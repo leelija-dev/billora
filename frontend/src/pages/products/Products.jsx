@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { FiPlus, FiSearch, FiEdit2, FiTrash2, FiFilter } from 'react-icons/fi'
+import { FiPlus, FiSearch, FiEdit2, FiTrash2, FiFilter, FiPackage } from 'react-icons/fi'
 import { useProductStore } from '../../store/productStore'
 import Button from '../../components/common/Button/Button'
 import Input from '../../components/common/Input/Input'

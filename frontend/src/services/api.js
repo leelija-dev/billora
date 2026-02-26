@@ -423,5 +423,94 @@ export const invoicesAPI = {
     : (id) => realApi.post(`/invoices/${id}/mark-paid/`),
 }
 
-// For backward compatibility
-export default realApi
+const mockClient = {
+  get: (url, config) => {
+    const params = config?.params
+
+    if (url === '/products/') return productsAPI.list(params)
+    if (url?.startsWith('/products/') && url !== '/products/') {
+      const id = url.replace('/products/', '').replace(/\/$/, '')
+      return productsAPI.retrieve(id)
+    }
+
+    if (url === '/orders/') return ordersAPI.list(params)
+    if (url?.startsWith('/orders/') && url !== '/orders/') {
+      const id = url.replace('/orders/', '').replace(/\/$/, '')
+      return ordersAPI.retrieve(id)
+    }
+
+    if (url === '/customers/') return customersAPI.list(params)
+    if (url?.startsWith('/customers/') && url !== '/customers/') {
+      const id = url.replace('/customers/', '').replace(/\/$/, '')
+      return customersAPI.retrieve(id)
+    }
+
+    if (url === '/inventory/logs/') return inventoryAPI.list(params)
+    if (url === '/inventory/low-stock/') return inventoryAPI.lowStock()
+
+    if (url === '/invoices/') return invoicesAPI.list(params)
+    if (url?.startsWith('/invoices/') && url !== '/invoices/') {
+      const id = url.replace('/invoices/', '').replace(/\/$/, '')
+      return invoicesAPI.retrieve(id)
+    }
+
+    if (url === '/dashboard/stats/') return dashboardAPI.stats()
+    if (url === '/dashboard/revenue/') return dashboardAPI.revenue(params)
+    if (url === '/dashboard/recent-orders/') return dashboardAPI.recentOrders()
+    if (url === '/dashboard/top-products/') return dashboardAPI.topProducts()
+    if (url === '/dashboard/activity/') return dashboardAPI.activity()
+
+    return Promise.reject(new Error(`Mock API route not implemented: GET ${url}`))
+  },
+  post: (url, data) => {
+    if (url === '/products/') return productsAPI.create(data)
+    if (url === '/orders/') return ordersAPI.create(data)
+    if (url === '/customers/') return customersAPI.create(data)
+    if (url === '/inventory/add/') return inventoryAPI.add(data)
+    if (url === '/inventory/remove/') return inventoryAPI.remove(data)
+    if (url === '/invoices/') return invoicesAPI.create(data)
+
+    if (url === '/auth/login/') return authAPI.login(data)
+    if (url === '/auth/register/') return authAPI.register(data)
+    if (url === '/auth/refresh/') return authAPI.refresh(data?.refresh)
+    if (url === '/auth/logout/') return authAPI.logout()
+
+    if (url?.startsWith('/invoices/') && url?.endsWith('/mark-paid/')) {
+      const id = url.replace('/invoices/', '').replace('/mark-paid/', '').replace(/\/$/, '')
+      return invoicesAPI.markAsPaid(id)
+    }
+
+    return Promise.reject(new Error(`Mock API route not implemented: POST ${url}`))
+  },
+  put: (url, data) => {
+    if (url?.startsWith('/products/')) {
+      const id = url.replace('/products/', '').replace(/\/$/, '')
+      return productsAPI.update(id, data)
+    }
+    if (url?.startsWith('/customers/')) {
+      const id = url.replace('/customers/', '').replace(/\/$/, '')
+      return customersAPI.update(id, data)
+    }
+    return Promise.reject(new Error(`Mock API route not implemented: PUT ${url}`))
+  },
+  patch: (url, data) => {
+    if (url?.startsWith('/orders/')) {
+      const id = url.replace('/orders/', '').replace(/\/$/, '')
+      return ordersAPI.updateStatus(id, data?.status)
+    }
+    return Promise.reject(new Error(`Mock API route not implemented: PATCH ${url}`))
+  },
+  delete: (url) => {
+    if (url?.startsWith('/products/')) {
+      const id = url.replace('/products/', '').replace(/\/$/, '')
+      return productsAPI.delete(id)
+    }
+    if (url?.startsWith('/customers/')) {
+      const id = url.replace('/customers/', '').replace(/\/$/, '')
+      return customersAPI.delete(id)
+    }
+    return Promise.reject(new Error(`Mock API route not implemented: DELETE ${url}`))
+  },
+ }
+
+ export default (useMockApi ? mockClient : realApi)
