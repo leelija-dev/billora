@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { FiPlus, FiSearch, FiFilter, FiDownload } from 'react-icons/fi'
+import { FiPlus, FiSearch, FiFilter, FiDownload, FiPackage } from 'react-icons/fi'
 import { useInventoryStore } from '../../store/inventoryStore'
 import Button from '../../components/common/Button/Button'
 import Input from '../../components/common/Input/Input'
@@ -8,6 +8,7 @@ import Modal from '../../components/common/Modal/Modal'
 import StatusBadge from '../../components/common/StatusBadge/StatusBadge'
 import Pagination from '../../components/common/Pagination/Pagination'
 import DatePicker from '../../components/common/DatePicker/DatePicker'
+import Select from '../../components/common/Select/Select'
 
 const Inventory = () => {
   const {
