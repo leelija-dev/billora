@@ -28,6 +28,10 @@ const Dashboard = () => {
     products: 0,
     customers: 0,
     lowStock: 0,
+    revenueChange: null,
+    ordersChange: null,
+    productsChange: null,
+    customersChange: null,
   })
   const [revenueData, setRevenueData] = useState([])
   const [recentOrders, setRecentOrders] = useState([])
@@ -45,8 +49,21 @@ const Dashboard = () => {
         api.get('/dashboard/revenue/'),
         api.get('/dashboard/recent-orders/'),
       ])
-      
-      setStats(statsRes.data)
+
+      const rawStats = statsRes.data
+      const normalizedStats = {
+        revenue: rawStats?.revenue?.total ?? rawStats?.revenue ?? 0,
+        orders: rawStats?.orders?.total ?? rawStats?.orders ?? 0,
+        products: rawStats?.products?.total ?? rawStats?.products ?? 0,
+        customers: rawStats?.customers?.total ?? rawStats?.customers ?? 0,
+        lowStock: rawStats?.products?.lowStock ?? rawStats?.lowStock ?? 0,
+        revenueChange: rawStats?.revenue?.change ?? null,
+        ordersChange: rawStats?.orders?.change ?? null,
+        productsChange: rawStats?.products?.change ?? null,
+        customersChange: rawStats?.customers?.change ?? null,
+      }
+
+      setStats(normalizedStats)
       setRevenueData(revenueRes.data)
       setRecentOrders(ordersRes.data)
     } catch (error) {
@@ -64,7 +81,7 @@ const Dashboard = () => {
           <p className="text-2xl font-bold text-gray-900 dark:text-white mt-2">
             {value}
           </p>
-          {change && (
+          {change !== null && (
             <p className={`text-sm mt-2 ${change > 0 ? 'text-green-600' : 'text-red-600'}`}>
               {change > 0 ? '+' : ''}{change}% from last month
             </p>
@@ -112,30 +129,30 @@ const Dashboard = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard
           title="Total Revenue"
-          value={`$${stats.revenue.toLocaleString()}`}
+          value={`$${Number(stats.revenue || 0).toLocaleString()}`}
           icon={FiDollarSign}
-          change={12.5}
+          change={stats.revenueChange}
           color="bg-green-500"
         />
         <StatCard
           title="Total Orders"
-          value={stats.orders.toLocaleString()}
+          value={Number(stats.orders || 0).toLocaleString()}
           icon={FiShoppingBag}
-          change={8.2}
+          change={stats.ordersChange}
           color="bg-blue-500"
         />
         <StatCard
           title="Products"
-          value={stats.products.toLocaleString()}
+          value={Number(stats.products || 0).toLocaleString()}
           icon={FiPackage}
-          change={-3.1}
+          change={stats.productsChange}
           color="bg-purple-500"
         />
         <StatCard
           title="Customers"
-          value={stats.customers.toLocaleString()}
+          value={Number(stats.customers || 0).toLocaleString()}
           icon={FiUsers}
-          change={15.3}
+          change={stats.customersChange}
           color="bg-orange-500"
         />
       </div>

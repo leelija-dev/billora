@@ -1,10 +1,48 @@
-import React, { useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { FiUser, FiBell, FiLock, FiGlobe, FiSave } from 'react-icons/fi'
 import Button from '../../components/common/Button/Button'
 import Input from '../../components/common/Input/Input'
+import Select from '../../components/common/Select/Select'
+import { useSettingsStore } from '../../store/settingsStore'
+import { useAuthStore } from '../../store/authStore'
 
 const Settings = () => {
   const [activeTab, setActiveTab] = useState('profile')
+
+  const {
+    loading,
+    savingProfile,
+    savingPassword,
+    savingPreferences,
+    savingNotifications,
+    profile,
+    notifications,
+    preferences,
+    security,
+    loadSettings,
+    setProfile,
+    setNotifications,
+    setPreferences,
+    setSecurity,
+    saveProfile,
+    savePassword,
+    savePreferences,
+    saveNotifications,
+  } = useSettingsStore()
+
+  const { user } = useAuthStore()
+
+  useEffect(() => {
+    loadSettings()
+  }, [])
+
+  const initials = useMemo(() => {
+    const name = user?.name || `${profile.firstName} ${profile.lastName}`.trim() || 'User'
+    const parts = name.split(' ').filter(Boolean)
+    const first = parts[0]?.[0] || 'U'
+    const second = parts[1]?.[0] || ''
+    return `${first}${second}`.toUpperCase()
+  }, [user?.name, profile.firstName, profile.lastName])
 
   const tabs = [
     { id: 'profile', name: 'Profile', icon: FiUser },
@@ -54,7 +92,7 @@ const Settings = () => {
             <div className="space-y-6 max-w-2xl">
               <div className="flex items-center space-x-4">
                 <div className="w-20 h-20 bg-gradient-to-r from-primary-500 to-primary-600 rounded-full flex items-center justify-center text-white text-2xl font-bold">
-                  JD
+                  {initials}
                 </div>
                 <Button variant="outline" size="sm">
                   Change Avatar
@@ -62,14 +100,37 @@ const Settings = () => {
               </div>
 
               <div className="grid grid-cols-2 gap-4">
-                <Input label="First Name" defaultValue="John" />
-                <Input label="Last Name" defaultValue="Doe" />
-                <Input label="Email" type="email" defaultValue="john@example.com" />
-                <Input label="Phone" defaultValue="+1 234 567 890" />
+                <Input
+                  label="First Name"
+                  value={profile.firstName}
+                  onChange={(e) => setProfile({ firstName: e.target.value })}
+                  disabled={loading}
+                />
+                <Input
+                  label="Last Name"
+                  value={profile.lastName}
+                  onChange={(e) => setProfile({ lastName: e.target.value })}
+                  disabled={loading}
+                />
+                <Input
+                  label="Email"
+                  type="email"
+                  value={profile.email}
+                  onChange={(e) => setProfile({ email: e.target.value })}
+                  disabled={loading}
+                />
+                <Input
+                  label="Phone"
+                  value={profile.phone}
+                  onChange={(e) => setProfile({ phone: e.target.value })}
+                  disabled={loading}
+                />
               </div>
 
               <div className="flex justify-end">
-                <Button icon={FiSave}>Save Changes</Button>
+                <Button icon={FiSave} onClick={saveProfile} isLoading={savingProfile} disabled={loading}>
+                  Save Changes
+                </Button>
               </div>
             </div>
           )}
@@ -86,7 +147,12 @@ const Settings = () => {
                   </p>
                 </div>
                 <label className="relative inline-flex items-center cursor-pointer">
-                  <input type="checkbox" className="sr-only peer" defaultChecked />
+                  <input
+                    type="checkbox"
+                    className="sr-only peer"
+                    checked={notifications.emailNotifications}
+                    onChange={(e) => setNotifications({ emailNotifications: e.target.checked })}
+                  />
                   <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 dark:peer-focus:ring-primary-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary-600"></div>
                 </label>
               </div>
@@ -98,10 +164,15 @@ const Settings = () => {
                   </h3>
                   <p className="text-sm text-gray-500 dark:text-gray-400">
                     Get notified when orders are placed or updated
-                                 </p>
+                  </p>
                 </div>
                 <label className="relative inline-flex items-center cursor-pointer">
-                  <input type="checkbox" className="sr-only peer" defaultChecked />
+                  <input
+                    type="checkbox"
+                    className="sr-only peer"
+                    checked={notifications.orderUpdates}
+                    onChange={(e) => setNotifications({ orderUpdates: e.target.checked })}
+                  />
                   <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 dark:peer-focus:ring-primary-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary-600"></div>
                 </label>
               </div>
@@ -116,9 +187,20 @@ const Settings = () => {
                   </p>
                 </div>
                 <label className="relative inline-flex items-center cursor-pointer">
-                  <input type="checkbox" className="sr-only peer" defaultChecked />
+                  <input
+                    type="checkbox"
+                    className="sr-only peer"
+                    checked={notifications.lowStockAlerts}
+                    onChange={(e) => setNotifications({ lowStockAlerts: e.target.checked })}
+                  />
                   <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 dark:peer-focus:ring-primary-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary-600"></div>
                 </label>
+              </div>
+
+              <div className="flex justify-end">
+                <Button icon={FiSave} onClick={saveNotifications} isLoading={savingNotifications}>
+                  Save Notification Settings
+                </Button>
               </div>
             </div>
           )}
@@ -129,18 +211,24 @@ const Settings = () => {
                 label="Current Password"
                 type="password"
                 placeholder="Enter current password"
+                value={security.currentPassword}
+                onChange={(e) => setSecurity({ currentPassword: e.target.value })}
               />
               <Input
                 label="New Password"
                 type="password"
                 placeholder="Enter new password"
+                value={security.newPassword}
+                onChange={(e) => setSecurity({ newPassword: e.target.value })}
               />
               <Input
                 label="Confirm New Password"
                 type="password"
                 placeholder="Confirm new password"
+                value={security.confirmNewPassword}
+                onChange={(e) => setSecurity({ confirmNewPassword: e.target.value })}
               />
-              
+
               <div className="pt-4">
                 <h3 className="text-sm font-medium text-gray-900 dark:text-white mb-2">
                   Two-Factor Authentication
@@ -151,7 +239,9 @@ const Settings = () => {
               </div>
 
               <div className="flex justify-end">
-                <Button>Update Password</Button>
+                <Button onClick={savePassword} isLoading={savingPassword}>
+                  Update Password
+                </Button>
               </div>
             </div>
           )}
@@ -166,9 +256,10 @@ const Settings = () => {
                   { value: 'fr', label: 'French' },
                   { value: 'de', label: 'German' },
                 ]}
-                defaultValue="en"
+                value={preferences.language}
+                onChange={(e) => setPreferences({ language: e.target.value })}
               />
-              
+
               <Select
                 label="Timezone"
                 options={[
@@ -177,9 +268,10 @@ const Settings = () => {
                   { value: 'pst', label: 'Pacific Time' },
                   { value: 'gmt', label: 'GMT' },
                 ]}
-                defaultValue="utc"
+                value={preferences.timezone}
+                onChange={(e) => setPreferences({ timezone: e.target.value })}
               />
-              
+
               <Select
                 label="Date Format"
                 options={[
@@ -187,11 +279,14 @@ const Settings = () => {
                   { value: 'DD/MM/YYYY', label: 'DD/MM/YYYY' },
                   { value: 'YYYY-MM-DD', label: 'YYYY-MM-DD' },
                 ]}
-                defaultValue="MM/DD/YYYY"
+                value={preferences.dateFormat}
+                onChange={(e) => setPreferences({ dateFormat: e.target.value })}
               />
 
               <div className="flex justify-end">
-                <Button>Save Preferences</Button>
+                <Button icon={FiSave} onClick={savePreferences} isLoading={savingPreferences}>
+                  Save Preferences
+                </Button>
               </div>
             </div>
           )}

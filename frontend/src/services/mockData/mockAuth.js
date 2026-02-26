@@ -83,4 +83,30 @@ export const mockAuth = {
     const { password: _, ...userWithoutPassword } = user
     return { user: userWithoutPassword, company }
   },
+
+  updateProfile: (userData = {}) => {
+    const user = mockUsers[0]
+
+    if (userData.email) user.email = userData.email
+    if (userData.name) user.name = userData.name
+    if (userData.avatar) user.avatar = userData.avatar
+    if (userData.phone) user.phone = userData.phone
+    if (userData.first_name) user.first_name = userData.first_name
+    if (userData.last_name) user.last_name = userData.last_name
+
+    const { password: _, ...userWithoutPassword } = user
+    return { user: userWithoutPassword }
+  },
+
+  changePassword: ({ current_password, new_password } = {}) => {
+    const user = mockUsers[0]
+    if (!current_password || !new_password) {
+      throw new Error('Current password and new password are required')
+    }
+    if (user.password !== current_password) {
+      throw new Error('Current password is incorrect')
+    }
+    user.password = new_password
+    return { success: true }
+  },
 }

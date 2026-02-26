@@ -1,23 +1,235 @@
-import React from 'react'
-import { FiUsers } from 'react-icons/fi'
+import React, { useEffect, useState } from 'react'
+import { FiPlus, FiSearch, FiEdit2, FiTrash2, FiFilter, FiUsers } from 'react-icons/fi'
+import { useCustomerStore } from '../../store/customerStore'
+import Button from '../../components/common/Button/Button'
+import Input from '../../components/common/Input/Input'
+import Table from '../../components/common/Table/Table'
+import StatusBadge from '../../components/common/StatusBadge/StatusBadge'
+import Pagination from '../../components/common/Pagination/Pagination'
 import EmptyState from '../../components/common/EmptyState/EmptyState'
+import CustomerModal from '../../components/features/Customers/CustomerModal'
+import Select from '../../components/common/Select/Select'
 
 const Customers = () => {
+  const {
+    customers,
+    totalCustomers,
+    currentPage,
+    pageSize,
+    loading,
+    filters,
+    fetchCustomers,
+    createCustomer,
+    updateCustomer,
+    deleteCustomer,
+    setFilters,
+  } = useCustomerStore()
+
+  const [showAddModal, setShowAddModal] = useState(false)
+  const [showEditModal, setShowEditModal] = useState(false)
+  const [selectedCustomer, setSelectedCustomer] = useState(null)
+  const [searchTerm, setSearchTerm] = useState(filters.search || '')
+  const [showFilters, setShowFilters] = useState(false)
+
+  useEffect(() => {
+    fetchCustomers()
+  }, [])
+
+  useEffect(() => {
+    const debounceTimer = setTimeout(() => {
+      setFilters({ search: searchTerm })
+    }, 500)
+
+    return () => clearTimeout(debounceTimer)
+  }, [searchTerm, setFilters])
+
+  const handleEdit = (customer) => {
+    setSelectedCustomer(customer)
+    setShowEditModal(true)
+  }
+
+  const handleDelete = async (id) => {
+    if (window.confirm('Are you sure you want to delete this customer?')) {
+      await deleteCustomer(id)
+    }
+  }
+
+  const handlePageChange = (page) => {
+    fetchCustomers(page)
+  }
+
+  const handleAddSubmit = async (data) => {
+    const result = await createCustomer(data)
+    if (result?.success) {
+      fetchCustomers(currentPage)
+    }
+  }
+
+  const handleEditSubmit = async (data) => {
+    if (!selectedCustomer?.id) return
+    const result = await updateCustomer(selectedCustomer.id, data)
+    if (result?.success) {
+      fetchCustomers(currentPage)
+    }
+  }
+
+  const columns = [
+    {
+      header: 'Customer',
+      accessor: 'name',
+      cell: (value, row) => (
+        <div>
+          <p className="font-medium text-gray-900 dark:text-white">{value}</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400">{row.email}</p>
+        </div>
+      ),
+    },
+    {
+      header: 'Phone',
+      accessor: 'phone',
+      cell: (value) => value || '-',
+    },
+    {
+      header: 'Company',
+      accessor: 'company',
+      cell: (value) => value || '-',
+    },
+    {
+      header: 'Orders',
+      accessor: 'totalOrders',
+      cell: (value) => (value ?? 0),
+    },
+    {
+      header: 'Spent',
+      accessor: 'totalSpent',
+      cell: (value) => {
+        const amount = Number(value || 0)
+        return `$${amount.toFixed(2)}`
+      },
+    },
+    {
+      header: 'Status',
+      accessor: 'status',
+      cell: (value) => (
+        <StatusBadge
+          status={value}
+          variant={value === 'active' ? 'success' : value === 'blocked' ? 'danger' : 'warning'}
+        />
+      ),
+    },
+    {
+      header: 'Actions',
+      accessor: 'actions',
+      cell: (_, row) => (
+        <div className="flex items-center space-x-2">
+          <button
+            onClick={() => handleEdit(row)}
+            className="p-2 text-gray-600 hover:text-primary-600 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
+          >
+            <FiEdit2 className="w-4 h-4" />
+          </button>
+          <button
+            onClick={() => handleDelete(row.id)}
+            className="p-2 text-gray-600 hover:text-red-600 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
+          >
+            <FiTrash2 className="w-4 h-4" />
+          </button>
+        </div>
+      ),
+    },
+  ]
+
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-          Customers
-        </h1>
-        <p className="text-gray-600 dark:text-gray-400 mt-1">
-          Manage your customer relationships
-        </p>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Customers</h1>
+          <p className="text-gray-600 dark:text-gray-400 mt-1">Manage your customer relationships</p>
+        </div>
+        <Button onClick={() => setShowAddModal(true)} icon={FiPlus}>
+          Add Customer
+        </Button>
       </div>
-      
-      <EmptyState
-        icon={FiUsers}
-        title="Customers module coming soon"
-        description="This module is under development and will be available soon."
+
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4">
+        <div className="flex flex-col sm:flex-row gap-4">
+          <div className="flex-1 relative">
+            <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+            <Input
+              type="text"
+              placeholder="Search customers..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+          <Button
+            variant="outline"
+            onClick={() => setShowFilters(!showFilters)}
+            icon={FiFilter}
+          >
+            Filters
+          </Button>
+        </div>
+
+        {showFilters && (
+          <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <Select
+                label="Status"
+                options={[
+                  { value: '', label: 'All Statuses' },
+                  { value: 'active', label: 'Active' },
+                  { value: 'inactive', label: 'Inactive' },
+                  { value: 'blocked', label: 'Blocked' },
+                ]}
+                value={filters.status}
+                onChange={(e) => setFilters({ status: e.target.value })}
+              />
+            </div>
+          </div>
+        )}
+      </div>
+
+      {customers?.length === 0 && !loading ? (
+        <EmptyState
+          icon={FiUsers}
+          title="No customers found"
+          description="Try adjusting your search or filters, or add your first customer."
+          action={
+            <Button onClick={() => setShowAddModal(true)} icon={FiPlus}>
+              Add Customer
+            </Button>
+          }
+        />
+      ) : (
+        <>
+          <Table columns={columns} data={customers} loading={loading} />
+          <Pagination
+            currentPage={currentPage}
+            totalItems={totalCustomers}
+            pageSize={pageSize}
+            onPageChange={handlePageChange}
+          />
+        </>
+      )}
+
+      <CustomerModal
+        isOpen={showAddModal}
+        onClose={() => setShowAddModal(false)}
+        mode="add"
+        onSubmit={handleAddSubmit}
+      />
+
+      <CustomerModal
+        isOpen={showEditModal}
+        onClose={() => {
+          setShowEditModal(false)
+          setSelectedCustomer(null)
+        }}
+        customer={selectedCustomer}
+        mode="edit"
+        onSubmit={handleEditSubmit}
       />
     </div>
   )

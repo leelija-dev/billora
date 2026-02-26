@@ -268,6 +268,13 @@ export const authAPI = {
   me: useMockApi
     ? mockApiWrapper(() => mockAuth.getCurrentUser())
     : () => realApi.get('/auth/me/'),
+  updateProfile: useMockApi
+    ? mockApiWrapper((userData) => mockAuth.updateProfile(userData))
+    : (userData) => realApi.put('/auth/profile/', userData),
+
+  changePassword: useMockApi
+    ? mockApiWrapper((passwordData) => mockAuth.changePassword(passwordData))
+    : (passwordData) => realApi.post('/auth/change-password/', passwordData),
 }
 
 // Products endpoints
@@ -400,10 +407,22 @@ export const billingAPI = {
     : () => realApi.post('/billing/cancel/'),
 }
 
+const normalizeListParams = (params) => {
+  if (!params) return params
+
+  const normalized = { ...params }
+
+  if (normalized.pageSize == null && normalized.page_size != null) {
+    normalized.pageSize = normalized.page_size
+  }
+
+  return normalized
+}
+
 // Invoices endpoints
 export const invoicesAPI = {
   list: useMockApi
-    ? mockApiWrapper((params) => mockInvoiceService.list(params))
+    ? mockApiWrapper((params) => mockInvoiceService.list(normalizeListParams(params)))
     : (params) => realApi.get('/invoices/', { params }),
     
   create: useMockApi
@@ -421,11 +440,15 @@ export const invoicesAPI = {
   markAsPaid: useMockApi
     ? mockApiWrapper((id) => mockInvoiceService.markAsPaid(id))
     : (id) => realApi.post(`/invoices/${id}/mark-paid/`),
+
+  delete: useMockApi
+    ? mockApiWrapper((id) => mockInvoiceService.delete(id))
+    : (id) => realApi.delete(`/invoices/${id}/`),
 }
 
 const mockClient = {
   get: (url, config) => {
-    const params = config?.params
+    const params = normalizeListParams(config?.params)
 
     if (url === '/products/') return productsAPI.list(params)
     if (url?.startsWith('/products/') && url !== '/products/') {
@@ -474,6 +497,7 @@ const mockClient = {
     if (url === '/auth/register/') return authAPI.register(data)
     if (url === '/auth/refresh/') return authAPI.refresh(data?.refresh)
     if (url === '/auth/logout/') return authAPI.logout()
+    if (url === '/auth/change-password/') return authAPI.changePassword(data)
 
     if (url?.startsWith('/invoices/') && url?.endsWith('/mark-paid/')) {
       const id = url.replace('/invoices/', '').replace('/mark-paid/', '').replace(/\/$/, '')
@@ -491,6 +515,13 @@ const mockClient = {
       const id = url.replace('/customers/', '').replace(/\/$/, '')
       return customersAPI.update(id, data)
     }
+    if (url?.startsWith('/invoices/')) {
+      const id = url.replace('/invoices/', '').replace(/\/$/, '')
+      return invoicesAPI.update(id, data)
+    }
+    if (url === '/auth/profile/') {
+      return authAPI.updateProfile(data)
+    }
     return Promise.reject(new Error(`Mock API route not implemented: PUT ${url}`))
   },
   patch: (url, data) => {
@@ -505,9 +536,14 @@ const mockClient = {
       const id = url.replace('/products/', '').replace(/\/$/, '')
       return productsAPI.delete(id)
     }
+
     if (url?.startsWith('/customers/')) {
       const id = url.replace('/customers/', '').replace(/\/$/, '')
       return customersAPI.delete(id)
+    }
+    if (url?.startsWith('/invoices/')) {
+      const id = url.replace('/invoices/', '').replace(/\/$/, '')
+      return invoicesAPI.delete(id)
     }
     return Promise.reject(new Error(`Mock API route not implemented: DELETE ${url}`))
   },

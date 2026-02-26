@@ -8,6 +8,7 @@ import StatusBadge from '../../components/common/StatusBadge/StatusBadge'
 import Pagination from '../../components/common/Pagination/Pagination'
 import EmptyState from '../../components/common/EmptyState/EmptyState'
 import ProductModal from '../../components/features/Products/ProductModal'
+import Select from '../../components/common/Select/Select'
 
 const Products = () => {
   const {
