@@ -1,8 +1,7 @@
 import React, { forwardRef } from 'react'
 
-const Select = forwardRef(({
+const DatePicker = forwardRef(({
   label,
-  options = [],
   error,
   className = '',
   ...props
@@ -14,12 +13,12 @@ const Select = forwardRef(({
           {label}
         </label>
       )}
-      <select
+      <input
         ref={ref}
+        type="date"
         className={`
           w-full px-3 py-2 border rounded-lg shadow-sm
           focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500
-          disabled:bg-gray-100 disabled:cursor-not-allowed
           dark:bg-gray-700 dark:border-gray-600 dark:text-white
           ${error 
             ? 'border-red-300 dark:border-red-600' 
@@ -28,13 +27,7 @@ const Select = forwardRef(({
           ${className}
         `}
         {...props}
-      >
-        {options.map(({ value, label }) => (
-          <option key={value} value={value}>
-            {label}
-          </option>
-        ))}
-      </select>
+      />
       {error && (
         <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
       )}
@@ -42,6 +35,6 @@ const Select = forwardRef(({
   )
 })
 
-Select.displayName = 'Select'
+DatePicker.displayName = 'DatePicker'
 
-export default Select
+export default DatePicker
