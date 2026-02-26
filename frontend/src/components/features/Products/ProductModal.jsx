@@ -4,6 +4,8 @@ import { useProductStore } from '../../../store/productStore'
 import Modal from '../../common/Modal/Modal'
 import Button from '../../common/Button/Button'
 import Input from '../../common/Input/Input'
+import Select from '../../common/Select/Select'
+import { FiUpload } from 'react-icons/fi'
 
 const ProductModal = ({ isOpen, onClose, product, mode = 'add' }) => {
   const { createProduct, updateProduct } = useProductStore()
