@@ -14,7 +14,7 @@ const Layout = () => {
       
       <main
         className={`
-          transition-all duration-300 pt-16
+          transition-all duration-300 pt-4
           ${sidebarOpen ? 'md:ml-64' : 'md:ml-20'}
         `}
       >
