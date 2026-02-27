@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react'
-import { NavLink, useLocation } from 'react-router-dom'
-import { useUIStore } from '../../../store/uiStore'
+import React, { useEffect, useState } from 'react';
+import { NavLink, useLocation } from 'react-router-dom';
+import { useUIStore } from '../../../store/uiStore';
 import {
   FiHome,
   FiPackage,
@@ -15,30 +15,31 @@ import {
   FiLogOut,
   FiHelpCircle,
   FiBell,
-} from 'react-icons/fi'
-import { motion, AnimatePresence } from 'framer-motion'
+} from 'react-icons/fi';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const Sidebar = () => {
-  const { sidebarOpen, toggleSidebar, isMobile, setIsMobile } = useUIStore()
-  const location = useLocation()
-  const [hoveredItem, setHoveredItem] = useState(null)
+  const { sidebarOpen, toggleSidebar, isMobile, setIsMobile } = useUIStore();
+  const location = useLocation();
+  const [hoveredItem, setHoveredItem] = useState(null);
 
   useEffect(() => {
     const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768)
-    }
+      setIsMobile(window.innerWidth < 768);
+    };
     
-    checkMobile()
-    window.addEventListener('resize', checkMobile)
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
     
-    return () => window.removeEventListener('resize', checkMobile)
-  }, [setIsMobile])
+    return () => window.removeEventListener('resize', checkMobile);
+  }, [setIsMobile]);
 
+  // Auto close sidebar on mobile when route changes
   useEffect(() => {
     if (isMobile && sidebarOpen) {
-      toggleSidebar()
+      toggleSidebar();
     }
-  }, [location.pathname, isMobile])
+  }, [location.pathname, isMobile]);
 
   const menuItems = [
     { path: '/dashboard', name: 'Dashboard', icon: FiHome, badge: null },
@@ -49,17 +50,7 @@ const Sidebar = () => {
     { path: '/invoices', name: 'Invoices', icon: FiFileText, badge: '3' },
     { path: '/billing', name: 'Billing', icon: FiCreditCard, badge: null },
     { path: '/settings', name: 'Settings', icon: FiSettings, badge: null },
-  ]
-
-  const sidebarVariants = {
-    expanded: { width: '256px' },
-    collapsed: { width: '80px' }
-  }
-
-  const logoVariants = {
-    expanded: { opacity: 1, x: 0 },
-    collapsed: { opacity: 0, x: -20 }
-  }
+  ];
 
   return (
     <>
@@ -69,7 +60,7 @@ const Sidebar = () => {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-20"
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-30"
           onClick={toggleSidebar}
         />
       )}
@@ -77,24 +68,19 @@ const Sidebar = () => {
       {/* Sidebar */}
       <motion.aside
         initial={false}
-        animate={[
-          sidebarOpen ? 'expanded' : 'collapsed',
-          isMobile ? (sidebarOpen ? 'open' : 'closed') : 'desktop'
-        ]}
-        variants={{
-          expanded: { width: '256px' },
-          collapsed: { width: '80px' },
-          open: { x: 0 },
-          closed: { x: '-100%' },
-          desktop: { x: 0 }
+        animate={{
+          width: isMobile 
+            ? (sidebarOpen ? '280px' : '0px')
+            : (sidebarOpen ? '256px' : '80px'),
+          x: isMobile && !sidebarOpen ? '-100%' : 0,
         }}
         transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
-        className="fixed left-0 top-0 h-full bg-gradient-to-b from-white to-gray-50/80 dark:from-gray-800 dark:to-gray-900 shadow-2xl z-30 overflow-hidden border-r border-gray-200/50 dark:border-gray-700/50"
+        className="fixed left-0 top-0 h-full bg-gradient-to-b from-white to-gray-50/80 dark:from-gray-800 dark:to-gray-900 shadow-2xl z-40 overflow-hidden border-r border-gray-200/50 dark:border-gray-700/50"
       >
         {/* Decorative gradient line */}
         <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-primary-500 via-secondary-500 to-accent-500" />
 
-        {/* Logo Area with glass morphism effect */}
+        {/* Logo Area */}
         <div className="relative flex items-center justify-between h-20 px-4 border-b border-gray-200/50 dark:border-gray-700/50 bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm">
           <div className="flex items-center space-x-3 overflow-hidden">
             <motion.div
@@ -124,7 +110,7 @@ const Sidebar = () => {
             </AnimatePresence>
           </div>
           
-          {/* Toggle Button with enhanced design */}
+          {/* Toggle Button - Hide on mobile */}
           {!isMobile && (
             <motion.button
               whileHover={{ scale: 1.1 }}
@@ -141,11 +127,11 @@ const Sidebar = () => {
           )}
         </div>
 
-        {/* Navigation with enhanced styling */}
+        {/* Navigation */}
         <nav className="mt-6 px-3 space-y-1 overflow-y-auto max-h-[calc(100vh-180px)] scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600">
           {menuItems.map((item, index) => {
-            const Icon = item.icon
-            const isActive = location.pathname === item.path
+            const Icon = item.icon;
+            const isActive = location.pathname === item.path;
             
             return (
               <motion.div
@@ -178,7 +164,7 @@ const Sidebar = () => {
                     />
                   )}
 
-                  {/* Icon with animation */}
+                  {/* Icon */}
                   <motion.div
                     whileHover={{ scale: 1.1 }}
                     whileTap={{ scale: 0.95 }}
@@ -194,7 +180,7 @@ const Sidebar = () => {
                     )}
                   </motion.div>
 
-                  {/* Item name with animation */}
+                  {/* Item name */}
                   <AnimatePresence mode="wait">
                     {sidebarOpen && (
                       <motion.span
@@ -224,8 +210,8 @@ const Sidebar = () => {
                     </motion.span>
                   )}
 
-                  {/* Enhanced tooltip for collapsed state */}
-                  {!sidebarOpen && hoveredItem === item.path && (
+                  {/* Tooltip for collapsed state */}
+                  {!sidebarOpen && !isMobile && hoveredItem === item.path && (
                     <motion.div
                       initial={{ opacity: 0, x: -10 }}
                       animate={{ opacity: 1, x: 0 }}
@@ -243,88 +229,68 @@ const Sidebar = () => {
                   )}
                 </NavLink>
               </motion.div>
-            )
+            );
           })}
         </nav>
 
-        {/* Bottom Section with enhanced design */}
-        <motion.div 
-          className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200/50 dark:border-gray-700/50 bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm"
-          whileHover={{ y: -2 }}
-          transition={{ duration: 0.2 }}
-        >
-          {/* Quick actions */}
-          <div className="flex justify-around mb-4 px-2">
-            <motion.button
-              whileHover={{ scale: 1.1, y: -2 }}
-              whileTap={{ scale: 0.95 }}
-              className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400"
-            >
-              <FiBell className="w-4 h-4" />
-            </motion.button>
-            <motion.button
-              whileHover={{ scale: 1.1, y: -2 }}
-              whileTap={{ scale: 0.95 }}
-              className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400"
-            >
-              <FiHelpCircle className="w-4 h-4" />
-            </motion.button>
-            <motion.button
-              whileHover={{ scale: 1.1, y: -2 }}
-              whileTap={{ scale: 0.95 }}
-              className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400"
-            >
-              <FiLogOut className="w-4 h-4" />
-            </motion.button>
-          </div>
-
-          {/* User profile section */}
-          <AnimatePresence mode="wait">
-            {sidebarOpen ? (
-              <motion.div
-                key="expanded-profile"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 20 }}
-                className="flex items-center space-x-3 p-2 rounded-xl bg-gradient-to-r from-primary-500/5 to-secondary-500/5 dark:from-primary-500/10 dark:to-secondary-500/10"
-              >
-                <motion.div
-                  whileHover={{ scale: 1.05, rotate: 5 }}
-                  className="flex-shrink-0 w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center text-white font-bold shadow-lg shadow-purple-500/20"
+        {/* Bottom Section - Hide on mobile when sidebar is collapsed */}
+        {sidebarOpen && (
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20 }}
+            className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200/50 dark:border-gray-700/50 bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm"
+          >
+            {/* Quick actions - Hide on mobile */}
+            {!isMobile && (
+              <div className="flex justify-around mb-4 px-2">
+                <motion.button
+                  whileHover={{ scale: 1.1, y: -2 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400"
                 >
-                  JD
-                </motion.div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">
-                    John Doe
-                  </p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 truncate flex items-center">
-                    <span className="w-1.5 h-1.5 bg-green-500 rounded-full mr-1.5" />
-                    Free Plan
-                  </p>
-                </div>
-              </motion.div>
-            ) : (
-              <motion.div
-                key="collapsed-profile"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="flex justify-center"
-              >
-                <motion.div
-                  whileHover={{ scale: 1.05, rotate: 5 }}
-                  className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center text-white font-bold shadow-lg shadow-purple-500/20 cursor-pointer"
+                  <FiBell className="w-4 h-4" />
+                </motion.button>
+                <motion.button
+                  whileHover={{ scale: 1.1, y: -2 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400"
                 >
-                  JD
-                </motion.div>
-              </motion.div>
+                  <FiHelpCircle className="w-4 h-4" />
+                </motion.button>
+                <motion.button
+                  whileHover={{ scale: 1.1, y: -2 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400"
+                >
+                  <FiLogOut className="w-4 h-4" />
+                </motion.button>
+              </div>
             )}
-          </AnimatePresence>
-        </motion.div>
+
+            {/* User profile section */}
+            <div className="flex items-center space-x-3 p-2 rounded-xl bg-gradient-to-r from-primary-500/5 to-secondary-500/5 dark:from-primary-500/10 dark:to-secondary-500/10">
+              <motion.div
+                whileHover={{ scale: 1.05, rotate: 5 }}
+                className="flex-shrink-0 w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center text-white font-bold shadow-lg shadow-purple-500/20"
+              >
+                JD
+              </motion.div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">
+                  John Doe
+                </p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 truncate flex items-center">
+                  <span className="w-1.5 h-1.5 bg-green-500 rounded-full mr-1.5" />
+                  Free Plan
+                </p>
+              </div>
+            </div>
+          </motion.div>
+        )}
       </motion.aside>
     </>
-  )
-}
+  );
+};
 
-export default Sidebar
+export default Sidebar;
