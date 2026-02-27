@@ -108,16 +108,41 @@ const Billing = () => {
           }
         />
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="">
           <div className="lg:col-span-2 space-y-6">
-            <SubscriptionCard
-              subscription={{
-                ...subscription,
-                nextBillingDate: subscription?.currentPeriodEnd || subscription?.nextBillingDate,
-              }}
-              onUpgrade={handleUpgrade}
-              onCancel={handleCancel}
-            />
+            <div className='flex flex-row gap-6'>
+            <div className='w-full'>
+                <SubscriptionCard
+                subscription={{
+                  ...subscription,
+                  nextBillingDate: subscription?.currentPeriodEnd || subscription?.nextBillingDate,
+                }}
+                onUpgrade={handleUpgrade}
+                onCancel={handleCancel}
+              />
+
+            </div>
+              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 min-w-[350px]">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Current Plan</h3>
+                <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+                  {currentPlan ? `${currentPlan.name} ($${currentPlan.price}/${currentPlan.interval})` : 'Unknown'}
+                </p>
+
+                <div className="mt-4 space-y-2">
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    Status: <span className="font-medium text-gray-900 dark:text-white">{subscription?.status || 'N/A'}</span>
+                  </p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    Renews: <span className="font-medium text-gray-900 dark:text-white">{subscription?.currentPeriodEnd ? new Date(subscription.currentPeriodEnd).toLocaleDateString() : 'N/A'}</span>
+                  </p>
+                  {subscription?.paymentMethod?.type === 'credit_card' && (
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                      Card: <span className="font-medium text-gray-900 dark:text-white">{subscription.paymentMethod.brand} •••• {subscription.paymentMethod.last4}</span>
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
 
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4">
               <div className="flex flex-col sm:flex-row sm:items-end gap-4">
@@ -159,28 +184,7 @@ const Billing = () => {
             />
           </div>
 
-          <div className="space-y-6">
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Current Plan</h3>
-              <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
-                {currentPlan ? `${currentPlan.name} ($${currentPlan.price}/${currentPlan.interval})` : 'Unknown'}
-              </p>
 
-              <div className="mt-4 space-y-2">
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Status: <span className="font-medium text-gray-900 dark:text-white">{subscription?.status || 'N/A'}</span>
-                </p>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Renews: <span className="font-medium text-gray-900 dark:text-white">{subscription?.currentPeriodEnd ? new Date(subscription.currentPeriodEnd).toLocaleDateString() : 'N/A'}</span>
-                </p>
-                {subscription?.paymentMethod?.type === 'credit_card' && (
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
-                    Card: <span className="font-medium text-gray-900 dark:text-white">{subscription.paymentMethod.brand} •••• {subscription.paymentMethod.last4}</span>
-                  </p>
-                )}
-              </div>
-            </div>
-          </div>
         </div>
       )}
     </div>

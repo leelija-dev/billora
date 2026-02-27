@@ -21,6 +21,7 @@ import {
   FiX,
   FiStar,
   FiMessageCircle,
+  FiArrowLeft,
 } from 'react-icons/fi'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useCustomerStore } from '../../store/customerStore'
@@ -48,8 +49,8 @@ const Customers = () => {
     setFilters,
   } = useCustomerStore()
 
-  const [showAddModal, setShowAddModal] = useState(false)
-  const [showEditModal, setShowEditModal] = useState(false)
+  const [showAddForm, setShowAddForm] = useState(false)
+  const [showEditForm, setShowEditForm] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [selectedCustomer, setSelectedCustomer] = useState(null)
   const [searchTerm, setSearchTerm] = useState(filters.search || '')
@@ -72,7 +73,7 @@ const Customers = () => {
 
   const handleEdit = (customer) => {
     setSelectedCustomer(customer)
-    setShowEditModal(true)
+    setShowEditForm(true)
   }
 
   const handleDelete = async (id) => {
@@ -105,7 +106,7 @@ const Customers = () => {
     try {
       const result = await createCustomer(data)
       if (result?.success) {
-        setShowAddModal(false)
+        setShowAddForm(false)
         fetchCustomers(currentPage)
       }
     } catch (error) {
@@ -118,13 +119,19 @@ const Customers = () => {
     try {
       const result = await updateCustomer(selectedCustomer.id, data)
       if (result?.success) {
-        setShowEditModal(false)
+        setShowEditForm(false)
         setSelectedCustomer(null)
         fetchCustomers(currentPage)
       }
     } catch (error) {
       console.error('Failed to update customer:', error)
     }
+  }
+
+  const handleFormCancel = () => {
+    setShowAddForm(false)
+    setShowEditForm(false)
+    setSelectedCustomer(null)
   }
 
   const handlePageChange = (page) => {
@@ -431,11 +438,89 @@ const Customers = () => {
     </motion.div>
   )
 
-  return (
-    <motion.div 
+  // Render Add Customer Form
+  const renderAddCustomerForm = () => (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -20 }}
+      className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg overflow-hidden"
+    >
+      <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+        <div className="flex items-center space-x-4">
+          <motion.button
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={handleFormCancel}
+            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+          >
+            <FiArrowLeft className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+          </motion.button>
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+            Add New Customer
+          </h2>
+        </div>
+      </div>
+      
+      <div className="p-6">
+        <CustomerModal
+          isOpen={true}
+          onClose={handleFormCancel}
+          mode="add"
+          onSubmit={handleAddSubmit}
+        />
+      </div>
+    </motion.div>
+  )
+
+  // Render Edit Customer Form
+  const renderEditCustomerForm = () => (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -20 }}
+      className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg overflow-hidden"
+    >
+      <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+        <div className="flex items-center space-x-4">
+          <motion.button
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={handleFormCancel}
+            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+          >
+            <FiArrowLeft className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+          </motion.button>
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+              Edit Customer
+            </h2>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+              {selectedCustomer?.name} • {selectedCustomer?.email}
+            </p>
+          </div>
+        </div>
+      </div>
+      
+      <div className="p-6">
+        <CustomerModal
+          isOpen={true}
+          onClose={handleFormCancel}
+          customer={selectedCustomer}
+          mode="edit"
+          onSubmit={handleEditSubmit}
+        />
+      </div>
+    </motion.div>
+  )
+
+  // Render Main Customers View
+  const renderCustomersView = () => (
+    <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="space-y-6 p-6"
+      exit={{ opacity: 0 }}
+      className="space-y-6"
     >
       {/* Header */}
       <motion.div
@@ -496,7 +581,7 @@ const Customers = () => {
             whileTap={{ scale: 0.95 }}
           >
             <Button
-              onClick={() => setShowAddModal(true)}
+              onClick={() => setShowAddForm(true)}
               icon={FiPlus}
               className="shadow-lg shadow-primary-500/30"
             >
@@ -683,7 +768,7 @@ const Customers = () => {
           title="No customers found"
           description="Try adjusting your search or filters, or add your first customer."
           action={
-            <Button onClick={() => setShowAddModal(true)} icon={FiPlus}>
+            <Button onClick={() => setShowAddForm(true)} icon={FiPlus}>
               Add Customer
             </Button>
           }
@@ -706,25 +791,47 @@ const Customers = () => {
           />
         </>
       )}
+    </motion.div>
+  )
 
-      {/* Modals */}
-      <CustomerModal
-        isOpen={showAddModal}
-        onClose={() => setShowAddModal(false)}
-        mode="add"
-        onSubmit={handleAddSubmit}
-      />
-
-      <CustomerModal
-        isOpen={showEditModal}
-        onClose={() => {
-          setShowEditModal(false)
-          setSelectedCustomer(null)
-        }}
-        customer={selectedCustomer}
-        mode="edit"
-        onSubmit={handleEditSubmit}
-      />
+  return (
+    <motion.div 
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      className="space-y-6 p-6"
+    >
+      <AnimatePresence mode="wait">
+        {showAddForm ? (
+          <motion.div
+            key="add-form"
+            initial={{ opacity: 0, x: 100 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -100 }}
+            transition={{ duration: 0.3 }}
+          >
+            {renderAddCustomerForm()}
+          </motion.div>
+        ) : showEditForm ? (
+          <motion.div
+            key="edit-form"
+            initial={{ opacity: 0, x: 100 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -100 }}
+            transition={{ duration: 0.3 }}
+          >
+            {renderEditCustomerForm()}
+          </motion.div>
+        ) : (
+          <motion.div
+            key="customers-view"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            {renderCustomersView()}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Delete Confirmation Modal */}
       <AnimatePresence>

@@ -19,18 +19,19 @@ import {
   FiTrash2,
   FiChevronDown,
   FiX,
+  FiArrowLeft,
 } from 'react-icons/fi'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useOrderStore } from '../../store/orderStore'
 import Button from '../../components/common/Button/Button'
 import Input from '../../components/common/Input/Input'
 import Table from '../../components/common/Table/Table'
-import Modal from '../../components/common/Modal/Modal'
 import StatusBadge from '../../components/common/StatusBadge/StatusBadge'
 import Pagination from '../../components/common/Pagination/Pagination'
 import OrderForm from '../../components/features/Orders/OrderForm'
 import OrderDetails from '../../components/features/Orders/OrderDetails'
 import Select from '../../components/common/Select/Select'
+import Modal from '../../components/common/Modal/Modal'
 
 const Orders = () => {
   const {
@@ -45,7 +46,8 @@ const Orders = () => {
     setFilters,
   } = useOrderStore()
 
-  const [showCreateModal, setShowCreateModal] = useState(false)
+  const [showCreateForm, setShowCreateForm] = useState(false)
+  const [showEditForm, setShowEditForm] = useState(false)
   const [showDetailsModal, setShowDetailsModal] = useState(false)
   const [selectedOrder, setSelectedOrder] = useState(null)
   const [searchTerm, setSearchTerm] = useState(filters.search || '')
@@ -79,6 +81,11 @@ const Orders = () => {
     setShowDetailsModal(true)
   }
 
+  const handleEditOrder = (order) => {
+    setSelectedOrder(order)
+    setShowEditForm(true)
+  }
+
   const handleStatusChange = async (orderId, newStatus) => {
     await updateOrderStatus(orderId, newStatus)
   }
@@ -91,6 +98,19 @@ const Orders = () => {
     setRefreshing(true)
     await fetchOrders()
     setRefreshing(false)
+  }
+
+  const handleFormSuccess = () => {
+    setShowCreateForm(false)
+    setShowEditForm(false)
+    setSelectedOrder(null)
+    fetchOrders() // Refresh the data
+  }
+
+  const handleCancelForm = () => {
+    setShowCreateForm(false)
+    setShowEditForm(false)
+    setSelectedOrder(null)
   }
 
   const clearFilters = () => {
@@ -261,6 +281,16 @@ const Orders = () => {
             <FiEye className="w-4 h-4" />
           </motion.button>
           
+          <motion.button
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => handleEditOrder(row)}
+            className="p-2 text-green-600 hover:bg-green-50 dark:text-green-400 dark:hover:bg-green-900/20 rounded-lg transition-colors"
+            title="Edit Order"
+          >
+            <FiEdit className="w-4 h-4" />
+          </motion.button>
+          
           <div className="relative group">
             <motion.button
               whileHover={{ scale: 1.1 }}
@@ -279,10 +309,6 @@ const Orders = () => {
                 <button className="w-full px-3 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg flex items-center space-x-2">
                   <FiMail className="w-4 h-4" />
                   <span>Email Customer</span>
-                </button>
-                <button className="w-full px-3 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg flex items-center space-x-2">
-                  <FiEdit className="w-4 h-4" />
-                  <span>Edit Order</span>
                 </button>
                 <div className="border-t border-gray-200 dark:border-gray-700 my-1" />
                 <button className="w-full px-3 py-2 text-left text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg flex items-center space-x-2">
@@ -326,11 +352,90 @@ const Orders = () => {
     </motion.div>
   )
 
-  return (
-    <motion.div 
+  // Render Create Order Form
+  const renderCreateOrderForm = () => (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -20 }}
+      className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg overflow-hidden"
+    >
+      <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-4">
+            <motion.button
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={handleCancelForm}
+              className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+            >
+              <FiArrowLeft className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+            </motion.button>
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+              Create New Order
+            </h2>
+          </div>
+        </div>
+      </div>
+      
+      <div className="p-6">
+        <OrderForm 
+          onSuccess={handleFormSuccess}
+          onCancel={handleCancelForm}
+        />
+      </div>
+    </motion.div>
+  )
+
+  // Render Edit Order Form
+  const renderEditOrderForm = () => (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -20 }}
+      className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg overflow-hidden"
+    >
+      <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-4">
+            <motion.button
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={handleCancelForm}
+              className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+            >
+              <FiArrowLeft className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+            </motion.button>
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+                Edit Order #{selectedOrder?.orderNumber}
+              </h2>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                Customer: {selectedOrder?.customer?.name}
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div className="p-6">
+        <OrderForm 
+          order={selectedOrder}
+          onSuccess={handleFormSuccess}
+          onCancel={handleCancelForm}
+          isEdit={true}
+        />
+      </div>
+    </motion.div>
+  )
+
+  // Render Main Orders View
+  const renderOrdersView = () => (
+    <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="space-y-6 p-6"
+      exit={{ opacity: 0 }}
+      className="space-y-6"
     >
       {/* Header */}
       <motion.div
@@ -394,7 +499,7 @@ const Orders = () => {
             whileTap={{ scale: 0.95 }}
           >
             <Button
-              onClick={() => setShowCreateModal(true)}
+              onClick={() => setShowCreateForm(true)}
               icon={FiPlus}
               className="shadow-lg shadow-primary-500/30"
             >
@@ -626,18 +731,49 @@ const Orders = () => {
         pageSize={pageSize}
         onPageChange={handlePageChange}
       />
+    </motion.div>
+  )
 
-      {/* Create Order Modal */}
-      <Modal
-        isOpen={showCreateModal}
-        onClose={() => setShowCreateModal(false)}
-        title="Create New Order"
-        size="lg"
-      >
-        <OrderForm onClose={() => setShowCreateModal(false)} />
-      </Modal>
+  return (
+    <motion.div 
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      className="space-y-6 p-6"
+    >
+      <AnimatePresence mode="wait">
+        {showCreateForm ? (
+          <motion.div
+            key="create-form"
+            initial={{ opacity: 0, x: 100 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -100 }}
+            transition={{ duration: 0.3 }}
+          >
+            {renderCreateOrderForm()}
+          </motion.div>
+        ) : showEditForm ? (
+          <motion.div
+            key="edit-form"
+            initial={{ opacity: 0, x: 100 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -100 }}
+            transition={{ duration: 0.3 }}
+          >
+            {renderEditOrderForm()}
+          </motion.div>
+        ) : (
+          <motion.div
+            key="orders-view"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            {renderOrdersView()}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-      {/* Order Details Modal */}
+      {/* Order Details Modal (always renders but conditionally shown) */}
       <Modal
         isOpen={showDetailsModal}
         onClose={() => {
