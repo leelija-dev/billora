@@ -1,30 +1,32 @@
-import { create } from 'zustand'
-import { persist } from 'zustand/middleware'
+import { create } from 'zustand';
 
-export const useUIStore = create(
-  persist(
-    (set) => ({
-      theme: 'light',
-      sidebarOpen: true,
-      isMobile: false,
-      
-      toggleTheme: () => 
-        set((state) => ({ 
-          theme: state.theme === 'light' ? 'dark' : 'light' 
-        })),
-      
-      toggleSidebar: () => 
-        set((state) => ({ sidebarOpen: !state.sidebarOpen })),
-      
-      setSidebarOpen: (open) => 
-        set({ sidebarOpen: open }),
-      
-      setIsMobile: (isMobile) => 
-        set({ isMobile }),
-    }),
-    {
-      name: 'ui-storage',
-      getStorage: () => localStorage,
+export const useUIStore = create((set) => ({
+  theme: localStorage.getItem('theme') || 'light',
+  sidebarOpen: window.innerWidth >= 768, // Open by default on desktop
+  isMobile: window.innerWidth < 768,
+  
+  toggleTheme: () => set((state) => {
+    const newTheme = state.theme === 'light' ? 'dark' : 'light';
+    localStorage.setItem('theme', newTheme);
+    if (newTheme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
     }
-  )
-)
+    return { theme: newTheme };
+  }),
+  
+  toggleSidebar: () => set((state) => ({ sidebarOpen: !state.sidebarOpen })),
+  
+  setSidebarOpen: (open) => set({ sidebarOpen: open }),
+  
+  setIsMobile: (mobile) => set({ isMobile: mobile }),
+}));
+
+// Initialize theme
+if (typeof window !== 'undefined') {
+  const theme = localStorage.getItem('theme') || 'light';
+  if (theme === 'dark') {
+    document.documentElement.classList.add('dark');
+  }
+}

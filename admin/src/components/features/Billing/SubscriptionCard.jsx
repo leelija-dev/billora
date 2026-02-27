@@ -1,187 +1,156 @@
 import React from 'react'
-import { FiCheck, FiX, FiStar, FiCpu, FiUsers, FiDatabase, FiCreditCard } from 'react-icons/fi'
+import { motion } from 'framer-motion'
+import { 
+  FiCreditCard, 
+  FiTrendingUp, 
+  FiXCircle,
+  FiRefreshCw,
+  FiCalendar,
+  FiCheckCircle,
+  FiAlertCircle
+} from 'react-icons/fi'
 import Button from '../../common/Button/Button'
+import StatusBadge from '../../common/StatusBadge/StatusBadge'
 
-const SubscriptionCard = ({ subscription, onUpgrade, onCancel }) => {
-  const plans = {
-    free: {
-      name: 'Free',
-      price: 0,
-      features: [
-        { name: 'Up to 100 products', included: true },
-        { name: 'Basic analytics', included: true },
-        { name: 'Email support', included: true },
-        { name: 'Advanced reporting', included: false },
-        { name: 'API access', included: false },
-        { name: 'Priority support', included: false },
-      ],
-      color: 'gray',
-      icon: FiStar,
-    },
-    basic: {
-      name: 'Basic',
-      price: 29,
-      features: [
-        { name: 'Up to 500 products', included: true },
-        { name: 'Basic analytics', included: true },
-        { name: 'Email support', included: true },
-        { name: 'Advanced reporting', included: true },
-        { name: 'API access', included: false },
-        { name: 'Priority support', included: false },
-      ],
-      color: 'blue',
-      icon: FiUsers,
-    },
-    professional: {
-      name: 'Professional',
-      price: 79,
-      features: [
-        { name: 'Unlimited products', included: true },
-        { name: 'Advanced analytics', included: true },
-        { name: 'Priority support', included: true },
-        { name: 'Advanced reporting', included: true },
-        { name: 'API access', included: true },
-        { name: 'Custom integrations', included: true },
-      ],
-      color: 'purple',
-      icon: FiCpu,
-    },
-    enterprise: {
-      name: 'Enterprise',
-      price: 199,
-      features: [
-        { name: 'Unlimited everything', included: true },
-        { name: 'Custom analytics', included: true },
-        { name: '24/7 phone support', included: true },
-        { name: 'SLA guarantee', included: true },
-        { name: 'Dedicated account manager', included: true },
-        { name: 'Custom development', included: true },
-      ],
-      color: 'indigo',
-      icon: FiDatabase,
-    },
+const SubscriptionCard = ({ 
+  subscription, 
+  onUpgrade, 
+  onCancel, 
+  onReactivate,
+  onUpdatePaymentMethod,
+  loading 
+}) => {
+  const getStatusBadge = () => {
+    const status = subscription?.status
+    const configs = {
+      active: { variant: 'success', icon: FiCheckCircle, label: 'Active' },
+      past_due: { variant: 'warning', icon: FiAlertCircle, label: 'Past Due' },
+      canceled: { variant: 'danger', icon: FiXCircle, label: 'Canceled' },
+      incomplete: { variant: 'warning', icon: FiAlertCircle, label: 'Incomplete' },
+      incomplete_expired: { variant: 'danger', icon: FiXCircle, label: 'Expired' },
+      trialing: { variant: 'info', icon: FiCalendar, label: 'Trial' },
+      unpaid: { variant: 'danger', icon: FiAlertCircle, label: 'Unpaid' },
+    }
+    const config = configs[status] || configs.active
+    return (
+      <StatusBadge
+        status={config.label}
+        variant={config.variant}
+        icon={config.icon}
+      />
+    )
   }
 
-  const currentPlan = plans[subscription?.plan || 'free']
-  const Icon = currentPlan.icon
-
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden">
-      {/* Current Plan Header */}
-      <div className={`bg-${currentPlan.color}-50 dark:bg-${currentPlan.color}-900/20 p-6`}>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <div className={`p-3 bg-${currentPlan.color}-500 rounded-lg`}>
-              <Icon className="w-6 h-6 text-white" />
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 relative overflow-hidden h-full"
+    >
+      <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-br from-primary-500 to-secondary-500 opacity-5 rounded-full -mr-10 -mt-10" />
+      
+      <div className="relative">
+        <div className="flex items-start justify-between">
+          <div className="flex items-center space-x-3">
+            <div className="p-3 bg-gradient-to-br from-primary-500 to-secondary-500 rounded-xl shadow-lg">
+              <FiCreditCard className="w-6 h-6 text-white" />
             </div>
             <div>
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                {currentPlan.name} Plan
+                Subscription
               </h3>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                {subscription?.status === 'active' ? 'Active' : 'Inactive'} · Next billing on{' '}
-                {subscription?.nextBillingDate 
-                  ? new Date(subscription.nextBillingDate).toLocaleDateString() 
-                  : 'N/A'}
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                Manage your plan and billing
               </p>
             </div>
           </div>
-          <div className="text-right">
-            <p className="text-2xl font-bold text-gray-900 dark:text-white">
-              ${currentPlan.price}
-              <span className="text-sm font-normal text-gray-500 dark:text-gray-400">/month</span>
-            </p>
+          {getStatusBadge()}
+        </div>
+
+        <div className="mt-6 space-y-4">
+          <div className="flex items-center justify-between py-3 border-b border-gray-100 dark:border-gray-700">
+            <span className="text-sm text-gray-600 dark:text-gray-400">Plan</span>
+            <span className="font-medium text-gray-900 dark:text-white capitalize">
+              {subscription?.plan || 'N/A'}
+            </span>
           </div>
-        </div>
-      </div>
 
-      {/* Plan Details */}
-      <div className="p-6">
-        <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">
-          Current Plan Features
-        </h4>
-        <div className="space-y-3">
-          {currentPlan.features.map((feature, index) => (
-            <div key={index} className="flex items-center justify-between">
-              <span className="text-sm text-gray-600 dark:text-gray-400">
-                {feature.name}
-              </span>
-              {feature.included ? (
-                <FiCheck className="w-5 h-5 text-green-500" />
-              ) : (
-                <FiX className="w-5 h-5 text-gray-400" />
-              )}
-            </div>
-          ))}
-        </div>
-
-        {/* Usage Stats */}
-        <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
-          <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">
-            Usage Statistics
-          </h4>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <p className="text-xs text-gray-500 dark:text-gray-400">Products</p>
-              <p className="text-lg font-semibold text-gray-900 dark:text-white">
-                {subscription?.usage?.products || 0}
-                <span className="text-sm font-normal text-gray-500 dark:text-gray-400">
-                  /{subscription?.limits?.products || '∞'}
-                </span>
-              </p>
-            </div>
-            <div>
-              <p className="text-xs text-gray-500 dark:text-gray-400">Users</p>
-              <p className="text-lg font-semibold text-gray-900 dark:text-white">
-                {subscription?.usage?.users || 0}
-                <span className="text-sm font-normal text-gray-500 dark:text-gray-400">
-                  /{subscription?.limits?.users || '∞'}
-                </span>
-              </p>
-            </div>
-            <div>
-              <p className="text-xs text-gray-500 dark:text-gray-400">Storage</p>
-              <p className="text-lg font-semibold text-gray-900 dark:text-white">
-                {subscription?.usage?.storage || 0}GB
-                <span className="text-sm font-normal text-gray-500 dark:text-gray-400">
-                  /{subscription?.limits?.storage || '∞'}GB
-                </span>
-              </p>
-            </div>
-            <div>
-              <p className="text-xs text-gray-500 dark:text-gray-400">API Calls</p>
-              <p className="text-lg font-semibold text-gray-900 dark:text-white">
-                {subscription?.usage?.apiCalls?.toLocaleString() || 0}
-                <span className="text-sm font-normal text-gray-500 dark:text-gray-400">
-                  /{subscription?.limits?.apiCalls?.toLocaleString() || '∞'}
-                </span>
-              </p>
-            </div>
+          <div className="flex items-center justify-between py-3 border-b border-gray-100 dark:border-gray-700">
+            <span className="text-sm text-gray-600 dark:text-gray-400">Price</span>
+            <span className="font-medium text-gray-900 dark:text-white">
+              ${subscription?.amount?.toFixed(2) || '0.00'}/{subscription?.interval || 'month'}
+            </span>
           </div>
-        </div>
 
-        {/* Action Buttons */}
-        <div className="mt-6 flex space-x-3">
-          <Button
-            variant="primary"
-            fullWidth
-            onClick={onUpgrade}
-            icon={FiCreditCard}
-          >
-            Upgrade Plan
-          </Button>
-          {subscription?.plan !== 'free' && (
-            <Button
-              variant="outline"
-              fullWidth
-              onClick={onCancel}
-            >
-              Cancel Subscription
-            </Button>
+          <div className="flex items-center justify-between py-3 border-b border-gray-100 dark:border-gray-700">
+            <span className="text-sm text-gray-600 dark:text-gray-400">Next Billing</span>
+            <span className="font-medium text-gray-900 dark:text-white">
+              {subscription?.currentPeriodEnd 
+                ? new Date(subscription.currentPeriodEnd).toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                  })
+                : 'N/A'}
+            </span>
+          </div>
+
+          {subscription?.cancelAtPeriodEnd && (
+            <div className="mt-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
+              <p className="text-sm text-yellow-800 dark:text-yellow-200">
+                Your subscription will end on{' '}
+                {new Date(subscription.currentPeriodEnd).toLocaleDateString()}
+              </p>
+            </div>
           )}
         </div>
+
+        <div className="mt-6 space-y-3">
+          {subscription?.status === 'active' && !subscription.cancelAtPeriodEnd && (
+            <>
+              <Button
+                onClick={onUpgrade}
+                icon={FiTrendingUp}
+                fullWidth
+                loading={loading}
+              >
+                Change Plan
+              </Button>
+              <Button
+                variant="outline"
+                onClick={onCancel}
+                icon={FiXCircle}
+                fullWidth
+                loading={loading}
+              >
+                Cancel Subscription
+              </Button>
+            </>
+          )}
+
+          {subscription?.cancelAtPeriodEnd && (
+            <Button
+              onClick={onReactivate}
+              icon={FiRefreshCw}
+              fullWidth
+              loading={loading}
+            >
+              Reactivate Subscription
+            </Button>
+          )}
+
+          <Button
+            variant="outline"
+            onClick={onUpdatePaymentMethod}
+            icon={FiCreditCard}
+            fullWidth
+            loading={loading}
+          >
+            Update Payment Method
+          </Button>
+        </div>
       </div>
-    </div>
+    </motion.div>
   )
 }
 
