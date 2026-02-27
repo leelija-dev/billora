@@ -91,7 +91,7 @@ const Footer = () => {
         {/* Bottom Section */}
         <div className="pt-8 border-t border-[#1e293b] flex justify-between items-center flex-wrap gap-4 max-md:flex-col max-md:text-center">
           <div className="text-[#94a3b8] text-sm">
-            &copy; 2024 GSTBilling. All rights reserved.
+            &copy; 2026 GSTBilling. All rights reserved by ASHMIT.
           </div>
           <div className="flex gap-4">
             {socialLinks.map((social, index) => (

@@ -199,6 +199,8 @@ const Pricing = () => {
             </div>
           ))}
         </div>
+<br />
+<br />
 
         {/* Money-back guarantee */}
         <div className="flex items-center justify-center gap-2.5 p-5 bg-white rounded-[50px] max-w-[500px] mx-auto shadow-[0_5px_15px_rgba(0,0,0,0.05)] max-sm:flex-col max-sm:text-center">

@@ -3,20 +3,21 @@
 import React, { useState, useEffect, useRef } from 'react';
 
 const Industries = () => {
-  const [currentIndex, setCurrentIndex] = useState(2);
+  const [currentIndex, setCurrentIndex] = useState(2); // Start with GSTR Filing (index 2)
   const [isPlaying, setIsPlaying] = useState(true);
   const sliderRef = useRef(null);
   const autoPlayRef = useRef(null);
 
   const leftCards = [
-    { text: 'Drive Innovation', opacity: 0.18, image: 'innovation' },
-    { text: 'Empower Growth', opacity: 0.64, image: 'growth' },
-    { text: 'GSTR Filing', opacity: 1, isHighlighted: true, image: 'gstr' },
+    { text: 'Drive Innovation', opacity: 0.4, image: 'innovation' },
+    { text: 'Empower Growth', opacity: 0.6, image: 'growth' },
+    { text: 'GSTR Filing', opacity: 1, image: 'gstr' },
     { text: 'Unite Industries', opacity: 1, image: 'unite' },
-    { text: 'Expand Reach', opacity: 0.52, image: 'expand' },
-    { text: 'Boost Resilience', opacity: 0.18, image: 'resilience' }
+    { text: 'Expand Reach', opacity: 0.6, image: 'expand' },
+    { text: 'Boost Resilience', opacity: 0.4, image: 'resilience' }
   ];
 
+  // Triple the array for infinite loop effect
   const infiniteCards = [...leftCards, ...leftCards, ...leftCards];
 
   const tagCloud = [
@@ -26,6 +27,7 @@ const Industries = () => {
     'hospitality', 'healthcare', 'education', 'real estate', 'transport'
   ];
 
+  // Auto-slide functionality
   useEffect(() => {
     if (isPlaying) {
       autoPlayRef.current = setInterval(() => {
@@ -40,9 +42,10 @@ const Industries = () => {
     };
   }, [isPlaying, leftCards.length]);
 
+  // Scroll to current index with center alignment
   useEffect(() => {
     if (sliderRef.current) {
-      const cardHeight = 120;
+      const cardHeight = 120; // Card height + gap
       const containerHeight = 400;
       const scrollPosition = (currentIndex + leftCards.length) * cardHeight - (containerHeight / 2) + (cardHeight / 2);
       
@@ -53,16 +56,24 @@ const Industries = () => {
     }
   }, [currentIndex, leftCards.length]);
 
+  // Get image for right panel based on current card
   const getRightPanelImage = () => {
-    const images = {
-      innovation: 'url("https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80")',
-      growth: 'url("https://images.unsplash.com/photo-1460925895917-afdab827c52f?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80")',
-      gstr: 'url("https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80")',
-      unite: 'url("https://images.unsplash.com/photo-1522071820081-009f0129c71c?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80")',
-      expand: 'url("https://images.unsplash.com/photo-1542744173-8e7e53415bb0?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80")',
-      resilience: 'url("https://images.unsplash.com/photo-1552664730-d307ca884978?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80")'
-    };
-    return images[leftCards[currentIndex].image] || images.gstr;
+    switch(leftCards[currentIndex].image) {
+      case 'innovation':
+        return 'url("https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80")';
+      case 'growth':
+        return 'url("https://images.unsplash.com/photo-1460925895917-afdab827c52f?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80")';
+      case 'gstr':
+        return 'url("https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80")';
+      case 'unite':
+        return 'url("https://images.unsplash.com/photo-1522071820081-009f0129c71c?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80")';
+      case 'expand':
+        return 'url("https://images.unsplash.com/photo-1542744173-8e7e53415bb0?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80")';
+      case 'resilience':
+        return 'url("https://images.unsplash.com/photo-1552664730-d307ca884978?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80")';
+      default:
+        return 'url("https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80")';
+    }
   };
 
   const handleCardClick = (index) => {
@@ -82,28 +93,17 @@ const Industries = () => {
   return (
     <section className="relative w-full py-[100px] bg-gradient-to-b from-[#f8fafc] to-white font-['Inter',sans-serif] overflow-hidden max-md:py-[70px] max-sm:py-[50px]">
       <style jsx>{`
+        /* Center card highlight - clean and subtle */
         .industries__card--center {
-          transform: scale(1.05);
-          box-shadow: 0 25px 45px rgba(59, 130, 246, 0.35),
-                      0 0 0 3px #3B82F6,
-                      0 0 40px rgba(59, 130, 246, 0.6);
-          border: none;
+          transform: scale(1.02);
+          border: 2px solid #3B82F6;
+          background: white;
           z-index: 10;
           position: relative;
+          box-shadow: 0 10px 25px rgba(59, 130, 246, 0.15);
         }
-        .industries__card--center::before {
-          content: '';
-          position: absolute;
-          top: -3px;
-          left: -3px;
-          right: -3px;
-          bottom: -3px;
-          background: linear-gradient(135deg, #3B82F6, #8B5CF6);
-          border-radius: 22px;
-          z-index: -1;
-          opacity: 0.4;
-          filter: blur(12px);
-        }
+        
+        /* Hide scrollbar */
         div::-webkit-scrollbar {
           display: none;
         }
@@ -134,7 +134,7 @@ const Industries = () => {
           >
             <div className="h-[450px] overflow-hidden rounded-[30px] bg-transparent py-[15px] relative max-md:h-[400px]">
               <div 
-                className="h-full overflow-y-auto scrollbar-hide scroll-smooth px-[30px]"
+                className="h-full overflow-y-auto scroll-smooth px-[30px]"
                 ref={sliderRef}
                 style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
               >
@@ -144,19 +144,29 @@ const Industries = () => {
                     index >= leftCards.length && 
                     index < leftCards.length * 2;
                   
+                  // Calculate opacity based on position
+                  let opacity = card.opacity;
+                  if (isCenter) {
+                    opacity = 1; // Center card fully visible
+                  } else if (Math.abs(index - (currentIndex + leftCards.length)) <= 2) {
+                    opacity = 0.8; // Nearby cards
+                  } else {
+                    opacity = 0.4; // Far cards
+                  }
+                  
                   return (
                     <div
                       key={index}
-                      className={`w-full max-w-[450px] h-[110px] bg-white border border-[#E0E2E7] shadow-[0_8px_15px_rgba(0,0,0,0.05)] rounded-[20px] flex items-center pl-[35px] mx-auto mb-[25px] transition-all duration-300 cursor-pointer relative z-10 hover:translate-x-2 hover:shadow-[0_12px_25px_rgba(255,255,255,0.2)] hover:border-red-500 ${
-                        isCenter ? 'industries__card--center' : ''
+                      className={`w-full max-w-[450px] h-[110px] bg-white border border-[#E0E2E7] rounded-[20px] flex items-center pl-[35px] mx-auto mb-[25px] transition-all duration-300 cursor-pointer relative hover:translate-x-2 hover:shadow-md ${
+                        isCenter ? 'industries__card--center' : 'shadow-sm'
                       }`}
                       style={{ 
-                        opacity: isCenter ? 1 : card.opacity,
+                        opacity: opacity,
                       }}
                       onClick={() => handleCardClick(originalIndex)}
                     >
                       <span className={`text-2xl font-semibold text-[#1e293b] whitespace-nowrap transition-all duration-300 max-md:text-[22px] max-sm:text-xl ${
-                        isCenter ? '!text-[#3B82F6] font-bold text-[26px] max-md:text-2xl' : ''
+                        isCenter ? 'text-[#3B82F6] font-bold' : ''
                       }`}>
                         {card.text}
                       </span>
@@ -169,15 +179,15 @@ const Industries = () => {
 
           {/* Right Side - Dynamic Image Panel */}
           <div 
-            className="flex-1 h-[550px] rounded-[45px] overflow-hidden relative transition-all duration-500 shadow-[0_30px_50px_rgba(0,0,0,0.2)] max-w-[650px] max-lg:max-w-full max-lg:w-full max-md:h-[450px] max-sm:h-[400px]"
+            className="flex-1 h-[550px] rounded-[45px] overflow-hidden relative transition-all duration-500 shadow-[0_20px_40px_rgba(0,0,0,0.15)] max-w-[650px] max-lg:max-w-full max-lg:w-full max-md:h-[450px] max-sm:h-[400px]"
             style={{ backgroundImage: getRightPanelImage(), backgroundSize: 'cover', backgroundPosition: 'center' }}
           >
-            <div className="absolute top-0 left-0 right-0 bottom-0 bg-gradient-to-br from-black/80 via-black/50 to-black/30 flex items-end p-[50px] max-md:p-[30px] max-sm:p-5">
+            <div className="absolute top-0 left-0 right-0 bottom-0 bg-gradient-to-br from-black/70 via-black/40 to-black/20 flex items-end p-[50px] max-md:p-[30px] max-sm:p-5">
               <div className="text-white w-full">
-                <h3 className="text-[38px] font-bold mb-4 text-shadow-[0_4px_15px_rgba(0,0,0,0.4)] max-md:text-3xl max-sm:text-2xl">
+                <h3 className="text-[38px] font-bold mb-4 drop-shadow-lg max-md:text-3xl max-sm:text-2xl">
                   {leftCards[currentIndex].text}
                 </h3>
-                <p className="text-lg mb-6 opacity-95 leading-[1.6] text-shadow-[0_2px_8px_rgba(0,0,0,0.3)] max-md:text-base max-sm:text-sm">
+                <p className="text-lg mb-6 leading-[1.6] drop-shadow max-md:text-base max-sm:text-sm">
                   {leftCards[currentIndex].text === 'Drive Innovation' && 'Transform your business with cutting-edge billing solutions'}
                   {leftCards[currentIndex].text === 'Empower Growth' && 'Scale your business with powerful accounting tools'}
                   {leftCards[currentIndex].text === 'GSTR Filing' && 'Simplify GST returns with automated filing'}
