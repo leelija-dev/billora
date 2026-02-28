@@ -7,7 +7,7 @@ const FAQ = () => {
 
   const faqs = [
     {
-      question: "Is GST supported for all business types?",
+      question: "Is GSTa supported for all business types?",
       answer:
         "Yes, our software supports all types of GST registrations including regular, composition, and casual taxpayers. We handle B2B and B2C invoices with proper tax calculations.",
     },
@@ -45,7 +45,7 @@ const FAQ = () => {
   return (
     <section className="px-[100px] py-20 bg-[#eef3f9] font-sans max-lg:px-[60px] max-md:px-[30px] max-sm:px-5">
       <div className="flex justify-between gap-[50px] max-lg:flex-col">
-        {/* LEFT SIDE */}
+        {/* LEFT SIDE - Keep as is */}
         <div className="flex-1">
           <h4 className="text-[#1e88e5] mb-2.5">Questions & answers</h4>
           <h2 className="text-[40px] text-[#2c3e75] mb-5 max-md:text-3xl max-sm:text-2xl">
@@ -65,8 +65,8 @@ const FAQ = () => {
           </div>
         </div>
 
-        {/* RIGHT SIDE */}
-        <div className="flex-1.2">
+        {/* RIGHT SIDE - Cards with reduced width */}
+        <div className="flex-1 max-w-[600px]"> {/* Added max-width to control card width */}
           {faqs.map((item, index) => (
             <div
               key={index}
@@ -78,9 +78,9 @@ const FAQ = () => {
                 className="flex justify-between items-center cursor-pointer font-medium"
                 onClick={() => toggleFAQ(index)}
               >
-                <p>{item.question}</p>
+                <p className="pr-4">{item.question}</p> {/* Added padding right for better spacing */}
                 <span
-                  className={`text-[22px] transition-transform duration-300 ${
+                  className={`text-[22px] transition-transform duration-300 flex-shrink-0 ${
                     activeIndex === index ? "rotate-45" : ""
                   }`}
                 >

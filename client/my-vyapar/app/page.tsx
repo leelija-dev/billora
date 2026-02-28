@@ -1,12 +1,12 @@
 // import Navbar from "./components/Navbar";
 // import Hero from "./components/Hero";
 // import Features from "./components/Features";
-import Industries from "./components/Industries";
-import Pricing from "./components/Pricing";
-import Testimonials from "./components/Testimonials";
-import FAQ from "./components/FAQ";
-import Ratings from "./components/Ratings";
-import Footer from "./components/Footer";
+import Industries from "../components/Industries";
+import Pricing from "../components/Pricing";
+import Testimonials from "../components/Testimonials";
+import FAQ from "../components/FAQ";
+import Ratings from "../components/Ratings";
+// import Footer from "../components/Footer";
 
 export default function Page() {
   return (
@@ -20,7 +20,7 @@ export default function Page() {
       <Testimonials />
       <FAQ />
       <Ratings />
-      <Footer />
+      {/* <Footer /> */}
     </>
   );
 }

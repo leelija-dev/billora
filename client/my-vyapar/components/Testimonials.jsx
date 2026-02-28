@@ -5,6 +5,7 @@ import React, { useState, useEffect } from "react";
 const Testimonials = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isAnimating, setIsAnimating] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
 
   const testimonials = [
     { name: 'Amit Patel', role: 'Owner', company: 'Patel & Sons', avatar: '👨', review: 'Vyapar has revolutionized our billing process. The GST compliance features are saved us countless hours.', yearsWithUs: '3+ years', location: 'Mumbai' },
@@ -13,20 +14,21 @@ const Testimonials = () => {
     { name: 'Suresh Sharma', role: 'Owner', company: 'Sharma Traders', avatar: '👨‍💼', review: 'Billing is extremely fast and easy. The interface is intuitive and saves us time.', yearsWithUs: '2+ years', location: 'Jaipur' },
   ];
 
-  // AUTO SLIDE - Added this useEffect
   useEffect(() => {
+    if (isHovered) return;
+    
     const interval = setInterval(() => {
       handleNext();
-    }, 5000); // Changes slide every 5 seconds
+    }, 5000);
     
-    return () => clearInterval(interval); // Cleanup on unmount
-  }, [currentIndex, isAnimating]); // Re-run when currentIndex changes
+    return () => clearInterval(interval);
+  }, [currentIndex, isAnimating, isHovered]);
 
   const handleNext = () => {
     if (isAnimating) return;
     setIsAnimating(true);
     setCurrentIndex((prev) => (prev + 1) % testimonials.length);
-    setTimeout(() => setIsAnimating(false), 50);
+    setTimeout(() => setIsAnimating(false), 600);
   };
 
   const handlePrev = () => {
@@ -35,19 +37,6 @@ const Testimonials = () => {
     setCurrentIndex((prev) => (prev - 1 + testimonials.length) % testimonials.length);
     setTimeout(() => setIsAnimating(false), 600);
   };
-
-  // Optional: Pause auto-slide when user hovers over the section
-  const [isHovered, setIsHovered] = useState(false);
-  
-  useEffect(() => {
-    if (isHovered) return; // Don't auto-slide when hovered
-    
-    const interval = setInterval(() => {
-      handleNext();
-    }, 5000);
-    
-    return () => clearInterval(interval);
-  }, [currentIndex, isAnimating, isHovered]);
 
   return (
     <section 
@@ -61,10 +50,8 @@ const Testimonials = () => {
         </h2>
         <p className="text-slate-500 text-lg mb-16">Deep-dive into how we empower businesses.</p>
 
-        {/* 3D Perspective Container */}
         <div className="relative h-[450px] w-full flex items-center justify-center [perspective:1200px] [transform-style:preserve-3d]">
           {testimonials.map((item, index) => {
-            // Logic to determine card position relative to current
             let position = "hidden";
             if (index === currentIndex) position = "active";
             else if (index === (currentIndex + 1) % testimonials.length) position = "next";
@@ -86,7 +73,6 @@ const Testimonials = () => {
           })}
         </div>
 
-        {/* Modern Controls */}
         <div className="flex flex-col items-center gap-8 mt-12">
           <div className="flex gap-4">
             <button 
@@ -111,9 +97,6 @@ const Testimonials = () => {
               />
             ))}
           </div>
-
-          {/* Optional: Add a small auto-play indicator */}
-          
         </div>
       </div>
     </section>
@@ -148,4 +131,4 @@ const Card = ({ data, isActive }) => (
   </div>
 );
 
-export default Testimonials;  
+export default Testimonials;

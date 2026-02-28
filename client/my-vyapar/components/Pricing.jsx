@@ -104,7 +104,6 @@ const Pricing = () => {
         </p>
       </div>
 
-      {/* Billing Toggle */}
       <div className="flex justify-center items-center gap-4 mb-[50px] bg-white p-2 rounded-[60px] max-w-[350px] mx-auto shadow-[0_5px_15px_rgba(0,0,0,0.05)] max-md:max-w-[300px] max-sm:flex-col max-sm:bg-transparent max-sm:shadow-none max-sm:gap-2.5">
         <button
           className={`px-[30px] py-3 border-none rounded-[40px] text-base font-semibold cursor-pointer transition-all duration-300 flex-1 whitespace-nowrap max-sm:w-full max-sm:bg-white max-sm:text-[#1e293b] max-sm:border max-sm:border-[#e2e8f0] ${
@@ -128,13 +127,12 @@ const Pricing = () => {
         </button>
       </div>
 
-      {/* Pricing Container */}
       <div className="max-w-[1200px] mx-auto">
         <div className="grid grid-cols-3 gap-[30px] mb-10 max-lg:grid-cols-2 max-md:grid-cols-1">
           {plans.map((plan, index) => (
             <div
               key={index}
-              ref={el => cardRefs.current[index] = el}
+              ref={(el) => { cardRefs.current[index] = el; }}
               className={`bg-white rounded-[30px] p-10 shadow-[0_20px_40px_rgba(0,0,0,0.08)] relative transition-all duration-300 border border-[#e2e8f0] flex flex-col h-full min-h-[600px] opacity-0 translate-y-5 card-visible hover:-translate-y-2 hover:shadow-[0_30px_60px_rgba(0,0,0,0.12)] max-lg:min-h-[550px] max-md:p-8 ${
                 plan.popular 
                   ? 'border-2 border-[#8b5cf6] shadow-[0_30px_50px_rgba(139,92,246,0.15)] scale-105 z-[2] hover:scale-105 hover:-translate-y-2 max-lg:col-span-2 max-lg:max-w-[500px] max-lg:mx-auto max-md:col-auto max-md:scale-100' 
@@ -202,7 +200,6 @@ const Pricing = () => {
 <br />
 <br />
 
-        {/* Money-back guarantee */}
         <div className="flex items-center justify-center gap-2.5 p-5 bg-white rounded-[50px] max-w-[500px] mx-auto shadow-[0_5px_15px_rgba(0,0,0,0.05)] max-sm:flex-col max-sm:text-center">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
             <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="#3b82f6" strokeWidth="2" />

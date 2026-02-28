@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 
 const Industries = () => {
-  const [currentIndex, setCurrentIndex] = useState(2); // Start with GSTR Filing (index 2)
+  const [currentIndex, setCurrentIndex] = useState(2);
   const [isPlaying, setIsPlaying] = useState(true);
   const sliderRef = useRef(null);
   const autoPlayRef = useRef(null);
@@ -17,7 +17,6 @@ const Industries = () => {
     { text: 'Boost Resilience', opacity: 0.4, image: 'resilience' }
   ];
 
-  // Triple the array for infinite loop effect
   const infiniteCards = [...leftCards, ...leftCards, ...leftCards];
 
   const tagCloud = [
@@ -27,7 +26,6 @@ const Industries = () => {
     'hospitality', 'healthcare', 'education', 'real estate', 'transport'
   ];
 
-  // Auto-slide functionality
   useEffect(() => {
     if (isPlaying) {
       autoPlayRef.current = setInterval(() => {
@@ -42,10 +40,9 @@ const Industries = () => {
     };
   }, [isPlaying, leftCards.length]);
 
-  // Scroll to current index with center alignment
   useEffect(() => {
     if (sliderRef.current) {
-      const cardHeight = 120; // Card height + gap
+      const cardHeight = 120;
       const containerHeight = 400;
       const scrollPosition = (currentIndex + leftCards.length) * cardHeight - (containerHeight / 2) + (cardHeight / 2);
       
@@ -56,7 +53,6 @@ const Industries = () => {
     }
   }, [currentIndex, leftCards.length]);
 
-  // Get image for right panel based on current card
   const getRightPanelImage = () => {
     switch(leftCards[currentIndex].image) {
       case 'innovation':
@@ -110,23 +106,18 @@ const Industries = () => {
       `}</style>
 
       <div className="max-w-[1400px] mx-auto px-[60px] relative max-lg:px-10 max-md:px-[30px] max-sm:px-5">
-        {/* Gradient Line */}
         <div className="w-[200px] h-1 bg-gradient-to-r from-[#3B82F6] to-[#234C90] mx-auto mb-[30px] rounded-[2px]"></div>
 
-        {/* Main Heading */}
         <h2 className="text-5xl font-extrabold leading-[1.2] text-center max-w-[1000px] mx-auto mb-5 bg-gradient-to-r from-[#3A80F2] to-[#234C90] bg-clip-text text-transparent max-lg:text-[42px] max-md:text-4xl max-sm:text-3xl">
           Supporting businesses from a wide range of industries
         </h2>
 
-        {/* Subheading */}
         <p className="text-xl text-[#475569] text-center max-w-[900px] mx-auto mb-[60px] leading-[1.6] font-light max-lg:text-lg max-md:text-base max-sm:mb-10">
           We understand your unique billing and accounting needs, Vyapar India billing software 
           is specially designed for Indian SMBs.
         </p>
 
-        {/* Two Column Layout */}
         <div className="flex gap-[60px] items-center justify-between max-lg:flex-col max-lg:gap-[50px]">
-          {/* Left Side - Auto-sliding Panel */}
           <div 
             className="flex-1 relative py-[30px] max-w-[550px] max-lg:max-w-full max-lg:w-full"
             onMouseEnter={handleMouseEnter}
@@ -144,14 +135,13 @@ const Industries = () => {
                     index >= leftCards.length && 
                     index < leftCards.length * 2;
                   
-                  // Calculate opacity based on position
                   let opacity = card.opacity;
                   if (isCenter) {
-                    opacity = 1; // Center card fully visible
+                    opacity = 1;
                   } else if (Math.abs(index - (currentIndex + leftCards.length)) <= 2) {
-                    opacity = 0.8; // Nearby cards
+                    opacity = 0.8;
                   } else {
-                    opacity = 0.4; // Far cards
+                    opacity = 0.4;
                   }
                   
                   return (
@@ -177,7 +167,6 @@ const Industries = () => {
             </div>
           </div>
 
-          {/* Right Side - Dynamic Image Panel */}
           <div 
             className="flex-1 h-[550px] rounded-[45px] overflow-hidden relative transition-all duration-500 shadow-[0_20px_40px_rgba(0,0,0,0.15)] max-w-[650px] max-lg:max-w-full max-lg:w-full max-md:h-[450px] max-sm:h-[400px]"
             style={{ backgroundImage: getRightPanelImage(), backgroundSize: 'cover', backgroundPosition: 'center' }}
