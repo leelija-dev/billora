@@ -1,4 +1,3 @@
-
 "use client";
 
 import React from 'react';
@@ -9,25 +8,25 @@ const Features = () => {
     {
       title: "Manage cashflow seamlessly",
       description: "The billing software by Vyapar helps automate management. It is done to prevent mistakes in accounting. By investing in this billing software, you can manage your business cash flow effortlessly. This all-in-one software makes managing cash transactions possible. It comes with features like bank withdrawals and deposits tracking.",
-      image: "/images/feature1.jpg",
+      image: "/image/feature1.jpg",
       reverse: false
     },
-    {
+    { 
       title: "Online/Offline GST billing",
       description: "The Vyapar app helps you generate invoices for your customers without requiring you to stay online. You can rely on our business accounting software to validate your transactions and update your database when connecting it to the internet.",
-      image: "/images/feature2.jpg",
+      image: "/image/feature2.jpg",
       reverse: true
     },
     {
       title: "Provide multiple payment options",
       description: "Choose the perfect convenience for customers; the biggest comfort you can provide is allowing them to choose how they pay you. Using the Vyapar invoicing app, you can create invoices that include multiple payment options for your business.",
-      image: "/images/feature3.jpg",
+      image: "/image/feature3.jpg",
       reverse: false
     },
     {
       title: "Track your business status",
       description: "With free GST billing software and invoicing tools, you can manage your business using a mobile. Accounting in your business becomes quite simple and efficient with this free software. As all data is stored during invoicing.",
-      image: "/images/feature4.jpg",
+      image: "/image/feature4.jpg",
       reverse: true
     }
   ];
@@ -59,7 +58,7 @@ const Features = () => {
                   width={500}
                   height={300}
                   className="w-full h-auto rounded-[20px] shadow-[0_10px_30px_rgba(0,0,0,0.1)] transition-transform duration-300 hover:scale-105"
-                  loading="lazy"
+                  priority={false}
                 />
               </div>
             </div>

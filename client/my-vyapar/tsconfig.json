@@ -29,10 +29,6 @@
     ".next/types/**/*.ts",
     ".next/dev/types/**/*.ts",
     "**/*.mts"
-<<<<<<< HEAD
-, ".next/page.tsx"  ],
-=======
-, "app/components/Navbar.jsx", "app/components/Hero.jsx"  ],
->>>>>>> 6deee889272d85f1ac047d7fad72ab1665f17f1b
+, "app/components/Navbar.jsx", "app/components/Hero.jsx", "Components/Footer.jsx", "Components/Hero.jsx", "Components/Navbar.jsx"  ],
   "exclude": ["node_modules"]
 }
