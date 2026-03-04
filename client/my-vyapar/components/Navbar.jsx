@@ -26,7 +26,7 @@ const Navbar = () => {
   return (
     <nav className="sticky top-0 bg-white shadow-md z-[1000] h-20 flex items-center px-5 lg:px-10">
       <div className="max-w-[1400px] w-full mx-auto flex justify-between items-center h-full">
-        
+
         {/* Logo */}
         <Link
           href="/"
@@ -63,8 +63,19 @@ const Navbar = () => {
               : "max-h-0 opacity-0 invisible lg:max-h-none lg:opacity-100 lg:visible"
             }`}
         >
+          {/* try-mobile-app Link */}
+
+              <li className="w-full lg:w-auto border-b lg:border-none border-slate-100">
+                <Link
+                  href="/try-mobile-app"
+                  className="block py-4 lg:py-0 text-slate-500 font-medium text-sm transition-colors hover:text-blue-600 lg:border-b-2 lg:border-transparent lg:hover:border-blue-600 capitalize whitespace-nowrap w-full text-left"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  Try Mobile App
+                </Link>
+              </li>
           <ul className="flex flex-col lg:flex-row list-none gap-0 lg:gap-5 m-0 p-0 items-start lg:items-center">
-            {["try-mobile-app", "solution", "about-us", "desktop", "careers", "partner"].map(
+            {["try-mobile-app",  "desktop", "careers"].map(
               (item) => (
                 <li key={item} className="w-full lg:w-auto border-b lg:border-none border-slate-100">
                   <button
@@ -76,7 +87,64 @@ const Navbar = () => {
                 </li>
               )
             )}
+            <li className="w-full lg:w-auto border-b lg:border-none border-slate-100">
+              <Link
+                href="/partner"
+                className="block py-4 lg:py-0 text-slate-500 font-medium text-sm transition-colors hover:text-blue-600 lg:border-b-2 lg:border-transparent lg:hover:border-blue-600 capitalize whitespace-nowrap w-full text-left"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                Partner
+              </Link>
+            </li>
 
+            {/* About Us Link */}
+            <li className="w-full lg:w-auto border-b lg:border-none border-slate-100">
+              <Link
+                href="/solution"
+                className="block py-4 lg:py-0 text-slate-500 font-medium text-sm transition-colors hover:text-blue-600 lg:border-b-2 lg:border-transparent lg:hover:border-blue-600 capitalize whitespace-nowrap w-full text-left"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                Solution
+              </Link>
+            </li>
+
+            {/* About Us Link */}
+            <li className="w-full lg:w-auto border-b lg:border-none border-slate-100">
+              <Link
+                href="/about"
+                className="block py-4 lg:py-0 text-slate-500 font-medium text-sm transition-colors hover:text-blue-600 lg:border-b-2 lg:border-transparent lg:hover:border-blue-600 capitalize whitespace-nowrap w-full text-left"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                About Us
+              </Link>
+            </li>
+
+          
+            {/* Dektop Link */}
+            <li className="w-full lg:w-auto border-b lg:border-none border-slate-100">
+              <Link
+                href="/desktop"
+                className="block py-4 lg:py-0 text-slate-500 font-medium text-sm transition-colors hover:text-blue-600 lg:border-b-2 lg:border-transparent lg:hover:border-blue-600 capitalize whitespace-nowrap w-full text-left"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                Desktop
+              </Link>
+            </li>
+
+            
+
+            {/* Carrers Link */}
+            <li className="w-full lg:w-auto border-b lg:border-none border-slate-100">
+              <Link
+                href="/carrers"
+                className="block py-4 lg:py-0 text-slate-500 font-medium text-sm transition-colors hover:text-blue-600 lg:border-b-2 lg:border-transparent lg:hover:border-blue-600 capitalize whitespace-nowrap w-full text-left"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                Careers
+              </Link>
+            </li>
+
+            {/* Pricing Link */}
             <li className="w-full lg:w-auto border-b lg:border-none border-slate-100">
               <button
                 onClick={() => {

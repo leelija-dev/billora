@@ -26,7 +26,9 @@ const Register = () => {
 
         {/* Google Button */}
         <button className="w-full py-3.5 rounded-xl border border-[#ddd] bg-white cursor-pointer mb-6 hover:shadow-md transition-shadow">
-          <FcGoogle size={22} className="mx-auto" />
+          <div className="mx-auto flex justify-center">
+            <FcGoogle size={22} />
+          </div>
         </button>
 
         {/* OR Divider */}
