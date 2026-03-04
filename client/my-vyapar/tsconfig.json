@@ -14,9 +14,7 @@
     "jsx": "react-jsx",
     "incremental": true,
     "plugins": [
-      {
-        "name": "next"
-      }
+      { "name": "next" }
     ],
     "paths": {
       "@/*": ["./*"]
@@ -26,14 +24,12 @@
     "next-env.d.ts",
     "**/*.ts",
     "**/*.tsx",
-    ".next/types/**/*.ts",
-    ".next/dev/types/**/*.ts",
     "**/*.mts",
     "components/**/*.tsx",
-    "components/**/*.jsx"
-, "app/AboutUs.jsx", "app/Careers.jsx", "app/Desktop.jsx", "app/GSTCalculator.jsx", "app/Solution.jsx", "app/TryMobileApp.jsx"      ],
+    "components/**/*.jsx",
+    "app/**/*.jsx",
+    ".next/types/**/*.ts",
+    ".next/dev/types/**/*.ts"
+  ],
   "exclude": ["node_modules"]
 }
-
-
-
