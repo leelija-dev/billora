@@ -87,7 +87,7 @@ const HowItWorks = () => {
             <div className="max-w-[1200px] mx-auto relative">
                 <div className="relative flex justify-between items-stretch gap-[30px] py-[60px] px-0 max-lg:flex-col max-lg:gap-[60px]">
                     {/* Animated Connecting Line - Desktop Only */}
-                    <div className="absolute top-[120px] left-0 right-0 h-1 bg-[#e2e8f0] z-[1] rounded overflow-hidden max-lg:hidden">
+                    <div className="absolute bottom-[200px] left-0 right-0 h-1 bg-[#blue] z-[1] rounded overflow-hidden max-lg:hidden">
                         <div className="absolute top-0 left-0 h-full w-0 bg-gradient-to-r from-[#3b82f6] via-[#8b5cf6] to-[#10b981] rounded animate-[progressFill_2s_ease-out_forwards] shadow-[0_0_20px_rgba(59,130,246,0.5)]"></div>
                     </div>
 

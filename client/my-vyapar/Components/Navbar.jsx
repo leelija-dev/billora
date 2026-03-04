@@ -64,7 +64,7 @@ const Navbar = () => {
             }`}
         >
           <ul className="flex flex-col lg:flex-row list-none gap-0 lg:gap-5 m-0 p-0 items-start lg:items-center">
-            {["try-mobile-app", "solution", "about-us", "desktop", "careers", "partner"].map(
+            {["try-mobile-app",  "desktop", "careers"].map(
               (item) => (
                 <li key={item} className="w-full lg:w-auto border-b lg:border-none border-slate-100">
                   <button
@@ -76,6 +76,37 @@ const Navbar = () => {
                 </li>
               )
             )}
+            <li className="w-full lg:w-auto border-b lg:border-none border-slate-100">
+              <Link
+                href="/partner"
+                className="block py-4 lg:py-0 text-slate-500 font-medium text-sm transition-colors hover:text-blue-600 lg:border-b-2 lg:border-transparent lg:hover:border-blue-600 capitalize whitespace-nowrap w-full text-left"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                Partner
+              </Link>
+            </li>
+
+            {/* About Us Link */}
+            <li className="w-full lg:w-auto border-b lg:border-none border-slate-100">
+              <Link
+                href="/solution"
+                className="block py-4 lg:py-0 text-slate-500 font-medium text-sm transition-colors hover:text-blue-600 lg:border-b-2 lg:border-transparent lg:hover:border-blue-600 capitalize whitespace-nowrap w-full text-left"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                Solution
+              </Link>
+            </li>
+
+            {/* About Us Link */}
+            <li className="w-full lg:w-auto border-b lg:border-none border-slate-100">
+              <Link
+                href="/about"
+                className="block py-4 lg:py-0 text-slate-500 font-medium text-sm transition-colors hover:text-blue-600 lg:border-b-2 lg:border-transparent lg:hover:border-blue-600 capitalize whitespace-nowrap w-full text-left"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                About Us
+              </Link>
+            </li>
 
             <li className="w-full lg:w-auto border-b lg:border-none border-slate-100">
               <button
