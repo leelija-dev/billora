@@ -1,5 +1,4 @@
 "use client";
-
 import React, { useState, useEffect, useRef } from 'react';
 
 const Industries = () => {
@@ -78,6 +77,12 @@ const Industries = () => {
     setTimeout(() => setIsPlaying(true), 5000);
   };
 
+  const handleDotClick = (index) => {
+    setCurrentIndex(index);
+    setIsPlaying(false);
+    setTimeout(() => setIsPlaying(true), 5000);
+  };
+
   const handleMouseEnter = () => {
     setIsPlaying(false);
   };
@@ -106,11 +111,11 @@ const Industries = () => {
       `}</style>
 
       <div className="max-w-[1400px] mx-auto px-[60px] relative max-lg:px-10 max-md:px-[30px] max-sm:px-5">
-        <div className="w-[200px] h-1 bg-gradient-to-r from-[#3B82F6] to-[#234C90] mx-auto mb-[30px] rounded-[2px]"></div>
-
+        
         <h2 className="text-5xl font-extrabold leading-[1.2] text-center max-w-[1000px] mx-auto mb-5 bg-gradient-to-r from-[#3A80F2] to-[#234C90] bg-clip-text text-transparent max-lg:text-[42px] max-md:text-4xl max-sm:text-3xl">
           Supporting businesses from a wide range of industries
         </h2>
+        <div className="w-[200px] h-1 bg-gradient-to-r from-[#3B82F6] to-[#234C90] mx-auto mb-[30px] rounded-[2px]"></div>
 
         <p className="text-xl text-[#475569] text-center max-w-[900px] mx-auto mb-[60px] leading-[1.6] font-light max-lg:text-lg max-md:text-base max-sm:mb-10">
           We understand your unique billing and accounting needs, Vyapar India billing software 
@@ -118,8 +123,9 @@ const Industries = () => {
         </p>
 
         <div className="flex gap-[60px] items-center justify-between max-lg:flex-col max-lg:gap-[50px]">
+          {/* LEFT PANEL - Hidden on mobile, visible on desktop */}
           <div 
-            className="flex-1 relative py-[30px] max-w-[550px] max-lg:max-w-full max-lg:w-full"
+            className="flex-1 relative py-[30px] max-w-[550px] max-lg:max-w-full max-lg:w-full hidden md:block"
             onMouseEnter={handleMouseEnter}
             onMouseLeave={handleMouseLeave}
           >
@@ -167,9 +173,14 @@ const Industries = () => {
             </div>
           </div>
 
+          {/* RIGHT PANEL - Image with content, full width on mobile */}
           <div 
-            className="flex-1 h-[550px] rounded-[45px] overflow-hidden relative transition-all duration-500 shadow-[0_20px_40px_rgba(0,0,0,0.15)] max-w-[650px] max-lg:max-w-full max-lg:w-full max-md:h-[450px] max-sm:h-[400px]"
-            style={{ backgroundImage: getRightPanelImage(), backgroundSize: 'cover', backgroundPosition: 'center' }}
+            className="flex-1 h-[550px] rounded-[45px] overflow-hidden relative transition-all duration-500 shadow-[0_20px_40px_rgba(0,0,0,0.15)] max-w-[650px] max-lg:max-w-full max-lg:w-full max-md:h-[450px] max-sm:h-[400px] max-sm:w-full"
+            style={{ 
+              backgroundImage: getRightPanelImage(), 
+              backgroundSize: 'cover', 
+              backgroundPosition: 'center' 
+            }}
           >
             <div className="absolute top-0 left-0 right-0 bottom-0 bg-gradient-to-br from-black/70 via-black/40 to-black/20 flex items-end p-[50px] max-md:p-[30px] max-sm:p-5">
               <div className="text-white w-full">
@@ -193,6 +204,30 @@ const Industries = () => {
                 </div>
               </div>
             </div>
+          </div>
+        </div>
+
+        {/* MOBILE SECTION - Only visible on mobile, shows current selection and dots */}
+        <div className="md:hidden mt-8 space-y-4">
+          {/* Current viewing text */}
+          <p className="text-center text-base text-gray-700">
+             <h1><span className="font-bold text-blue-600">{leftCards[currentIndex].text}</span></h1>
+          </p>
+          
+          {/* Navigation dots - clicking these changes the image AND content */}
+          <div className="flex justify-center gap-3">
+            {leftCards.map((_, idx) => (
+              <button
+                key={idx}
+                onClick={() => handleDotClick(idx)}
+                className={`transition-all duration-300 ${
+                  idx === currentIndex 
+                    ? 'w-10 h-2.5 bg-blue-600 rounded-full' 
+                    : 'w-2.5 h-2.5 bg-gray-300 rounded-full hover:bg-gray-400'
+                }`}
+                aria-label={`View ${leftCards[idx].text}`}
+              />
+            ))}
           </div>
         </div>
       </div>

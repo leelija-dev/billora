@@ -48,8 +48,12 @@ const FAQ = () => {
         {/* LEFT SIDE - Keep as is */}
         <div className="flex-1">
           <h4 className="text-[#1e88e5] mb-2.5">Questions & answers</h4>
-          <h2 className="text-[40px] text-[#2c3e75] mb-5 max-md:text-3xl max-sm:text-2xl">
-            Frequently asked <br />
+          
+
+          <h2 className="text-4xl md:text-5xl font-black text-slate-900 mb-4 tracking-tight">
+          Frequently asked
+        <br />
+        <br />
             <span className="bg-[#f6c453] px-2">Questions</span>
           </h2>
 
@@ -66,7 +70,7 @@ const FAQ = () => {
         </div>
 
         {/* RIGHT SIDE - Cards with reduced width */}
-        <div className="flex-1 max-w-[600px]"> {/* Added max-width to control card width */}
+        <div className="flex-1 max-w-[600px]">
           {faqs.map((item, index) => (
             <div
               key={index}
@@ -78,13 +82,11 @@ const FAQ = () => {
                 className="flex justify-between items-center cursor-pointer font-medium"
                 onClick={() => toggleFAQ(index)}
               >
-                <p className="pr-4">{item.question}</p> {/* Added padding right for better spacing */}
+                <p className="pr-4">{item.question}</p>
                 <span
-                  className={`text-[22px] transition-transform duration-300 flex-shrink-0 ${
-                    activeIndex === index ? "rotate-45" : ""
-                  }`}
+                  className={`text-[22px] transition-transform duration-300 flex-shrink-0`}
                 >
-                  +
+                  {activeIndex === index ? "−" : "+"}
                 </span>
               </div>
 
