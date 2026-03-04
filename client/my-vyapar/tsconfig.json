@@ -28,7 +28,12 @@
     "**/*.tsx",
     ".next/types/**/*.ts",
     ".next/dev/types/**/*.ts",
-    "**/*.mts"
-, "app/components/Navbar.jsx", "app/components/Hero.jsx", "Components/Footer.jsx", "Components/Hero.jsx", "Components/Navbar.jsx"  ],
+    "**/*.mts",
+    "components/**/*.tsx",
+    "components/**/*.jsx"
+, "app/AboutUs.jsx", "app/Careers.jsx", "app/Desktop.jsx", "app/GSTCalculator.jsx", "app/Solution.jsx", "app/TryMobileApp.jsx"      ],
   "exclude": ["node_modules"]
 }
+
+
+
