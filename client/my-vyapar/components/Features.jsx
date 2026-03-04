@@ -65,6 +65,7 @@ const Features = () => {
       [index]: !prev[index]
     }));
   };
+  
 
   return (
     <section className="py-[100px] bg-white font-sans max-md:py-[60px] max-sm:py-10 overflow-hidden relative">
