@@ -209,7 +209,7 @@ const ProductDetailScreen = () => {
 
   return (
     <View className="flex-1 bg-gray-50">
-      <SafeAreaView className="flex-1" edges={["left", "right"]}>
+      <SafeAreaView className="flex-1 pb-16" edges={["left", "right"]}>
         <Header
           title="Product Details"
           showBackButton
