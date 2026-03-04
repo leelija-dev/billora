@@ -1,13 +1,12 @@
-import Navbar from "../components/Navbar";
-import Hero from "../components/Hero";
-import Features from "../components/Features";
-import HowItWorks from "../components/HowItWorks";
-import Industries from "../components/Industries";
-import Pricing from "../components/Pricing";
-import Testimonials from "../components/Testimonials";
-import FAQ from "../components/FAQ";
-import Ratings from "../components/Ratings";
-import Footer from "../components/Footer";
+import Navbar from "../Components/Navbar"; 
+import Hero from "../Components/Hero";
+import Features from "../Components/Features"; 
+import Ratings from "../Components/Ratings";
+import HowItWorks from "../Components/HowItWorks";  
+import Start from "../Components/Start";
+
+
+import Footer from "../Components/Footer";
 
 export default function Page() {
   return (
@@ -15,13 +14,11 @@ export default function Page() {
       <Navbar />
       <Hero />
       <Features />
-      <HowItWorks />
-      <Industries />
-      <Pricing />
-      <Testimonials />
-      <FAQ />
       <Ratings />
-      <Footer />
-    </main>
-  );
-}
+      <HowItWorks />
+      <Start />
+      <Footer/>
+      </main>
+
+  )
+  };
