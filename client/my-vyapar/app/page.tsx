@@ -17,12 +17,11 @@ export default function Page() {
       <Features />
       <HowItWorks />
       <Industries />
-      <Pricing /> 
+      <Pricing />
       <Testimonials />
       <FAQ />
       <Ratings />
-      <Footer/>
-      </main>
-
-  )
-  };
+      <Footer />
+    </main>
+  );
+}
