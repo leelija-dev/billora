@@ -3,7 +3,8 @@ import Hero from "../components/Hero";
 import Features from "../components/Features"; 
 import Industries from "../components/Industries";
 import Ratings from "../components/Ratings";
-import HowItWorks from "../components/HowItWorks";  
+import HowItWorks from "../components/HowItWorks"; 
+import Pricing from "../components/Pricing"; 
 import Start from "../components/Start";
 
 
@@ -18,6 +19,7 @@ export default function Page() {
       <Industries />
       <Ratings />
       <HowItWorks />
+      <Pricing />
       <Start />
       <Footer/>
       </main>
