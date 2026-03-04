@@ -1,215 +1,455 @@
 // components/products/ProductList.js
-import React, { useState } from 'react';
-import { FlatList, View, Text, RefreshControl, TouchableOpacity } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
-import ProductCard from './ProductCard';
+import { useNavigation } from "@react-navigation/native";
+import { useEffect, useMemo, useState } from "react";
+import {
+  ActivityIndicator,
+  Animated,
+  FlatList,
+  Image,
+  RefreshControl,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import Icon from "react-native-vector-icons/MaterialCommunityIcons";
+import ProductCard from "./ProductCard";
 
-// Static product data
+// Static product data with enhanced information
 const STATIC_PRODUCTS = [
   {
-    id: '1',
-    name: 'Classic White T-Shirt',
-    sku: 'TS-001-WHT',
+    id: "1",
+    name: "Classic White T-Shirt",
+    sku: "TS-001-WHT",
     price: 29.99,
-    cost: 18.50,
+    cost: 18.5,
     originalPrice: 49.99,
-    image: 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=500',
+    image: "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=500",
     stock: 45,
-    category: 'Apparel',
-    supplier: 'Fashion Corp',
+    category: "Apparel",
+    supplier: "Fashion Corp",
     rating: 4.5,
     reviews: 128,
     discount: 40,
     isNew: false,
     isFavorite: false,
-    location: 'Warehouse A - R12',
+    location: "Warehouse A - R12",
     reorderLevel: 20,
-    lastUpdated: '2024-01-15T10:30:00Z',
+    lastUpdated: "2024-01-15T10:30:00Z",
+    brand: "Fashionista",
   },
   {
-    id: '2',
-    name: 'Slim Fit Jeans - Dark Blue',
-    sku: 'JN-002-BLU',
+    id: "2",
+    name: "Slim Fit Jeans - Dark Blue",
+    sku: "JN-002-BLU",
     price: 79.99,
-    cost: 45.00,
+    cost: 45.0,
     originalPrice: 0,
-    image: 'https://images.unsplash.com/photo-1541099649105-f69ad21f3246?w=500',
+    image: "https://images.unsplash.com/photo-1541099649105-f69ad21f3246?w=500",
     stock: 15,
-    category: 'Apparel',
-    supplier: 'Denim Co',
+    category: "Apparel",
+    supplier: "Denim Co",
     rating: 4.2,
     reviews: 89,
     discount: 0,
     isNew: true,
     isFavorite: true,
-    location: 'Warehouse A - R08',
+    location: "Warehouse A - R08",
     reorderLevel: 25,
-    lastUpdated: '2024-01-20T14:20:00Z',
+    lastUpdated: "2024-01-20T14:20:00Z",
+    brand: "DenimCo",
   },
   {
-    id: '3',
-    name: 'Leather Sneakers - White',
-    sku: 'SN-003-WHT',
+    id: "3",
+    name: "Leather Sneakers - White",
+    sku: "SN-003-WHT",
     price: 89.99,
-    cost: 52.00,
+    cost: 52.0,
     originalPrice: 129.99,
-    image: 'https://images.unsplash.com/photo-1549298916-b41d501d3772?w=500',
+    image: "https://images.unsplash.com/photo-1549298916-b41d501d3772?w=500",
     stock: 8,
-    category: 'Footwear',
-    supplier: 'Sporty Feet',
+    category: "Footwear",
+    supplier: "Sporty Feet",
     rating: 4.8,
     reviews: 256,
     discount: 30,
     isNew: false,
     isFavorite: false,
-    location: 'Warehouse B - F03',
+    location: "Warehouse B - F03",
     reorderLevel: 15,
-    lastUpdated: '2024-01-18T09:15:00Z',
+    lastUpdated: "2024-01-18T09:15:00Z",
+    brand: "SportMax",
   },
   {
-    id: '4',
-    name: 'Wool Blend Overcoat - Camel',
-    sku: 'OC-004-CML',
+    id: "4",
+    name: "Wool Blend Overcoat - Camel",
+    sku: "OC-004-CML",
     price: 199.99,
-    cost: 120.00,
+    cost: 120.0,
     originalPrice: 299.99,
-    image: 'https://images.unsplash.com/photo-1539533113208-f6df8cc8b543?w=500',
+    image: "https://images.unsplash.com/photo-1539533113208-f6df8cc8b543?w=500",
     stock: 5,
-    category: 'Outerwear',
-    supplier: 'Luxury Wear',
+    category: "Outerwear",
+    supplier: "Luxury Wear",
     rating: 4.6,
     reviews: 67,
     discount: 33,
     isNew: false,
     isFavorite: false,
-    location: 'Warehouse C - H02',
+    location: "Warehouse C - H02",
     reorderLevel: 10,
-    lastUpdated: '2024-01-10T16:45:00Z',
+    lastUpdated: "2024-01-10T16:45:00Z",
+    brand: "LuxeStyle",
   },
   {
-    id: '5',
-    name: 'Cashmere Sweater - Gray',
-    sku: 'SW-005-GRY',
+    id: "5",
+    name: "Cashmere Sweater - Gray",
+    sku: "SW-005-GRY",
     price: 129.99,
-    cost: 75.00,
+    cost: 75.0,
     originalPrice: 189.99,
-    image: 'https://images.unsplash.com/photo-1624378439575-d8705ad7ae80?w=500',
+    image: "https://images.unsplash.com/photo-1624378439575-d8705ad7ae80?w=500",
     stock: 12,
-    category: 'Knitwear',
-    supplier: 'Soft Touch',
+    category: "Knitwear",
+    supplier: "Soft Touch",
     rating: 4.7,
     reviews: 145,
     discount: 31,
     isNew: true,
     isFavorite: true,
-    location: 'Warehouse A - R15',
+    location: "Warehouse A - R15",
     reorderLevel: 8,
-    lastUpdated: '2024-01-22T11:30:00Z',
+    lastUpdated: "2024-01-22T11:30:00Z",
+    brand: "CashmereCo",
   },
   {
-    id: '6',
-    name: 'Sports Watch - Black',
-    sku: 'WT-006-BLK',
+    id: "6",
+    name: "Sports Watch - Black",
+    sku: "WT-006-BLK",
     price: 149.99,
-    cost: 89.00,
+    cost: 89.0,
     originalPrice: 0,
-    image: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=500',
+    image: "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=500",
     stock: 0,
-    category: 'Accessories',
-    supplier: 'TechTime',
+    category: "Accessories",
+    supplier: "TechTime",
     rating: 4.4,
     reviews: 203,
     discount: 0,
     isNew: false,
     isFavorite: false,
-    location: 'Warehouse B - E10',
+    location: "Warehouse B - E10",
     reorderLevel: 5,
-    lastUpdated: '2024-01-19T13:20:00Z',
+    lastUpdated: "2024-01-19T13:20:00Z",
+    brand: "TechGear",
+  },
+  {
+    id: "7",
+    name: "Leather Backpack - Brown",
+    sku: "BP-007-BRN",
+    price: 89.99,
+    cost: 55.0,
+    originalPrice: 149.99,
+    image: "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=500",
+    stock: 23,
+    category: "Accessories",
+    supplier: "UrbanGear",
+    rating: 4.3,
+    reviews: 78,
+    discount: 40,
+    isNew: false,
+    isFavorite: true,
+    location: "Warehouse A - B04",
+    reorderLevel: 10,
+    lastUpdated: "2024-01-21T10:00:00Z",
+    brand: "UrbanPro",
+  },
+  {
+    id: "8",
+    name: "Running Shoes - Blue",
+    sku: "RS-008-BLU",
+    price: 119.99,
+    cost: 70.0,
+    originalPrice: 159.99,
+    image: "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=500",
+    stock: 18,
+    category: "Footwear",
+    supplier: "SportMax",
+    rating: 4.9,
+    reviews: 312,
+    discount: 25,
+    isNew: true,
+    isFavorite: false,
+    location: "Warehouse B - F05",
+    reorderLevel: 12,
+    lastUpdated: "2024-01-23T09:45:00Z",
+    brand: "RunPro",
   },
 ];
 
-const ProductList = () => {
+const ProductList = ({
+  viewMode = "grid",
+  searchQuery = "",
+  category = "all",
+  onProductPress,
+  onEditProduct,
+  onDeleteProduct,
+  onUpdateStock,
+}) => {
   const navigation = useNavigation();
   const [refreshing, setRefreshing] = useState(false);
   const [products, setProducts] = useState(STATIC_PRODUCTS);
+  const [loading, setLoading] = useState(false);
+  const [fadeAnim] = useState(new Animated.Value(0));
+
+  useEffect(() => {
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 500,
+      useNativeDriver: true,
+    }).start();
+  }, []);
+
+  // Filter and sort products based on props
+  const filteredProducts = useMemo(() => {
+    let filtered = [...products];
+
+    // Category filter
+    if (category !== "all") {
+      filtered = filtered.filter(
+        (p) => p.category.toLowerCase() === category.toLowerCase(),
+      );
+    }
+
+    // Search filter
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(
+        (p) =>
+          p.name.toLowerCase().includes(query) ||
+          p.sku.toLowerCase().includes(query) ||
+          p.supplier.toLowerCase().includes(query) ||
+          p.brand?.toLowerCase().includes(query),
+      );
+    }
+
+    return filtered;
+  }, [products, category, searchQuery]);
+
+  // Statistics
+  const stats = useMemo(() => {
+    const totalStock = products.reduce((sum, p) => sum + p.stock, 0);
+    const lowStockCount = products.filter(
+      (p) => p.stock <= p.reorderLevel && p.stock > 0,
+    ).length;
+    const outOfStockCount = products.filter((p) => p.stock === 0).length;
+    const totalValue = products.reduce((sum, p) => sum + p.price * p.stock, 0);
+
+    return {
+      total: products.length,
+      totalStock,
+      lowStock: lowStockCount,
+      outOfStock: outOfStockCount,
+      totalValue,
+    };
+  }, [products]);
 
   const handleProductPress = (product) => {
-    navigation.navigate('ProductDetail', { productId: product.id });
+    if (onProductPress) {
+      onProductPress(product);
+    } else {
+      navigation.navigate("ProductDetail", { productId: product.id });
+    }
   };
 
   const handleEditProduct = (product) => {
-    navigation.navigate('AddProduct', { productId: product.id });
+    if (onEditProduct) {
+      onEditProduct(product);
+    } else {
+      navigation.navigate("AddProduct", { productId: product.id });
+    }
   };
 
   const handleDeleteProduct = (productId) => {
-    setProducts(prev => prev.filter(p => p.id !== productId));
+    if (onDeleteProduct) {
+      onDeleteProduct(productId);
+    } else {
+      setProducts((prev) => prev.filter((p) => p.id !== productId));
+    }
   };
 
   const handleUpdateStock = (productId, newStock) => {
-    setProducts(prev => prev.map(p => 
-      p.id === productId ? { ...p, stock: newStock } : p
-    ));
+    if (onUpdateStock) {
+      onUpdateStock(productId, newStock);
+    } else {
+      setProducts((prev) =>
+        prev.map((p) => (p.id === productId ? { ...p, stock: newStock } : p)),
+      );
+    }
+  };
+
+  const handleToggleFavorite = (productId) => {
+    setProducts((prev) =>
+      prev.map((p) =>
+        p.id === productId ? { ...p, isFavorite: !p.isFavorite } : p,
+      ),
+    );
   };
 
   const onRefresh = () => {
     setRefreshing(true);
+    // Simulate API call
     setTimeout(() => {
+      setProducts(STATIC_PRODUCTS);
       setRefreshing(false);
     }, 1000);
   };
 
-  const totalStock = products.reduce((sum, p) => sum + p.stock, 0);
-  const lowStockCount = products.filter(p => p.stock <= p.reorderLevel).length;
-  const totalValue = products.reduce((sum, p) => sum + (p.price * p.stock), 0);
-
   const renderHeader = () => (
-    <View className="flex-row flex-wrap justify-between mb-4 gap-2">
-      <View className="flex-1 min-w-[22%] bg-white rounded-2xl p-3 items-center shadow-sm">
-        <Text className="text-lg font-bold text-blue-500 mb-1">{products.length}</Text>
-        <Text className="text-xs text-gray-500 text-center">Total Products</Text>
+    <Animated.View style={{ opacity: fadeAnim, marginBottom: 16 }}>
+      {/* Results Info */}
+      <View className="flex-row justify-between items-center mb-3">
+        <Text className="text-gray-600">
+          {filteredProducts.length}{" "}
+          {filteredProducts.length === 1 ? "product" : "products"} found
+        </Text>
+        <View className="flex-row items-center bg-white px-3 py-1.5 rounded-full shadow-sm">
+          <Icon name="package-variant" size={16} color="#4b5563" />
+          <Text className="text-gray-600 text-sm ml-1">
+            {stats.total} total
+          </Text>
+        </View>
       </View>
-      <View className="flex-1 min-w-[22%] bg-white rounded-2xl p-3 items-center shadow-sm">
-        <Text className="text-lg font-bold text-green-500 mb-1">{totalStock}</Text>
-        <Text className="text-xs text-gray-500 text-center">Total Stock</Text>
-      </View>
-      <View className="flex-1 min-w-[22%] bg-white rounded-2xl p-3 items-center shadow-sm">
-        <Text className="text-lg font-bold text-yellow-500 mb-1">{lowStockCount}</Text>
-        <Text className="text-xs text-gray-500 text-center">Low Stock</Text>
-      </View>
-      <View className="flex-1 min-w-[22%] bg-white rounded-2xl p-3 items-center shadow-sm">
-        <Text className="text-lg font-bold text-purple-500 mb-1">${totalValue.toFixed(0)}</Text>
-        <Text className="text-xs text-gray-500 text-center">Total Value</Text>
-      </View>
+    </Animated.View>
+  );
+
+  const renderGridItem = ({ item }) => (
+    <View className="w-[48%] mx-[1%] mb-3">
+      <ProductCard
+        product={item}
+        onPress={handleProductPress}
+        onEdit={handleEditProduct}
+        onDelete={handleDeleteProduct}
+        onUpdateStock={handleUpdateStock}
+        onToggleFavorite={handleToggleFavorite}
+      />
     </View>
   );
 
+  const renderListItem = ({ item }) => (
+    <TouchableOpacity
+      onPress={() => handleProductPress(item)}
+      className="flex-row bg-white rounded-xl mb-3 p-3 shadow-sm border border-gray-100"
+    >
+      <Image
+        source={{ uri: item.image }}
+        className="w-20 h-20 rounded-lg"
+        resizeMode="cover"
+      />
+      <View className="flex-1 ml-3">
+        <View className="flex-row justify-between items-start">
+          <View className="flex-1">
+            <Text className="text-xs text-gray-400">{item.sku}</Text>
+            <Text
+              className="text-base font-semibold text-gray-800"
+              numberOfLines={1}
+            >
+              {item.name}
+            </Text>
+          </View>
+          <TouchableOpacity onPress={() => handleToggleFavorite(item.id)}>
+            <Icon
+              name={item.isFavorite ? "heart" : "heart-outline"}
+              size={20}
+              color={item.isFavorite ? "#ef4444" : "#9ca3af"}
+            />
+          </TouchableOpacity>
+        </View>
+
+        <View className="flex-row items-center mt-1">
+          <Icon name="tag" size={12} color="#9ca3af" />
+          <Text className="text-xs text-gray-500 ml-1">{item.category}</Text>
+          <Text className="text-xs text-gray-300 mx-2">•</Text>
+          <Icon name="factory" size={12} color="#9ca3af" />
+          <Text className="text-xs text-gray-500 ml-1">{item.supplier}</Text>
+        </View>
+
+        <View className="flex-row justify-between items-center mt-2">
+          <View>
+            <Text className="text-lg font-bold text-blue-600">
+              ${item.price.toFixed(2)}
+            </Text>
+            {item.originalPrice > 0 && (
+              <Text className="text-xs text-gray-400 line-through">
+                ${item.originalPrice.toFixed(2)}
+              </Text>
+            )}
+          </View>
+
+          <View className="flex-row items-center">
+            <View
+              className={`px-2 py-1 rounded-full ${
+                item.stock === 0
+                  ? "bg-red-100"
+                  : item.stock <= item.reorderLevel
+                    ? "bg-orange-100"
+                    : "bg-green-100"
+              }`}
+            >
+              <Text
+                className={`text-xs font-medium ${
+                  item.stock === 0
+                    ? "text-red-600"
+                    : item.stock <= item.reorderLevel
+                      ? "text-orange-600"
+                      : "text-green-600"
+                }`}
+              >
+                {item.stock} in stock
+              </Text>
+            </View>
+          </View>
+        </View>
+      </View>
+    </TouchableOpacity>
+  );
+
+  if (loading) {
+    return (
+      <View className="flex-1 justify-center items-center">
+        <ActivityIndicator size="large" color="#3b82f6" />
+        <Text className="text-gray-500 mt-4">Loading products...</Text>
+      </View>
+    );
+  }
+
   return (
     <FlatList
-      data={products}
+      data={filteredProducts}
       keyExtractor={(item) => item.id}
-      numColumns={2}
-      renderItem={({ item }) => (
-        <ProductCard
-          product={item}
-          onPress={handleProductPress}
-          onEdit={handleEditProduct}
-          onDelete={handleDeleteProduct}
-          onUpdateStock={handleUpdateStock}
-        />
-      )}
+      numColumns={viewMode === "grid" ? 2 : 1}
+      key={viewMode} // Force re-render when view mode changes
+      renderItem={viewMode === "grid" ? renderGridItem : renderListItem}
       ListHeaderComponent={renderHeader}
-      contentContainerClassName="p-3 pb-6"
-      columnWrapperClassName="justify-between"
+      contentContainerStyle={{ paddingBottom: 20 }}
       showsVerticalScrollIndicator={false}
       refreshControl={
-        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={onRefresh}
+          colors={["#3b82f6"]}
+          tintColor="#3b82f6"
+        />
       }
       ListEmptyComponent={
         <View className="flex-1 items-center justify-center py-16">
-          <Text className="text-6xl mb-4">📦</Text>
-          <Text className="text-lg font-semibold text-gray-700 mb-2">No Products Found</Text>
-          <Text className="text-sm text-gray-400 text-center">
-            Tap the + button to add your first product
+          <Icon name="package-variant" size={80} color="#d1d5db" />
+          <Text className="text-lg font-semibold text-gray-700 mt-4">
+            No Products Found
+          </Text>
+          <Text className="text-sm text-gray-400 text-center mt-2 px-8">
+            {searchQuery || category !== "all"
+              ? "Try adjusting your search or filters"
+              : "Tap the + button to add your first product"}
           </Text>
         </View>
       }

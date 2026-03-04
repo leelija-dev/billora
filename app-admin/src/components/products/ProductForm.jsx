@@ -1,15 +1,27 @@
+// components/products/ProductForm.js
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useEffect, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
-import { Alert, ScrollView, StyleSheet, View } from 'react-native';
+import { Alert, ScrollView, View, Text, TouchableOpacity } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { productsAPI } from '../../api';
 import { useMutation } from '../../hooks/useApi';
 import { useProductStore } from '../../store/productStore';
 import { useUIStore } from '../../store/uiStore';
-import { theme } from '../../theme';
 import Button from '../common/Button';
 import Header from '../common/Header';
 import Input from '../common/Input';
+
+const categories = [
+  { id: 'apparel', label: 'Apparel', icon: 'tshirt-crew' },
+  { id: 'footwear', label: 'Footwear', icon: 'shoe-sneaker' },
+  { id: 'accessories', label: 'Accessories', icon: 'watch' },
+  { id: 'outerwear', label: 'Outerwear', icon: 'jacket' },
+  { id: 'knitwear', label: 'Knitwear', icon: 'knitting' },
+  { id: 'electronics', label: 'Electronics', icon: 'laptop' },
+];
 
 const ProductForm = () => {
   const navigation = useNavigation();
@@ -19,6 +31,7 @@ const ProductForm = () => {
   
   const isEditing = route.params?.productId || selectedProduct?.id;
   const [loading, setLoading] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState('');
 
   const {
     control,
@@ -26,6 +39,7 @@ const ProductForm = () => {
     formState: { errors, isValid },
     setValue,
     reset,
+    watch,
   } = useForm({
     defaultValues: {
       name: '',
@@ -57,6 +71,7 @@ const ProductForm = () => {
         stock: selectedProduct.stock?.toString() || '',
         minStock: selectedProduct.minStock?.toString() || '',
       });
+      setSelectedCategory(selectedProduct.category?.toLowerCase() || '');
     }
   }, [isEditing, selectedProduct, reset]);
 
@@ -70,6 +85,7 @@ const ProductForm = () => {
         originalPrice: data.originalPrice ? parseFloat(data.originalPrice) : null,
         stock: parseInt(data.stock),
         minStock: data.minStock ? parseInt(data.minStock) : 0,
+        category: selectedCategory,
       };
 
       if (isEditing) {
@@ -117,23 +133,70 @@ const ProductForm = () => {
   };
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView className="flex-1 bg-gray-50">
       <Header
         title={isEditing ? 'Edit Product' : 'Add Product'}
+        showBackButton
         rightComponent={
           isEditing ? (
-            <Button
-              title="Delete"
+            <TouchableOpacity
               onPress={handleDelete}
-              variant="ghost"
-              size="small"
-            />
+              className="w-10 h-10 bg-red-50 rounded-full items-center justify-center"
+            >
+              <Icon name="delete" size={22} color="#ef4444" />
+            </TouchableOpacity>
           ) : null
         }
       />
       
-      <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
-        <View style={styles.form}>
+      <ScrollView 
+        className="flex-1"
+        contentContainerClassName="p-5 pb-10"
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Image Upload Section */}
+        <TouchableOpacity className="mb-6">
+          <View className="w-full h-48 bg-gray-200 rounded-2xl overflow-hidden border-2 border-dashed border-gray-300 items-center justify-center">
+            <Icon name="camera-plus" size={40} color="#9ca3af" />
+            <Text className="text-gray-500 mt-2">Add Product Images</Text>
+          </View>
+        </TouchableOpacity>
+
+        {/* Category Selection */}
+        <View className="mb-6">
+          <Text className="text-base font-semibold text-gray-800 mb-3">Category</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+            <View className="flex-row gap-2">
+              {categories.map((cat) => (
+                <TouchableOpacity
+                  key={cat.id}
+                  onPress={() => setSelectedCategory(cat.id)}
+                  className={`items-center px-4 py-3 rounded-xl border ${
+                    selectedCategory === cat.id
+                      ? 'bg-blue-500 border-blue-500'
+                      : 'bg-white border-gray-200'
+                  }`}
+                >
+                  <Icon 
+                    name={cat.icon} 
+                    size={24} 
+                    color={selectedCategory === cat.id ? '#ffffff' : '#6b7280'} 
+                  />
+                  <Text className={`text-xs mt-1 ${
+                    selectedCategory === cat.id ? 'text-white' : 'text-gray-600'
+                  }`}>
+                    {cat.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </ScrollView>
+        </View>
+
+        {/* Form Fields */}
+        <View className="bg-white rounded-2xl p-4 shadow-sm mb-6">
+          <Text className="text-base font-semibold text-gray-800 mb-4">Basic Information</Text>
+          
           <Controller
             control={control}
             name="name"
@@ -152,6 +215,8 @@ const ProductForm = () => {
                 onBlur={onBlur}
                 placeholder="Enter product name"
                 error={errors.name?.message}
+                leftIcon={<Icon name="tag" size={20} color="#9ca3af" />}
+                containerClassName="mb-4"
               />
             )}
           />
@@ -175,6 +240,9 @@ const ProductForm = () => {
                 multiline
                 numberOfLines={4}
                 error={errors.description?.message}
+                leftIcon={<Icon name="text" size={20} color="#9ca3af" />}
+                containerClassName="mb-4"
+                inputClassName="h-24"
               />
             )}
           />
@@ -190,55 +258,45 @@ const ProductForm = () => {
                 onBlur={onBlur}
                 placeholder="Enter SKU (optional)"
                 error={errors.sku?.message}
+                leftIcon={<Icon name="barcode" size={20} color="#9ca3af" />}
+                containerClassName="mb-4"
               />
             )}
           />
+        </View>
 
-          <Controller
-            control={control}
-            name="category"
-            rules={{
-              required: 'Category is required',
-            }}
-            render={({ field: { onChange, onBlur, value } }) => (
-              <Input
-                label="Category"
-                value={value}
-                onChangeText={onChange}
-                onBlur={onBlur}
-                placeholder="Enter product category"
-                error={errors.category?.message}
-              />
-            )}
-          />
-
-          <View style={styles.row}>
-            <View style={styles.halfWidth}>
+        {/* Pricing Section */}
+        <View className="bg-white rounded-2xl p-4 shadow-sm mb-6">
+          <Text className="text-base font-semibold text-gray-800 mb-4">Pricing</Text>
+          
+          <View className="flex-row gap-4 mb-4">
+            <View className="flex-1">
               <Controller
                 control={control}
                 name="price"
                 rules={{
                   required: 'Price is required',
                   validate: {
-                    positive: (value) => value > 0 || 'Price must be greater than 0',
+                    positive: (value) => parseFloat(value) > 0 || 'Price must be greater than 0',
                     numeric: (value) => !isNaN(value) || 'Price must be a number',
                   },
                 }}
                 render={({ field: { onChange, onBlur, value } }) => (
                   <Input
-                    label="Price"
+                    label="Selling Price"
                     value={value}
                     onChangeText={onChange}
                     onBlur={onBlur}
                     placeholder="0.00"
                     keyboardType="decimal-pad"
                     error={errors.price?.message}
+                    leftIcon={<Icon name="currency-usd" size={20} color="#9ca3af" />}
                   />
                 )}
               />
             </View>
 
-            <View style={styles.halfWidth}>
+            <View className="flex-1">
               <Controller
                 control={control}
                 name="originalPrice"
@@ -256,100 +314,95 @@ const ProductForm = () => {
                     placeholder="0.00"
                     keyboardType="decimal-pad"
                     error={errors.originalPrice?.message}
+                    leftIcon={<Icon name="currency-usd" size={20} color="#9ca3af" />}
                   />
                 )}
               />
             </View>
           </View>
 
-          <View style={styles.row}>
-            <View style={styles.halfWidth}>
+          {watch('price') && watch('originalPrice') && (
+            <LinearGradient
+              colors={['#f0f9ff', '#e0f2fe']}
+              className="p-3 rounded-xl"
+            >
+              <Text className="text-sm text-blue-800">
+                Discount: {((watch('originalPrice') - watch('price')) / watch('originalPrice') * 100).toFixed(1)}%
+              </Text>
+            </LinearGradient>
+          )}
+        </View>
+
+        {/* Inventory Section */}
+        <View className="bg-white rounded-2xl p-4 shadow-sm mb-6">
+          <Text className="text-base font-semibold text-gray-800 mb-4">Inventory</Text>
+          
+          <View className="flex-row gap-4">
+            <View className="flex-1">
               <Controller
                 control={control}
                 name="stock"
                 rules={{
                   required: 'Stock is required',
                   validate: {
-                    positive: (value) => value >= 0 || 'Stock must be 0 or greater',
+                    positive: (value) => parseInt(value) >= 0 || 'Stock must be 0 or greater',
                     integer: (value) => Number.isInteger(Number(value)) || 'Stock must be a whole number',
                   },
                 }}
                 render={({ field: { onChange, onBlur, value } }) => (
                   <Input
-                    label="Stock"
+                    label="Current Stock"
                     value={value}
                     onChangeText={onChange}
                     onBlur={onBlur}
                     placeholder="0"
                     keyboardType="number-pad"
                     error={errors.stock?.message}
+                    leftIcon={<Icon name="package" size={20} color="#9ca3af" />}
                   />
                 )}
               />
             </View>
 
-            <View style={styles.halfWidth}>
+            <View className="flex-1">
               <Controller
                 control={control}
                 name="minStock"
                 rules={{
                   validate: {
-                    positive: (value) => !value || value >= 0 || 'Min stock must be 0 or greater',
+                    positive: (value) => !value || parseInt(value) >= 0 || 'Min stock must be 0 or greater',
                     integer: (value) => !value || Number.isInteger(Number(value)) || 'Min stock must be a whole number',
                   },
                 }}
                 render={({ field: { onChange, onBlur, value } }) => (
                   <Input
-                    label="Min Stock Alert"
+                    label="Reorder Level"
                     value={value}
                     onChangeText={onChange}
                     onBlur={onBlur}
                     placeholder="0"
                     keyboardType="number-pad"
                     error={errors.minStock?.message}
+                    leftIcon={<Icon name="alert" size={20} color="#9ca3af" />}
                   />
                 )}
               />
             </View>
           </View>
-
-          <Button
-            title={isEditing ? 'Update Product' : 'Create Product'}
-            onPress={handleSubmit(onSubmit)}
-            loading={loading}
-            disabled={!isValid || loading}
-            style={styles.submitButton}
-          />
         </View>
+
+        {/* Submit Button */}
+        <Button
+          title={isEditing ? 'Update Product' : 'Create Product'}
+          onPress={handleSubmit(onSubmit)}
+          loading={loading}
+          disabled={!isValid || loading}
+          className="bg-blue-500 py-4 rounded-xl"
+          textClassName="text-white font-semibold text-lg"
+        />
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: theme.colors.background,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  scrollContent: {
-    padding: theme.spacing.md,
-  },
-  form: {
-    paddingBottom: theme.spacing.xl,
-  },
-  row: {
-    flexDirection: 'row',
-    gap: theme.spacing.md,
-  },
-  halfWidth: {
-    flex: 1,
-  },
-  submitButton: {
-    marginTop: theme.spacing.lg,
-  },
-});
 
 export default ProductForm;

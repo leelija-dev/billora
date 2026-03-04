@@ -1,11 +1,23 @@
 // components/products/ProductCard.js
-import React, { useState } from 'react';
-import { View, Text, Image, TouchableOpacity, Alert } from 'react-native';
-import { formatCurrency } from '../../utils/helpers';
+import { LinearGradient } from "expo-linear-gradient";
+import { useState } from "react";
+import {
+  Alert,
+  Animated,
+  Image,
+  Modal,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 
 const ProductCard = ({ product, onPress, onEdit, onDelete, onUpdateStock }) => {
   const [isFavorite, setIsFavorite] = useState(product?.isFavorite || false);
   const [currentStock, setCurrentStock] = useState(product?.stock || 0);
+  const [showActions, setShowActions] = useState(false);
+  const [stockUpdateMode, setStockUpdateMode] = useState(false);
+  const scaleValue = useState(new Animated.Value(1))[0];
 
   if (!product) return null;
 
@@ -28,12 +40,25 @@ const ProductCard = ({ product, onPress, onEdit, onDelete, onUpdateStock }) => {
     reorderLevel,
   } = product;
 
-  const profitMargin = cost ? ((price - cost) / price * 100).toFixed(1) : 0;
+  const profitMargin = cost ? (((price - cost) / price) * 100).toFixed(1) : 0;
   const isLowStock = currentStock <= reorderLevel;
   const isOutOfStock = currentStock <= 0;
 
   const handleFavoritePress = () => {
     setIsFavorite(!isFavorite);
+    // Animate heart
+    Animated.sequence([
+      Animated.timing(scaleValue, {
+        toValue: 1.3,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+      Animated.timing(scaleValue, {
+        toValue: 1,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+    ]).start();
   };
 
   const handleStockUpdate = (increment) => {
@@ -44,171 +69,370 @@ const ProductCard = ({ product, onPress, onEdit, onDelete, onUpdateStock }) => {
     }
   };
 
+  const getStockStatus = () => {
+    if (isOutOfStock)
+      return {
+        label: "Out of Stock",
+        color: "text-red-500",
+        bg: "bg-red-50",
+        icon: "alert-circle",
+        gradient: ["#ef4444", "#dc2626"],
+      };
+    if (isLowStock)
+      return {
+        label: "Low Stock",
+        color: "text-orange-500",
+        bg: "bg-orange-50",
+        icon: "alert",
+        gradient: ["#f97316", "#ea580c"],
+      };
+    return {
+      label: "In Stock",
+      color: "text-green-500",
+      bg: "bg-green-50",
+      icon: "check-circle",
+      gradient: ["#22c55e", "#16a34a"],
+    };
+  };
+
+  const stockStatus = getStockStatus();
+
+  const handleLongPress = () => {
+    setShowActions(true);
+  };
+
   return (
-    <TouchableOpacity 
-      className="w-[47%] bg-white rounded-2xl mx-1 my-2 shadow-lg overflow-hidden"
-      onPress={() => onPress?.(product)}
-      activeOpacity={0.7}
-    >
-      {/* Image Section */}
-      <View className="relative h-40 bg-gray-100">
-        {image ? (
-          <Image source={{ uri: image }} className="w-full h-full" />
-        ) : (
-          <View className="w-full h-full items-center justify-center">
-            <Text className="text-4xl text-gray-300">📦</Text>
-          </View>
-        )}
-        
-        {/* Badges */}
-        <View className="absolute top-2 left-2 flex-col gap-1">
-          {discount > 0 && (
-            <View className="bg-red-500 px-2 py-1 rounded-full">
-              <Text className="text-white text-xs font-bold">-{discount}%</Text>
-            </View>
-          )}
-          {isNew && (
-            <View className="bg-green-500 px-2 py-1 rounded-full">
-              <Text className="text-white text-xs font-bold">NEW</Text>
-            </View>
-          )}
-          {isLowStock && !isOutOfStock && (
-            <View className="bg-yellow-500 px-2 py-1 rounded-full">
-              <Text className="text-white text-xs font-bold">⚠️ LOW</Text>
-            </View>
-          )}
-          {isOutOfStock && (
-            <View className="bg-gray-500 px-2 py-1 rounded-full">
-              <Text className="text-white text-xs font-bold">OUT</Text>
-            </View>
-          )}
-        </View>
-
-        {/* Favorite Button */}
-        <TouchableOpacity 
-          className="absolute top-2 right-2 bg-white/95 w-8 h-8 rounded-full items-center justify-center shadow-sm"
-          onPress={handleFavoritePress}
-        >
-          <Text className="text-lg">{isFavorite ? '⭐' : '☆'}</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Product Details */}
-      <View className="p-3">
-        {/* SKU and Category */}
-        <View className="flex-row justify-between items-center mb-2">
-          <Text className="text-gray-400 text-xs font-medium">#{sku || 'N/A'}</Text>
-          <View className="bg-blue-50 px-2 py-1 rounded-full">
-            <Text className="text-blue-500 text-xs font-semibold">{category || 'General'}</Text>
-          </View>
-        </View>
-
-        {/* Product Name */}
-        <Text className="text-base font-semibold text-gray-800 mb-1" numberOfLines={2}>
-          {name}
-        </Text>
-
-        {/* Supplier */}
-        {supplier && (
-          <Text className="text-xs text-gray-500 mb-1" numberOfLines={1}>
-            🏭 {supplier}
-          </Text>
-        )}
-
-        {/* Location */}
-        {location && (
-          <Text className="text-xs text-gray-500 mb-2" numberOfLines={1}>
-            📍 {location}
-          </Text>
-        )}
-
-        {/* Price Section */}
-        <View className="bg-gray-50 p-2 rounded-xl mb-2">
-          <View className="flex-row justify-between items-center mb-1">
-            <Text className="text-xs text-gray-500">Selling:</Text>
-            <Text className="text-base font-bold text-green-600">{formatCurrency(price)}</Text>
-          </View>
-          
-          {cost > 0 && (
-            <View className="flex-row justify-between items-center mb-1">
-              <Text className="text-xs text-gray-500">Cost:</Text>
-              <Text className="text-sm text-red-500 font-medium">{formatCurrency(cost)}</Text>
+    <>
+      <TouchableOpacity
+        className="w-full bg-white rounded-2xl mx-auto my-2 shadow-lg overflow-hidden"
+        onPress={() => onPress?.(product)}
+        onLongPress={handleLongPress}
+        delayLongPress={500}
+        activeOpacity={0.7}
+      >
+        {/* Image Section with Gradient Overlay */}
+        <View className="relative h-40 bg-gray-100">
+          {image ? (
+            <Image source={{ uri: image }} className="w-full h-full" />
+          ) : (
+            <View className="w-full h-full items-center justify-center">
+              <Icon name="package-variant" size={40} color="#9ca3af" />
             </View>
           )}
 
-          {originalPrice > 0 && (
-            <View className="flex-row justify-between items-center">
-              <Text className="text-xs text-gray-500">MRP:</Text>
-              <Text className="text-xs text-gray-400 line-through">{formatCurrency(originalPrice)}</Text>
-            </View>
-          )}
-        </View>
+          {/* Gradient Overlay */}
+          <LinearGradient
+            colors={["transparent", "rgba(0,0,0,0.3)"]}
+            className="absolute bottom-0 left-0 right-0 h-12"
+          />
 
-        {/* Profit Margin */}
-        {cost > 0 && (
-          <View className="mb-2">
-            <View className="h-1 bg-gray-200 rounded-full overflow-hidden">
-              <View 
-                className="h-full bg-green-500 rounded-full"
-                style={{ width: `${Math.min(profitMargin, 100)}%` }}
-              />
-            </View>
-            <Text className="text-xs text-green-600 font-medium mt-1">
-              Margin: {profitMargin}% 
-              {profitMargin > 30 ? ' 🚀' : profitMargin > 15 ? ' 📈' : ' 📉'}
-            </Text>
-          </View>
-        )}
-
-        {/* Stock Management */}
-        <View className="flex-row justify-between items-center bg-gray-100 p-2 rounded-xl mb-2">
-          <View className="flex-row items-center gap-1">
-            <Text className="text-xs text-gray-600">Stock:</Text>
-            <Text className={`text-sm font-semibold ${
-              isOutOfStock ? 'text-red-500' : isLowStock ? 'text-yellow-600' : 'text-gray-800'
-            }`}>
-              {currentStock} units
-            </Text>
-            {reorderLevel > 0 && (
-              <Text className="text-xs text-gray-400">(min: {reorderLevel})</Text>
+          {/* Badges */}
+          <View className="absolute top-2 left-2 flex-col gap-1">
+            {discount > 0 && (
+              <LinearGradient
+                colors={["#ef4444", "#dc2626"]}
+                className="px-2 py-1 rounded-full"
+              >
+                <Text className="text-white text-xs font-bold">
+                  -{discount}%
+                </Text>
+              </LinearGradient>
+            )}
+            {isNew && (
+              <LinearGradient
+                colors={["#3b82f6", "#2563eb"]}
+                className="px-2 py-1 rounded-full"
+              >
+                <Text className="text-white text-xs font-bold">NEW</Text>
+              </LinearGradient>
             )}
           </View>
 
-          {/* Quick Stock Update */}
-          <View className="flex-row gap-1">
-            <TouchableOpacity 
-              className="w-7 h-7 bg-red-100 rounded-full items-center justify-center"
-              onPress={() => handleStockUpdate(-1)}
+          {/* Favorite Button */}
+          <TouchableOpacity
+            className="absolute top-2 right-2 bg-white/95 w-8 h-8 rounded-full items-center justify-center shadow-md"
+            onPress={handleFavoritePress}
+          >
+            <Animated.View style={{ transform: [{ scale: scaleValue }] }}>
+              <Icon
+                name={isFavorite ? "heart" : "heart-outline"}
+                size={18}
+                color={isFavorite ? "#ef4444" : "#6b7280"}
+              />
+            </Animated.View>
+          </TouchableOpacity>
+
+          {/* Stock Status Badge */}
+          <View className="absolute bottom-2 left-2 right-2 flex-row justify-between items-center">
+            <LinearGradient
+              colors={stockStatus.gradient}
+              className="px-2 py-1 rounded-full flex-row items-center"
             >
-              <Text className="text-lg font-semibold text-gray-600">−</Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity 
-              className="w-7 h-7 bg-green-100 rounded-full items-center justify-center"
-              onPress={() => handleStockUpdate(1)}
-            >
-              <Text className="text-lg font-semibold text-gray-600">+</Text>
-            </TouchableOpacity>
+              <Icon name={stockStatus.icon} size={12} color="#ffffff" />
+              <Text className="text-white text-xs font-medium ml-1">
+                {stockStatus.label}
+              </Text>
+            </LinearGradient>
+
+            <View className="bg-white/95 px-2 py-1 rounded-full">
+              <Text className="text-xs font-bold">{currentStock}</Text>
+            </View>
           </View>
         </View>
 
-        {/* Rating */}
-        {rating > 0 && (
-          <View className="flex-row items-center mb-1">
-            <Text className="text-xs mr-1">⭐</Text>
-            <Text className="text-xs font-semibold text-yellow-600 mr-1">{rating.toFixed(1)}</Text>
-            <Text className="text-xs text-gray-400">({reviews || 0})</Text>
+        {/* Product Details */}
+        <View className="p-3">
+          {/* SKU and Category */}
+          <View className="flex-row justify-between items-center mb-2">
+            <Text className="text-gray-400 text-xs font-medium">
+              #{sku || "N/A"}
+            </Text>
+            <View className="bg-blue-50 px-2 py-1 rounded-full">
+              <Text className="text-blue-500 text-xs font-semibold">
+                {category || "General"}
+              </Text>
+            </View>
           </View>
-        )}
 
-        {/* Last Updated */}
-        {lastUpdated && (
-          <Text className="text-xs text-gray-300 text-right mt-1">
-            Updated: {new Date(lastUpdated).toLocaleDateString()}
+          {/* Product Name */}
+          <Text
+            className="text-base font-semibold text-gray-800 mb-1"
+            numberOfLines={2}
+          >
+            {name}
           </Text>
-        )}
-      </View>
-    </TouchableOpacity>
+
+          {/* Supplier & Location */}
+          <View className="flex-row items-center mb-2">
+            {supplier && (
+              <>
+                <Icon name="factory" size={12} color="#9ca3af" />
+                <Text
+                  className="text-xs text-gray-500 ml-1 mr-2"
+                  numberOfLines={1}
+                >
+                  {supplier}
+                </Text>
+              </>
+            )}
+            {location && (
+              <>
+                <Icon name="map-marker" size={12} color="#9ca3af" />
+                <Text className="text-xs text-gray-500 ml-1" numberOfLines={1}>
+                  {location}
+                </Text>
+              </>
+            )}
+          </View>
+
+          {/* Price Section */}
+          <View className="bg-gray-50 p-2 rounded-xl mb-2">
+            <View className="flex-row justify-between items-center mb-1">
+              <Text className="text-xs text-gray-500">Price:</Text>
+              <View className="flex-row items-baseline">
+                <Text className="text-lg font-bold text-green-600">
+                  ${price?.toFixed(2)}
+                </Text>
+                {originalPrice > 0 && (
+                  <Text className="text-xs text-gray-400 line-through ml-2">
+                    ${originalPrice?.toFixed(2)}
+                  </Text>
+                )}
+              </View>
+            </View>
+
+            {cost > 0 && (
+              <View className="flex-row justify-between items-center">
+                <Text className="text-xs text-gray-500">Profit:</Text>
+                <View className="flex-row items-center">
+                  <Text className="text-sm text-green-600 font-medium">
+                    ${(price - cost).toFixed(2)}
+                  </Text>
+                  <Text className="text-xs text-gray-400 ml-1">
+                    ({profitMargin}%)
+                  </Text>
+                </View>
+              </View>
+            )}
+          </View>
+
+          {/* Progress Bar for Stock */}
+          {reorderLevel > 0 && (
+            <View className="mb-2">
+              <View className="h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                <View
+                  className={`h-full rounded-full ${
+                    isOutOfStock
+                      ? "bg-red-500"
+                      : isLowStock
+                        ? "bg-orange-500"
+                        : "bg-green-500"
+                  }`}
+                  style={{
+                    width: `${Math.min((currentStock / reorderLevel) * 100, 100)}%`,
+                  }}
+                />
+              </View>
+              <Text className="text-xs text-gray-400 mt-1">
+                Reorder at: {reorderLevel} units
+              </Text>
+            </View>
+          )}
+
+          {/* Rating */}
+          {rating > 0 && (
+            <View className="flex-row items-center mb-2">
+              <Icon name="star" size={14} color="#fbbf24" />
+              <Text className="text-xs font-semibold text-yellow-600 ml-1">
+                {rating.toFixed(1)}
+              </Text>
+              <Text className="text-xs text-gray-400 ml-1">
+                ({reviews || 0} reviews)
+              </Text>
+            </View>
+          )}
+
+          {/* Quick Actions */}
+          <View className="flex-row justify-between items-center mt-2 pt-2 border-t border-gray-100">
+            <View className="flex-row gap-1">
+              <TouchableOpacity
+                className="w-8 h-8 bg-red-50 rounded-lg items-center justify-center"
+                onPress={() => handleStockUpdate(-1)}
+              >
+                <Icon name="minus" size={18} color="#ef4444" />
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                className="w-8 h-8 bg-green-50 rounded-lg items-center justify-center"
+                onPress={() => handleStockUpdate(1)}
+              >
+                <Icon name="plus" size={18} color="#22c55e" />
+              </TouchableOpacity>
+            </View>
+
+            <TouchableOpacity
+              className="w-8 h-8 bg-blue-50 rounded-lg items-center justify-center"
+              onPress={() => onEdit?.(product)}
+            >
+              <Icon name="pencil" size={16} color="#3b82f6" />
+            </TouchableOpacity>
+          </View>
+
+          {/* Last Updated */}
+          {lastUpdated && (
+            <Text className="text-xs text-gray-300 text-right mt-1">
+              {new Date(lastUpdated).toLocaleDateString()}
+            </Text>
+          )}
+        </View>
+      </TouchableOpacity>
+
+      {/* Action Modal */}
+      <Modal
+        visible={showActions}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowActions(false)}
+      >
+        <TouchableOpacity
+          className="flex-1 bg-black/50"
+          activeOpacity={1}
+          onPress={() => setShowActions(false)}
+        >
+          <View className="absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl">
+            <View className="items-center pt-2">
+              <View className="w-12 h-1 bg-gray-300 rounded-full" />
+            </View>
+
+            <View className="p-5">
+              <Text className="text-lg font-semibold text-gray-800 mb-4 text-center">
+                Product Actions
+              </Text>
+
+              <TouchableOpacity
+                className="flex-row items-center p-4 bg-blue-50 rounded-xl mb-2"
+                onPress={() => {
+                  setShowActions(false);
+                  onEdit?.(product);
+                }}
+              >
+                <View className="w-10 h-10 bg-blue-100 rounded-full items-center justify-center">
+                  <Icon name="pencil" size={22} color="#3b82f6" />
+                </View>
+                <View className="ml-3 flex-1">
+                  <Text className="text-base font-semibold text-gray-800">
+                    Edit Product
+                  </Text>
+                  <Text className="text-xs text-gray-500">
+                    Modify product details
+                  </Text>
+                </View>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                className="flex-row items-center p-4 bg-green-50 rounded-xl mb-2"
+                onPress={() => {
+                  setShowActions(false);
+                  setStockUpdateMode(true);
+                }}
+              >
+                <View className="w-10 h-10 bg-green-100 rounded-full items-center justify-center">
+                  <Icon name="package-up" size={22} color="#22c55e" />
+                </View>
+                <View className="ml-3 flex-1">
+                  <Text className="text-base font-semibold text-gray-800">
+                    Update Stock
+                  </Text>
+                  <Text className="text-xs text-gray-500">
+                    Adjust inventory levels
+                  </Text>
+                </View>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                className="flex-row items-center p-4 bg-red-50 rounded-xl"
+                onPress={() => {
+                  setShowActions(false);
+                  Alert.alert(
+                    "Delete Product",
+                    `Are you sure you want to delete ${name}?`,
+                    [
+                      { text: "Cancel", style: "cancel" },
+                      {
+                        text: "Delete",
+                        onPress: () => onDelete?.(id),
+                        style: "destructive",
+                      },
+                    ],
+                  );
+                }}
+              >
+                <View className="w-10 h-10 bg-red-100 rounded-full items-center justify-center">
+                  <Icon name="delete" size={22} color="#ef4444" />
+                </View>
+                <View className="ml-3 flex-1">
+                  <Text className="text-base font-semibold text-gray-800">
+                    Delete Product
+                  </Text>
+                  <Text className="text-xs text-gray-500">
+                    Remove from inventory
+                  </Text>
+                </View>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                className="mt-4 p-3 bg-gray-100 rounded-xl items-center"
+                onPress={() => setShowActions(false)}
+              >
+                <Text className="text-base font-semibold text-gray-600">
+                  Cancel
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </TouchableOpacity>
+      </Modal>
+    </>
   );
 };
 

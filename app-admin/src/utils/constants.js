@@ -131,7 +131,7 @@ export const NAVIGATION_SCREENS = {
     REGISTER: 'Register',
     FORGOT_PASSWORD: 'ForgotPassword',
   },
-  MAIN: {
+   MAIN: {
     DASHBOARD: 'Dashboard',
     PRODUCTS: 'Products',
     PRODUCT_DETAIL: 'ProductDetail',
@@ -146,7 +146,7 @@ export const NAVIGATION_SCREENS = {
     STOCK_MOVEMENT: 'StockMovement',
     SETTINGS: 'Settings',
     PROFILE: 'Profile',
-  },
+  }
 };
 
 export const DATE_FORMATS = {
