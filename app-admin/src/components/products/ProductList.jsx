@@ -14,7 +14,7 @@ import {
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 import ProductCard from "./ProductCard";
 
-// Static product data with enhanced information
+// Static product data
 const STATIC_PRODUCTS = [
   {
     id: "1",
@@ -142,58 +142,12 @@ const STATIC_PRODUCTS = [
     lastUpdated: "2024-01-19T13:20:00Z",
     brand: "TechGear",
   },
-  {
-    id: "7",
-    name: "Leather Backpack - Brown",
-    sku: "BP-007-BRN",
-    price: 89.99,
-    cost: 55.0,
-    originalPrice: 149.99,
-    image: "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=500",
-    stock: 23,
-    category: "Accessories",
-    supplier: "UrbanGear",
-    rating: 4.3,
-    reviews: 78,
-    discount: 40,
-    isNew: false,
-    isFavorite: true,
-    location: "Warehouse A - B04",
-    reorderLevel: 10,
-    lastUpdated: "2024-01-21T10:00:00Z",
-    brand: "UrbanPro",
-  },
-  {
-    id: "8",
-    name: "Running Shoes - Blue",
-    sku: "RS-008-BLU",
-    price: 119.99,
-    cost: 70.0,
-    originalPrice: 159.99,
-    image: "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=500",
-    stock: 18,
-    category: "Footwear",
-    supplier: "SportMax",
-    rating: 4.9,
-    reviews: 312,
-    discount: 25,
-    isNew: true,
-    isFavorite: false,
-    location: "Warehouse B - F05",
-    reorderLevel: 12,
-    lastUpdated: "2024-01-23T09:45:00Z",
-    brand: "RunPro",
-  },
 ];
 
 const ProductList = ({
   viewMode = "grid",
   searchQuery = "",
   category = "all",
-  onProductPress,
-  onEditProduct,
-  onDeleteProduct,
-  onUpdateStock,
 }) => {
   const navigation = useNavigation();
   const [refreshing, setRefreshing] = useState(false);
@@ -254,37 +208,21 @@ const ProductList = ({
   }, [products]);
 
   const handleProductPress = (product) => {
-    if (onProductPress) {
-      onProductPress(product);
-    } else {
-      navigation.navigate("ProductDetail", { productId: product.id });
-    }
+    navigation.navigate("ProductDetail", { productId: product.id });
   };
 
   const handleEditProduct = (product) => {
-    if (onEditProduct) {
-      onEditProduct(product);
-    } else {
-      navigation.navigate("AddProduct", { productId: product.id });
-    }
+    navigation.navigate("AddProduct", { productId: product.id });
   };
 
   const handleDeleteProduct = (productId) => {
-    if (onDeleteProduct) {
-      onDeleteProduct(productId);
-    } else {
-      setProducts((prev) => prev.filter((p) => p.id !== productId));
-    }
+    setProducts((prev) => prev.filter((p) => p.id !== productId));
   };
 
   const handleUpdateStock = (productId, newStock) => {
-    if (onUpdateStock) {
-      onUpdateStock(productId, newStock);
-    } else {
-      setProducts((prev) =>
-        prev.map((p) => (p.id === productId ? { ...p, stock: newStock } : p)),
-      );
-    }
+    setProducts((prev) =>
+      prev.map((p) => (p.id === productId ? { ...p, stock: newStock } : p)),
+    );
   };
 
   const handleToggleFavorite = (productId) => {
@@ -297,7 +235,6 @@ const ProductList = ({
 
   const onRefresh = () => {
     setRefreshing(true);
-    // Simulate API call
     setTimeout(() => {
       setProducts(STATIC_PRODUCTS);
       setRefreshing(false);
@@ -306,7 +243,6 @@ const ProductList = ({
 
   const renderHeader = () => (
     <Animated.View style={{ opacity: fadeAnim, marginBottom: 16 }}>
-      {/* Results Info */}
       <View className="flex-row justify-between items-center mb-3">
         <Text className="text-gray-600">
           {filteredProducts.length}{" "}
@@ -324,14 +260,7 @@ const ProductList = ({
 
   const renderGridItem = ({ item }) => (
     <View className="w-[48%] mx-[1%] mb-3">
-      <ProductCard
-        product={item}
-        onPress={handleProductPress}
-        onEdit={handleEditProduct}
-        onDelete={handleDeleteProduct}
-        onUpdateStock={handleUpdateStock}
-        onToggleFavorite={handleToggleFavorite}
-      />
+      <ProductCard product={item} onUpdateStock={handleUpdateStock} />
     </View>
   );
 
@@ -427,7 +356,7 @@ const ProductList = ({
       data={filteredProducts}
       keyExtractor={(item) => item.id}
       numColumns={viewMode === "grid" ? 2 : 1}
-      key={viewMode} // Force re-render when view mode changes
+      key={viewMode}
       renderItem={viewMode === "grid" ? renderGridItem : renderListItem}
       ListHeaderComponent={renderHeader}
       contentContainerStyle={{ paddingBottom: 20 }}

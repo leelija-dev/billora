@@ -10,7 +10,7 @@ import {
   View,
 } from "react-native";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
-import Header from "../../components/common/Header"; // Importing the Header component
+import Header from "../../components/common/Header";
 import ProductFilters from "../../components/products/ProductFilters";
 import ProductList from "../../components/products/ProductList";
 
@@ -24,24 +24,30 @@ const categories = [
     color: "#3b82f6",
   },
   {
-    id: "electronics",
-    name: "Electronics",
-    icon: "laptop",
-    count: 45,
-    color: "#8b5cf6",
-  },
-  {
-    id: "clothing",
-    name: "Clothing",
+    id: "apparel",
+    name: "Apparel",
     icon: "tshirt-crew",
     count: 78,
     color: "#ec4899",
   },
-  { id: "food", name: "Food & Bev", icon: "food", count: 23, color: "#f97316" },
   {
-    id: "furniture",
-    name: "Furniture",
-    icon: "sofa",
+    id: "footwear",
+    name: "Footwear",
+    icon: "shoe-sneaker",
+    count: 45,
+    color: "#8b5cf6",
+  },
+  {
+    id: "accessories",
+    name: "Accessories",
+    icon: "watch",
+    count: 23,
+    color: "#f97316",
+  },
+  {
+    id: "outerwear",
+    name: "Outerwear",
+    icon: "jacket",
     count: 10,
     color: "#10b981",
   },
@@ -52,7 +58,7 @@ const ProductsScreen = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
-  const [viewMode, setViewMode] = useState("grid"); // 'grid' or 'list'
+  const [viewMode, setViewMode] = useState("grid");
 
   const handleAddProduct = () => {
     navigation.navigate("AddProduct");
@@ -124,7 +130,6 @@ const ProductsScreen = () => {
     <View className="flex-1 bg-gray-50">
       <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
 
-      {/* Use the enhanced Header component */}
       <Header
         title="Products"
         backgroundColor="bg-white"

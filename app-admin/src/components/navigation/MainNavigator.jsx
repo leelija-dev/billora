@@ -12,6 +12,8 @@ import StockMovementScreen from "../../screens/inventory/StockMovementScreen";
 import CreateOrderScreen from "../../screens/orders/CreateOrderScreen";
 import OrderDetailScreen from "../../screens/orders/OrderDetailScreen";
 import OrdersScreen from "../../screens/orders/OrdersScreen";
+import AddProductScreen from "../../screens/products/AddProductScreen"; // IMPORT THIS
+import ProductDetailScreen from "../../screens/products/ProductDetailScreen"; // IMPORT THIS
 import ProductsScreen from "../../screens/products/ProductsScreen";
 import ProfileScreen from "../../screens/profile/ProfileScreen";
 import SettingsScreen from "../../screens/settings/SettingsScreen";
@@ -56,7 +58,7 @@ const StackHeader = ({ title, navigation, showBack = true }) => (
   </LinearGradient>
 );
 
-// Enhanced Products Stack
+// Enhanced Products Stack with all screens uncommented
 const ProductsStack = () => (
   <Stack.Navigator
     screenOptions={{
@@ -78,21 +80,24 @@ const ProductsStack = () => (
         ),
       }}
     />
-    {/* Uncomment when ready
     <Stack.Screen
       name={NAVIGATION_SCREENS.MAIN.PRODUCT_DETAIL}
       component={ProductDetailScreen}
       options={({ navigation }) => ({
-        header: () => <StackHeader title="Product Details" navigation={navigation} />,
+        header: () => (
+          <StackHeader title="Product Details" navigation={navigation} />
+        ),
       })}
     />
     <Stack.Screen
       name={NAVIGATION_SCREENS.MAIN.ADD_PRODUCT}
       component={AddProductScreen}
       options={({ navigation }) => ({
-        header: () => <StackHeader title="Add Product" navigation={navigation} />,
+        header: () => (
+          <StackHeader title="Add Product" navigation={navigation} />
+        ),
       })}
-    /> */}
+    />
   </Stack.Navigator>
 );
 

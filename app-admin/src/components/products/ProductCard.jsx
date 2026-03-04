@@ -1,4 +1,5 @@
 // components/products/ProductCard.js
+import { useNavigation } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
 import { useState } from "react";
 import {
@@ -12,11 +13,11 @@ import {
 } from "react-native";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 
-const ProductCard = ({ product, onPress, onEdit, onDelete, onUpdateStock }) => {
+const ProductCard = ({ product, onUpdateStock }) => {
+  const navigation = useNavigation();
   const [isFavorite, setIsFavorite] = useState(product?.isFavorite || false);
   const [currentStock, setCurrentStock] = useState(product?.stock || 0);
   const [showActions, setShowActions] = useState(false);
-  const [stockUpdateMode, setStockUpdateMode] = useState(false);
   const scaleValue = useState(new Animated.Value(1))[0];
 
   if (!product) return null;
@@ -44,9 +45,32 @@ const ProductCard = ({ product, onPress, onEdit, onDelete, onUpdateStock }) => {
   const isLowStock = currentStock <= reorderLevel;
   const isOutOfStock = currentStock <= 0;
 
+  const handlePress = () => {
+    navigation.navigate("ProductDetail", { productId: id });
+  };
+
+  const handleEdit = () => {
+    setShowActions(false);
+    navigation.navigate("AddProduct", { productId: id });
+  };
+
+  const handleDelete = () => {
+    setShowActions(false);
+    Alert.alert("Delete Product", `Are you sure you want to delete ${name}?`, [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Delete",
+        onPress: () => {
+          // Handle delete
+          Alert.alert("Success", "Product deleted successfully");
+        },
+        style: "destructive",
+      },
+    ]);
+  };
+
   const handleFavoritePress = () => {
     setIsFavorite(!isFavorite);
-    // Animate heart
     Animated.sequence([
       Animated.timing(scaleValue, {
         toValue: 1.3,
@@ -104,8 +128,8 @@ const ProductCard = ({ product, onPress, onEdit, onDelete, onUpdateStock }) => {
   return (
     <>
       <TouchableOpacity
-        className="w-full bg-white rounded-2xl mx-auto my-2 shadow-lg overflow-hidden"
-        onPress={() => onPress?.(product)}
+        className="w-full bg-white rounded-2xl shadow-lg overflow-hidden"
+        onPress={handlePress}
         onLongPress={handleLongPress}
         delayLongPress={500}
         activeOpacity={0.7}
@@ -256,42 +280,6 @@ const ProductCard = ({ product, onPress, onEdit, onDelete, onUpdateStock }) => {
             )}
           </View>
 
-          {/* Progress Bar for Stock */}
-          {reorderLevel > 0 && (
-            <View className="mb-2">
-              <View className="h-1.5 bg-gray-200 rounded-full overflow-hidden">
-                <View
-                  className={`h-full rounded-full ${
-                    isOutOfStock
-                      ? "bg-red-500"
-                      : isLowStock
-                        ? "bg-orange-500"
-                        : "bg-green-500"
-                  }`}
-                  style={{
-                    width: `${Math.min((currentStock / reorderLevel) * 100, 100)}%`,
-                  }}
-                />
-              </View>
-              <Text className="text-xs text-gray-400 mt-1">
-                Reorder at: {reorderLevel} units
-              </Text>
-            </View>
-          )}
-
-          {/* Rating */}
-          {rating > 0 && (
-            <View className="flex-row items-center mb-2">
-              <Icon name="star" size={14} color="#fbbf24" />
-              <Text className="text-xs font-semibold text-yellow-600 ml-1">
-                {rating.toFixed(1)}
-              </Text>
-              <Text className="text-xs text-gray-400 ml-1">
-                ({reviews || 0} reviews)
-              </Text>
-            </View>
-          )}
-
           {/* Quick Actions */}
           <View className="flex-row justify-between items-center mt-2 pt-2 border-t border-gray-100">
             <View className="flex-row gap-1">
@@ -312,7 +300,7 @@ const ProductCard = ({ product, onPress, onEdit, onDelete, onUpdateStock }) => {
 
             <TouchableOpacity
               className="w-8 h-8 bg-blue-50 rounded-lg items-center justify-center"
-              onPress={() => onEdit?.(product)}
+              onPress={handleEdit}
             >
               <Icon name="pencil" size={16} color="#3b82f6" />
             </TouchableOpacity>
@@ -351,10 +339,7 @@ const ProductCard = ({ product, onPress, onEdit, onDelete, onUpdateStock }) => {
 
               <TouchableOpacity
                 className="flex-row items-center p-4 bg-blue-50 rounded-xl mb-2"
-                onPress={() => {
-                  setShowActions(false);
-                  onEdit?.(product);
-                }}
+                onPress={handleEdit}
               >
                 <View className="w-10 h-10 bg-blue-100 rounded-full items-center justify-center">
                   <Icon name="pencil" size={22} color="#3b82f6" />
@@ -370,42 +355,8 @@ const ProductCard = ({ product, onPress, onEdit, onDelete, onUpdateStock }) => {
               </TouchableOpacity>
 
               <TouchableOpacity
-                className="flex-row items-center p-4 bg-green-50 rounded-xl mb-2"
-                onPress={() => {
-                  setShowActions(false);
-                  setStockUpdateMode(true);
-                }}
-              >
-                <View className="w-10 h-10 bg-green-100 rounded-full items-center justify-center">
-                  <Icon name="package-up" size={22} color="#22c55e" />
-                </View>
-                <View className="ml-3 flex-1">
-                  <Text className="text-base font-semibold text-gray-800">
-                    Update Stock
-                  </Text>
-                  <Text className="text-xs text-gray-500">
-                    Adjust inventory levels
-                  </Text>
-                </View>
-              </TouchableOpacity>
-
-              <TouchableOpacity
                 className="flex-row items-center p-4 bg-red-50 rounded-xl"
-                onPress={() => {
-                  setShowActions(false);
-                  Alert.alert(
-                    "Delete Product",
-                    `Are you sure you want to delete ${name}?`,
-                    [
-                      { text: "Cancel", style: "cancel" },
-                      {
-                        text: "Delete",
-                        onPress: () => onDelete?.(id),
-                        style: "destructive",
-                      },
-                    ],
-                  );
-                }}
+                onPress={handleDelete}
               >
                 <View className="w-10 h-10 bg-red-100 rounded-full items-center justify-center">
                   <Icon name="delete" size={22} color="#ef4444" />

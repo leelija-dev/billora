@@ -1,26 +1,25 @@
 // components/products/ProductForm.js
-import { useNavigation, useRoute } from '@react-navigation/native';
-import { useEffect, useState } from 'react';
-import { Controller, useForm } from 'react-hook-form';
-import { Alert, ScrollView, View, Text, TouchableOpacity } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
-import { LinearGradient } from 'expo-linear-gradient';
-import { productsAPI } from '../../api';
-import { useMutation } from '../../hooks/useApi';
-import { useProductStore } from '../../store/productStore';
-import { useUIStore } from '../../store/uiStore';
-import Button from '../common/Button';
-import Header from '../common/Header';
-import Input from '../common/Input';
+import { useNavigation, useRoute } from "@react-navigation/native";
+import { LinearGradient } from "expo-linear-gradient";
+import { useEffect, useState } from "react";
+import { Controller, useForm } from "react-hook-form";
+import { Alert, ScrollView, Text, TouchableOpacity, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import Icon from "react-native-vector-icons/MaterialCommunityIcons";
+import { productsAPI } from "../../api";
+import { useMutation } from "../../hooks/useApi";
+import { useProductStore } from "../../store/productStore";
+import { useUIStore } from "../../store/uiStore";
+import Button from "../common/Button";
+import Input from "../common/Input";
 
 const categories = [
-  { id: 'apparel', label: 'Apparel', icon: 'tshirt-crew' },
-  { id: 'footwear', label: 'Footwear', icon: 'shoe-sneaker' },
-  { id: 'accessories', label: 'Accessories', icon: 'watch' },
-  { id: 'outerwear', label: 'Outerwear', icon: 'jacket' },
-  { id: 'knitwear', label: 'Knitwear', icon: 'knitting' },
-  { id: 'electronics', label: 'Electronics', icon: 'laptop' },
+  { id: "apparel", label: "Apparel", icon: "tshirt-crew" },
+  { id: "footwear", label: "Footwear", icon: "shoe-sneaker" },
+  { id: "accessories", label: "Accessories", icon: "watch" },
+  { id: "outerwear", label: "Outerwear", icon: "jacket" },
+  { id: "knitwear", label: "Knitwear", icon: "knitting" },
+  { id: "electronics", label: "Electronics", icon: "laptop" },
 ];
 
 const ProductForm = () => {
@@ -28,10 +27,10 @@ const ProductForm = () => {
   const route = useRoute();
   const { selectedProduct, updateProduct, addProduct } = useProductStore();
   const { showSuccess, showError } = useUIStore();
-  
+
   const isEditing = route.params?.productId || selectedProduct?.id;
   const [loading, setLoading] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState("");
 
   const {
     control,
@@ -42,47 +41,52 @@ const ProductForm = () => {
     watch,
   } = useForm({
     defaultValues: {
-      name: '',
-      description: '',
-      price: '',
-      originalPrice: '',
-      sku: '',
-      category: '',
-      stock: '',
-      minStock: '',
+      name: "",
+      description: "",
+      price: "",
+      originalPrice: "",
+      sku: "",
+      category: "",
+      stock: "",
+      minStock: "",
       images: [],
     },
   });
 
   const { mutate: createProduct } = useMutation(productsAPI.createProduct);
-  const { mutate: updateProductApi } = useMutation(
-    (data) => productsAPI.updateProduct(route.params?.productId || selectedProduct?.id, data)
+  const { mutate: updateProductApi } = useMutation((data) =>
+    productsAPI.updateProduct(
+      route.params?.productId || selectedProduct?.id,
+      data,
+    ),
   );
 
   useEffect(() => {
     if (isEditing && selectedProduct) {
       reset({
-        name: selectedProduct.name || '',
-        description: selectedProduct.description || '',
-        price: selectedProduct.price?.toString() || '',
-        originalPrice: selectedProduct.originalPrice?.toString() || '',
-        sku: selectedProduct.sku || '',
-        category: selectedProduct.category || '',
-        stock: selectedProduct.stock?.toString() || '',
-        minStock: selectedProduct.minStock?.toString() || '',
+        name: selectedProduct.name || "",
+        description: selectedProduct.description || "",
+        price: selectedProduct.price?.toString() || "",
+        originalPrice: selectedProduct.originalPrice?.toString() || "",
+        sku: selectedProduct.sku || "",
+        category: selectedProduct.category || "",
+        stock: selectedProduct.stock?.toString() || "",
+        minStock: selectedProduct.minStock?.toString() || "",
       });
-      setSelectedCategory(selectedProduct.category?.toLowerCase() || '');
+      setSelectedCategory(selectedProduct.category?.toLowerCase() || "");
     }
   }, [isEditing, selectedProduct, reset]);
 
   const onSubmit = async (data) => {
     try {
       setLoading(true);
-      
+
       const productData = {
         ...data,
         price: parseFloat(data.price),
-        originalPrice: data.originalPrice ? parseFloat(data.originalPrice) : null,
+        originalPrice: data.originalPrice
+          ? parseFloat(data.originalPrice)
+          : null,
         stock: parseInt(data.stock),
         minStock: data.minStock ? parseInt(data.minStock) : 0,
         category: selectedCategory,
@@ -91,16 +95,16 @@ const ProductForm = () => {
       if (isEditing) {
         const response = await updateProductApi(productData);
         updateProduct(selectedProduct.id, response.product);
-        showSuccess('Product updated successfully');
+        showSuccess("Product updated successfully");
       } else {
         const response = await createProduct(productData);
         addProduct(response.product);
-        showSuccess('Product created successfully');
+        showSuccess("Product created successfully");
       }
 
       navigation.goBack();
     } catch (error) {
-      showError(error.message || 'Failed to save product');
+      showError(error.message || "Failed to save product");
     } finally {
       setLoading(false);
     }
@@ -108,50 +112,35 @@ const ProductForm = () => {
 
   const handleDelete = () => {
     Alert.alert(
-      'Delete Product',
-      'Are you sure you want to delete this product? This action cannot be undone.',
+      "Delete Product",
+      "Are you sure you want to delete this product? This action cannot be undone.",
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: "Cancel", style: "cancel" },
         {
-          text: 'Delete',
-          style: 'destructive',
+          text: "Delete",
+          style: "destructive",
           onPress: async () => {
             try {
               setLoading(true);
               await productsAPI.deleteProduct(selectedProduct.id);
               navigation.goBack();
-              showSuccess('Product deleted successfully');
+              showSuccess("Product deleted successfully");
             } catch (error) {
-              showError(error.message || 'Failed to delete product');
+              showError(error.message || "Failed to delete product");
             } finally {
               setLoading(false);
             }
           },
         },
-      ]
+      ],
     );
   };
 
   return (
     <SafeAreaView className="flex-1 bg-gray-50">
-      <Header
-        title={isEditing ? 'Edit Product' : 'Add Product'}
-        showBackButton
-        rightComponent={
-          isEditing ? (
-            <TouchableOpacity
-              onPress={handleDelete}
-              className="w-10 h-10 bg-red-50 rounded-full items-center justify-center"
-            >
-              <Icon name="delete" size={22} color="#ef4444" />
-            </TouchableOpacity>
-          ) : null
-        }
-      />
-      
-      <ScrollView 
+      <ScrollView
         className="flex-1"
-        contentContainerClassName="p-5 pb-10"
+        contentContainerClassName="p-5 pb-16 pt-0"
         showsVerticalScrollIndicator={false}
       >
         {/* Image Upload Section */}
@@ -164,7 +153,9 @@ const ProductForm = () => {
 
         {/* Category Selection */}
         <View className="mb-6">
-          <Text className="text-base font-semibold text-gray-800 mb-3">Category</Text>
+          <Text className="text-base font-semibold text-gray-800 mb-3">
+            Category
+          </Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false}>
             <View className="flex-row gap-2">
               {categories.map((cat) => (
@@ -173,18 +164,22 @@ const ProductForm = () => {
                   onPress={() => setSelectedCategory(cat.id)}
                   className={`items-center px-4 py-3 rounded-xl border ${
                     selectedCategory === cat.id
-                      ? 'bg-blue-500 border-blue-500'
-                      : 'bg-white border-gray-200'
+                      ? "bg-blue-500 border-blue-500"
+                      : "bg-white border-gray-200"
                   }`}
                 >
-                  <Icon 
-                    name={cat.icon} 
-                    size={24} 
-                    color={selectedCategory === cat.id ? '#ffffff' : '#6b7280'} 
+                  <Icon
+                    name={cat.icon}
+                    size={24}
+                    color={selectedCategory === cat.id ? "#ffffff" : "#6b7280"}
                   />
-                  <Text className={`text-xs mt-1 ${
-                    selectedCategory === cat.id ? 'text-white' : 'text-gray-600'
-                  }`}>
+                  <Text
+                    className={`text-xs mt-1 ${
+                      selectedCategory === cat.id
+                        ? "text-white"
+                        : "text-gray-600"
+                    }`}
+                  >
                     {cat.label}
                   </Text>
                 </TouchableOpacity>
@@ -195,16 +190,18 @@ const ProductForm = () => {
 
         {/* Form Fields */}
         <View className="bg-white rounded-2xl p-4 shadow-sm mb-6">
-          <Text className="text-base font-semibold text-gray-800 mb-4">Basic Information</Text>
-          
+          <Text className="text-base font-semibold text-gray-800 mb-4">
+            Basic Information
+          </Text>
+
           <Controller
             control={control}
             name="name"
             rules={{
-              required: 'Product name is required',
+              required: "Product name is required",
               maxLength: {
                 value: 100,
-                message: 'Name must be less than 100 characters',
+                message: "Name must be less than 100 characters",
               },
             }}
             render={({ field: { onChange, onBlur, value } }) => (
@@ -227,7 +224,7 @@ const ProductForm = () => {
             rules={{
               maxLength: {
                 value: 1000,
-                message: 'Description must be less than 1000 characters',
+                message: "Description must be less than 1000 characters",
               },
             }}
             render={({ field: { onChange, onBlur, value } }) => (
@@ -267,18 +264,22 @@ const ProductForm = () => {
 
         {/* Pricing Section */}
         <View className="bg-white rounded-2xl p-4 shadow-sm mb-6">
-          <Text className="text-base font-semibold text-gray-800 mb-4">Pricing</Text>
-          
+          <Text className="text-base font-semibold text-gray-800 mb-4">
+            Pricing
+          </Text>
+
           <View className="flex-row gap-4 mb-4">
             <View className="flex-1">
               <Controller
                 control={control}
                 name="price"
                 rules={{
-                  required: 'Price is required',
+                  required: "Price is required",
                   validate: {
-                    positive: (value) => parseFloat(value) > 0 || 'Price must be greater than 0',
-                    numeric: (value) => !isNaN(value) || 'Price must be a number',
+                    positive: (value) =>
+                      parseFloat(value) > 0 || "Price must be greater than 0",
+                    numeric: (value) =>
+                      !isNaN(value) || "Price must be a number",
                   },
                 }}
                 render={({ field: { onChange, onBlur, value } }) => (
@@ -290,7 +291,9 @@ const ProductForm = () => {
                     placeholder="0.00"
                     keyboardType="decimal-pad"
                     error={errors.price?.message}
-                    leftIcon={<Icon name="currency-usd" size={20} color="#9ca3af" />}
+                    leftIcon={
+                      <Icon name="currency-usd" size={20} color="#9ca3af" />
+                    }
                   />
                 )}
               />
@@ -302,7 +305,10 @@ const ProductForm = () => {
                 name="originalPrice"
                 rules={{
                   validate: {
-                    numeric: (value) => !value || !isNaN(value) || 'Original price must be a number',
+                    numeric: (value) =>
+                      !value ||
+                      !isNaN(value) ||
+                      "Original price must be a number",
                   },
                 }}
                 render={({ field: { onChange, onBlur, value } }) => (
@@ -314,20 +320,28 @@ const ProductForm = () => {
                     placeholder="0.00"
                     keyboardType="decimal-pad"
                     error={errors.originalPrice?.message}
-                    leftIcon={<Icon name="currency-usd" size={20} color="#9ca3af" />}
+                    leftIcon={
+                      <Icon name="currency-usd" size={20} color="#9ca3af" />
+                    }
                   />
                 )}
               />
             </View>
           </View>
 
-          {watch('price') && watch('originalPrice') && (
+          {watch("price") && watch("originalPrice") && (
             <LinearGradient
-              colors={['#f0f9ff', '#e0f2fe']}
+              colors={["#f0f9ff", "#e0f2fe"]}
               className="p-3 rounded-xl"
             >
               <Text className="text-sm text-blue-800">
-                Discount: {((watch('originalPrice') - watch('price')) / watch('originalPrice') * 100).toFixed(1)}%
+                Discount:{" "}
+                {(
+                  ((watch("originalPrice") - watch("price")) /
+                    watch("originalPrice")) *
+                  100
+                ).toFixed(1)}
+                %
               </Text>
             </LinearGradient>
           )}
@@ -335,18 +349,23 @@ const ProductForm = () => {
 
         {/* Inventory Section */}
         <View className="bg-white rounded-2xl p-4 shadow-sm mb-6">
-          <Text className="text-base font-semibold text-gray-800 mb-4">Inventory</Text>
-          
+          <Text className="text-base font-semibold text-gray-800 mb-4">
+            Inventory
+          </Text>
+
           <View className="flex-row gap-4">
             <View className="flex-1">
               <Controller
                 control={control}
                 name="stock"
                 rules={{
-                  required: 'Stock is required',
+                  required: "Stock is required",
                   validate: {
-                    positive: (value) => parseInt(value) >= 0 || 'Stock must be 0 or greater',
-                    integer: (value) => Number.isInteger(Number(value)) || 'Stock must be a whole number',
+                    positive: (value) =>
+                      parseInt(value) >= 0 || "Stock must be 0 or greater",
+                    integer: (value) =>
+                      Number.isInteger(Number(value)) ||
+                      "Stock must be a whole number",
                   },
                 }}
                 render={({ field: { onChange, onBlur, value } }) => (
@@ -370,8 +389,14 @@ const ProductForm = () => {
                 name="minStock"
                 rules={{
                   validate: {
-                    positive: (value) => !value || parseInt(value) >= 0 || 'Min stock must be 0 or greater',
-                    integer: (value) => !value || Number.isInteger(Number(value)) || 'Min stock must be a whole number',
+                    positive: (value) =>
+                      !value ||
+                      parseInt(value) >= 0 ||
+                      "Min stock must be 0 or greater",
+                    integer: (value) =>
+                      !value ||
+                      Number.isInteger(Number(value)) ||
+                      "Min stock must be a whole number",
                   },
                 }}
                 render={({ field: { onChange, onBlur, value } }) => (
@@ -393,7 +418,7 @@ const ProductForm = () => {
 
         {/* Submit Button */}
         <Button
-          title={isEditing ? 'Update Product' : 'Create Product'}
+          title={isEditing ? "Update Product" : "Create Product"}
           onPress={handleSubmit(onSubmit)}
           loading={loading}
           disabled={!isValid || loading}

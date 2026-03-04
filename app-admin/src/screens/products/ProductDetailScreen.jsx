@@ -15,45 +15,107 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
-import { productsAPI } from "../../api";
 import ErrorState from "../../components/common/ErrorState";
 import Header from "../../components/common/Header";
 import Loading from "../../components/common/Loading";
-import { useApi } from "../../hooks/useApi";
-import { useProductStore } from "../../store/productStore";
-import { useUIStore } from "../../store/uiStore";
 import { formatCurrency } from "../../utils/helpers";
+
+// Mock product data
+const MOCK_PRODUCTS = {
+  1: {
+    id: "1",
+    name: "Classic White T-Shirt",
+    sku: "TS-001-WHT",
+    price: 29.99,
+    cost: 18.5,
+    originalPrice: 49.99,
+    image: "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=500",
+    stock: 45,
+    category: "Apparel",
+    supplier: "Fashion Corp",
+    rating: 4.5,
+    reviews: 128,
+    description:
+      "Premium quality cotton t-shirt. Perfect for everyday wear. Features a classic fit and comfortable fabric.",
+    location: "Warehouse A - R12",
+    minStock: 20,
+    brand: "Fashionista",
+    createdAt: "2024-01-15T10:30:00Z",
+    updatedAt: "2024-01-15T10:30:00Z",
+  },
+  2: {
+    id: "2",
+    name: "Slim Fit Jeans - Dark Blue",
+    sku: "JN-002-BLU",
+    price: 79.99,
+    cost: 45.0,
+    originalPrice: 0,
+    image: "https://images.unsplash.com/photo-1541099649105-f69ad21f3246?w=500",
+    stock: 15,
+    category: "Apparel",
+    supplier: "Denim Co",
+    rating: 4.2,
+    reviews: 89,
+    description:
+      "Modern slim fit jeans in dark blue wash. Stretch denim for extra comfort.",
+    location: "Warehouse A - R08",
+    minStock: 25,
+    brand: "DenimCo",
+    createdAt: "2024-01-20T14:20:00Z",
+    updatedAt: "2024-01-20T14:20:00Z",
+  },
+  3: {
+    id: "3",
+    name: "Leather Sneakers - White",
+    sku: "SN-003-WHT",
+    price: 89.99,
+    cost: 52.0,
+    originalPrice: 129.99,
+    image: "https://images.unsplash.com/photo-1549298916-b41d501d3772?w=500",
+    stock: 8,
+    category: "Footwear",
+    supplier: "Sporty Feet",
+    rating: 4.8,
+    reviews: 256,
+    description:
+      "Premium leather sneakers. Comfortable and stylish for everyday wear.",
+    location: "Warehouse B - F03",
+    minStock: 15,
+    brand: "SportMax",
+    createdAt: "2024-01-18T09:15:00Z",
+    updatedAt: "2024-01-18T09:15:00Z",
+  },
+};
 
 const ProductDetailScreen = () => {
   const navigation = useNavigation();
   const route = useRoute();
   const { productId } = route.params || {};
-  const { selectedProduct, setSelectedProduct } = useProductStore();
-  const { showSuccess, showError } = useUIStore();
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [product, setProduct] = useState(null);
+  const [error, setError] = useState(null);
   const [showStockModal, setShowStockModal] = useState(false);
   const [stockUpdate, setStockUpdate] = useState("");
-  const [activeTab, setActiveTab] = useState("details"); // 'details', 'history', 'stats'
-
-  const {
-    data: product,
-    loading: productLoading,
-    error: productError,
-    execute: fetchProduct,
-  } = useApi(() => productsAPI.getProduct(productId));
+  const [activeTab, setActiveTab] = useState("details");
 
   useEffect(() => {
-    if (productId) {
-      fetchProduct();
+    if (!productId) {
+      navigation.goBack();
+      return;
     }
+
+    // Simulate API call
+    setTimeout(() => {
+      const foundProduct = MOCK_PRODUCTS[productId];
+      if (foundProduct) {
+        setProduct(foundProduct);
+        setStockUpdate(foundProduct.stock.toString());
+      } else {
+        setError("Product not found");
+      }
+      setLoading(false);
+    }, 1000);
   }, [productId]);
-
-  useEffect(() => {
-    if (product) {
-      setSelectedProduct(product);
-      setStockUpdate(product.stock?.toString() || "0");
-    }
-  }, [product]);
 
   const handleEdit = () => {
     navigation.navigate("AddProduct", { productId });
@@ -68,17 +130,9 @@ const ProductDetailScreen = () => {
         {
           text: "Delete",
           style: "destructive",
-          onPress: async () => {
-            try {
-              setLoading(true);
-              await productsAPI.deleteProduct(productId);
-              showSuccess("Product deleted successfully");
-              navigation.goBack();
-            } catch (error) {
-              showError(error.message || "Failed to delete product");
-            } finally {
-              setLoading(false);
-            }
+          onPress: () => {
+            Alert.alert("Success", "Product deleted successfully");
+            navigation.goBack();
           },
         },
       ],
@@ -107,8 +161,8 @@ const ProductDetailScreen = () => {
       return;
     }
 
-    // Here you would call API to update stock
-    showSuccess(`Stock updated to ${newStock} units`);
+    setProduct({ ...product, stock: newStock });
+    Alert.alert("Success", `Stock updated to ${newStock} units`);
     setShowStockModal(false);
   };
 
@@ -128,7 +182,7 @@ const ProductDetailScreen = () => {
 
   const stockStatus = getStockStatus();
 
-  if (productLoading && !product) {
+  if (loading) {
     return (
       <View className="flex-1 bg-gray-50">
         <SafeAreaView className="flex-1">
@@ -139,22 +193,7 @@ const ProductDetailScreen = () => {
     );
   }
 
-  if (productError) {
-    return (
-      <View className="flex-1 bg-gray-50">
-        <SafeAreaView className="flex-1">
-          <Header title="Product Details" showBackButton />
-          <ErrorState
-            title="Failed to Load Product"
-            description="Unable to load product details. Please try again."
-            onRetry={fetchProduct}
-          />
-        </SafeAreaView>
-      </View>
-    );
-  }
-
-  if (!product) {
+  if (error || !product) {
     return (
       <View className="flex-1 bg-gray-50">
         <SafeAreaView className="flex-1">
@@ -302,7 +341,7 @@ const ProductDetailScreen = () => {
                 <View className="flex-row items-center justify-between">
                   <View className="flex-row items-center">
                     <View
-                      className={`w-3 h-3 rounded-full ${stockStatus.bg.replace("bg-", "bg-")}`}
+                      className={`w-3 h-3 rounded-full ${stockStatus.bg}`}
                     />
                     <Text className={`ml-2 font-medium ${stockStatus.color}`}>
                       {stockStatus.label}
@@ -449,7 +488,7 @@ const ProductDetailScreen = () => {
               </Text>
 
               <View className="flex-row flex-wrap">
-                <View className="w-1/2 mb-4">
+                <View className="w-1/2 mb-4 pr-2">
                   <View className="bg-blue-50 rounded-xl p-3">
                     <Icon name="currency-usd" size={24} color="#3b82f6" />
                     <Text className="text-2xl font-bold text-gray-800 mt-2">
