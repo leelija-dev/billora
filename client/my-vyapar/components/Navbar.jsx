@@ -63,7 +63,7 @@ const Navbar = () => {
               : "max-h-0 opacity-0 invisible lg:max-h-none lg:opacity-100 lg:visible"
             }`}
         >
-          {/* try-mobile-app Link */}
+          {/* try-mobile-app Link
 
               <li className="w-full lg:w-auto border-b lg:border-none border-slate-100">
                 <Link
@@ -73,7 +73,7 @@ const Navbar = () => {
                 >
                   Try Mobile App
                 </Link>
-              </li>
+              </li> */}
           <ul className="flex flex-col lg:flex-row list-none gap-0 lg:gap-5 m-0 p-0 items-start lg:items-center">
             {["try-mobile-app",  "desktop", "careers"].map(
               (item) => (
@@ -120,7 +120,7 @@ const Navbar = () => {
             </li>
 
           
-            {/* Dektop Link */}
+            {/* Dektop Link
             <li className="w-full lg:w-auto border-b lg:border-none border-slate-100">
               <Link
                 href="/desktop"
@@ -129,11 +129,11 @@ const Navbar = () => {
               >
                 Desktop
               </Link>
-            </li>
+            </li> */}
 
             
 
-            {/* Carrers Link */}
+            {/* Carrers Link
             <li className="w-full lg:w-auto border-b lg:border-none border-slate-100">
               <Link
                 href="/carrers"
@@ -142,7 +142,7 @@ const Navbar = () => {
               >
                 Careers
               </Link>
-            </li>
+            </li> */}
 
             {/* Pricing Link */}
             <li className="w-full lg:w-auto border-b lg:border-none border-slate-100">
