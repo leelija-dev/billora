@@ -167,7 +167,7 @@ const Hero = () => {
 
             {/* Phone Mockup */}
             <div className="absolute -left-4 md:-left-8 -bottom-5 w-[100px] md:w-[130px] h-[200px] md:h-[280px] bg-slate-800 rounded-[30px] p-1.5 shadow-xl z-20 hidden sm:block animate-fadeInUp" style={{animationDelay: "0.45s"}}>
-              <div className="w-full h-full bg-slate-900 rounded-[25px] overflow-hidden relative">
+              <div className=" w-full h-full bg-slate-900 rounded-[25px] overflow-hidden relative">
                 
                 {/* Mobile Image */}
                 <Image
