@@ -46,7 +46,7 @@ const Testimonials = () => {
     >
       <div className="max-w-7xl mx-auto px-6 text-center">
         <h2 className="text-4xl md:text-5xl font-black text-slate-900 mb-4 tracking-tight">
-          They succeeded online             .<br />             .now it’s your turn
+          They succeeded online_<br />_now it’s your turn
         </h2>
         <p className="text-slate-500 text-lg mb-16">Deep-dive into how we empower businesses.</p>
 
