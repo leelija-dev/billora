@@ -11,6 +11,9 @@
       <change beforePath="$PROJECT_DIR$/src/components/common/Header.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/common/Header.jsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/components/common/Input.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/common/Input.jsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/components/navigation/MainNavigator.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/navigation/MainNavigator.jsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/orders/OrderCard.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/orders/OrderCard.jsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/orders/OrderForm.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/orders/OrderForm.jsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/orders/OrderList.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/orders/OrderList.jsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/components/products/ProductCard.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/products/ProductCard.jsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/components/products/ProductFilters.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/products/ProductFilters.jsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/components/products/ProductForm.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/products/ProductForm.jsx" afterDir="false" />
