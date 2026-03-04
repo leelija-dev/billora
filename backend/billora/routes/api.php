@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\admin\BillCustomerController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\admin\CustomerController;
 use App\Http\Controllers\admin\ProductsController;
@@ -11,19 +12,20 @@ use App\Http\Controllers\admin\StoreController;
 use App\Models\Unit;
 
 Route::get('/test', function () {
-    return response()->json([
-        'message' => 'Hello World',
-    ]);
+   return response()->json([
+      'message' => 'Hello World',
+   ]);
 });
+//admin user
 Route::prefix('users')->group(function () {
    //    Route::get('/', [CustomerController::class, 'index']);
    Route::middleware('auth:sanctum')->get('/', [CustomerController::class, 'index']);
 
    Route::post('/store', [CustomerController::class, 'store']);
    Route::post('/login', [CustomerController::class, 'login']);
-    //    Route::post('/logout', [CustomerController::class, 'logout']);
-    Route::middleware('auth:sanctum')->post('/logout', [CustomerController::class, 'logout']);
-    //due RBAC
+   //    Route::post('/logout', [CustomerController::class, 'logout']);
+   Route::middleware('auth:sanctum')->post('/logout', [CustomerController::class, 'logout']);
+   //due RBAC
 
 });
 // Route::middleware('auth:sanctum')->group(function () {
@@ -51,8 +53,6 @@ Route::prefix('stocks')->group(function () {
    Route::put('/{id}', [StocksController::class, 'update']);
    Route::delete('/{id}', [StocksController::class, 'destroy']);
    Route::post('/add-stock/{id}', [StocksController::class, 'addStock']);
-   
-   
 });
 //units
 Route::prefix('units')->group(function () {
@@ -70,8 +70,8 @@ Route::prefix('brands')->group(function () {
    Route::put('/{id}', [BrandController::class, 'update']);
    Route::delete('/{id}', [BrandController::class, 'delete']);
 });
-
-Route::prefix('invoice')->group(function (){
+//invoices
+Route::prefix('invoice')->group(function () {
    Route::get('/', [InvoiceController::class, 'index']);
    Route::post('/store', [InvoiceController::class, 'store']);
    Route::get('/{id}', [InvoiceController::class, 'show']);
@@ -79,11 +79,23 @@ Route::prefix('invoice')->group(function (){
    Route::delete('/{id}', [InvoiceController::class, 'destroy']);
 });
 
-//store
+
+// store/shop
 Route::prefix('store')->group(function () {
    Route::get('/{id}', [StoreController::class, 'index']);
    Route::post('/store', [StoreController::class, 'store']);
    Route::get('/edit/{id}', [StoreController::class, 'edit']);
    Route::put('/{id}', [StoreController::class, 'update']);
    Route::delete('/{id}', [StoreController::class, 'delete']);
+});
+
+//client or bill generation customer
+Route::prefix('customer')->group(function () {
+   Route::get('/', [BillCustomerController::class, 'index']);
+   Route::post('/store', [BillCustomerController::class, 'store']);
+   Route::get('/show/{id}', [BillCustomerController::class, 'show']);
+   Route::put('/{id}', [BillCustomerController::class, 'update']);
+   Route::delete('/{id}', [BillCustomerController::class, 'delete']); //soft delete
+   Route::patch('/{id}', [BillCustomerController::class, 'restore']); //restore
+   Route::delete('/{id}/force', [BillCustomerController::class, 'forceDelete']); //permanently delete
 });

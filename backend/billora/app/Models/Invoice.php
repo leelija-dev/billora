@@ -12,9 +12,12 @@ class Invoice extends Model
     protected $fillable =[
         'user_id',
         'customer_id',
+        'store_id',
         'total_amount',
         'total_items',
-        'created_by'
+        'paid_amount',
+        'created_by',
+
     ];
         protected $casts = [
         'total_amount' => 'decimal:2',

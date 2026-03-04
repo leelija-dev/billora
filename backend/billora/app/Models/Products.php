@@ -22,7 +22,7 @@ class Products extends Model
         'unit_id',	
         'description',
         'is_active',
-        'created_by'	
+        'created_by'
 
     ];
     public function brand(){

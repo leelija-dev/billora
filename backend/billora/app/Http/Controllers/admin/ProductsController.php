@@ -74,12 +74,11 @@ class ProductsController extends Controller
             ]);
         }
     }
-    public function update($id, Request $request){   // update product
+    public function update($id,Request $request){   // update product
         try{
             $product = Products::findOrFail($id);
             $data=$request->validate([
             'user_id'=>'required',
-            'sku'=>'required',
             'name'=>'required',
             'brand_id'=>'nullable',
             'category_id'=>'required',
