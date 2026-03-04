@@ -1,398 +1,365 @@
-// OrderList.js
-import { Ionicons } from "@expo/vector-icons";
+// components/orders/OrderList.js
 import { useNavigation } from "@react-navigation/native";
-import { LinearGradient } from "expo-linear-gradient";
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
+  ActivityIndicator,
   Animated,
-  Dimensions,
   FlatList,
-  ScrollView,
-  StatusBar,
+  Image,
+  RefreshControl,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
-import { MOCK_ORDERS } from "../../data/mockOrders";
-import OrderCard from "./OrderCard";
+import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 
-const { width } = Dimensions.get("window");
+// Static order data
+const STATIC_ORDERS = [
+  {
+    id: "ORD-001",
+    customerName: "John Smith",
+    customerEmail: "john.smith@email.com",
+    customerAvatar: "https://randomuser.me/api/portraits/men/1.jpg",
+    orderDate: "2024-03-15T10:30:00Z",
+    total: 299.99,
+    status: "delivered",
+    paymentMethod: "Credit Card",
+    items: [
+      { id: 1, name: "Classic White T-Shirt", quantity: 2, price: 29.99 },
+      { id: 2, name: "Slim Fit Jeans", quantity: 1, price: 79.99 },
+    ],
+    shippingAddress: "123 Main St, New York, NY 10001",
+    trackingNumber: "TRK123456789",
+  },
+  {
+    id: "ORD-002",
+    customerName: "Emma Wilson",
+    customerEmail: "emma.w@email.com",
+    customerAvatar: "https://randomuser.me/api/portraits/women/2.jpg",
+    orderDate: "2024-03-14T14:20:00Z",
+    total: 189.5,
+    status: "processing",
+    paymentMethod: "PayPal",
+    items: [
+      { id: 3, name: "Leather Sneakers", quantity: 1, price: 89.99 },
+      { id: 4, name: "Cashmere Sweater", quantity: 1, price: 99.99 },
+    ],
+    shippingAddress: "456 Oak Ave, Los Angeles, CA 90001",
+    trackingNumber: "TRK987654321",
+  },
+  {
+    id: "ORD-003",
+    customerName: "Michael Brown",
+    customerEmail: "michael.b@email.com",
+    customerAvatar: "https://randomuser.me/api/portraits/men/3.jpg",
+    orderDate: "2024-03-14T09:15:00Z",
+    total: 79.99,
+    status: "pending",
+    paymentMethod: "Debit Card",
+    items: [{ id: 5, name: "Sports Watch", quantity: 1, price: 79.99 }],
+    shippingAddress: "789 Pine St, Chicago, IL 60601",
+    trackingNumber: null,
+  },
+  {
+    id: "ORD-004",
+    customerName: "Sarah Davis",
+    customerEmail: "sarah.d@email.com",
+    customerAvatar: "https://randomuser.me/api/portraits/women/4.jpg",
+    orderDate: "2024-03-13T16:45:00Z",
+    total: 459.99,
+    status: "delivered",
+    paymentMethod: "Credit Card",
+    items: [
+      { id: 6, name: "Wool Overcoat", quantity: 1, price: 299.99 },
+      { id: 7, name: "Leather Boots", quantity: 1, price: 159.99 },
+    ],
+    shippingAddress: "321 Elm Blvd, Houston, TX 77001",
+    trackingNumber: "TRK456789123",
+  },
+  {
+    id: "ORD-005",
+    customerName: "David Lee",
+    customerEmail: "david.lee@email.com",
+    customerAvatar: "https://randomuser.me/api/portraits/men/5.jpg",
+    orderDate: "2024-03-13T11:30:00Z",
+    total: 129.99,
+    status: "cancelled",
+    paymentMethod: "PayPal",
+    items: [{ id: 8, name: "Running Shoes", quantity: 1, price: 129.99 }],
+    shippingAddress: "654 Cedar Ln, Phoenix, AZ 85001",
+    trackingNumber: null,
+  },
+  {
+    id: "ORD-006",
+    customerName: "Lisa Anderson",
+    customerEmail: "lisa.a@email.com",
+    customerAvatar: "https://randomuser.me/api/portraits/women/6.jpg",
+    orderDate: "2024-03-12T13:20:00Z",
+    total: 249.95,
+    status: "processing",
+    paymentMethod: "Credit Card",
+    items: [
+      { id: 9, name: "Leather Backpack", quantity: 1, price: 89.99 },
+      { id: 10, name: "Sunglasses", quantity: 2, price: 79.98 },
+    ],
+    shippingAddress: "987 Maple Dr, Philadelphia, PA 19101",
+    trackingNumber: "TRK321654987",
+  },
+];
 
-// Create Animated versions of components
-const AnimatedFlatList = Animated.createAnimatedComponent(FlatList);
-const AnimatedLinearGradient = Animated.createAnimatedComponent(LinearGradient);
-
-const OrderList = ({ onOrderPress }) => {
+const OrderList = ({ viewMode = "list", searchQuery = "", filter = "all" }) => {
   const navigation = useNavigation();
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selectedFilter, setSelectedFilter] = useState("all");
   const [refreshing, setRefreshing] = useState(false);
-  const [isSearchFocused, setIsSearchFocused] = useState(false);
+  const [orders, setOrders] = useState(STATIC_ORDERS);
+  const [loading, setLoading] = useState(false);
+  const [fadeAnim] = useState(new Animated.Value(0));
 
-  // Animation values
-  const scrollY = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 500,
+      useNativeDriver: true,
+    }).start();
+  }, []);
 
-  const headerOpacity = scrollY.interpolate({
-    inputRange: [0, 100],
-    outputRange: [1, 0.95],
-    extrapolate: "clamp",
-  });
-
-  const headerTranslateY = scrollY.interpolate({
-    inputRange: [0, 100],
-    outputRange: [0, -10],
-    extrapolate: "clamp",
-  });
-
-  const filters = [
-    { id: "all", label: "All", icon: "apps-outline", color: "#3B82F6" },
-    { id: "pending", label: "Pending", icon: "time-outline", color: "#F59E0B" },
-    {
-      id: "processing",
-      label: "Processing",
-      icon: "sync-outline",
-      color: "#8B5CF6",
-    },
-    {
-      id: "delivered",
-      label: "Delivered",
-      icon: "checkmark-done-circle-outline",
-      color: "#10B981",
-    },
-    {
-      id: "cancelled",
-      label: "Cancelled",
-      icon: "close-circle-outline",
-      color: "#EF4444",
-    },
-  ];
-
+  // Filter orders based on search and filter
   const filteredOrders = useMemo(() => {
-    let orders = MOCK_ORDERS;
+    let filtered = [...orders];
 
-    if (selectedFilter !== "all") {
-      orders = orders.filter((order) => order.status === selectedFilter);
+    // Status filter
+    if (filter !== "all") {
+      filtered = filtered.filter((order) => order.status === filter);
     }
 
-    if (searchQuery.trim()) {
+    // Search filter
+    if (searchQuery) {
       const query = searchQuery.toLowerCase();
-      orders = orders.filter(
+      filtered = filtered.filter(
         (order) =>
-          order.orderNumber.toLowerCase().includes(query) ||
-          order.customer.name.toLowerCase().includes(query) ||
-          order.customer.email?.toLowerCase().includes(query),
+          order.id.toLowerCase().includes(query) ||
+          order.customerName.toLowerCase().includes(query) ||
+          order.customerEmail.toLowerCase().includes(query),
       );
     }
 
-    return orders.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-  }, [selectedFilter, searchQuery]);
+    // Sort by date (newest first)
+    filtered.sort((a, b) => new Date(b.orderDate) - new Date(a.orderDate));
 
-  const handleRefresh = useCallback(() => {
+    return filtered;
+  }, [orders, filter, searchQuery]);
+
+  const getStatusColor = (status) => {
+    switch (status) {
+      case "delivered":
+        return {
+          bg: "bg-green-100",
+          text: "text-green-600",
+          icon: "check-circle",
+        };
+      case "processing":
+        return {
+          bg: "bg-blue-100",
+          text: "text-blue-600",
+          icon: "progress-clock",
+        };
+      case "pending":
+        return {
+          bg: "bg-yellow-100",
+          text: "text-yellow-600",
+          icon: "clock-outline",
+        };
+      case "cancelled":
+        return { bg: "bg-red-100", text: "text-red-600", icon: "close-circle" };
+      default:
+        return {
+          bg: "bg-gray-100",
+          text: "text-gray-600",
+          icon: "help-circle",
+        };
+    }
+  };
+
+  const handleOrderPress = (order) => {
+    navigation.navigate("OrderDetail", { orderId: order.id });
+  };
+
+  const onRefresh = () => {
     setRefreshing(true);
-    setTimeout(() => setRefreshing(false), 1500);
-  }, []);
-
-  const handleOrderPress = useCallback(
-    (order) => {
-      if (onOrderPress) {
-        onOrderPress(order);
-      } else {
-        navigation.navigate("OrderDetail", { orderId: order.id });
-      }
-    },
-    [navigation, onOrderPress],
-  );
-
-  const getStats = () => {
-    const total = filteredOrders.length;
-    const totalAmount = filteredOrders.reduce(
-      (sum, order) => sum + order.total,
-      0,
-    );
-    const pendingCount = filteredOrders.filter(
-      (o) => o.status === "pending",
-    ).length;
-
-    return { total, totalAmount, pendingCount };
+    setTimeout(() => {
+      setOrders(STATIC_ORDERS);
+      setRefreshing(false);
+    }, 1000);
   };
-
-  const stats = getStats();
-
-  const renderFilterChip = (filter) => {
-    const isSelected = selectedFilter === filter.id;
-    return (
-      <TouchableOpacity
-        key={filter.id}
-        onPress={() => setSelectedFilter(filter.id)}
-        activeOpacity={0.7}
-        className="mr-3"
-      >
-        <View
-          className={`flex-row items-center px-5 py-3 rounded-2xl ${
-            isSelected ? "shadow-lg" : ""
-          }`}
-          style={{
-            backgroundColor: isSelected ? filter.color : "#F3F4F6",
-          }}
-        >
-          <Ionicons
-            name={filter.icon}
-            size={18}
-            color={isSelected ? "white" : "#6B7280"}
-          />
-          <Text
-            className={`ml-2 text-sm font-semibold ${
-              isSelected ? "text-white" : "text-gray-600"
-            }`}
-          >
-            {filter.label}
-          </Text>
-          {isSelected && (
-            <View className="absolute -top-1 -right-1 w-4 h-4 bg-white rounded-full items-center justify-center">
-              <Text
-                className="text-xs font-bold"
-                style={{ color: filter.color }}
-              >
-                {filter.id === "all"
-                  ? stats.total
-                  : filter.id === "pending"
-                    ? stats.pendingCount
-                    : ""}
-              </Text>
-            </View>
-          )}
-        </View>
-      </TouchableOpacity>
-    );
-  };
-
-  const renderEmpty = () => (
-    <View className="flex-1 items-center justify-center px-8 py-16">
-      <View className="w-28 h-28 bg-blue-100 rounded-3xl items-center justify-center mb-6 shadow-xl">
-        <Ionicons name="document-text-outline" size={48} color="#3B82F6" />
-      </View>
-      <Text className="text-2xl font-bold text-gray-900 mb-3">
-        No Orders Found
-      </Text>
-      <Text className="text-base text-gray-500 text-center mb-8 leading-6">
-        {searchQuery
-          ? `We couldn't find any orders matching "${searchQuery}"`
-          : "Your order list is empty. Start by creating your first order to see it here."}
-      </Text>
-      {!searchQuery && (
-        <TouchableOpacity
-          className="flex-row items-center bg-blue-500 px-8 py-4 rounded-2xl shadow-xl"
-          onPress={() => navigation.navigate("CreateOrder")}
-          activeOpacity={0.9}
-        >
-          <Ionicons name="add-circle-outline" size={24} color="white" />
-          <Text className="text-white font-bold text-lg ml-2">
-            Create New Order
-          </Text>
-        </TouchableOpacity>
-      )}
-    </View>
-  );
 
   const renderHeader = () => (
-    <Animated.View
-      className="bg-white border-b border-gray-100 pb-5"
-      style={{
-        opacity: headerOpacity,
-        transform: [{ translateY: headerTranslateY }],
-      }}
-    >
-      {/* Header Title */}
-      <View className="px-5 pt-4 pb-2">
-        <Text className="text-3xl font-bold text-gray-900">Orders</Text>
-        <Text className="text-base text-gray-500 mt-1">
-          Manage and track all your orders
+    <Animated.View style={{ opacity: fadeAnim, marginBottom: 16 }}>
+      <View className="flex-row justify-between items-center">
+        <Text className="text-gray-600">
+          {filteredOrders.length}{" "}
+          {filteredOrders.length === 1 ? "order" : "orders"} found
         </Text>
-      </View>
-
-      {/* Stats Cards */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        className="px-5 mb-4"
-      >
-        <View className="flex-row space-x-3">
-          <LinearGradient
-            colors={["#3B82F6", "#2563EB"]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            className="px-5 py-4 rounded-2xl shadow-lg mr-3"
-            style={{ width: width * 0.4 }}
-          >
-            <Ionicons name="cube-outline" size={24} color="white" />
-            <Text className="text-white text-2xl font-bold mt-2">
-              {stats.total}
-            </Text>
-            <Text className="text-white text-sm opacity-90">Total Orders</Text>
-          </LinearGradient>
-
-          <LinearGradient
-            colors={["#10B981", "#059669"]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            className="px-5 py-4 rounded-2xl shadow-lg"
-            style={{ width: width * 0.4 }}
-          >
-            <Ionicons name="cash-outline" size={24} color="white" />
-            <Text className="text-white text-2xl font-bold mt-2">
-              ${stats.totalAmount.toFixed(0)}
-            </Text>
-            <Text className="text-white text-sm opacity-90">Total Revenue</Text>
-          </LinearGradient>
-        </View>
-      </ScrollView>
-
-      {/* Search Bar */}
-      <View className="px-5 mb-4">
-        <View
-          className={`flex-row items-center bg-gray-100 rounded-2xl border-2 ${
-            isSearchFocused ? "border-blue-500 bg-white" : "border-transparent"
-          }`}
-        >
-          <View className="pl-5">
-            <Ionicons
-              name="search-outline"
-              size={20}
-              color={isSearchFocused ? "#3B82F6" : "#9CA3AF"}
-            />
-          </View>
-          <TextInput
-            className="flex-1 py-4 px-3 text-gray-900 text-base"
-            placeholder="Search orders by number or customer..."
-            placeholderTextColor="#9CA3AF"
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-            onFocus={() => setIsSearchFocused(true)}
-            onBlur={() => setIsSearchFocused(false)}
-          />
-          {searchQuery ? (
-            <TouchableOpacity
-              onPress={() => setSearchQuery("")}
-              className="pr-5"
-            >
-              <Ionicons name="close-circle" size={20} color="#9CA3AF" />
-            </TouchableOpacity>
-          ) : null}
-        </View>
-      </View>
-
-      {/* Filter Chips */}
-      <View className="px-5">
-        <View className="flex-row justify-between items-center mb-3">
-          <Text className="text-base font-semibold text-gray-700">
-            Filter by Status
-          </Text>
-          <TouchableOpacity
-            className="flex-row items-center"
-            onPress={() => setSelectedFilter("all")}
-          >
-            <Text className="text-sm text-blue-500 font-medium mr-1">
-              Clear
-            </Text>
-            <Ionicons name="close-circle-outline" size={16} color="#3B82F6" />
-          </TouchableOpacity>
-        </View>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          <View className="flex-row pb-2">{filters.map(renderFilterChip)}</View>
-        </ScrollView>
-      </View>
-
-      {/* Results Count */}
-      <View className="flex-row justify-between items-center px-5 mt-4">
-        <View className="flex-row items-center">
-          <Text className="text-lg font-bold text-gray-900 mr-2">
-            {filteredOrders.length}
-          </Text>
-          <Text className="text-base text-gray-500">
-            {filteredOrders.length === 1 ? "Order" : "Orders"} found
-          </Text>
-        </View>
-        <TouchableOpacity className="flex-row items-center bg-gray-100 px-4 py-2 rounded-xl">
-          <Ionicons name="swap-vertical" size={16} color="#4B5563" />
-          <Text className="text-sm font-medium text-gray-700 ml-1">
-            Sort by: Newest
-          </Text>
+        <TouchableOpacity className="flex-row items-center bg-white px-3 py-1.5 rounded-full shadow-sm">
+          <Icon name="filter" size={16} color="#4b5563" />
+          <Text className="text-gray-600 text-sm ml-1">Filter</Text>
         </TouchableOpacity>
       </View>
     </Animated.View>
   );
 
-  const renderItem = ({ item, index }) => {
-    const scale = scrollY.interpolate({
-      inputRange: [-1, 0, 100 * index, 100 * (index + 2)],
-      outputRange: [1, 1, 1, 0.98],
-      extrapolate: "clamp",
-    });
+  const renderListItem = ({ item }) => {
+    const statusStyle = getStatusColor(item.status);
 
     return (
-      <Animated.View
-        style={{
-          transform: [{ scale }],
-        }}
+      <TouchableOpacity
+        onPress={() => handleOrderPress(item)}
+        className="bg-white rounded-2xl p-4 mb-3 shadow-sm border border-white"
       >
-        <View className="px-5 pt-3">
-          <OrderCard order={item} onPress={handleOrderPress} />
+        {/* Header */}
+        <View className="flex-row justify-between items-center mb-3">
+          <View className="flex-row items-center">
+            <Image
+              source={{ uri: item.customerAvatar }}
+              className="w-10 h-10 rounded-full"
+            />
+            <View className="ml-3">
+              <Text className="text-base font-semibold text-gray-800">
+                {item.customerName}
+              </Text>
+              <Text className="text-xs text-gray-500">Order #{item.id}</Text>
+            </View>
+          </View>
+          <View className={`px-3 py-1 rounded-full ${statusStyle.bg}`}>
+            <Text className={`text-xs font-medium ${statusStyle.text}`}>
+              {item.status.charAt(0).toUpperCase() + item.status.slice(1)}
+            </Text>
+          </View>
         </View>
-      </Animated.View>
-    );
-  };
 
-  const renderFooter = () => {
-    if (filteredOrders.length === 0) return null;
-
-    return (
-      <View className="py-8 items-center">
-        <View className="bg-white/90 px-6 py-3 rounded-full shadow-lg">
-          <Text className="text-sm text-gray-600">
-            {filteredOrders.length} orders loaded
+        {/* Items Summary */}
+        <View className="mb-3">
+          <Text className="text-sm text-gray-600" numberOfLines={1}>
+            {item.items.map((i) => i.name).join(", ")}
           </Text>
         </View>
-      </View>
+
+        {/* Footer */}
+        <View className="flex-row justify-between items-center pt-3 border-t border-blue-100">
+          <View>
+            <Text className="text-xs text-gray-500">Total Amount</Text>
+            <Text className="text-lg font-bold text-blue-600">
+              ${item.total.toFixed(2)}
+            </Text>
+          </View>
+          <View className="flex-row items-center">
+            <Icon name="calendar" size={14} color="#9ca3af" />
+            <Text className="text-xs text-gray-500 ml-1">
+              {new Date(item.orderDate).toLocaleDateString()}
+            </Text>
+          </View>
+        </View>
+
+        {/* Tracking if available */}
+        {item.trackingNumber && (
+          <View className="mt-2 flex-row items-center">
+            <Icon name="truck" size={14} color="#3b82f6" />
+            <Text className="text-xs text-blue-500 ml-1">
+              Track: {item.trackingNumber}
+            </Text>
+          </View>
+        )}
+      </TouchableOpacity>
     );
   };
 
-  return (
-    <View className="flex-1 bg-gray-50">
-      <StatusBar barStyle="dark-content" backgroundColor="white" />
+  const renderGridItem = ({ item }) => {
+    const statusStyle = getStatusColor(item.status);
 
-      <AnimatedFlatList
-        data={filteredOrders}
-        keyExtractor={(item) => item.id.toString()}
-        renderItem={renderItem}
-        ListHeaderComponent={renderHeader}
-        ListEmptyComponent={renderEmpty}
-        ListFooterComponent={renderFooter}
-        onRefresh={handleRefresh}
-        refreshing={refreshing}
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{
-          flexGrow: 1,
-          paddingBottom: 20,
-        }}
-        onScroll={Animated.event(
-          [{ nativeEvent: { contentOffset: { y: scrollY } } }],
-          { useNativeDriver: true },
-        )}
-        scrollEventThrottle={16}
-      />
+    return (
+      <TouchableOpacity
+        onPress={() => handleOrderPress(item)}
+        className="w-[48%] mx-[1%] bg-white rounded-2xl p-3 mb-3 shadow-sm border border-white"
+      >
+        <View className="items-center mb-2">
+          <Image
+            source={{ uri: item.customerAvatar }}
+            className="w-16 h-16 rounded-full"
+          />
+          <Text
+            className="text-base font-semibold text-gray-800 mt-2"
+            numberOfLines={1}
+          >
+            {item.customerName}
+          </Text>
+          <Text className="text-xs text-gray-500">#{item.id}</Text>
+        </View>
 
-      {/* Quick Action Button */}
-      {filteredOrders.length > 0 && (
-        <TouchableOpacity
-          className="absolute bottom-6 right-6 bg-blue-500 w-14 h-14 rounded-full items-center justify-center shadow-2xl"
-          onPress={() => navigation.navigate("CreateOrder")}
-          activeOpacity={0.8}
+        <View
+          className={`self-center px-3 py-1 rounded-full ${statusStyle.bg} mb-2`}
         >
-          <Ionicons name="add" size={28} color="white" />
-        </TouchableOpacity>
-      )}
-    </View>
+          <Text className={`text-xs font-medium ${statusStyle.text}`}>
+            {item.status}
+          </Text>
+        </View>
+
+        <Text className="text-lg font-bold text-blue-600 text-center">
+          ${item.total.toFixed(2)}
+        </Text>
+
+        <Text className="text-xs text-gray-500 text-center mt-1">
+          {new Date(item.orderDate).toLocaleDateString()}
+        </Text>
+
+        <Text
+          className="text-xs text-gray-400 text-center mt-1"
+          numberOfLines={1}
+        >
+          {item.items.length} {item.items.length === 1 ? "item" : "items"}
+        </Text>
+      </TouchableOpacity>
+    );
+  };
+
+  if (loading) {
+    return (
+      <View className="flex-1 justify-center items-center">
+        <ActivityIndicator size="large" color="#3b82f6" />
+        <Text className="text-gray-500 mt-4">Loading orders...</Text>
+      </View>
+    );
+  }
+
+  return (
+    <FlatList
+      data={filteredOrders}
+      keyExtractor={(item) => item.id}
+      numColumns={viewMode === "grid" ? 2 : 1}
+      key={viewMode}
+      renderItem={viewMode === "grid" ? renderGridItem : renderListItem}
+      ListHeaderComponent={renderHeader}
+      contentContainerStyle={{ paddingBottom: 20 }}
+      showsVerticalScrollIndicator={false}
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={onRefresh}
+          colors={["#3b82f6"]}
+          tintColor="#3b82f6"
+        />
+      }
+      ListEmptyComponent={
+        <View className="flex-1 items-center justify-center py-16">
+          <Icon name="clipboard-list" size={80} color="#d1d5db" />
+          <Text className="text-lg font-semibold text-gray-700 mt-4">
+            No Orders Found
+          </Text>
+          <Text className="text-sm text-gray-400 text-center mt-2 px-8">
+            {searchQuery || filter !== "all"
+              ? "Try adjusting your search or filters"
+              : "Create your first order by tapping the + button"}
+          </Text>
+        </View>
+      }
+    />
   );
 };
 

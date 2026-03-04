@@ -162,7 +162,7 @@ const ProductsScreen = () => {
 
       {/* Search Bar */}
       <View className="px-4 pt-4 pb-2">
-        <View className="flex-row items-center bg-white rounded-2xl px-4 h-14 shadow-sm border border-gray-100">
+        <View className="flex-row items-center bg-white rounded-2xl px-4 h-14 shadow-sm ">
           <Icon name="magnify" size={22} color="#9ca3af" />
           <TextInput
             className="flex-1 ml-3 text-base text-gray-800"
@@ -199,7 +199,7 @@ const ProductsScreen = () => {
               className={`flex-row items-center mr-3 px-4 py-2.5 rounded-full border ${
                 selectedCategory === category.id
                   ? "bg-blue-500 border-blue-500"
-                  : "bg-white border-gray-200"
+                  : "bg-white border-white"
               } shadow-sm`}
             >
               <Icon
@@ -242,15 +242,15 @@ const ProductsScreen = () => {
 
       {/* Stats Cards */}
       <View className="flex-row justify-between px-4 py-3">
-        <View className="bg-white rounded-xl p-3 flex-1 mr-2 shadow-sm border border-gray-100">
+        <View className="bg-white rounded-xl p-3 flex-1 mr-2 shadow-sm ">
           <Text className="text-gray-500 text-xs">Total Products</Text>
           <Text className="text-2xl font-bold text-gray-800">156</Text>
         </View>
-        <View className="bg-white rounded-xl p-3 flex-1 mx-2 shadow-sm border border-gray-100">
+        <View className="bg-white rounded-xl p-3 flex-1 mx-2 shadow-sm ">
           <Text className="text-gray-500 text-xs">Low Stock</Text>
           <Text className="text-2xl font-bold text-orange-500">12</Text>
         </View>
-        <View className="bg-white rounded-xl p-3 flex-1 ml-2 shadow-sm border border-gray-100">
+        <View className="bg-white rounded-xl p-3 flex-1 ml-2 shadow-sm ">
           <Text className="text-gray-500 text-xs">Out of Stock</Text>
           <Text className="text-2xl font-bold text-red-500">5</Text>
         </View>

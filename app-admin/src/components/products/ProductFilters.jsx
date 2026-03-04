@@ -312,7 +312,7 @@ const ProductFilters = ({
           </ScrollView>
 
           {/* Footer */}
-          <View className="flex-row gap-3 p-5 border-t border-gray-200">
+          <View className="flex-row gap-3 p-5 ">
             <TouchableOpacity
               onPress={handleReset}
               className="flex-1 bg-gray-100 py-4 rounded-xl items-center"

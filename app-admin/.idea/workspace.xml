@@ -9,10 +9,17 @@
       <change beforePath="$PROJECT_DIR$/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/package.json" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/App.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/App.jsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/components/common/Header.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/common/Header.jsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/common/Input.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/common/Input.jsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/components/navigation/MainNavigator.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/navigation/MainNavigator.jsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/components/products/ProductCard.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/products/ProductCard.jsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/products/ProductFilters.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/products/ProductFilters.jsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/components/products/ProductForm.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/products/ProductForm.jsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/products/ProductList.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/products/ProductList.jsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/screens/orders/OrdersScreen.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/screens/orders/OrdersScreen.jsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/screens/products/AddProductScreen.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/screens/products/AddProductScreen.jsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/screens/products/ProductDetailScreen.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/screens/products/ProductDetailScreen.jsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/screens/products/ProductsScreen.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/screens/products/ProductsScreen.jsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/utils/constants.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/utils/constants.js" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />

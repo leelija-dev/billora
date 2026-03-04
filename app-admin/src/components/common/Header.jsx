@@ -322,7 +322,7 @@ const Header = ({
   return (
     <>
       <SafeAreaView
-        className={`border-b border-gray-200 shadow-sm ${backgroundColor} ${style}`}
+        className={`border-b border-white shadow-[0px_7px_20px_black] ${backgroundColor} ${style}`}
         edges={["top", "left", "right"]}
       >
         <View className="flex-row items-center justify-between px-4 py-3 min-h-[60px]">
