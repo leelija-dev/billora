@@ -10,6 +10,7 @@ use App\Http\Controllers\admin\BrandController;
 use App\Http\Controllers\admin\InvoiceController;
 use App\Http\Controllers\admin\StoreController;
 use App\Models\Unit;
+use App\Http\Controllers\admin\CategoriesController;
 
 Route::get('/test', function () {
    return response()->json([
@@ -28,6 +29,7 @@ Route::prefix('users')->group(function () {
    //due RBAC
 
 });
+// 
 // Route::middleware('auth:sanctum')->group(function () {
 //     Route::get('/', [CustomerController::class, 'index']);
 //     Route::post('/store', [CustomerController::class, 'store']);
@@ -48,6 +50,7 @@ Route::prefix('products')->group(function () {
 //stocks
 Route::prefix('stocks')->group(function () {
    Route::get('/', [StocksController::class, 'index']);
+   Route::get('/create', [StocksController::class, 'create']);
    Route::post('/store', [StocksController::class, 'store']);
    Route::get('/{id}', [StocksController::class, 'edit']);
    Route::put('/{id}', [StocksController::class, 'update']);
@@ -70,9 +73,9 @@ Route::prefix('brands')->group(function () {
    Route::put('/{id}', [BrandController::class, 'update']);
    Route::delete('/{id}', [BrandController::class, 'delete']);
 });
-//invoices
+//invoices & bill generate from stock table(stock management)
 Route::prefix('invoice')->group(function () {
-   Route::get('/', [InvoiceController::class, 'index']);
+   Route::get('/', [InvoiceController::class, 'index']); //for bill generate
    Route::post('/store', [InvoiceController::class, 'store']);
    Route::get('/bill-history', [InvoiceController::class, 'billHistory']);
    Route::get('/{id}', [InvoiceController::class, 'show']);
@@ -80,9 +83,15 @@ Route::prefix('invoice')->group(function () {
    Route::delete('/{id}', [InvoiceController::class, 'destroy']);
    
 });
+//bill generate from product table(with out stock management)
+Route::prefix('invoices')->group(function () {
+   Route::get('/{id}', [InvoiceController::class, 'bill']);
+   Route::post('/store', [InvoiceController::class, 'billStore']);
+   
+});
 
 
-// store/shop
+// store or shop
 Route::prefix('store')->group(function () {
    Route::get('/{id}', [StoreController::class, 'index']);
    Route::post('/store', [StoreController::class, 'store']);
@@ -93,12 +102,24 @@ Route::prefix('store')->group(function () {
 
 //client or bill generation customer
 Route::prefix('customer')->group(function () {
-   Route::get('/', [BillCustomerController::class, 'index']);
+ 
    Route::post('/store', [BillCustomerController::class, 'store']);
+   Route::get('/{id}', [BillCustomerController::class, 'index']);
    Route::get('/show/{id}', [BillCustomerController::class, 'show']);
+   Route::put('/due-payment/{id}', [BillCustomerController::class, 'duePayment']); // due payment
    Route::put('/{id}', [BillCustomerController::class, 'update']);
    Route::delete('/{id}', [BillCustomerController::class, 'delete']); //soft delete
+   Route::get('/trashed', [BillCustomerController::class, 'trashed']);
    Route::patch('/{id}', [BillCustomerController::class, 'restore']); //restore
    Route::delete('/{id}/force', [BillCustomerController::class, 'forceDelete']); //permanently delete
 });
 
+// categories
+Route::prefix('categories')->group(function () {
+   Route::get('/', [CategoriesController::class, 'index']);
+   // Route::get('/create', [CategoriesController::class, 'create']);
+   Route::post('/store', [CategoriesController::class, 'store']);
+   Route::get('/{id}', [CategoriesController::class, 'edit']);
+   Route::put('/{id}', [CategoriesController::class, 'update']);
+   Route::delete('/{id}', [CategoriesController::class, 'delete']);
+});

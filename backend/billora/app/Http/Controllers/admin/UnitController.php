@@ -15,7 +15,7 @@ class UnitController extends Controller
         try {
             //     $units=Unit::where('user_id',auth()->user()->id)
             //     ->OrWhere('user_id',auth()->user()->created_by)->get();
-            $units = Unit::all();
+            $units = Unit::paginate(15);
             return response()->json([
                 'status' => true,
                 'message' => 'Unit List',

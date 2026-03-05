@@ -12,7 +12,7 @@ class StoreController extends Controller
     {
         try {
 
-            $store = Store::where('user_id', $id)->get();
+            $store = Store::where('user_id', $id)->paginate(15);
 
             if ($store->isEmpty()) {
                 return response()->json([

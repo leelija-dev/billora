@@ -8,9 +8,9 @@ use App\Models\BillCustomer;
 
 class BillCustomerController extends Controller
 {
-    public function index()
+    public function index($id)
     {
-        $billCustomer = BillCustomer::all();
+        $billCustomer = BillCustomer::where('admin_id', $id)->paginate(15);
         return response()->json([
             'status' => true,
             'message' => 'Bill Customer List',
@@ -59,6 +59,7 @@ class BillCustomerController extends Controller
     }
     public function update(Request $request, $id){
         $data = $request->validate([
+            'user_id' => 'required',
             'name' => 'required',
             'email' => 'nullable',
             'phone' => 'required',
@@ -67,7 +68,10 @@ class BillCustomerController extends Controller
  
         ]);
         try {
-            $billCustomer = BillCustomer::findOrFail($id);
+        $billCustomer = BillCustomer::where('id', $id)->where('admin_id', $data['user_id'])->firstOrFail();
+        //   $category = Categories::where('id', $id)
+        //     ->where('user_id', $data['user_id'])
+        //     ->firstOrFail();
             $billCustomer->update($data);
             return response()->json([
                 'status' => true,
@@ -81,9 +85,12 @@ class BillCustomerController extends Controller
             ]);
         }
     }
-    public function delete($id){
+    public function delete(Request $request,$id){
+        $data = $request->validate([
+            'user_id' => 'required',
+        ]);
         try {
-            $billCustomer = BillCustomer::findOrFail($id);
+            $billCustomer = BillCustomer::where('id', $id)->where('admin_id', $data['user_id'])->firstOrFail();
             $billCustomer->delete();
             return response()->json([
                 'status' => true,
@@ -97,9 +104,20 @@ class BillCustomerController extends Controller
             ]);
         }
     }
-    public function restore($id){
+    public function trashed(){
+        $trashedCustomers = BillCustomer::onlyTrashed()->paginate(15);
+        return response()->json([
+            'status'=>true,
+            'message'=>'Bill Customer Trashed List',
+            'data'=>$trashedCustomers
+        ]);
+    }
+    public function restore(Request $request,$id){
+        $data = $request->validate([
+            'user_id' => 'required',
+        ]);
         try {
-            $billCustomer = BillCustomer::withTrashed()->findOrFail($id);
+            $billCustomer = BillCustomer::withTrashed()->where('id', $id)->where('admin_id', $data['user_id'])->firstOrFail();
             $billCustomer->restore();
             return response()->json([
                 'status' => true,
@@ -128,6 +146,20 @@ class BillCustomerController extends Controller
                 'message' => $e->getMessage()
             ]);
         }
+    }
+    public function duePayment($id , Request $request){
+       $data = $request->validate([
+            'due_payment' => 'required'
+        ]);
+        $customer = BillCustomer::findOrFail($id);
+        $customer->update([
+            'due_amount' => ($customer->due_amount - $data['due_payment'])
+        ]);
+        return response()->json([
+            'status' => true,
+            'message' => 'Bill Customer due amount updated successfully',
+            'data' => $customer
+        ]);
     }
 }
 

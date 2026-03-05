@@ -9,7 +9,7 @@ class ProductsController extends Controller
 {
     public function index(Request $request){
         try{
-        $product = Products::where('is_active', true)->paginate(10);
+        $product = Products::where('is_active', true)->paginate(15);
         if($request->has('search')){
             $product = Products::where('name', 'like', '%'.$request->search.'%')
             ->orWhere('sku', 'like', '%'.$request->search.'%')

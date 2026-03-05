@@ -12,7 +12,7 @@ class BrandController extends Controller
     public function index()
     {
         try {
-            $brands = Brand::all();
+            $brands = Brand::paginate(15);
             return response()->json([
                 'status' => 'success',
                 'message' => 'Brand List',
