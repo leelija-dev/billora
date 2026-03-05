@@ -307,6 +307,13 @@ const ModernTabBar = ({ state, descriptors, navigation }) => {
       label: "Clients",
       screen: "CustomersStack",
     },
+    {
+      name: "Inventory",
+      icon: "warehouse",
+      iconActive: "warehouse",
+      label: "Inventory",
+      screen: "InventoryStack",
+    },
   ];
 
   // Update slider position when active tab changes
@@ -371,7 +378,7 @@ const ModernTabBar = ({ state, descriptors, navigation }) => {
             style={{
               backgroundColor: "rgba(255, 255, 255, 0.7)",
               position: 'relative',
-              height: 45, // Fixed height for consistent animation
+              height: 50, // Fixed height for consistent animation
             }}
           >
             {/* Animated Sliding Background */}
@@ -380,7 +387,7 @@ const ModernTabBar = ({ state, descriptors, navigation }) => {
                 position: 'absolute',
                 left: animation,
                 width: sliderWidth,
-                height: 44, // Slightly smaller than container for padding effect
+                height: 50, // Slightly smaller than container for padding effect
                 backgroundColor: "#6366F1",
                 borderRadius: 30,
                 marginVertical: 6, // Center vertically
@@ -401,6 +408,7 @@ const ModernTabBar = ({ state, descriptors, navigation }) => {
                     flexDirection: "row",
                     paddingVertical: 12,
                     paddingHorizontal: isFocused ? 18 : 12,
+                    minWidth: isFocused ? 60 : "auto",
                     zIndex: 1, // Ensure text/icons are above the animated background
                   }}
                 >
@@ -450,10 +458,7 @@ const MainNavigator = () => {
       <Tab.Screen
         name="InventoryStack"
         component={InventoryStack}
-        options={{
-          tabBarButton: () => null,
-          tabBarItemStyle: { display: "none" },
-        }}
+        
       />
       <Tab.Screen
         name="SettingsStack"

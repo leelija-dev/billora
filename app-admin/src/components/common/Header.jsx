@@ -412,14 +412,15 @@ const Header = ({
                     },
                   ],
                 }}
-                className="absolute top-16 right-4 w-[90%] max-w-[350px] bg-white rounded-2xl shadow-xl border border-gray-100"
+                className="absolute top-16 right-4 w-[80%] max-w-[350px] bg-white rounded-2xl shadow-[0px_10px_20px_black] "
               >
                 {/* Header */}
-                <LinearGradient
+                <View className="rounded-t-2xl overflow-hidden">
+                  <LinearGradient
                   colors={["#667eea", "#764ba2"]}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 0 }}
-                  className="flex-row justify-between items-center p-4 rounded-t-2xl"
+                  className="flex-row justify-between items-center p-4  w-full h-auto"
                 >
                   <Text className="text-white font-bold text-lg">
                     Notifications
@@ -430,6 +431,7 @@ const Header = ({
                     <Icon name="close" size={22} color="white" />
                   </TouchableOpacity>
                 </LinearGradient>
+                </View>
 
                 {/* Notifications List */}
                 <ScrollView
