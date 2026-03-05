@@ -1,5 +1,4 @@
 // components/orders/OrderList.js
-import { useNavigation } from "@react-navigation/native";
 import { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
@@ -107,8 +106,12 @@ const STATIC_ORDERS = [
   },
 ];
 
-const OrderList = ({ viewMode = "list", searchQuery = "", filter = "all" }) => {
-  const navigation = useNavigation();
+const OrderList = ({
+  viewMode = "list",
+  searchQuery = "",
+  filter = "all",
+  navigation,
+}) => {
   const [refreshing, setRefreshing] = useState(false);
   const [orders, setOrders] = useState(STATIC_ORDERS);
   const [loading, setLoading] = useState(false);
@@ -180,7 +183,9 @@ const OrderList = ({ viewMode = "list", searchQuery = "", filter = "all" }) => {
   };
 
   const handleOrderPress = (order) => {
-    navigation.navigate("OrderDetail", { orderId: order.id });
+    if (navigation) {
+      navigation.navigate("OrderDetail", { orderId: order.id });
+    }
   };
 
   const onRefresh = () => {

@@ -1,3 +1,4 @@
+// components/common/Header.js
 import { useNavigation } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
 import { useEffect, useRef, useState } from "react";
@@ -78,11 +79,17 @@ const Header = ({
   ],
   onNavigate,
   activeScreen = "Dashboard",
+  notificationCount = 3, // Add prop for notification count
+  onNotificationPress,
+  onSearchPress,
+  onLogout,
 }) => {
   const navigation = useNavigation();
   const [sidebarVisible, setSidebarVisible] = useState(false);
+  const [notificationVisible, setNotificationVisible] = useState(false);
   const slideAnim = useRef(new Animated.Value(-DRAWER_WIDTH)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
+  const notificationAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     if (sidebarVisible) {
@@ -114,6 +121,23 @@ const Header = ({
     }
   }, [sidebarVisible]);
 
+  useEffect(() => {
+    if (notificationVisible) {
+      Animated.spring(notificationAnim, {
+        toValue: 1,
+        useNativeDriver: true,
+        friction: 8,
+        tension: 40,
+      }).start();
+    } else {
+      Animated.timing(notificationAnim, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: true,
+      }).start();
+    }
+  }, [notificationVisible]);
+
   const toggleSidebar = () => {
     setSidebarVisible(!sidebarVisible);
   };
@@ -122,12 +146,28 @@ const Header = ({
     setSidebarVisible(false);
   };
 
+  const toggleNotifications = () => {
+    setNotificationVisible(!notificationVisible);
+    if (onNotificationPress) {
+      onNotificationPress();
+    }
+  };
+
   const handleNavigation = (item) => {
     closeSidebar();
     if (onNavigate) {
       onNavigate(item.screen);
     } else {
       navigation.navigate(item.screen);
+    }
+  };
+
+  const handleLogout = () => {
+    closeSidebar();
+    if (onLogout) {
+      onLogout();
+    } else {
+      console.log("Logout pressed");
     }
   };
 
@@ -181,17 +221,32 @@ const Header = ({
 
     return (
       <View className="flex-row items-center">
-        <TouchableOpacity className="p-2 relative">
+        {/* Notification Bell with Badge */}
+        <TouchableOpacity
+          className="p-2 relative"
+          onPress={toggleNotifications}
+          activeOpacity={0.7}
+        >
           <Icon
             name="bell-outline"
             size={24}
             color={textColor === "text-gray-800" ? "#1f2937" : textColor}
           />
-          <View className="absolute top-1 right-1 bg-red-500 rounded-full min-w-[18px] h-[18px] justify-center items-center border-2 border-white">
-            <Text className="text-white text-[10px] font-bold px-1">3</Text>
-          </View>
+          {notificationCount > 0 && (
+            <View className="absolute -top-1 -right-1 bg-red-500 rounded-full min-w-[20px] h-[20px] justify-center items-center border-2 border-white shadow-sm shadow-red-500/50">
+              <Text className="text-white text-[10px] font-bold">
+                {notificationCount > 9 ? "9+" : notificationCount}
+              </Text>
+            </View>
+          )}
         </TouchableOpacity>
-        <TouchableOpacity className="p-2">
+
+        {/* Search Icon */}
+        <TouchableOpacity
+          className="p-2"
+          onPress={onSearchPress || (() => console.log("Search pressed"))}
+          activeOpacity={0.7}
+        >
           <Icon
             name="magnify"
             size={24}
@@ -199,6 +254,143 @@ const Header = ({
           />
         </TouchableOpacity>
       </View>
+    );
+  };
+
+  const renderNotifications = () => {
+    if (!notificationVisible) return null;
+
+    // Sample notifications data
+    const notifications = [
+      {
+        id: 1,
+        title: "New Order",
+        message: "Order #ORD-1234 has been placed",
+        time: "5 min ago",
+        read: false,
+        icon: "clipboard-list",
+        color: "#6366F1",
+      },
+      {
+        id: 2,
+        title: "Low Stock Alert",
+        message: "Classic White T-Shirt is running low",
+        time: "1 hour ago",
+        read: false,
+        icon: "alert",
+        color: "#F59E0B",
+      },
+      {
+        id: 3,
+        title: "Payment Received",
+        message: "Payment of $299.99 from John Smith",
+        time: "2 hours ago",
+        read: true,
+        icon: "cash",
+        color: "#10B981",
+      },
+    ];
+
+    return (
+      <Modal
+        transparent
+        visible={notificationVisible}
+        animationType="none"
+        onRequestClose={() => setNotificationVisible(false)}
+      >
+        <TouchableWithoutFeedback onPress={() => setNotificationVisible(false)}>
+          <View className="flex-1">
+            <TouchableWithoutFeedback>
+              <Animated.View
+                style={{
+                  opacity: notificationAnim,
+                  transform: [
+                    {
+                      translateY: notificationAnim.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: [-20, 0],
+                      }),
+                    },
+                  ],
+                }}
+                className="absolute top-16 right-4 w-[90%] max-w-[350px] bg-white rounded-2xl shadow-xl border border-gray-100"
+              >
+                {/* Header */}
+                <LinearGradient
+                  colors={["#667eea", "#764ba2"]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  className="flex-row justify-between items-center p-4 rounded-t-2xl"
+                >
+                  <Text className="text-white font-bold text-lg">
+                    Notifications
+                  </Text>
+                  <TouchableOpacity
+                    onPress={() => setNotificationVisible(false)}
+                  >
+                    <Icon name="close" size={22} color="white" />
+                  </TouchableOpacity>
+                </LinearGradient>
+
+                {/* Notifications List */}
+                <ScrollView
+                  className="max-h-96"
+                  showsVerticalScrollIndicator={false}
+                >
+                  {notifications.map((notif) => (
+                    <TouchableOpacity
+                      key={notif.id}
+                      className={`flex-row p-4 border-b border-gray-100 ${
+                        !notif.read ? "bg-blue-50/50" : ""
+                      }`}
+                      onPress={() => {
+                        console.log("Notification pressed:", notif.id);
+                        setNotificationVisible(false);
+                      }}
+                    >
+                      <View
+                        className="w-10 h-10 rounded-xl items-center justify-center mr-3"
+                        style={{ backgroundColor: `${notif.color}20` }}
+                      >
+                        <Icon name={notif.icon} size={20} color={notif.color} />
+                      </View>
+                      <View className="flex-1">
+                        <View className="flex-row justify-between items-center">
+                          <Text className="font-semibold text-gray-900">
+                            {notif.title}
+                          </Text>
+                          <Text className="text-xs text-gray-400">
+                            {notif.time}
+                          </Text>
+                        </View>
+                        <Text className="text-sm text-gray-600 mt-1">
+                          {notif.message}
+                        </Text>
+                      </View>
+                      {!notif.read && (
+                        <View className="w-2 h-2 rounded-full bg-blue-500 ml-2 self-center" />
+                      )}
+                    </TouchableOpacity>
+                  ))}
+
+                  {/* View All Button */}
+                  <TouchableOpacity
+                    className="p-4 bg-gray-50 rounded-b-2xl"
+                    onPress={() => {
+                      console.log("View all notifications");
+                      setNotificationVisible(false);
+                    }}
+                  >
+                    <Text className="text-center text-indigo-600 font-semibold">
+                      View All Notifications
+                    </Text>
+                  </TouchableOpacity>
+                </ScrollView>
+              </Animated.View>
+            </TouchableWithoutFeedback>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
     );
   };
 
@@ -306,7 +498,10 @@ const Header = ({
                       Help & Support
                     </Text>
                   </TouchableOpacity>
-                  <TouchableOpacity className="flex-row items-center py-3">
+                  <TouchableOpacity
+                    className="flex-row items-center py-3"
+                    onPress={handleLogout}
+                  >
                     <Icon name="logout" size={22} color="#ff4444" />
                     <Text className="text-base ml-4 text-red-500">Logout</Text>
                   </TouchableOpacity>
@@ -337,6 +532,7 @@ const Header = ({
         </View>
       </SafeAreaView>
       {renderSidebar()}
+      {renderNotifications()}
     </>
   );
 };

@@ -240,7 +240,7 @@ const OrdersScreen = () => {
                 className={`flex-row items-center px-4 py-2 rounded-full border ${
                   selectedFilter === filter.id
                     ? "bg-blue-500 border-blue-500"
-                    : "bg-white border-white"
+                    : "bg-white border-gray-200"
                 } shadow-sm`}
               >
                 <Icon
@@ -288,6 +288,7 @@ const OrdersScreen = () => {
           viewMode={viewMode}
           searchQuery={searchQuery}
           filter={selectedFilter}
+          navigation={navigation}
         />
       </View>
     </View>
