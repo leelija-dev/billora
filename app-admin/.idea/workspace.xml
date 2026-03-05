@@ -10,6 +10,8 @@
       <change beforePath="$PROJECT_DIR$/src/App.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/App.jsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/components/common/Header.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/common/Header.jsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/components/common/Input.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/common/Input.jsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/customers/CustomerCard.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/customers/CustomerCard.jsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/customers/CustomerList.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/customers/CustomerList.jsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/components/navigation/MainNavigator.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/navigation/MainNavigator.jsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/components/orders/OrderCard.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/orders/OrderCard.jsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/components/orders/OrderForm.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/orders/OrderForm.jsx" afterDir="false" />
@@ -18,6 +20,9 @@
       <change beforePath="$PROJECT_DIR$/src/components/products/ProductFilters.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/products/ProductFilters.jsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/components/products/ProductForm.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/products/ProductForm.jsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/components/products/ProductList.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/products/ProductList.jsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/screens/customers/AddCustomerScreen.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/screens/customers/AddCustomerScreen.jsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/screens/customers/CustomerDetailScreen.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/screens/customers/CustomerDetailScreen.jsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/screens/customers/CustomersScreen.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/screens/customers/CustomersScreen.jsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/screens/dashboard/DashboardScreen.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/screens/dashboard/DashboardScreen.jsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/screens/orders/OrderDetailScreen.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/screens/orders/OrderDetailScreen.jsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/screens/orders/OrdersScreen.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/screens/orders/OrdersScreen.jsx" afterDir="false" />

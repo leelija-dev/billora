@@ -1,81 +1,213 @@
-import { useNavigation, useRoute } from '@react-navigation/native';
-import { useEffect, useState } from 'react';
-import { Alert, Linking, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { customersAPI } from '../../api';
-import Button from '../../components/common/Button';
-import Card from '../../components/common/Card';
-import ErrorState from '../../components/common/ErrorState';
-import Header from '../../components/common/Header';
-import Loading from '../../components/common/Loading';
-import StatusBadge from '../../components/common/StatusBadge';
-import { useApi } from '../../hooks/useApi';
-import { useCustomerStore } from '../../store/customerStore';
-import { useUIStore } from '../../store/uiStore';
-import { theme } from '../../theme';
-import { formatRelativeTime } from '../../utils/helpers';
+// screens/customers/CustomerDetailScreen.js
+import { useNavigation, useRoute } from "@react-navigation/native";
+import { LinearGradient } from "expo-linear-gradient";
+import { useEffect, useState } from "react";
+import {
+  Alert,
+  Linking,
+  ScrollView,
+  StatusBar,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import Icon from "react-native-vector-icons/MaterialCommunityIcons";
+
+// Static customers data (same as in CustomerList)
+const STATIC_CUSTOMERS = {
+  "CUST-001": {
+    id: "CUST-001",
+    name: "John Smith",
+    email: "john.smith@email.com",
+    phone: "+1 (555) 123-4567",
+    company: "Smith Enterprises",
+    status: "active",
+    orderCount: 24,
+    totalSpent: 5840.5,
+    averageOrderValue: 243.35,
+    address: {
+      street: "123 Main Street",
+      city: "New York",
+      state: "NY",
+      zip: "10001",
+      country: "USA",
+    },
+    notes:
+      "Premium customer, prefers email communication. Has been with us for over 2 years. Frequently orders bulk items for his business.",
+    createdAt: "2024-01-15T10:30:00Z",
+    avatar: "https://randomuser.me/api/portraits/men/1.jpg",
+    lastOrder: "2024-03-15T10:30:00Z",
+    preferredPayment: "Credit Card",
+    taxId: "12-3456789",
+    tags: ["premium", "business", "bulk-orders"],
+  },
+  "CUST-002": {
+    id: "CUST-002",
+    name: "Emma Wilson",
+    email: "emma.wilson@email.com",
+    phone: "+1 (555) 234-5678",
+    company: "Wilson Designs",
+    status: "active",
+    orderCount: 18,
+    totalSpent: 4250.75,
+    averageOrderValue: 236.15,
+    address: {
+      street: "456 Oak Avenue",
+      city: "Los Angeles",
+      state: "CA",
+      zip: "90001",
+      country: "USA",
+    },
+    notes: "Interested in new collections. Loves seasonal items.",
+    createdAt: "2024-01-20T14:20:00Z",
+    avatar: "https://randomuser.me/api/portraits/women/2.jpg",
+    lastOrder: "2024-03-14T14:20:00Z",
+    preferredPayment: "PayPal",
+    tags: ["designer", "seasonal"],
+  },
+  "CUST-003": {
+    id: "CUST-003",
+    name: "Michael Brown",
+    email: "michael.brown@email.com",
+    phone: "+1 (555) 345-6789",
+    company: "Brown Consulting",
+    status: "active",
+    orderCount: 12,
+    totalSpent: 2890.25,
+    averageOrderValue: 240.85,
+    address: {
+      street: "789 Pine Street",
+      city: "Chicago",
+      state: "IL",
+      zip: "60601",
+      country: "USA",
+    },
+    notes: "Corporate account, needs invoices. Monthly orders.",
+    createdAt: "2024-02-01T09:15:00Z",
+    avatar: "https://randomuser.me/api/portraits/men/3.jpg",
+    lastOrder: "2024-03-13T09:15:00Z",
+    preferredPayment: "Bank Transfer",
+    taxId: "98-7654321",
+    tags: ["corporate", "monthly"],
+  },
+};
+
+// Recent orders for this customer
+const CUSTOMER_ORDERS = {
+  "CUST-001": [
+    {
+      id: "ORD-001",
+      orderNumber: "ORD-001",
+      total: 299.99,
+      status: "delivered",
+      createdAt: "2024-03-15T10:30:00Z",
+      items: 3,
+    },
+    {
+      id: "ORD-012",
+      orderNumber: "ORD-012",
+      total: 459.99,
+      status: "delivered",
+      createdAt: "2024-03-01T14:20:00Z",
+      items: 4,
+    },
+    {
+      id: "ORD-023",
+      orderNumber: "ORD-023",
+      total: 189.5,
+      status: "processing",
+      createdAt: "2024-02-15T09:15:00Z",
+      items: 2,
+    },
+  ],
+  "CUST-002": [
+    {
+      id: "ORD-002",
+      orderNumber: "ORD-002",
+      total: 189.5,
+      status: "processing",
+      createdAt: "2024-03-14T14:20:00Z",
+      items: 2,
+    },
+    {
+      id: "ORD-015",
+      orderNumber: "ORD-015",
+      total: 329.99,
+      status: "delivered",
+      createdAt: "2024-02-28T11:30:00Z",
+      items: 3,
+    },
+  ],
+  "CUST-003": [
+    {
+      id: "ORD-003",
+      orderNumber: "ORD-003",
+      total: 79.99,
+      status: "pending",
+      createdAt: "2024-03-13T09:15:00Z",
+      items: 1,
+    },
+    {
+      id: "ORD-018",
+      orderNumber: "ORD-018",
+      total: 245.5,
+      status: "delivered",
+      createdAt: "2024-02-20T16:45:00Z",
+      items: 2,
+    },
+  ],
+};
 
 const CustomerDetailScreen = () => {
   const navigation = useNavigation();
   const route = useRoute();
   const { customerId } = route.params;
-  const { selectedCustomer, setSelectedCustomer } = useCustomerStore();
-  const { showSuccess, showError } = useUIStore();
-  const [loading, setLoading] = useState(false);
-
-  const {
-    data: customer,
-    loading: customerLoading,
-    error: customerError,
-    execute: fetchCustomer,
-  } = useApi(() => customersAPI.getCustomer(customerId));
-
-  const {
-    data: customerOrders,
-    loading: ordersLoading,
-    execute: fetchCustomerOrders,
-  } = useApi(() => customersAPI.getCustomerOrders(customerId, { limit: 5 }));
+  const [customer, setCustomer] = useState(null);
+  const [recentOrders, setRecentOrders] = useState([]);
+  const [loading] = useState(false);
 
   useEffect(() => {
-    if (customerId) {
-      fetchCustomer();
-      fetchCustomerOrders();
+    // Load customer data from static object
+    const customerData = STATIC_CUSTOMERS[customerId];
+    if (customerData) {
+      setCustomer(customerData);
+      setRecentOrders(CUSTOMER_ORDERS[customerId] || []);
     }
-  }, [customerId, fetchCustomer, fetchCustomerOrders]);
+  }, [customerId]);
 
-  useEffect(() => {
-    if (customer) {
-      setSelectedCustomer(customer);
-    }
-  }, [customer, setSelectedCustomer]);
+  const formatCurrency = (amount) => {
+    return `$${amount.toFixed(2)}`;
+  };
+
+  const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+  };
 
   const handleEdit = () => {
-    navigation.navigate('AddCustomer', { customerId });
+    navigation.navigate("AddCustomer", { customerId });
   };
 
   const handleDelete = () => {
     Alert.alert(
-      'Delete Customer',
-      'Are you sure you want to delete this customer? This action cannot be undone.',
+      "Delete Customer",
+      "Are you sure you want to delete this customer? This action cannot be undone.",
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: "Cancel", style: "cancel" },
         {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              setLoading(true);
-              await customersAPI.deleteCustomer(customerId);
-              showSuccess('Customer deleted successfully');
-              navigation.goBack();
-            } catch (error) {
-              showError(error.message || 'Failed to delete customer');
-            } finally {
-              setLoading(false);
-            }
+          text: "Delete",
+          style: "destructive",
+          onPress: () => {
+            Alert.alert("Success", "Customer deleted successfully");
+            navigation.goBack();
           },
         },
-      ]
+      ],
     );
   };
 
@@ -91,329 +223,351 @@ const CustomerDetailScreen = () => {
     }
   };
 
-  const handleViewAllOrders = () => {
-    navigation.navigate('Orders', { customerId });
+  const handleMessage = () => {
+    if (customer?.phone) {
+      Linking.openURL(`sms:${customer.phone}`);
+    }
   };
 
-  if (customerLoading && !customer) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <Header title="Customer Details" showBackButton />
-        <Loading text="Loading customer..." />
-      </SafeAreaView>
-    );
-  }
-
-  if (customerError) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <Header title="Customer Details" showBackButton />
-        <ErrorState
-          title="Failed to Load Customer"
-          description="Unable to load customer details. Please try again."
-          onRetry={fetchCustomer}
-        />
-      </SafeAreaView>
-    );
-  }
+  const handleViewAllOrders = () => {
+    navigation.navigate("Orders", { customerId });
+  };
 
   if (!customer) {
     return (
-      <SafeAreaView style={styles.container}>
-        <Header title="Customer Details" showBackButton />
-        <ErrorState
-          title="Customer Not Found"
-          description="The customer you're looking for doesn't exist."
-        />
+      <SafeAreaView className="flex-1 bg-gray-50">
+        <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
+        <View className="flex-1 items-center justify-center">
+          <Text>Customer not found</Text>
+        </View>
       </SafeAreaView>
     );
   }
 
-  const isActive = customer.status === 'active';
+  const isActive = customer.status === "active";
 
   return (
-    <SafeAreaView style={styles.container} edges={['left', 'right']}>
-      <Header
-        title="Customer Details"
-        showBackButton
-        rightComponent={
-          <View style={styles.headerButtons}>
-            <Button
-              title="Edit"
-              onPress={handleEdit}
-              variant="outline"
-              size="small"
-            />
-          </View>
-        }
-      />
+    <SafeAreaView className="flex-1 bg-gray-50" edges={["top"]}>
+      <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
 
-      <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
-        <Card style={styles.customerCard}>
-          <View style={styles.customerHeader}>
-            <View style={styles.customerInfo}>
-              <Text style={styles.customerName}>{customer.name}</Text>
+      {/* Header */}
+      <View className="flex-row items-center justify-between px-4 py-3 bg-white border-b border-gray-100">
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          className="w-10 h-10 bg-gray-100 rounded-2xl items-center justify-center"
+        >
+          <Icon name="arrow-left" size={22} color="#374151" />
+        </TouchableOpacity>
+        <Text className="text-lg font-bold text-gray-900">
+          Customer Profile
+        </Text>
+        <TouchableOpacity
+          onPress={handleEdit}
+          className="w-10 h-10 bg-indigo-100 rounded-2xl items-center justify-center"
+        >
+          <Icon name="pencil" size={20} color="#6366F1" />
+        </TouchableOpacity>
+      </View>
+
+      <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
+        {/* Profile Header */}
+        <LinearGradient
+          colors={isActive ? ["#10B981", "#059669"] : ["#EF4444", "#DC2626"]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          className="mx-4 mt-4 p-6 rounded-3xl"
+          style={{
+            shadowColor: isActive ? "#10B981" : "#EF4444",
+            shadowOffset: { width: 0, height: 4 },
+            shadowOpacity: 0.3,
+            shadowRadius: 8,
+            elevation: 5,
+          }}
+        >
+          <View className="flex-row items-center">
+            <View className="w-20 h-20 bg-white/20 rounded-3xl items-center justify-center">
+              <Text className="text-white text-4xl font-bold">
+                {customer.name.charAt(0).toUpperCase()}
+              </Text>
+            </View>
+            <View className="flex-1 ml-4">
+              <Text className="text-white text-2xl font-bold">
+                {customer.name}
+              </Text>
               {customer.company && (
-                <Text style={styles.companyName}>{customer.company}</Text>
+                <Text className="text-white/80 text-sm mt-1">
+                  {customer.company}
+                </Text>
               )}
-            </View>
-            <StatusBadge
-              status={isActive ? 'Active' : 'Inactive'}
-              variant={isActive ? 'success' : 'error'}
-              size="small"
-            />
-          </View>
-
-          <View style={styles.contactInfo}>
-            <View style={styles.contactItem}>
-              <Text style={styles.contactLabel}>Email</Text>
-              <Text style={styles.contactValue}>{customer.email}</Text>
-            </View>
-            <View style={styles.contactItem}>
-              <Text style={styles.contactLabel}>Phone</Text>
-              <Text style={styles.contactValue}>{customer.phone || 'N/A'}</Text>
-            </View>
-          </View>
-
-          <View style={styles.actionButtons}>
-            <Button
-              title="Call"
-              onPress={handleCall}
-              variant="outline"
-              size="small"
-              disabled={!customer.phone}
-              style={styles.actionButton}
-            />
-            <Button
-              title="Email"
-              onPress={handleEmail}
-              variant="outline"
-              size="small"
-              style={styles.actionButton}
-            />
-          </View>
-        </Card>
-
-        {customer.address && (
-          <Card style={styles.addressCard}>
-            <Text style={styles.sectionTitle}>Address</Text>
-            <Text style={styles.addressText}>
-              {customer.address.street}
-            </Text>
-            <Text style={styles.addressText}>
-              {customer.address.city}, {customer.address.state} {customer.address.zip}
-            </Text>
-            <Text style={styles.addressText}>
-              {customer.address.country}
-            </Text>
-          </Card>
-        )}
-
-        <Card style={styles.statsCard}>
-          <Text style={styles.sectionTitle}>Statistics</Text>
-          <View style={styles.statsGrid}>
-            <View style={styles.statItem}>
-              <Text style={styles.statValue}>{customer.orderCount || 0}</Text>
-              <Text style={styles.statLabel}>Total Orders</Text>
-            </View>
-            <View style={styles.statItem}>
-              <Text style={styles.statValue}>${customer.totalSpent || 0}</Text>
-              <Text style={styles.statLabel}>Total Spent</Text>
-            </View>
-            <View style={styles.statItem}>
-              <Text style={styles.statValue}>${customer.averageOrderValue || 0}</Text>
-              <Text style={styles.statLabel}>Avg Order</Text>
-            </View>
-          </View>
-        </Card>
-
-        {customer.notes && (
-          <Card style={styles.notesCard}>
-            <Text style={styles.sectionTitle}>Notes</Text>
-            <Text style={styles.notesText}>{customer.notes}</Text>
-          </Card>
-        )}
-
-        {customerOrders && customerOrders.length > 0 && (
-          <Card style={styles.recentOrdersCard}>
-            <View style={styles.recentOrdersHeader}>
-              <Text style={styles.sectionTitle}>Recent Orders</Text>
-              <Button
-                title="View All"
-                onPress={handleViewAllOrders}
-                variant="ghost"
-                size="small"
-              />
-            </View>
-            {customerOrders.map((order) => (
-              <View key={order.id} style={styles.orderItem}>
-                <View style={styles.orderInfo}>
-                  <Text style={styles.orderNumber}>#{order.orderNumber}</Text>
-                  <Text style={styles.orderDate}>
-                    {formatRelativeTime(order.createdAt)}
+              <View className="flex-row mt-2">
+                <View className="bg-white/20 px-3 py-1 rounded-full">
+                  <Text className="text-white text-xs font-semibold">
+                    {customer.status.toUpperCase()}
                   </Text>
                 </View>
-                <Text style={styles.orderTotal}>${order.total}</Text>
+                <View className="bg-white/20 px-3 py-1 rounded-full ml-2">
+                  <Text className="text-white text-xs font-semibold">
+                    Member since {formatDate(customer.createdAt)}
+                  </Text>
+                </View>
               </View>
-            ))}
-          </Card>
+            </View>
+          </View>
+        </LinearGradient>
+
+        {/* Quick Actions */}
+        <View className="flex-row mx-4 mt-4">
+          <TouchableOpacity
+            onPress={handleCall}
+            className="flex-1 bg-white p-4 rounded-2xl mr-2 border border-gray-100 items-center"
+          >
+            <View className="w-10 h-10 bg-green-100 rounded-xl items-center justify-center mb-2">
+              <Icon name="phone" size={22} color="#10B981" />
+            </View>
+            <Text className="text-gray-700 text-sm font-medium">Call</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            onPress={handleEmail}
+            className="flex-1 bg-white p-4 rounded-2xl mx-2 border border-gray-100 items-center"
+          >
+            <View className="w-10 h-10 bg-blue-100 rounded-xl items-center justify-center mb-2">
+              <Icon name="email" size={22} color="#6366F1" />
+            </View>
+            <Text className="text-gray-700 text-sm font-medium">Email</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            onPress={handleMessage}
+            className="flex-1 bg-white p-4 rounded-2xl ml-2 border border-gray-100 items-center"
+          >
+            <View className="w-10 h-10 bg-purple-100 rounded-xl items-center justify-center mb-2">
+              <Icon name="message" size={22} color="#8B5CF6" />
+            </View>
+            <Text className="text-gray-700 text-sm font-medium">Message</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Contact Info */}
+        <View className="mx-4 mt-4 bg-white p-5 rounded-3xl border border-gray-100">
+          <View className="flex-row items-center mb-4">
+            <View className="w-10 h-10 bg-indigo-100 rounded-xl items-center justify-center mr-3">
+              <Icon name="card-account-details" size={20} color="#6366F1" />
+            </View>
+            <Text className="text-lg font-bold text-gray-900">
+              Contact Information
+            </Text>
+          </View>
+
+          <View className="space-y-3">
+            <View className="flex-row items-center">
+              <Icon name="email-outline" size={18} color="#9ca3af" />
+              <Text className="text-gray-600 ml-3 flex-1">
+                {customer.email}
+              </Text>
+            </View>
+
+            <View className="flex-row items-center">
+              <Icon name="phone-outline" size={18} color="#9ca3af" />
+              <Text className="text-gray-600 ml-3 flex-1">
+                {customer.phone || "N/A"}
+              </Text>
+            </View>
+
+            {customer.preferredPayment && (
+              <View className="flex-row items-center">
+                <Icon name="credit-card-outline" size={18} color="#9ca3af" />
+                <Text className="text-gray-600 ml-3 flex-1">
+                  {customer.preferredPayment}
+                </Text>
+              </View>
+            )}
+
+            {customer.taxId && (
+              <View className="flex-row items-center">
+                <Icon name="file-document-outline" size={18} color="#9ca3af" />
+                <Text className="text-gray-600 ml-3 flex-1">
+                  Tax ID: {customer.taxId}
+                </Text>
+              </View>
+            )}
+          </View>
+        </View>
+
+        {/* Address */}
+        {customer.address && (
+          <View className="mx-4 mt-4 bg-white p-5 rounded-3xl border border-gray-100">
+            <View className="flex-row items-center mb-4">
+              <View className="w-10 h-10 bg-green-100 rounded-xl items-center justify-center mr-3">
+                <Icon name="map-marker" size={20} color="#10B981" />
+              </View>
+              <Text className="text-lg font-bold text-gray-900">Address</Text>
+            </View>
+
+            <View className="bg-gray-50 p-4 rounded-2xl">
+              <Text className="text-gray-900 font-medium">
+                {customer.address.street}
+              </Text>
+              <Text className="text-gray-600 mt-1">
+                {customer.address.city}, {customer.address.state}{" "}
+                {customer.address.zip}
+              </Text>
+              <Text className="text-gray-600">{customer.address.country}</Text>
+            </View>
+          </View>
         )}
 
-        <View style={styles.deleteSection}>
-          <Button
-            title="Delete Customer"
+        {/* Statistics */}
+        <View className="mx-4 mt-4 bg-white p-5 rounded-3xl border border-gray-100">
+          <View className="flex-row items-center mb-4">
+            <View className="w-10 h-10 bg-orange-100 rounded-xl items-center justify-center mr-3">
+              <Icon name="chart-line" size={20} color="#F59E0B" />
+            </View>
+            <Text className="text-lg font-bold text-gray-900">Statistics</Text>
+          </View>
+
+          <View className="flex-row justify-around">
+            <View className="items-center">
+              <Text className="text-gray-900 text-2xl font-bold">
+                {customer.orderCount}
+              </Text>
+              <Text className="text-gray-500 text-xs mt-1">Total Orders</Text>
+            </View>
+
+            <View className="w-px h-10 bg-gray-200" />
+
+            <View className="items-center">
+              <Text className="text-gray-900 text-2xl font-bold">
+                {formatCurrency(customer.totalSpent)}
+              </Text>
+              <Text className="text-gray-500 text-xs mt-1">Total Spent</Text>
+            </View>
+
+            <View className="w-px h-10 bg-gray-200" />
+
+            <View className="items-center">
+              <Text className="text-gray-900 text-2xl font-bold">
+                {formatCurrency(customer.averageOrderValue)}
+              </Text>
+              <Text className="text-gray-500 text-xs mt-1">Avg Order</Text>
+            </View>
+          </View>
+        </View>
+
+        {/* Tags */}
+        {customer.tags && customer.tags.length > 0 && (
+          <View className="mx-4 mt-4 bg-white p-5 rounded-3xl border border-gray-100">
+            <View className="flex-row items-center mb-4">
+              <View className="w-10 h-10 bg-purple-100 rounded-xl items-center justify-center mr-3">
+                <Icon name="tag-multiple" size={20} color="#8B5CF6" />
+              </View>
+              <Text className="text-lg font-bold text-gray-900">Tags</Text>
+            </View>
+
+            <View className="flex-row flex-wrap">
+              {customer.tags.map((tag, index) => (
+                <View
+                  key={index}
+                  className="bg-indigo-50 px-3 py-1.5 rounded-full mr-2 mb-2"
+                >
+                  <Text className="text-indigo-600 text-xs font-medium">
+                    #{tag}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          </View>
+        )}
+
+        {/* Notes */}
+        {customer.notes && (
+          <View className="mx-4 mt-4 bg-white p-5 rounded-3xl border border-gray-100">
+            <View className="flex-row items-center mb-4">
+              <View className="w-10 h-10 bg-blue-100 rounded-xl items-center justify-center mr-3">
+                <Icon name="note-text" size={20} color="#6366F1" />
+              </View>
+              <Text className="text-lg font-bold text-gray-900">Notes</Text>
+            </View>
+
+            <View className="bg-gray-50 p-4 rounded-2xl">
+              <Text className="text-gray-600 leading-6">{customer.notes}</Text>
+            </View>
+          </View>
+        )}
+
+        {/* Recent Orders */}
+        {recentOrders.length > 0 && (
+          <View className="mx-4 mt-4 mb-8 bg-white p-5 rounded-3xl border border-gray-100">
+            <View className="flex-row justify-between items-center mb-4">
+              <View className="flex-row items-center">
+                <View className="w-10 h-10 bg-pink-100 rounded-xl items-center justify-center mr-3">
+                  <Icon name="clipboard-list" size={20} color="#EC4899" />
+                </View>
+                <Text className="text-lg font-bold text-gray-900">
+                  Recent Orders
+                </Text>
+              </View>
+              <TouchableOpacity onPress={handleViewAllOrders}>
+                <Text className="text-indigo-600 text-sm font-semibold">
+                  View All →
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            {recentOrders.map((order, index) => (
+              <TouchableOpacity
+                key={order.id}
+                onPress={() =>
+                  navigation.navigate("OrderDetail", { orderId: order.id })
+                }
+                className={`flex-row items-center py-3 ${
+                  index !== recentOrders.length - 1
+                    ? "border-b border-gray-100"
+                    : ""
+                }`}
+              >
+                <LinearGradient
+                  colors={["#6366F1", "#8B5CF6"]}
+                  className="w-10 h-10 rounded-xl items-center justify-center mr-3"
+                >
+                  <Text className="text-white font-bold text-xs">
+                    #{order.orderNumber.slice(-3)}
+                  </Text>
+                </LinearGradient>
+
+                <View className="flex-1">
+                  <Text className="text-gray-900 font-semibold">
+                    {order.orderNumber}
+                  </Text>
+                  <Text className="text-gray-500 text-xs">
+                    {order.items} items • {formatDate(order.createdAt)}
+                  </Text>
+                </View>
+
+                <Text className="text-gray-900 font-bold mr-3">
+                  {formatCurrency(order.total)}
+                </Text>
+
+                <Icon name="chevron-right" size={20} color="#9ca3af" />
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
+
+        {/* Delete Button */}
+        <View className="mx-4 mb-8">
+          <TouchableOpacity
             onPress={handleDelete}
-            variant="outline"
-            style={styles.deleteButton}
-          />
+            className="bg-red-50 py-4 rounded-2xl border border-red-200"
+          >
+            <Text className="text-red-600 font-semibold text-center">
+              Delete Customer
+            </Text>
+          </TouchableOpacity>
         </View>
       </ScrollView>
     </SafeAreaView>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: theme.colors.background,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  scrollContent: {
-    padding: theme.spacing.md,
-    paddingBottom: theme.spacing.xl,
-  },
-  headerButtons: {
-    flexDirection: 'row',
-    gap: theme.spacing.sm,
-  },
-  customerCard: {
-    marginBottom: theme.spacing.md,
-  },
-  customerHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: theme.spacing.md,
-  },
-  customerInfo: {
-    flex: 1,
-  },
-  customerName: {
-    ...theme.typography.h2,
-    color: theme.colors.text,
-    fontWeight: '700',
-    marginBottom: theme.spacing.xs,
-  },
-  companyName: {
-    ...theme.typography.body1,
-    color: theme.colors.textSecondary,
-  },
-  contactInfo: {
-    marginBottom: theme.spacing.md,
-  },
-  contactItem: {
-    marginBottom: theme.spacing.sm,
-  },
-  contactLabel: {
-    ...theme.typography.caption,
-    color: theme.colors.textTertiary,
-    marginBottom: 2,
-  },
-  contactValue: {
-    ...theme.typography.body1,
-    color: theme.colors.text,
-  },
-  actionButtons: {
-    flexDirection: 'row',
-    gap: theme.spacing.sm,
-  },
-  actionButton: {
-    flex: 1,
-  },
-  addressCard: {
-    marginBottom: theme.spacing.md,
-  },
-  sectionTitle: {
-    ...theme.typography.h3,
-    color: theme.colors.text,
-    marginBottom: theme.spacing.sm,
-  },
-  addressText: {
-    ...theme.typography.body1,
-    color: theme.colors.text,
-    marginBottom: theme.spacing.xs,
-  },
-  statsCard: {
-    marginBottom: theme.spacing.md,
-  },
-  statsGrid: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-  },
-  statItem: {
-    alignItems: 'center',
-  },
-  statValue: {
-    ...theme.typography.h3,
-    color: theme.colors.primary,
-    fontWeight: '700',
-    marginBottom: theme.spacing.xs,
-  },
-  statLabel: {
-    ...theme.typography.caption,
-    color: theme.colors.textSecondary,
-  },
-  notesCard: {
-    marginBottom: theme.spacing.md,
-  },
-  notesText: {
-    ...theme.typography.body1,
-    color: theme.colors.text,
-    lineHeight: 24,
-  },
-  recentOrdersCard: {
-    marginBottom: theme.spacing.md,
-  },
-  recentOrdersHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: theme.spacing.sm,
-  },
-  orderItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: theme.spacing.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: theme.colors.borderLight,
-  },
-  orderInfo: {
-    flex: 1,
-  },
-  orderNumber: {
-    ...theme.typography.body1,
-    color: theme.colors.text,
-    fontWeight: '500',
-    marginBottom: 2,
-  },
-  orderDate: {
-    ...theme.typography.caption,
-    color: theme.colors.textSecondary,
-  },
-  orderTotal: {
-    ...theme.typography.body1,
-    color: theme.colors.primary,
-    fontWeight: '600',
-  },
-  deleteSection: {
-    marginTop: theme.spacing.lg,
-  },
-  deleteButton: {
-    borderColor: theme.colors.error,
-  },
-});
 
 export default CustomerDetailScreen;
