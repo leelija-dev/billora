@@ -576,8 +576,8 @@ const renderSidebar = () => {
                       (item.stack && activeScreen === item.stack) ||
                       (item.title === "Dashboard" && activeScreen === "Dashboard");
                     
-                    // Debug log to check values
-                    console.log('Item:', item.title, 'Active:', activeScreen, 'isActive:', isActive);
+                    // // Debug log to check values
+                    // console.log('Item:', item.title, 'Active:', activeScreen, 'isActive:', isActive);
                     
                     return (
                       <TouchableOpacity
@@ -593,7 +593,7 @@ const renderSidebar = () => {
                               isActive ? 'bg-purple-100' : 'bg-gray-100'
                             }`}>
                               <Icon
-                                name={isActive ? item.iconActive : item.icon}
+                                name={isActive ? item.icon : item.icon}
                                 size={20}
                                 color={isActive ? "#667eea" : "#666"}
                               />

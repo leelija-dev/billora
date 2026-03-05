@@ -1,4 +1,6 @@
 // components/navigation/MainNavigator.js
+import { Animated } from "react-native";
+import { useState, useEffect, useRef } from "react";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { LinearGradient } from "expo-linear-gradient";
@@ -267,9 +269,14 @@ const SettingsStack = () => (
   </Stack.Navigator>
 );
 
-// Modern Tab Bar Component with Icon Left, Text Right
 // Modern Tab Bar Component with bottom area filled (design unchanged)
+// Modern Tab Bar Component with Sliding Active Background
 const ModernTabBar = ({ state, descriptors, navigation }) => {
+  const [tabPositions, setTabPositions] = useState({});
+  const [sliderWidth, setSliderWidth] = useState(0);
+  const [sliderLeft, setSliderLeft] = useState(0);
+  const animation = useRef(new Animated.Value(0)).current;
+
   // Define only the tabs we want to show
   const tabs = [
     {
@@ -302,9 +309,50 @@ const ModernTabBar = ({ state, descriptors, navigation }) => {
     },
   ];
 
+  // Update slider position when active tab changes
+  useEffect(() => {
+    if (tabPositions[state.index]) {
+      const { x, width } = tabPositions[state.index];
+      
+      Animated.spring(animation, {
+        toValue: x,
+        useNativeDriver: false,
+        tension: 300,
+        friction: 25,
+      }).start();
+      
+      setSliderWidth(width);
+    }
+  }, [state.index, tabPositions]);
+
+  const handleTabPress = (index) => {
+    const event = navigation.emit({
+      type: "tabPress",
+      target: state.routes[index].key,
+      canPreventDefault: true,
+    });
+
+    if (state.index !== index && !event.defaultPrevented) {
+      navigation.navigate(tabs[index].screen);
+    }
+  };
+
+  const onTabLayout = (index, event) => {
+    const { x, width } = event.nativeEvent.layout;
+    setTabPositions(prev => ({
+      ...prev,
+      [index]: { x, width }
+    }));
+
+    // Set initial slider position for the first tab
+    if (index === 0 && !tabPositions[0]) {
+      setSliderWidth(width);
+      animation.setValue(x);
+    }
+  };
+
   return (
     <View className="absolute bottom-0 left-0 right-0">
-      {/* Your exact same design - just moved to bottom-0 instead of bottom-6 */}
       <View className="mx-4 mb-2 rounded-3xl overflow-hidden">
         <BlurView
           intensity={50}
@@ -315,53 +363,56 @@ const ModernTabBar = ({ state, descriptors, navigation }) => {
             borderColor: "white",
             backgroundColor: "#ff0dfbcf",
             padding: 0,
-            borderRadius:30,
+            borderRadius: 30,
           }}
         >
           <View
-            className="flex-row items-center justify-between"
+            className="flex-row items-center"
             style={{
               backgroundColor: "rgba(255, 255, 255, 0.7)",
+              position: 'relative',
+              height: 45, // Fixed height for consistent animation
             }}
           >
+            {/* Animated Sliding Background */}
+            <Animated.View
+              style={{
+                position: 'absolute',
+                left: animation,
+                width: sliderWidth,
+                height: 44, // Slightly smaller than container for padding effect
+                backgroundColor: "#6366F1",
+                borderRadius: 30,
+                marginVertical: 6, // Center vertically
+              }}
+            />
+
             {tabs.map((tab, index) => {
               const isFocused = state.index === index;
-
-              const onPress = () => {
-                const event = navigation.emit({
-                  type: "tabPress",
-                  target: state.routes[index].key,
-                  canPreventDefault: true,
-                });
-
-                if (!isFocused && !event.defaultPrevented) {
-                  navigation.navigate(tab.screen);
-                }
-              };
 
               return (
                 <TouchableOpacity
                   key={tab.name}
-                  onPress={onPress}
+                  onPress={() => handleTabPress(index)}
+                  onLayout={(event) => onTabLayout(index, event)}
                   activeOpacity={0.7}
-                  className="items-center justify-center"
+                  className="items-center justify-center flex-1"
                   style={{
                     flexDirection: "row",
-                    backgroundColor: isFocused ? "#6366F1" : "transparent",
-                    borderRadius: 30,
                     paddingVertical: 12,
                     paddingHorizontal: isFocused ? 18 : 12,
+                    zIndex: 1, // Ensure text/icons are above the animated background
                   }}
                 >
                   <Icon
                     name={isFocused ? tab.iconActive : tab.icon}
                     size={22}
-                    color={isFocused ? "white" : "#9CA3AF"}
+                    color={isFocused ? "white" : "#758A93"}
                   />
                   {isFocused && (
-                    <Text className="text-sm font-medium text-white ml-2">
+                    <Animated.Text className="text-sm font-medium text-white ml-2">
                       {tab.label}
-                    </Text>
+                    </Animated.Text>
                   )}
                 </TouchableOpacity>
               );
@@ -370,11 +421,11 @@ const ModernTabBar = ({ state, descriptors, navigation }) => {
         </BlurView>
       </View>
 
-      {/* Extra invisible padding that fills the bottom gap with the same background color */}
+      {/* Extra invisible padding that fills the bottom gap */}
       <View
         style={{
-          height: 20, // Adjust this value as needed
-          backgroundColor: "white", // This will fill the gap with white
+          height: 20,
+          backgroundColor: "white",
           width: "100%",
         }}
       />
