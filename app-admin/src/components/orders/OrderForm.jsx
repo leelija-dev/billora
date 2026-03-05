@@ -5,7 +5,6 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   Animated,
   Dimensions,
   Modal,
@@ -16,11 +15,164 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { MOCK_CUSTOMERS } from "../../data/mockCustomers";
-import { MOCK_ORDERS } from "../../data/mockOrders";
-import { MOCK_PRODUCTS } from "../../data/mockProducts";
 
 const { width } = Dimensions.get("window");
+
+// Static mock data (keep as is from your original code)
+// Static mock data
+const MOCK_CUSTOMERS = [
+  {
+    id: 1,
+    name: "John Doe",
+    email: "john.doe@example.com",
+    phone: "+1 234-567-8901",
+    address: {
+      street: "123 Main St",
+      city: "New York",
+      state: "NY",
+      zip: "10001",
+      country: "USA"
+    }
+  },
+  {
+    id: 2,
+    name: "Jane Smith",
+    email: "jane.smith@example.com",
+    phone: "+1 234-567-8902",
+    address: {
+      street: "456 Oak Ave",
+      city: "Los Angeles",
+      state: "CA",
+      zip: "90001",
+      country: "USA"
+    }
+  },
+  {
+    id: 3,
+    name: "Robert Johnson",
+    email: "robert.j@example.com",
+    phone: "+1 234-567-8903",
+    address: {
+      street: "789 Pine Rd",
+      city: "Chicago",
+      state: "IL",
+      zip: "60601",
+      country: "USA"
+    }
+  },
+  {
+    id: 4,
+    name: "Maria Garcia",
+    email: "maria.g@example.com",
+    phone: "+1 234-567-8904",
+    address: {
+      street: "321 Elm St",
+      city: "Miami",
+      state: "FL",
+      zip: "33101",
+      country: "USA"
+    }
+  },
+  {
+    id: 5,
+    name: "David Chen",
+    email: "david.chen@example.com",
+    phone: "+1 234-567-8905",
+    address: {
+      street: "654 Maple Dr",
+      city: "San Francisco",
+      state: "CA",
+      zip: "94105",
+      country: "USA"
+    }
+  }
+];
+
+const MOCK_PRODUCTS = [
+  {
+    id: 1,
+    name: "Wireless Headphones",
+    description: "High-quality wireless headphones with noise cancellation",
+    price: 199.99,
+    image: "headphones",
+    category: "Electronics",
+    stock: 50
+  },
+  {
+    id: 2,
+    name: "Smart Watch",
+    description: "Fitness tracker with heart rate monitor and GPS",
+    price: 299.99,
+    image: "watch",
+    category: "Electronics",
+    stock: 30
+  },
+  {
+    id: 3,
+    name: "Laptop Backpack",
+    description: "Water-resistant backpack with USB charging port",
+    price: 79.99,
+    image: "backpack",
+    category: "Accessories",
+    stock: 100
+  },
+  {
+    id: 4,
+    name: "Wireless Mouse",
+    description: "Ergonomic wireless mouse with long battery life",
+    price: 49.99,
+    image: "mouse",
+    category: "Electronics",
+    stock: 75
+  },
+  {
+    id: 5,
+    name: "Coffee Maker",
+    description: "Programmable coffee maker with thermal carafe",
+    price: 149.99,
+    image: "coffee",
+    category: "Home",
+    stock: 25
+  },
+  {
+    id: 6,
+    name: "Yoga Mat",
+    description: "Eco-friendly non-slip yoga mat with carrying strap",
+    price: 39.99,
+    image: "yoga",
+    category: "Fitness",
+    stock: 60
+  }
+];
+
+const MOCK_ORDERS = [
+  {
+    id: 1,
+    customer: MOCK_CUSTOMERS[0],
+    items: [
+      { productId: 1, name: "Wireless Headphones", price: 199.99, quantity: 1, image: "headphones" },
+      { productId: 3, name: "Laptop Backpack", price: 79.99, quantity: 2, image: "backpack" }
+    ],
+    notes: "Please deliver before 5 PM",
+    paymentMethod: "credit_card",
+    shippingAddress: MOCK_CUSTOMERS[0].address,
+    orderDate: "2024-01-15",
+    status: "pending"
+  },
+  {
+    id: 2,
+    customer: MOCK_CUSTOMERS[1],
+    items: [
+      { productId: 2, name: "Smart Watch", price: 299.99, quantity: 1, image: "watch" },
+      { productId: 4, name: "Wireless Mouse", price: 49.99, quantity: 1, image: "mouse" }
+    ],
+    notes: "Leave at front desk",
+    paymentMethod: "cash",
+    shippingAddress: MOCK_CUSTOMERS[1].address,
+    orderDate: "2024-01-16",
+    status: "processing"
+  }
+];
 
 const OrderForm = () => {
   const navigation = useNavigation();
@@ -40,6 +192,7 @@ const OrderForm = () => {
   const [showCustomerModal, setShowCustomerModal] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [validationErrors, setValidationErrors] = useState({});
   const [shippingAddress, setShippingAddress] = useState({
     street: "",
     city: "",
@@ -48,6 +201,7 @@ const OrderForm = () => {
     country: "USA",
   });
 
+  // Animation effect when step changes
   useEffect(() => {
     Animated.parallel([
       Animated.timing(fadeAnim, {
@@ -61,8 +215,11 @@ const OrderForm = () => {
         useNativeDriver: true,
       }),
     ]).start();
+    // Clear validation errors when step changes
+    setValidationErrors({});
   }, [currentStep]);
 
+  // Load order data if editing
   useEffect(() => {
     if (isEditing) {
       const order = MOCK_ORDERS.find(
@@ -148,6 +305,12 @@ const OrderForm = () => {
   );
 
   const handleNext = () => {
+    const errors = validateStep();
+    if (Object.keys(errors).length > 0) {
+      setValidationErrors(errors);
+      return;
+    }
+
     if (currentStep < 4) {
       Animated.sequence([
         Animated.timing(fadeAnim, {
@@ -186,14 +349,16 @@ const OrderForm = () => {
         fadeAnim.setValue(1);
         slideAnim.setValue(0);
       });
-    } else navigation.goBack();
+    } else {
+      navigation.goBack();
+    }
   };
 
   const handleSelectCustomer = (customer) => {
     setSelectedCustomer(customer);
     setShippingAddress(customer.address || shippingAddress);
     setShowCustomerModal(false);
-    if (currentStep === 1) handleNext();
+    setValidationErrors({});
   };
 
   const handleAddItem = (product) => {
@@ -221,19 +386,12 @@ const OrderForm = () => {
       ]);
     }
     setShowProductModal(false);
+    setValidationErrors({});
   };
 
   const updateItemQuantity = (index, newQuantity) => {
     if (newQuantity <= 0) {
-      Alert.alert("Remove Item", "Are you sure you want to remove this item?", [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Remove",
-          onPress: () =>
-            setOrderItems(orderItems.filter((_, i) => i !== index)),
-          style: "destructive",
-        },
-      ]);
+      setOrderItems(orderItems.filter((_, i) => i !== index));
     } else {
       setOrderItems(
         orderItems.map((item, i) =>
@@ -259,57 +417,55 @@ const OrderForm = () => {
   };
 
   const validateStep = () => {
+    const errors = {};
+
     if (currentStep === 1 && !selectedCustomer) {
-      Alert.alert("Error", "Please select a customer");
-      return false;
+      errors.customer = "Please select a customer";
     }
     if (currentStep === 2 && orderItems.length === 0) {
-      Alert.alert("Error", "Please add at least one item to the order");
-      return false;
+      errors.items = "Please add at least one item to the order";
     }
     if (currentStep === 3) {
-      if (
-        !shippingAddress.street ||
-        !shippingAddress.city ||
-        !shippingAddress.zip
-      ) {
-        Alert.alert("Error", "Please fill in all required shipping fields");
-        return false;
+      if (!shippingAddress.street) {
+        errors.street = "Street address is required";
+      }
+      if (!shippingAddress.city) {
+        errors.city = "City is required";
+      }
+      if (!shippingAddress.zip) {
+        errors.zip = "ZIP code is required";
       }
     }
-    return true;
+
+    return errors;
   };
 
   const handleStepPress = (stepId) => {
     if (stepId < currentStep) {
       setCurrentStep(stepId);
     } else if (stepId > currentStep) {
-      if (validateStep()) {
+      const errors = validateStep();
+      if (Object.keys(errors).length === 0) {
         setCurrentStep(stepId);
+      } else {
+        setValidationErrors(errors);
       }
     }
   };
 
   const handleSubmit = () => {
-    if (!validateStep()) return;
+    const errors = validateStep();
+    if (Object.keys(errors).length > 0) {
+      setValidationErrors(errors);
+      return;
+    }
 
     setIsSubmitting(true);
 
     // Simulate order creation
     setTimeout(() => {
       setIsSubmitting(false);
-      Alert.alert(
-        "Success",
-        isEditing
-          ? "Order updated successfully!"
-          : "Order created successfully!",
-        [
-          {
-            text: "OK",
-            onPress: () => navigation.goBack(),
-          },
-        ],
-      );
+      navigation.goBack();
     }, 1500);
   };
 
@@ -321,7 +477,7 @@ const OrderForm = () => {
             key={step.id}
             className="items-center"
             onPress={() => handleStepPress(step.id)}
-            disabled={step.id > currentStep && !validateStep()}
+            disabled={step.id > currentStep && Object.keys(validateStep()).length > 0}
           >
             <LinearGradient
               colors={
@@ -380,6 +536,13 @@ const OrderForm = () => {
         <Text className="text-white/80">Choose a customer for this order</Text>
       </LinearGradient>
 
+      {validationErrors.customer && (
+        <View className="bg-red-50 p-3 rounded-xl mb-4 flex-row items-center">
+          <Ionicons name="alert-circle" size={20} color="#EF4444" />
+          <Text className="text-red-600 ml-2 flex-1">{validationErrors.customer}</Text>
+        </View>
+      )}
+
       {selectedCustomer ? (
         <LinearGradient
           colors={["#f5f0ff", "#ffffff"]}
@@ -415,9 +578,12 @@ const OrderForm = () => {
                 </Text>
               </View>
             </View>
-            <View className="w-8 h-8 bg-green-100 rounded-full items-center justify-center">
-              <Ionicons name="checkmark" size={18} color="#10B981" />
-            </View>
+            <TouchableOpacity
+              onPress={() => setShowCustomerModal(true)}
+              className="w-10 h-10 bg-purple-100 rounded-xl items-center justify-center"
+            >
+              <Ionicons name="create-outline" size={20} color="#667eea" />
+            </TouchableOpacity>
           </View>
         </LinearGradient>
       ) : (
@@ -451,7 +617,7 @@ const OrderForm = () => {
         </TouchableOpacity>
       )}
 
-      {/* Customer Modal with enhanced design */}
+      {/* Customer Modal */}
       <Modal
         visible={showCustomerModal}
         animationType="slide"
@@ -546,6 +712,25 @@ const OrderForm = () => {
           </LinearGradient>
         </View>
       </Modal>
+
+      {/* Next Button */}
+      <TouchableOpacity
+        onPress={handleNext}
+        className="mt-4"
+        activeOpacity={0.8}
+      >
+        <LinearGradient
+          colors={selectedCustomer ? ["#4158D0", "#C850C0"] : ["#E5E7EB", "#E5E7EB"]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          className="flex-row items-center justify-center py-4 rounded-xl"
+        >
+          <Text className={`font-bold text-base mr-2 ${selectedCustomer ? "text-white" : "text-gray-400"}`}>
+            Next: Items
+          </Text>
+          <Ionicons name="arrow-forward" size={18} color={selectedCustomer ? "white" : "#9CA3AF"} />
+        </LinearGradient>
+      </TouchableOpacity>
     </Animated.View>
   );
 
@@ -578,6 +763,13 @@ const OrderForm = () => {
           </TouchableOpacity>
         </View>
       </LinearGradient>
+
+      {validationErrors.items && (
+        <View className="bg-red-50 p-3 rounded-xl mb-4 flex-row items-center">
+          <Ionicons name="alert-circle" size={20} color="#EF4444" />
+          <Text className="text-red-600 ml-2 flex-1">{validationErrors.items}</Text>
+        </View>
+      )}
 
       {orderItems.length === 0 ? (
         <View className="bg-white p-8 rounded-2xl border-2 border-dashed border-orange-200 items-center">
@@ -753,6 +945,25 @@ const OrderForm = () => {
           </LinearGradient>
         </View>
       </Modal>
+
+      {/* Next Button */}
+      <TouchableOpacity
+        onPress={handleNext}
+        className="mt-4"
+        activeOpacity={0.8}
+      >
+        <LinearGradient
+          colors={orderItems.length > 0 ? ["#FF512F", "#F09819"] : ["#E5E7EB", "#E5E7EB"]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          className="flex-row items-center justify-center py-4 rounded-xl"
+        >
+          <Text className={`font-bold text-base mr-2 ${orderItems.length > 0 ? "text-white" : "text-gray-400"}`}>
+            Next: Details
+          </Text>
+          <Ionicons name="arrow-forward" size={18} color={orderItems.length > 0 ? "white" : "#9CA3AF"} />
+        </LinearGradient>
+      </TouchableOpacity>
     </Animated.View>
   );
 
@@ -775,6 +986,30 @@ const OrderForm = () => {
         </Text>
         <Text className="text-white/80">Payment & shipping information</Text>
       </LinearGradient>
+
+      {/* Validation Errors */}
+      {(validationErrors.street || validationErrors.city || validationErrors.zip) && (
+        <View className="bg-red-50 p-3 rounded-xl mb-4">
+          {validationErrors.street && (
+            <View className="flex-row items-center mb-1">
+              <Ionicons name="alert-circle" size={16} color="#EF4444" />
+              <Text className="text-red-600 ml-2 text-sm">{validationErrors.street}</Text>
+            </View>
+          )}
+          {validationErrors.city && (
+            <View className="flex-row items-center mb-1">
+              <Ionicons name="alert-circle" size={16} color="#EF4444" />
+              <Text className="text-red-600 ml-2 text-sm">{validationErrors.city}</Text>
+            </View>
+          )}
+          {validationErrors.zip && (
+            <View className="flex-row items-center">
+              <Ionicons name="alert-circle" size={16} color="#EF4444" />
+              <Text className="text-red-600 ml-2 text-sm">{validationErrors.zip}</Text>
+            </View>
+          )}
+        </View>
+      )}
 
       <Text className="text-gray-900 font-bold text-lg mb-4">
         Payment Method
@@ -824,25 +1059,39 @@ const OrderForm = () => {
         Shipping Address
       </Text>
       <View className="space-y-3">
-        <TextInput
-          className="bg-white p-4 rounded-xl border border-gray-200 text-base"
-          placeholder="Street Address *"
-          placeholderTextColor="#9CA3AF"
-          value={shippingAddress.street}
-          onChangeText={(text) =>
-            setShippingAddress({ ...shippingAddress, street: text })
-          }
-        />
-        <View className="flex-row">
+        <View>
           <TextInput
-            className="flex-1 bg-white p-4 rounded-xl border border-gray-200 mr-2 text-base"
-            placeholder="City *"
+            className={`bg-white p-4 rounded-xl border text-base ${
+              validationErrors.street ? "border-red-300" : "border-gray-200"
+            }`}
+            placeholder="Street Address *"
             placeholderTextColor="#9CA3AF"
-            value={shippingAddress.city}
-            onChangeText={(text) =>
-              setShippingAddress({ ...shippingAddress, city: text })
-            }
+            value={shippingAddress.street}
+            onChangeText={(text) => {
+              setShippingAddress({ ...shippingAddress, street: text });
+              if (validationErrors.street) {
+                setValidationErrors({ ...validationErrors, street: null });
+              }
+            }}
           />
+        </View>
+        <View className="flex-row">
+          <View className="flex-1 mr-2">
+            <TextInput
+              className={`bg-white p-4 rounded-xl border text-base ${
+                validationErrors.city ? "border-red-300" : "border-gray-200"
+              }`}
+              placeholder="City *"
+              placeholderTextColor="#9CA3AF"
+              value={shippingAddress.city}
+              onChangeText={(text) => {
+                setShippingAddress({ ...shippingAddress, city: text });
+                if (validationErrors.city) {
+                  setValidationErrors({ ...validationErrors, city: null });
+                }
+              }}
+            />
+          </View>
           <TextInput
             className="flex-1 bg-white p-4 rounded-xl border border-gray-200 text-base"
             placeholder="State"
@@ -854,16 +1103,23 @@ const OrderForm = () => {
           />
         </View>
         <View className="flex-row">
-          <TextInput
-            className="flex-1 bg-white p-4 rounded-xl border border-gray-200 mr-2 text-base"
-            placeholder="ZIP Code *"
-            placeholderTextColor="#9CA3AF"
-            value={shippingAddress.zip}
-            onChangeText={(text) =>
-              setShippingAddress({ ...shippingAddress, zip: text })
-            }
-            keyboardType="numeric"
-          />
+          <View className="flex-1 mr-2">
+            <TextInput
+              className={`bg-white p-4 rounded-xl border text-base ${
+                validationErrors.zip ? "border-red-300" : "border-gray-200"
+              }`}
+              placeholder="ZIP Code *"
+              placeholderTextColor="#9CA3AF"
+              value={shippingAddress.zip}
+              onChangeText={(text) => {
+                setShippingAddress({ ...shippingAddress, zip: text });
+                if (validationErrors.zip) {
+                  setValidationErrors({ ...validationErrors, zip: null });
+                }
+              }}
+              keyboardType="numeric"
+            />
+          </View>
           <TextInput
             className="flex-1 bg-white p-4 rounded-xl border border-gray-200 text-base"
             placeholder="Country"
@@ -889,6 +1145,35 @@ const OrderForm = () => {
         numberOfLines={4}
         textAlignVertical="top"
       />
+
+      {/* Next Button */}
+      <TouchableOpacity
+        onPress={handleNext}
+        className="mt-6"
+        activeOpacity={0.8}
+      >
+        <LinearGradient
+          colors={shippingAddress.street && shippingAddress.city && shippingAddress.zip 
+            ? ["#11998e", "#38ef7d"] 
+            : ["#E5E7EB", "#E5E7EB"]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          className="flex-row items-center justify-center py-4 rounded-xl"
+        >
+          <Text className={`font-bold text-base mr-2 ${
+            shippingAddress.street && shippingAddress.city && shippingAddress.zip 
+            ? "text-white" 
+            : "text-gray-400"
+          }`}>
+            Next: Review
+          </Text>
+          <Ionicons 
+            name="arrow-forward" 
+            size={18} 
+            color={shippingAddress.street && shippingAddress.city && shippingAddress.zip ? "white" : "#9CA3AF"} 
+          />
+        </LinearGradient>
+      </TouchableOpacity>
     </Animated.View>
   );
 
@@ -1008,6 +1293,18 @@ const OrderForm = () => {
           </View>
         </View>
 
+        {/* Notes */}
+        {notes ? (
+          <View className="mb-5">
+            <Text className="text-xs text-gray-600 font-semibold uppercase tracking-wider mb-3">
+              Notes
+            </Text>
+            <Text className="text-gray-700 bg-gray-50 p-3 rounded-xl">
+              {notes}
+            </Text>
+          </View>
+        ) : null}
+
         {/* Total */}
         <LinearGradient
           colors={["#8E2DE2", "#4A00E0"]}
@@ -1021,19 +1318,39 @@ const OrderForm = () => {
           </View>
         </LinearGradient>
       </LinearGradient>
+
+      {/* Submit Button */}
+      <TouchableOpacity
+        onPress={handleSubmit}
+        disabled={isSubmitting}
+        className="mt-6"
+        activeOpacity={0.8}
+      >
+        <LinearGradient
+          colors={isSubmitting ? ["#34D399", "#059669"] : ["#8E2DE2", "#4A00E0"]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          className="flex-row items-center justify-center py-4 rounded-xl"
+        >
+          {isSubmitting ? (
+            <>
+              <ActivityIndicator size="small" color="white" />
+              <Text className="text-white font-bold text-base ml-2">
+                Processing...
+              </Text>
+            </>
+          ) : (
+            <>
+              <Ionicons name="checkmark-circle" size={18} color="white" />
+              <Text className="text-white font-bold text-base ml-2">
+                {isEditing ? "Update Order" : "Create Order"}
+              </Text>
+            </>
+          )}
+        </LinearGradient>
+      </TouchableOpacity>
     </Animated.View>
   );
-
-  const isStepValid = () => {
-    if (currentStep === 1) return !!selectedCustomer;
-    if (currentStep === 2) return orderItems.length > 0;
-    if (currentStep === 3) {
-      return (
-        shippingAddress.street && shippingAddress.city && shippingAddress.zip
-      );
-    }
-    return true;
-  };
 
   const getCurrentGradient = () => {
     switch (currentStep) {
@@ -1077,68 +1394,13 @@ const OrderForm = () => {
       <ScrollView
         className="flex-1"
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 20 }}
+        contentContainerStyle={{ paddingBottom: 100 }} // Increased padding to account for tab bar
       >
         {currentStep === 1 && renderCustomerStep()}
         {currentStep === 2 && renderItemsStep()}
         {currentStep === 3 && renderDetailsStep()}
         {currentStep === 4 && renderReviewStep()}
       </ScrollView>
-
-      <View className="p-4 bg-white border-t border-gray-200">
-        {currentStep < 4 ? (
-          <TouchableOpacity
-            onPress={handleNext}
-            disabled={!isStepValid()}
-            activeOpacity={0.8}
-          >
-            <LinearGradient
-              colors={
-                isStepValid() ? getCurrentGradient() : ["#E5E7EB", "#E5E7EB"]
-              }
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              className="flex-row items-center justify-center py-4 rounded-xl"
-            >
-              <Text className="text-white font-bold text-base mr-2">
-                Continue
-              </Text>
-              <Ionicons name="arrow-forward" size={18} color="white" />
-            </LinearGradient>
-          </TouchableOpacity>
-        ) : (
-          <TouchableOpacity
-            onPress={handleSubmit}
-            disabled={isSubmitting}
-            activeOpacity={0.8}
-          >
-            <LinearGradient
-              colors={
-                isSubmitting ? ["#34D399", "#059669"] : ["#8E2DE2", "#4A00E0"]
-              }
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              className="flex-row items-center justify-center py-4 rounded-xl"
-            >
-              {isSubmitting ? (
-                <>
-                  <ActivityIndicator size="small" color="white" />
-                  <Text className="text-white font-bold text-base ml-2">
-                    Processing...
-                  </Text>
-                </>
-              ) : (
-                <>
-                  <Ionicons name="checkmark-circle" size={18} color="white" />
-                  <Text className="text-white font-bold text-base ml-2">
-                    {isEditing ? "Update Order" : "Create Order"}
-                  </Text>
-                </>
-              )}
-            </LinearGradient>
-          </TouchableOpacity>
-        )}
-      </View>
     </SafeAreaView>
   );
 };

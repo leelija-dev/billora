@@ -1,6 +1,7 @@
+// screens/orders/CreateOrderScreen.js
 import React from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import OrderForm from '../../components/orders/OrderForm';
+import OrderForm from '../../components/orders/OrderForm'
 import { theme } from '../../theme';
 
 const CreateOrderScreen = () => {
