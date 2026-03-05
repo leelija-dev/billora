@@ -74,9 +74,11 @@ Route::prefix('brands')->group(function () {
 Route::prefix('invoice')->group(function () {
    Route::get('/', [InvoiceController::class, 'index']);
    Route::post('/store', [InvoiceController::class, 'store']);
+   Route::get('/bill-history', [InvoiceController::class, 'billHistory']);
    Route::get('/{id}', [InvoiceController::class, 'show']);
    Route::put('/{id}', [InvoiceController::class, 'update']);
    Route::delete('/{id}', [InvoiceController::class, 'destroy']);
+   
 });
 
 
@@ -99,3 +101,4 @@ Route::prefix('customer')->group(function () {
    Route::patch('/{id}', [BillCustomerController::class, 'restore']); //restore
    Route::delete('/{id}/force', [BillCustomerController::class, 'forceDelete']); //permanently delete
 });
+

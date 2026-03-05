@@ -15,7 +15,8 @@ class BillCustomer extends Model
         'phone', 
         'address',
         'city', 
-        'created_by' 
+        'created_by',
+        'due_amount'
     ];
 
 }

@@ -23,7 +23,7 @@ class InvoiceItems extends Model
         
     ];
     protected $casts = [
-        'price' => 'deciamal:2',
+        'price' => 'decimal:2',
         'total_price'=>'decimal:2'
     ];
 }

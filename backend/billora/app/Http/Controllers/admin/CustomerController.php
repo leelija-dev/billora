@@ -109,14 +109,20 @@ public function login(Request $request)  //postman
 }
 public function logout(Request $request)
 {
-    // Print logged-in user for debugging
+    $user = $request->user();
+
+    if (!$user) {
+        return response()->json([
+            'status' => false,
+            'message' => 'User not authenticated'
+        ], 401);
+    }
+
+    $user->currentAccessToken()->delete();
+
     return response()->json([
         'status' => true,
-        'message' => 'Logout successful',
-        'user' => $request->user() // should show user object now
+        'message' => 'Logout successful'
     ]);
-
-    // Once confirmed, you can safely delete the token:
-    // $request->user()->currentAccessToken()->delete();
 }
 }

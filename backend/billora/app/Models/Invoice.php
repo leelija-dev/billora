@@ -23,5 +23,8 @@ class Invoice extends Model
         'total_amount' => 'decimal:2',
         'paid_amount' => 'decimal:2',
     ];
-
+    public function invoiceItems()
+    {
+        return $this->hasMany(InvoiceItems::class);
+    }
 }
