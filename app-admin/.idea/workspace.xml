@@ -4,34 +4,7 @@
     <option name="autoReloadType" value="NONE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="f4f602c7-85e4-45b1-adc0-a611405c7b28" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/package-lock.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/package.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/App.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/App.jsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/components/common/Header.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/common/Header.jsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/components/common/Input.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/common/Input.jsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/components/customers/CustomerCard.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/customers/CustomerCard.jsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/components/customers/CustomerList.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/customers/CustomerList.jsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/components/navigation/MainNavigator.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/navigation/MainNavigator.jsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/components/orders/OrderCard.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/orders/OrderCard.jsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/components/orders/OrderForm.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/orders/OrderForm.jsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/components/orders/OrderList.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/orders/OrderList.jsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/components/products/ProductCard.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/products/ProductCard.jsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/components/products/ProductFilters.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/products/ProductFilters.jsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/components/products/ProductForm.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/products/ProductForm.jsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/components/products/ProductList.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/products/ProductList.jsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/screens/customers/AddCustomerScreen.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/screens/customers/AddCustomerScreen.jsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/screens/customers/CustomerDetailScreen.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/screens/customers/CustomerDetailScreen.jsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/screens/customers/CustomersScreen.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/screens/customers/CustomersScreen.jsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/screens/dashboard/DashboardScreen.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/screens/dashboard/DashboardScreen.jsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/screens/orders/OrderDetailScreen.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/screens/orders/OrderDetailScreen.jsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/screens/orders/OrdersScreen.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/screens/orders/OrdersScreen.jsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/screens/products/AddProductScreen.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/screens/products/AddProductScreen.jsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/screens/products/ProductDetailScreen.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/screens/products/ProductDetailScreen.jsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/screens/products/ProductsScreen.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/screens/products/ProductsScreen.jsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/utils/constants.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/utils/constants.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tailwind.config.js" beforeDir="false" afterPath="$PROJECT_DIR$/tailwind.config.js" afterDir="false" />
-    </list>
+    <list default="true" id="f4f602c7-85e4-45b1-adc0-a611405c7b28" name="Changes" comment="" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -41,7 +14,7 @@
     <option name="formatViaClangd" value="false" />
   </component>
   <component name="Git.Settings">
-    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$/.." />
   </component>
   <component name="ProjectColorInfo">{
   &quot;customColor&quot;: &quot;&quot;,
@@ -61,7 +34,7 @@
     "RunOnceActivity.readMode.enableVisualFormatting": "true",
     "cf.first.check.clang-format": "false",
     "cidr.known.project.marker": "true",
-    "git-widget-placeholder": "master",
+    "git-widget-placeholder": "main",
     "kotlin-language-version-configured": "true"
   }
 }]]></component>
