@@ -250,7 +250,8 @@ const StockMovement = () => {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-50" edges={['top']}>
+    <SafeAreaView className="flex-1 bg-gray-50" edges={['top']}
+    style={{ paddingBottom: 60 }}>
       <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
 
       {/* Header */}
@@ -283,6 +284,7 @@ const StockMovement = () => {
             shadowOpacity: 0.3,
             shadowRadius: 8,
             elevation: 5,
+            borderRadius: 13,
           }}
         >
           <View className="flex-row items-center">
@@ -446,6 +448,7 @@ const StockMovement = () => {
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 0 }}
                     className="py-3 rounded-xl"
+                    style={{ borderRadius: 11 }}
                   >
                     <Text className="text-white font-semibold text-center">Add Movement</Text>
                   </LinearGradient>

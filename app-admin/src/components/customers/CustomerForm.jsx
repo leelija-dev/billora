@@ -1,370 +1,752 @@
 import { useNavigation, useRoute } from '@react-navigation/native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useEffect, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
-import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { customersAPI } from '../../api';
-import { useMutation } from '../../hooks/useApi';
-import { useCustomerStore } from '../../store/customerStore';
-import { useUIStore } from '../../store/uiStore';
-import { theme } from '../../theme';
-import Button from '../common/Button';
-import Header from '../common/Header';
-import Input from '../common/Input';
+import {
+  Alert,
+  ScrollView,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+  Modal,
+  KeyboardAvoidingView,
+  Platform,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+
+// Static customers data for editing
+const STATIC_CUSTOMERS = {
+  "CUST-001": {
+    id: "CUST-001",
+    name: "John Smith",
+    email: "john.smith@email.com",
+    phone: "+1 (555) 123-4567",
+    company: "Smith Enterprises",
+    address: {
+      street: "123 Main Street",
+      city: "New York",
+      state: "NY",
+      zip: "10001",
+      country: "USA",
+    },
+    notes: "Premium customer, prefers email communication. Has been with us for over 2 years. Frequently orders bulk items for his business.",
+    taxId: "12-3456789",
+    tags: ["premium", "business", "bulk-orders"],
+  },
+  "CUST-002": {
+    id: "CUST-002",
+    name: "Emma Wilson",
+    email: "emma.wilson@email.com",
+    phone: "+1 (555) 234-5678",
+    company: "Wilson Designs",
+    address: {
+      street: "456 Oak Avenue",
+      city: "Los Angeles",
+      state: "CA",
+      zip: "90001",
+      country: "USA",
+    },
+    notes: "Interested in new collections. Loves seasonal items.",
+    tags: ["designer", "seasonal"],
+  },
+  "CUST-003": {
+    id: "CUST-003",
+    name: "Michael Brown",
+    email: "michael.brown@email.com",
+    phone: "+1 (555) 345-6789",
+    company: "Brown Consulting",
+    address: {
+      street: "789 Pine Street",
+      city: "Chicago",
+      state: "IL",
+      zip: "60601",
+      country: "USA",
+    },
+    notes: "Corporate account, needs invoices. Monthly orders.",
+    taxId: "98-7654321",
+    tags: ["corporate", "monthly"],
+  },
+  "CUST-004": {
+    id: "CUST-004",
+    name: "Sarah Davis",
+    email: "sarah.davis@email.com",
+    phone: "+1 (555) 456-7890",
+    company: "Davis Law Firm",
+    address: {
+      street: "321 Elm Boulevard",
+      city: "Houston",
+      state: "TX",
+      zip: "77001",
+      country: "USA",
+    },
+    notes: "Prefers phone calls. Legal professional, needs detailed invoices.",
+    tags: ["legal", "phone-pref"],
+  },
+  "CUST-005": {
+    id: "CUST-005",
+    name: "David Lee",
+    email: "david.lee@email.com",
+    phone: "+1 (555) 567-8901",
+    company: "Lee Innovations",
+    address: {
+      street: "654 Cedar Lane",
+      city: "Phoenix",
+      state: "AZ",
+      zip: "85001",
+      country: "USA",
+    },
+    notes: "Temporary inactive - on sabbatical. Will return in June.",
+    tags: ["tech", "inactive"],
+  },
+  "CUST-006": {
+    id: "CUST-006",
+    name: "Lisa Anderson",
+    email: "lisa.anderson@email.com",
+    phone: "+1 (555) 678-9012",
+    company: "Anderson Art",
+    address: {
+      street: "987 Maple Drive",
+      city: "Philadelphia",
+      state: "PA",
+      zip: "19101",
+      country: "USA",
+    },
+    notes: "VIP customer - sends referrals. Art gallery owner.",
+    tags: ["vip", "art", "referrals"],
+  },
+  "CUST-007": {
+    id: "CUST-007",
+    name: "James Wilson",
+    email: "james.wilson@email.com",
+    phone: "",
+    company: "Wilson Tech",
+    address: {
+      street: "147 Birch Street",
+      city: "San Antonio",
+      state: "TX",
+      zip: "78201",
+      country: "USA",
+    },
+    notes: "New customer - tech startup founder. Interested in bulk discounts.",
+    tags: ["tech", "startup", "new"],
+  },
+  "CUST-008": {
+    id: "CUST-008",
+    name: "Maria Garcia",
+    email: "",
+    phone: "+1 (555) 890-1234",
+    company: "Garcia Designs",
+    address: {
+      street: "258 Walnut Avenue",
+      city: "San Diego",
+      state: "CA",
+      zip: "92101",
+      country: "USA",
+    },
+    notes: "On vacation until May. Interior designer.",
+    tags: ["design", "vacation"],
+  },
+  "CUST-009": {
+    id: "CUST-009",
+    name: "Robert Taylor",
+    email: "robert.taylor@email.com",
+    phone: "+1 (555) 901-2345",
+    company: "Taylor Construction",
+    address: {
+      street: "369 Spruce Street",
+      city: "Denver",
+      state: "CO",
+      zip: "80201",
+      country: "USA",
+    },
+    notes: "Construction company - bulk orders every month.",
+    taxId: "45-6789012",
+    tags: ["construction", "bulk", "monthly"],
+  },
+  "CUST-010": {
+    id: "CUST-010",
+    name: "Jennifer Park",
+    email: "jennifer.park@email.com",
+    phone: "+1 (555) 012-3456",
+    company: "Park Consulting",
+    address: {
+      street: "753 Aspen Road",
+      city: "Seattle",
+      state: "WA",
+      zip: "98101",
+      country: "USA",
+    },
+    notes: "Business consultant - orders for corporate events.",
+    tags: ["consulting", "corporate"],
+  },
+};
+
+const InputField = ({ 
+  control, 
+  name, 
+  label, 
+  placeholder, 
+  icon, 
+  required = false,
+  keyboardType = 'default',
+  multiline = false,
+  numberOfLines = 1,
+  errors,
+  secureTextEntry = false,
+  autoCapitalize = 'none',
+  editable = true,
+}) => (
+  <View className="mb-4">
+    <View className="flex-row items-center mb-2">
+      <Text className="text-gray-700 text-sm font-medium">
+        {label} {required && <Text className="text-red-500">*</Text>}
+      </Text>
+    </View>
+    <Controller
+      control={control}
+      name={name}
+      rules={{ required: required ? `${label} is required` : false }}
+      render={({ field: { onChange, onBlur, value } }) => (
+        <View
+          className={`flex-row items-center bg-gray-50 rounded-xl px-4 border ${
+            errors[name] ? 'border-red-300' : 'border-gray-200'
+          } ${!editable ? 'opacity-60' : ''}`}
+        >
+          {icon && (
+            <View className="w-8 h-8 items-center justify-center">
+              <Icon name={icon} size={20} color="#9ca3af" />
+            </View>
+          )}
+          <TextInput
+            className={`flex-1 py-3 ${icon ? 'ml-2' : ''} text-gray-900`}
+            placeholder={placeholder}
+            placeholderTextColor="#9ca3af"
+            onChangeText={onChange}
+            onBlur={onBlur}
+            value={value}
+            keyboardType={keyboardType}
+            multiline={multiline}
+            numberOfLines={numberOfLines}
+            textAlignVertical={multiline ? 'top' : 'center'}
+            secureTextEntry={secureTextEntry}
+            autoCapitalize={autoCapitalize}
+            editable={editable}
+          />
+        </View>
+      )}
+    />
+    {errors[name] && (
+      <View className="flex-row items-center mt-1">
+        <Icon name="alert-circle" size={14} color="#EF4444" />
+        <Text className="text-red-500 text-xs ml-1">{errors[name].message}</Text>
+      </View>
+    )}
+  </View>
+);
 
 const CustomerForm = () => {
   const navigation = useNavigation();
   const route = useRoute();
-  const { selectedCustomer, updateCustomer, addCustomer } = useCustomerStore();
-  const { showSuccess, showError } = useUIStore();
-  
-  const isEditing = route.params?.customerId || selectedCustomer?.id;
+  const { customerId } = route.params || {};
   const [loading, setLoading] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [customer, setCustomer] = useState(null);
 
   const {
     control,
     handleSubmit,
     formState: { errors, isValid },
-    setValue,
     reset,
+    watch,
   } = useForm({
     defaultValues: {
       name: '',
       email: '',
       phone: '',
       company: '',
+      taxId: '',
       address: {
         street: '',
         city: '',
         state: '',
         zip: '',
-        country: '',
+        country: 'USA',
       },
       notes: '',
     },
+    mode: 'onChange',
   });
 
-  const { mutate: createCustomer } = useMutation(customersAPI.createCustomer);
-  const { mutate: updateCustomerApi } = useMutation(
-    (data) => customersAPI.updateCustomer(route.params?.customerId || selectedCustomer?.id, data)
-  );
+  // Watch form values for live preview
+  const formValues = watch();
 
   useEffect(() => {
-    if (isEditing && selectedCustomer) {
+    if (customerId && STATIC_CUSTOMERS[customerId]) {
+      const customerData = STATIC_CUSTOMERS[customerId];
+      setCustomer(customerData);
       reset({
-        name: selectedCustomer.name || '',
-        email: selectedCustomer.email || '',
-        phone: selectedCustomer.phone || '',
-        company: selectedCustomer.company || '',
-        address: selectedCustomer.address || {
+        name: customerData.name || '',
+        email: customerData.email || '',
+        phone: customerData.phone || '',
+        company: customerData.company || '',
+        taxId: customerData.taxId || '',
+        address: customerData.address || {
           street: '',
           city: '',
           state: '',
           zip: '',
-          country: '',
+          country: 'USA',
         },
-        notes: selectedCustomer.notes || '',
+        notes: customerData.notes || '',
       });
     }
-  }, [isEditing, selectedCustomer, reset]);
+  }, [customerId, reset]);
 
-  const onSubmit = async (data) => {
-    try {
-      setLoading(true);
-      
-      if (isEditing) {
-        const response = await updateCustomerApi(data);
-        updateCustomer(selectedCustomer.id, response.customer);
-        showSuccess('Customer updated successfully');
-      } else {
-        const response = await createCustomer(data);
-        addCustomer(response.customer);
-        showSuccess('Customer created successfully');
-      }
-
-      navigation.goBack();
-    } catch (error) {
-      showError(error.message || 'Failed to save customer');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleDelete = () => {
+  const onSubmit = (data) => {
     Alert.alert(
-      'Delete Customer',
-      'Are you sure you want to delete this customer? This action cannot be undone.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              setLoading(true);
-              await customersAPI.deleteCustomer(selectedCustomer.id);
-              navigation.goBack();
-              showSuccess('Customer deleted successfully');
-            } catch (error) {
-              showError(error.message || 'Failed to delete customer');
-            } finally {
-              setLoading(false);
-            }
-          },
-        },
-      ]
+      'Success',
+      customerId ? 'Customer updated successfully' : 'Customer created successfully',
+      [{ text: 'OK', onPress: () => navigation.goBack() }]
     );
   };
 
+  const handleDelete = () => {
+    setShowDeleteModal(true);
+  };
+
+  const confirmDelete = () => {
+    setShowDeleteModal(false);
+    Alert.alert('Success', 'Customer deleted successfully', [
+      { text: 'OK', onPress: () => navigation.goBack() }
+    ]);
+  };
+
+  const isFormValid = () => {
+    return formValues.name && formValues.email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formValues.email);
+  };
+
   return (
-    <View style={styles.container}>
-      <Header
-        title={isEditing ? 'Edit Customer' : 'Add Customer'}
-        rightComponent={
-          isEditing ? (
-            <Button
-              title="Delete"
-              onPress={handleDelete}
-              variant="ghost"
-              size="small"
-            />
-          ) : null
-        }
-      />
-      
-      <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
-        <View style={styles.form}>
-          <Controller
-            control={control}
-            name="name"
-            rules={{
-              required: 'Customer name is required',
-              maxLength: {
-                value: 100,
-                message: 'Name must be less than 100 characters',
-              },
+    <SafeAreaView className="flex-1 bg-gray-50" edges={['top']}>
+      {/* Header */}
+      <View className="flex-row items-center justify-between px-4 py-3 bg-white border-b border-gray-100">
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          className="w-10 h-10 bg-gray-100 rounded-xl items-center justify-center"
+        >
+          <Icon name="arrow-left" size={22} color="#374151" />
+        </TouchableOpacity>
+        <Text className="text-lg font-bold text-gray-900">
+          {customerId ? 'Edit Customer' : 'New Customer'}
+        </Text>
+        {customerId ? (
+          <TouchableOpacity
+            onPress={handleDelete}
+            className="w-10 h-10 bg-red-100 rounded-xl items-center justify-center"
+          >
+            <Icon name="delete" size={20} color="#EF4444" />
+          </TouchableOpacity>
+        ) : (
+          <View className="w-10" />
+        )}
+      </View>
+
+      <KeyboardAvoidingView 
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        className="flex-1"
+      >
+        <ScrollView 
+          className="flex-1" 
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ paddingBottom: 100 }}
+        >
+          {/* Hero Section */}
+          <LinearGradient
+            colors={["#4158D0", "#C850C0"]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            className="mx-4 mt-4 p-6 rounded-3xl"
+            style={{
+              shadowColor: "#4158D0",
+              shadowOffset: { width: 0, height: 8 },
+              shadowOpacity: 0.3,
+              shadowRadius: 12,
+              elevation: 8,
+              borderRadius: 13,
             }}
-            render={({ field: { onChange, onBlur, value } }) => (
-              <Input
-                label="Name"
-                value={value}
-                onChangeText={onChange}
-                onBlur={onBlur}
-                placeholder="Enter customer name"
-                error={errors.name?.message}
-              />
-            )}
-          />
+          >
+            <View className="flex-row items-center">
+              <View className="w-16 h-16 bg-white/20 rounded-2xl items-center justify-center">
+                <Icon name="account-plus" size={32} color="white" />
+              </View>
+              <View className="flex-1 ml-4">
+                <Text className="text-white text-2xl font-bold">
+                  {customerId ? 'Edit Customer' : 'Add Customer'}
+                </Text>
+                <Text className="text-white/80 text-sm mt-1">
+                  {customerId 
+                    ? 'Update customer information below'
+                    : 'Fill in the details to add a new customer'}
+                </Text>
+              </View>
+            </View>
+          </LinearGradient>
 
-          <Controller
-            control={control}
-            name="email"
-            rules={{
-              required: 'Email is required',
-              pattern: {
-                value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-                message: 'Invalid email address',
-              },
-            }}
-            render={({ field: { onChange, onBlur, value } }) => (
-              <Input
-                label="Email"
-                value={value}
-                onChangeText={onChange}
-                onBlur={onBlur}
-                placeholder="Enter email address"
-                keyboardType="email-address"
-                autoCapitalize="none"
-                error={errors.email?.message}
-              />
-            )}
-          />
+          {/* Live Preview (only when editing/adding) */}
+          {formValues.name && (
+            <View className="mx-4 mt-4 bg-white p-4 rounded-2xl border border-indigo-100">
+              <View className="flex-row items-center">
+                <LinearGradient
+                  colors={["#4158D0", "#C850C0"]}
+                  className="w-12 h-12 rounded-xl items-center justify-center"
+                >
+                  <Text className="text-white text-xl font-bold">
+                    {formValues.name.charAt(0).toUpperCase()}
+                  </Text>
+                </LinearGradient>
+                <View className="flex-1 ml-3">
+                  <Text className="text-gray-900 font-bold">{formValues.name || 'Customer Name'}</Text>
+                  <Text className="text-gray-500 text-sm">{formValues.email || 'email@example.com'}</Text>
+                </View>
+                <View className="bg-green-100 px-3 py-1 rounded-full">
+                  <Text className="text-green-600 text-xs font-medium">New</Text>
+                </View>
+              </View>
+            </View>
+          )}
 
-          <Controller
-            control={control}
-            name="phone"
-            rules={{
-              pattern: {
-                value: /^\+?[\d\s\-\(\)]+$/,
-                message: 'Invalid phone number',
-              },
-            }}
-            render={({ field: { onChange, onBlur, value } }) => (
-              <Input
-                label="Phone"
-                value={value}
-                onChangeText={onChange}
-                onBlur={onBlur}
-                placeholder="Enter phone number"
-                keyboardType="phone-pad"
-                error={errors.phone?.message}
-              />
-            )}
-          />
+          {/* Main Form */}
+          <View className="p-4">
+            {/* Basic Information Card */}
+            <View className="bg-white rounded-3xl border border-gray-100 mb-4 overflow-hidden">
+              <LinearGradient
+                colors={["#f8f9ff", "#ffffff"]}
+                className="px-5 py-4 border-b border-gray-100"
+              >
+                <View className="flex-row items-center">
+                  <View className="w-8 h-8 bg-indigo-100 rounded-lg items-center justify-center mr-3">
+                    <Icon name="account-details" size={18} color="#6366F1" />
+                  </View>
+                  <Text className="text-gray-900 font-bold text-lg">Basic Information</Text>
+                </View>
+              </LinearGradient>
+              
+              <View className="p-5">
+                <InputField
+                  control={control}
+                  name="name"
+                  label="Full Name"
+                  placeholder="Enter customer full name"
+                  icon="account-outline"
+                  required
+                  errors={errors}
+                  autoCapitalize="words"
+                />
 
-          <Controller
-            control={control}
-            name="company"
-            render={({ field: { onChange, onBlur, value } }) => (
-              <Input
-                label="Company"
-                value={value}
-                onChangeText={onChange}
-                onBlur={onBlur}
-                placeholder="Enter company name (optional)"
-                error={errors.company?.message}
-              />
-            )}
-          />
+                <InputField
+                  control={control}
+                  name="email"
+                  label="Email Address"
+                  placeholder="customer@example.com"
+                  icon="email-outline"
+                  required
+                  keyboardType="email-address"
+                  errors={errors}
+                />
 
-          <Text style={styles.sectionTitle}>Address</Text>
-          
-          <Controller
-            control={control}
-            name="address.street"
-            render={({ field: { onChange, onBlur, value } }) => (
-              <Input
-                label="Street Address"
-                value={value}
-                onChangeText={onChange}
-                onBlur={onBlur}
-                placeholder="Enter street address"
-                error={errors.address?.street?.message}
-              />
-            )}
-          />
+                <InputField
+                  control={control}
+                  name="phone"
+                  label="Phone Number"
+                  placeholder="+1 (555) 123-4567"
+                  icon="phone-outline"
+                  keyboardType="phone-pad"
+                  errors={errors}
+                />
 
-          <View style={styles.row}>
-            <View style={styles.halfWidth}>
-              <Controller
-                control={control}
-                name="address.city"
-                render={({ field: { onChange, onBlur, value } }) => (
-                  <Input
-                    label="City"
-                    value={value}
-                    onChangeText={onChange}
-                    onBlur={onBlur}
-                    placeholder="Enter city"
-                    error={errors.address?.city?.message}
-                  />
-                )}
-              />
+                <InputField
+                  control={control}
+                  name="company"
+                  label="Company"
+                  placeholder="Company name (optional)"
+                  icon="office-building"
+                  errors={errors}
+                  autoCapitalize="words"
+                />
+
+                <InputField
+                  control={control}
+                  name="taxId"
+                  label="Tax ID / VAT Number"
+                  placeholder="Enter tax ID (optional)"
+                  icon="file-document-outline"
+                  errors={errors}
+                />
+              </View>
             </View>
 
-            <View style={styles.halfWidth}>
-              <Controller
-                control={control}
-                name="address.state"
-                render={({ field: { onChange, onBlur, value } }) => (
-                  <Input
-                    label="State"
-                    value={value}
-                    onChangeText={onChange}
-                    onBlur={onBlur}
-                    placeholder="Enter state"
-                    error={errors.address?.state?.message}
+            {/* Address Card */}
+            <View className="bg-white rounded-3xl border border-gray-100 mb-4 overflow-hidden">
+              <LinearGradient
+                colors={["#f8f9ff", "#ffffff"]}
+                className="px-5 py-4 border-b border-gray-100"
+              >
+                <View className="flex-row items-center">
+                  <View className="w-8 h-8 bg-green-100 rounded-lg items-center justify-center mr-3">
+                    <Icon name="map-marker" size={18} color="#10B981" />
+                  </View>
+                  <Text className="text-gray-900 font-bold text-lg">Address Information</Text>
+                </View>
+              </LinearGradient>
+              
+              <View className="p-5">
+                <InputField
+                  control={control}
+                  name="address.street"
+                  label="Street Address"
+                  placeholder="Enter street address"
+                  icon="home-outline"
+                  errors={errors}
+                  autoCapitalize="words"
+                />
+
+                <View className="flex-row mb-4">
+                  <View className="flex-1 mr-2">
+                    <Controller
+                      control={control}
+                      name="address.city"
+                      render={({ field: { onChange, onBlur, value } }) => (
+                        <View>
+                          <Text className="text-gray-700 text-sm font-medium mb-2">City</Text>
+                          <View className="flex-row items-center bg-gray-50 rounded-xl px-4 border border-gray-200">
+                            <Icon name="city" size={20} color="#9ca3af" />
+                            <TextInput
+                              className="flex-1 ml-2 py-3 text-gray-900"
+                              placeholder="City"
+                              placeholderTextColor="#9ca3af"
+                              onChangeText={onChange}
+                              onBlur={onBlur}
+                              value={value}
+                            />
+                          </View>
+                        </View>
+                      )}
+                    />
+                  </View>
+                  <View className="flex-1 ml-2">
+                    <Controller
+                      control={control}
+                      name="address.state"
+                      render={({ field: { onChange, onBlur, value } }) => (
+                        <View>
+                          <Text className="text-gray-700 text-sm font-medium mb-2">State</Text>
+                          <View className="flex-row items-center bg-gray-50 rounded-xl px-4 border border-gray-200">
+                            <TextInput
+                              className="flex-1 py-3 text-gray-900"
+                              placeholder="State"
+                              placeholderTextColor="#9ca3af"
+                              onChangeText={onChange}
+                              onBlur={onBlur}
+                              value={value}
+                            />
+                          </View>
+                        </View>
+                      )}
+                    />
+                  </View>
+                </View>
+
+                <View className="flex-row">
+                  <View className="flex-1 mr-2">
+                    <Controller
+                      control={control}
+                      name="address.zip"
+                      render={({ field: { onChange, onBlur, value } }) => (
+                        <View>
+                          <Text className="text-gray-700 text-sm font-medium mb-2">ZIP Code</Text>
+                          <View className="flex-row items-center bg-gray-50 rounded-xl px-4 border border-gray-200">
+                            <Icon name="zip-box" size={20} color="#9ca3af" />
+                            <TextInput
+                              className="flex-1 ml-2 py-3 text-gray-900"
+                              placeholder="ZIP"
+                              placeholderTextColor="#9ca3af"
+                              onChangeText={onChange}
+                              onBlur={onBlur}
+                              value={value}
+                              keyboardType="numeric"
+                            />
+                          </View>
+                        </View>
+                      )}
+                    />
+                  </View>
+                  <View className="flex-1 ml-2">
+                    <Controller
+                      control={control}
+                      name="address.country"
+                      render={({ field: { onChange, onBlur, value } }) => (
+                        <View>
+                          <Text className="text-gray-700 text-sm font-medium mb-2">Country</Text>
+                          <View className="flex-row items-center bg-gray-50 rounded-xl px-4 border border-gray-200">
+                            <Icon name="earth" size={20} color="#9ca3af" />
+                            <TextInput
+                              className="flex-1 ml-2 py-3 text-gray-900"
+                              placeholder="Country"
+                              placeholderTextColor="#9ca3af"
+                              onChangeText={onChange}
+                              onBlur={onBlur}
+                              value={value}
+                            />
+                          </View>
+                        </View>
+                      )}
+                    />
+                  </View>
+                </View>
+              </View>
+            </View>
+
+            {/* Tags Preview (if editing) */}
+            {customer?.tags && customer.tags.length > 0 && (
+              <View className="bg-white rounded-3xl border border-gray-100 mb-4 p-5">
+                <View className="flex-row items-center mb-4">
+                  <View className="w-8 h-8 bg-purple-100 rounded-lg items-center justify-center mr-3">
+                    <Icon name="tag-multiple" size={18} color="#8B5CF6" />
+                  </View>
+                  <Text className="text-gray-900 font-bold text-lg">Tags</Text>
+                </View>
+                <View className="flex-row flex-wrap">
+                  {customer.tags.map((tag, index) => (
+                    <View
+                      key={index}
+                      className="bg-indigo-50 px-3 py-1.5 rounded-full mr-2 mb-2"
+                    >
+                      <Text className="text-indigo-600 text-xs font-medium">
+                        #{tag}
+                      </Text>
+                    </View>
+                  ))}
+                </View>
+              </View>
+            )}
+
+            {/* Notes Card */}
+            <View className="bg-white rounded-3xl border border-gray-100 mb-6 overflow-hidden">
+              <LinearGradient
+                colors={["#f8f9ff", "#ffffff"]}
+                className="px-5 py-4 border-b border-gray-100"
+              >
+                <View className="flex-row items-center">
+                  <View className="w-8 h-8 bg-orange-100 rounded-lg items-center justify-center mr-3">
+                    <Icon name="note-text" size={18} color="#F59E0B" />
+                  </View>
+                  <Text className="text-gray-900 font-bold text-lg">Notes</Text>
+                </View>
+              </LinearGradient>
+              
+              <View className="p-5">
+                <Controller
+                  control={control}
+                  name="notes"
+                  render={({ field: { onChange, onBlur, value } }) => (
+                    <View className="bg-gray-50 rounded-xl px-4 border border-gray-200">
+                      <TextInput
+                        className="py-3 text-gray-900 min-h-[100px]"
+                        placeholder="Add any notes about this customer..."
+                        placeholderTextColor="#9ca3af"
+                        onChangeText={onChange}
+                        onBlur={onBlur}
+                        value={value}
+                        multiline
+                        numberOfLines={4}
+                        textAlignVertical="top"
+                      />
+                    </View>
+                  )}
+                />
+              </View>
+            </View>
+
+            {/* Submit Button */}
+            <TouchableOpacity
+              onPress={handleSubmit(onSubmit)}
+              disabled={!isFormValid() || loading}
+              className="mb-8"
+              activeOpacity={0.8}
+            >
+              <LinearGradient
+                colors={isFormValid() ? ["#4158D0", "#C850C0"] : ["#E5E7EB", "#E5E7EB"]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                className="py-4 rounded-2xl"
+                style={{
+                  shadowColor: isFormValid() ? "#4158D0" : "#000",
+                  shadowOffset: { width: 0, height: 4 },
+                  shadowOpacity: isFormValid() ? 0.3 : 0.1,
+                  shadowRadius: 8,
+                  elevation: isFormValid() ? 5 : 2,
+                  borderRadius: 13,
+                }}
+              >
+                <View className="flex-row items-center justify-center">
+                  <Icon 
+                    name={customerId ? "account-edit" : "account-plus"} 
+                    size={20} 
+                    color={isFormValid() ? "white" : "#9CA3AF"} 
                   />
-                )}
-              />
+                  <Text className={`font-bold text-center text-lg ml-2 ${
+                    isFormValid() ? "text-white" : "text-gray-400"
+                  }`}>
+                    {customerId ? "Update Customer" : "Create Customer"}
+                  </Text>
+                </View>
+              </LinearGradient>
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+
+      {/* Delete Confirmation Modal */}
+      <Modal
+        visible={showDeleteModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowDeleteModal(false)}
+      >
+        <View className="flex-1 bg-black/50 justify-center items-center px-6">
+          <View className="bg-white rounded-3xl p-6 w-full max-w-sm">
+            <View className="items-center mb-4">
+              <View className="w-16 h-16 bg-red-100 rounded-2xl items-center justify-center mb-3">
+                <Icon name="delete" size={32} color="#EF4444" />
+              </View>
+              <Text className="text-gray-900 font-bold text-xl text-center">
+                Delete Customer
+              </Text>
+              <Text className="text-gray-500 text-center mt-2">
+                Are you sure you want to delete this customer? This action cannot be undone.
+              </Text>
+            </View>
+
+            <View className="flex-row mt-6">
+              <TouchableOpacity
+                onPress={() => setShowDeleteModal(false)}
+                className="flex-1 bg-gray-100 py-3 rounded-xl mr-2"
+              >
+                <Text className="text-gray-700 font-semibold text-center">Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={confirmDelete}
+                className="flex-1 bg-red-500 py-3 rounded-xl ml-2"
+              >
+                <Text className="text-white font-semibold text-center">Delete</Text>
+              </TouchableOpacity>
             </View>
           </View>
-
-          <View style={styles.row}>
-            <View style={styles.halfWidth}>
-              <Controller
-                control={control}
-                name="address.zip"
-                render={({ field: { onChange, onBlur, value } }) => (
-                  <Input
-                    label="ZIP Code"
-                    value={value}
-                    onChangeText={onChange}
-                    onBlur={onBlur}
-                    placeholder="Enter ZIP code"
-                    error={errors.address?.zip?.message}
-                  />
-                )}
-              />
-            </View>
-
-            <View style={styles.halfWidth}>
-              <Controller
-                control={control}
-                name="address.country"
-                render={({ field: { onChange, onBlur, value } }) => (
-                  <Input
-                    label="Country"
-                    value={value}
-                    onChangeText={onChange}
-                    onBlur={onBlur}
-                    placeholder="Enter country"
-                    error={errors.address?.country?.message}
-                  />
-                )}
-              />
-            </View>
-          </View>
-
-          <Controller
-            control={control}
-            name="notes"
-            render={({ field: { onChange, onBlur, value } }) => (
-              <Input
-                label="Notes"
-                value={value}
-                onChangeText={onChange}
-                onBlur={onBlur}
-                placeholder="Add any notes about this customer"
-                multiline
-                numberOfLines={4}
-                error={errors.notes?.message}
-              />
-            )}
-          />
-
-          <Button
-            title={isEditing ? 'Update Customer' : 'Create Customer'}
-            onPress={handleSubmit(onSubmit)}
-            loading={loading}
-            disabled={!isValid || loading}
-            style={styles.submitButton}
-          />
         </View>
-      </ScrollView>
-    </View>
+      </Modal>
+    </SafeAreaView>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: theme.colors.background,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  scrollContent: {
-    padding: theme.spacing.md,
-  },
-  form: {
-    paddingBottom: theme.spacing.xl,
-  },
-  sectionTitle: {
-    ...theme.typography.h4,
-    color: theme.colors.text,
-    marginBottom: theme.spacing.sm,
-    marginTop: theme.spacing.md,
-  },
-  row: {
-    flexDirection: 'row',
-    gap: theme.spacing.md,
-  },
-  halfWidth: {
-    flex: 1,
-  },
-  submitButton: {
-    marginTop: theme.spacing.lg,
-  },
-});
 
 export default CustomerForm;
