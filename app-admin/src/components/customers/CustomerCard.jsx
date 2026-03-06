@@ -30,6 +30,7 @@ const CustomerCard = ({ customer, onPress, viewMode = 'grid' }) => {
           <LinearGradient
             colors={isActive ? ['#10B981', '#059669'] : ['#EF4444', '#DC2626']}
             className="w-14 h-14 rounded-2xl items-center justify-center mr-4"
+            style={{borderRadius:100}}
           >
             <Text className="text-white text-xl font-bold">
               {customer.name.charAt(0).toUpperCase()}
@@ -92,6 +93,7 @@ const CustomerCard = ({ customer, onPress, viewMode = 'grid' }) => {
       <LinearGradient
         colors={isActive ? ['#10B981', '#059669'] : ['#EF4444', '#DC2626']}
         className="w-16 h-16 rounded-2xl items-center justify-center self-center mb-3"
+        style={{borderRadius:100}}
       >
         <Text className="text-white text-2xl font-bold">
           {customer.name.charAt(0).toUpperCase()}

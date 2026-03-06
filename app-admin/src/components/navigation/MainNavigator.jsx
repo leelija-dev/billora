@@ -408,7 +408,7 @@ const ModernTabBar = ({ state, descriptors, navigation }) => {
                     flexDirection: "row",
                     paddingVertical: 12,
                     paddingHorizontal: isFocused ? 18 : 12,
-                    minWidth: isFocused ? 60 : "auto",
+                    // minWidth: isFocused ? 60 : "auto",
                     zIndex: 1, // Ensure text/icons are above the animated background
                   }}
                 >
@@ -417,11 +417,11 @@ const ModernTabBar = ({ state, descriptors, navigation }) => {
                     size={22}
                     color={isFocused ? "white" : "#758A93"}
                   />
-                  {isFocused && (
-                    <Animated.Text className="text-sm font-medium text-white ml-2">
+                  {/* {isFocused && (
+                    <Animated.Text className="text-sm font-medium text-white ml-2 ">
                       {tab.label}
                     </Animated.Text>
-                  )}
+                  )} */}
                 </TouchableOpacity>
               );
             })}
@@ -458,6 +458,7 @@ const MainNavigator = () => {
       <Tab.Screen
         name="InventoryStack"
         component={InventoryStack}
+        
         
       />
       <Tab.Screen

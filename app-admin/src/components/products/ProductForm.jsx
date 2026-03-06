@@ -140,7 +140,7 @@ const ProductForm = () => {
     <SafeAreaView className="flex-1 bg-gray-50">
       <ScrollView
         className="flex-1"
-        contentContainerClassName="p-5 pb-16 pt-0"
+        contentContainerClassName="px-5 pb-16 pt-0"
         showsVerticalScrollIndicator={false}
       >
         {/* Image Upload Section */}

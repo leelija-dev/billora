@@ -160,7 +160,8 @@ const CustomersScreen = () => {
         shadowOpacity: 0.1,
         shadowRadius: 8,
         elevation: 3,
-        minWidth: width * 0.3,
+        minWidth: width * 0.4,
+        borderRadius: 10,
       }}
     >
       <View className="flex-row items-center justify-between mb-2">

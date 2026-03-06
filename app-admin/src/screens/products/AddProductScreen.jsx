@@ -12,7 +12,7 @@ const AddProductScreen = () => {
   const { productId } = route.params || {};
 
   return (
-    <View className="flex-1 bg-gray-50">
+    <View className="flex-1 bg-gray-50 pb-4">
       <SafeAreaView className="flex-1" edges={["left", "right"]}>
         <Header
           title={productId ? "Edit Product" : "Add Product"}
@@ -22,6 +22,7 @@ const AddProductScreen = () => {
               <LinearGradient
                 colors={["#3b82f6", "#2563eb"]}
                 className="w-10 h-10 rounded-full items-center justify-center"
+                style={{borderRadius:100}}
               >
                 <Icon name="help" size={22} color="#ffffff" />
               </LinearGradient>
@@ -33,6 +34,7 @@ const AddProductScreen = () => {
         <LinearGradient
           colors={["#3b82f6", "#2563eb"]}
           className="px-5 py-6 mx-4 rounded-2xl mb-0 mt-3"
+          style={{borderRadius:10,}}
         >
           <View className="flex-row items-center">
             <View className="w-12 h-12 bg-white/20 rounded-full items-center justify-center mr-4">

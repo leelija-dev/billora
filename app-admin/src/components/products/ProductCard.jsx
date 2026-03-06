@@ -156,6 +156,7 @@ const ProductCard = ({ product, onUpdateStock }) => {
               <LinearGradient
                 colors={["#ef4444", "#dc2626"]}
                 className="px-2 py-1 rounded-full"
+                style={{borderRadius:100}}
               >
                 <Text className="text-white text-xs font-bold">
                   -{discount}%
@@ -166,6 +167,7 @@ const ProductCard = ({ product, onUpdateStock }) => {
               <LinearGradient
                 colors={["#3b82f6", "#2563eb"]}
                 className="px-2 py-1 rounded-full"
+                style={{borderRadius:100}}
               >
                 <Text className="text-white text-xs font-bold">NEW</Text>
               </LinearGradient>
@@ -191,6 +193,7 @@ const ProductCard = ({ product, onUpdateStock }) => {
             <LinearGradient
               colors={stockStatus.gradient}
               className="px-2 py-1 rounded-full flex-row items-center"
+              style={{borderRadius:100}}
             >
               <Icon name={stockStatus.icon} size={12} color="#ffffff" />
               <Text className="text-white text-xs font-medium ml-1">

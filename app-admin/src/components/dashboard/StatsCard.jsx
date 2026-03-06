@@ -1,4 +1,5 @@
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient'; // or 'react-native-linear-gradient'
 import { theme } from '../../theme';
 
 const StatsCard = ({
@@ -7,6 +8,7 @@ const StatsCard = ({
   subtitle,
   icon,
   color = theme.colors.primary,
+  gradient,
   trend,
   onPress,
   style,
@@ -23,6 +25,47 @@ const StatsCard = ({
 
   const CardComponent = onPress ? TouchableOpacity : View;
 
+  // If gradient is provided, render with LinearGradient
+  if (gradient) {
+    return (
+      <CardComponent
+        activeOpacity={onPress ? 0.8 : 1}
+        onPress={onPress}
+        style={style}
+      >
+        <LinearGradient
+          colors={gradient}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={styles.gradientContainer}
+        >
+          <View style={styles.content}>
+            <View style={styles.header}>
+              <View style={[styles.iconContainer, { backgroundColor: 'rgba(255,255,255,0.2)' }]}>
+                <Text style={[styles.icon, { color: '#FFFFFF' }]}>{icon}</Text>
+              </View>
+              {trend !== undefined && (
+                <View style={styles.trendContainer}>
+                  <Text style={[styles.trendIcon, { color: getTrendColor() }]}>
+                    {getTrendIcon()}
+                  </Text>
+                  <Text style={[styles.trendValue, { color: getTrendColor() }]}>
+                    {Math.abs(trend)}%
+                  </Text>
+                </View>
+              )}
+            </View>
+            
+            <Text style={[styles.value, styles.lightText]}>{value}</Text>
+            <Text style={[styles.title, styles.lightSubtext]}>{title}</Text>
+            {subtitle && <Text style={[styles.subtitle, styles.lightSubtext]}>{subtitle}</Text>}
+          </View>
+        </LinearGradient>
+      </CardComponent>
+    );
+  }
+
+  // Original non-gradient version
   return (
     <CardComponent
       style={[styles.container, { borderLeftColor: color }, style]}
@@ -59,6 +102,14 @@ const styles = StyleSheet.create({
     padding: theme.spacing.md,
     borderLeftWidth: 4,
     ...theme.shadows.sm,
+  },
+  gradientContainer: {
+    borderRadius: theme.borderRadius.lg,
+    overflow: 'hidden',
+    ...theme.shadows.sm,
+  },
+  content: {
+    padding: theme.spacing.md,
   },
   header: {
     flexDirection: 'row',
@@ -101,6 +152,12 @@ const styles = StyleSheet.create({
   subtitle: {
     ...theme.typography.caption,
     color: theme.colors.textTertiary,
+  },
+  lightText: {
+    color: '#FFFFFF',
+  },
+  lightSubtext: {
+    color: 'rgba(255,255,255,0.9)',
   },
 });
 
