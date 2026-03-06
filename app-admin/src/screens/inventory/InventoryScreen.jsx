@@ -116,7 +116,8 @@ const InventoryScreen = () => {
         shadowOpacity: 0.1,
         shadowRadius: 8,
         elevation: 3,
-        minWidth: width * 0.3,
+        minWidth: width * 0.4,
+        borderRadius: 13,
       }}
     >
       <View className="flex-row items-center justify-between mb-2">
@@ -131,7 +132,7 @@ const InventoryScreen = () => {
   );
 
   return (
-    <View className="flex-1 bg-gray-50">
+    <View className="flex-1 bg-gray-50 pb-16">
       <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
 
       <Header
@@ -229,7 +230,10 @@ const InventoryScreen = () => {
         </BlurView>
       </View>
 
-      {/* Filter Chips */}
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Filter Chips */}
       <View className="px-4 py-2">
         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
           <View className="flex-row gap-2">
@@ -314,6 +318,7 @@ const InventoryScreen = () => {
           filters={filters}
         />
       </View>
+      </ScrollView>
     </View>
   );
 };

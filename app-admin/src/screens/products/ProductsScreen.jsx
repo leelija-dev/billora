@@ -185,85 +185,85 @@ const ProductsScreen = () => {
         </View>
       </View>
 
-      {/* Categories Scroll */}
-      <View className="py-2">
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          className="px-4"
-        >
-          {categories.map((category) => (
-            <TouchableOpacity
-              key={category.id}
-              onPress={() => handleCategorySelect(category.id)}
-              className={`flex-row items-center mr-3 px-4 py-2.5 rounded-full border ${
-                selectedCategory === category.id
-                  ? "bg-blue-500 border-blue-500"
-                  : "bg-white border-white"
-              } shadow-sm`}
-            >
-              <Icon
-                name={category.icon}
-                size={18}
-                color={
-                  selectedCategory === category.id ? "#ffffff" : category.color
-                }
-              />
-              <Text
-                className={`ml-2 font-medium ${
-                  selectedCategory === category.id
-                    ? "text-white"
-                    : "text-gray-700"
-                }`}
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Categories Scroll */}
+        <View className="py-2">
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            className="px-4"
+          >
+            {categories.map((category) => (
+              <TouchableOpacity
+                key={category.id}
+                onPress={() => handleCategorySelect(category.id)}
+                className={`flex-row items-center mr-3 px-4 py-2.5 rounded-full border ${selectedCategory === category.id
+                    ? "bg-blue-500 border-blue-500"
+                    : "bg-white border-white"
+                  } shadow-sm`}
               >
-                {category.name}
-              </Text>
-              <View
-                className={`ml-2 px-2 py-0.5 rounded-full ${
-                  selectedCategory === category.id
-                    ? "bg-white/20"
-                    : "bg-gray-100"
-                }`}
-              >
+                <Icon
+                  name={category.icon}
+                  size={18}
+                  color={
+                    selectedCategory === category.id ? "#ffffff" : category.color
+                  }
+                />
                 <Text
-                  className={`text-xs ${
-                    selectedCategory === category.id
+                  className={`ml-2 font-medium ${selectedCategory === category.id
                       ? "text-white"
-                      : "text-gray-600"
-                  }`}
+                      : "text-gray-700"
+                    }`}
                 >
-                  {category.count}
+                  {category.name}
                 </Text>
-              </View>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-      </View>
+                <View
+                  className={`ml-2 px-2 py-0.5 rounded-full ${selectedCategory === category.id
+                      ? "bg-white/20"
+                      : "bg-gray-100"
+                    }`}
+                >
+                  <Text
+                    className={`text-xs ${selectedCategory === category.id
+                        ? "text-white"
+                        : "text-gray-600"
+                      }`}
+                  >
+                    {category.count}
+                  </Text>
+                </View>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
 
-      {/* Stats Cards */}
-      <View className="flex-row justify-between px-4 py-3">
-        <View className="bg-white rounded-xl p-3 flex-1 mr-2 shadow-sm ">
-          <Text className="text-gray-500 text-xs">Total Products</Text>
-          <Text className="text-2xl font-bold text-gray-800">156</Text>
+        {/* Stats Cards */}
+        <View className="flex-row justify-between px-4 py-3">
+          <View className="bg-white rounded-xl p-3 flex-1 mr-2 shadow-sm ">
+            <Text className="text-gray-500 text-xs">Total Products</Text>
+            <Text className="text-2xl font-bold text-gray-800">156</Text>
+          </View>
+          <View className="bg-white rounded-xl p-3 flex-1 mx-2 shadow-sm ">
+            <Text className="text-gray-500 text-xs">Low Stock</Text>
+            <Text className="text-2xl font-bold text-orange-500">12</Text>
+          </View>
+          <View className="bg-white rounded-xl p-3 flex-1 ml-2 shadow-sm ">
+            <Text className="text-gray-500 text-xs">Out of Stock</Text>
+            <Text className="text-2xl font-bold text-red-500">5</Text>
+          </View>
         </View>
-        <View className="bg-white rounded-xl p-3 flex-1 mx-2 shadow-sm ">
-          <Text className="text-gray-500 text-xs">Low Stock</Text>
-          <Text className="text-2xl font-bold text-orange-500">12</Text>
-        </View>
-        <View className="bg-white rounded-xl p-3 flex-1 ml-2 shadow-sm ">
-          <Text className="text-gray-500 text-xs">Out of Stock</Text>
-          <Text className="text-2xl font-bold text-red-500">5</Text>
-        </View>
-      </View>
 
-      {/* Product List */}
-      <View className="flex-1 px-4">
-        <ProductList
-          viewMode={viewMode}
-          searchQuery={searchQuery}
-          category={selectedCategory}
-        />
-      </View>
+        {/* Product List */}
+        <View className="flex-1 px-4">
+          <ProductList
+            viewMode={viewMode}
+            searchQuery={searchQuery}
+            category={selectedCategory}
+          />
+        </View>
+      </ScrollView>
 
       {/* Filters Modal */}
       <ProductFilters visible={showFilters} onClose={handleFiltersClose} />

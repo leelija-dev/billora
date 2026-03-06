@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Animated,
-  FlatList,
+  ScrollView,
   Image,
   RefreshControl,
   Text,
@@ -12,7 +12,7 @@ import {
 } from "react-native";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 
-// Static order data
+// Static order data (keep your existing STATIC_ORDERS array here)
 const STATIC_ORDERS = [
   {
     id: "ORD-001",
@@ -211,11 +211,12 @@ const OrderList = ({
     </Animated.View>
   );
 
-  const renderListItem = ({ item }) => {
+  const renderListItem = (item) => {
     const statusStyle = getStatusColor(item.status);
 
     return (
       <TouchableOpacity
+        key={item.id}
         onPress={() => handleOrderPress(item)}
         className="bg-white rounded-2xl p-4 mb-3 shadow-sm border border-white"
       >
@@ -276,11 +277,12 @@ const OrderList = ({
     );
   };
 
-  const renderGridItem = ({ item }) => {
+  const renderGridItem = (item) => {
     const statusStyle = getStatusColor(item.status);
 
     return (
       <TouchableOpacity
+        key={item.id}
         onPress={() => handleOrderPress(item)}
         className="w-[48%] mx-[1%] bg-white rounded-2xl p-3 mb-3 shadow-sm border border-white"
       >
@@ -324,6 +326,19 @@ const OrderList = ({
     );
   };
 
+  const renderGridItems = () => {
+    const rows = [];
+    for (let i = 0; i < filteredOrders.length; i += 2) {
+      const rowItems = filteredOrders.slice(i, i + 2);
+      rows.push(
+        <View key={`row-${i}`} className="flex-row justify-between mb-2">
+          {rowItems.map(item => renderGridItem(item))}
+        </View>
+      );
+    }
+    return rows;
+  };
+
   if (loading) {
     return (
       <View className="flex-1 justify-center items-center">
@@ -333,16 +348,41 @@ const OrderList = ({
     );
   }
 
+  if (!filteredOrders || filteredOrders.length === 0) {
+    return (
+      <ScrollView
+        className="flex-1"
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={["#3b82f6"]}
+            tintColor="#3b82f6"
+          />
+        }
+      >
+        <View className="px-4">
+          {renderHeader()}
+          <View className="items-center justify-center py-16">
+            <Icon name="clipboard-list" size={80} color="#d1d5db" />
+            <Text className="text-lg font-semibold text-gray-700 mt-4">
+              No Orders Found
+            </Text>
+            <Text className="text-sm text-gray-400 text-center mt-2 px-8">
+              {searchQuery || filter !== "all"
+                ? "Try adjusting your search or filters"
+                : "Create your first order by tapping the + button"}
+            </Text>
+          </View>
+        </View>
+      </ScrollView>
+    );
+  }
+
   return (
-    <FlatList
-      data={filteredOrders}
-      keyExtractor={(item) => item.id}
-      numColumns={viewMode === "grid" ? 2 : 1}
-      key={viewMode}
-      renderItem={viewMode === "grid" ? renderGridItem : renderListItem}
-      ListHeaderComponent={renderHeader}
-      contentContainerStyle={{ paddingBottom: 20 }}
-      showsVerticalScrollIndicator={false}
+    <View
+      className="flex-1"
+     
       refreshControl={
         <RefreshControl
           refreshing={refreshing}
@@ -351,20 +391,14 @@ const OrderList = ({
           tintColor="#3b82f6"
         />
       }
-      ListEmptyComponent={
-        <View className="flex-1 items-center justify-center py-16">
-          <Icon name="clipboard-list" size={80} color="#d1d5db" />
-          <Text className="text-lg font-semibold text-gray-700 mt-4">
-            No Orders Found
-          </Text>
-          <Text className="text-sm text-gray-400 text-center mt-2 px-8">
-            {searchQuery || filter !== "all"
-              ? "Try adjusting your search or filters"
-              : "Create your first order by tapping the + button"}
-          </Text>
-        </View>
-      }
-    />
+    >
+      <View className="">
+        {renderHeader()}
+        {viewMode === "grid" 
+          ? renderGridItems() 
+          : filteredOrders.map(item => renderListItem(item))}
+      </View>
+    </View>
   );
 };
 

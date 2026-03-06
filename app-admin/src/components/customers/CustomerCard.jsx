@@ -1,10 +1,22 @@
-// components/customers/CustomerCard.js
 import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
-import { formatRelativeTime } from '../../utils/helpers';
+
+const formatRelativeTime = (dateString) => {
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffTime = Math.abs(now - date);
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  
+  if (diffDays === 0) return 'Today';
+  if (diffDays === 1) return 'Yesterday';
+  if (diffDays < 7) return `${diffDays} days ago`;
+  if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`;
+  if (diffDays < 365) return `${Math.floor(diffDays / 30)} months ago`;
+  return `${Math.floor(diffDays / 365)} years ago`;
+};
 
 const CustomerCard = ({ customer, onPress, viewMode = 'grid' }) => {
   const navigation = useNavigation();
@@ -12,7 +24,7 @@ const CustomerCard = ({ customer, onPress, viewMode = 'grid' }) => {
   const handlePress = () => {
     if (onPress) {
       onPress(customer);
-    } else {
+    } else if (navigation) {
       navigation.navigate('CustomerDetail', { customerId: customer.id });
     }
   };
@@ -41,7 +53,7 @@ const CustomerCard = ({ customer, onPress, viewMode = 'grid' }) => {
             <View className="flex-row justify-between items-start">
               <View>
                 <Text className="text-gray-900 font-bold text-lg">{customer.name}</Text>
-                <Text className="text-gray-500 text-sm">{customer.email}</Text>
+                <Text className="text-gray-500 text-sm">{customer.email || 'No email'}</Text>
               </View>
               <View className={`px-3 py-1 rounded-full ${
                 isActive ? 'bg-green-100' : 'bg-red-100'
@@ -87,7 +99,7 @@ const CustomerCard = ({ customer, onPress, viewMode = 'grid' }) => {
   return (
     <TouchableOpacity
       onPress={handlePress}
-      className="w-[48%] mx-[1%] bg-white rounded-2xl p-4 mb-3 shadow-sm border border-gray-100"
+      className="w-full mx-[1%] bg-white rounded-2xl p-4 mb-3 shadow-sm border border-gray-100"
       activeOpacity={0.7}
     >
       <LinearGradient
@@ -104,7 +116,7 @@ const CustomerCard = ({ customer, onPress, viewMode = 'grid' }) => {
         {customer.name}
       </Text>
       <Text className="text-gray-500 text-xs text-center mb-2" numberOfLines={1}>
-        {customer.email}
+        {customer.email || 'No email'}
       </Text>
 
       <View className={`self-center px-3 py-1 rounded-full mb-3 ${
