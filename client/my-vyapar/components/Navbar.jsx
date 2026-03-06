@@ -34,10 +34,10 @@ const Navbar = () => {
           onClick={handleLogoClick}
         >
           <span className="bg-blue-600 text-white px-2.5 py-1 rounded text-2xl lg:text-3xl font-bold leading-none">
-            V
+            B
           </span>
           <span className="text-slate-800 text-2xl lg:text-3xl font-bold leading-none">
-            Vyapar
+            Billora
           </span>
         </Link>
 
@@ -151,12 +151,14 @@ const Navbar = () => {
 
           {/* CTA Buttons */}
           <div className="flex flex-col lg:flex-row items-center gap-4 mt-5 lg:mt-0">
-            <button
+            
+            <Link
+              href="/bookdemo"
               className="w-full lg:w-auto flex items-center justify-center gap-2 px-4 h-10 bg-gradient-to-br from-blue-500 to-purple-600 text-white rounded-full font-semibold text-sm transition-all hover:-translate-y-0.5 hover:shadow-[0_5px_15px_rgba(59,130,246,0.3)] whitespace-nowrap"
-              onClick={() => handleLinkClick("gst-calculator")}
+              onClick={() => setIsMenuOpen(false)}
             >
-              🧮 GST Calculator
-            </button>
+              Book free demo
+            </Link>
 
             <Link
               href="/login"

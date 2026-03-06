@@ -117,7 +117,7 @@ const Industries = () => {
           description="We understand your unique billing and accounting needs, Vyapar India billing software is specially designed for Indian SMBs."
         />
          <p className="text-[#475569] text-xl max-w-[600px] mx-auto mt-6 animate-[fadeInUp_0.8s_ease-out_0.2s_both] max-md:text-lg max-sm:text-base">
-                    Get started with Vyapar in three simple steps
+                    Get started with Billora in three simple steps
                 </p>
 
         <div className="flex flex-col lg:flex-row gap-8 sm:gap-10 md:gap-12 lg:gap-[60px] items-center justify-between mt-12 sm:mt-14 md:mt-16 lg:mt-20">

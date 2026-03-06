@@ -63,7 +63,7 @@ const HowItWorks = () => {
                     How It Works
                 </h2>
                 <p className="text-[#475569] text-sm sm:text-base md:text-lg lg:text-xl max-w-[600px] mx-auto mt-4 sm:mt-6 animate-[fadeInUp_0.8s_ease-out_0.2s_both] leading-relaxed">
-                    Get started with Vyapar in three simple steps
+                    Get started with Billora in three simple steps
                 </p>
             </div>
 

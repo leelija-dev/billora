@@ -57,9 +57,12 @@ const Footer = () => {
         <div className="grid grid-cols-[1.5fr_2.5fr] gap-16 mb-12 max-lg:grid-cols-1 max-lg:gap-12">
           {/* Brand Section */}
           <div>
-            <h3 className="text-[28px] font-bold text-white mb-4 tracking-tight">
-              GSTBilling
-            </h3>
+            <span className="bg-blue-600 text-white px-2.5 py-1 rounded text-1xl lg:text-1xl font-bold leading-none">
+            B
+          </span>
+          <span className="text-slate-800 text-white  lg:text-1xl font-bold leading-none">
+            Billora
+          </span>
             <p className="text-[#94a3b8] leading-[1.6] max-w-[300px] max-lg:max-w-full">
               Modern GST billing software for Indian businesses. Simplify your invoicing and compliance.
             </p>
