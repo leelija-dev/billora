@@ -74,7 +74,7 @@ const Ratings = () => {
       {/* Content Container */}
       <div className="relative z-10 px-4 sm:px-6">
         <h2 className="text-xl sm:text-2xl md:text-[28px] font-bold text-[#0f172a] mb-6 sm:mb-8 lg:mb-[30px] leading-tight">
-          How useful is Vyapar for<br className="sm:hidden" /> Your Business?
+          How useful is Billora for<br className="sm:hidden" /> Your Business?
         </h2>
         
         {/* Stars Rating */}

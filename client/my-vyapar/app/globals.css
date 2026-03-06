@@ -35,3 +35,30 @@ body {
   50% { transform: translate(0,-10px); }
   75% { transform: translate(-5px,-5px); }
 }
+.animated-bg{
+background: linear-gradient(
+-45deg,
+#dbeafe,
+#e0e7ff,
+#ede9fe,
+#dbeafe
+);
+background-size: 400% 400%;
+animation: gradientMove 12s ease infinite;
+}
+
+@keyframes gradientMove {
+
+0%{
+background-position:0% 50%;
+}
+
+50%{
+background-position:100% 50%;
+}
+
+100%{
+background-position:0% 50%;
+}
+
+}
