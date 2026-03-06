@@ -14,6 +14,7 @@ import {
   View,
   Easing,
   StatusBar,
+  useColorScheme,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
@@ -36,60 +37,60 @@ const Header = ({
   userName = "Guest User",
   userEmail = "guest@example.com",
   navigationItems = [
-     {
-    id: "dashboard",
-    title: "Dashboard",
-    icon: "view-dashboard-outline", // Changed from "view-dashboard" to outline version
-    iconActive: "view-dashboard", // Keep this as filled version
-    screen: "Dashboard",
-    badge: null,
-    stack: null,
-  },
-  {
-    id: "products",
-    title: "Products",
-    icon: "package-variant-closed", // This is already an outline version
-    iconActive: "package-variant", // This is the filled version
-    screen: "ProductsStack",
-    badge: "156",
-    stack: "Products",
-  },
-  {
-    id: "orders",
-    title: "Orders",
-    icon: "clipboard-list-outline",
-    iconActive: "clipboard-list",
-    screen: "OrdersStack",
-    badge: "12",
-    stack: "Orders",
-  },
-  {
-    id: "customers",
-    title: "Customers",
-    icon: "account-group-outline",
-    iconActive: "account-group",
-    screen: "CustomersStack",
-    badge: "892",
-    stack: "Customers",
-  },
-  {
-    id: "inventory",
-    title: "Inventory",
-    icon: "warehouse-outline", // Changed from "warehouse-outline" (it was correct)
-    iconActive: "warehouse", // Changed from "warehouse" (it was correct)
-    screen: "InventoryStack",
-    badge: "Low Stock",
-    stack: "Inventory",
-  },
-  {
-    id: "settings",
-    title: "Settings",
-    icon: "cog-outline",
-    iconActive: "cog",
-    screen: "SettingsStack",
-    badge: null,
-    stack: "Settings",
-  },
+    {
+      id: "dashboard",
+      title: "Dashboard",
+      icon: "view-dashboard-outline",
+      iconActive: "view-dashboard",
+      screen: "Dashboard",
+      badge: null,
+      stack: null,
+    },
+    {
+      id: "products",
+      title: "Products",
+      icon: "package-variant-closed",
+      iconActive: "package-variant",
+      screen: "ProductsStack",
+      badge: "156",
+      stack: "Products",
+    },
+    {
+      id: "orders",
+      title: "Orders",
+      icon: "clipboard-list-outline",
+      iconActive: "clipboard-list",
+      screen: "OrdersStack",
+      badge: "12",
+      stack: "Orders",
+    },
+    {
+      id: "customers",
+      title: "Customers",
+      icon: "account-group-outline",
+      iconActive: "account-group",
+      screen: "CustomersStack",
+      badge: "892",
+      stack: "Customers",
+    },
+    {
+      id: "inventory",
+      title: "Inventory",
+      icon: "warehouse-outline",
+      iconActive: "warehouse",
+      screen: "InventoryStack",
+      badge: "Low Stock",
+      stack: "Inventory",
+    },
+    {
+      id: "settings",
+      title: "Settings",
+      icon: "cog-outline",
+      iconActive: "cog",
+      screen: "SettingsStack",
+      badge: null,
+      stack: "Settings",
+    },
   ],
   onNavigate,
   activeScreen = "Dashboard",
@@ -97,11 +98,37 @@ const Header = ({
   onNotificationPress,
   onSearchPress,
   onLogout,
+  onThemeToggle,
+  isDarkMode = false,
 }) => {
   const navigation = useNavigation();
   const [sidebarVisible, setSidebarVisible] = useState(false);
   const [notificationVisible, setNotificationVisible] = useState(false);
+  const systemColorScheme = useColorScheme();
   
+  // Determine actual dark mode state (system or manual)
+  const darkMode = isDarkMode !== undefined ? isDarkMode : systemColorScheme === 'dark';
+  
+  // Theme-based colors
+  const theme = {
+    background: darkMode ? 'bg-gray-900' : 'bg-white',
+    text: darkMode ? 'text-white' : 'text-gray-800',
+    textSecondary: darkMode ? 'text-gray-300' : 'text-gray-600',
+    border: darkMode ? 'border-gray-700' : 'border-gray-200',
+    card: darkMode ? 'bg-gray-800' : 'bg-white',
+    cardHover: darkMode ? 'bg-gray-700' : 'bg-gray-50',
+    iconBg: darkMode ? 'bg-gray-700' : 'bg-gray-100',
+    iconColor: darkMode ? '#9CA3AF' : '#666',
+    activeBg: darkMode ? 'bg-purple-900/30' : 'bg-purple-50',
+    activeIconBg: darkMode ? 'bg-purple-800' : 'bg-purple-100',
+    activeText: darkMode ? 'text-purple-400' : 'text-purple-600',
+    shadow: darkMode ? 'shadow-none' : 'shadow-[0px_7px_20px_black]',
+    modalOverlay: darkMode ? 'rgba(0,0,0,0.7)' : 'rgba(0,0,0,0.5)',
+    notificationBg: darkMode ? 'bg-gray-800' : 'bg-white',
+    notificationItemBg: darkMode ? 'bg-gray-800' : 'bg-white',
+    notificationUnreadBg: darkMode ? 'bg-purple-900/20' : 'bg-blue-50/50',
+  };
+
   // Animation values
   const slideAnim = useRef(new Animated.Value(-DRAWER_WIDTH)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -110,7 +137,6 @@ const Header = ({
   // Handle sidebar animations
   useEffect(() => {
     if (sidebarVisible) {
-      // Slide in from left
       Animated.parallel([
         Animated.timing(slideAnim, {
           toValue: 0,
@@ -126,7 +152,6 @@ const Header = ({
         }),
       ]).start();
     } else {
-      // Slide out to left
       Animated.parallel([
         Animated.timing(slideAnim, {
           toValue: -DRAWER_WIDTH,
@@ -168,7 +193,6 @@ const Header = ({
 
   const closeSidebar = () => {
     if (sidebarVisible) {
-      // Animate out before closing
       Animated.parallel([
         Animated.timing(slideAnim, {
           toValue: -DRAWER_WIDTH,
@@ -198,7 +222,6 @@ const Header = ({
   };
 
   const handleNavigation = (item) => {
-    // Animate out before navigating
     Animated.parallel([
       Animated.timing(slideAnim, {
         toValue: -DRAWER_WIDTH,
@@ -218,7 +241,6 @@ const Header = ({
       if (onNavigate) {
         onNavigate(item.screen);
       } else {
-        // Navigate to the correct tab stack
         switch (item.id) {
           case "dashboard":
             navigation.navigate("Dashboard");
@@ -246,7 +268,6 @@ const Header = ({
   };
 
   const handleLogout = () => {
-    // Animate out before logout
     Animated.parallel([
       Animated.timing(slideAnim, {
         toValue: -DRAWER_WIDTH,
@@ -268,6 +289,12 @@ const Header = ({
         console.log("Logout pressed");
       }
     });
+  };
+
+  const handleThemeToggle = () => {
+    if (onThemeToggle) {
+      onThemeToggle(!darkMode);
+    }
   };
 
   const renderLeftComponent = () => {
@@ -304,7 +331,7 @@ const Header = ({
           <Icon
             name="arrow-left"
             size={24}
-            color={textColor === "text-gray-800" ? "#1f2937" : textColor}
+            color={darkMode ? "#FFFFFF" : "#1f2937"}
           />
         </TouchableOpacity>
       );
@@ -329,7 +356,7 @@ const Header = ({
           <Icon
             name="bell-outline"
             size={24}
-            color={textColor === "text-gray-800" ? "#1f2937" : textColor}
+            color={darkMode ? "#FFFFFF" : "#1f2937"}
           />
           {notificationCount > 0 && (
             <View className="absolute -top-1 -right-1 bg-red-500 rounded-full min-w-[20px] h-[20px] justify-center items-center border-2 border-white shadow-sm shadow-red-500/50">
@@ -349,7 +376,7 @@ const Header = ({
           <Icon
             name="magnify"
             size={24}
-            color={textColor === "text-gray-800" ? "#1f2937" : textColor}
+            color={darkMode ? "#FFFFFF" : "#1f2937"}
           />
         </TouchableOpacity>
       </View>
@@ -359,7 +386,6 @@ const Header = ({
   const renderNotifications = () => {
     if (!notificationVisible) return null;
 
-    // Sample notifications data
     const notifications = [
       {
         id: 1,
@@ -412,25 +438,25 @@ const Header = ({
                     },
                   ],
                 }}
-                className="absolute top-16 right-4 w-[80%] max-w-[350px] bg-white rounded-2xl shadow-[0px_10px_20px_black] "
+                className={`absolute top-16 right-4 w-[80%] max-w-[350px] ${theme.notificationBg} rounded-2xl shadow-lg`}
               >
                 {/* Header */}
                 <View className="rounded-t-2xl overflow-hidden">
                   <LinearGradient
-                  colors={["#667eea", "#764ba2"]}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                  className="flex-row justify-between items-center p-4  w-full h-auto"
-                >
-                  <Text className="text-white font-bold text-lg">
-                    Notifications
-                  </Text>
-                  <TouchableOpacity
-                    onPress={() => setNotificationVisible(false)}
+                    colors={["#667eea", "#764ba2"]}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 0 }}
+                    className="flex-row justify-between items-center p-4 w-full h-auto"
                   >
-                    <Icon name="close" size={22} color="white" />
-                  </TouchableOpacity>
-                </LinearGradient>
+                    <Text className="text-white font-bold text-lg">
+                      Notifications
+                    </Text>
+                    <TouchableOpacity
+                      onPress={() => setNotificationVisible(false)}
+                    >
+                      <Icon name="close" size={22} color="white" />
+                    </TouchableOpacity>
+                  </LinearGradient>
                 </View>
 
                 {/* Notifications List */}
@@ -441,8 +467,8 @@ const Header = ({
                   {notifications.map((notif) => (
                     <TouchableOpacity
                       key={notif.id}
-                      className={`flex-row p-4 border-b border-gray-100 ${
-                        !notif.read ? "bg-blue-50/50" : ""
+                      className={`flex-row p-4 border-b ${theme.border} ${
+                        !notif.read ? theme.notificationUnreadBg : theme.notificationItemBg
                       }`}
                       onPress={() => {
                         console.log("Notification pressed:", notif.id);
@@ -457,14 +483,14 @@ const Header = ({
                       </View>
                       <View className="flex-1">
                         <View className="flex-row justify-between items-center">
-                          <Text className="font-semibold text-gray-900">
+                          <Text className={`font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
                             {notif.title}
                           </Text>
-                          <Text className="text-xs text-gray-400">
+                          <Text className={`text-xs ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>
                             {notif.time}
                           </Text>
                         </View>
-                        <Text className="text-sm text-gray-600 mt-1">
+                        <Text className={`text-sm mt-1 ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
                           {notif.message}
                         </Text>
                       </View>
@@ -476,7 +502,7 @@ const Header = ({
 
                   {/* View All Button */}
                   <TouchableOpacity
-                    className="p-4 bg-gray-50 rounded-b-2xl"
+                    className={`p-4 ${darkMode ? 'bg-gray-900' : 'bg-gray-50'} rounded-b-2xl`}
                     onPress={() => {
                       console.log("View all notifications");
                       setNotificationVisible(false);
@@ -495,10 +521,7 @@ const Header = ({
     );
   };
 
- // components/common/Header.js
-// Update the renderSidebar function - remove the StatusBar spacer
-
-const renderSidebar = () => {
+ const renderSidebar = () => {
   if (!sidebarVisible) return null;
 
   return (
@@ -513,7 +536,7 @@ const renderSidebar = () => {
           style={{ 
             opacity: fadeAnim,
             flex: 1,
-            backgroundColor: 'rgba(0,0,0,0.5)',
+            backgroundColor: theme.modalOverlay,
           }}
         >
           <TouchableWithoutFeedback>
@@ -522,15 +545,15 @@ const renderSidebar = () => {
                 transform: [{ translateX: slideAnim }],
                 width: DRAWER_WIDTH,
                 height: '100%',
-                backgroundColor: 'white',
-                shadowColor: "#000",
+                backgroundColor: darkMode ? '#1F2937' : 'white',
+                shadowColor: darkMode ? '#000' : '#000',
                 shadowOffset: { width: 2, height: 0 },
-                shadowOpacity: 0.25,
+                shadowOpacity: darkMode ? 0.5 : 0.25,
                 shadowRadius: 5,
                 elevation: 5,
               }}
             >
-              {/* Main container with flex:1 to take full height */}
+              {/* Main container */}
               <View className="flex-1">
                 {/* User Profile Section */}
                 <LinearGradient
@@ -563,14 +586,13 @@ const renderSidebar = () => {
                   </View>
                 </LinearGradient>
 
-                {/* Navigation Items - Takes remaining space */}
+                {/* Navigation Items */}
                 <ScrollView 
                   className="flex-1" 
                   showsVerticalScrollIndicator={false}
                   contentContainerStyle={{ paddingVertical: 8 }}
                 >
                   {navigationItems.map((item) => {
-                    // FIXED: Better active state detection
                     const isActive = 
                       activeScreen === item.title || 
                       activeScreen === item.stack ||
@@ -578,33 +600,30 @@ const renderSidebar = () => {
                       (item.stack && activeScreen === item.stack) ||
                       (item.title === "Dashboard" && activeScreen === "Dashboard");
                     
-                    // // Debug log to check values
-                    // console.log('Item:', item.title, 'Active:', activeScreen, 'isActive:', isActive);
-                    
                     return (
                       <TouchableOpacity
                         key={item.id}
                         onPress={() => handleNavigation(item)}
                         className={`mx-3 my-1 px-4 py-3.5 rounded-xl ${
-                          isActive ? "bg-purple-50" : ""
+                          isActive ? theme.activeBg : ''
                         }`}
                       >
                         <View className="flex-row items-center justify-between">
                           <View className="flex-row items-center flex-1">
                             <View className={`w-8 h-8 rounded-lg items-center justify-center ${
-                              isActive ? 'bg-purple-100' : 'bg-gray-100'
+                              isActive ? theme.activeIconBg : theme.iconBg
                             }`}>
                               <Icon
-                                name={isActive ? item.icon : item.icon}
+                                name={isActive ? item.iconActive : item.icon}
                                 size={20}
-                                color={isActive ? "#667eea" : "#666"}
+                                color={isActive ? "#667eea" : theme.iconColor}
                               />
                             </View>
                             <Text
                               className={`text-base ml-3 flex-1 ${
                                 isActive
-                                  ? "text-purple-600 font-semibold"
-                                  : "text-gray-600"
+                                  ? theme.activeText
+                                  : darkMode ? 'text-gray-300' : 'text-gray-600'
                               }`}
                               numberOfLines={1}
                             >
@@ -630,19 +649,74 @@ const renderSidebar = () => {
                   })}
                 </ScrollView>
 
-                {/* Footer - Always at bottom */}
-                <View className="border-t border-gray-200 pt-4 pb-8 px-5">
-                  <TouchableOpacity className="flex-row items-center py-3">
-                    <View className="w-8 h-8 rounded-lg bg-gray-100 items-center justify-center">
-                      <Icon name="help-circle-outline" size={20} color="#666" />
+                {/* Footer */}
+                <View className={`border-t ${theme.border} pt-4 pb-8 px-5`}>
+                  {/* Dark Mode Toggle - FIXED VERSION */}
+                  <TouchableOpacity 
+                    className="flex-row items-center py-3 justify-between"
+                    onPress={handleThemeToggle}
+                    activeOpacity={0.7}
+                  >
+                    <View className="flex-row items-center">
+                      <View className={`w-8 h-8 rounded-lg ${theme.iconBg} items-center justify-center`}>
+                        <Icon 
+                          name={darkMode ? "weather-night" : "white-balance-sunny"} 
+                          size={20} 
+                          color={darkMode ? "#9CA3AF" : "#666"} 
+                        />
+                      </View>
+                      <Text className={`text-base ml-3 ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                        Dark Mode
+                      </Text>
                     </View>
-                    <Text className="text-base ml-3 text-gray-600">
+                    
+                    {/* Fixed Toggle Switch */}
+                    <View 
+                      style={{
+                        width: 48,
+                        height: 24,
+                        borderRadius: 12,
+                        backgroundColor: darkMode ? '#667eea' : '#e5e7eb',
+                        padding: 2,
+                      }}
+                    >
+                      <Animated.View
+                        style={{
+                          width: 20,
+                          height: 20,
+                          borderRadius: 10,
+                          backgroundColor: 'white',
+                          shadowColor: '#000',
+                          shadowOffset: { width: 0, height: 1 },
+                          shadowOpacity: 0.2,
+                          shadowRadius: 1,
+                          elevation: 2,
+                          transform: [{
+                            translateX: darkMode ? 24 : 0,
+                          }],
+                        }}
+                      />
+                    </View>
+                  </TouchableOpacity>
+
+                  {/* Help & Support */}
+                  <TouchableOpacity 
+                    className="flex-row items-center py-3"
+                    activeOpacity={0.7}
+                  >
+                    <View className={`w-8 h-8 rounded-lg ${theme.iconBg} items-center justify-center`}>
+                      <Icon name="help-circle-outline" size={20} color={theme.iconColor} />
+                    </View>
+                    <Text className={`text-base ml-3 ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
                       Help & Support
                     </Text>
                   </TouchableOpacity>
+
+                  {/* Logout */}
                   <TouchableOpacity
                     className="flex-row items-center py-3"
                     onPress={handleLogout}
+                    activeOpacity={0.7}
                   >
                     <View className="w-8 h-8 rounded-lg bg-red-50 items-center justify-center">
                       <Icon name="logout" size={20} color="#ff4444" />
@@ -659,16 +733,20 @@ const renderSidebar = () => {
   );
 };
 
+  // Determine header background and text color based on dark mode
+  const headerBg = darkMode ? 'bg-gray-900' : backgroundColor;
+  const headerTextColor = darkMode ? 'text-white' : textColor;
+
   return (
     <>
       <SafeAreaView
-        className={`border-b border-white shadow-[0px_7px_20px_black] ${backgroundColor} ${style}`}
+        className={`border-b ${darkMode ? 'border-gray-800' : 'border-white'} ${theme.shadow} ${headerBg} ${style}`}
         edges={["top", "left", "right"]}
       >
         <View className="flex-row items-center justify-between px-4 py-3 min-h-[60px]">
           {renderLeftComponent()}
           <Text
-            className={`flex-1 text-center mx-2 font-semibold text-lg ${textColor} ${titleStyle}`}
+            className={`flex-1 text-center mx-2 font-semibold text-lg ${headerTextColor} ${titleStyle}`}
             numberOfLines={1}
           >
             {title}
