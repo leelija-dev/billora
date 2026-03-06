@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, TouchableOpacity, Text } from 'react-native';
+import { StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../../hooks/useAuth';
+import { useTheme } from '../../hooks/useTheme';
 import RegisterForm from '../../components/auth/RegisterForm';
 import Loading from '../../components/common/Loading';
-import { theme } from '../../theme';
 
 const RegisterScreen = ({ navigation }) => {
   const { register, isLoading } = useAuth();
+  const theme = useTheme();
   const [error, setError] = useState(null);
 
   const handleRegister = async (userData) => {
@@ -22,6 +23,13 @@ const RegisterScreen = ({ navigation }) => {
   const handleLoginPress = () => {
     navigation.navigate('Login');
   };
+
+  const styles = StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: theme.colors.background,
+    },
+  });
 
   if (isLoading) {
     return (
@@ -42,12 +50,5 @@ const RegisterScreen = ({ navigation }) => {
     </SafeAreaView>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: theme.colors.background,
-  },
-});
 
 export default RegisterScreen;

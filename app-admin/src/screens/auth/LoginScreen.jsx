@@ -4,10 +4,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import LoginForm from '../../components/auth/LoginForm';
 import Loading from '../../components/common/Loading';
 import { useAuth } from '../../hooks/useAuth';
-import { theme } from '../../theme';
+import { useTheme } from '../../hooks/useTheme';
 
 const LoginScreen = ({ navigation }) => {
   const { login, isLoading } = useAuth();
+  const theme = useTheme();
   const [error, setError] = useState(null);
 
   const handleLogin = async (credentials) => {
@@ -22,6 +23,45 @@ const LoginScreen = ({ navigation }) => {
   const handleRegisterPress = () => {
     navigation.navigate('Register');
   };
+
+  const handleForgotPasswordPress = () => {
+    navigation.navigate('ForgotPassword');
+  };
+
+  const styles = StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: theme.colors.background,
+    },
+    footer: {
+      padding: theme.spacing.lg,
+      borderTopWidth: 1,
+      borderTopColor: theme.colors.borderLight,
+    },
+    registerContainer: {
+      flexDirection: 'row',
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginBottom: theme.spacing.sm,
+    },
+    registerText: {
+      ...theme.typography.body2,
+      color: theme.colors.textSecondary,
+    },
+    registerLink: {
+      ...theme.typography.body2,
+      color: theme.colors.primary,
+      fontWeight: '600',
+    },
+    forgotPassword: {
+      alignItems: 'center',
+      marginTop: theme.spacing.sm,
+    },
+    forgotPasswordText: {
+      ...theme.typography.body2,
+      color: theme.colors.primary,
+    },
+  });
 
   if (isLoading) {
     return (
@@ -45,35 +85,15 @@ const LoginScreen = ({ navigation }) => {
             <Text style={styles.registerLink}>Sign Up</Text>
           </TouchableOpacity>
         </View>
+        <TouchableOpacity 
+          style={styles.forgotPassword}
+          onPress={handleForgotPasswordPress}
+        >
+          <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
+        </TouchableOpacity>
       </View>
     </SafeAreaView>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: theme.colors.background,
-  },
-  footer: {
-    padding: theme.spacing.lg,
-    borderTopWidth: 1,
-    borderTopColor: theme.colors.borderLight,
-  },
-  registerContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  registerText: {
-    ...theme.typography.body2,
-    color: theme.colors.textSecondary,
-  },
-  registerLink: {
-    ...theme.typography.body2,
-    color: theme.colors.primary,
-    fontWeight: '600',
-  },
-});
 
 export default LoginScreen;

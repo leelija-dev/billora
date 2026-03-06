@@ -1,19 +1,18 @@
 import { useState } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { theme } from '../../theme';
+import { useTheme } from '../../hooks/useTheme';
 import Button from '../common/Button';
 import Header from '../common/Header';
 import Input from '../common/Input';
 
 const RegisterForm = ({ onSubmit, loading, error, onLoginPress }) => {
+  const theme = useTheme();
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   
   const [firstNameError, setFirstNameError] = useState('');
   const [lastNameError, setLastNameError] = useState('');
@@ -31,9 +30,9 @@ const RegisterForm = ({ onSubmit, loading, error, onLoginPress }) => {
   const validatePassword = (password) => {
     if (!password) return 'Password is required';
     if (password.length < 8) return 'Password must be at least 8 characters';
-    if (!/[a-z]/.test(password)) return 'Password must contain lowercase letter';
-    if (!/[A-Z]/.test(password)) return 'Password must contain uppercase letter';
-    if (!/\d/.test(password)) return 'Password must contain number';
+    if (!/[a-z]/.test(password)) return 'Must contain lowercase letter';
+    if (!/[A-Z]/.test(password)) return 'Must contain uppercase letter';
+    if (!/\d/.test(password)) return 'Must contain number';
     return '';
   };
 
@@ -63,13 +62,23 @@ const RegisterForm = ({ onSubmit, loading, error, onLoginPress }) => {
   };
 
   const handleFirstNameBlur = () => {
-    if (!firstName) setFirstNameError('First name is required');
-    if (firstName.length < 2) setFirstNameError('First name must be at least 2 characters');
+    if (!firstName) {
+      setFirstNameError('First name is required');
+    } else if (firstName.length < 2) {
+      setFirstNameError('First name must be at least 2 characters');
+    } else {
+      setFirstNameError('');
+    }
   };
 
   const handleLastNameBlur = () => {
-    if (!lastName) setLastNameError('Last name is required');
-    if (lastName.length < 2) setLastNameError('Last name must be at least 2 characters');
+    if (!lastName) {
+      setLastNameError('Last name is required');
+    } else if (lastName.length < 2) {
+      setLastNameError('Last name must be at least 2 characters');
+    } else {
+      setLastNameError('');
+    }
   };
 
   const handleEmailBlur = () => {
@@ -81,14 +90,20 @@ const RegisterForm = ({ onSubmit, loading, error, onLoginPress }) => {
   };
 
   const handleConfirmPasswordBlur = () => {
-    if (!confirmPassword) setConfirmPasswordError('Please confirm your password');
-    else if (password !== confirmPassword) setConfirmPasswordError('Passwords do not match');
-    else setConfirmPasswordError('');
+    if (!confirmPassword) {
+      setConfirmPasswordError('Please confirm your password');
+    } else if (password !== confirmPassword) {
+      setConfirmPasswordError('Passwords do not match');
+    } else {
+      setConfirmPasswordError('');
+    }
   };
 
   const onFormSubmit = () => {
-    const firstNameValidationError = !firstName ? 'First name is required' : '';
-    const lastNameValidationError = !lastName ? 'Last name is required' : '';
+    const firstNameValidationError = !firstName ? 'First name is required' : 
+      (firstName.length < 2 ? 'First name must be at least 2 characters' : '');
+    const lastNameValidationError = !lastName ? 'Last name is required' : 
+      (lastName.length < 2 ? 'Last name must be at least 2 characters' : '');
     const emailValidationError = validateEmail(email);
     const passwordValidationError = validatePassword(password);
     const confirmPasswordValidationError = !confirmPassword ? 'Please confirm your password' : 
@@ -107,31 +122,31 @@ const RegisterForm = ({ onSubmit, loading, error, onLoginPress }) => {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['left', 'right']}>
-      <Header title="Create Account" />
-      <View style={styles.content}>
-        <View style={styles.form}>
-          <View style={styles.nameRow}>
-            <View style={styles.nameField}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.background }} edges={['left', 'right']}>
+      <Header title="Create Account" showBackButton={true} />
+      <View style={{ flex: 1, padding: theme.spacing.lg }}>
+        <View style={{ flex: 1 }}>
+          <View style={{ flexDirection: 'row', gap: theme.spacing.sm }}>
+            <View style={{ flex: 1 }}>
               <Input
                 label="First Name"
                 value={firstName}
                 onChangeText={handleFirstNameChange}
                 onBlur={handleFirstNameBlur}
-                placeholder="Enter first name"
+                placeholder="First name"
                 error={firstNameError}
-                style={styles.nameInput}
+                leftIcon="account-outline"
               />
             </View>
-            <View style={styles.nameField}>
+            <View style={{ flex: 1 }}>
               <Input
                 label="Last Name"
                 value={lastName}
                 onChangeText={handleLastNameChange}
                 onBlur={handleLastNameBlur}
-                placeholder="Enter last name"
+                placeholder="Last name"
                 error={lastNameError}
-                style={styles.nameInput}
+                leftIcon="account-outline"
               />
             </View>
           </View>
@@ -147,7 +162,7 @@ const RegisterForm = ({ onSubmit, loading, error, onLoginPress }) => {
             autoCorrect={false}
             returnKeyType="next"
             error={emailError}
-            leftIcon={<Text>📧</Text>}
+            leftIcon="email-outline"
           />
 
           <Input
@@ -159,7 +174,7 @@ const RegisterForm = ({ onSubmit, loading, error, onLoginPress }) => {
             secureTextEntry
             returnKeyType="next"
             error={passwordError}
-            leftIcon={<Text>🔒</Text>}
+            leftIcon="lock-outline"
           />
 
           <Input
@@ -172,12 +187,23 @@ const RegisterForm = ({ onSubmit, loading, error, onLoginPress }) => {
             returnKeyType="done"
             onSubmitEditing={onFormSubmit}
             error={confirmPasswordError}
-            leftIcon={<Text>🔒</Text>}
+            leftIcon="lock-check-outline"
           />
 
           {error && (
-            <View style={styles.errorContainer}>
-              <Text style={styles.errorText}>{error}</Text>
+            <View style={{
+              backgroundColor: theme.colors.error + '20',
+              borderWidth: 1,
+              borderColor: theme.colors.error,
+              borderRadius: theme.borderRadius.md,
+              padding: theme.spacing.md,
+              marginBottom: theme.spacing.md,
+            }}>
+              <Text style={{
+                ...theme.typography.body2,
+                color: theme.colors.error,
+                textAlign: 'center',
+              }}>{error}</Text>
             </View>
           )}
 
@@ -186,13 +212,25 @@ const RegisterForm = ({ onSubmit, loading, error, onLoginPress }) => {
             onPress={onFormSubmit}
             loading={loading}
             disabled={!firstName || !lastName || !email || !password || !confirmPassword || loading}
-            style={styles.registerButton}
+            style={{ marginTop: theme.spacing.lg }}
           />
 
-          <View style={styles.loginContainer}>
-            <Text style={styles.loginText}>Already have an account? </Text>
+          <View style={{
+            flexDirection: 'row',
+            justifyContent: 'center',
+            alignItems: 'center',
+            marginTop: theme.spacing.xl,
+          }}>
+            <Text style={{
+              ...theme.typography.body2,
+              color: theme.colors.textSecondary,
+            }}>Already have an account? </Text>
             <TouchableOpacity onPress={onLoginPress}>
-              <Text style={styles.loginLink}>Login</Text>
+              <Text style={{
+                ...theme.typography.body2,
+                color: theme.colors.primary,
+                fontWeight: '600',
+              }}>Login</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -200,60 +238,5 @@ const RegisterForm = ({ onSubmit, loading, error, onLoginPress }) => {
     </SafeAreaView>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: theme.colors.background,
-  },
-  content: {
-    flex: 1,
-    padding: theme.spacing.lg,
-  },
-  form: {
-    flex: 1,
-  },
-  nameRow: {
-    flexDirection: 'row',
-    gap: theme.spacing.sm,
-  },
-  nameField: {
-    flex: 1,
-  },
-  nameInput: {
-    marginBottom: 0,
-  },
-  errorContainer: {
-    backgroundColor: theme.colors.error + '20',
-    borderWidth: 1,
-    borderColor: theme.colors.error,
-    borderRadius: theme.borderRadius.md,
-    padding: theme.spacing.md,
-    marginBottom: theme.spacing.md,
-  },
-  errorText: {
-    ...theme.typography.body2,
-    color: theme.colors.error,
-    textAlign: 'center',
-  },
-  registerButton: {
-    marginTop: theme.spacing.lg,
-  },
-  loginContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: theme.spacing.xl,
-  },
-  loginText: {
-    ...theme.typography.body2,
-    color: theme.colors.textSecondary,
-  },
-  loginLink: {
-    ...theme.typography.body2,
-    color: theme.colors.primary,
-    fontWeight: '600',
-  },
-});
 
 export default RegisterForm;

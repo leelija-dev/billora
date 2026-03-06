@@ -1,5 +1,4 @@
-// components/common/Input.js (Enhanced Version)
-import React, { useRef, useState } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import {
   ActivityIndicator,
   Animated,
@@ -10,17 +9,15 @@ import {
   View,
 } from "react-native";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
+import { useTheme } from "../../hooks/useTheme";
 
 const Input = ({
-  // Core props
   label,
   value,
   onChangeText,
   onBlur,
   onFocus,
   placeholder,
-
-  // Input configuration
   secureTextEntry = false,
   keyboardType = "default",
   autoCapitalize = "none",
@@ -28,88 +25,73 @@ const Input = ({
   multiline = false,
   numberOfLines = 1,
   editable = true,
-
-  // Icons
   leftIcon,
   rightIcon,
   onRightIconPress,
-
-  // Status
   error,
   success,
   warning,
   helper,
   loading = false,
-
-  // Validation
   required = false,
   maxLength,
-  minLength,
-
-  // Styling
-  size = "md", // 'sm', 'md', 'lg'
-  variant = "outlined", // 'outlined', 'filled', 'underlined'
-  rounded = "lg", // 'none', 'sm', 'md', 'lg', 'full'
-
-  // Additional
   disabled = false,
   returnKeyType = "done",
   onSubmitEditing,
-  ref,
-
-  // Custom classes
-  containerClassName = "",
-  inputClassName = "",
-  labelClassName = "",
-  errorClassName = "",
-
   ...props
 }) => {
+  const theme = useTheme();
   const [isFocused, setIsFocused] = useState(false);
   const [isSecure, setIsSecure] = useState(secureTextEntry);
   const [shakeAnimation] = useState(new Animated.Value(0));
   const inputRef = useRef(null);
 
-  const sizeStyles = {
-    sm: {
-      container: "px-3 py-2",
-      text: "text-sm",
-      icon: 18,
-    },
-    md: {
-      container: "px-4 py-3",
-      text: "text-base",
-      icon: 20,
-    },
-    lg: {
-      container: "px-4 py-4",
-      text: "text-lg",
-      icon: 22,
-    },
+  const getBorderColor = () => {
+    if (error) return theme.colors.error;
+    if (warning) return theme.colors.warning;
+    if (success) return theme.colors.success;
+    if (isFocused) return theme.colors.primary;
+    return theme.colors.border;
   };
 
-  const roundedStyles = {
-    none: "rounded-none",
-    sm: "rounded",
-    md: "rounded-lg",
-    lg: "rounded-xl",
-    full: "rounded-full",
+  const getIconColor = () => {
+    if (error) return theme.colors.error;
+    if (warning) return theme.colors.warning;
+    if (success) return theme.colors.success;
+    if (isFocused) return theme.colors.primary;
+    return theme.colors.textTertiary;
   };
 
-  const variantStyles = {
-    outlined: {
-      container: `border ${getBorderColor()}`,
-      background: "bg-white",
-    },
-    filled: {
-      container: "border-0",
-      background: "bg-gray-100",
-    },
-    underlined: {
-      container: "border-0 border-b rounded-none",
-      background: "bg-transparent",
-    },
-  };
+  useEffect(() => {
+    if (error) {
+      Animated.sequence([
+        Animated.timing(shakeAnimation, {
+          toValue: 10,
+          duration: 100,
+          easing: Easing.linear,
+          useNativeDriver: true,
+        }),
+        Animated.timing(shakeAnimation, {
+          toValue: -10,
+          duration: 100,
+          easing: Easing.linear,
+          useNativeDriver: true,
+        }),
+        Animated.timing(shakeAnimation, {
+          toValue: 5,
+          duration: 100,
+          easing: Easing.linear,
+          useNativeDriver: true,
+        }),
+        Animated.timing(shakeAnimation, {
+          toValue: 0,
+          duration: 100,
+          easing: Easing.linear,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    }
+  }, [error]);
 
   const handleFocus = (e) => {
     setIsFocused(true);
@@ -129,206 +111,29 @@ const Input = ({
     inputRef.current?.focus();
   };
 
-  const blur = () => {
-    inputRef.current?.blur();
-  };
-
-  const shake = () => {
-    Animated.sequence([
-      Animated.timing(shakeAnimation, {
-        toValue: 10,
-        duration: 100,
-        easing: Easing.linear,
-        useNativeDriver: true,
-      }),
-      Animated.timing(shakeAnimation, {
-        toValue: -10,
-        duration: 100,
-        easing: Easing.linear,
-        useNativeDriver: true,
-      }),
-      Animated.timing(shakeAnimation, {
-        toValue: 5,
-        duration: 100,
-        easing: Easing.linear,
-        useNativeDriver: true,
-      }),
-      Animated.timing(shakeAnimation, {
-        toValue: 0,
-        duration: 100,
-        easing: Easing.linear,
-        useNativeDriver: true,
-      }),
-    ]).start();
-  };
-
-  React.useEffect(() => {
-    if (error) {
-      shake();
-    }
-  }, [error]);
-
-  function getBorderColor() {
-    if (error) return "border-red-500";
-    if (warning) return "border-yellow-500";
-    if (success) return "border-green-500";
-    if (isFocused) return "border-blue-500";
-    return "border-gray-200";
-  }
-
-  function getIconColor() {
-    if (error) return "#ef4444";
-    if (warning) return "#f97316";
-    if (success) return "#22c55e";
-    if (isFocused) return "#3b82f6";
-    return "#9ca3af";
-  }
-
-  const renderLeftIcon = () => {
-    if (!leftIcon) return null;
-
-    return (
-      <View className="mr-3">
-        {typeof leftIcon === "string" ? (
-          <Icon
-            name={leftIcon}
-            size={sizeStyles[size].icon}
-            color={getIconColor()}
-          />
-        ) : (
-          leftIcon
-        )}
-      </View>
-    );
-  };
-
-  const renderRightIcon = () => {
-    if (loading) {
-      return (
-        <View className="ml-3">
-          <ActivityIndicator size="small" color={getIconColor()} />
-        </View>
-      );
-    }
-
-    if (secureTextEntry) {
-      return (
-        <TouchableOpacity onPress={toggleSecureEntry} className="ml-3">
-          <Icon
-            name={isSecure ? "eye-off" : "eye"}
-            size={sizeStyles[size].icon}
-            color={getIconColor()}
-          />
-        </TouchableOpacity>
-      );
-    }
-
-    if (rightIcon) {
-      return (
-        <TouchableOpacity
-          onPress={onRightIconPress}
-          className="ml-3"
-          disabled={!onRightIconPress}
-        >
-          {typeof rightIcon === "string" ? (
-            <Icon
-              name={rightIcon}
-              size={sizeStyles[size].icon}
-              color={getIconColor()}
-            />
-          ) : (
-            rightIcon
-          )}
-        </TouchableOpacity>
-      );
-    }
-
-    // Show status icons
-    if (success && !rightIcon) {
-      return (
-        <View className="ml-3">
-          <Icon
-            name="check-circle"
-            size={sizeStyles[size].icon}
-            color="#22c55e"
-          />
-        </View>
-      );
-    }
-
-    if (error && !rightIcon) {
-      return (
-        <View className="ml-3">
-          <Icon
-            name="alert-circle"
-            size={sizeStyles[size].icon}
-            color="#ef4444"
-          />
-        </View>
-      );
-    }
-
-    return null;
-  };
-
-  const renderLabel = () => {
-    if (!label) return null;
-
-    return (
-      <TouchableOpacity onPress={focus} activeOpacity={0.7}>
-        <View className="flex-row items-center mb-2">
-          <Text
-            className={`text-sm font-medium text-gray-700 ${labelClassName}`}
-          >
-            {label}
-          </Text>
-          {required && <Text className="text-red-500 ml-1">*</Text>}
-        </View>
-      </TouchableOpacity>
-    );
-  };
-
-  const renderHelper = () => {
-    if (error) {
-      return (
-        <View className="flex-row items-center mt-2">
-          <Icon name="alert-circle" size={14} color="#ef4444" />
-          <Text className={`text-xs text-red-500 ml-1 ${errorClassName}`}>
-            {error}
-          </Text>
-        </View>
-      );
-    }
-
-    if (warning) {
-      return (
-        <View className="flex-row items-center mt-2">
-          <Icon name="alert" size={14} color="#f97316" />
-          <Text className="text-xs text-yellow-600 ml-1">{warning}</Text>
-        </View>
-      );
-    }
-
-    if (helper) {
-      return (
-        <View className="flex-row items-center mt-2">
-          <Icon name="information" size={14} color="#6b7280" />
-          <Text className="text-xs text-gray-500 ml-1">{helper}</Text>
-        </View>
-      );
-    }
-
-    return null;
-  };
-
   return (
     <Animated.View
-      className={`mb-4 ${containerClassName}`}
       style={{
+        marginBottom: theme.spacing.md,
         transform: [{ translateX: shakeAnimation }],
       }}
     >
-      {renderLabel()}
+      {label && (
+        <TouchableOpacity onPress={focus} activeOpacity={0.7}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
+            <Text style={{
+              fontSize: 14,
+              fontWeight: '500',
+              color: theme.colors.text,
+            }}>
+              {label}
+            </Text>
+            {required && (
+              <Text style={{ color: theme.colors.error, marginLeft: 4 }}>*</Text>
+            )}
+          </View>
+        </TouchableOpacity>
+      )}
 
       <TouchableOpacity
         activeOpacity={1}
@@ -336,32 +141,46 @@ const Input = ({
         disabled={disabled || !editable}
       >
         <View
-          className={`
-            flex-row items-center
-            ${variantStyles[variant].container}
-            ${variantStyles[variant].background}
-            ${roundedStyles[rounded]}
-            ${sizeStyles[size].container}
-            ${disabled ? "opacity-60" : ""}
-            ${inputClassName}
-          `}
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            borderWidth: 1,
+            borderColor: getBorderColor(),
+            borderRadius: theme.borderRadius.lg,
+            backgroundColor: disabled 
+              ? theme.colors.surface 
+              : theme.isDark ? theme.colors.surface : '#FFFFFF',
+            paddingHorizontal: 16,
+            paddingVertical: multiline ? 12 : 10,
+            opacity: disabled ? 0.6 : 1,
+          }}
         >
-          {renderLeftIcon()}
+          {leftIcon && (
+            <View style={{ marginRight: 12 }}>
+              {typeof leftIcon === "string" ? (
+                <Icon name={leftIcon} size={20} color={getIconColor()} />
+              ) : (
+                leftIcon
+              )}
+            </View>
+          )}
 
           <TextInput
             ref={inputRef}
-            className={`
-              flex-1
-              ${sizeStyles[size].text}
-              ${disabled ? "text-gray-400" : "text-gray-800"}
-              ${multiline ? "text-top" : ""}
-            `}
+            style={{
+              flex: 1,
+              fontSize: 16,
+              color: disabled ? theme.colors.textTertiary : theme.colors.text,
+              textAlignVertical: multiline ? 'top' : 'center',
+              minHeight: multiline ? 80 : 'auto',
+              padding: 0,
+            }}
             value={value}
             onChangeText={onChangeText}
             onFocus={handleFocus}
             onBlur={handleBlur}
             placeholder={placeholder}
-            placeholderTextColor="#9ca3af"
+            placeholderTextColor={theme.colors.textTertiary}
             secureTextEntry={isSecure}
             keyboardType={keyboardType}
             autoCapitalize={autoCapitalize}
@@ -375,15 +194,82 @@ const Input = ({
             {...props}
           />
 
-          {renderRightIcon()}
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            {loading && (
+              <ActivityIndicator size="small" color={getIconColor()} />
+            )}
+
+            {secureTextEntry && !loading && (
+              <TouchableOpacity onPress={toggleSecureEntry}>
+                <Icon
+                  name={isSecure ? "eye-off" : "eye"}
+                  size={20}
+                  color={getIconColor()}
+                />
+              </TouchableOpacity>
+            )}
+
+            {rightIcon && !secureTextEntry && !loading && (
+              <TouchableOpacity
+                onPress={onRightIconPress}
+                disabled={!onRightIconPress}
+              >
+                {typeof rightIcon === "string" ? (
+                  <Icon name={rightIcon} size={20} color={getIconColor()} />
+                ) : (
+                  rightIcon
+                )}
+              </TouchableOpacity>
+            )}
+
+            {success && !rightIcon && !secureTextEntry && !loading && (
+              <Icon name="check-circle" size={20} color={theme.colors.success} />
+            )}
+          </View>
         </View>
       </TouchableOpacity>
 
-      {renderHelper()}
+      {(error || warning || helper) && (
+        <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 8 }}>
+          {error && (
+            <>
+              <Icon name="alert-circle" size={14} color={theme.colors.error} />
+              <Text style={{
+                fontSize: 12,
+                color: theme.colors.error,
+                marginLeft: 4,
+              }}>{error}</Text>
+            </>
+          )}
+          {warning && !error && (
+            <>
+              <Icon name="alert" size={14} color={theme.colors.warning} />
+              <Text style={{
+                fontSize: 12,
+                color: theme.colors.warning,
+                marginLeft: 4,
+              }}>{warning}</Text>
+            </>
+          )}
+          {helper && !error && !warning && (
+            <>
+              <Icon name="information" size={14} color={theme.colors.textTertiary} />
+              <Text style={{
+                fontSize: 12,
+                color: theme.colors.textTertiary,
+                marginLeft: 4,
+              }}>{helper}</Text>
+            </>
+          )}
+        </View>
+      )}
 
       {maxLength > 0 && (
-        <View className="flex-row justify-end mt-1">
-          <Text className="text-xs text-gray-400">
+        <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginTop: 4 }}>
+          <Text style={{
+            fontSize: 12,
+            color: theme.colors.textTertiary,
+          }}>
             {value?.length || 0}/{maxLength}
           </Text>
         </View>

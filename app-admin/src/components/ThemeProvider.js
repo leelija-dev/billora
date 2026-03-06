@@ -1,25 +1,40 @@
-import { useThemeStore } from '../store/themeStore';
+import React, { createContext, useContext, useEffect } from 'react';
 import { useColorScheme } from 'react-native';
+import { useThemeStore } from '../store/themeStore';
+
+const ThemeContext = createContext();
 
 export const useTheme = () => {
-  const { isDarkMode, systemTheme, toggleDarkMode, setDarkMode, setSystemTheme } = useThemeStore();
+  const context = useContext(ThemeContext);
+  if (!context) {
+    throw new Error('useTheme must be used within a ThemeProvider');
+  }
+  return context;
+};
+
+export const ThemeProvider = ({ children }) => {
+  const { isDarkMode, systemTheme, setDarkMode } = useThemeStore();
   const systemColorScheme = useColorScheme();
 
-  const effectiveDarkMode = systemTheme ? systemColorScheme === 'dark' : isDarkMode;
+  useEffect(() => {
+    if (systemTheme) {
+      setDarkMode(systemColorScheme === 'dark');
+    }
+  }, [systemColorScheme, systemTheme]);
 
   const theme = {
-    isDark: effectiveDarkMode,
+    isDark: isDarkMode,
     colors: {
-      background: effectiveDarkMode ? '#111827' : '#FFFFFF',
-      surface: effectiveDarkMode ? '#1F2937' : '#F9FAFB',
-      card: effectiveDarkMode ? '#1F2937' : '#FFFFFF',
+      background: isDarkMode ? '#111827' : '#FFFFFF',
+      surface: isDarkMode ? '#1F2937' : '#F9FAFB',
+      card: isDarkMode ? '#1F2937' : '#FFFFFF',
       primary: '#667eea',
       secondary: '#764ba2',
-      text: effectiveDarkMode ? '#FFFFFF' : '#1F2937',
-      textSecondary: effectiveDarkMode ? '#9CA3AF' : '#4B5563',
-      textTertiary: effectiveDarkMode ? '#6B7280' : '#9CA3AF',
-      border: effectiveDarkMode ? '#374151' : '#E5E7EB',
-      borderLight: effectiveDarkMode ? '#1F2937' : '#F3F4F6',
+      text: isDarkMode ? '#FFFFFF' : '#1F2937',
+      textSecondary: isDarkMode ? '#9CA3AF' : '#4B5563',
+      textTertiary: isDarkMode ? '#6B7280' : '#9CA3AF',
+      border: isDarkMode ? '#374151' : '#E5E7EB',
+      borderLight: isDarkMode ? '#1F2937' : '#F3F4F6',
       error: '#EF4444',
       success: '#10B981',
       warning: '#F59E0B',
@@ -72,11 +87,11 @@ export const useTheme = () => {
         lineHeight: 16,
       },
     },
-    toggleTheme: toggleDarkMode,
-    setDarkMode,
-    setSystemTheme,
-    isSystemTheme: systemTheme,
   };
 
-  return theme;
+  return (
+    <ThemeContext.Provider value={theme}>
+      {children}
+    </ThemeContext.Provider>
+  );
 };
