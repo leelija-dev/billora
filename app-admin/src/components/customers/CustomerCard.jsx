@@ -99,7 +99,7 @@ const CustomerCard = ({ customer, onPress, viewMode = 'grid' }) => {
   return (
     <TouchableOpacity
       onPress={handlePress}
-      className="w-[48%] mx-[1%] bg-white rounded-2xl p-4 mb-3 shadow-sm border border-gray-100"
+      className="w-full mx-[1%] bg-white rounded-2xl p-4 mb-3 shadow-sm border border-gray-100"
       activeOpacity={0.7}
     >
       <LinearGradient

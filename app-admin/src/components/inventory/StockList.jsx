@@ -448,9 +448,9 @@ const StockList = ({ viewMode = 'grid', searchQuery = '', filters = {} }) => {
   }
 
   return (
-    <ScrollView
+    <View
       className="flex-1"
-      showsVerticalScrollIndicator={false}
+      
       refreshControl={
         <RefreshControl
           refreshing={refreshing}
@@ -460,11 +460,11 @@ const StockList = ({ viewMode = 'grid', searchQuery = '', filters = {} }) => {
         />
       }
     >
-      <View className="px-4">
+      <View className="">
         {renderHeader()}
         {viewMode === 'grid' ? renderGridItems() : filteredInventory.map(item => renderListItem(item))}
       </View>
-    </ScrollView>
+    </View>
   );
 };
 

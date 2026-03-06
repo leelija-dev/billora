@@ -230,7 +230,9 @@ const InventoryScreen = () => {
         </BlurView>
       </View>
 
-      <ScrollView>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+      >
         {/* Filter Chips */}
       <View className="px-4 py-2">
         <ScrollView horizontal showsHorizontalScrollIndicator={false}>

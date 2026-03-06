@@ -229,7 +229,10 @@ const OrdersScreen = () => {
         </View>
       </View>
 
-      {/* Filter Chips */}
+      <ScrollView 
+      showsVerticalScrollIndicator={false}
+      >
+        {/* Filter Chips */}
       <View>
         <ScrollView
           horizontal
@@ -295,6 +298,7 @@ const OrdersScreen = () => {
           navigation={navigation}
         />
       </View>
+      </ScrollView>
     </View>
   );
 };

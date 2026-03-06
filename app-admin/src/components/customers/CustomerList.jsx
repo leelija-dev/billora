@@ -3,7 +3,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useEffect, useMemo, useState } from "react";
 import {
   Animated,
-  FlatList,
+  ScrollView,
   RefreshControl,
   Text,
   TouchableOpacity,
@@ -168,6 +168,17 @@ const CustomerList = ({
     }
   };
 
+  const handleClearFilters = () => {
+    // This will trigger a refresh by resetting filters in parent
+    // The parent component should handle this
+  };
+
+  const handleAddCustomer = () => {
+    if (navigation) {
+      navigation.navigate("AddCustomer");
+    }
+  };
+
   const onRefresh = () => {
     setRefreshing(true);
     setTimeout(() => {
@@ -186,73 +197,90 @@ const CustomerList = ({
     </Animated.View>
   );
 
-  const renderItem = ({ item }) => (
-    <CustomerCard
-      customer={item}
-      viewMode={viewMode}
-      onPress={handleCustomerPress}
-    />
+  const renderItem = (item) => (
+    <View 
+      key={item.id}
+      className={viewMode === "grid" ? "w-[48%] mx-[1%]" : "w-full"}
+    >
+      <CustomerCard
+        customer={item}
+        viewMode={viewMode}
+        onPress={handleCustomerPress}
+      />
+    </View>
   );
+
+  const renderGridItems = () => {
+    const rows = [];
+    for (let i = 0; i < filteredCustomers.length; i += 2) {
+      const rowItems = filteredCustomers.slice(i, i + 2);
+      rows.push(
+        <View key={`row-${i}`} className="flex-row justify-between mb-3">
+          {rowItems.map(item => renderItem(item))}
+        </View>
+      );
+    }
+    return rows;
+  };
 
   if (!filteredCustomers || filteredCustomers.length === 0) {
     return (
-      <View className="flex-1 items-center justify-center py-16">
-        <Icon name="account-group" size={80} color="#d1d5db" />
-        <Text className="text-lg font-semibold text-gray-700 mt-4">
-          No Customers Found
-        </Text>
-        <Text className="text-sm text-gray-400 text-center mt-2 px-8">
-          {searchQuery ||
-          Object.keys(filters).some(
-            (k) =>
-              filters[k] &&
-              filters[k] !== "all" &&
-              filters[k] !== "" &&
-              filters[k] !== false,
-          )
-            ? "Try adjusting your search or filters"
-            : "Add your first customer by tapping the + button"}
-        </Text>
-        {searchQuery || Object.keys(filters).some(k => filters[k] && filters[k] !== "all" && filters[k] !== "") ? (
-          <TouchableOpacity
-            onPress={() => {
-              // This will trigger a refresh by resetting filters in parent
-              // The parent component should handle this
-            }}
-            className="mt-4 bg-indigo-500 px-6 py-3 rounded-full"
-          >
-            <Text className="text-white font-semibold">Clear Filters</Text>
-          </TouchableOpacity>
-        ) : (
-          <TouchableOpacity
-            onPress={() => {
-              if (navigation) {
-                navigation.navigate("AddCustomer");
-              }
-            }}
-            className="mt-4 bg-indigo-500 px-6 py-3 rounded-full flex-row items-center"
-          >
-            <Icon name="plus" size={18} color="white" />
-            <Text className="text-white font-semibold ml-2">Add Customer</Text>
-          </TouchableOpacity>
-        )}
-      </View>
+      <ScrollView
+        className="flex-1"
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={["#6366F1"]}
+            tintColor="#6366F1"
+          />
+        }
+      >
+        <View className="px-4">
+          {renderHeader()}
+          <View className="items-center justify-center py-16">
+            <Icon name="account-group" size={80} color="#d1d5db" />
+            <Text className="text-lg font-semibold text-gray-700 mt-4">
+              No Customers Found
+            </Text>
+            <Text className="text-sm text-gray-400 text-center mt-2 px-8">
+              {searchQuery ||
+              Object.keys(filters).some(
+                (k) =>
+                  filters[k] &&
+                  filters[k] !== "all" &&
+                  filters[k] !== "" &&
+                  filters[k] !== false,
+              )
+                ? "Try adjusting your search or filters"
+                : "Add your first customer by tapping the + button"}
+            </Text>
+            {searchQuery || Object.keys(filters).some(k => filters[k] && filters[k] !== "all" && filters[k] !== "") ? (
+              <TouchableOpacity
+                onPress={handleClearFilters}
+                className="mt-4 bg-indigo-500 px-6 py-3 rounded-full"
+              >
+                <Text className="text-white font-semibold">Clear Filters</Text>
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity
+                onPress={handleAddCustomer}
+                className="mt-4 bg-indigo-500 px-6 py-3 rounded-full flex-row items-center"
+              >
+                <Icon name="plus" size={18} color="white" />
+                <Text className="text-white font-semibold ml-2">Add Customer</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        </View>
+      </ScrollView>
     );
   }
 
   return (
-    <FlatList
-      data={filteredCustomers}
-      keyExtractor={(item) => item.id}
-      numColumns={viewMode === "grid" ? 2 : 1}
-      key={viewMode}
-      renderItem={renderItem}
-      ListHeaderComponent={renderHeader}
-      contentContainerStyle={{ paddingBottom: 20 }}
-      showsVerticalScrollIndicator={false}
-      columnWrapperStyle={
-        viewMode === "grid" ? { justifyContent: "space-between" } : undefined
-      }
+    <View
+      className="flex-1"
+      
       refreshControl={
         <RefreshControl
           refreshing={refreshing}
@@ -261,7 +289,14 @@ const CustomerList = ({
           tintColor="#6366F1"
         />
       }
-    />
+    >
+      <View className="">
+        {renderHeader()}
+        {viewMode === "grid" 
+          ? renderGridItems() 
+          : filteredCustomers.map(item => renderItem(item))}
+      </View>
+    </View>
   );
 };
 

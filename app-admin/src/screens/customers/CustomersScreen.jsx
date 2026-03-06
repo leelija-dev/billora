@@ -547,7 +547,8 @@ const CustomersScreen = () => {
         </View>
       </View>
 
-      {/* Filter Chips */}
+      <ScrollView showsVerticalScrollIndicator={false}>
+        {/* Filter Chips */}
       <View className="px-4 py-2">
         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
           <View className="flex-row gap-2">
@@ -621,6 +622,8 @@ const CustomersScreen = () => {
           customers={STATIC_CUSTOMERS}
         />
       </View>
+        
+      </ScrollView>
     </View>
   );
 };
