@@ -268,7 +268,7 @@ class InvoiceController extends Controller
      public function billStore(Request $request)  // bill generate data form product table with out stock management
     {
         $request->validate([
-            "user_id"       => 'required',
+            "user_id"       => 'required|exists:customers,id',
             "customer_id"   => 'required|exists:bill_customer,id',
             "store_id"      => 'required|exists:store,id',
             "paid_amount"   => 'required|numeric|min:0',

@@ -20,6 +20,10 @@ class Products extends Model
         'category_id',
         'unit_amount',
         'unit_id',	
+        'selling_price',
+        'purchase_price',
+        'gst_percentage',
+        'discount_percentage',
         'description',
         'is_active',
         'created_by'
