@@ -27,8 +27,9 @@ const Header = ({
   rightComponent,
   showBackButton = false,
   onBackPress,
-  backgroundColor = "bg-white dark:bg-gray-900",
-  textColor = "text-gray-800 dark:text-white",
+  // Remove the default backgroundColor prop - let theme control it
+  backgroundColor, // Remove default value
+  textColor, // Remove default value
   style = "",
   titleStyle = "",
   showSidebar = true,
@@ -692,13 +693,20 @@ const Header = ({
   return (
     <>
       <SafeAreaView
-        className={`border-b ${isDarkMode ? 'border-gray-800' : 'border-white'} shadow-[0px_7px_20px_black] dark:shadow-none ${isDarkMode ? 'bg-gray-900' : backgroundColor} ${style}`}
+        className={`
+          border-b 
+          ${isDarkMode ? 'border-gray-800 bg-gray-900' : 'border-white bg-white'} 
+          shadow-[0px_7px_20px_black] dark:shadow-none 
+          ${style}
+        `}
         edges={["top", "left", "right"]}
       >
         <View className="flex-row items-center justify-between px-4 py-3 min-h-[60px]">
           {renderLeftComponent()}
           <Text
-            className={`flex-1 text-center mx-2 font-semibold text-lg ${isDarkMode ? 'text-white' : textColor} ${titleStyle}`}
+            className={`flex-1 text-center mx-2 font-semibold text-lg ${
+              isDarkMode ? 'text-white' : 'text-gray-800'
+            } ${titleStyle}`}
             numberOfLines={1}
           >
             {title}
