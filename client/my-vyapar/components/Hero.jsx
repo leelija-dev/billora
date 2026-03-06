@@ -60,62 +60,37 @@ const Hero = () => {
           .gradient-shift { animation: gradient-shift 8s ease infinite; background-size: 200% 200%; }
         `}</style>
 
-        {/* Animated Background Elements */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          
-          {/* Blob 1 - Blue */}
-          <div className="absolute top-10 left-20 w-96 h-96 
-                          bg-gradient-to-br from-blue-400/40 via-blue-500/30 to-blue-600/20 
-                          rounded-full blur-3xl blob-float-1 glow-pulse"></div>
-          
-          {/* Blob 2 - Purple */}
-          <div className="absolute bottom-20 right-40 w-80 h-80 
-                          bg-gradient-to-br from-purple-400/40 via-purple-500/30 to-purple-600/20 
-                          rounded-full blur-3xl blob-float-2 glow-pulse"></div>
-          
-          {/* Blob 3 - Cyan */}
-          <div className="absolute top-1/2 right-20 w-72 h-72 
-                          bg-gradient-to-br from-cyan-400/35 via-cyan-500/25 to-cyan-600/15 
-                          rounded-full blur-3xl blob-float-3 glow-pulse"></div>
+        {/* Fading GST Icons Container */}
+        {/* Floating Business Icons Background */}
+<div className="absolute inset-0 pointer-events-none z-0">
 
-          {/* Blob 4 - Indigo */}
-          <div className="absolute -bottom-32 left-1/3 w-96 h-96 
-                          bg-gradient-to-br from-indigo-400/35 via-indigo-500/25 to-indigo-600/15 
-                          rounded-full blur-3xl blob-float-4 glow-pulse"></div>
+  {/* Invoice */}
+  <div className="absolute top-[12%] left-[8%] float-icon opacity-20">
+    📄
+  </div>
 
-          {/* Animated Gradient Overlay */}
-          <div className="absolute inset-0 
-                          bg-gradient-to-r from-blue-200/10 via-purple-200/10 to-cyan-200/10 
-                          gradient-shift opacity-60"></div>
+  {/* Rupee */}
+  <div className="absolute top-[65%] left-[15%] float-icon delay-2 opacity-20">
+    ₹
+  </div>
 
-          {/* Rotating Ring */}
-          <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full">
-            <div className="absolute inset-0 rounded-full 
-                            border-2 border-transparent 
-                            bg-gradient-to-r from-blue-400/20 via-purple-400/20 to-cyan-400/20 
-                            rotate-slow"
-                 style={{borderImage: "linear-gradient(90deg, rgba(59,130,246,0.3), rgba(168,85,247,0.3), rgba(34,211,238,0.3)) 1"}}></div>
-          </div>
+  {/* Chart */}
+  <div className="absolute top-[30%] right-[12%] float-icon delay-3 opacity-20">
+    📊
+  </div>
 
-          {/* Shimmer Lines */}
-          <div className="absolute top-0 left-0 right-0 h-0.5 
-                          bg-gradient-to-r from-transparent via-blue-300 to-transparent 
-                          shimmer-bg"></div>
-          <div className="absolute bottom-0 left-0 right-0 h-0.5 
-                          bg-gradient-to-r from-transparent via-purple-300 to-transparent 
-                          shimmer-bg" style={{animationDelay: "2s"}}></div>
+  {/* Calculator */}
+  <div className="absolute bottom-[20%] right-[18%] float-icon delay-4 opacity-20">
+    🧮
+  </div>
 
-          {/* Animated Grid Particles - FIXED */}
-          {[...Array(15)].map((_, i) => (
-            <div key={i} 
-              className="absolute w-1 h-1 bg-blue-300/30 rounded-full shimmer-bg"
-              style={{
-                left: `${Math.random() * 100}%`,
-                top: `${Math.random() * 100}%`,
-                animationDelay: `${i * 0.3}s`
-              }}></div>
-          ))}
-        </div>
+  {/* Bill */}
+  <div className="absolute top-[50%] left-[40%] float-icon delay-5 opacity-20">
+    🧾
+  </div>
+
+</div>
+    
 
         {/* Gradient Overlay at bottom */}
         <div className="absolute bottom-0 left-0 right-0 h-40 
@@ -130,13 +105,21 @@ const Hero = () => {
             <h1 className="text-4xl md:text-5xl lg:text-[52px] font-extrabold text-slate-900 leading-tight mb-8 tracking-tight animate-fadeInUp">
               GST Billing Software for Small Businesses in India
             </h1>
-            <p className="text-base md:text-lg text-slate-600 leading-relaxed mb-10 max-w-[550px] mx-auto lg:mx-0 animate-fadeInUp" style={{animationDelay: "0.2s"}}>
-              Manage your business professionally with Vyapar, India's leading small business software for billing, inventory, and accounting. Join 1 Cr+ satisfied SMEs in India who trust Vyapar.
+            <p className="text-sm sm:text-base md:text-lg text-slate-600 leading-relaxed mb-6 sm:mb-10 max-w-[550px] mx-auto lg:mx-0 animate-fadeInUp" style={{animationDelay: "0.2s"}}>
+              Manage your business professionally with Billora, India's leading small business software for billing, inventory, and accounting. Join 1 Cr+ satisfied SMEs in India who trust Billora.
             </p>
-            <button className="px-10 py-4 bg-gradient-to-r from-blue-600 to-purple-500 text-white rounded-full text-lg font-semibold shadow-[0_10px_25px_rgba(59,130,246,0.3)] transition-all hover:-translate-y-1 hover:shadow-[0_15px_35px_rgba(59,130,246,0.4)] animate-fadeInUp" style={{animationDelay: "0.4s"}}>
-              Download Vyapar Now!
-            </button>
-          </div>
+           <div className="flex flex-col sm:flex-row gap-6">
+
+<button className="px-10 py-4 bg-gradient-to-r from-blue-600 to-purple-500 text-white rounded-full text-sm font-semibold shadow-md transition-all hover:-translate-y-1">
+Start Free Trial
+</button>
+
+<button className="px-10 py-4 bg-gradient-to-r from-blue-600 to-purple-500 text-white rounded-full text-sm font-semibold shadow-md transition-all hover:-translate-y-1">
+Book free demo
+</button>
+
+</div>
+</div>
 
           {/* Hero Images Container */}
           <div className="flex-1 relative min-h-[350px] md:min-h-[500px] w-full max-w-[600px]">
@@ -210,37 +193,38 @@ const Hero = () => {
 
           {/* Ultra Animated Background Styles */}
           <style>{`
-            @keyframes float-blob-dark-1 {
-              0%, 100% { transform: translate(0px, 0px); }
-              25% { transform: translate(30px, -30px); }
-              50% { transform: translate(-20px, 20px); }
-              75% { transform: translate(25px, 15px); }
-            }
-            @keyframes float-blob-dark-2 {
-              0%, 100% { transform: translate(0px, 0px); }
-              25% { transform: translate(-25px, 35px); }
-              50% { transform: translate(20px, -25px); }
-              75% { transform: translate(-15px, -20px); }
-            }
-            @keyframes float-blob-dark-3 {
-              0%, 100% { transform: translate(0px, 0px); }
-              25% { transform: translate(20px, 20px); }
-              50% { transform: translate(-30px, -15px); }
-              75% { transform: translate(15px, -30px); }
-            }
-            @keyframes glow-pulse-dark {
-              0%, 100% { opacity: 0.3; }
-              50% { opacity: 0.6; }
-            }
-            @keyframes rotate-slow-dark {
-              0% { transform: rotate(0deg); }
-              100% { transform: rotate(360deg); }
-            }
-            .blob-float-dark-1 { animation: float-blob-dark-1 8s ease-in-out infinite; }
-            .blob-float-dark-2 { animation: float-blob-dark-2 10s ease-in-out infinite 1s; }
-            .blob-float-dark-3 { animation: float-blob-dark-3 12s ease-in-out infinite 2s; }
-            .glow-pulse-dark { animation: glow-pulse-dark 4s ease-in-out infinite; }
-            .rotate-slow-dark { animation: rotate-slow-dark 20s linear infinite; }
+        @keyframes floatIcons {
+  0% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-25px) rotate(8deg);
+  }
+  100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+}
+
+.float-icon {
+  font-size: 48px;
+  animation: floatIcons 8s ease-in-out infinite;
+}
+
+.delay-2 {
+  animation-delay: 2s;
+}
+
+.delay-3 {
+  animation-delay: 3s;
+}
+
+.delay-4 {
+  animation-delay: 4s;
+}
+
+.delay-5 {
+  animation-delay: 5s;
+}
           `}</style>
 
           {/* Animated Blob Background Elements */}

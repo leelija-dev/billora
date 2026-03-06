@@ -48,7 +48,7 @@ export default function Home() {
           {/* LEFT CONTENT */}
           <div className="space-y-6">
             <h1 className="text-4xl md:text-4xl font-bold text-gray-900 leading-tight">
-              Start using <br /> myVyapar today
+              Start using <br /> myBillora today
             </h1>
 
             {/* Premium Input Section with Clickable Search */}
