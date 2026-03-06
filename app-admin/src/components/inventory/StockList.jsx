@@ -3,7 +3,7 @@ import React, { useMemo, useState, useEffect } from 'react';
 import {
   View,
   Text,
-  FlatList,
+  ScrollView,
   TouchableOpacity,
   Animated,
   RefreshControl,
@@ -250,12 +250,13 @@ const StockList = ({ viewMode = 'grid', searchQuery = '', filters = {} }) => {
     </Animated.View>
   );
 
-  const renderListItem = ({ item }) => {
+  const renderListItem = (item) => {
     const status = getStatusColor(item.status);
     const totalValue = item.currentStock * item.unitPrice;
 
     return (
       <TouchableOpacity
+        key={item.id}
         onPress={() => handleItemPress(item)}
         activeOpacity={0.7}
       >
@@ -273,6 +274,7 @@ const StockList = ({ viewMode = 'grid', searchQuery = '', filters = {} }) => {
               <LinearGradient
                 colors={['#6366F1', '#8B5CF6']}
                 className="w-14 h-14 rounded-2xl items-center justify-center mr-4"
+                style={{ borderRadius: 5 }}
               >
                 <Icon name="package-variant" size={28} color="white" />
               </LinearGradient>
@@ -334,12 +336,13 @@ const StockList = ({ viewMode = 'grid', searchQuery = '', filters = {} }) => {
     );
   };
 
-  const renderGridItem = ({ item }) => {
+  const renderGridItem = (item) => {
     const status = getStatusColor(item.status);
     const totalValue = item.currentStock * item.unitPrice;
 
     return (
       <TouchableOpacity
+        key={item.id}
         onPress={() => handleItemPress(item)}
         activeOpacity={0.7}
         className="w-[48%] mx-[1%]"
@@ -357,6 +360,7 @@ const StockList = ({ viewMode = 'grid', searchQuery = '', filters = {} }) => {
             <LinearGradient
               colors={['#6366F1', '#8B5CF6']}
               className="w-16 h-16 rounded-2xl items-center justify-center self-center mb-3"
+              style={{ borderRadius: 5 }}
             >
               <Icon name="package-variant" size={32} color="white" />
             </LinearGradient>
@@ -414,6 +418,19 @@ const StockList = ({ viewMode = 'grid', searchQuery = '', filters = {} }) => {
     );
   };
 
+  const renderGridItems = () => {
+    const rows = [];
+    for (let i = 0; i < filteredInventory.length; i += 2) {
+      const rowItems = filteredInventory.slice(i, i + 2);
+      rows.push(
+        <View key={i} className="flex-row justify-between mb-2">
+          {rowItems.map(item => renderGridItem(item))}
+        </View>
+      );
+    }
+    return rows;
+  };
+
   if (!filteredInventory || filteredInventory.length === 0) {
     return (
       <View className="flex-1 items-center justify-center py-16">
@@ -431,15 +448,9 @@ const StockList = ({ viewMode = 'grid', searchQuery = '', filters = {} }) => {
   }
 
   return (
-    <FlatList
-      data={filteredInventory}
-      keyExtractor={(item) => item.id}
-      numColumns={viewMode === 'grid' ? 2 : 1}
-      key={viewMode}
-      renderItem={viewMode === 'grid' ? renderGridItem : renderListItem}
-      ListHeaderComponent={renderHeader}
-      contentContainerStyle={{ paddingBottom: 20 }}
-      showsVerticalScrollIndicator={false}
+    <View
+      className="flex-1"
+      
       refreshControl={
         <RefreshControl
           refreshing={refreshing}
@@ -448,7 +459,12 @@ const StockList = ({ viewMode = 'grid', searchQuery = '', filters = {} }) => {
           tintColor="#6366F1"
         />
       }
-    />
+    >
+      <View className="">
+        {renderHeader()}
+        {viewMode === 'grid' ? renderGridItems() : filteredInventory.map(item => renderListItem(item))}
+      </View>
+    </View>
   );
 };
 

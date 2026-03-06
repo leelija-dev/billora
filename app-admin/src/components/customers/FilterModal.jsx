@@ -1,4 +1,3 @@
-// components/customers/FilterModal.js
 import { LinearGradient } from "expo-linear-gradient";
 import { useEffect, useState } from "react";
 import {
@@ -408,7 +407,7 @@ const FilterModal = ({
                       {filters.status !== "all" && (
                         <View className="bg-indigo-100 rounded-full px-3 py-1 mr-2 mb-2">
                           <Text className="text-indigo-600 text-xs">
-                            Status: {filters.status}
+                            Status: {filters.status === 'active' ? 'Active' : filters.status === 'inactive' ? 'Inactive' : 'All'}
                           </Text>
                         </View>
                       )}
@@ -486,6 +485,7 @@ const FilterModal = ({
                       start={{ x: 0, y: 0 }}
                       end={{ x: 1, y: 0 }}
                       className="py-4 rounded-xl"
+                      style={{ borderRadius: 13 }}
                     >
                       <Text className="text-white font-semibold text-center">
                         Apply{" "}

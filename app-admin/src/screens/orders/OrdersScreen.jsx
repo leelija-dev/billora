@@ -121,7 +121,7 @@ const OrdersScreen = () => {
   ];
 
   return (
-    <View className="flex-1 bg-gray-50">
+    <View className="flex-1 bg-gray-50 pb-16">
       <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
 
       {/* Use the enhanced Header component */}
@@ -160,12 +160,13 @@ const OrdersScreen = () => {
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
-          className="px-4 py-3"
+          className="px-2 py-3"
         >
-          <View className="flex-row gap-3">
+          <View className="flex-row gap-3 pr-4">
             <LinearGradient
               colors={["#3b82f6", "#2563eb"]}
               className="rounded-2xl p-4 min-w-[120px]"
+              style={{borderRadius:10}}
             >
               <Text className="text-white/80 text-xs">Total Orders</Text>
               <Text className="text-white text-2xl font-bold">
@@ -176,6 +177,7 @@ const OrdersScreen = () => {
             <LinearGradient
               colors={["#f97316", "#ea580c"]}
               className="rounded-2xl p-4 min-w-[120px]"
+               style={{borderRadius:10}}
             >
               <Text className="text-white/80 text-xs">Pending</Text>
               <Text className="text-white text-2xl font-bold">
@@ -186,6 +188,7 @@ const OrdersScreen = () => {
             <LinearGradient
               colors={["#10b981", "#059669"]}
               className="rounded-2xl p-4 min-w-[120px]"
+               style={{borderRadius:10}}
             >
               <Text className="text-white/80 text-xs">Delivered</Text>
               <Text className="text-white text-2xl font-bold">
@@ -196,6 +199,7 @@ const OrdersScreen = () => {
             <LinearGradient
               colors={["#ef4444", "#dc2626"]}
               className="rounded-2xl p-4 min-w-[120px]"
+               style={{borderRadius:10}}
             >
               <Text className="text-white/80 text-xs">Cancelled</Text>
               <Text className="text-white text-2xl font-bold">
@@ -225,7 +229,10 @@ const OrdersScreen = () => {
         </View>
       </View>
 
-      {/* Filter Chips */}
+      <ScrollView 
+      showsVerticalScrollIndicator={false}
+      >
+        {/* Filter Chips */}
       <View>
         <ScrollView
           horizontal
@@ -291,6 +298,7 @@ const OrdersScreen = () => {
           navigation={navigation}
         />
       </View>
+      </ScrollView>
     </View>
   );
 };

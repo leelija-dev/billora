@@ -490,6 +490,7 @@ const OrderForm = () => {
               }`}
               style={{
                 transform: [{ scale: currentStep === step.id ? 1.1 : 1 }],
+                borderRadius:100,
               }}
             >
               <Ionicons
@@ -529,6 +530,7 @@ const OrderForm = () => {
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         className="rounded-3xl p-6 mb-6"
+         style={{borderRadius:10}}
       >
         <Text className="text-white text-2xl font-bold mb-2">
           Select Customer
@@ -552,12 +554,14 @@ const OrderForm = () => {
             shadowOffset: { width: 0, height: 4 },
             shadowOpacity: 0.1,
             shadowRadius: 8,
+            borderRadius:10
           }}
         >
           <View className="flex-row items-center">
             <LinearGradient
               colors={["#667eea", "#764ba2"]}
               className="w-16 h-16 rounded-2xl items-center justify-center"
+               style={{borderRadius:100}}
             >
               <Text className="text-white text-2xl font-bold">
                 {selectedCustomer.name.charAt(0)}
@@ -600,6 +604,8 @@ const OrderForm = () => {
           <LinearGradient
             colors={["#667eea", "#764ba2"]}
             className="w-20 h-20 rounded-2xl items-center justify-center mb-4"
+             style={{borderRadius:100}}
+            
           >
             <Ionicons name="person-add-outline" size={36} color="white" />
           </LinearGradient>
@@ -660,6 +666,7 @@ const OrderForm = () => {
                   key={customer.id}
                   onPress={() => handleSelectCustomer(customer)}
                   activeOpacity={0.7}
+                   
                 >
                   <LinearGradient
                     colors={["#ffffff", "#f8f9fa"]}
@@ -669,12 +676,14 @@ const OrderForm = () => {
                       shadowOffset: { width: 0, height: 2 },
                       shadowOpacity: 0.05,
                       shadowRadius: 4,
+                     
                     }}
                   >
                     <View className="flex-row items-center">
                       <LinearGradient
                         colors={["#667eea", "#764ba2"]}
                         className="w-14 h-14 rounded-xl items-center justify-center"
+                        style={{borderRadius:100}}
                       >
                         <Text className="text-white text-xl font-bold">
                           {customer.name.charAt(0)}
@@ -724,6 +733,7 @@ const OrderForm = () => {
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           className="flex-row items-center justify-center py-4 rounded-xl"
+          style={{borderRadius:10}}
         >
           <Text className={`font-bold text-base mr-2 ${selectedCustomer ? "text-white" : "text-gray-400"}`}>
             Next: Items
@@ -747,6 +757,7 @@ const OrderForm = () => {
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         className="rounded-3xl p-6 mb-6"
+        style={{borderRadius:10}}
       >
         <View className="flex-row justify-between items-center">
           <View>
@@ -776,6 +787,7 @@ const OrderForm = () => {
           <LinearGradient
             colors={["#FF512F", "#F09819"]}
             className="w-20 h-20 rounded-2xl items-center justify-center mb-4"
+            style={{borderRadius:100}}
           >
             <Ionicons name="cart-outline" size={36} color="white" />
           </LinearGradient>
@@ -804,6 +816,7 @@ const OrderForm = () => {
                 <LinearGradient
                   colors={["#FF512F", "#F09819"]}
                   className="w-16 h-16 rounded-xl items-center justify-center"
+                  style={{borderRadius:5}}
                 >
                   <Ionicons name="cube" size={28} color="white" />
                 </LinearGradient>
@@ -848,6 +861,7 @@ const OrderForm = () => {
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             className="p-5 rounded-2xl mt-4"
+            style={{borderRadius:10}}
           >
             <View className="flex-row justify-between mb-2">
               <Text className="text-white/80">Subtotal</Text>
@@ -917,6 +931,7 @@ const OrderForm = () => {
                       <LinearGradient
                         colors={["#FF512F", "#F09819"]}
                         className="w-16 h-16 rounded-xl items-center justify-center"
+                        style={{borderRadius:5}}
                       >
                         <Ionicons name="cube" size={28} color="white" />
                       </LinearGradient>
@@ -957,6 +972,7 @@ const OrderForm = () => {
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           className="flex-row items-center justify-center py-4 rounded-xl"
+           style={{borderRadius:10}}
         >
           <Text className={`font-bold text-base mr-2 ${orderItems.length > 0 ? "text-white" : "text-gray-400"}`}>
             Next: Details
@@ -980,6 +996,7 @@ const OrderForm = () => {
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         className="rounded-3xl p-6 mb-6"
+        style={{borderRadius:10}}
       >
         <Text className="text-white text-2xl font-bold mb-2">
           Order Details
@@ -1058,7 +1075,7 @@ const OrderForm = () => {
       <Text className="text-gray-900 font-bold text-lg mb-4">
         Shipping Address
       </Text>
-      <View className="space-y-3">
+      <View className=" gap-2">
         <View>
           <TextInput
             className={`bg-white p-4 rounded-xl border text-base ${
@@ -1159,6 +1176,7 @@ const OrderForm = () => {
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           className="flex-row items-center justify-center py-4 rounded-xl"
+           style={{borderRadius:10}}
         >
           <Text className={`font-bold text-base mr-2 ${
             shippingAddress.street && shippingAddress.city && shippingAddress.zip 
@@ -1190,6 +1208,7 @@ const OrderForm = () => {
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         className="rounded-3xl p-6 mb-6"
+        style={{borderRadius:10}}
       >
         <Text className="text-white text-2xl font-bold mb-2">Review Order</Text>
         <Text className="text-white/80">
@@ -1205,6 +1224,7 @@ const OrderForm = () => {
           shadowOffset: { width: 0, height: 4 },
           shadowOpacity: 0.1,
           shadowRadius: 8,
+          borderRadius: 10,
         }}
       >
         {/* Customer Info */}
@@ -1216,6 +1236,7 @@ const OrderForm = () => {
             <LinearGradient
               colors={["#8E2DE2", "#4A00E0"]}
               className="w-12 h-12 rounded-xl items-center justify-center mr-3"
+              style={{borderRadius:100}}
             >
               <Text className="text-white font-bold text-lg">
                 {selectedCustomer?.name?.charAt(0)}
@@ -1261,6 +1282,7 @@ const OrderForm = () => {
                   ?.gradient || ["#11998e", "#38ef7d"]
               }
               className="w-8 h-8 rounded-lg items-center justify-center mr-3"
+              style={{borderRadius:100}}
             >
               <Ionicons
                 name={paymentMethods.find((m) => m.id === paymentMethod)?.icon}
@@ -1309,6 +1331,7 @@ const OrderForm = () => {
         <LinearGradient
           colors={["#8E2DE2", "#4A00E0"]}
           className="p-4 rounded-xl mt-3"
+          style={{borderRadius:5}}
         >
           <View className="flex-row justify-between items-center">
             <Text className="text-white font-bold text-lg">Total</Text>
@@ -1331,6 +1354,8 @@ const OrderForm = () => {
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           className="flex-row items-center justify-center py-4 rounded-xl"
+           style={{borderRadius:10}}
+          
         >
           {isSubmitting ? (
             <>
@@ -1381,6 +1406,7 @@ const OrderForm = () => {
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           className="px-4 py-2 rounded-xl"
+           style={{borderRadius:5}}
         >
           <Text className="text-white font-bold">
             {isEditing ? "Edit Order" : "Create Order"}

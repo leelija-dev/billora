@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Animated,
-  FlatList,
+  ScrollView,
   Image,
   RefreshControl,
   Text,
@@ -14,7 +14,7 @@ import {
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 import ProductCard from "./ProductCard";
 
-// Static product data
+// Static product data (keep your existing STATIC_PRODUCTS array here)
 const STATIC_PRODUCTS = [
   {
     id: "1",
@@ -258,16 +258,17 @@ const ProductList = ({
     </Animated.View>
   );
 
-  const renderGridItem = ({ item }) => (
-    <View className="w-[48%] mx-[1%] mb-3">
+  const renderGridItem = (item) => (
+    <View key={item.id} className="w-[48%] mx-[1%] mb-3">
       <ProductCard product={item} onUpdateStock={handleUpdateStock} />
     </View>
   );
 
-  const renderListItem = ({ item }) => (
+  const renderListItem = (item) => (
     <TouchableOpacity
+      key={item.id}
       onPress={() => handleProductPress(item)}
-      className="flex-row bg-white rounded-xl mb-3 p-3 shadow-sm "
+      className="flex-row bg-white rounded-xl mb-3 p-3 shadow-sm"
     >
       <Image
         source={{ uri: item.image }}
@@ -342,6 +343,19 @@ const ProductList = ({
     </TouchableOpacity>
   );
 
+  const renderGridItems = () => {
+    const rows = [];
+    for (let i = 0; i < filteredProducts.length; i += 2) {
+      const rowItems = filteredProducts.slice(i, i + 2);
+      rows.push(
+        <View key={`row-${i}`} className="flex-row justify-between mb-2">
+          {rowItems.map(item => renderGridItem(item))}
+        </View>
+      );
+    }
+    return rows;
+  };
+
   if (loading) {
     return (
       <View className="flex-1 justify-center items-center">
@@ -351,16 +365,41 @@ const ProductList = ({
     );
   }
 
+  if (!filteredProducts || filteredProducts.length === 0) {
+    return (
+      <ScrollView
+        className="flex-1"
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={["#3b82f6"]}
+            tintColor="#3b82f6"
+          />
+        }
+      >
+        <View className="px-4">
+          {renderHeader()}
+          <View className="items-center justify-center py-16">
+            <Icon name="package-variant" size={80} color="#d1d5db" />
+            <Text className="text-lg font-semibold text-gray-700 mt-4">
+              No Products Found
+            </Text>
+            <Text className="text-sm text-gray-400 text-center mt-2 px-8">
+              {searchQuery || category !== "all"
+                ? "Try adjusting your search or filters"
+                : "Tap the + button to add your first product"}
+            </Text>
+          </View>
+        </View>
+      </ScrollView>
+    );
+  }
+
   return (
-    <FlatList
-      data={filteredProducts}
-      keyExtractor={(item) => item.id}
-      numColumns={viewMode === "grid" ? 2 : 1}
-      key={viewMode}
-      renderItem={viewMode === "grid" ? renderGridItem : renderListItem}
-      ListHeaderComponent={renderHeader}
-      contentContainerStyle={{ paddingBottom: 20 }}
-      showsVerticalScrollIndicator={false}
+    <View
+      className="flex-1"
+      
       refreshControl={
         <RefreshControl
           refreshing={refreshing}
@@ -369,20 +408,14 @@ const ProductList = ({
           tintColor="#3b82f6"
         />
       }
-      ListEmptyComponent={
-        <View className="flex-1 items-center justify-center py-16">
-          <Icon name="package-variant" size={80} color="#d1d5db" />
-          <Text className="text-lg font-semibold text-gray-700 mt-4">
-            No Products Found
-          </Text>
-          <Text className="text-sm text-gray-400 text-center mt-2 px-8">
-            {searchQuery || category !== "all"
-              ? "Try adjusting your search or filters"
-              : "Tap the + button to add your first product"}
-          </Text>
-        </View>
-      }
-    />
+    >
+      <View className="">
+        {renderHeader()}
+        {viewMode === "grid" 
+          ? renderGridItems() 
+          : filteredProducts.map(item => renderListItem(item))}
+      </View>
+    </View>
   );
 };
 

@@ -11,11 +11,13 @@ import {
   StatusBar,
   Text,
   TouchableOpacity,
+  useWindowDimensions,
   View,
 } from "react-native";
 import { LineChart } from "react-native-chart-kit";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 import Header from "../../components/common/Header";
+import StatsCard from "../../components/dashboard/StatsCard";
 
 const { width } = Dimensions.get("window");
 
@@ -184,6 +186,9 @@ const navigationItems = [
 ];
 
 const DashboardScreen = () => {
+  const { width } = useWindowDimensions();
+  const cardWidth = Math.min(200, width * 0.8); // Max 300px or 80% of screen
+  const gap = 16;
   const navigation = useNavigation();
   const [dashboardData] = useState(STATIC_DASHBOARD_DATA);
   const [selectedPeriod, setSelectedPeriod] = useState("week");
@@ -316,42 +321,7 @@ const DashboardScreen = () => {
     ]);
   };
 
-  const StatsCard = ({ icon, title, value, trend, gradient }) => (
-    <LinearGradient
-      colors={gradient}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 1 }}
-      className="flex-1 m-1 p-4 rounded-2xl"
-      style={{
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.1,
-        shadowRadius: 8,
-        elevation: 3,
-        minWidth: width * 0.4,
-      }}
-    >
-      <View className="flex-row items-center justify-between mb-2">
-        <View className="w-10 h-10 rounded-xl bg-white/20 items-center justify-center">
-          <Text className="text-2xl">{icon}</Text>
-        </View>
-        {trend && (
-          <View className="flex-row items-center bg-white/30 px-2 py-1 rounded-full">
-            <Ionicons
-              name={trend > 0 ? "trending-up" : "trending-down"}
-              size={14}
-              color="white"
-            />
-            <Text className="text-white text-xs font-semibold ml-1">
-              {Math.abs(trend)}%
-            </Text>
-          </View>
-        )}
-      </View>
-      <Text className="text-white/80 text-xs font-medium">{title}</Text>
-      <Text className="text-2xl font-bold text-white mt-1">{value}</Text>
-    </LinearGradient>
-  );
+
 
   // Custom right component that INCLUDES both view mode toggle AND default icons
   const renderCustomRightComponent = () => (
@@ -396,7 +366,7 @@ const DashboardScreen = () => {
   );
 
   return (
-    <View className="flex-1 bg-gray-50">
+    <View className="flex-1 bg-gray-50 pb-16">
       <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
 
       {/* Header with custom right component that includes all icons */}
@@ -412,9 +382,9 @@ const DashboardScreen = () => {
         onNotificationPress={handleNotificationPress}
         onSearchPress={handleSearchPress}
         onLogout={handleLogout}
-        // Don't pass rightComponent - let Header use its default
-        // OR use the custom one below that includes everything
-        // rightComponent={renderCustomRightComponent()}
+      // Don't pass rightComponent - let Header use its default
+      // OR use the custom one below that includes everything
+      // rightComponent={renderCustomRightComponent()}
       />
 
       <ScrollView
@@ -441,6 +411,7 @@ const DashboardScreen = () => {
             shadowOpacity: 0.3,
             shadowRadius: 8,
             elevation: 5,
+            borderRadius: 10,
           }}
         >
           <View className="flex-row justify-between items-center">
@@ -460,40 +431,44 @@ const DashboardScreen = () => {
         </LinearGradient>
 
         {/* Stats Cards - Horizontal Scroll */}
-        <View className="px-4 mt-6">
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            <View className="flex-row">
-              <StatsCard
-                icon="💰"
-                title="Total Revenue"
-                value={formatCurrency(dashboardData.stats.totalRevenue)}
-                trend={dashboardData.stats.revenueTrend}
-                gradient={["#6366F1", "#8B5CF6"]}
-              />
-              <StatsCard
-                icon="📋"
-                title="Total Orders"
-                value={formatNumber(dashboardData.stats.totalOrders)}
-                trend={dashboardData.stats.ordersTrend}
-                gradient={["#F59E0B", "#D97706"]}
-              />
-              <StatsCard
-                icon="👥"
-                title="Customers"
-                value={formatNumber(dashboardData.stats.totalCustomers)}
-                trend={dashboardData.stats.customersTrend}
-                gradient={["#10B981", "#059669"]}
-              />
-              <StatsCard
-                icon="📦"
-                title="Products"
-                value={formatNumber(dashboardData.stats.totalProducts)}
-                trend={dashboardData.stats.productsTrend}
-                gradient={["#EF4444", "#DC2626"]}
-              />
-            </View>
-          </ScrollView>
+          <View className="px-4 mt-6">
+      <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+        <View className="flex-row" style={{ gap }}>
+          <StatsCard
+            icon="💰"
+            title="Total Revenue"
+            value={formatCurrency(dashboardData.stats.totalRevenue)}
+            trend={dashboardData.stats.revenueTrend}
+            gradient={["#6366F1", "#8B5CF6"]}
+            style={{ width: cardWidth }}
+          />
+          <StatsCard
+            icon="📋"
+            title="Total Orders"
+            value={formatNumber(dashboardData.stats.totalOrders)}
+            trend={dashboardData.stats.ordersTrend}
+            gradient={["#F59E0B", "#D97706"]}
+            style={{ width: cardWidth }}
+          />
+          <StatsCard
+            icon="👥"
+            title="Customers"
+            value={formatNumber(dashboardData.stats.totalCustomers)}
+            trend={dashboardData.stats.customersTrend}
+            gradient={["#10B981", "#059669"]}
+            style={{ width: cardWidth }}
+          />
+          <StatsCard
+            icon="📦"
+            title="Products"
+            value={formatNumber(dashboardData.stats.totalProducts)}
+            trend={dashboardData.stats.productsTrend}
+            gradient={["#EF4444", "#DC2626"]}
+            style={{ width: cardWidth }}
+          />
         </View>
+      </ScrollView>
+    </View>
 
         {/* Quick Stats Row */}
         <View className="flex-row justify-between px-4 mt-4">
@@ -502,7 +477,7 @@ const DashboardScreen = () => {
             <Text className="text-xl font-bold text-gray-800 mt-1">
               {formatCurrency(
                 dashboardData.stats.totalRevenue /
-                  dashboardData.stats.totalOrders,
+                dashboardData.stats.totalOrders,
               )}
             </Text>
           </View>
@@ -528,16 +503,14 @@ const DashboardScreen = () => {
                 <TouchableOpacity
                   key={period}
                   onPress={() => setSelectedPeriod(period)}
-                  className={`px-4 py-2 rounded-xl ${
-                    selectedPeriod === period ? "bg-white shadow-sm" : ""
-                  }`}
+                  className={`px-4 py-2 rounded-xl ${selectedPeriod === period ? "bg-white shadow-sm" : ""
+                    }`}
                 >
                   <Text
-                    className={`text-sm font-medium ${
-                      selectedPeriod === period
+                    className={`text-sm font-medium ${selectedPeriod === period
                         ? "text-indigo-600"
                         : "text-gray-500"
-                    }`}
+                      }`}
                   >
                     {period.charAt(0).toUpperCase() + period.slice(1)}
                   </Text>
@@ -631,11 +604,10 @@ const DashboardScreen = () => {
               onPress={() =>
                 handleNavigate("ProductDetail", { productId: product.id })
               }
-              className={`flex-row items-center py-3 ${
-                index !== dashboardData.topProducts.length - 1
+              className={`flex-row items-center py-3 ${index !== dashboardData.topProducts.length - 1
                   ? "border-b border-gray-100"
                   : ""
-              }`}
+                }`}
             >
               <View className="w-8 h-8 bg-indigo-100 rounded-xl items-center justify-center mr-3">
                 <Text className="text-indigo-600 font-bold">#{index + 1}</Text>
@@ -679,15 +651,15 @@ const DashboardScreen = () => {
                 onPress={() =>
                   handleNavigate("OrderDetail", { orderId: order.id })
                 }
-                className={`flex-row items-center py-3 ${
-                  index !== dashboardData.recentOrders.length - 1
+                className={`flex-row items-center py-3 ${index !== dashboardData.recentOrders.length - 1
                     ? "border-b border-gray-100"
                     : ""
-                }`}
+                  }`}
               >
                 <LinearGradient
                   colors={["#6366F1", "#8B5CF6"]}
-                  className="w-12 h-12 rounded-2xl items-center justify-center mr-3"
+                  className="w-12 h-12 min-w-12 min-h-12 rounded-2xl items-center justify-center mr-3"
+                  style={{borderRadius:40, overflow:'hidden',}}
                 >
                   <Text className="text-white font-bold">
                     #{order.orderNumber.slice(-3)}

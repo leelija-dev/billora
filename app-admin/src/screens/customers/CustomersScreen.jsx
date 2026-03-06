@@ -1,5 +1,4 @@
-// screens/customers/CustomersScreen.js
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -20,13 +19,278 @@ import FilterModal from '../../components/customers/FilterModal';
 
 const { width } = Dimensions.get('window');
 
-// Static customer stats
-const customerStats = {
-  total: 892,
-  active: 723,
-  inactive: 169,
-  newThisMonth: 45,
+// Static customer stats based on actual data
+const STATIC_CUSTOMERS = [
+  {
+    id: "CUST-001",
+    name: "John Smith",
+    email: "john.smith@email.com",
+    phone: "+1 (555) 123-4567",
+    company: "Smith Enterprises",
+    status: "active",
+    orderCount: 24,
+    totalSpent: 5840.5,
+    averageOrderValue: 243.35,
+    address: {
+      street: "123 Main Street",
+      city: "New York",
+      state: "NY",
+      zip: "10001",
+      country: "USA",
+    },
+    notes: "Premium customer, prefers email communication. Has been with us for over 2 years. Frequently orders bulk items for his business.",
+    createdAt: "2024-01-15T10:30:00Z",
+    lastOrder: "2024-03-15T10:30:00Z",
+    preferredPayment: "Credit Card",
+    taxId: "12-3456789",
+    tags: ["premium", "business", "bulk-orders"],
+    hasPhone: true,
+    hasEmail: true,
+  },
+  {
+    id: "CUST-002",
+    name: "Emma Wilson",
+    email: "emma.wilson@email.com",
+    phone: "+1 (555) 234-5678",
+    company: "Wilson Designs",
+    status: "active",
+    orderCount: 18,
+    totalSpent: 4250.75,
+    averageOrderValue: 236.15,
+    address: {
+      street: "456 Oak Avenue",
+      city: "Los Angeles",
+      state: "CA",
+      zip: "90001",
+      country: "USA",
+    },
+    notes: "Interested in new collections. Loves seasonal items.",
+    createdAt: "2024-01-20T14:20:00Z",
+    lastOrder: "2024-03-14T14:20:00Z",
+    preferredPayment: "PayPal",
+    tags: ["designer", "seasonal"],
+    hasPhone: true,
+    hasEmail: true,
+  },
+  {
+    id: "CUST-003",
+    name: "Michael Brown",
+    email: "michael.brown@email.com",
+    phone: "+1 (555) 345-6789",
+    company: "Brown Consulting",
+    status: "active",
+    orderCount: 12,
+    totalSpent: 2890.25,
+    averageOrderValue: 240.85,
+    address: {
+      street: "789 Pine Street",
+      city: "Chicago",
+      state: "IL",
+      zip: "60601",
+      country: "USA",
+    },
+    notes: "Corporate account, needs invoices. Monthly orders.",
+    createdAt: "2024-02-01T09:15:00Z",
+    lastOrder: "2024-03-13T09:15:00Z",
+    preferredPayment: "Bank Transfer",
+    taxId: "98-7654321",
+    tags: ["corporate", "monthly"],
+    hasPhone: true,
+    hasEmail: true,
+  },
+  {
+    id: "CUST-004",
+    name: "Sarah Davis",
+    email: "sarah.davis@email.com",
+    phone: "+1 (555) 456-7890",
+    company: "Davis Law Firm",
+    status: "active",
+    orderCount: 8,
+    totalSpent: 1950.0,
+    averageOrderValue: 243.75,
+    address: {
+      street: "321 Elm Boulevard",
+      city: "Houston",
+      state: "TX",
+      zip: "77001",
+      country: "USA",
+    },
+    notes: "Prefers phone calls. Legal professional, needs detailed invoices.",
+    createdAt: "2024-02-10T16:45:00Z",
+    lastOrder: "2024-03-12T16:45:00Z",
+    preferredPayment: "Credit Card",
+    tags: ["legal", "phone-pref"],
+    hasPhone: true,
+    hasEmail: true,
+  },
+  {
+    id: "CUST-005",
+    name: "David Lee",
+    email: "david.lee@email.com",
+    phone: "+1 (555) 567-8901",
+    company: "Lee Innovations",
+    status: "inactive",
+    orderCount: 5,
+    totalSpent: 1250.5,
+    averageOrderValue: 250.1,
+    address: {
+      street: "654 Cedar Lane",
+      city: "Phoenix",
+      state: "AZ",
+      zip: "85001",
+      country: "USA",
+    },
+    notes: "Temporary inactive - on sabbatical. Will return in June.",
+    createdAt: "2024-02-15T11:30:00Z",
+    lastOrder: "2024-02-28T11:30:00Z",
+    preferredPayment: "PayPal",
+    tags: ["tech", "inactive"],
+    hasPhone: true,
+    hasEmail: true,
+  },
+  {
+    id: "CUST-006",
+    name: "Lisa Anderson",
+    email: "lisa.anderson@email.com",
+    phone: "+1 (555) 678-9012",
+    company: "Anderson Art",
+    status: "active",
+    orderCount: 15,
+    totalSpent: 3675.8,
+    averageOrderValue: 245.05,
+    address: {
+      street: "987 Maple Drive",
+      city: "Philadelphia",
+      state: "PA",
+      zip: "19101",
+      country: "USA",
+    },
+    notes: "VIP customer - sends referrals. Art gallery owner.",
+    createdAt: "2024-01-05T13:20:00Z",
+    lastOrder: "2024-03-10T13:20:00Z",
+    preferredPayment: "Credit Card",
+    tags: ["vip", "art", "referrals"],
+    hasPhone: true,
+    hasEmail: true,
+  },
+  {
+    id: "CUST-007",
+    name: "James Wilson",
+    email: "james.wilson@email.com",
+    phone: null,
+    company: "Wilson Tech",
+    status: "active",
+    orderCount: 10,
+    totalSpent: 2450.0,
+    averageOrderValue: 245.0,
+    address: {
+      street: "147 Birch Street",
+      city: "San Antonio",
+      state: "TX",
+      zip: "78201",
+      country: "USA",
+    },
+    notes: "New customer - tech startup founder. Interested in bulk discounts.",
+    createdAt: "2024-03-01T10:00:00Z",
+    lastOrder: "2024-03-11T10:00:00Z",
+    preferredPayment: "Bank Transfer",
+    tags: ["tech", "startup", "new"],
+    hasPhone: false,
+    hasEmail: true,
+  },
+  {
+    id: "CUST-008",
+    name: "Maria Garcia",
+    email: null,
+    phone: "+1 (555) 890-1234",
+    company: "Garcia Designs",
+    status: "inactive",
+    orderCount: 3,
+    totalSpent: 750.25,
+    averageOrderValue: 250.08,
+    address: {
+      street: "258 Walnut Avenue",
+      city: "San Diego",
+      state: "CA",
+      zip: "92101",
+      country: "USA",
+    },
+    notes: "On vacation until May. Interior designer.",
+    createdAt: "2024-02-20T15:30:00Z",
+    lastOrder: "2024-02-25T15:30:00Z",
+    preferredPayment: "Credit Card",
+    tags: ["design", "vacation"],
+    hasPhone: true,
+    hasEmail: false,
+  },
+  {
+    id: "CUST-009",
+    name: "Robert Taylor",
+    email: "robert.taylor@email.com",
+    phone: "+1 (555) 901-2345",
+    company: "Taylor Construction",
+    status: "active",
+    orderCount: 32,
+    totalSpent: 8920.0,
+    averageOrderValue: 278.75,
+    address: {
+      street: "369 Spruce Street",
+      city: "Denver",
+      state: "CO",
+      zip: "80201",
+      country: "USA",
+    },
+    notes: "Construction company - bulk orders every month.",
+    createdAt: "2023-12-10T09:00:00Z",
+    lastOrder: "2024-03-09T09:00:00Z",
+    preferredPayment: "Bank Transfer",
+    taxId: "45-6789012",
+    tags: ["construction", "bulk", "monthly"],
+    hasPhone: true,
+    hasEmail: true,
+  },
+  {
+    id: "CUST-010",
+    name: "Jennifer Park",
+    email: "jennifer.park@email.com",
+    phone: "+1 (555) 012-3456",
+    company: "Park Consulting",
+    status: "active",
+    orderCount: 7,
+    totalSpent: 1850.5,
+    averageOrderValue: 264.36,
+    address: {
+      street: "753 Aspen Road",
+      city: "Seattle",
+      state: "WA",
+      zip: "98101",
+      country: "USA",
+    },
+    notes: "Business consultant - orders for corporate events.",
+    createdAt: "2024-02-25T11:45:00Z",
+    lastOrder: "2024-03-08T11:45:00Z",
+    preferredPayment: "Credit Card",
+    tags: ["consulting", "corporate"],
+    hasPhone: true,
+    hasEmail: true,
+  },
+];
+
+// Calculate stats from actual data
+const calculateStats = () => {
+  const total = STATIC_CUSTOMERS.length;
+  const active = STATIC_CUSTOMERS.filter(c => c.status === 'active').length;
+  const inactive = STATIC_CUSTOMERS.filter(c => c.status === 'inactive').length;
+  const newThisMonth = STATIC_CUSTOMERS.filter(c => {
+    const created = new Date(c.createdAt);
+    const now = new Date();
+    return created.getMonth() === now.getMonth() && created.getFullYear() === now.getFullYear();
+  }).length;
+
+  return { total, active, inactive, newThisMonth };
 };
+
+const customerStats = calculateStats();
 
 // Navigation items for sidebar
 const navigationItems = [
@@ -56,7 +320,7 @@ const navigationItems = [
     title: "Customers",
     icon: "account-group",
     screen: "Customers",
-    badge: "892",
+    badge: customerStats.total.toString(),
   },
   {
     id: "inventory",
@@ -108,6 +372,12 @@ const CustomersScreen = () => {
 
   const handleApplyFilters = (newFilters) => {
     setFilters(newFilters);
+    // Update selected filter based on status
+    if (newFilters.status !== 'all') {
+      setSelectedFilter(newFilters.status);
+    } else {
+      setSelectedFilter('all');
+    }
     setFilterVisible(false);
   };
 
@@ -141,8 +411,8 @@ const CustomersScreen = () => {
     if (key === 'status') return value !== 'all';
     if (key === 'sortBy') return value !== 'newest';
     if (key === 'dateRange') return value !== 'all';
-    if (key === 'minOrders') return value !== '';
-    if (key === 'minSpent') return value !== '';
+    if (key === 'minOrders') return value !== '' && value !== null;
+    if (key === 'minSpent') return value !== '' && value !== null;
     if (key === 'hasPhone') return value === true;
     if (key === 'hasEmail') return value === false;
     return false;
@@ -160,7 +430,8 @@ const CustomersScreen = () => {
         shadowOpacity: 0.1,
         shadowRadius: 8,
         elevation: 3,
-        minWidth: width * 0.3,
+        minWidth: width * 0.4,
+        borderRadius: 10,
       }}
     >
       <View className="flex-row items-center justify-between mb-2">
@@ -175,7 +446,7 @@ const CustomersScreen = () => {
   );
 
   return (
-    <View className="flex-1 bg-gray-50">
+    <View className="flex-1 bg-gray-50 pb-16">
       <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
 
       <Header
@@ -276,7 +547,8 @@ const CustomersScreen = () => {
         </View>
       </View>
 
-      {/* Filter Chips */}
+      <ScrollView showsVerticalScrollIndicator={false}>
+        {/* Filter Chips */}
       <View className="px-4 py-2">
         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
           <View className="flex-row gap-2">
@@ -347,8 +619,11 @@ const CustomersScreen = () => {
           viewMode={viewMode}
           searchQuery={searchQuery}
           filters={filters}
+          customers={STATIC_CUSTOMERS}
         />
       </View>
+        
+      </ScrollView>
     </View>
   );
 };
