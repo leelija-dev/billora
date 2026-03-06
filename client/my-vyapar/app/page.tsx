@@ -2,9 +2,11 @@ import Navbar from "../components/Navbar";
 import Hero from "../components/Hero";
 import Features from "../components/Features"; 
 import Industries from "../components/Industries";
-import Ratings from "../components/Ratings";
 import HowItWorks from "../components/HowItWorks"; 
-import Pricing from "../components/Pricing"; 
+import Pricing from "../components/Pricing";
+import Testimonials from "../components/Testimonials"; 
+import Ratings from "../components/Ratings";
+import FAQ from "../components/FAQ";
 import Start from "../components/Start";
 
 
@@ -17,9 +19,11 @@ export default function Page() {
       <Hero />
       <Features />
       <Industries />
-      <Ratings />
       <HowItWorks />
       <Pricing />
+      <Testimonials />
+      <Ratings />
+      <FAQ />
       <Start />
       <Footer/>
       </main>

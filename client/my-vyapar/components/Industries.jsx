@@ -1,4 +1,5 @@
 "use client";
+import SectionTitle from "../components/SectionTitle";
 import React, { useState, useEffect, useRef } from 'react';
 
 const Industries = () => {
@@ -92,9 +93,8 @@ const Industries = () => {
   };
 
   return (
-    <section className="relative w-full py-[100px] bg-gradient-to-b from-[#f8fafc] to-white font-['Inter',sans-serif] overflow-hidden max-md:py-[70px] max-sm:py-[50px]">
+    <section className="relative w-full py-12 sm:py-16 md:py-20 lg:py-[100px] bg-gradient-to-b from-[#f8fafc] to-white font-['Inter',sans-serif] overflow-hidden">
       <style jsx>{`
-        /* Center card highlight - clean and subtle */
         .industries__card--center {
           transform: scale(1.02);
           border: 2px solid #3B82F6;
@@ -104,28 +104,26 @@ const Industries = () => {
           box-shadow: 0 10px 25px rgba(59, 130, 246, 0.15);
         }
         
-        /* Hide scrollbar */
         div::-webkit-scrollbar {
           display: none;
         }
       `}</style>
 
-      <div className="max-w-[1400px] mx-auto px-[60px] relative max-lg:px-10 max-md:px-[30px] max-sm:px-5">
+      <div className=" text-center max-w-[1400px] mx-auto px-4 sm:px-6 md:px-8 lg:px-[60px] relative">
         
-        <h2 className="text-5xl font-extrabold leading-[1.2] text-center max-w-[1000px] mx-auto mb-5 bg-gradient-to-r from-[#3A80F2] to-[#234C90] bg-clip-text text-transparent max-lg:text-[42px] max-md:text-4xl max-sm:text-3xl">
-          Supporting businesses from a wide range of industries
-        </h2>
-        <div className="w-[200px] h-1 bg-gradient-to-r from-[#3B82F6] to-[#234C90] mx-auto mb-[30px] rounded-[2px]"></div>
+        {/* SECTION TITLE COMPONENT */}
+        <SectionTitle 
+          title="Supporting businesses from a wide range of industries"
+          description="We understand your unique billing and accounting needs, Vyapar India billing software is specially designed for Indian SMBs."
+        />
+         <p className="text-[#475569] text-xl max-w-[600px] mx-auto mt-6 animate-[fadeInUp_0.8s_ease-out_0.2s_both] max-md:text-lg max-sm:text-base">
+                    Get started with Vyapar in three simple steps
+                </p>
 
-        <p className="text-xl text-[#475569] text-center max-w-[900px] mx-auto mb-[60px] leading-[1.6] font-light max-lg:text-lg max-md:text-base max-sm:mb-10">
-          We understand your unique billing and accounting needs, Vyapar India billing software 
-          is specially designed for Indian SMBs.
-        </p>
-
-        <div className="flex gap-[60px] items-center justify-between max-lg:flex-col max-lg:gap-[50px]">
+        <div className="flex flex-col lg:flex-row gap-8 sm:gap-10 md:gap-12 lg:gap-[60px] items-center justify-between mt-12 sm:mt-14 md:mt-16 lg:mt-20">
           {/* LEFT PANEL - Hidden on mobile, visible on desktop */}
           <div 
-            className="flex-1 relative py-[30px] max-w-[550px] max-lg:max-w-full max-lg:w-full hidden md:block"
+            className="flex-1 relative py-[30px] max-w-[550px] max-lg:max-w-full max-lg:w-full hidden lg:block"
             onMouseEnter={handleMouseEnter}
             onMouseLeave={handleMouseLeave}
           >
@@ -175,19 +173,19 @@ const Industries = () => {
 
           {/* RIGHT PANEL - Image with content, full width on mobile */}
           <div 
-            className="flex-1 h-[550px] rounded-[45px] overflow-hidden relative transition-all duration-500 shadow-[0_20px_40px_rgba(0,0,0,0.15)] max-w-[650px] max-lg:max-w-full max-lg:w-full max-md:h-[450px] max-sm:h-[400px] max-sm:w-full"
+            className="flex-1 h-[350px] sm:h-[400px] md:h-[450px] lg:h-[550px] rounded-[30px] sm:rounded-[40px] md:rounded-[45px] overflow-hidden relative transition-all duration-500 shadow-[0_20px_40px_rgba(0,0,0,0.15)] max-w-[650px] max-lg:max-w-full w-full"
             style={{ 
               backgroundImage: getRightPanelImage(), 
               backgroundSize: 'cover', 
               backgroundPosition: 'center' 
             }}
           >
-            <div className="absolute top-0 left-0 right-0 bottom-0 bg-gradient-to-br from-black/70 via-black/40 to-black/20 flex items-end p-[50px] max-md:p-[30px] max-sm:p-5">
+            <div className="absolute top-0 left-0 right-0 bottom-0 bg-gradient-to-br from-black/70 via-black/40 to-black/20 flex items-end p-6 sm:p-8 md:p-10 lg:p-[50px]">
               <div className="text-white w-full">
-                <h3 className="text-[38px] font-bold mb-4 drop-shadow-lg max-md:text-3xl max-sm:text-2xl">
+                <h3 className="text-2xl sm:text-3xl md:text-4xl lg:text-[38px] font-bold mb-3 sm:mb-4 md:mb-5 drop-shadow-lg">
                   {leftCards[currentIndex].text}
                 </h3>
-                <p className="text-lg mb-6 leading-[1.6] drop-shadow max-md:text-base max-sm:text-sm">
+                <p className="text-sm sm:text-base md:text-lg mb-4 sm:mb-5 md:mb-6 leading-relaxed drop-shadow">
                   {leftCards[currentIndex].text === 'Drive Innovation' && 'Transform your business with cutting-edge billing solutions'}
                   {leftCards[currentIndex].text === 'Empower Growth' && 'Scale your business with powerful accounting tools'}
                   {leftCards[currentIndex].text === 'GSTR Filing' && 'Simplify GST returns with automated filing'}
@@ -195,9 +193,9 @@ const Industries = () => {
                   {leftCards[currentIndex].text === 'Expand Reach' && 'Grow your customer base with digital invoices'}
                   {leftCards[currentIndex].text === 'Boost Resilience' && 'Build a resilient business with smart financial management'}
                 </p>
-                <div className="flex flex-wrap gap-3">
+                <div className="flex flex-wrap gap-2 sm:gap-3">
                   {tagCloud.slice(0, 6).map((tag, i) => (
-                    <span key={i} className="text-[15px] px-5 py-2 bg-white/20 backdrop-blur-[8px] rounded-[35px] border border-white/40 text-white font-medium transition-all duration-300 hover:bg-[#3b82f699] hover:-translate-y-1 max-sm:text-xs max-sm:px-3 max-sm:py-1.5">
+                    <span key={i} className="text-xs sm:text-sm md:text-[15px] px-3 sm:px-4 md:px-5 py-1.5 sm:py-2 md:py-2.5 bg-white/20 backdrop-blur-[8px] rounded-full border border-white/40 text-white font-medium transition-all duration-300 hover:bg-[#3b82f699] hover:-translate-y-1">
                       {tag}
                     </span>
                   ))}
@@ -208,28 +206,60 @@ const Industries = () => {
         </div>
 
         {/* MOBILE SECTION - Only visible on mobile, shows current selection and dots */}
-        <div className="md:hidden mt-8 space-y-4">
-          {/* Current viewing text */}
-          <p className="text-center text-base text-gray-700">
-             <h1><span className="font-bold text-blue-600">{leftCards[currentIndex].text}</span></h1>
-          </p>
-          
-          {/* Navigation dots - clicking these changes the image AND content */}
-          <div className="flex justify-center gap-3">
-            {leftCards.map((_, idx) => (
-              <button
-                key={idx}
-                onClick={() => handleDotClick(idx)}
-                className={`transition-all duration-300 ${
-                  idx === currentIndex 
-                    ? 'w-10 h-2.5 bg-blue-600 rounded-full' 
-                    : 'w-2.5 h-2.5 bg-gray-300 rounded-full hover:bg-gray-400'
-                }`}
-                aria-label={`View ${leftCards[idx].text}`}
-              />
-            ))}
-          </div>
-        </div>
+     {/* MOBILE SECTION - Only visible on mobile */}
+<div className="lg:hidden mt-8 sm:mt-10 space-y-5 sm:space-y-6">
+
+  {/* Mobile Image Card */}
+  <div
+    className="w-full h-[260px] rounded-[25px] overflow-hidden relative shadow-lg"
+    style={{
+      backgroundImage: getRightPanelImage(),
+      backgroundSize: "cover",
+      backgroundPosition: "center"
+    }}
+  >
+    <div className="absolute inset-0 bg-gradient-to-br from-black/70 via-black/40 to-black/20 flex items-end p-5">
+      <div className="text-white">
+        <h3 className="text-xl font-bold mb-2">
+          {leftCards[currentIndex].text}
+        </h3>
+
+        <p className="text-sm leading-relaxed">
+          {leftCards[currentIndex].text === 'Drive Innovation' && 'Transform your business with cutting-edge billing solutions'}
+          {leftCards[currentIndex].text === 'Empower Growth' && 'Scale your business with powerful accounting tools'}
+          {leftCards[currentIndex].text === 'GSTR Filing' && 'Simplify GST returns with automated filing'}
+          {leftCards[currentIndex].text === 'Unite Industries' && 'Connect all your business operations seamlessly'}
+          {leftCards[currentIndex].text === 'Expand Reach' && 'Grow your customer base with digital invoices'}
+          {leftCards[currentIndex].text === 'Boost Resilience' && 'Build a resilient business with smart financial management'}
+        </p>
+      </div>
+    </div>
+  </div>
+
+  {/* Current viewing text */}
+  <div className="text-center">
+    <h3 className="text-lg sm:text-xl font-bold text-blue-600">
+      {leftCards[currentIndex].text}
+    </h3>
+  </div>
+
+  {/* Navigation dots */}
+  <div className="flex justify-center gap-3 sm:gap-4">
+    {leftCards.map((_, idx) => (
+      <button
+        key={idx}
+        onClick={() => handleDotClick(idx)}
+        className={`transition-all duration-300 ${
+          idx === currentIndex
+            ? "w-8 sm:w-10 h-2 sm:h-2.5 bg-blue-600 rounded-full"
+            : "w-2 sm:w-2.5 h-2 sm:h-2.5 bg-gray-300 rounded-full hover:bg-gray-400"
+        }`}
+        aria-label={`View ${leftCards[idx].text}`}
+      />
+    ))}
+  </div>
+
+</div>
       </div>
     </section>
   );
