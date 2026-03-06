@@ -1,6 +1,7 @@
 "use client";
 import React from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 
 const Hero = () => {
   return (
@@ -110,13 +111,29 @@ const Hero = () => {
             </p>
            <div className="flex flex-col sm:flex-row gap-6">
 
-<button className="px-10 py-4 bg-gradient-to-r from-blue-600 to-purple-500 text-white rounded-full text-sm font-semibold shadow-md transition-all hover:-translate-y-1">
-Start Free Trial
-</button>
 
-<button className="px-10 py-4 bg-gradient-to-r from-blue-600 to-purple-500 text-white rounded-full text-sm font-semibold shadow-md transition-all hover:-translate-y-1">
-Book free demo
-</button>
+    <Link
+                href="/bookdemo "
+              className=   "px-10 py-4 bg-gradient-to-r from-blue-600 to-purple-500 text-white rounded-full text-sm font-semibold shadow-md transition-all hover:-translate-y-1"
+                
+                onClick={() => setIsMenuOpen(false)}
+      >      
+                Start Free Trial
+              
+
+</Link>
+
+
+ <Link
+                href="/bookdemo "
+              className=   "px-10 py-4 bg-gradient-to-r from-blue-600 to-purple-500 text-white rounded-full text-sm font-semibold shadow-md transition-all hover:-translate-y-1"
+                
+                onClick={() => setIsMenuOpen(false)}
+      >      
+                Book free demo
+              
+
+</Link>
 
 </div>
 </div>
