@@ -267,7 +267,7 @@ const ProductList = ({
   const renderListItem = ({ item }) => (
     <TouchableOpacity
       onPress={() => handleProductPress(item)}
-      className="flex-row bg-white rounded-xl mb-3 p-3 shadow-sm border border-gray-100"
+      className="flex-row bg-white rounded-xl mb-3 p-3 shadow-sm "
     >
       <Image
         source={{ uri: item.image }}

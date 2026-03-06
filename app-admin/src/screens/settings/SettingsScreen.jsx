@@ -1,18 +1,21 @@
 import { useNavigation } from '@react-navigation/native';
-import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, ScrollView, Text, View, Switch, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import Button from '../../components/common/Button';
-import Card from '../../components/common/Card';
-import Header from '../../components/common/Header';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
+import * as Updates from 'expo-updates';
+import { useState } from 'react';
 import { useAuth } from '../../hooks/useAuth';
 import { useTheme } from '../../hooks/useTheme';
-import { theme } from '../../theme';
-import { appStorage } from '../../utils/storage';
 
 const SettingsScreen = () => {
   const navigation = useNavigation();
   const { user, logout } = useAuth();
-  const { theme: currentTheme, setTheme, toggleTheme } = useTheme();
+  const { theme: currentTheme, toggleTheme } = useTheme();
+  const [notifications, setNotifications] = useState(true);
+  const [biometric, setBiometric] = useState(false);
+  const [emailUpdates, setEmailUpdates] = useState('weekly');
+  const [autoLock, setAutoLock] = useState('5 minutes');
 
   const handleProfile = () => {
     navigation.navigate('Profile');
@@ -50,7 +53,7 @@ const SettingsScreen = () => {
           style: 'destructive',
           onPress: async () => {
             try {
-              await appStorage.clear();
+              // Clear cache logic here
               Alert.alert('Success', 'Cache cleared successfully');
             } catch (error) {
               Alert.alert('Error', 'Failed to clear cache');
@@ -61,152 +64,387 @@ const SettingsScreen = () => {
     );
   };
 
+  const handleCheckForUpdates = async () => {
+    try {
+      const update = await Updates.checkForUpdateAsync();
+      if (update.isAvailable) {
+        Alert.alert(
+          'Update Available',
+          'A new version is available. Would you like to update now?',
+          [
+            { text: 'Later', style: 'cancel' },
+            {
+              text: 'Update',
+              onPress: async () => {
+                await Updates.fetchUpdateAsync();
+                await Updates.reloadAsync();
+              },
+            },
+          ]
+        );
+      } else {
+        Alert.alert('Up to Date', 'You are running the latest version');
+      }
+    } catch (error) {
+      Alert.alert('Error', 'Failed to check for updates');
+    }
+  };
+
+  const SettingItem = ({ icon, label, value, onPress, type = 'default', rightElement, gradient }) => (
+    <TouchableOpacity
+      className="flex-row items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-gray-800"
+      onPress={onPress}
+      activeOpacity={0.7}
+      disabled={!onPress}
+    >
+      <View className="flex-row items-center flex-1">
+        <LinearGradient
+          colors={gradient || (type === 'danger' ? ['#FF416C', '#FF4B2B'] : ['#4158D0', '#C850C0'])}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          className="w-10 h-10 rounded-xl items-center justify-center mr-4"
+        >
+          <Ionicons name={icon} size={20} color="#FFFFFF" />
+        </LinearGradient>
+        <View className="flex-1">
+          <Text className={`text-base font-medium ${
+            type === 'danger' ? 'text-red-500' : 'text-gray-900 dark:text-white'
+          }`}>
+            {label}
+          </Text>
+          {value && (
+            <Text className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
+              {value}
+            </Text>
+          )}
+        </View>
+      </View>
+      {rightElement || (
+        <Ionicons 
+          name="chevron-forward" 
+          size={20} 
+          color={currentTheme.colorScheme === 'dark' ? '#4B5563' : '#D1D5DB'} 
+        />
+      )}
+    </TouchableOpacity>
+  );
+
+  const SectionHeader = ({ title, gradient }) => (
+    <LinearGradient
+      colors={gradient}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 0 }}
+      className="px-5 py-3"
+    >
+      <Text className="text-white font-semibold text-base tracking-wider">
+        {title}
+      </Text>
+    </LinearGradient>
+  );
+
   return (
-    <SafeAreaView style={styles.container} edges={['left', 'right']}>
-      <Header title="Settings" />
+    <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-900" edges={['left', 'right', 'top']}>
+      {/* Header */}
+      <View className="flex-row items-center justify-between px-5 py-4 bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700">
+        <Text className="text-2xl font-bold text-gray-900 dark:text-white">Settings</Text>
+        <TouchableOpacity className="w-10 h-10 items-center justify-center">
+          <Ionicons name="notifications-outline" size={24} color={currentTheme.colorScheme === 'dark' ? '#FFF' : '#1F2937'} />
+        </TouchableOpacity>
+      </View>
       
-      <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
-        <Card style={styles.section}>
-          <Text style={styles.sectionTitle}>Account</Text>
-          
-          <View style={styles.settingItem}>
-            <View style={styles.settingInfo}>
-              <Text style={styles.settingLabel}>Profile</Text>
-              <Text style={styles.settingValue}>{user?.name || 'User'}</Text>
+      <ScrollView 
+        className="flex-1"
+        contentContainerStyle={{ paddingBottom: 120 }}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Profile Card */}
+        <LinearGradient
+          colors={['#4158D0', '#C850C0']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          className="mx-5 mt-5 rounded-2xl p-5"
+          style={{
+            shadowColor: '#4158D0',
+            shadowOffset: { width: 0, height: 8 },
+            shadowOpacity: 0.3,
+            shadowRadius: 12,
+            elevation: 8,
+          }}
+        >
+          <View className="flex-row justify-between items-center mb-5">
+            <View className="flex-row items-center flex-1">
+              <LinearGradient
+                colors={['#FFE5B4', '#FFB6C1']}
+                className="w-16 h-16 rounded-xl items-center justify-center mr-4"
+                style={{
+                  shadowColor: '#000',
+                  shadowOffset: { width: 0, height: 4 },
+                  shadowOpacity: 0.2,
+                  shadowRadius: 8,
+                  elevation: 5,
+                }}
+              >
+                <Text className="text-2xl font-bold text-[#4158D0]">
+                  {user?.name?.charAt(0) || 'U'}
+                </Text>
+              </LinearGradient>
+              <View className="flex-1">
+                <Text className="text-lg font-bold text-white mb-1">
+                  {user?.name || 'User Name'}
+                </Text>
+                <Text className="text-sm text-white/80">
+                  {user?.email || 'user@example.com'}
+                </Text>
+              </View>
             </View>
-            <Button
-              title="Edit"
+            <TouchableOpacity 
               onPress={handleProfile}
-              variant="outline"
-              size="small"
-            />
+              className="w-10 h-10 rounded-xl bg-white/20 items-center justify-center"
+            >
+              <Ionicons name="create-outline" size={20} color="#FFFFFF" />
+            </TouchableOpacity>
           </View>
-        </Card>
+          
+          <View className="flex-row justify-around items-center bg-white/10 rounded-xl p-4">
+            <View className="items-center">
+              <Text className="text-xl font-bold text-white mb-1">128</Text>
+              <Text className="text-xs text-white/80">Orders</Text>
+            </View>
+            <View className="w-px h-8 bg-white/20" />
+            <View className="items-center">
+              <Text className="text-xl font-bold text-white mb-1">$4.5k</Text>
+              <Text className="text-xs text-white/80">Spent</Text>
+            </View>
+            <View className="w-px h-8 bg-white/20" />
+            <View className="items-center">
+              <Text className="text-xl font-bold text-white mb-1">3</Text>
+              <Text className="text-xs text-white/80">Years</Text>
+            </View>
+          </View>
+        </LinearGradient>
 
-        <Card style={styles.section}>
-          <Text style={styles.sectionTitle}>Appearance</Text>
+        {/* Appearance Section */}
+        <View className="mx-5 mt-5 bg-white dark:bg-gray-800 rounded-2xl overflow-hidden">
+          <SectionHeader title="APPEARANCE" gradient={['#FF512F', '#F09819']} />
           
-          <View style={styles.settingItem}>
-            <View style={styles.settingInfo}>
-              <Text style={styles.settingLabel}>Theme</Text>
-              <Text style={styles.settingValue}>
-                {currentTheme.colorScheme === 'dark' ? 'Dark' : 'Light'}
-              </Text>
-            </View>
-            <Button
-              title="Toggle"
-              onPress={handleThemeToggle}
-              variant="outline"
-              size="small"
-            />
-          </View>
-        </Card>
+          <SettingItem
+            icon="moon-outline"
+            label="Dark Mode"
+            value={currentTheme.colorScheme === 'dark' ? 'Enabled' : 'Disabled'}
+            gradient={['#FF512F', '#F09819']}
+            rightElement={
+              <Switch
+                value={currentTheme.colorScheme === 'dark'}
+                onValueChange={handleThemeToggle}
+                trackColor={{ false: '#E5E7EB', true: '#FBBF24' }}
+                thumbColor={currentTheme.colorScheme === 'dark' ? '#F59E0B' : '#FFFFFF'}
+              />
+            }
+          />
+          
+          <SettingItem
+            icon="color-palette-outline"
+            label="Accent Color"
+            value="Purple"
+            gradient={['#FF512F', '#F09819']}
+            onPress={() => {}}
+          />
+          
+          <SettingItem
+            icon="text-outline"
+            label="Font Size"
+            value="Medium"
+            gradient={['#FF512F', '#F09819']}
+            onPress={() => {}}
+          />
+        </View>
 
-        <Card style={styles.section}>
-          <Text style={styles.sectionTitle}>Data & Storage</Text>
+        {/* Notifications Section */}
+        <View className="mx-5 mt-5 bg-white dark:bg-gray-800 rounded-2xl overflow-hidden">
+          <SectionHeader title="NOTIFICATIONS" gradient={['#11998e', '#38ef7d']} />
           
-          <View style={styles.settingItem}>
-            <View style={styles.settingInfo}>
-              <Text style={styles.settingLabel}>Clear Cache</Text>
-              <Text style={styles.settingValue}>Free up storage space</Text>
-            </View>
-            <Button
-              title="Clear"
-              onPress={handleClearCache}
-              variant="outline"
-              size="small"
-            />
-          </View>
-        </Card>
+          <SettingItem
+            icon="notifications-outline"
+            label="Push Notifications"
+            gradient={['#11998e', '#38ef7d']}
+            rightElement={
+              <Switch
+                value={notifications}
+                onValueChange={setNotifications}
+                trackColor={{ false: '#E5E7EB', true: '#10B981' }}
+                thumbColor={notifications ? '#059669' : '#FFFFFF'}
+              />
+            }
+          />
+          
+          <SettingItem
+            icon="mail-outline"
+            label="Email Updates"
+            value="Weekly"
+            gradient={['#11998e', '#38ef7d']}
+            onPress={() => {}}
+          />
+          
+          <SettingItem
+            icon="megaphone-outline"
+            label="Promotions"
+            value="Enabled"
+            gradient={['#11998e', '#38ef7d']}
+            onPress={() => {}}
+          />
+        </View>
 
-        <Card style={styles.section}>
-          <Text style={styles.sectionTitle}>About</Text>
+        {/* Security Section */}
+        <View className="mx-5 mt-5 bg-white dark:bg-gray-800 rounded-2xl overflow-hidden">
+          <SectionHeader title="SECURITY" gradient={['#8E2DE2', '#4A00E0']} />
           
-          <View style={styles.settingItem}>
-            <View style={styles.settingInfo}>
-              <Text style={styles.settingLabel}>Version</Text>
-              <Text style={styles.settingValue}>1.0.0</Text>
-            </View>
-          </View>
+          <SettingItem
+            icon="lock-closed-outline"
+            label="Change Password"
+            gradient={['#8E2DE2', '#4A00E0']}
+            onPress={() => {}}
+          />
           
-          <View style={styles.settingItem}>
-            <View style={styles.settingInfo}>
-              <Text style={styles.settingLabel}>Build</Text>
-              <Text style={styles.settingValue}>Expo SDK 54</Text>
-            </View>
-          </View>
-        </Card>
+          <SettingItem
+            icon="finger-print-outline"
+            label="Biometric Login"
+            gradient={['#8E2DE2', '#4A00E0']}
+            rightElement={
+              <Switch
+                value={biometric}
+                onValueChange={setBiometric}
+                trackColor={{ false: '#E5E7EB', true: '#8B5CF6' }}
+                thumbColor={biometric ? '#6D28D9' : '#FFFFFF'}
+              />
+            }
+          />
+          
+          <SettingItem
+            icon="time-outline"
+            label="Auto-lock"
+            value="5 minutes"
+            gradient={['#8E2DE2', '#4A00E0']}
+            onPress={() => {}}
+          />
+        </View>
 
-        <Card style={[styles.section, styles.dangerSection]}>
-          <Text style={styles.sectionTitle}>Danger Zone</Text>
+        {/* Data & Storage Section */}
+        <View className="mx-5 mt-5 bg-white dark:bg-gray-800 rounded-2xl overflow-hidden">
+          <SectionHeader title="DATA & STORAGE" gradient={['#FF416C', '#FF4B2B']} />
           
-          <View style={styles.settingItem}>
-            <View style={styles.settingInfo}>
-              <Text style={styles.settingLabel}>Logout</Text>
-              <Text style={styles.settingValue}>Sign out of your account</Text>
-            </View>
-            <Button
-              title="Logout"
-              onPress={handleLogout}
-              variant="outline"
-              size="small"
-              style={styles.dangerButton}
-            />
-          </View>
-        </Card>
+          <SettingItem
+            icon="cloud-upload-outline"
+            label="Backup Data"
+            gradient={['#FF416C', '#FF4B2B']}
+            onPress={() => {}}
+          />
+          
+          <SettingItem
+            icon="sync-outline"
+            label="Auto-sync"
+            value="Daily"
+            gradient={['#FF416C', '#FF4B2B']}
+            onPress={() => {}}
+          />
+          
+          <SettingItem
+            icon="trash-outline"
+            label="Clear Cache"
+            value="124 MB"
+            gradient={['#FF416C', '#FF4B2B']}
+            onPress={handleClearCache}
+          />
+        </View>
+
+        {/* About Section */}
+        <View className="mx-5 mt-5 bg-white dark:bg-gray-800 rounded-2xl overflow-hidden">
+          <SectionHeader title="ABOUT" gradient={['#FFB75E', '#ED8F03']} />
+          
+          <SettingItem
+            icon="information-circle-outline"
+            label="Version"
+            value="1.0.0 (Build 54)"
+            gradient={['#FFB75E', '#ED8F03']}
+          />
+          
+          <SettingItem
+            icon="download-outline"
+            label="Check for Updates"
+            gradient={['#FFB75E', '#ED8F03']}
+            onPress={handleCheckForUpdates}
+          />
+          
+          <SettingItem
+            icon="document-text-outline"
+            label="Terms of Service"
+            gradient={['#FFB75E', '#ED8F03']}
+            onPress={() => {}}
+          />
+          
+          <SettingItem
+            icon="shield-checkmark-outline"
+            label="Privacy Policy"
+            gradient={['#FFB75E', '#ED8F03']}
+            onPress={() => {}}
+          />
+        </View>
+
+        {/* Support Section */}
+        <View className="mx-5 mt-5 bg-white dark:bg-gray-800 rounded-2xl overflow-hidden">
+          <SectionHeader title="SUPPORT" gradient={['#00B4DB', '#0083B0']} />
+          
+          <SettingItem
+            icon="help-circle-outline"
+            label="Help Center"
+            gradient={['#00B4DB', '#0083B0']}
+            onPress={() => {}}
+          />
+          
+          <SettingItem
+            icon="chatbubble-outline"
+            label="Contact Support"
+            gradient={['#00B4DB', '#0083B0']}
+            onPress={() => {}}
+          />
+          
+          <SettingItem
+            icon="star-outline"
+            label="Rate App"
+            gradient={['#00B4DB', '#0083B0']}
+            onPress={() => {}}
+          />
+          
+          <SettingItem
+            icon="share-outline"
+            label="Share App"
+            gradient={['#00B4DB', '#0083B0']}
+            onPress={() => {}}
+          />
+        </View>
+
+        {/* Danger Zone */}
+        <View className="mx-5 mt-5 mb-5 bg-white dark:bg-gray-800 rounded-2xl overflow-hidden border border-red-200 dark:border-red-900">
+          <SectionHeader title="DANGER ZONE" gradient={['#FF416C', '#FF4B2B']} />
+          
+          <SettingItem
+            icon="log-out-outline"
+            label="Logout"
+            type="danger"
+            gradient={['#FF416C', '#FF4B2B']}
+            onPress={handleLogout}
+          />
+          
+          <SettingItem
+            icon="trash-outline"
+            label="Delete Account"
+            type="danger"
+            gradient={['#FF416C', '#FF4B2B']}
+            onPress={() => {}}
+          />
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: theme.colors.background,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  scrollContent: {
-    padding: theme.spacing.md,
-    paddingBottom: theme.spacing.xl,
-  },
-  section: {
-    marginBottom: theme.spacing.lg,
-  },
-  dangerSection: {
-    borderColor: theme.colors.error,
-    borderWidth: 1,
-  },
-  sectionTitle: {
-    ...theme.typography.h3,
-    color: theme.colors.text,
-    marginBottom: theme.spacing.md,
-  },
-  settingItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: theme.spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: theme.colors.borderLight,
-  },
-  settingInfo: {
-    flex: 1,
-  },
-  settingLabel: {
-    ...theme.typography.body1,
-    color: theme.colors.text,
-    fontWeight: '500',
-    marginBottom: 2,
-  },
-  settingValue: {
-    ...theme.typography.caption,
-    color: theme.colors.textSecondary,
-  },
-  dangerButton: {
-    borderColor: theme.colors.error,
-  },
-});
 
 export default SettingsScreen;

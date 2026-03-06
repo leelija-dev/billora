@@ -281,7 +281,7 @@ const ProductCard = ({ product, onUpdateStock }) => {
           </View>
 
           {/* Quick Actions */}
-          <View className="flex-row justify-between items-center mt-2 pt-2 border-t border-gray-100">
+          <View className="flex-row justify-between items-center mt-2 pt-2 border-t border-blue-100">
             <View className="flex-row gap-1">
               <TouchableOpacity
                 className="w-8 h-8 bg-red-50 rounded-lg items-center justify-center"
