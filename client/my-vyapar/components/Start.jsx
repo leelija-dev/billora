@@ -1,7 +1,7 @@
 "use client";
 
 import Image from 'next/image';
-import { useState } from 'react';
+import { useState } from 'react'; 
 
 export default function Home() {
   const [mobileNumber, setMobileNumber] = useState('');
@@ -41,10 +41,10 @@ export default function Home() {
   };
 
   return (
-    <main className="bg-[#white] min-h-[50vh] flex items-center">
+    <main className="bg-white min-h-[50vh] md:min-h-[60vh] lg:min-h-[50vh] flex items-center">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
-        <div className="grid md:grid-cols-2 items-center gap-10">
-          
+        <div className="grid grid-cols-1 lg:grid-cols-2 items-center gap-10">
+           
           {/* LEFT CONTENT */}
           <div className="space-y-6">
             <h1 className="text-4xl md:text-4xl font-bold text-gray-900 leading-tight">
@@ -52,8 +52,8 @@ export default function Home() {
             </h1>
 
             {/* Premium Input Section with Clickable Search */}
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-              <div className="relative w-full sm:w-auto">
+            <div className="flex flex-col md:flex-row items-start md:items-center gap-4">
+              <div className="relative w-full md:w-auto whitespace-nowrap bg-gradient-to-r ...">
                 <div className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-500 text-sm font-medium">
                   +91
                 </div>
@@ -71,9 +71,9 @@ export default function Home() {
               <button 
                 onClick={handleSearch}
                 disabled={isSearching}
-                className="relative w-full sm:w-auto bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-8 py-3.5 rounded-xl sm:rounded-full font-medium transition-all duration-300 transform hover:scale-105 hover:shadow-xl disabled:opacity-70 disabled:cursor-not-allowed disabled:hover:scale-100 group overflow-hidden"
+                className="relative w-full sm:w-auto whitespace-nowrap bg-gradient-to-r from-blue-600 to-blue-700  hover:to-blue-800 text-white px-8 py-3.5 rounded-xl lg:rounded-full "
               >
-                <span className="relative z-10 flex items-center justify-center gap-2">
+                <span className="relative z-10 flex justify-center md:justify-end">"
                   {isSearching ? (
                     <>
                       <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -121,32 +121,34 @@ export default function Home() {
             </div>
           </div>
 
-          {/* RIGHT CONTENT (Phone Mockups) */}
-          <div className="relative flex justify-center items-center min-h-[400px]">
-            {/* Back Phone */}
-            <div className="absolute left-15 top-38 hidden lg:block">
-              <Image
-                src="/image/phone2.png"
-                alt="Phone Back View"
-                width={250}
-                height={500}
-                className="w-64 drop-shadow-xl max-h-[400px] object-contain"
-                priority={false}
-              />
-            </div>
+{/* RIGHT CONTENT (Phone Mockups) */}
+<div className="relative flex justify-center items-center min-h-[260px] sm:min-h-[360px] md:min-h-[420px] lg:min-h-[400px] mt-8 md:mt-0">
 
-            {/* Front Phone */}
-            <div className="relative z-10 top-13 left-18">
-              <Image
-                src="/image/phone1.png"
-                alt="Phone Front View"
-                width={250}
-                height={500}
-                className="w-64 drop-shadow-2xl max-h-[400px] object-contain"
-                priority={true}
-              />
-            </div>
-          </div>
+  {/* Back Phone */}
+  <div className="absolute hidden lg:block left-4 sm:left-6 md:left-10 lg:left-15 top-10 sm:top-16 md:top-24 lg:top-38">
+    <Image
+      src="/image/phone2.png"
+      alt="Phone Back View"
+      width={250}
+      height={500}
+      className="w-40 sm:w-48 md:w-56 lg:w-64 drop-shadow-xl max-h-[320px] sm:max-h-[360px] md:max-h-[380px] lg:max-h-[400px] object-contain"
+      priority={false}
+    />
+  </div>
+
+  {/* Front Phone */}
+  <div className="relative z-10 top-0 sm:top-9 lg:top-14 left-0 sm:left-6 lg:left-18 md:bottom-20flex justify-center">
+    <Image
+      src="/image/phone1.png"
+      alt="Phone Front View"
+      width={250}
+      height={500}
+      className="w-44 sm:w-52 md:w-56 lg:w-64 drop-shadow-2xl max-h-[340px] sm:max-h-[360px] md:max-h-[380px] lg:max-h-[400px] object-contain"
+      priority={true}
+    />
+  </div>
+
+</div>
         </div>
       </div>
     </main>

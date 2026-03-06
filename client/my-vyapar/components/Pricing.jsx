@@ -128,12 +128,15 @@ const Pricing = () => {
       </div>
 
       <div className="max-w-[1200px] mx-auto px-0 sm:px-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6 lg:gap-[30px] mb-10">
-          {plans.map((plan, index) => (
-            <div
-              key={index}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6 md:gap-8 lg:gap-[30px] mb-10 items-start">
+         {plans.map((plan, index) => (
+  <div
+    key={index}
+    className={`${index === 2 ? "md:col-span-2 md:flex md:justify-center lg:col-span-1 lg:block" : ""}`}
               ref={(el) => { cardRefs.current[index] = el; }}
-              className={`bg-white rounded-[30px] p-6 sm:p-7 lg:p-10 shadow-[0_20px_40px_rgba(0,0,0,0.08)] relative transition-all duration-300 border border-[#e2e8f0] flex flex-col h-full min-h-[500px] sm:min-h-[550px] lg:min-h-[600px] opacity-0 translate-y-5 card-visible hover:-translate-y-2 hover:shadow-[0_30px_60px_rgba(0,0,0,0.12)] ${
+             className={`bg-white rounded-[30px] p-6 sm:p-7 lg:p-10 shadow-[0_20px_40px_rgba(0,0,0,0.08)] relative transition-all duration-300 border border-[#e2e8f0] flex flex-col h-full min-h-[500px] sm:min-h-[550px] lg:min-h-[600px] opacity-0 translate-y-5 card-visible hover:-translate-y-2 hover:shadow-[0_30px_60px_rgba(0,0,0,0.12)] ${
+  index === 2 ? "md:col-span-2 md:max-w-[420px] md:mx-auto lg:col-span-1 lg:max-w-full" : ""
+} ${
                 plan.popular 
                   ? 'border-2 border-[#8b5cf6] shadow-[0_30px_50px_rgba(139,92,246,0.15)] scale-105 md:scale-100 lg:scale-105 z-[2] hover:scale-105 hover:-translate-y-2' 
                   : ''

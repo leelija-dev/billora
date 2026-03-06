@@ -1,4 +1,5 @@
 "use client";
+import SectionTitle from "../components/SectionTitle";
 
 import React, { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
@@ -68,7 +69,7 @@ const Features = () => {
   
 
   return (
-    <section className="py-[100px] bg-white font-sans max-md:py-[60px] max-sm:py-10 overflow-hidden relative">
+    <section className="py-20 sm:py-24 md:py-[100px] bg-white font-sans overflow-hidden relative">
       
       {/* Animated Circular Background */}
       <style>{`
@@ -94,24 +95,27 @@ const Features = () => {
         .circle-float-4 { animation: float-circle-4 9s ease-in-out infinite 1.5s; }
       `}</style>
 
-      {/* Animated Circle Elements - Darker Colors */}
-      <div className="absolute top-20 left-10 w-72 h-72 bg-gradient-to-br from-blue-400 to-blue-200 rounded-full circle-float-1"></div>
-      <div className="absolute top-1/3 right-20 w-80 h-80 bg-gradient-to-br from-purple-400 to-purple-200 rounded-full circle-float-2"></div>
-      <div className="absolute bottom-40 left-1/4 w-96 h-96 bg-gradient-to-br from-indigo-400 to-indigo-200 rounded-full circle-float-3"></div>
-      <div className="absolute bottom-10 right-1/3 w-64 h-64 bg-gradient-to-br from-cyan-400 to-cyan-200 rounded-full circle-float-4"></div>
+      {/* Animated Circle Elements - Darker Colors (Hidden on mobile for better performance) */}
+      <div className="hidden sm:block absolute top-20 left-10 w-48 sm:w-64 md:w-72 h-48 sm:h-64 md:h-72 bg-gradient-to-br from-blue-400 to-blue-200 rounded-full circle-float-1"></div>
+      <div className="hidden md:block absolute top-1/3 right-20 w-64 md:w-80 h-64 md:h-80 bg-gradient-to-br from-purple-400 to-purple-200 rounded-full circle-float-2"></div>
+      <div className="hidden sm:block absolute bottom-40 left-1/4 w-64 sm:w-80 md:w-96 h-64 sm:h-80 md:h-96 bg-gradient-to-br from-indigo-400 to-indigo-200 rounded-full circle-float-3"></div>
+      <div className="hidden md:block absolute bottom-10 right-1/3 w-64 h-64 bg-gradient-to-br from-cyan-400 to-cyan-200 rounded-full circle-float-4"></div>
 
       {/* Content */}
       <div className="relative z-10">
-        <div className="text-center mb-[60px] max-w-[800px] mx-auto px-5">
-          <h2 className="text-4xl text-[#2f5fa5] mb-4 font-bold max-md:text-3xl max-sm:text-2xl">
+        <div className="text-center mb-12 sm:mb-16 md:mb-[60px] max-w-[800px] mx-auto px-4 sm:px-5">
+          {/* <h2 className="text-2xl sm:text-3xl md:text-4xl text-[#2f5fa5] mb-3 sm:mb-4 font-bold leading-tight">
             Features of GST Billing and Accounting Software
-          </h2>
-          <p className="text-[#666] text-lg max-md:text-base">
+          </h2> */}
+          <SectionTitle 
+                    title=  "Features of GST Billing and Accounting Software"
+                  />
+          <p className="text-sm sm:text-base md:text-lg text-[#666]">
             Everything you need to manage your business professionally
           </p>
         </div>
 
-        <div className="max-w-[1200px] mx-auto px-5">
+        <div className="max-w-[1200px] mx-auto px-4 sm:px-5">
           {features.map((feature, index) => {
             const isEven = index % 2 === 0;
             return (
@@ -119,13 +123,13 @@ const Features = () => {
                 key={index}
                 ref={(el) => (sectionRefs.current[index] = el)}
                 data-index={index}
-                className={`flex items-center gap-[60px] mb-[100px] max-lg:flex-col max-lg:gap-10 max-lg:mb-20 transition-all duration-1000 ${
+                className={`flex flex-col lg:flex-row items-center gap-6 sm:gap-10 md:gap-[60px] mb-12 sm:mb-20 md:mb-[100px] transition-all duration-1000 ${
                   feature.reverse ? 'lg:flex-row-reverse' : ''
                 }`}
               >
                 {/* Image with left-right animation */}
                 <div 
-                  className={`flex-1 flex justify-center items-center transition-all duration-1000 ${
+                  className={`w-full lg:flex-1 flex justify-center items-center transition-all duration-1000 ${
                     visibleItems[index]
                       ? 'opacity-100 translate-x-0'
                       : isEven 
@@ -133,7 +137,7 @@ const Features = () => {
                         : 'opacity-0 translate-x-20'
                   }`}
                 >
-                  <div className="w-full max-w-[500px] overflow-hidden rounded-[20px]">
+                  <div className="w-full max-w-[500px] overflow-hidden rounded-lg sm:rounded-xl md:rounded-[20px]">
                     <Image
                       src={feature.image}
                       alt={feature.title}
@@ -147,7 +151,7 @@ const Features = () => {
 
                 {/* Content with opposite left-right animation */}
                 <div 
-                  className={`flex-1 p-5 max-lg:text-center max-lg:p-0 transition-all duration-1000 delay-200 ${
+                  className={`w-full lg:flex-1 px-0 sm:px-2 md:px-5 text-center lg:text-left transition-all duration-1000 delay-200 ${
                     visibleItems[index]
                       ? 'opacity-100 translate-x-0'
                       : isEven 
@@ -155,16 +159,16 @@ const Features = () => {
                         : 'opacity-0 -translate-x-20'
                   }`}
                 >
-                  <h3 className="text-[28px] text-black mb-5 font-semibold max-md:text-2xl max-sm:text-[22px] transition-colors duration-300 hover:text-[#2f5fa5]">
+                  <h3 className="text-xl sm:text-2xl md:text-[28px] text-black mb-3 sm:mb-4 md:mb-5 font-semibold leading-snug transition-colors duration-300 hover:text-[#2f5fa5]">
                     {feature.title}
                   </h3>
-                  <p className="text-base text-[#555] leading-[1.8] m-0 max-sm:text-sm max-sm:leading-[1.6]">
+                  <p className="text-xs sm:text-sm md:text-base text-[#555] leading-relaxed sm:leading-[1.7] md:leading-[1.8] m-0">
                     {feature.description}
                   </p>
                   
                   {/* Extra paragraph that appears when expanded */}
                   {expandedItems[index] && (
-                    <p className="text-base text-[#555] leading-[1.8] mt-4 pt-4 border-t border-[#2f5fa5]/20 animate-in slide-in-from-top duration-500 max-sm:text-sm max-sm:leading-[1.6]">
+                    <p className="text-xs sm:text-sm md:text-base text-[#555] leading-relaxed sm:leading-[1.7] md:leading-[1.8] mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-[#2f5fa5]/20 animate-in slide-in-from-top duration-500">
                       {feature.extraDescription}
                     </p>
                   )}
@@ -172,14 +176,14 @@ const Features = () => {
                   {/* Clickable read more/less link */}
                   <button
                     onClick={() => toggleReadMore(index)}
-                    className="inline-flex items-center gap-2 mt-4 text-[#2f5fa5] font-medium text-base group hover:cursor-pointer max-lg:justify-center bg-transparent border-none p-0 transition-all duration-300 hover:gap-3"
+                    className="inline-flex items-center gap-2 mt-3 sm:mt-4 md:mt-5 text-[#2f5fa5] font-medium text-xs sm:text-sm md:text-base group hover:cursor-pointer bg-transparent border-none p-0 transition-all duration-300 hover:gap-3 justify-center lg:justify-start"
                   >
                     <span className="relative">
                       {expandedItems[index] ? 'Show less' : 'Read more'}
                       <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-[#2f5fa5] transition-all duration-300 group-hover:w-full"></span>
                     </span>
                     <svg 
-                      className={`w-4 h-4 transition-all duration-300 ${expandedItems[index] ? 'rotate-180' : 'group-hover:translate-x-1'}`}
+                      className={`w-3 h-3 sm:w-4 sm:h-4 transition-all duration-300 ${expandedItems[index] ? 'rotate-180' : 'group-hover:translate-x-1'}`}
                       fill="none" 
                       stroke="currentColor" 
                       viewBox="0 0 24 24"

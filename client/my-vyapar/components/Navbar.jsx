@@ -63,19 +63,8 @@ const Navbar = () => {
               : "max-h-0 opacity-0 invisible lg:max-h-none lg:opacity-100 lg:visible"
             }`}
         >
-          {/* try-mobile-app Link
-
-              <li className="w-full lg:w-auto border-b lg:border-none border-slate-100">
-                <Link
-                  href="/try-mobile-app"
-                  className="block py-4 lg:py-0 text-slate-500 font-medium text-sm transition-colors hover:text-blue-600 lg:border-b-2 lg:border-transparent lg:hover:border-blue-600 capitalize whitespace-nowrap w-full text-left"
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  Try Mobile App
-                </Link>
-              </li> */}
           <ul className="flex flex-col lg:flex-row list-none gap-0 lg:gap-5 m-0 p-0 items-start lg:items-center">
-            {["try-mobile-app",  "desktop", "careers"].map(
+            {[].map(
               (item) => (
                 <li key={item} className="w-full lg:w-auto border-b lg:border-none border-slate-100">
                   <button
@@ -87,6 +76,38 @@ const Navbar = () => {
                 </li>
               )
             )}
+
+             <li className="w-full lg:w-auto border-b lg:border-none border-slate-100">
+              <Link
+                href="/trymobile"
+                className="block py-4 lg:py-0 text-slate-500 font-medium text-sm transition-colors hover:text-blue-600 lg:border-b-2 lg:border-transparent lg:hover:border-blue-600 capitalize whitespace-nowrap w-full text-left"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                Try Mobile App
+              </Link>
+            </li>
+
+             <li className="w-full lg:w-auto border-b lg:border-none border-slate-100">
+              <Link
+                href="/desktop"
+                className="block py-4 lg:py-0 text-slate-500 font-medium text-sm transition-colors hover:text-blue-600 lg:border-b-2 lg:border-transparent lg:hover:border-blue-600 capitalize whitespace-nowrap w-full text-left"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                Desktop
+              </Link>
+            </li>
+
+            <li className="w-full lg:w-auto border-b lg:border-none border-slate-100">
+              <Link
+                href="/carrers"
+                className="block py-4 lg:py-0 text-slate-500 font-medium text-sm transition-colors hover:text-blue-600 lg:border-b-2 lg:border-transparent lg:hover:border-blue-600 capitalize whitespace-nowrap w-full text-left"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                Carrers
+              </Link>
+            </li>
+
+
             <li className="w-full lg:w-auto border-b lg:border-none border-slate-100">
               <Link
                 href="/partner"
@@ -97,7 +118,6 @@ const Navbar = () => {
               </Link>
             </li>
 
-            {/* About Us Link */}
             <li className="w-full lg:w-auto border-b lg:border-none border-slate-100">
               <Link
                 href="/solution"
@@ -108,7 +128,6 @@ const Navbar = () => {
               </Link>
             </li>
 
-            {/* About Us Link */}
             <li className="w-full lg:w-auto border-b lg:border-none border-slate-100">
               <Link
                 href="/about"
@@ -119,42 +138,14 @@ const Navbar = () => {
               </Link>
             </li>
 
-          
-            {/* Dektop Link
             <li className="w-full lg:w-auto border-b lg:border-none border-slate-100">
               <Link
-                href="/desktop"
+                href="/pricing"
                 className="block py-4 lg:py-0 text-slate-500 font-medium text-sm transition-colors hover:text-blue-600 lg:border-b-2 lg:border-transparent lg:hover:border-blue-600 capitalize whitespace-nowrap w-full text-left"
                 onClick={() => setIsMenuOpen(false)}
-              >
-                Desktop
-              </Link>
-            </li> */}
-
-            
-
-            {/* Carrers Link
-            <li className="w-full lg:w-auto border-b lg:border-none border-slate-100">
-              <Link
-                href="/carrers"
-                className="block py-4 lg:py-0 text-slate-500 font-medium text-sm transition-colors hover:text-blue-600 lg:border-b-2 lg:border-transparent lg:hover:border-blue-600 capitalize whitespace-nowrap w-full text-left"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                Careers
-              </Link>
-            </li> */}
-
-            {/* Pricing Link */}
-            <li className="w-full lg:w-auto border-b lg:border-none border-slate-100">
-              <button
-                onClick={() => {
-                  router.push("/pricing");
-                  setIsMenuOpen(false);
-                }}
-                className="block py-4 lg:py-0 text-slate-500 font-medium text-sm hover:text-blue-600 w-full text-left"
               >
                 Pricing
-              </button>
+              </Link>
             </li>
           </ul>
 
@@ -167,15 +158,13 @@ const Navbar = () => {
               🧮 GST Calculator
             </button>
 
-            <button
-              className="w-full lg:w-auto px-6 h-10 bg-blue-600 text-white rounded-full font-semibold text-sm transition-all hover:bg-blue-700 hover:-translate-y-0.5"
-              onClick={() => {
-                router.push("/login");
-                setIsMenuOpen(false);
-              }}
+            <Link
+              href="/login"
+              className="w-full lg:w-auto px-6 h-10 bg-blue-600 text-white rounded-full font-semibold text-sm transition-all hover:bg-blue-700 hover:-translate-y-0.5 flex items-center justify-center"
+              onClick={() => setIsMenuOpen(false)}
             >
               Login
-            </button>
+            </Link>
           </div>
         </div>
       </div>
