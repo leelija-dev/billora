@@ -127,7 +127,7 @@ export default function Home() {
   {/* Back Phone */}
   <div className="absolute hidden lg:block left-4 sm:left-6 md:left-10 lg:left-15 top-10 sm:top-16 md:top-24 lg:top-38">
     <Image
-      src="/image/phone2.png"
+      src="/image/Phone2.png"
       alt="Phone Back View"
       width={250}
       height={500}
@@ -139,12 +139,12 @@ export default function Home() {
   {/* Front Phone */}
   <div className="relative z-10 top-0 sm:top-9 lg:top-14 left-0 sm:left-6 lg:left-18 md:bottom-20flex justify-center">
     <Image
-      src="/image/phone1.png"
+      src="/image/Phone1.png"
       alt="Phone Front View"
       width={250}
       height={500}
       className="w-44 sm:w-52 md:w-56 lg:w-64 drop-shadow-2xl max-h-[340px] sm:max-h-[360px] md:max-h-[380px] lg:max-h-[400px] object-contain"
-      priority={true}
+      priority={false}
     />
   </div>
 
