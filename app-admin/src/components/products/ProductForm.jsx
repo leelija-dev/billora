@@ -6,6 +6,7 @@ import { Controller, useForm } from "react-hook-form";
 import { Alert, ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
+import { useThemeStore } from "../../store/themeStore";
 import { productsAPI } from "../../api";
 import { useMutation } from "../../hooks/useApi";
 import { useProductStore } from "../../store/productStore";
@@ -22,13 +23,14 @@ const categories = [
   { id: "electronics", label: "Electronics", icon: "laptop" },
 ];
 
-const ProductForm = () => {
+const ProductForm = ({ productId }) => {
   const navigation = useNavigation();
   const route = useRoute();
+  const { isDarkMode } = useThemeStore();
   const { selectedProduct, updateProduct, addProduct } = useProductStore();
   const { showSuccess, showError } = useUIStore();
 
-  const isEditing = route.params?.productId || selectedProduct?.id;
+  const isEditing = productId || selectedProduct?.id;
   const [loading, setLoading] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState("");
 
@@ -36,7 +38,6 @@ const ProductForm = () => {
     control,
     handleSubmit,
     formState: { errors, isValid },
-    setValue,
     reset,
     watch,
   } = useForm({
@@ -56,7 +57,7 @@ const ProductForm = () => {
   const { mutate: createProduct } = useMutation(productsAPI.createProduct);
   const { mutate: updateProductApi } = useMutation((data) =>
     productsAPI.updateProduct(
-      route.params?.productId || selectedProduct?.id,
+      productId || selectedProduct?.id,
       data,
     ),
   );
@@ -137,7 +138,7 @@ const ProductForm = () => {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-50">
+    <SafeAreaView className={`flex-1 ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
       <ScrollView
         className="flex-1"
         contentContainerClassName="px-5 pb-16 pt-0"
@@ -145,15 +146,23 @@ const ProductForm = () => {
       >
         {/* Image Upload Section */}
         <TouchableOpacity className="mb-6">
-          <View className="w-full h-48 bg-gray-200 rounded-2xl overflow-hidden border-2 border-dashed border-gray-300 items-center justify-center">
+          <View className={`w-full h-48 rounded-2xl overflow-hidden border-2 border-dashed items-center justify-center ${
+            isDarkMode 
+              ? 'bg-gray-800 border-gray-700' 
+              : 'bg-gray-200 border-gray-300'
+          }`}>
             <Icon name="camera-plus" size={40} color="#9ca3af" />
-            <Text className="text-gray-500 mt-2">Add Product Images</Text>
+            <Text className={`mt-2 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+              Add Product Images
+            </Text>
           </View>
         </TouchableOpacity>
 
         {/* Category Selection */}
         <View className="mb-6">
-          <Text className="text-base font-semibold text-gray-800 mb-3">
+          <Text className={`text-base font-semibold mb-3 ${
+            isDarkMode ? 'text-white' : 'text-gray-800'
+          }`}>
             Category
           </Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false}>
@@ -165,19 +174,21 @@ const ProductForm = () => {
                   className={`items-center px-4 py-3 rounded-xl border ${
                     selectedCategory === cat.id
                       ? "bg-blue-500 border-blue-500"
-                      : "bg-white border-gray-200"
+                      : isDarkMode 
+                        ? 'bg-gray-800 border-gray-700' 
+                        : 'bg-white border-gray-200'
                   }`}
                 >
                   <Icon
                     name={cat.icon}
                     size={24}
-                    color={selectedCategory === cat.id ? "#ffffff" : "#6b7280"}
+                    color={selectedCategory === cat.id ? "#ffffff" : (isDarkMode ? '#9CA3AF' : '#6b7280')}
                   />
                   <Text
                     className={`text-xs mt-1 ${
                       selectedCategory === cat.id
                         ? "text-white"
-                        : "text-gray-600"
+                        : isDarkMode ? 'text-gray-400' : 'text-gray-600'
                     }`}
                   >
                     {cat.label}
@@ -189,8 +200,12 @@ const ProductForm = () => {
         </View>
 
         {/* Form Fields */}
-        <View className="bg-white rounded-2xl p-4 shadow-sm mb-6">
-          <Text className="text-base font-semibold text-gray-800 mb-4">
+        <View className={`rounded-2xl p-4 shadow-sm mb-6 ${
+          isDarkMode ? 'bg-gray-800' : 'bg-white'
+        }`}>
+          <Text className={`text-base font-semibold mb-4 ${
+            isDarkMode ? 'text-white' : 'text-gray-800'
+          }`}>
             Basic Information
           </Text>
 
@@ -212,8 +227,9 @@ const ProductForm = () => {
                 onBlur={onBlur}
                 placeholder="Enter product name"
                 error={errors.name?.message}
-                leftIcon={<Icon name="tag" size={20} color="#9ca3af" />}
+                leftIcon="tag"
                 containerClassName="mb-4"
+                isDarkMode={isDarkMode}
               />
             )}
           />
@@ -237,9 +253,10 @@ const ProductForm = () => {
                 multiline
                 numberOfLines={4}
                 error={errors.description?.message}
-                leftIcon={<Icon name="text" size={20} color="#9ca3af" />}
+                leftIcon="text"
                 containerClassName="mb-4"
                 inputClassName="h-24"
+                isDarkMode={isDarkMode}
               />
             )}
           />
@@ -255,16 +272,21 @@ const ProductForm = () => {
                 onBlur={onBlur}
                 placeholder="Enter SKU (optional)"
                 error={errors.sku?.message}
-                leftIcon={<Icon name="barcode" size={20} color="#9ca3af" />}
+                leftIcon="barcode"
                 containerClassName="mb-4"
+                isDarkMode={isDarkMode}
               />
             )}
           />
         </View>
 
         {/* Pricing Section */}
-        <View className="bg-white rounded-2xl p-4 shadow-sm mb-6">
-          <Text className="text-base font-semibold text-gray-800 mb-4">
+        <View className={`rounded-2xl p-4 shadow-sm mb-6 ${
+          isDarkMode ? 'bg-gray-800' : 'bg-white'
+        }`}>
+          <Text className={`text-base font-semibold mb-4 ${
+            isDarkMode ? 'text-white' : 'text-gray-800'
+          }`}>
             Pricing
           </Text>
 
@@ -291,9 +313,8 @@ const ProductForm = () => {
                     placeholder="0.00"
                     keyboardType="decimal-pad"
                     error={errors.price?.message}
-                    leftIcon={
-                      <Icon name="currency-usd" size={20} color="#9ca3af" />
-                    }
+                    leftIcon="currency-usd"
+                    isDarkMode={isDarkMode}
                   />
                 )}
               />
@@ -320,9 +341,8 @@ const ProductForm = () => {
                     placeholder="0.00"
                     keyboardType="decimal-pad"
                     error={errors.originalPrice?.message}
-                    leftIcon={
-                      <Icon name="currency-usd" size={20} color="#9ca3af" />
-                    }
+                    leftIcon="currency-usd"
+                    isDarkMode={isDarkMode}
                   />
                 )}
               />
@@ -331,10 +351,10 @@ const ProductForm = () => {
 
           {watch("price") && watch("originalPrice") && (
             <LinearGradient
-              colors={["#f0f9ff", "#e0f2fe"]}
+              colors={isDarkMode ? ["#1e3a8a", "#1e40af"] : ["#f0f9ff", "#e0f2fe"]}
               className="p-3 rounded-xl"
             >
-              <Text className="text-sm text-blue-800">
+              <Text className={isDarkMode ? "text-blue-400" : "text-blue-800"}>
                 Discount:{" "}
                 {(
                   ((watch("originalPrice") - watch("price")) /
@@ -348,8 +368,12 @@ const ProductForm = () => {
         </View>
 
         {/* Inventory Section */}
-        <View className="bg-white rounded-2xl p-4 shadow-sm mb-6">
-          <Text className="text-base font-semibold text-gray-800 mb-4">
+        <View className={`rounded-2xl p-4 shadow-sm mb-6 ${
+          isDarkMode ? 'bg-gray-800' : 'bg-white'
+        }`}>
+          <Text className={`text-base font-semibold mb-4 ${
+            isDarkMode ? 'text-white' : 'text-gray-800'
+          }`}>
             Inventory
           </Text>
 
@@ -377,7 +401,8 @@ const ProductForm = () => {
                     placeholder="0"
                     keyboardType="number-pad"
                     error={errors.stock?.message}
-                    leftIcon={<Icon name="package" size={20} color="#9ca3af" />}
+                    leftIcon="package"
+                    isDarkMode={isDarkMode}
                   />
                 )}
               />
@@ -408,7 +433,8 @@ const ProductForm = () => {
                     placeholder="0"
                     keyboardType="number-pad"
                     error={errors.minStock?.message}
-                    leftIcon={<Icon name="alert" size={20} color="#9ca3af" />}
+                    leftIcon="alert"
+                    isDarkMode={isDarkMode}
                   />
                 )}
               />

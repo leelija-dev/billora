@@ -10,6 +10,7 @@ import {
   View,
 } from "react-native";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
+import { useThemeStore } from "../../store/themeStore";
 import Header from "../../components/common/Header";
 import ProductFilters from "../../components/products/ProductFilters";
 import ProductList from "../../components/products/ProductList";
@@ -55,6 +56,7 @@ const categories = [
 
 const ProductsScreen = () => {
   const navigation = useNavigation();
+  const { isDarkMode } = useThemeStore();
   const [showFilters, setShowFilters] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
@@ -127,13 +129,11 @@ const ProductsScreen = () => {
   ];
 
   return (
-    <View className="flex-1 bg-gray-50 pb-16">
-      <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
+    <View className={`flex-1 ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'} pb-16`}>
+      <StatusBar barStyle={isDarkMode ? "light-content" : "dark-content"} backgroundColor={isDarkMode ? "#111827" : "#ffffff"} />
 
       <Header
         title="Products"
-        backgroundColor="bg-white"
-        textColor="text-gray-800"
         userName="John Doe"
         userEmail="john@example.com"
         activeScreen="Products"
@@ -142,12 +142,14 @@ const ProductsScreen = () => {
           <View className="flex-row items-center">
             <TouchableOpacity
               onPress={toggleViewMode}
-              className="w-10 h-10 bg-gray-100 rounded-full items-center justify-center mr-2"
+              className={`w-10 h-10 rounded-full items-center justify-center mr-2 ${
+                isDarkMode ? 'bg-gray-800' : 'bg-gray-100'
+              }`}
             >
               <Icon
                 name={viewMode === "grid" ? "view-grid" : "view-list"}
                 size={22}
-                color="#4b5563"
+                color={isDarkMode ? "#9CA3AF" : "#4b5563"}
               />
             </TouchableOpacity>
             <TouchableOpacity
@@ -162,10 +164,14 @@ const ProductsScreen = () => {
 
       {/* Search Bar */}
       <View className="px-4 pt-4 pb-2">
-        <View className="flex-row items-center bg-white rounded-2xl px-4 h-14 shadow-sm ">
+        <View className={`flex-row items-center rounded-2xl px-4 h-14 shadow-sm ${
+          isDarkMode ? 'bg-gray-800' : 'bg-white'
+        }`}>
           <Icon name="magnify" size={22} color="#9ca3af" />
           <TextInput
-            className="flex-1 ml-3 text-base text-gray-800"
+            className={`flex-1 ml-3 text-base ${
+              isDarkMode ? 'text-white' : 'text-gray-800'
+            }`}
             placeholder="Search products, SKU, category..."
             placeholderTextColor="#9ca3af"
             value={searchQuery}
@@ -178,16 +184,16 @@ const ProductsScreen = () => {
           )}
           <TouchableOpacity
             onPress={handleFilterPress}
-            className="ml-2 p-2 border-l border-gray-200"
+            className={`ml-2 p-2 border-l ${
+              isDarkMode ? 'border-gray-700' : 'border-gray-200'
+            }`}
           >
-            <Icon name="tune" size={22} color="#4b5563" />
+            <Icon name="tune" size={22} color={isDarkMode ? "#9CA3AF" : "#4b5563"} />
           </TouchableOpacity>
         </View>
       </View>
 
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-      >
+      <ScrollView showsVerticalScrollIndicator={false}>
         {/* Categories Scroll */}
         <View className="py-2">
           <ScrollView
@@ -199,37 +205,45 @@ const ProductsScreen = () => {
               <TouchableOpacity
                 key={category.id}
                 onPress={() => handleCategorySelect(category.id)}
-                className={`flex-row items-center mr-3 px-4 py-2.5 rounded-full border ${selectedCategory === category.id
+                className={`flex-row items-center mr-3 px-4 py-2.5 rounded-full border ${
+                  selectedCategory === category.id
                     ? "bg-blue-500 border-blue-500"
-                    : "bg-white border-white"
-                  } shadow-sm`}
+                    : isDarkMode 
+                      ? 'bg-gray-800 border-gray-700' 
+                      : 'bg-white border-white'
+                } shadow-sm`}
               >
                 <Icon
                   name={category.icon}
                   size={18}
                   color={
-                    selectedCategory === category.id ? "#ffffff" : category.color
+                    selectedCategory === category.id 
+                      ? "#ffffff" 
+                      : isDarkMode ? '#9CA3AF' : category.color
                   }
                 />
                 <Text
-                  className={`ml-2 font-medium ${selectedCategory === category.id
+                  className={`ml-2 font-medium ${
+                    selectedCategory === category.id
                       ? "text-white"
-                      : "text-gray-700"
-                    }`}
+                      : isDarkMode ? 'text-gray-300' : 'text-gray-700'
+                  }`}
                 >
                   {category.name}
                 </Text>
                 <View
-                  className={`ml-2 px-2 py-0.5 rounded-full ${selectedCategory === category.id
+                  className={`ml-2 px-2 py-0.5 rounded-full ${
+                    selectedCategory === category.id
                       ? "bg-white/20"
-                      : "bg-gray-100"
-                    }`}
+                      : isDarkMode ? 'bg-gray-700' : 'bg-gray-100'
+                  }`}
                 >
                   <Text
-                    className={`text-xs ${selectedCategory === category.id
+                    className={`text-xs ${
+                      selectedCategory === category.id
                         ? "text-white"
-                        : "text-gray-600"
-                      }`}
+                        : isDarkMode ? 'text-gray-400' : 'text-gray-600'
+                    }`}
                   >
                     {category.count}
                   </Text>
@@ -241,16 +255,30 @@ const ProductsScreen = () => {
 
         {/* Stats Cards */}
         <View className="flex-row justify-between px-4 py-3">
-          <View className="bg-white rounded-xl p-3 flex-1 mr-2 shadow-sm ">
-            <Text className="text-gray-500 text-xs">Total Products</Text>
-            <Text className="text-2xl font-bold text-gray-800">156</Text>
+          <View className={`rounded-xl p-3 flex-1 mr-2 shadow-sm ${
+            isDarkMode ? 'bg-gray-800' : 'bg-white'
+          }`}>
+            <Text className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+              Total Products
+            </Text>
+            <Text className={`text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
+              156
+            </Text>
           </View>
-          <View className="bg-white rounded-xl p-3 flex-1 mx-2 shadow-sm ">
-            <Text className="text-gray-500 text-xs">Low Stock</Text>
+          <View className={`rounded-xl p-3 flex-1 mx-2 shadow-sm ${
+            isDarkMode ? 'bg-gray-800' : 'bg-white'
+          }`}>
+            <Text className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+              Low Stock
+            </Text>
             <Text className="text-2xl font-bold text-orange-500">12</Text>
           </View>
-          <View className="bg-white rounded-xl p-3 flex-1 ml-2 shadow-sm ">
-            <Text className="text-gray-500 text-xs">Out of Stock</Text>
+          <View className={`rounded-xl p-3 flex-1 ml-2 shadow-sm ${
+            isDarkMode ? 'bg-gray-800' : 'bg-white'
+          }`}>
+            <Text className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+              Out of Stock
+            </Text>
             <Text className="text-2xl font-bold text-red-500">5</Text>
           </View>
         </View>
@@ -266,7 +294,11 @@ const ProductsScreen = () => {
       </ScrollView>
 
       {/* Filters Modal */}
-      <ProductFilters visible={showFilters} onClose={handleFiltersClose} />
+      <ProductFilters 
+        visible={showFilters} 
+        onClose={handleFiltersClose}
+        isDarkMode={isDarkMode}
+      />
     </View>
   );
 };
