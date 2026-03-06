@@ -22,8 +22,8 @@ module.exports = {
         danger: "#ff6b6b",
         warning: "#ffd43b",
         dark: "#212529",
-        gray: "#868e96",
         light: "#f8f9fa",
+        // Remove the custom gray or extend it properly
       },
     },
   },

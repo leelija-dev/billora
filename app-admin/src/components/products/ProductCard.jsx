@@ -156,6 +156,7 @@ const ProductCard = ({ product, onUpdateStock }) => {
               <LinearGradient
                 colors={["#ef4444", "#dc2626"]}
                 className="px-2 py-1 rounded-full"
+                style={{borderRadius:100}}
               >
                 <Text className="text-white text-xs font-bold">
                   -{discount}%
@@ -166,6 +167,7 @@ const ProductCard = ({ product, onUpdateStock }) => {
               <LinearGradient
                 colors={["#3b82f6", "#2563eb"]}
                 className="px-2 py-1 rounded-full"
+                style={{borderRadius:100}}
               >
                 <Text className="text-white text-xs font-bold">NEW</Text>
               </LinearGradient>
@@ -191,6 +193,7 @@ const ProductCard = ({ product, onUpdateStock }) => {
             <LinearGradient
               colors={stockStatus.gradient}
               className="px-2 py-1 rounded-full flex-row items-center"
+              style={{borderRadius:100}}
             >
               <Icon name={stockStatus.icon} size={12} color="#ffffff" />
               <Text className="text-white text-xs font-medium ml-1">
@@ -281,7 +284,7 @@ const ProductCard = ({ product, onUpdateStock }) => {
           </View>
 
           {/* Quick Actions */}
-          <View className="flex-row justify-between items-center mt-2 pt-2 border-t border-gray-100">
+          <View className="flex-row justify-between items-center mt-2 pt-2 border-t border-blue-100">
             <View className="flex-row gap-1">
               <TouchableOpacity
                 className="w-8 h-8 bg-red-50 rounded-lg items-center justify-center"

@@ -1,7 +1,11 @@
+// components/navigation/MainNavigator.js
+import { Animated } from "react-native";
+import { useState, useEffect, useRef } from "react";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { LinearGradient } from "expo-linear-gradient";
-import { Text, TouchableOpacity, View } from "react-native";
+import { BlurView } from "expo-blur";
+import { Text, TouchableOpacity, View, Dimensions } from "react-native";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 import AddCustomerScreen from "../../screens/customers/AddCustomerScreen";
 import CustomerDetailScreen from "../../screens/customers/CustomerDetailScreen";
@@ -12,33 +16,39 @@ import StockMovementScreen from "../../screens/inventory/StockMovementScreen";
 import CreateOrderScreen from "../../screens/orders/CreateOrderScreen";
 import OrderDetailScreen from "../../screens/orders/OrderDetailScreen";
 import OrdersScreen from "../../screens/orders/OrdersScreen";
-import AddProductScreen from "../../screens/products/AddProductScreen"; // IMPORT THIS
-import ProductDetailScreen from "../../screens/products/ProductDetailScreen"; // IMPORT THIS
+import AddProductScreen from "../../screens/products/AddProductScreen";
+import ProductDetailScreen from "../../screens/products/ProductDetailScreen";
 import ProductsScreen from "../../screens/products/ProductsScreen";
 import ProfileScreen from "../../screens/profile/ProfileScreen";
 import SettingsScreen from "../../screens/settings/SettingsScreen";
 import { theme } from "../../theme";
 import { NAVIGATION_SCREENS } from "../../utils/constants";
 
+const { width } = Dimensions.get("window");
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
 
-// Custom header with gradient for stack navigators
+// Modern Header with Gradient
 const StackHeader = ({ title, navigation, showBack = true }) => (
   <LinearGradient
-    colors={[
-      theme.colors.primary,
-      theme.colors.primaryDark || theme.colors.primary,
-    ]}
+    colors={["#6366F1", "#8B5CF6"]}
     start={{ x: 0, y: 0 }}
     end={{ x: 1, y: 0 }}
     className="pt-12 pb-4 px-4"
+    style={{
+      shadowColor: "#6366F1",
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.3,
+      shadowRadius: 8,
+      elevation: 5,
+    }}
   >
     <View className="flex-row items-center">
       {showBack && (
         <TouchableOpacity
           onPress={() => navigation.goBack()}
-          className="mr-3 p-2 rounded-full bg-white/20"
+          className="mr-3 w-10 h-10 rounded-2xl bg-white/20 items-center justify-center"
+          activeOpacity={0.7}
         >
           <Icon name="arrow-left" size={22} color="#FFFFFF" />
         </TouchableOpacity>
@@ -46,10 +56,16 @@ const StackHeader = ({ title, navigation, showBack = true }) => (
       <Text className="text-2xl font-bold text-white flex-1">{title}</Text>
       {!showBack && (
         <View className="flex-row">
-          <TouchableOpacity className="mr-3 p-2 rounded-full bg-white/20">
+          <TouchableOpacity
+            className="mr-3 w-10 h-10 rounded-2xl bg-white/20 items-center justify-center"
+            activeOpacity={0.7}
+          >
             <Icon name="bell-outline" size={22} color="#FFFFFF" />
           </TouchableOpacity>
-          <TouchableOpacity className="p-2 rounded-full bg-white/20">
+          <TouchableOpacity
+            className="w-10 h-10 rounded-2xl bg-white/20 items-center justify-center"
+            activeOpacity={0.7}
+          >
             <Icon name="magnify" size={22} color="#FFFFFF" />
           </TouchableOpacity>
         </View>
@@ -58,7 +74,7 @@ const StackHeader = ({ title, navigation, showBack = true }) => (
   </LinearGradient>
 );
 
-// Enhanced Products Stack with all screens uncommented
+// Products Stack
 const ProductsStack = () => (
   <Stack.Navigator
     screenOptions={{
@@ -101,7 +117,7 @@ const ProductsStack = () => (
   </Stack.Navigator>
 );
 
-// Enhanced Orders Stack
+// Orders Stack
 const OrdersStack = () => (
   <Stack.Navigator
     screenOptions={{
@@ -144,7 +160,7 @@ const OrdersStack = () => (
   </Stack.Navigator>
 );
 
-// Enhanced Customers Stack
+// Customers Stack
 const CustomersStack = () => (
   <Stack.Navigator
     screenOptions={{
@@ -187,7 +203,7 @@ const CustomersStack = () => (
   </Stack.Navigator>
 );
 
-// Enhanced Inventory Stack
+// Inventory Stack (hidden from tab bar)
 const InventoryStack = () => (
   <Stack.Navigator
     screenOptions={{
@@ -221,7 +237,7 @@ const InventoryStack = () => (
   </Stack.Navigator>
 );
 
-// Enhanced Settings Stack
+// Settings Stack (hidden from tab bar)
 const SettingsStack = () => (
   <Stack.Navigator
     screenOptions={{
@@ -253,120 +269,204 @@ const SettingsStack = () => (
   </Stack.Navigator>
 );
 
-// Custom Tab Bar Icon
-const TabIcon = ({ name, focused, color }) => (
-  <View className={`items-center justify-center ${focused ? "mt-[-8px]" : ""}`}>
-    <View className={`p-2 rounded-full ${focused ? "bg-primary/10" : ""}`}>
-      <Icon name={name} size={focused ? 28 : 24} color={color} />
-    </View>
-    {focused && <View className="w-1 h-1 rounded-full bg-primary mt-1" />}
-  </View>
-);
+// Modern Tab Bar Component with bottom area filled (design unchanged)
+// Modern Tab Bar Component with Sliding Active Background
+const ModernTabBar = ({ state, descriptors, navigation }) => {
+  const [tabPositions, setTabPositions] = useState({});
+  const [sliderWidth, setSliderWidth] = useState(0);
+  const [sliderLeft, setSliderLeft] = useState(0);
+  const animation = useRef(new Animated.Value(0)).current;
 
-// Main Navigator with enhanced design
+  // Define only the tabs we want to show
+  const tabs = [
+    {
+      name: "Home",
+      icon: "view-dashboard-outline",
+      iconActive: "view-dashboard",
+      label: "Home",
+      screen: "Dashboard",
+    },
+    {
+      name: "Products",
+      icon: "package-variant-closed",
+      iconActive: "package-variant",
+      label: "Products",
+      screen: "ProductsStack",
+    },
+    {
+      name: "Orders",
+      icon: "clipboard-list-outline",
+      iconActive: "clipboard-list",
+      label: "Orders",
+      screen: "OrdersStack",
+    },
+    {
+      name: "Clients",
+      icon: "account-group-outline",
+      iconActive: "account-group",
+      label: "Clients",
+      screen: "CustomersStack",
+    },
+    {
+      name: "Inventory",
+      icon: "warehouse",
+      iconActive: "warehouse",
+      label: "Inventory",
+      screen: "InventoryStack",
+    },
+  ];
+
+  // Update slider position when active tab changes
+  useEffect(() => {
+    if (tabPositions[state.index]) {
+      const { x, width } = tabPositions[state.index];
+      
+      Animated.spring(animation, {
+        toValue: x,
+        useNativeDriver: false,
+        tension: 300,
+        friction: 25,
+      }).start();
+      
+      setSliderWidth(width);
+    }
+  }, [state.index, tabPositions]);
+
+  const handleTabPress = (index) => {
+    const event = navigation.emit({
+      type: "tabPress",
+      target: state.routes[index].key,
+      canPreventDefault: true,
+    });
+
+    if (state.index !== index && !event.defaultPrevented) {
+      navigation.navigate(tabs[index].screen);
+    }
+  };
+
+  const onTabLayout = (index, event) => {
+    const { x, width } = event.nativeEvent.layout;
+    setTabPositions(prev => ({
+      ...prev,
+      [index]: { x, width }
+    }));
+
+    // Set initial slider position for the first tab
+    if (index === 0 && !tabPositions[0]) {
+      setSliderWidth(width);
+      animation.setValue(x);
+    }
+  };
+
+  return (
+    <View className="absolute bottom-0 left-0 right-0">
+      <View className="mx-4 mb-2 rounded-3xl overflow-hidden">
+        <BlurView
+          intensity={50}
+          tint="light"
+          className="overflow-hidden"
+          style={{
+            borderWidth: 0,
+            borderColor: "white",
+            backgroundColor: "#ff0dfbcf",
+            padding: 0,
+            borderRadius: 30,
+          }}
+        >
+          <View
+            className="flex-row items-center"
+            style={{
+              backgroundColor: "rgba(255, 255, 255, 0.7)",
+              position: 'relative',
+              height: 50, // Fixed height for consistent animation
+            }}
+          >
+            {/* Animated Sliding Background */}
+            <Animated.View
+              style={{
+                position: 'absolute',
+                left: animation,
+                width: sliderWidth,
+                height: 50, // Slightly smaller than container for padding effect
+                backgroundColor: "#6366F1",
+                borderRadius: 30,
+                marginVertical: 6, // Center vertically
+              }}
+            />
+
+            {tabs.map((tab, index) => {
+              const isFocused = state.index === index;
+
+              return (
+                <TouchableOpacity
+                  key={tab.name}
+                  onPress={() => handleTabPress(index)}
+                  onLayout={(event) => onTabLayout(index, event)}
+                  activeOpacity={0.7}
+                  className="items-center justify-center flex-1"
+                  style={{
+                    flexDirection: "row",
+                    paddingVertical: 12,
+                    paddingHorizontal: isFocused ? 18 : 12,
+                    // minWidth: isFocused ? 60 : "auto",
+                    zIndex: 1, // Ensure text/icons are above the animated background
+                  }}
+                >
+                  <Icon
+                    name={isFocused ? tab.iconActive : tab.icon}
+                    size={22}
+                    color={isFocused ? "white" : "#758A93"}
+                  />
+                  {/* {isFocused && (
+                    <Animated.Text className="text-sm font-medium text-white ml-2 ">
+                      {tab.label}
+                    </Animated.Text>
+                  )} */}
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        </BlurView>
+      </View>
+
+      {/* Extra invisible padding that fills the bottom gap */}
+      <View
+        style={{
+          height: 20,
+          backgroundColor: "white",
+          width: "100%",
+        }}
+      />
+    </View>
+  );
+};
+
+// Main Navigator with modern design
 const MainNavigator = () => {
   return (
     <Tab.Navigator
-      screenOptions={({ route }) => ({
-        tabBarIcon: ({ focused, color }) => {
-          let iconName;
-
-          switch (route.name) {
-            case NAVIGATION_SCREENS.MAIN.DASHBOARD:
-              iconName = focused ? "view-dashboard" : "view-dashboard-outline";
-              break;
-            case "ProductsStack":
-              iconName = focused ? "package-variant" : "package-variant-closed";
-              break;
-            case "OrdersStack":
-              iconName = focused ? "clipboard-list" : "clipboard-list-outline";
-              break;
-            case "CustomersStack":
-              iconName = focused ? "account-group" : "account-group-outline";
-              break;
-            case "InventoryStack":
-              iconName = focused ? "warehouse" : "warehouse";
-              break;
-            case "SettingsStack":
-              iconName = focused ? "cog" : "cog-outline";
-              break;
-            default:
-              iconName = "help";
-          }
-
-          return <TabIcon name={iconName} focused={focused} color={color} />;
-        },
-        tabBarActiveTintColor: theme.colors.primary,
-        tabBarInactiveTintColor: theme.colors.textTertiary,
-        tabBarStyle: {
-          backgroundColor: "#FFFFFF",
-          borderTopWidth: 0,
-          height: 70,
-          paddingBottom: 10,
-          paddingTop: 5,
-          elevation: 20,
-          shadowColor: "#000",
-          shadowOffset: { width: 0, height: -3 },
-          shadowOpacity: 0.1,
-          shadowRadius: 6,
-          borderTopLeftRadius: 24,
-          borderTopRightRadius: 24,
-          position: "absolute",
-          bottom: 0,
-          left: 0,
-          right: 0,
-        },
-        tabBarLabelStyle: {
-          fontSize: 11,
-          fontWeight: "600",
-          marginBottom: 5,
-        },
-        tabBarItemStyle: {
-          paddingVertical: 5,
-        },
+      tabBar={(props) => <ModernTabBar {...props} />}
+      screenOptions={{
         headerShown: false,
-      })}
+      }}
     >
-      <Tab.Screen
-        name={NAVIGATION_SCREENS.MAIN.DASHBOARD}
-        component={DashboardScreen}
-        options={{
-          title: "Home",
-        }}
-      />
-      <Tab.Screen
-        name="ProductsStack"
-        component={ProductsStack}
-        options={{
-          title: "Products",
-        }}
-      />
-      <Tab.Screen
-        name="OrdersStack"
-        component={OrdersStack}
-        options={{
-          title: "Orders",
-        }}
-      />
-      <Tab.Screen
-        name="CustomersStack"
-        component={CustomersStack}
-        options={{
-          title: "Clients",
-        }}
-      />
+      <Tab.Screen name="Dashboard" component={DashboardScreen} />
+      <Tab.Screen name="ProductsStack" component={ProductsStack} />
+      <Tab.Screen name="OrdersStack" component={OrdersStack} />
+      <Tab.Screen name="CustomersStack" component={CustomersStack} />
+      {/* Hidden screens - accessible via navigation only */}
       <Tab.Screen
         name="InventoryStack"
         component={InventoryStack}
-        options={{
-          title: "Stock",
-        }}
+        
+        
       />
       <Tab.Screen
         name="SettingsStack"
         component={SettingsStack}
         options={{
-          title: "More",
+          tabBarButton: () => null,
+          tabBarItemStyle: { display: "none" },
         }}
       />
     </Tab.Navigator>

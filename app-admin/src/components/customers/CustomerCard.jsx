@@ -1,14 +1,14 @@
+// components/customers/CustomerCard.js
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, TouchableOpacity } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { theme } from '../../theme';
+import { LinearGradient } from 'expo-linear-gradient';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { formatRelativeTime } from '../../utils/helpers';
-import StatusBadge from '../common/StatusBadge';
-import Card from '../common/Card';
 
-const CustomerCard = ({ customer, onPress }) => {
+const CustomerCard = ({ customer, onPress, viewMode = 'grid' }) => {
   const navigation = useNavigation();
-  
+
   const handlePress = () => {
     if (onPress) {
       onPress(customer);
@@ -19,118 +19,123 @@ const CustomerCard = ({ customer, onPress }) => {
 
   const isActive = customer.status === 'active';
 
-  return (
-    <TouchableOpacity onPress={handlePress} activeOpacity={0.8}>
-      <Card style={styles.card} padding="sm">
-        <View style={styles.header}>
-          <View style={styles.customerInfo}>
-            <Text style={styles.customerName}>{customer.name}</Text>
-            <Text style={styles.customerEmail}>{customer.email}</Text>
-          </View>
-          <StatusBadge
-            status={isActive ? 'Active' : 'Inactive'}
-            variant={isActive ? 'success' : 'error'}
-            size="small"
-          />
-        </View>
-
-        <View style={styles.details}>
-          <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>Phone:</Text>
-            <Text style={styles.detailValue}>{customer.phone || 'N/A'}</Text>
-          </View>
-          <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>Orders:</Text>
-            <Text style={styles.detailValue}>{customer.orderCount || 0}</Text>
-          </View>
-          <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>Total Spent:</Text>
-            <Text style={styles.detailValue}>{customer.totalSpent ? `$${customer.totalSpent}` : '$0'}</Text>
-          </View>
-        </View>
-
-        {customer.address && (
-          <View style={styles.addressSection}>
-            <Text style={styles.addressLabel}>Address:</Text>
-            <Text style={styles.addressText} numberOfLines={2}>
-              {customer.address.street}, {customer.address.city}, {customer.address.state}
+  if (viewMode === 'list') {
+    return (
+      <TouchableOpacity
+        onPress={handlePress}
+        className="bg-white rounded-2xl p-4 mb-3 shadow-sm border border-gray-100"
+        activeOpacity={0.7}
+      >
+        <View className="flex-row items-center">
+          <LinearGradient
+            colors={isActive ? ['#10B981', '#059669'] : ['#EF4444', '#DC2626']}
+            className="w-14 h-14 rounded-2xl items-center justify-center mr-4"
+            style={{borderRadius:100}}
+          >
+            <Text className="text-white text-xl font-bold">
+              {customer.name.charAt(0).toUpperCase()}
             </Text>
-          </View>
-        )}
+          </LinearGradient>
+          
+          <View className="flex-1">
+            <View className="flex-row justify-between items-start">
+              <View>
+                <Text className="text-gray-900 font-bold text-lg">{customer.name}</Text>
+                <Text className="text-gray-500 text-sm">{customer.email}</Text>
+              </View>
+              <View className={`px-3 py-1 rounded-full ${
+                isActive ? 'bg-green-100' : 'bg-red-100'
+              }`}>
+                <Text className={`text-xs font-medium ${
+                  isActive ? 'text-green-600' : 'text-red-600'
+                }`}>
+                  {customer.status.toUpperCase()}
+                </Text>
+              </View>
+            </View>
 
-        <View style={styles.footer}>
-          <Text style={styles.memberSince}>
-            Member since {formatRelativeTime(customer.createdAt)}
-          </Text>
+            <View className="flex-row mt-3">
+              <View className="flex-1">
+                <Text className="text-gray-400 text-xs">Orders</Text>
+                <Text className="text-gray-900 font-semibold">{customer.orderCount}</Text>
+              </View>
+              <View className="flex-1">
+                <Text className="text-gray-400 text-xs">Total Spent</Text>
+                <Text className="text-gray-900 font-semibold">${customer.totalSpent.toFixed(2)}</Text>
+              </View>
+              <View className="flex-1">
+                <Text className="text-gray-400 text-xs">Since</Text>
+                <Text className="text-gray-900 font-semibold text-xs">
+                  {formatRelativeTime(customer.createdAt)}
+                </Text>
+              </View>
+            </View>
+
+            {customer.phone && (
+              <View className="flex-row items-center mt-2">
+                <Icon name="phone" size={14} color="#9ca3af" />
+                <Text className="text-gray-500 text-xs ml-1">{customer.phone}</Text>
+              </View>
+            )}
+          </View>
         </View>
-      </Card>
+      </TouchableOpacity>
+    );
+  }
+
+  // Grid view
+  return (
+    <TouchableOpacity
+      onPress={handlePress}
+      className="w-[48%] mx-[1%] bg-white rounded-2xl p-4 mb-3 shadow-sm border border-gray-100"
+      activeOpacity={0.7}
+    >
+      <LinearGradient
+        colors={isActive ? ['#10B981', '#059669'] : ['#EF4444', '#DC2626']}
+        className="w-16 h-16 rounded-2xl items-center justify-center self-center mb-3"
+        style={{borderRadius:100}}
+      >
+        <Text className="text-white text-2xl font-bold">
+          {customer.name.charAt(0).toUpperCase()}
+        </Text>
+      </LinearGradient>
+
+      <Text className="text-gray-900 font-bold text-base text-center" numberOfLines={1}>
+        {customer.name}
+      </Text>
+      <Text className="text-gray-500 text-xs text-center mb-2" numberOfLines={1}>
+        {customer.email}
+      </Text>
+
+      <View className={`self-center px-3 py-1 rounded-full mb-3 ${
+        isActive ? 'bg-green-100' : 'bg-red-100'
+      }`}>
+        <Text className={`text-xs font-medium ${
+          isActive ? 'text-green-600' : 'text-red-600'
+        }`}>
+          {customer.status.toUpperCase()}
+        </Text>
+      </View>
+
+      <View className="flex-row justify-between mt-2">
+        <View className="items-center">
+          <Text className="text-gray-400 text-xs">Orders</Text>
+          <Text className="text-gray-900 font-bold">{customer.orderCount}</Text>
+        </View>
+        <View className="items-center">
+          <Text className="text-gray-400 text-xs">Spent</Text>
+          <Text className="text-gray-900 font-bold">${customer.totalSpent.toFixed(0)}</Text>
+        </View>
+      </View>
+
+      <View className="flex-row items-center justify-center mt-2">
+        <Icon name="clock-outline" size={12} color="#9ca3af" />
+        <Text className="text-gray-400 text-xs ml-1">
+          {formatRelativeTime(customer.createdAt)}
+        </Text>
+      </View>
     </TouchableOpacity>
   );
 };
-
-const styles = StyleSheet.create({
-  card: {
-    marginBottom: theme.spacing.sm,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: theme.spacing.sm,
-  },
-  customerInfo: {
-    flex: 1,
-  },
-  customerName: {
-    ...theme.typography.body1,
-    color: theme.colors.text,
-    fontWeight: '600',
-    marginBottom: 2,
-  },
-  customerEmail: {
-    ...theme.typography.body2,
-    color: theme.colors.textSecondary,
-  },
-  details: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: theme.spacing.sm,
-  },
-  detailRow: {
-    alignItems: 'center',
-  },
-  detailLabel: {
-    ...theme.typography.caption,
-    color: theme.colors.textTertiary,
-    marginBottom: 2,
-  },
-  detailValue: {
-    ...theme.typography.body2,
-    color: theme.colors.text,
-    fontWeight: '500',
-  },
-  addressSection: {
-    marginBottom: theme.spacing.sm,
-  },
-  addressLabel: {
-    ...theme.typography.caption,
-    color: theme.colors.textTertiary,
-    marginBottom: 2,
-  },
-  addressText: {
-    ...theme.typography.caption,
-    color: theme.colors.textSecondary,
-  },
-  footer: {
-    paddingTop: theme.spacing.sm,
-    borderTopWidth: 1,
-    borderTopColor: theme.colors.borderLight,
-  },
-  memberSince: {
-    ...theme.typography.caption,
-    color: theme.colors.textTertiary,
-    fontStyle: 'italic',
-  },
-});
 
 export default CustomerCard;

@@ -72,8 +72,8 @@ const ProductFilters = ({
   const getStockButtonStyle = (optionValue) => {
     const isActive = filters.inStock === optionValue;
     return {
-      buttonClass: `flex-1 py-3 px-3 rounded-xl ${isActive ? "bg-blue-500" : "bg-gray-100"}`,
-      textClass: `text-sm font-medium text-center ${isActive ? "text-white" : "text-gray-600"}`,
+      buttonClass: `flex-1 py-3 px-3 rounded-xl ${isActive ? "bg-blue-500" : "bg-gray-200 border border-gray-100"}`,
+      textClass: `text-sm font-medium text-center ${isActive ? "text-white" : "text-gray-700"}`,
     };
   };
 
@@ -114,7 +114,7 @@ const ProductFilters = ({
           >
             {/* Quick Stats Summary */}
             {stats && (
-              <View className="bg-blue-50 p-4 rounded-xl mb-6">
+              <View className="bg-blue-50 p-4 rounded-xl mb-6 border border-blue-200">
                 <Text className="text-sm font-semibold text-blue-800 mb-2">
                   Quick Overview
                 </Text>
@@ -153,24 +153,24 @@ const ProductFilters = ({
                   <TouchableOpacity
                     key={option.value}
                     onPress={() => handleFilterChange("sortBy", option.value)}
-                    className={`flex-1 flex-row items-center justify-center py-3 px-3 rounded-xl ${
+                    className={`flex-1 flex-row items-center justify-center py-3 px-3 rounded-xl border ${
                       filters.sortBy === option.value
-                        ? "bg-blue-500"
-                        : "bg-gray-100"
+                        ? "bg-blue-500 border-blue-600"
+                        : "bg-gray-200 border-gray-100"
                     }`}
                   >
                     <Icon
                       name={option.icon}
                       size={18}
                       color={
-                        filters.sortBy === option.value ? "#ffffff" : "#6b7280"
+                        filters.sortBy === option.value ? "#ffffff" : "#4b5563"
                       }
                     />
                     <Text
                       className={`text-sm font-medium ml-2 ${
                         filters.sortBy === option.value
                           ? "text-white"
-                          : "text-gray-600"
+                          : "text-gray-700"
                       }`}
                     >
                       {option.label}
@@ -183,20 +183,22 @@ const ProductFilters = ({
               <View className="flex-row gap-2">
                 <TouchableOpacity
                   onPress={() => handleFilterChange("sortOrder", "asc")}
-                  className={`flex-1 flex-row items-center justify-center py-3 px-3 rounded-xl ${
-                    filters.sortOrder === "asc" ? "bg-blue-500" : "bg-gray-100"
+                  className={`flex-1 flex-row items-center justify-center py-3 px-3 rounded-xl border ${
+                    filters.sortOrder === "asc"
+                      ? "bg-blue-500 border-blue-600"
+                      : "bg-gray-200 border-gray-100"
                   }`}
                 >
                   <Icon
                     name="sort-ascending"
                     size={18}
-                    color={filters.sortOrder === "asc" ? "#ffffff" : "#6b7280"}
+                    color={filters.sortOrder === "asc" ? "#ffffff" : "#4b5563"}
                   />
                   <Text
                     className={`text-sm font-medium ml-2 ${
                       filters.sortOrder === "asc"
                         ? "text-white"
-                        : "text-gray-600"
+                        : "text-gray-700"
                     }`}
                   >
                     Ascending
@@ -205,20 +207,22 @@ const ProductFilters = ({
 
                 <TouchableOpacity
                   onPress={() => handleFilterChange("sortOrder", "desc")}
-                  className={`flex-1 flex-row items-center justify-center py-3 px-3 rounded-xl ${
-                    filters.sortOrder === "desc" ? "bg-blue-500" : "bg-gray-100"
+                  className={`flex-1 flex-row items-center justify-center py-3 px-3 rounded-xl border ${
+                    filters.sortOrder === "desc"
+                      ? "bg-blue-500 border-blue-600"
+                      : "bg-gray-200 border-gray-100"
                   }`}
                 >
                   <Icon
                     name="sort-descending"
                     size={18}
-                    color={filters.sortOrder === "desc" ? "#ffffff" : "#6b7280"}
+                    color={filters.sortOrder === "desc" ? "#ffffff" : "#4b5563"}
                   />
                   <Text
                     className={`text-sm font-medium ml-2 ${
                       filters.sortOrder === "desc"
                         ? "text-white"
-                        : "text-gray-600"
+                        : "text-gray-700"
                     }`}
                   >
                     Descending
@@ -234,28 +238,34 @@ const ProductFilters = ({
               </Text>
               <View className="flex-row items-center gap-3">
                 <View className="flex-1">
-                  <Text className="text-xs text-gray-500 mb-1">Min ($)</Text>
+                  <Text className="text-xs text-gray-600 mb-1 font-medium">
+                    Min ($)
+                  </Text>
                   <TextInput
                     value={filters.minPrice}
                     onChangeText={(value) =>
                       handleFilterChange("minPrice", value)
                     }
                     placeholder="0"
+                    placeholderTextColor="#9ca3af"
                     keyboardType="numeric"
-                    className="bg-gray-100 rounded-xl px-4 py-3 text-gray-800"
+                    className="bg-gray-200 rounded-xl px-4 py-3 text-gray-800 border border-gray-100"
                   />
                 </View>
-                <Text className="text-lg text-gray-400">-</Text>
+                <Text className="text-lg text-gray-500 font-bold">-</Text>
                 <View className="flex-1">
-                  <Text className="text-xs text-gray-500 mb-1">Max ($)</Text>
+                  <Text className="text-xs text-gray-600 mb-1 font-medium">
+                    Max ($)
+                  </Text>
                   <TextInput
                     value={filters.maxPrice}
                     onChangeText={(value) =>
                       handleFilterChange("maxPrice", value)
                     }
                     placeholder="1000"
+                    placeholderTextColor="#9ca3af"
                     keyboardType="numeric"
-                    className="bg-gray-100 rounded-xl px-4 py-3 text-gray-800"
+                    className="bg-gray-200 rounded-xl px-4 py-3 text-gray-800 border border-gray-100"
                   />
                 </View>
               </View>
@@ -293,7 +303,8 @@ const ProductFilters = ({
                 value={filters.supplier}
                 onChangeText={(value) => handleFilterChange("supplier", value)}
                 placeholder="Enter supplier name..."
-                className="bg-gray-100 rounded-xl px-4 py-3 text-gray-800"
+                placeholderTextColor="#9ca3af"
+                className="bg-gray-200 rounded-xl px-4 py-3 text-gray-800 border border-gray-100"
               />
             </View>
 
@@ -306,7 +317,8 @@ const ProductFilters = ({
                 value={filters.brand}
                 onChangeText={(value) => handleFilterChange("brand", value)}
                 placeholder="Enter brand name..."
-                className="bg-gray-100 rounded-xl px-4 py-3 text-gray-800"
+                placeholderTextColor="#9ca3af"
+                className="bg-gray-200 rounded-xl px-4 py-3 text-gray-800 border border-gray-100"
               />
             </View>
           </ScrollView>
@@ -315,14 +327,14 @@ const ProductFilters = ({
           <View className="flex-row gap-3 p-5 border-t border-gray-200">
             <TouchableOpacity
               onPress={handleReset}
-              className="flex-1 bg-gray-100 py-4 rounded-xl items-center"
+              className="flex-1 bg-gray-200 py-4 rounded-xl items-center border border-gray-100"
             >
               <Text className="text-gray-700 font-semibold">Reset</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
               onPress={handleApply}
-              className="flex-2 bg-blue-500 py-4 rounded-xl items-center"
+              className="flex-1 bg-blue-500 py-4 rounded-xl items-center border border-blue-600"
             >
               <Text className="text-white font-semibold">Apply Filters</Text>
             </TouchableOpacity>
