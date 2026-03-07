@@ -1,3 +1,4 @@
+// screens/settings/SettingsScreen.js
 import { useNavigation } from '@react-navigation/native';
 import { Alert, ScrollView, Text, View, Switch, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -6,12 +7,12 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Updates from 'expo-updates';
 import { useState } from 'react';
 import { useAuth } from '../../hooks/useAuth';
-import { useTheme } from '../../hooks/useTheme';
+import { useThemeStore } from '../../store/themeStore';
 
 const SettingsScreen = () => {
   const navigation = useNavigation();
   const { user, logout } = useAuth();
-  const { theme: currentTheme, toggleTheme } = useTheme();
+  const { isDarkMode, toggleDarkMode } = useThemeStore();
   const [notifications, setNotifications] = useState(true);
   const [biometric, setBiometric] = useState(false);
   const [emailUpdates, setEmailUpdates] = useState('weekly');
@@ -22,7 +23,7 @@ const SettingsScreen = () => {
   };
 
   const handleThemeToggle = () => {
-    toggleTheme();
+    toggleDarkMode();
   };
 
   const handleLogout = () => {
@@ -92,7 +93,9 @@ const SettingsScreen = () => {
 
   const SettingItem = ({ icon, label, value, onPress, type = 'default', rightElement, gradient }) => (
     <TouchableOpacity
-      className="flex-row items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-gray-800"
+      className={`flex-row items-center justify-between px-5 py-4 border-b ${
+        isDarkMode ? 'border-gray-700' : 'border-gray-100'
+      }`}
       onPress={onPress}
       activeOpacity={0.7}
       disabled={!onPress}
@@ -108,12 +111,16 @@ const SettingsScreen = () => {
         </LinearGradient>
         <View className="flex-1">
           <Text className={`text-base font-medium ${
-            type === 'danger' ? 'text-red-500' : 'text-gray-900 dark:text-white'
+            type === 'danger' 
+              ? 'text-red-500' 
+              : isDarkMode ? 'text-white' : 'text-gray-900'
           }`}>
             {label}
           </Text>
           {value && (
-            <Text className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
+            <Text className={`text-sm mt-0.5 ${
+              isDarkMode ? 'text-gray-400' : 'text-gray-500'
+            }`}>
               {value}
             </Text>
           )}
@@ -123,7 +130,7 @@ const SettingsScreen = () => {
         <Ionicons 
           name="chevron-forward" 
           size={20} 
-          color={currentTheme.colorScheme === 'dark' ? '#4B5563' : '#D1D5DB'} 
+          color={isDarkMode ? '#4B5563' : '#D1D5DB'} 
         />
       )}
     </TouchableOpacity>
@@ -143,12 +150,20 @@ const SettingsScreen = () => {
   );
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-900" edges={['left', 'right', 'top']}>
+    <SafeAreaView className={`flex-1 ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`} edges={['left', 'right', 'top']}>
       {/* Header */}
-      <View className="flex-row items-center justify-between px-5 py-4 bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700">
-        <Text className="text-2xl font-bold text-gray-900 dark:text-white">Settings</Text>
+      <View className={`flex-row items-center justify-between px-5 py-4 border-b ${
+        isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'
+      }`}>
+        <Text className={`text-2xl font-bold ${
+          isDarkMode ? 'text-white' : 'text-gray-900'
+        }`}>Settings</Text>
         <TouchableOpacity className="w-10 h-10 items-center justify-center">
-          <Ionicons name="notifications-outline" size={24} color={currentTheme.colorScheme === 'dark' ? '#FFF' : '#1F2937'} />
+          <Ionicons 
+            name="notifications-outline" 
+            size={24} 
+            color={isDarkMode ? '#FFFFFF' : '#1F2937'} 
+          />
         </TouchableOpacity>
       </View>
       
@@ -224,20 +239,22 @@ const SettingsScreen = () => {
         </LinearGradient>
 
         {/* Appearance Section */}
-        <View className="mx-5 mt-5 bg-white dark:bg-gray-800 rounded-2xl overflow-hidden">
+        <View className={`mx-5 mt-5 rounded-2xl overflow-hidden ${
+          isDarkMode ? 'bg-gray-800' : 'bg-white'
+        }`}>
           <SectionHeader title="APPEARANCE" gradient={['#FF512F', '#F09819']} />
           
           <SettingItem
             icon="moon-outline"
             label="Dark Mode"
-            value={currentTheme.colorScheme === 'dark' ? 'Enabled' : 'Disabled'}
+            value={isDarkMode ? 'Enabled' : 'Disabled'}
             gradient={['#FF512F', '#F09819']}
             rightElement={
               <Switch
-                value={currentTheme.colorScheme === 'dark'}
+                value={isDarkMode}
                 onValueChange={handleThemeToggle}
                 trackColor={{ false: '#E5E7EB', true: '#FBBF24' }}
-                thumbColor={currentTheme.colorScheme === 'dark' ? '#F59E0B' : '#FFFFFF'}
+                thumbColor={isDarkMode ? '#F59E0B' : '#FFFFFF'}
               />
             }
           />
@@ -260,7 +277,9 @@ const SettingsScreen = () => {
         </View>
 
         {/* Notifications Section */}
-        <View className="mx-5 mt-5 bg-white dark:bg-gray-800 rounded-2xl overflow-hidden">
+        <View className={`mx-5 mt-5 rounded-2xl overflow-hidden ${
+          isDarkMode ? 'bg-gray-800' : 'bg-white'
+        }`}>
           <SectionHeader title="NOTIFICATIONS" gradient={['#11998e', '#38ef7d']} />
           
           <SettingItem
@@ -295,7 +314,9 @@ const SettingsScreen = () => {
         </View>
 
         {/* Security Section */}
-        <View className="mx-5 mt-5 bg-white dark:bg-gray-800 rounded-2xl overflow-hidden">
+        <View className={`mx-5 mt-5 rounded-2xl overflow-hidden ${
+          isDarkMode ? 'bg-gray-800' : 'bg-white'
+        }`}>
           <SectionHeader title="SECURITY" gradient={['#8E2DE2', '#4A00E0']} />
           
           <SettingItem
@@ -329,7 +350,9 @@ const SettingsScreen = () => {
         </View>
 
         {/* Data & Storage Section */}
-        <View className="mx-5 mt-5 bg-white dark:bg-gray-800 rounded-2xl overflow-hidden">
+        <View className={`mx-5 mt-5 rounded-2xl overflow-hidden ${
+          isDarkMode ? 'bg-gray-800' : 'bg-white'
+        }`}>
           <SectionHeader title="DATA & STORAGE" gradient={['#FF416C', '#FF4B2B']} />
           
           <SettingItem
@@ -357,7 +380,9 @@ const SettingsScreen = () => {
         </View>
 
         {/* About Section */}
-        <View className="mx-5 mt-5 bg-white dark:bg-gray-800 rounded-2xl overflow-hidden">
+        <View className={`mx-5 mt-5 rounded-2xl overflow-hidden ${
+          isDarkMode ? 'bg-gray-800' : 'bg-white'
+        }`}>
           <SectionHeader title="ABOUT" gradient={['#FFB75E', '#ED8F03']} />
           
           <SettingItem
@@ -390,7 +415,9 @@ const SettingsScreen = () => {
         </View>
 
         {/* Support Section */}
-        <View className="mx-5 mt-5 bg-white dark:bg-gray-800 rounded-2xl overflow-hidden">
+        <View className={`mx-5 mt-5 rounded-2xl overflow-hidden ${
+          isDarkMode ? 'bg-gray-800' : 'bg-white'
+        }`}>
           <SectionHeader title="SUPPORT" gradient={['#00B4DB', '#0083B0']} />
           
           <SettingItem
@@ -423,7 +450,11 @@ const SettingsScreen = () => {
         </View>
 
         {/* Danger Zone */}
-        <View className="mx-5 mt-5 mb-5 bg-white dark:bg-gray-800 rounded-2xl overflow-hidden border border-red-200 dark:border-red-900">
+        <View className={`mx-5 mt-5 mb-5 rounded-2xl overflow-hidden border ${
+          isDarkMode 
+            ? 'bg-gray-800 border-red-900' 
+            : 'bg-white border-red-200'
+        }`}>
           <SectionHeader title="DANGER ZONE" gradient={['#FF416C', '#FF4B2B']} />
           
           <SettingItem

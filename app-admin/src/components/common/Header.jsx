@@ -13,6 +13,7 @@ import {
   View,
   Easing,
   useColorScheme,
+  StatusBar,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
@@ -37,60 +38,60 @@ const Header = ({
   userName = "Guest User",
   userEmail = "guest@example.com",
   navigationItems = [
-    {
-      id: "dashboard",
-      title: "Dashboard",
-      icon: "view-dashboard-outline",
-      iconActive: "view-dashboard",
-      screen: "Dashboard",
-      badge: null,
-      stack: null,
-    },
-    {
-      id: "products",
-      title: "Products",
-      icon: "package-variant-closed",
-      iconActive: "package-variant",
-      screen: "ProductsStack",
-      badge: "156",
-      stack: "Products",
-    },
-    {
-      id: "orders",
-      title: "Orders",
-      icon: "clipboard-list-outline",
-      iconActive: "clipboard-list",
-      screen: "OrdersStack",
-      badge: "12",
-      stack: "Orders",
-    },
-    {
-      id: "customers",
-      title: "Customers",
-      icon: "account-group-outline",
-      iconActive: "account-group",
-      screen: "CustomersStack",
-      badge: "892",
-      stack: "Customers",
-    },
-    {
-      id: "inventory",
-      title: "Inventory",
-      icon: "warehouse-outline",
-      iconActive: "warehouse",
-      screen: "InventoryStack",
-      badge: "Low Stock",
-      stack: "Inventory",
-    },
-    {
-      id: "settings",
-      title: "Settings",
-      icon: "cog-outline",
-      iconActive: "cog",
-      screen: "SettingsStack",
-      badge: null,
-      stack: "Settings",
-    },
+     {
+    id: "dashboard",
+    title: "Dashboard",
+    icon: "view-dashboard-outline",
+    iconActive: "view-dashboard",
+    screen: "Dashboard", // This is a direct screen, not a stack
+    badge: null,
+    stack: null,
+  },
+  {
+    id: "products",
+    title: "Products",
+    icon: "package-variant-closed",
+    iconActive: "package-variant",
+    parent: "ProductsStack", // The parent stack navigator name
+    screen: "Products", // The actual screen name inside the stack
+    badge: "156",
+  },
+  {
+    id: "orders",
+    title: "Orders",
+    icon: "clipboard-list-outline",
+    iconActive: "clipboard-list",
+    parent: "OrdersStack",
+    screen: "Orders", // The actual screen name
+    badge: "12",
+  },
+  {
+    id: "customers",
+    title: "Customers",
+    icon: "account-group-outline",
+    iconActive: "account-group",
+    parent: "CustomersStack",
+    screen: "Customers", // The actual screen name
+    badge: "892",
+  },
+  {
+    id: "inventory",
+    title: "Inventory",
+    icon: "warehouse-outline",
+    iconActive: "warehouse",
+    parent: "InventoryStack",
+    screen: "Inventory", // The actual screen name
+    badge: "Low Stock",
+  },
+  {
+    id: "settings",
+    title: "Settings",
+    icon: "cog-outline",
+    iconActive: "cog",
+    parent: "SettingsStack",
+    screen: "Settings", // The actual screen name
+    badge: null,
+  },
   ],
   onNavigate,
   activeScreen = "Dashboard",
@@ -199,30 +200,45 @@ const Header = ({
     }
   };
 
-  const handleNavigation = (item) => {
-    Animated.parallel([
-      Animated.timing(slideAnim, {
-        toValue: -DRAWER_WIDTH,
-        duration: 200,
-        useNativeDriver: true,
-        easing: Easing.in(Easing.cubic),
-      }),
-      Animated.timing(fadeAnim, {
-        toValue: 0,
-        duration: 150,
-        useNativeDriver: true,
-        easing: Easing.in(Easing.cubic),
-      }),
-    ]).start(() => {
-      setSidebarVisible(false);
+ const handleNavigation = (item) => {
+  console.log('Navigation clicked:', item); // Debug log
+  console.log('Has onNavigate prop:', !!onNavigate); // Check if custom handler exists
+  
+  // Close sidebar animations first
+  Animated.parallel([
+    Animated.timing(slideAnim, {
+      toValue: -DRAWER_WIDTH,
+      duration: 200,
+      useNativeDriver: true,
+      easing: Easing.in(Easing.cubic),
+    }),
+    Animated.timing(fadeAnim, {
+      toValue: 0,
+      duration: 150,
+      useNativeDriver: true,
+      easing: Easing.in(Easing.cubic),
+    }),
+  ]).start(() => {
+    setSidebarVisible(false);
+    
+    if (onNavigate) {
+      console.log('Using custom navigation handler');
+      onNavigate(item);
+    } else {
+      // Default navigation with fallback logic
+      const targetStack = item.parent || `${item.title}Stack`;
+      const targetScreen = item.screen || item.title;
       
-      if (onNavigate) {
-        onNavigate(item.screen);
+      if (item.parent || ['products', 'orders', 'customers', 'inventory', 'settings'].includes(item.id)) {
+        console.log('Navigating to parent stack:', targetStack);
+        navigation.navigate(targetStack);
       } else {
-        navigation.navigate(item.screen);
+        console.log('Navigating to root screen:', targetScreen);
+        navigation.navigate(targetScreen);
       }
-    });
-  };
+    }
+  });
+};
 
   const handleLogout = () => {
     Animated.parallel([
