@@ -15,11 +15,11 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useThemeStore } from "../../store/themeStore";
 
 const { width } = Dimensions.get("window");
 
 // Static mock data (keep as is from your original code)
-// Static mock data
 const MOCK_CUSTOMERS = [
   {
     id: 1,
@@ -177,6 +177,7 @@ const MOCK_ORDERS = [
 const OrderForm = () => {
   const navigation = useNavigation();
   const route = useRoute();
+  const { isDarkMode } = useThemeStore();
 
   // Animation values
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -277,24 +278,27 @@ const OrderForm = () => {
       label: "Credit Card",
       icon: "card-outline",
       gradient: ["#4158D0", "#C850C0"],
-      lightBg: "bg-purple-50",
-      textColor: "text-purple-600",
+      lightBg: isDarkMode ? "bg-purple-900/30" : "bg-purple-50",
+      darkBg: "bg-purple-900/30",
+      textColor: isDarkMode ? "text-purple-400" : "text-purple-600",
     },
     {
       id: "cash",
       label: "Cash",
       icon: "cash-outline",
       gradient: ["#FF512F", "#F09819"],
-      lightBg: "bg-orange-50",
-      textColor: "text-orange-600",
+      lightBg: isDarkMode ? "bg-orange-900/30" : "bg-orange-50",
+      darkBg: "bg-orange-900/30",
+      textColor: isDarkMode ? "text-orange-400" : "text-orange-600",
     },
     {
       id: "bank_transfer",
       label: "Bank Transfer",
       icon: "business-outline",
       gradient: ["#11998e", "#38ef7d"],
-      lightBg: "bg-green-50",
-      textColor: "text-green-600",
+      lightBg: isDarkMode ? "bg-green-900/30" : "bg-green-50",
+      darkBg: "bg-green-900/30",
+      textColor: isDarkMode ? "text-green-400" : "text-green-600",
     },
   ];
 
@@ -470,7 +474,7 @@ const OrderForm = () => {
   };
 
   const renderStepIndicator = () => (
-    <View className="px-4 py-6 bg-white">
+    <View className={`px-4 py-6 ${isDarkMode ? 'bg-gray-800' : 'bg-white'}`}>
       <View className="flex-row items-center justify-between">
         {steps.map((step, index) => (
           <TouchableOpacity
@@ -481,12 +485,12 @@ const OrderForm = () => {
           >
             <LinearGradient
               colors={
-                currentStep >= step.id ? step.gradient : ["#E5E7EB", "#E5E7EB"]
+                currentStep >= step.id ? step.gradient : (isDarkMode ? ["#374151", "#374151"] : ["#E5E7EB", "#E5E7EB"])
               }
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
               className={`w-12 h-12 rounded-2xl items-center justify-center shadow-lg ${
-                currentStep >= step.id ? "shadow-purple-200" : ""
+                currentStep >= step.id ? (isDarkMode ? "shadow-purple-900/50" : "shadow-purple-200") : ""
               }`}
               style={{
                 transform: [{ scale: currentStep === step.id ? 1.1 : 1 }],
@@ -496,12 +500,14 @@ const OrderForm = () => {
               <Ionicons
                 name={step.icon}
                 size={22}
-                color={currentStep >= step.id ? "white" : "#9CA3AF"}
+                color={currentStep >= step.id ? "white" : (isDarkMode ? "#6B7280" : "#9CA3AF")}
               />
             </LinearGradient>
             <Text
               className={`text-xs font-semibold mt-2 ${
-                currentStep >= step.id ? "text-gray-900" : "text-gray-400"
+                currentStep >= step.id 
+                  ? (isDarkMode ? 'text-white' : 'text-gray-900')
+                  : (isDarkMode ? 'text-gray-600' : 'text-gray-400')
               }`}
             >
               {step.title}
@@ -512,7 +518,7 @@ const OrderForm = () => {
 
       {/* Progress Line */}
       <View className="absolute top-[38px] left-0 right-0 flex-row justify-center px-8">
-        <View className="h-[2px] bg-gray-200 w-[70%]" />
+        <View className={`h-[2px] ${isDarkMode ? 'bg-gray-700' : 'bg-gray-200'} w-[70%]`} />
       </View>
     </View>
   );
@@ -530,7 +536,7 @@ const OrderForm = () => {
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         className="rounded-3xl p-6 mb-6"
-         style={{borderRadius:10}}
+        style={{borderRadius:10}}
       >
         <Text className="text-white text-2xl font-bold mb-2">
           Select Customer
@@ -539,20 +545,24 @@ const OrderForm = () => {
       </LinearGradient>
 
       {validationErrors.customer && (
-        <View className="bg-red-50 p-3 rounded-xl mb-4 flex-row items-center">
+        <View className={`p-3 rounded-xl mb-4 flex-row items-center ${
+          isDarkMode ? 'bg-red-900/30' : 'bg-red-50'
+        }`}>
           <Ionicons name="alert-circle" size={20} color="#EF4444" />
-          <Text className="text-red-600 ml-2 flex-1">{validationErrors.customer}</Text>
+          <Text className="text-red-600 dark:text-red-400 ml-2 flex-1">{validationErrors.customer}</Text>
         </View>
       )}
 
       {selectedCustomer ? (
         <LinearGradient
-          colors={["#f5f0ff", "#ffffff"]}
-          className="p-5 rounded-2xl border border-purple-100 mb-4"
+          colors={isDarkMode ? ["#1F2937", "#111827"] : ["#f5f0ff", "#ffffff"]}
+          className={`p-5 rounded-2xl border mb-4 ${
+            isDarkMode ? 'border-gray-700' : 'border-purple-100'
+          }`}
           style={{
-            shadowColor: "#667eea",
+            shadowColor: isDarkMode ? "#000" : "#667eea",
             shadowOffset: { width: 0, height: 4 },
-            shadowOpacity: 0.1,
+            shadowOpacity: isDarkMode ? 0.3 : 0.1,
             shadowRadius: 8,
             borderRadius:10
           }}
@@ -561,22 +571,26 @@ const OrderForm = () => {
             <LinearGradient
               colors={["#667eea", "#764ba2"]}
               className="w-16 h-16 rounded-2xl items-center justify-center"
-               style={{borderRadius:100}}
+              style={{borderRadius:100}}
             >
               <Text className="text-white text-2xl font-bold">
                 {selectedCustomer.name.charAt(0)}
               </Text>
             </LinearGradient>
             <View className="flex-1 ml-4">
-              <Text className="text-gray-900 font-bold text-lg">
+              <Text className={`font-bold text-lg ${
+                isDarkMode ? 'text-white' : 'text-gray-900'
+              }`}>
                 {selectedCustomer.name}
               </Text>
-              <Text className="text-gray-500 text-sm">
+              <Text className={`text-sm ${
+                isDarkMode ? 'text-gray-400' : 'text-gray-500'
+              }`}>
                 {selectedCustomer.email}
               </Text>
               <View className="flex-row items-center mt-2">
                 <Ionicons name="location-outline" size={14} color="#667eea" />
-                <Text className="text-purple-600 text-xs ml-1">
+                <Text className="text-purple-600 dark:text-purple-400 text-xs ml-1">
                   {selectedCustomer.address?.city},{" "}
                   {selectedCustomer.address?.country}
                 </Text>
@@ -584,7 +598,9 @@ const OrderForm = () => {
             </View>
             <TouchableOpacity
               onPress={() => setShowCustomerModal(true)}
-              className="w-10 h-10 bg-purple-100 rounded-xl items-center justify-center"
+              className={`w-10 h-10 rounded-xl items-center justify-center ${
+                isDarkMode ? 'bg-purple-900/30' : 'bg-purple-100'
+              }`}
             >
               <Ionicons name="create-outline" size={20} color="#667eea" />
             </TouchableOpacity>
@@ -593,30 +609,39 @@ const OrderForm = () => {
       ) : (
         <TouchableOpacity
           onPress={() => setShowCustomerModal(true)}
-          className="bg-white p-8 rounded-2xl border-2 border-dashed border-purple-200 items-center"
+          className={`p-8 rounded-2xl border-2 border-dashed items-center ${
+            isDarkMode 
+              ? 'bg-gray-800 border-gray-700' 
+              : 'bg-white border-purple-200'
+          }`}
           style={{
-            shadowColor: "#667eea",
+            shadowColor: isDarkMode ? "#000" : "#667eea",
             shadowOffset: { width: 0, height: 4 },
-            shadowOpacity: 0.05,
+            shadowOpacity: isDarkMode ? 0.3 : 0.05,
             shadowRadius: 8,
           }}
         >
           <LinearGradient
             colors={["#667eea", "#764ba2"]}
             className="w-20 h-20 rounded-2xl items-center justify-center mb-4"
-             style={{borderRadius:100}}
-            
+            style={{borderRadius:100}}
           >
             <Ionicons name="person-add-outline" size={36} color="white" />
           </LinearGradient>
-          <Text className="text-gray-900 font-bold text-lg mb-2">
+          <Text className={`font-bold text-lg mb-2 ${
+            isDarkMode ? 'text-white' : 'text-gray-900'
+          }`}>
             No Customer Selected
           </Text>
-          <Text className="text-gray-400 text-center mb-4">
+          <Text className={`text-center mb-4 ${
+            isDarkMode ? 'text-gray-500' : 'text-gray-400'
+          }`}>
             Tap to select a customer for this order
           </Text>
-          <View className="bg-purple-50 px-6 py-3 rounded-xl">
-            <Text className="text-purple-600 font-semibold">
+          <View className={`px-6 py-3 rounded-xl ${
+            isDarkMode ? 'bg-purple-900/30' : 'bg-purple-50'
+          }`}>
+            <Text className="text-purple-600 dark:text-purple-400 font-semibold">
               Select Customer
             </Text>
           </View>
@@ -631,27 +656,35 @@ const OrderForm = () => {
       >
         <View className="flex-1 bg-black/50">
           <LinearGradient
-            colors={["#ffffff", "#f8f9fa"]}
+            colors={isDarkMode ? ["#1F2937", "#111827"] : ["#ffffff", "#f8f9fa"]}
             className="flex-1 mt-20 rounded-t-3xl"
           >
-            <View className="p-5 border-b border-gray-100">
+            <View className={`p-5 border-b ${isDarkMode ? 'border-gray-700' : 'border-gray-100'}`}>
               <View className="flex-row justify-between items-center mb-4">
-                <Text className="text-2xl font-bold text-gray-900">
+                <Text className={`text-2xl font-bold ${
+                  isDarkMode ? 'text-white' : 'text-gray-900'
+                }`}>
                   Select Customer
                 </Text>
                 <TouchableOpacity
                   onPress={() => setShowCustomerModal(false)}
-                  className="w-10 h-10 bg-gray-100 rounded-xl items-center justify-center"
+                  className={`w-10 h-10 rounded-xl items-center justify-center ${
+                    isDarkMode ? 'bg-gray-700' : 'bg-gray-100'
+                  }`}
                 >
-                  <Ionicons name="close" size={22} color="#6B7280" />
+                  <Ionicons name="close" size={22} color={isDarkMode ? "#9CA3AF" : "#6B7280"} />
                 </TouchableOpacity>
               </View>
 
               {/* Search Bar */}
-              <View className="flex-row items-center bg-gray-100 rounded-xl px-4 h-12">
+              <View className={`flex-row items-center rounded-xl px-4 h-12 ${
+                isDarkMode ? 'bg-gray-700' : 'bg-gray-100'
+              }`}>
                 <Ionicons name="search" size={20} color="#9CA3AF" />
                 <TextInput
-                  className="flex-1 ml-3 text-base text-gray-800"
+                  className={`flex-1 ml-3 text-base ${
+                    isDarkMode ? 'text-white' : 'text-gray-800'
+                  }`}
                   placeholder="Search customers..."
                   placeholderTextColor="#9CA3AF"
                   value={searchQuery}
@@ -666,17 +699,17 @@ const OrderForm = () => {
                   key={customer.id}
                   onPress={() => handleSelectCustomer(customer)}
                   activeOpacity={0.7}
-                   
                 >
                   <LinearGradient
-                    colors={["#ffffff", "#f8f9fa"]}
-                    className="p-4 rounded-2xl mb-3 border border-gray-100"
+                    colors={isDarkMode ? ["#1F2937", "#111827"] : ["#ffffff", "#f8f9fa"]}
+                    className={`p-4 rounded-2xl mb-3 border ${
+                      isDarkMode ? 'border-gray-700' : 'border-gray-100'
+                    }`}
                     style={{
-                      shadowColor: "#667eea",
+                      shadowColor: isDarkMode ? "#000" : "#667eea",
                       shadowOffset: { width: 0, height: 2 },
-                      shadowOpacity: 0.05,
+                      shadowOpacity: isDarkMode ? 0.3 : 0.05,
                       shadowRadius: 4,
-                     
                     }}
                   >
                     <View className="flex-row items-center">
@@ -690,10 +723,14 @@ const OrderForm = () => {
                         </Text>
                       </LinearGradient>
                       <View className="flex-1 ml-4">
-                        <Text className="text-gray-900 font-bold">
+                        <Text className={`font-bold ${
+                          isDarkMode ? 'text-white' : 'text-gray-900'
+                        }`}>
                           {customer.name}
                         </Text>
-                        <Text className="text-gray-500 text-sm">
+                        <Text className={`text-sm ${
+                          isDarkMode ? 'text-gray-400' : 'text-gray-500'
+                        }`}>
                           {customer.email}
                         </Text>
                         <View className="flex-row items-center mt-1">
@@ -702,7 +739,7 @@ const OrderForm = () => {
                             size={12}
                             color="#667eea"
                           />
-                          <Text className="text-purple-600 text-xs ml-1">
+                          <Text className="text-purple-600 dark:text-purple-400 text-xs ml-1">
                             {customer.address?.city},{" "}
                             {customer.address?.country}
                           </Text>
@@ -729,16 +766,24 @@ const OrderForm = () => {
         activeOpacity={0.8}
       >
         <LinearGradient
-          colors={selectedCustomer ? ["#4158D0", "#C850C0"] : ["#E5E7EB", "#E5E7EB"]}
+          colors={selectedCustomer ? ["#4158D0", "#C850C0"] : (isDarkMode ? ["#374151", "#374151"] : ["#E5E7EB", "#E5E7EB"])}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           className="flex-row items-center justify-center py-4 rounded-xl"
           style={{borderRadius:10}}
         >
-          <Text className={`font-bold text-base mr-2 ${selectedCustomer ? "text-white" : "text-gray-400"}`}>
+          <Text className={`font-bold text-base mr-2 ${
+            selectedCustomer 
+              ? "text-white" 
+              : (isDarkMode ? 'text-gray-500' : 'text-gray-400')
+          }`}>
             Next: Items
           </Text>
-          <Ionicons name="arrow-forward" size={18} color={selectedCustomer ? "white" : "#9CA3AF"} />
+          <Ionicons 
+            name="arrow-forward" 
+            size={18} 
+            color={selectedCustomer ? "white" : (isDarkMode ? "#6B7280" : "#9CA3AF")} 
+          />
         </LinearGradient>
       </TouchableOpacity>
     </Animated.View>
@@ -776,14 +821,20 @@ const OrderForm = () => {
       </LinearGradient>
 
       {validationErrors.items && (
-        <View className="bg-red-50 p-3 rounded-xl mb-4 flex-row items-center">
+        <View className={`p-3 rounded-xl mb-4 flex-row items-center ${
+          isDarkMode ? 'bg-red-900/30' : 'bg-red-50'
+        }`}>
           <Ionicons name="alert-circle" size={20} color="#EF4444" />
-          <Text className="text-red-600 ml-2 flex-1">{validationErrors.items}</Text>
+          <Text className="text-red-600 dark:text-red-400 ml-2 flex-1">{validationErrors.items}</Text>
         </View>
       )}
 
       {orderItems.length === 0 ? (
-        <View className="bg-white p-8 rounded-2xl border-2 border-dashed border-orange-200 items-center">
+        <View className={`p-8 rounded-2xl border-2 border-dashed items-center ${
+          isDarkMode 
+            ? 'bg-gray-800 border-orange-900' 
+            : 'bg-white border-orange-200'
+        }`}>
           <LinearGradient
             colors={["#FF512F", "#F09819"]}
             className="w-20 h-20 rounded-2xl items-center justify-center mb-4"
@@ -791,10 +842,14 @@ const OrderForm = () => {
           >
             <Ionicons name="cart-outline" size={36} color="white" />
           </LinearGradient>
-          <Text className="text-gray-900 font-bold text-lg mb-2">
+          <Text className={`font-bold text-lg mb-2 ${
+            isDarkMode ? 'text-white' : 'text-gray-900'
+          }`}>
             No Items Added
           </Text>
-          <Text className="text-gray-400 text-center mb-4">
+          <Text className={`text-center mb-4 ${
+            isDarkMode ? 'text-gray-500' : 'text-gray-400'
+          }`}>
             Tap the + button to add products
           </Text>
         </View>
@@ -803,12 +858,14 @@ const OrderForm = () => {
           {orderItems.map((item, index) => (
             <LinearGradient
               key={index}
-              colors={["#ffffff", "#fff5f0"]}
-              className="p-4 rounded-2xl mb-3 border border-orange-100"
+              colors={isDarkMode ? ["#1F2937", "#111827"] : ["#ffffff", "#fff5f0"]}
+              className={`p-4 rounded-2xl mb-3 border ${
+                isDarkMode ? 'border-orange-900' : 'border-orange-100'
+              }`}
               style={{
-                shadowColor: "#FF512F",
+                shadowColor: isDarkMode ? "#000" : "#FF512F",
                 shadowOffset: { width: 0, height: 2 },
-                shadowOpacity: 0.1,
+                shadowOpacity: isDarkMode ? 0.3 : 0.1,
                 shadowRadius: 4,
               }}
             >
@@ -822,7 +879,9 @@ const OrderForm = () => {
                 </LinearGradient>
                 <View className="flex-1 ml-4">
                   <Text
-                    className="text-gray-900 font-bold text-base"
+                    className={`font-bold text-base ${
+                      isDarkMode ? 'text-white' : 'text-gray-900'
+                    }`}
                     numberOfLines={1}
                   >
                     {item.name}
@@ -831,19 +890,27 @@ const OrderForm = () => {
                     ${item.price.toFixed(2)}
                   </Text>
                 </View>
-                <Text className="text-xl font-bold text-gray-900">
+                <Text className={`text-xl font-bold ${
+                  isDarkMode ? 'text-white' : 'text-gray-900'
+                }`}>
                   ${(item.price * item.quantity).toFixed(2)}
                 </Text>
               </View>
 
-              <View className="flex-row items-center justify-end mt-4 pt-3 border-t border-orange-100">
+              <View className={`flex-row items-center justify-end mt-4 pt-3 border-t ${
+                isDarkMode ? 'border-orange-900' : 'border-orange-100'
+              }`}>
                 <TouchableOpacity
-                  className="w-10 h-10 bg-orange-100 rounded-xl items-center justify-center"
+                  className={`w-10 h-10 rounded-xl items-center justify-center ${
+                    isDarkMode ? 'bg-orange-900/30' : 'bg-orange-100'
+                  }`}
                   onPress={() => updateItemQuantity(index, item.quantity - 1)}
                 >
                   <Ionicons name="remove" size={18} color="#FF512F" />
                 </TouchableOpacity>
-                <Text className="mx-4 font-bold text-gray-900 text-lg">
+                <Text className={`mx-4 font-bold text-lg ${
+                  isDarkMode ? 'text-white' : 'text-gray-900'
+                }`}>
                   {item.quantity}
                 </Text>
                 <TouchableOpacity
@@ -893,19 +960,23 @@ const OrderForm = () => {
       >
         <View className="flex-1 bg-black/50">
           <LinearGradient
-            colors={["#ffffff", "#fff5f0"]}
+            colors={isDarkMode ? ["#1F2937", "#111827"] : ["#ffffff", "#fff5f0"]}
             className="flex-1 mt-20 rounded-t-3xl"
           >
-            <View className="p-5 border-b border-gray-100">
+            <View className={`p-5 border-b ${isDarkMode ? 'border-gray-700' : 'border-gray-100'}`}>
               <View className="flex-row justify-between items-center mb-4">
-                <Text className="text-2xl font-bold text-gray-900">
+                <Text className={`text-2xl font-bold ${
+                  isDarkMode ? 'text-white' : 'text-gray-900'
+                }`}>
                   Select Product
                 </Text>
                 <TouchableOpacity
                   onPress={() => setShowProductModal(false)}
-                  className="w-10 h-10 bg-gray-100 rounded-xl items-center justify-center"
+                  className={`w-10 h-10 rounded-xl items-center justify-center ${
+                    isDarkMode ? 'bg-gray-700' : 'bg-gray-100'
+                  }`}
                 >
-                  <Ionicons name="close" size={22} color="#6B7280" />
+                  <Ionicons name="close" size={22} color={isDarkMode ? "#9CA3AF" : "#6B7280"} />
                 </TouchableOpacity>
               </View>
             </View>
@@ -918,12 +989,14 @@ const OrderForm = () => {
                   activeOpacity={0.7}
                 >
                   <LinearGradient
-                    colors={["#ffffff", "#fff5f0"]}
-                    className="p-4 rounded-2xl mb-3 border border-orange-100"
+                    colors={isDarkMode ? ["#1F2937", "#111827"] : ["#ffffff", "#fff5f0"]}
+                    className={`p-4 rounded-2xl mb-3 border ${
+                      isDarkMode ? 'border-orange-900' : 'border-orange-100'
+                    }`}
                     style={{
-                      shadowColor: "#FF512F",
+                      shadowColor: isDarkMode ? "#000" : "#FF512F",
                       shadowOffset: { width: 0, height: 2 },
-                      shadowOpacity: 0.05,
+                      shadowOpacity: isDarkMode ? 0.3 : 0.05,
                       shadowRadius: 4,
                     }}
                   >
@@ -936,11 +1009,15 @@ const OrderForm = () => {
                         <Ionicons name="cube" size={28} color="white" />
                       </LinearGradient>
                       <View className="flex-1 ml-4">
-                        <Text className="text-gray-900 font-bold text-base">
+                        <Text className={`font-bold text-base ${
+                          isDarkMode ? 'text-white' : 'text-gray-900'
+                        }`}>
                           {product.name}
                         </Text>
                         <Text
-                          className="text-gray-500 text-xs mt-1"
+                          className={`text-xs mt-1 ${
+                            isDarkMode ? 'text-gray-400' : 'text-gray-500'
+                          }`}
                           numberOfLines={2}
                         >
                           {product.description}
@@ -968,16 +1045,24 @@ const OrderForm = () => {
         activeOpacity={0.8}
       >
         <LinearGradient
-          colors={orderItems.length > 0 ? ["#FF512F", "#F09819"] : ["#E5E7EB", "#E5E7EB"]}
+          colors={orderItems.length > 0 ? ["#FF512F", "#F09819"] : (isDarkMode ? ["#374151", "#374151"] : ["#E5E7EB", "#E5E7EB"])}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           className="flex-row items-center justify-center py-4 rounded-xl"
-           style={{borderRadius:10}}
+          style={{borderRadius:10}}
         >
-          <Text className={`font-bold text-base mr-2 ${orderItems.length > 0 ? "text-white" : "text-gray-400"}`}>
+          <Text className={`font-bold text-base mr-2 ${
+            orderItems.length > 0 
+              ? "text-white" 
+              : (isDarkMode ? 'text-gray-500' : 'text-gray-400')
+          }`}>
             Next: Details
           </Text>
-          <Ionicons name="arrow-forward" size={18} color={orderItems.length > 0 ? "white" : "#9CA3AF"} />
+          <Ionicons 
+            name="arrow-forward" 
+            size={18} 
+            color={orderItems.length > 0 ? "white" : (isDarkMode ? "#6B7280" : "#9CA3AF")} 
+          />
         </LinearGradient>
       </TouchableOpacity>
     </Animated.View>
@@ -1006,36 +1091,42 @@ const OrderForm = () => {
 
       {/* Validation Errors */}
       {(validationErrors.street || validationErrors.city || validationErrors.zip) && (
-        <View className="bg-red-50 p-3 rounded-xl mb-4">
+        <View className={`p-3 rounded-xl mb-4 ${
+          isDarkMode ? 'bg-red-900/30' : 'bg-red-50'
+        }`}>
           {validationErrors.street && (
             <View className="flex-row items-center mb-1">
               <Ionicons name="alert-circle" size={16} color="#EF4444" />
-              <Text className="text-red-600 ml-2 text-sm">{validationErrors.street}</Text>
+              <Text className="text-red-600 dark:text-red-400 ml-2 text-sm">{validationErrors.street}</Text>
             </View>
           )}
           {validationErrors.city && (
             <View className="flex-row items-center mb-1">
               <Ionicons name="alert-circle" size={16} color="#EF4444" />
-              <Text className="text-red-600 ml-2 text-sm">{validationErrors.city}</Text>
+              <Text className="text-red-600 dark:text-red-400 ml-2 text-sm">{validationErrors.city}</Text>
             </View>
           )}
           {validationErrors.zip && (
             <View className="flex-row items-center">
               <Ionicons name="alert-circle" size={16} color="#EF4444" />
-              <Text className="text-red-600 ml-2 text-sm">{validationErrors.zip}</Text>
+              <Text className="text-red-600 dark:text-red-400 ml-2 text-sm">{validationErrors.zip}</Text>
             </View>
           )}
         </View>
       )}
 
-      <Text className="text-gray-900 font-bold text-lg mb-4">
+      <Text className={`font-bold text-lg mb-4 ${
+        isDarkMode ? 'text-white' : 'text-gray-900'
+      }`}>
         Payment Method
       </Text>
       <View className="flex-row mb-6">
         {paymentMethods.map((method) => (
           <TouchableOpacity
             key={method.id}
-            className={`flex-1 mx-1 ${method.lightBg} rounded-2xl overflow-hidden`}
+            className={`flex-1 mx-1 rounded-2xl overflow-hidden ${
+              paymentMethod === method.id ? '' : (isDarkMode ? method.darkBg : method.lightBg)
+            }`}
             onPress={() => setPaymentMethod(method.id)}
             activeOpacity={0.7}
           >
@@ -1049,20 +1140,26 @@ const OrderForm = () => {
             >
               <View
                 className={`w-12 h-12 rounded-xl items-center justify-center mb-2 ${
-                  paymentMethod === method.id ? "bg-white/20" : method.lightBg
+                  paymentMethod === method.id 
+                    ? "bg-white/20" 
+                    : (isDarkMode ? 'bg-gray-700' : method.lightBg)
                 }`}
               >
                 <Ionicons
                   name={method.icon}
                   size={24}
                   color={
-                    paymentMethod === method.id ? "white" : method.gradient[0]
+                    paymentMethod === method.id 
+                      ? "white" 
+                      : (isDarkMode ? '#9CA3AF' : method.gradient[0])
                   }
                 />
               </View>
               <Text
                 className={`text-xs font-semibold ${
-                  paymentMethod === method.id ? "text-white" : method.textColor
+                  paymentMethod === method.id 
+                    ? "text-white" 
+                    : (isDarkMode ? 'text-gray-400' : method.textColor)
                 }`}
               >
                 {method.label}
@@ -1072,17 +1169,21 @@ const OrderForm = () => {
         ))}
       </View>
 
-      <Text className="text-gray-900 font-bold text-lg mb-4">
+      <Text className={`font-bold text-lg mb-4 ${
+        isDarkMode ? 'text-white' : 'text-gray-900'
+      }`}>
         Shipping Address
       </Text>
-      <View className=" gap-2">
+      <View className="gap-2">
         <View>
           <TextInput
-            className={`bg-white p-4 rounded-xl border text-base ${
-              validationErrors.street ? "border-red-300" : "border-gray-200"
+            className={`p-4 rounded-xl border text-base ${
+              isDarkMode 
+                ? `bg-gray-800 text-white ${validationErrors.street ? 'border-red-700' : 'border-gray-700'}`
+                : `bg-white text-gray-800 ${validationErrors.street ? 'border-red-300' : 'border-gray-200'}`
             }`}
             placeholder="Street Address *"
-            placeholderTextColor="#9CA3AF"
+            placeholderTextColor={isDarkMode ? '#6B7280' : '#9CA3AF'}
             value={shippingAddress.street}
             onChangeText={(text) => {
               setShippingAddress({ ...shippingAddress, street: text });
@@ -1095,11 +1196,13 @@ const OrderForm = () => {
         <View className="flex-row">
           <View className="flex-1 mr-2">
             <TextInput
-              className={`bg-white p-4 rounded-xl border text-base ${
-                validationErrors.city ? "border-red-300" : "border-gray-200"
+              className={`p-4 rounded-xl border text-base ${
+                isDarkMode 
+                  ? `bg-gray-800 text-white ${validationErrors.city ? 'border-red-700' : 'border-gray-700'}`
+                  : `bg-white text-gray-800 ${validationErrors.city ? 'border-red-300' : 'border-gray-200'}`
               }`}
               placeholder="City *"
-              placeholderTextColor="#9CA3AF"
+              placeholderTextColor={isDarkMode ? '#6B7280' : '#9CA3AF'}
               value={shippingAddress.city}
               onChangeText={(text) => {
                 setShippingAddress({ ...shippingAddress, city: text });
@@ -1110,9 +1213,13 @@ const OrderForm = () => {
             />
           </View>
           <TextInput
-            className="flex-1 bg-white p-4 rounded-xl border border-gray-200 text-base"
+            className={`flex-1 p-4 rounded-xl border text-base ${
+              isDarkMode 
+                ? 'bg-gray-800 text-white border-gray-700' 
+                : 'bg-white text-gray-800 border-gray-200'
+            }`}
             placeholder="State"
-            placeholderTextColor="#9CA3AF"
+            placeholderTextColor={isDarkMode ? '#6B7280' : '#9CA3AF'}
             value={shippingAddress.state}
             onChangeText={(text) =>
               setShippingAddress({ ...shippingAddress, state: text })
@@ -1122,11 +1229,13 @@ const OrderForm = () => {
         <View className="flex-row">
           <View className="flex-1 mr-2">
             <TextInput
-              className={`bg-white p-4 rounded-xl border text-base ${
-                validationErrors.zip ? "border-red-300" : "border-gray-200"
+              className={`p-4 rounded-xl border text-base ${
+                isDarkMode 
+                  ? `bg-gray-800 text-white ${validationErrors.zip ? 'border-red-700' : 'border-gray-700'}`
+                  : `bg-white text-gray-800 ${validationErrors.zip ? 'border-red-300' : 'border-gray-200'}`
               }`}
               placeholder="ZIP Code *"
-              placeholderTextColor="#9CA3AF"
+              placeholderTextColor={isDarkMode ? '#6B7280' : '#9CA3AF'}
               value={shippingAddress.zip}
               onChangeText={(text) => {
                 setShippingAddress({ ...shippingAddress, zip: text });
@@ -1138,9 +1247,13 @@ const OrderForm = () => {
             />
           </View>
           <TextInput
-            className="flex-1 bg-white p-4 rounded-xl border border-gray-200 text-base"
+            className={`flex-1 p-4 rounded-xl border text-base ${
+              isDarkMode 
+                ? 'bg-gray-800 text-white border-gray-700' 
+                : 'bg-white text-gray-800 border-gray-200'
+            }`}
             placeholder="Country"
-            placeholderTextColor="#9CA3AF"
+            placeholderTextColor={isDarkMode ? '#6B7280' : '#9CA3AF'}
             value={shippingAddress.country}
             onChangeText={(text) =>
               setShippingAddress({ ...shippingAddress, country: text })
@@ -1149,13 +1262,19 @@ const OrderForm = () => {
         </View>
       </View>
 
-      <Text className="text-gray-900 font-bold text-lg mt-6 mb-4">
+      <Text className={`font-bold text-lg mt-6 mb-4 ${
+        isDarkMode ? 'text-white' : 'text-gray-900'
+      }`}>
         Order Notes
       </Text>
       <TextInput
-        className="bg-white p-4 rounded-xl border border-gray-200 min-h-[100px] text-base"
+        className={`p-4 rounded-xl border min-h-[100px] text-base ${
+          isDarkMode 
+            ? 'bg-gray-800 text-white border-gray-700' 
+            : 'bg-white text-gray-800 border-gray-200'
+        }`}
         placeholder="Add any special instructions or notes..."
-        placeholderTextColor="#9CA3AF"
+        placeholderTextColor={isDarkMode ? '#6B7280' : '#9CA3AF'}
         value={notes}
         onChangeText={setNotes}
         multiline
@@ -1172,23 +1291,25 @@ const OrderForm = () => {
         <LinearGradient
           colors={shippingAddress.street && shippingAddress.city && shippingAddress.zip 
             ? ["#11998e", "#38ef7d"] 
-            : ["#E5E7EB", "#E5E7EB"]}
+            : (isDarkMode ? ["#374151", "#374151"] : ["#E5E7EB", "#E5E7EB"])}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           className="flex-row items-center justify-center py-4 rounded-xl"
-           style={{borderRadius:10}}
+          style={{borderRadius:10}}
         >
           <Text className={`font-bold text-base mr-2 ${
             shippingAddress.street && shippingAddress.city && shippingAddress.zip 
             ? "text-white" 
-            : "text-gray-400"
+            : (isDarkMode ? 'text-gray-500' : 'text-gray-400')
           }`}>
             Next: Review
           </Text>
           <Ionicons 
             name="arrow-forward" 
             size={18} 
-            color={shippingAddress.street && shippingAddress.city && shippingAddress.zip ? "white" : "#9CA3AF"} 
+            color={shippingAddress.street && shippingAddress.city && shippingAddress.zip 
+              ? "white" 
+              : (isDarkMode ? "#6B7280" : "#9CA3AF")} 
           />
         </LinearGradient>
       </TouchableOpacity>
@@ -1217,19 +1338,21 @@ const OrderForm = () => {
       </LinearGradient>
 
       <LinearGradient
-        colors={["#ffffff", "#f5f0ff"]}
-        className="rounded-2xl p-5 border border-purple-100"
+        colors={isDarkMode ? ["#1F2937", "#111827"] : ["#ffffff", "#f5f0ff"]}
+        className={`rounded-2xl p-5 border ${
+          isDarkMode ? 'border-gray-700' : 'border-purple-100'
+        }`}
         style={{
-          shadowColor: "#8E2DE2",
+          shadowColor: isDarkMode ? "#000" : "#8E2DE2",
           shadowOffset: { width: 0, height: 4 },
-          shadowOpacity: 0.1,
+          shadowOpacity: isDarkMode ? 0.3 : 0.1,
           shadowRadius: 8,
           borderRadius: 10,
         }}
       >
         {/* Customer Info */}
         <View className="mb-5">
-          <Text className="text-xs text-purple-600 font-semibold uppercase tracking-wider mb-3">
+          <Text className="text-xs text-purple-600 dark:text-purple-400 font-semibold uppercase tracking-wider mb-3">
             Customer
           </Text>
           <View className="flex-row items-center">
@@ -1243,10 +1366,14 @@ const OrderForm = () => {
               </Text>
             </LinearGradient>
             <View>
-              <Text className="text-gray-900 font-bold">
+              <Text className={`font-bold ${
+                isDarkMode ? 'text-white' : 'text-gray-900'
+              }`}>
                 {selectedCustomer?.name}
               </Text>
-              <Text className="text-gray-500 text-sm">
+              <Text className={`text-sm ${
+                isDarkMode ? 'text-gray-400' : 'text-gray-500'
+              }`}>
                 {selectedCustomer?.email}
               </Text>
             </View>
@@ -1255,15 +1382,19 @@ const OrderForm = () => {
 
         {/* Items */}
         <View className="mb-5">
-          <Text className="text-xs text-orange-600 font-semibold uppercase tracking-wider mb-3">
+          <Text className="text-xs text-orange-600 dark:text-orange-400 font-semibold uppercase tracking-wider mb-3">
             Items ({orderItems.length})
           </Text>
           {orderItems.map((item, index) => (
             <View key={index} className="flex-row justify-between mb-2">
-              <Text className="text-gray-700 flex-1" numberOfLines={1}>
+              <Text className={`flex-1 ${
+                isDarkMode ? 'text-gray-300' : 'text-gray-700'
+              }`} numberOfLines={1}>
                 {item.name} x{item.quantity}
               </Text>
-              <Text className="text-gray-900 font-bold">
+              <Text className={`font-bold ${
+                isDarkMode ? 'text-white' : 'text-gray-900'
+              }`}>
                 ${(item.price * item.quantity).toFixed(2)}
               </Text>
             </View>
@@ -1272,7 +1403,7 @@ const OrderForm = () => {
 
         {/* Payment */}
         <View className="mb-5">
-          <Text className="text-xs text-green-600 font-semibold uppercase tracking-wider mb-3">
+          <Text className="text-xs text-green-600 dark:text-green-400 font-semibold uppercase tracking-wider mb-3">
             Payment
           </Text>
           <View className="flex-row items-center">
@@ -1290,7 +1421,9 @@ const OrderForm = () => {
                 color="white"
               />
             </LinearGradient>
-            <Text className="text-gray-700 font-semibold">
+            <Text className={`font-semibold ${
+              isDarkMode ? 'text-white' : 'text-gray-700'
+            }`}>
               {paymentMethods.find((m) => m.id === paymentMethod)?.label}
             </Text>
           </View>
@@ -1298,18 +1431,26 @@ const OrderForm = () => {
 
         {/* Shipping */}
         <View className="mb-5">
-          <Text className="text-xs text-green-600 font-semibold uppercase tracking-wider mb-3">
+          <Text className="text-xs text-green-600 dark:text-green-400 font-semibold uppercase tracking-wider mb-3">
             Shipping
           </Text>
-          <View className="bg-green-50 p-3 rounded-xl">
-            <Text className="text-gray-900 font-semibold">
+          <View className={`p-3 rounded-xl ${
+            isDarkMode ? 'bg-green-900/30' : 'bg-green-50'
+          }`}>
+            <Text className={`font-semibold ${
+              isDarkMode ? 'text-white' : 'text-gray-900'
+            }`}>
               {shippingAddress.street}
             </Text>
-            <Text className="text-gray-600 text-sm">
+            <Text className={`text-sm ${
+              isDarkMode ? 'text-gray-400' : 'text-gray-600'
+            }`}>
               {shippingAddress.city}, {shippingAddress.state}{" "}
               {shippingAddress.zip}
             </Text>
-            <Text className="text-gray-600 text-sm">
+            <Text className={`text-sm ${
+              isDarkMode ? 'text-gray-400' : 'text-gray-600'
+            }`}>
               {shippingAddress.country}
             </Text>
           </View>
@@ -1318,10 +1459,14 @@ const OrderForm = () => {
         {/* Notes */}
         {notes ? (
           <View className="mb-5">
-            <Text className="text-xs text-gray-600 font-semibold uppercase tracking-wider mb-3">
+            <Text className="text-xs text-gray-600 dark:text-gray-400 font-semibold uppercase tracking-wider mb-3">
               Notes
             </Text>
-            <Text className="text-gray-700 bg-gray-50 p-3 rounded-xl">
+            <Text className={`p-3 rounded-xl ${
+              isDarkMode 
+                ? 'bg-gray-700 text-gray-300' 
+                : 'bg-gray-50 text-gray-700'
+            }`}>
               {notes}
             </Text>
           </View>
@@ -1350,12 +1495,14 @@ const OrderForm = () => {
         activeOpacity={0.8}
       >
         <LinearGradient
-          colors={isSubmitting ? ["#34D399", "#059669"] : ["#8E2DE2", "#4A00E0"]}
+          colors={isSubmitting 
+            ? (isDarkMode ? ["#065F46", "#064E3B"] : ["#34D399", "#059669"]) 
+            : ["#8E2DE2", "#4A00E0"]
+          }
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           className="flex-row items-center justify-center py-4 rounded-xl"
-           style={{borderRadius:10}}
-          
+          style={{borderRadius:10}}
         >
           {isSubmitting ? (
             <>
@@ -1393,20 +1540,24 @@ const OrderForm = () => {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-50" edges={["top"]}>
-      <View className="flex-row items-center justify-between px-5 py-4 bg-white">
+    <SafeAreaView className={`flex-1 ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`} edges={["top"]}>
+      <View className={`flex-row items-center justify-between px-5 py-4 ${
+        isDarkMode ? 'bg-gray-800' : 'bg-white'
+      }`}>
         <TouchableOpacity
           onPress={handleBack}
-          className="w-10 h-10 bg-gray-100 rounded-xl items-center justify-center"
+          className={`w-10 h-10 rounded-xl items-center justify-center ${
+            isDarkMode ? 'bg-gray-700' : 'bg-gray-100'
+          }`}
         >
-          <Ionicons name="arrow-back" size={22} color="#374151" />
+          <Ionicons name="arrow-back" size={22} color={isDarkMode ? "#9CA3AF" : "#374151"} />
         </TouchableOpacity>
         <LinearGradient
           colors={getCurrentGradient()}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           className="px-4 py-2 rounded-xl"
-           style={{borderRadius:5}}
+          style={{borderRadius:5}}
         >
           <Text className="text-white font-bold">
             {isEditing ? "Edit Order" : "Create Order"}
@@ -1420,7 +1571,7 @@ const OrderForm = () => {
       <ScrollView
         className="flex-1"
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 100 }} // Increased padding to account for tab bar
+        contentContainerStyle={{ paddingBottom: 100 }}
       >
         {currentStep === 1 && renderCustomerStep()}
         {currentStep === 2 && renderItemsStep()}

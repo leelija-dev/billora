@@ -13,10 +13,11 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useThemeStore } from "../../store/themeStore";
 
 const { width } = Dimensions.get("window");
 
-// Static order data
+// Static order data (keep as is)
 const STATIC_ORDER = {
   id: "ORD-001",
   orderNumber: "ORD-001",
@@ -120,6 +121,7 @@ const STATIC_ORDER = {
 };
 
 const OrderDetailScreen = ({ navigation }) => {
+  const { isDarkMode } = useThemeStore();
   const [order] = useState(STATIC_ORDER);
   const [activeTab, setActiveTab] = useState("details");
   const scrollY = useRef(new Animated.Value(0)).current;
@@ -139,12 +141,36 @@ const OrderDetailScreen = ({ navigation }) => {
 
   const getStatusColor = (status) => {
     const colors = {
-      delivered: { bg: "#34D39920", text: "#059669", icon: "checkmark-circle" },
-      cancelled: { bg: "#F8717120", text: "#DC2626", icon: "close-circle" },
-      pending: { bg: "#FBBF2420", text: "#D97706", icon: "time" },
-      processing: { bg: "#60A5FA20", text: "#2563EB", icon: "sync" },
-      confirmed: { bg: "#8B5CF620", text: "#6D28D9", icon: "checkmark" },
-      shipped: { bg: "#8B5CF620", text: "#6D28D9", icon: "rocket" },
+      delivered: { 
+        bg: isDarkMode ? "#10B98120" : "#34D39920", 
+        text: isDarkMode ? "#34D399" : "#059669", 
+        icon: "checkmark-circle" 
+      },
+      cancelled: { 
+        bg: isDarkMode ? "#EF444420" : "#F8717120", 
+        text: isDarkMode ? "#F87171" : "#DC2626", 
+        icon: "close-circle" 
+      },
+      pending: { 
+        bg: isDarkMode ? "#F59E0B20" : "#FBBF2420", 
+        text: isDarkMode ? "#FBBF24" : "#D97706", 
+        icon: "time" 
+      },
+      processing: { 
+        bg: isDarkMode ? "#3B82F620" : "#60A5FA20", 
+        text: isDarkMode ? "#60A5FA" : "#2563EB", 
+        icon: "sync" 
+      },
+      confirmed: { 
+        bg: isDarkMode ? "#8B5CF620" : "#8B5CF620", 
+        text: isDarkMode ? "#A78BFA" : "#6D28D9", 
+        icon: "checkmark" 
+      },
+      shipped: { 
+        bg: isDarkMode ? "#8B5CF620" : "#8B5CF620", 
+        text: isDarkMode ? "#A78BFA" : "#6D28D9", 
+        icon: "rocket" 
+      },
     };
     return colors[order.status] || colors.pending;
   };
@@ -205,17 +231,22 @@ const OrderDetailScreen = ({ navigation }) => {
   const renderDetailsTab = () => (
     <View>
       {/* Customer Info */}
-      <View className="bg-white p-5 rounded-3xl border border-gray-100 mb-4">
+      <View className={`p-5 rounded-3xl border mb-4 ${
+        isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'
+      }`}>
         <View className="flex-row items-center mb-4">
           <View className="rounded-full overflow-hidden w-[40px] h-[40px] justify-center items-center mr-3">
             <LinearGradient
               colors={["#60A5FA", "#3B82F6"]}
               className="w-full h-full items-center justify-center"
+              style={{ borderRadius: 20 }}
             >
               <Ionicons name="person-outline" size={20} color="white" />
             </LinearGradient>
           </View>
-          <Text className="text-lg font-bold text-gray-900">Customer</Text>
+          <Text className={`text-lg font-bold ${
+            isDarkMode ? 'text-white' : 'text-gray-900'
+          }`}>Customer</Text>
         </View>
 
         <View className="flex-row items-center">
@@ -224,13 +255,19 @@ const OrderDetailScreen = ({ navigation }) => {
             className="w-16 h-16 rounded-2xl"
           />
           <View className="ml-4 flex-1">
-            <Text className="text-lg font-bold text-gray-900">
+            <Text className={`text-lg font-bold ${
+              isDarkMode ? 'text-white' : 'text-gray-900'
+            }`}>
               {order.customer.name}
             </Text>
-            <Text className="text-gray-500 text-sm mt-1">
+            <Text className={`text-sm mt-1 ${
+              isDarkMode ? 'text-gray-400' : 'text-gray-500'
+            }`}>
               {order.customer.email}
             </Text>
-            <Text className="text-gray-500 text-sm">
+            <Text className={`text-sm ${
+              isDarkMode ? 'text-gray-400' : 'text-gray-500'
+            }`}>
               {order.customer.phone}
             </Text>
           </View>
@@ -238,7 +275,9 @@ const OrderDetailScreen = ({ navigation }) => {
 
         <TouchableOpacity
           onPress={handleContactCustomer}
-          className="mt-4 bg-gray-50 p-3 rounded-xl flex-row items-center justify-center"
+          className={`mt-4 p-3 rounded-xl flex-row items-center justify-center ${
+            isDarkMode ? 'bg-gray-700' : 'bg-gray-50'
+          }`}
         >
           <Ionicons name="mail-outline" size={18} color="#6366F1" />
           <Text className="text-indigo-500 font-semibold ml-2">
@@ -248,7 +287,9 @@ const OrderDetailScreen = ({ navigation }) => {
       </View>
 
       {/* Shipping Address */}
-      <View className="bg-white p-5 rounded-3xl border border-gray-100 mb-4">
+      <View className={`p-5 rounded-3xl border mb-4 ${
+        isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'
+      }`}>
         <View className="flex-row items-center mb-4">
           <View className="rounded-full overflow-hidden w-[40px] h-[40px] justify-center items-center mr-3">
             <LinearGradient
@@ -258,27 +299,41 @@ const OrderDetailScreen = ({ navigation }) => {
               <Ionicons name="location-outline" size={20} color="white" />
             </LinearGradient>
           </View>
-          <Text className="text-lg font-bold text-gray-900">Shipping</Text>
+          <Text className={`text-lg font-bold ${
+            isDarkMode ? 'text-white' : 'text-gray-900'
+          }`}>Shipping</Text>
         </View>
 
-        <View className="bg-gray-50 p-4 rounded-2xl">
+        <View className={`p-4 rounded-2xl ${
+          isDarkMode ? 'bg-gray-700' : 'bg-gray-50'
+        }`}>
           <View className="flex-row items-center mb-2">
             <Ionicons name="home-outline" size={16} color="#6b7280" />
-            <Text className="text-gray-500 text-sm ml-2">
+            <Text className={`text-sm ml-2 ${
+              isDarkMode ? 'text-gray-400' : 'text-gray-500'
+            }`}>
               {order.shippingAddress.type}
             </Text>
           </View>
-          <Text className="text-gray-900 font-medium">
+          <Text className={`font-medium ${
+            isDarkMode ? 'text-white' : 'text-gray-900'
+          }`}>
             {order.shippingAddress.street}
           </Text>
-          <Text className="text-gray-600 mt-1">
+          <Text className={`mt-1 ${
+            isDarkMode ? 'text-gray-400' : 'text-gray-600'
+          }`}>
             {order.shippingAddress.city}, {order.shippingAddress.state}{" "}
             {order.shippingAddress.zip}
           </Text>
-          <Text className="text-gray-600">{order.shippingAddress.country}</Text>
+          <Text className={`${
+            isDarkMode ? 'text-gray-400' : 'text-gray-600'
+          }`}>{order.shippingAddress.country}</Text>
 
           {order.trackingNumber && (
-            <View className="mt-4 pt-4 border-t border-gray-200">
+            <View className={`mt-4 pt-4 border-t ${
+              isDarkMode ? 'border-gray-600' : 'border-gray-200'
+            }`}>
               <View className="flex-row items-center justify-between">
                 <View className="flex-row items-center">
                   <Ionicons name="cube-outline" size={16} color="#6366F1" />
@@ -286,8 +341,8 @@ const OrderDetailScreen = ({ navigation }) => {
                     Tracking: {order.trackingNumber}
                   </Text>
                 </View>
-                <TouchableOpacity className="bg-indigo-50 px-4 py-2 rounded-xl">
-                  <Text className="text-indigo-600 text-sm font-medium">
+                <TouchableOpacity className="bg-indigo-50 dark:bg-indigo-900/30 px-4 py-2 rounded-xl">
+                  <Text className="text-indigo-600 dark:text-indigo-400 text-sm font-medium">
                     Track
                   </Text>
                 </TouchableOpacity>
@@ -298,7 +353,9 @@ const OrderDetailScreen = ({ navigation }) => {
       </View>
 
       {/* Payment Info */}
-      <View className="bg-white p-5 rounded-3xl border border-gray-100 mb-4">
+      <View className={`p-5 rounded-3xl border mb-4 ${
+        isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'
+      }`}>
         <View className="flex-row items-center mb-4">
           <View className="rounded-full overflow-hidden w-[40px] h-[40px] justify-center items-center mr-3">
             <LinearGradient
@@ -308,18 +365,24 @@ const OrderDetailScreen = ({ navigation }) => {
               <Ionicons name="card-outline" size={20} color="white" />
             </LinearGradient>
           </View>
-          <Text className="text-lg font-bold text-gray-900">Payment</Text>
+          <Text className={`text-lg font-bold ${
+            isDarkMode ? 'text-white' : 'text-gray-900'
+          }`}>Payment</Text>
         </View>
 
-        <View className="bg-gray-50 p-4 rounded-2xl">
+        <View className={`p-4 rounded-2xl ${
+          isDarkMode ? 'bg-gray-700' : 'bg-gray-50'
+        }`}>
           <View className="flex-row items-center justify-between mb-3">
-            <Text className="text-gray-500">Method</Text>
-            <Text className="text-gray-900 font-medium">
+            <Text className={isDarkMode ? 'text-gray-400' : 'text-gray-500'}>Method</Text>
+            <Text className={`font-medium ${
+              isDarkMode ? 'text-white' : 'text-gray-900'
+            }`}>
               {order.paymentMethod}
             </Text>
           </View>
           <View className="flex-row items-center justify-between mb-3">
-            <Text className="text-gray-500">Status</Text>
+            <Text className={isDarkMode ? 'text-gray-400' : 'text-gray-500'}>Status</Text>
             <View className="flex-row items-center">
               <Ionicons
                 name={
@@ -344,7 +407,9 @@ const OrderDetailScreen = ({ navigation }) => {
 
       {/* Order Notes */}
       {order.notes && (
-        <View className="bg-white p-5 rounded-3xl border border-gray-100 mb-4">
+        <View className={`p-5 rounded-3xl border mb-4 ${
+          isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'
+        }`}>
           <View className="flex-row items-center mb-4">
             <View className="rounded-full overflow-hidden w-[40px] h-[40px] justify-center items-center mr-3">
               <LinearGradient
@@ -358,11 +423,17 @@ const OrderDetailScreen = ({ navigation }) => {
                 />
               </LinearGradient>
             </View>
-            <Text className="text-lg font-bold text-gray-900">Notes</Text>
+            <Text className={`text-lg font-bold ${
+              isDarkMode ? 'text-white' : 'text-gray-900'
+            }`}>Notes</Text>
           </View>
 
-          <View className="bg-gray-50 p-4 rounded-2xl">
-            <Text className="text-gray-600 leading-6">{order.notes}</Text>
+          <View className={`p-4 rounded-2xl ${
+            isDarkMode ? 'bg-gray-700' : 'bg-gray-50'
+          }`}>
+            <Text className={`leading-6 ${
+              isDarkMode ? 'text-gray-300' : 'text-gray-600'
+            }`}>{order.notes}</Text>
           </View>
         </View>
       )}
@@ -370,7 +441,9 @@ const OrderDetailScreen = ({ navigation }) => {
   );
 
   const renderItemsTab = () => (
-    <View className="bg-white rounded-3xl border border-gray-100 overflow-hidden">
+    <View className={`rounded-3xl border overflow-hidden ${
+      isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'
+    }`}>
       <LinearGradient colors={["#6366F1", "#8B5CF6"]} className="p-4">
         <View className="flex-row justify-between items-center">
           <Text className="text-white font-bold text-lg">Order Items</Text>
@@ -386,19 +459,23 @@ const OrderDetailScreen = ({ navigation }) => {
         <View
           key={item.id}
           className={`p-4 ${
-            index !== order.items.length - 1 ? "border-b border-gray-100" : ""
+            index !== order.items.length - 1 
+              ? isDarkMode ? 'border-b border-gray-700' : 'border-b border-gray-100'
+              : ''
           }`}
         >
           <View className="flex-row">
             <LinearGradient
-              colors={["#f3f4f6", "#e5e7eb"]}
+              colors={isDarkMode ? ["#374151", "#1F2937"] : ["#f3f4f6", "#e5e7eb"]}
               className="w-20 h-20 rounded-2xl items-center justify-center"
             >
               <Ionicons name="cube-outline" size={30} color="#9ca3af" />
             </LinearGradient>
 
             <View className="flex-1 ml-3">
-              <Text className="text-gray-900 font-semibold text-base">
+              <Text className={`font-semibold text-base ${
+                isDarkMode ? 'text-white' : 'text-gray-900'
+              }`}>
                 {item.name}
               </Text>
 
@@ -409,22 +486,32 @@ const OrderDetailScreen = ({ navigation }) => {
                       className="w-3 h-3 rounded-full mr-1"
                       style={{ backgroundColor: item.color.toLowerCase() }}
                     />
-                    <Text className="text-gray-500 text-xs">{item.color}</Text>
+                    <Text className={`text-xs ${
+                      isDarkMode ? 'text-gray-400' : 'text-gray-500'
+                    }`}>{item.color}</Text>
                   </View>
                 )}
                 {item.size && (
-                  <Text className="text-gray-500 text-xs">
+                  <Text className={`text-xs ${
+                    isDarkMode ? 'text-gray-400' : 'text-gray-500'
+                  }`}>
                     Size: {item.size}
                   </Text>
                 )}
               </View>
 
               <View className="flex-row justify-between items-center mt-2">
-                <Text className="text-gray-900 font-bold">
+                <Text className={`font-bold ${
+                  isDarkMode ? 'text-white' : 'text-gray-900'
+                }`}>
                   {formatCurrency(item.price)}
                 </Text>
-                <View className="bg-gray-100 px-3 py-1 rounded-full">
-                  <Text className="text-gray-600 text-sm">
+                <View className={`px-3 py-1 rounded-full ${
+                  isDarkMode ? 'bg-gray-700' : 'bg-gray-100'
+                }`}>
+                  <Text className={`text-sm ${
+                    isDarkMode ? 'text-gray-300' : 'text-gray-600'
+                  }`}>
                     Qty: {item.quantity}
                   </Text>
                 </View>
@@ -435,22 +522,32 @@ const OrderDetailScreen = ({ navigation }) => {
       ))}
 
       {/* Order Summary */}
-      <View className="p-4 bg-gray-50 border-t border-gray-200">
+      <View className={`p-4 border-t ${
+        isDarkMode 
+          ? 'bg-gray-700 border-gray-600' 
+          : 'bg-gray-50 border-gray-200'
+      }`}>
         <View className="flex-row justify-between mb-2">
-          <Text className="text-gray-500">Subtotal</Text>
-          <Text className="text-gray-900 font-medium">
+          <Text className={isDarkMode ? 'text-gray-400' : 'text-gray-500'}>Subtotal</Text>
+          <Text className={`font-medium ${
+            isDarkMode ? 'text-white' : 'text-gray-900'
+          }`}>
             {formatCurrency(order.subtotal)}
           </Text>
         </View>
         <View className="flex-row justify-between mb-2">
-          <Text className="text-gray-500">Tax</Text>
-          <Text className="text-gray-900 font-medium">
+          <Text className={isDarkMode ? 'text-gray-400' : 'text-gray-500'}>Tax</Text>
+          <Text className={`font-medium ${
+            isDarkMode ? 'text-white' : 'text-gray-900'
+          }`}>
             {formatCurrency(order.tax)}
           </Text>
         </View>
         <View className="flex-row justify-between mb-3">
-          <Text className="text-gray-500">Shipping</Text>
-          <Text className="text-gray-900 font-medium">
+          <Text className={isDarkMode ? 'text-gray-400' : 'text-gray-500'}>Shipping</Text>
+          <Text className={`font-medium ${
+            isDarkMode ? 'text-white' : 'text-gray-900'
+          }`}>
             {formatCurrency(order.shipping)}
           </Text>
         </View>
@@ -471,17 +568,21 @@ const OrderDetailScreen = ({ navigation }) => {
   );
 
   const renderTimelineTab = () => (
-    <View className="bg-white p-5 rounded-3xl border border-gray-100">
+    <View className={`p-5 rounded-3xl border ${
+      isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'
+    }`}>
       <View className="flex-row items-center mb-4">
         <View className="rounded-full overflow-hidden w-[40px] h-[40px] justify-center items-center mr-3">
           <LinearGradient
             colors={["#F59E0B", "#D97706"]}
-            className="w-full h-full items-center justify-center "
+            className="w-full h-full items-center justify-center"
           >
             <Ionicons name="time-outline" size={20} color="white" />
           </LinearGradient>
         </View>
-        <Text className="text-lg font-bold text-gray-900">Order Timeline</Text>
+        <Text className={`text-lg font-bold ${
+          isDarkMode ? 'text-white' : 'text-gray-900'
+        }`}>Order Timeline</Text>
       </View>
 
       {order.timeline.map((event, index) => (
@@ -489,7 +590,9 @@ const OrderDetailScreen = ({ navigation }) => {
           <View className="items-center mr-4">
             <View
               className={`w-6 h-6 rounded-full ${
-                event.completed ? "bg-green-500" : "bg-gray-200"
+                event.completed 
+                  ? "bg-green-500" 
+                  : isDarkMode ? 'bg-gray-700' : 'bg-gray-200'
               } items-center justify-center`}
             >
               {event.completed && (
@@ -497,7 +600,9 @@ const OrderDetailScreen = ({ navigation }) => {
               )}
             </View>
             {index !== order.timeline.length - 1 && (
-              <View className="w-0.5 h-12 bg-gray-200 mt-1" />
+              <View className={`w-0.5 h-12 mt-1 ${
+                isDarkMode ? 'bg-gray-700' : 'bg-gray-200'
+              }`} />
             )}
           </View>
 
@@ -505,19 +610,25 @@ const OrderDetailScreen = ({ navigation }) => {
             <View className="flex-row justify-between items-center">
               <Text
                 className={`font-semibold ${
-                  event.completed ? "text-gray-900" : "text-gray-400"
+                  event.completed 
+                    ? isDarkMode ? 'text-white' : 'text-gray-900'
+                    : isDarkMode ? 'text-gray-500' : 'text-gray-400'
                 }`}
               >
                 {event.status}
               </Text>
               {event.date && (
-                <Text className="text-xs text-gray-400">
+                <Text className={`text-xs ${
+                  isDarkMode ? 'text-gray-500' : 'text-gray-400'
+                }`}>
                   {formatDate(event.date)}
                 </Text>
               )}
             </View>
             {!event.completed && (
-              <Text className="text-xs text-gray-400 mt-1">
+              <Text className={`text-xs mt-1 ${
+                isDarkMode ? 'text-gray-500' : 'text-gray-400'
+              }`}>
                 {event.status === "Shipped"
                   ? "Estimated: " + formatDate(order.estimatedDelivery)
                   : "Pending"}
@@ -528,14 +639,18 @@ const OrderDetailScreen = ({ navigation }) => {
       ))}
 
       {/* Estimated Delivery */}
-      <View className="mt-4 p-4 bg-indigo-50 rounded-2xl">
+      <View className={`mt-4 p-4 rounded-2xl ${
+        isDarkMode ? 'bg-indigo-900/30' : 'bg-indigo-50'
+      }`}>
         <View className="flex-row items-center">
           <Ionicons name="rocket-outline" size={20} color="#6366F1" />
-          <Text className="text-indigo-600 font-semibold ml-2">
+          <Text className="text-indigo-600 dark:text-indigo-400 font-semibold ml-2">
             Estimated Delivery
           </Text>
         </View>
-        <Text className="text-indigo-700 text-lg font-bold mt-2">
+        <Text className={`text-lg font-bold mt-2 ${
+          isDarkMode ? 'text-indigo-400' : 'text-indigo-700'
+        }`}>
           {formatDate(order.estimatedDelivery)}
         </Text>
       </View>
@@ -543,8 +658,8 @@ const OrderDetailScreen = ({ navigation }) => {
   );
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-50" edges={["top"]}>
-      <StatusBar barStyle="dark-content" backgroundColor="#f9fafb" />
+    <SafeAreaView className={`flex-1 ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`} edges={["top"]}>
+      <StatusBar barStyle={isDarkMode ? "light-content" : "dark-content"} backgroundColor={isDarkMode ? "#111827" : "#f9fafb"} />
 
       {/* Animated Header */}
       <Animated.View
@@ -552,26 +667,36 @@ const OrderDetailScreen = ({ navigation }) => {
           opacity: headerOpacity,
           transform: [{ scale: headerScale }],
         }}
-        className="bg-white border-b border-gray-100"
+        className={`border-b ${
+          isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'
+        }`}
       >
         <View className="flex-row items-center justify-between px-4 py-3">
           <TouchableOpacity
             onPress={handleBack}
-            className="w-10 h-10 bg-gray-100 rounded-2xl items-center justify-center"
+            className={`w-10 h-10 rounded-2xl items-center justify-center ${
+              isDarkMode ? 'bg-gray-700' : 'bg-gray-100'
+            }`}
           >
-            <Ionicons name="arrow-back" size={22} color="#374151" />
+            <Ionicons name="arrow-back" size={22} color={isDarkMode ? "#9CA3AF" : "#374151"} />
           </TouchableOpacity>
 
           <View className="items-center">
-            <Text className="text-sm text-gray-500">Order Details</Text>
-            <Text className="text-lg font-bold text-gray-900">
+            <Text className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+              Order Details
+            </Text>
+            <Text className={`text-lg font-bold ${
+              isDarkMode ? 'text-white' : 'text-gray-900'
+            }`}>
               #{order.orderNumber}
             </Text>
           </View>
 
           <TouchableOpacity
             onPress={handleEdit}
-            className="w-10 h-10 bg-purple-100 rounded-2xl items-center justify-center"
+            className={`w-10 h-10 rounded-2xl items-center justify-center ${
+              isDarkMode ? 'bg-purple-900/30' : 'bg-purple-100'
+            }`}
           >
             <Ionicons name="create-outline" size={20} color="#8B5CF6" />
           </TouchableOpacity>
@@ -590,12 +715,14 @@ const OrderDetailScreen = ({ navigation }) => {
       >
         {/* Order Header Card */}
         <LinearGradient
-          colors={["#ffffff", "#f9fafb"]}
-          className="mx-4 mt-4 p-5 rounded-3xl border border-gray-100"
+          colors={isDarkMode ? ["#1F2937", "#111827"] : ["#ffffff", "#f9fafb"]}
+          className={`mx-4 mt-4 p-5 rounded-3xl border ${
+            isDarkMode ? 'border-gray-700' : 'border-gray-100'
+          }`}
           style={{
             shadowColor: "#000",
             shadowOffset: { width: 0, height: 4 },
-            shadowOpacity: 0.05,
+            shadowOpacity: isDarkMode ? 0.3 : 0.05,
             shadowRadius: 12,
           }}
         >
@@ -609,7 +736,9 @@ const OrderDetailScreen = ({ navigation }) => {
 
             <View className="flex-1">
               <View className="flex-row items-center mb-1">
-                <Text className="text-2xl font-bold text-gray-900 mr-2">
+                <Text className={`text-2xl font-bold mr-2 ${
+                  isDarkMode ? 'text-white' : 'text-gray-900'
+                }`}>
                   #{order.orderNumber}
                 </Text>
                 <View
@@ -627,7 +756,9 @@ const OrderDetailScreen = ({ navigation }) => {
 
               <View className="flex-row items-center">
                 <Ionicons name="calendar-outline" size={14} color="#6b7280" />
-                <Text className="text-sm text-gray-500 ml-1">
+                <Text className={`text-sm ml-1 ${
+                  isDarkMode ? 'text-gray-400' : 'text-gray-500'
+                }`}>
                   {formatDate(order.orderDate)}
                 </Text>
               </View>
@@ -635,24 +766,38 @@ const OrderDetailScreen = ({ navigation }) => {
           </View>
 
           {/* Quick Stats */}
-          <View className="flex-row mt-5 pt-4 border-t border-gray-100">
+          <View className={`flex-row mt-5 pt-4 border-t ${
+            isDarkMode ? 'border-gray-700' : 'border-gray-100'
+          }`}>
             <View className="flex-1 items-center">
-              <Text className="text-2xl font-bold text-gray-900">
+              <Text className={`text-2xl font-bold ${
+                isDarkMode ? 'text-white' : 'text-gray-900'
+              }`}>
                 {order.items.length}
               </Text>
-              <Text className="text-xs text-gray-500 mt-1">Items</Text>
+              <Text className={`text-xs mt-1 ${
+                isDarkMode ? 'text-gray-400' : 'text-gray-500'
+              }`}>Items</Text>
             </View>
 
-            <View className="w-px h-8 bg-gray-200 self-center" />
+            <View className={`w-px h-8 self-center ${
+              isDarkMode ? 'bg-gray-700' : 'bg-gray-200'
+            }`} />
 
             <View className="flex-1 items-center">
-              <Text className="text-2xl font-bold text-gray-900">
+              <Text className={`text-2xl font-bold ${
+                isDarkMode ? 'text-white' : 'text-gray-900'
+              }`}>
                 {formatCurrency(order.total)}
               </Text>
-              <Text className="text-xs text-gray-500 mt-1">Total</Text>
+              <Text className={`text-xs mt-1 ${
+                isDarkMode ? 'text-gray-400' : 'text-gray-500'
+              }`}>Total</Text>
             </View>
 
-            <View className="w-px h-8 bg-gray-200 self-center" />
+            <View className={`w-px h-8 self-center ${
+              isDarkMode ? 'bg-gray-700' : 'bg-gray-200'
+            }`} />
 
             <View className="flex-1 items-center">
               <View className="flex-row items-center">
@@ -664,13 +809,17 @@ const OrderDetailScreen = ({ navigation }) => {
                   color={order.paymentStatus === "paid" ? "#10b981" : "#f59e0b"}
                 />
               </View>
-              <Text className="text-xs text-gray-500 mt-1">Payment</Text>
+              <Text className={`text-xs mt-1 ${
+                isDarkMode ? 'text-gray-400' : 'text-gray-500'
+              }`}>Payment</Text>
             </View>
           </View>
         </LinearGradient>
 
         {/* Tabs */}
-        <View className="flex-row mx-4 mt-6 bg-white p-1 rounded-2xl border border-gray-100">
+        <View className={`flex-row mx-4 mt-6 p-1 rounded-2xl border ${
+          isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'
+        }`}>
           {["details", "items", "timeline"].map((tab) => (
             <TouchableOpacity
               key={tab}
@@ -682,7 +831,9 @@ const OrderDetailScreen = ({ navigation }) => {
             >
               <Text
                 className={`text-center font-medium capitalize ${
-                  activeTab === tab ? "text-white" : "text-gray-500"
+                  activeTab === tab 
+                    ? "text-white" 
+                    : isDarkMode ? 'text-gray-400' : 'text-gray-500'
                 }`}
               >
                 {tab}
@@ -734,9 +885,13 @@ const OrderDetailScreen = ({ navigation }) => {
             </LinearGradient>
           </TouchableOpacity>
 
-          <TouchableOpacity className="bg-gray-100 flex-row items-center justify-center py-4 rounded-2xl">
-            <Ionicons name="print-outline" size={20} color="#374151" />
-            <Text className="text-gray-700 font-semibold text-base ml-2">
+          <TouchableOpacity className={`flex-row items-center justify-center py-4 rounded-2xl ${
+            isDarkMode ? 'bg-gray-800' : 'bg-gray-100'
+          }`}>
+            <Ionicons name="print-outline" size={20} color={isDarkMode ? "#9CA3AF" : "#374151"} />
+            <Text className={`font-semibold text-base ml-2 ${
+              isDarkMode ? 'text-gray-300' : 'text-gray-700'
+            }`}>
               Print Invoice
             </Text>
           </TouchableOpacity>

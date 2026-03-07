@@ -11,6 +11,7 @@ import {
   View,
 } from "react-native";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
+import { useThemeStore } from "../../store/themeStore";
 
 // Static order data (keep your existing STATIC_ORDERS array here)
 const STATIC_ORDERS = [
@@ -112,6 +113,7 @@ const OrderList = ({
   filter = "all",
   navigation,
 }) => {
+  const { isDarkMode } = useThemeStore();
   const [refreshing, setRefreshing] = useState(false);
   const [orders, setOrders] = useState(STATIC_ORDERS);
   const [loading, setLoading] = useState(false);
@@ -155,28 +157,32 @@ const OrderList = ({
     switch (status) {
       case "delivered":
         return {
-          bg: "bg-green-100",
-          text: "text-green-600",
+          bg: isDarkMode ? "bg-green-900/30" : "bg-green-100",
+          text: isDarkMode ? "text-green-400" : "text-green-600",
           icon: "check-circle",
         };
       case "processing":
         return {
-          bg: "bg-blue-100",
-          text: "text-blue-600",
+          bg: isDarkMode ? "bg-blue-900/30" : "bg-blue-100",
+          text: isDarkMode ? "text-blue-400" : "text-blue-600",
           icon: "progress-clock",
         };
       case "pending":
         return {
-          bg: "bg-yellow-100",
-          text: "text-yellow-600",
+          bg: isDarkMode ? "bg-yellow-900/30" : "bg-yellow-100",
+          text: isDarkMode ? "text-yellow-400" : "text-yellow-600",
           icon: "clock-outline",
         };
       case "cancelled":
-        return { bg: "bg-red-100", text: "text-red-600", icon: "close-circle" };
+        return {
+          bg: isDarkMode ? "bg-red-900/30" : "bg-red-100",
+          text: isDarkMode ? "text-red-400" : "text-red-600",
+          icon: "close-circle",
+        };
       default:
         return {
-          bg: "bg-gray-100",
-          text: "text-gray-600",
+          bg: isDarkMode ? "bg-gray-800" : "bg-gray-100",
+          text: isDarkMode ? "text-gray-400" : "text-gray-600",
           icon: "help-circle",
         };
     }
@@ -199,13 +205,17 @@ const OrderList = ({
   const renderHeader = () => (
     <Animated.View style={{ opacity: fadeAnim, marginBottom: 16 }}>
       <View className="flex-row justify-between items-center">
-        <Text className="text-gray-600">
+        <Text className={isDarkMode ? 'text-gray-400' : 'text-gray-600'}>
           {filteredOrders.length}{" "}
           {filteredOrders.length === 1 ? "order" : "orders"} found
         </Text>
-        <TouchableOpacity className="flex-row items-center bg-white px-3 py-1.5 rounded-full shadow-sm">
-          <Icon name="filter" size={16} color="#4b5563" />
-          <Text className="text-gray-600 text-sm ml-1">Filter</Text>
+        <TouchableOpacity className={`flex-row items-center px-3 py-1.5 rounded-full shadow-sm ${
+          isDarkMode ? 'bg-gray-800' : 'bg-white'
+        }`}>
+          <Icon name="filter" size={16} color={isDarkMode ? "#9CA3AF" : "#4b5563"} />
+          <Text className={`text-sm ml-1 ${
+            isDarkMode ? 'text-gray-400' : 'text-gray-600'
+          }`}>Filter</Text>
         </TouchableOpacity>
       </View>
     </Animated.View>
@@ -218,7 +228,11 @@ const OrderList = ({
       <TouchableOpacity
         key={item.id}
         onPress={() => handleOrderPress(item)}
-        className="bg-white rounded-2xl p-4 mb-3 shadow-sm border border-white"
+        className={`rounded-2xl p-4 mb-3 shadow-sm border ${
+          isDarkMode 
+            ? 'bg-gray-800 border-gray-700' 
+            : 'bg-white border-white'
+        }`}
       >
         {/* Header */}
         <View className="flex-row justify-between items-center mb-3">
@@ -228,10 +242,16 @@ const OrderList = ({
               className="w-10 h-10 rounded-full"
             />
             <View className="ml-3">
-              <Text className="text-base font-semibold text-gray-800">
+              <Text className={`text-base font-semibold ${
+                isDarkMode ? 'text-white' : 'text-gray-800'
+              }`}>
                 {item.customerName}
               </Text>
-              <Text className="text-xs text-gray-500">Order #{item.id}</Text>
+              <Text className={`text-xs ${
+                isDarkMode ? 'text-gray-500' : 'text-gray-500'
+              }`}>
+                Order #{item.id}
+              </Text>
             </View>
           </View>
           <View className={`px-3 py-1 rounded-full ${statusStyle.bg}`}>
@@ -243,22 +263,32 @@ const OrderList = ({
 
         {/* Items Summary */}
         <View className="mb-3">
-          <Text className="text-sm text-gray-600" numberOfLines={1}>
+          <Text className={`text-sm ${
+            isDarkMode ? 'text-gray-400' : 'text-gray-600'
+          }`} numberOfLines={1}>
             {item.items.map((i) => i.name).join(", ")}
           </Text>
         </View>
 
         {/* Footer */}
-        <View className="flex-row justify-between items-center pt-3 border-t border-blue-100">
+        <View className={`flex-row justify-between items-center pt-3 border-t ${
+          isDarkMode ? 'border-blue-900' : 'border-blue-100'
+        }`}>
           <View>
-            <Text className="text-xs text-gray-500">Total Amount</Text>
+            <Text className={`text-xs ${
+              isDarkMode ? 'text-gray-500' : 'text-gray-500'
+            }`}>
+              Total Amount
+            </Text>
             <Text className="text-lg font-bold text-blue-600">
               ${item.total.toFixed(2)}
             </Text>
           </View>
           <View className="flex-row items-center">
             <Icon name="calendar" size={14} color="#9ca3af" />
-            <Text className="text-xs text-gray-500 ml-1">
+            <Text className={`text-xs ml-1 ${
+              isDarkMode ? 'text-gray-500' : 'text-gray-500'
+            }`}>
               {new Date(item.orderDate).toLocaleDateString()}
             </Text>
           </View>
@@ -284,7 +314,11 @@ const OrderList = ({
       <TouchableOpacity
         key={item.id}
         onPress={() => handleOrderPress(item)}
-        className="w-[48%] mx-[1%] bg-white rounded-2xl p-3 mb-3 shadow-sm border border-white"
+        className={`w-[48%] mx-[1%] rounded-2xl p-3 mb-3 shadow-sm border ${
+          isDarkMode 
+            ? 'bg-gray-800 border-gray-700' 
+            : 'bg-white border-white'
+        }`}
       >
         <View className="items-center mb-2">
           <Image
@@ -292,12 +326,18 @@ const OrderList = ({
             className="w-16 h-16 rounded-full"
           />
           <Text
-            className="text-base font-semibold text-gray-800 mt-2"
+            className={`text-base font-semibold mt-2 ${
+              isDarkMode ? 'text-white' : 'text-gray-800'
+            }`}
             numberOfLines={1}
           >
             {item.customerName}
           </Text>
-          <Text className="text-xs text-gray-500">#{item.id}</Text>
+          <Text className={`text-xs ${
+            isDarkMode ? 'text-gray-500' : 'text-gray-500'
+          }`}>
+            #{item.id}
+          </Text>
         </View>
 
         <View
@@ -312,12 +352,16 @@ const OrderList = ({
           ${item.total.toFixed(2)}
         </Text>
 
-        <Text className="text-xs text-gray-500 text-center mt-1">
+        <Text className={`text-xs text-center mt-1 ${
+          isDarkMode ? 'text-gray-500' : 'text-gray-500'
+        }`}>
           {new Date(item.orderDate).toLocaleDateString()}
         </Text>
 
         <Text
-          className="text-xs text-gray-400 text-center mt-1"
+          className={`text-xs text-center mt-1 ${
+            isDarkMode ? 'text-gray-500' : 'text-gray-400'
+          }`}
           numberOfLines={1}
         >
           {item.items.length} {item.items.length === 1 ? "item" : "items"}
@@ -343,7 +387,9 @@ const OrderList = ({
     return (
       <View className="flex-1 justify-center items-center">
         <ActivityIndicator size="large" color="#3b82f6" />
-        <Text className="text-gray-500 mt-4">Loading orders...</Text>
+        <Text className={`mt-4 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+          Loading orders...
+        </Text>
       </View>
     );
   }
@@ -365,10 +411,14 @@ const OrderList = ({
           {renderHeader()}
           <View className="items-center justify-center py-16">
             <Icon name="clipboard-list" size={80} color="#d1d5db" />
-            <Text className="text-lg font-semibold text-gray-700 mt-4">
+            <Text className={`text-lg font-semibold mt-4 ${
+              isDarkMode ? 'text-gray-300' : 'text-gray-700'
+            }`}>
               No Orders Found
             </Text>
-            <Text className="text-sm text-gray-400 text-center mt-2 px-8">
+            <Text className={`text-sm text-center mt-2 px-8 ${
+              isDarkMode ? 'text-gray-500' : 'text-gray-400'
+            }`}>
               {searchQuery || filter !== "all"
                 ? "Try adjusting your search or filters"
                 : "Create your first order by tapping the + button"}
@@ -380,24 +430,25 @@ const OrderList = ({
   }
 
   return (
-    <View
-      className="flex-1"
-     
-      refreshControl={
-        <RefreshControl
-          refreshing={refreshing}
-          onRefresh={onRefresh}
-          colors={["#3b82f6"]}
-          tintColor="#3b82f6"
-        />
-      }
-    >
-      <View className="">
-        {renderHeader()}
-        {viewMode === "grid" 
-          ? renderGridItems() 
-          : filteredOrders.map(item => renderListItem(item))}
-      </View>
+    <View className="flex-1">
+      {renderHeader()}
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={["#3b82f6"]}
+            tintColor="#3b82f6"
+          />
+        }
+      >
+        <View className="pb-4">
+          {viewMode === "grid" 
+            ? renderGridItems() 
+            : filteredOrders.map(item => renderListItem(item))}
+        </View>
+      </ScrollView>
     </View>
   );
 };
