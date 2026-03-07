@@ -201,10 +201,30 @@ const Header = ({
   };
 
  const handleNavigation = (item) => {
-  console.log('Navigation clicked:', item); // Debug log
-  console.log('Has onNavigate prop:', !!onNavigate); // Check if custom handler exists
+  // console.log('Navigation clicked:', item); // Debug log
+  // console.log('Has onNavigate prop:', !!onNavigate); // Check if custom handler exists
   
-  // Close sidebar animations first
+  // Close sidebar immediately and navigate instantly
+  setSidebarVisible(false);
+  
+  if (onNavigate) {
+    // console.log('Using custom navigation handler');
+    onNavigate(item);
+  } else {
+    // Default navigation with fallback logic
+    const targetStack = item.parent || `${item.title}Stack`;
+    const targetScreen = item.screen || item.title;
+    
+    if (item.parent || ['products', 'orders', 'customers', 'inventory', 'settings'].includes(item.id)) {
+      // console.log('Navigating to parent stack:', targetStack);
+      navigation.navigate(targetStack);
+    } else {
+      // console.log('Navigating to root screen:', targetScreen);
+      navigation.navigate(targetScreen);
+    }
+  }
+  
+  // Start closing animation after navigation
   Animated.parallel([
     Animated.timing(slideAnim, {
       toValue: -DRAWER_WIDTH,
@@ -218,26 +238,7 @@ const Header = ({
       useNativeDriver: true,
       easing: Easing.in(Easing.cubic),
     }),
-  ]).start(() => {
-    setSidebarVisible(false);
-    
-    if (onNavigate) {
-      console.log('Using custom navigation handler');
-      onNavigate(item);
-    } else {
-      // Default navigation with fallback logic
-      const targetStack = item.parent || `${item.title}Stack`;
-      const targetScreen = item.screen || item.title;
-      
-      if (item.parent || ['products', 'orders', 'customers', 'inventory', 'settings'].includes(item.id)) {
-        console.log('Navigating to parent stack:', targetStack);
-        navigation.navigate(targetStack);
-      } else {
-        console.log('Navigating to root screen:', targetScreen);
-        navigation.navigate(targetScreen);
-      }
-    }
-  });
+  ]).start();
 };
 
   const handleLogout = () => {
@@ -339,7 +340,7 @@ const Header = ({
         {/* Search Icon */}
         <TouchableOpacity
           className="p-2"
-          onPress={onSearchPress || (() => console.log("Search pressed"))}
+          onPress={onSearchPress}
           activeOpacity={0.7}
         >
           <Icon
@@ -440,7 +441,7 @@ const Header = ({
                         !notif.read ? 'bg-blue-50/50 dark:bg-purple-900/20' : 'bg-white dark:bg-gray-800'
                       }`}
                       onPress={() => {
-                        console.log("Notification pressed:", notif.id);
+                        // console.log("Notification pressed:", notif.id);
                         setNotificationVisible(false);
                       }}
                     >
@@ -473,7 +474,7 @@ const Header = ({
                   <TouchableOpacity
                     className="p-4 bg-gray-50 dark:bg-gray-900 rounded-b-2xl"
                     onPress={() => {
-                      console.log("View all notifications");
+                      // console.log("View all notifications");
                       setNotificationVisible(false);
                     }}
                   >
@@ -569,7 +570,7 @@ const Header = ({
                         (item.parent && activeScreen.includes(item.title)) ||
                         (item.title === "Dashboard" && activeScreen === "Dashboard");
                       
-                      console.log('Item:', item.title, 'ActiveScreen:', activeScreen, 'IsActive:', isActive); // Debug log
+                      // console.log('Item:', item.title, 'ActiveScreen:', activeScreen, 'IsActive:', isActive); // Debug log
 
                       return (
                         <TouchableOpacity
