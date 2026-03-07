@@ -1,8 +1,10 @@
+// components/customers/CustomerCard.js
 import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { useThemeStore } from '../../store/themeStore';
 
 const formatRelativeTime = (dateString) => {
   const date = new Date(dateString);
@@ -20,6 +22,7 @@ const formatRelativeTime = (dateString) => {
 
 const CustomerCard = ({ customer, onPress, viewMode = 'grid' }) => {
   const navigation = useNavigation();
+  const { isDarkMode } = useThemeStore();
 
   const handlePress = () => {
     if (onPress) {
@@ -35,14 +38,16 @@ const CustomerCard = ({ customer, onPress, viewMode = 'grid' }) => {
     return (
       <TouchableOpacity
         onPress={handlePress}
-        className="bg-white rounded-2xl p-4 mb-3 shadow-sm border border-gray-100"
+        className={`rounded-2xl p-4 mb-3 shadow-sm border ${
+          isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'
+        }`}
         activeOpacity={0.7}
       >
         <View className="flex-row items-center">
           <LinearGradient
             colors={isActive ? ['#10B981', '#059669'] : ['#EF4444', '#DC2626']}
             className="w-14 h-14 rounded-2xl items-center justify-center mr-4"
-            style={{borderRadius:100}}
+            style={{ borderRadius: 100 }}
           >
             <Text className="text-white text-xl font-bold">
               {customer.name.charAt(0).toUpperCase()}
@@ -52,14 +57,22 @@ const CustomerCard = ({ customer, onPress, viewMode = 'grid' }) => {
           <View className="flex-1">
             <View className="flex-row justify-between items-start">
               <View>
-                <Text className="text-gray-900 font-bold text-lg">{customer.name}</Text>
-                <Text className="text-gray-500 text-sm">{customer.email || 'No email'}</Text>
+                <Text className={`font-bold text-lg ${
+                  isDarkMode ? 'text-white' : 'text-gray-900'
+                }`}>{customer.name}</Text>
+                <Text className={`text-sm ${
+                  isDarkMode ? 'text-gray-400' : 'text-gray-500'
+                }`}>{customer.email || 'No email'}</Text>
               </View>
               <View className={`px-3 py-1 rounded-full ${
-                isActive ? 'bg-green-100' : 'bg-red-100'
+                isActive 
+                  ? (isDarkMode ? 'bg-green-900/30' : 'bg-green-100')
+                  : (isDarkMode ? 'bg-red-900/30' : 'bg-red-100')
               }`}>
                 <Text className={`text-xs font-medium ${
-                  isActive ? 'text-green-600' : 'text-red-600'
+                  isActive 
+                    ? (isDarkMode ? 'text-green-400' : 'text-green-600')
+                    : (isDarkMode ? 'text-red-400' : 'text-red-600')
                 }`}>
                   {customer.status.toUpperCase()}
                 </Text>
@@ -68,16 +81,28 @@ const CustomerCard = ({ customer, onPress, viewMode = 'grid' }) => {
 
             <View className="flex-row mt-3">
               <View className="flex-1">
-                <Text className="text-gray-400 text-xs">Orders</Text>
-                <Text className="text-gray-900 font-semibold">{customer.orderCount}</Text>
+                <Text className={`text-xs ${
+                  isDarkMode ? 'text-gray-500' : 'text-gray-400'
+                }`}>Orders</Text>
+                <Text className={`font-semibold ${
+                  isDarkMode ? 'text-white' : 'text-gray-900'
+                }`}>{customer.orderCount}</Text>
               </View>
               <View className="flex-1">
-                <Text className="text-gray-400 text-xs">Total Spent</Text>
-                <Text className="text-gray-900 font-semibold">${customer.totalSpent.toFixed(2)}</Text>
+                <Text className={`text-xs ${
+                  isDarkMode ? 'text-gray-500' : 'text-gray-400'
+                }`}>Total Spent</Text>
+                <Text className={`font-semibold ${
+                  isDarkMode ? 'text-white' : 'text-gray-900'
+                }`}>${customer.totalSpent.toFixed(2)}</Text>
               </View>
               <View className="flex-1">
-                <Text className="text-gray-400 text-xs">Since</Text>
-                <Text className="text-gray-900 font-semibold text-xs">
+                <Text className={`text-xs ${
+                  isDarkMode ? 'text-gray-500' : 'text-gray-400'
+                }`}>Since</Text>
+                <Text className={`font-semibold text-xs ${
+                  isDarkMode ? 'text-white' : 'text-gray-900'
+                }`}>
                   {formatRelativeTime(customer.createdAt)}
                 </Text>
               </View>
@@ -86,7 +111,9 @@ const CustomerCard = ({ customer, onPress, viewMode = 'grid' }) => {
             {customer.phone && (
               <View className="flex-row items-center mt-2">
                 <Icon name="phone" size={14} color="#9ca3af" />
-                <Text className="text-gray-500 text-xs ml-1">{customer.phone}</Text>
+                <Text className={`text-xs ml-1 ${
+                  isDarkMode ? 'text-gray-500' : 'text-gray-500'
+                }`}>{customer.phone}</Text>
               </View>
             )}
           </View>
@@ -99,31 +126,41 @@ const CustomerCard = ({ customer, onPress, viewMode = 'grid' }) => {
   return (
     <TouchableOpacity
       onPress={handlePress}
-      className="w-full mx-[1%] bg-white rounded-2xl p-4 mb-3 shadow-sm border border-gray-100"
+      className={`w-full mx-[1%] rounded-2xl p-4 mb-3 shadow-sm border ${
+        isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'
+      }`}
       activeOpacity={0.7}
     >
       <LinearGradient
         colors={isActive ? ['#10B981', '#059669'] : ['#EF4444', '#DC2626']}
         className="w-16 h-16 rounded-2xl items-center justify-center self-center mb-3"
-        style={{borderRadius:100}}
+        style={{ borderRadius: 100 }}
       >
         <Text className="text-white text-2xl font-bold">
           {customer.name.charAt(0).toUpperCase()}
         </Text>
       </LinearGradient>
 
-      <Text className="text-gray-900 font-bold text-base text-center" numberOfLines={1}>
+      <Text className={`font-bold text-base text-center ${
+        isDarkMode ? 'text-white' : 'text-gray-900'
+      }`} numberOfLines={1}>
         {customer.name}
       </Text>
-      <Text className="text-gray-500 text-xs text-center mb-2" numberOfLines={1}>
+      <Text className={`text-xs text-center mb-2 ${
+        isDarkMode ? 'text-gray-500' : 'text-gray-500'
+      }`} numberOfLines={1}>
         {customer.email || 'No email'}
       </Text>
 
       <View className={`self-center px-3 py-1 rounded-full mb-3 ${
-        isActive ? 'bg-green-100' : 'bg-red-100'
+        isActive 
+          ? (isDarkMode ? 'bg-green-900/30' : 'bg-green-100')
+          : (isDarkMode ? 'bg-red-900/30' : 'bg-red-100')
       }`}>
         <Text className={`text-xs font-medium ${
-          isActive ? 'text-green-600' : 'text-red-600'
+          isActive 
+            ? (isDarkMode ? 'text-green-400' : 'text-green-600')
+            : (isDarkMode ? 'text-red-400' : 'text-red-600')
         }`}>
           {customer.status.toUpperCase()}
         </Text>
@@ -131,18 +168,28 @@ const CustomerCard = ({ customer, onPress, viewMode = 'grid' }) => {
 
       <View className="flex-row justify-between mt-2">
         <View className="items-center">
-          <Text className="text-gray-400 text-xs">Orders</Text>
-          <Text className="text-gray-900 font-bold">{customer.orderCount}</Text>
+          <Text className={`text-xs ${
+            isDarkMode ? 'text-gray-500' : 'text-gray-400'
+          }`}>Orders</Text>
+          <Text className={`font-bold ${
+            isDarkMode ? 'text-white' : 'text-gray-900'
+          }`}>{customer.orderCount}</Text>
         </View>
         <View className="items-center">
-          <Text className="text-gray-400 text-xs">Spent</Text>
-          <Text className="text-gray-900 font-bold">${customer.totalSpent.toFixed(0)}</Text>
+          <Text className={`text-xs ${
+            isDarkMode ? 'text-gray-500' : 'text-gray-400'
+          }`}>Spent</Text>
+          <Text className={`font-bold ${
+            isDarkMode ? 'text-white' : 'text-gray-900'
+          }`}>${customer.totalSpent.toFixed(0)}</Text>
         </View>
       </View>
 
       <View className="flex-row items-center justify-center mt-2">
         <Icon name="clock-outline" size={12} color="#9ca3af" />
-        <Text className="text-gray-400 text-xs ml-1">
+        <Text className={`text-xs ml-1 ${
+          isDarkMode ? 'text-gray-500' : 'text-gray-400'
+        }`}>
           {formatRelativeTime(customer.createdAt)}
         </Text>
       </View>

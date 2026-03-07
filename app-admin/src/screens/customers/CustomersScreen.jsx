@@ -1,3 +1,4 @@
+// screens/customers/CustomersScreen.js
 import React, { useState, useEffect } from 'react';
 import {
   View,
@@ -13,6 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { useThemeStore } from '../../store/themeStore';
 import Header from '../../components/common/Header';
 import CustomerList from '../../components/customers/CustomerList';
 import FilterModal from '../../components/customers/FilterModal';
@@ -340,6 +342,7 @@ const navigationItems = [
 
 const CustomersScreen = () => {
   const navigation = useNavigation();
+  const { isDarkMode } = useThemeStore();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFilter, setSelectedFilter] = useState('all');
   const [viewMode, setViewMode] = useState('grid');
@@ -446,13 +449,11 @@ const CustomersScreen = () => {
   );
 
   return (
-    <View className="flex-1 bg-gray-50 pb-16">
-      <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
+    <View className={`flex-1 ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'} pb-16`}>
+      <StatusBar barStyle={isDarkMode ? "light-content" : "dark-content"} backgroundColor={isDarkMode ? "#111827" : "#ffffff"} />
 
       <Header
         title="Customers"
-        backgroundColor="bg-white"
-        textColor="text-gray-800"
         userName="John Doe"
         userEmail="john.doe@example.com"
         activeScreen="Customers"
@@ -461,12 +462,14 @@ const CustomersScreen = () => {
           <View className="flex-row items-center">
             <TouchableOpacity
               onPress={toggleViewMode}
-              className="w-10 h-10 bg-gray-100 rounded-full items-center justify-center mr-2"
+              className={`w-10 h-10 rounded-full items-center justify-center mr-2 ${
+                isDarkMode ? 'bg-gray-800' : 'bg-gray-100'
+              }`}
             >
               <Icon
                 name={viewMode === "grid" ? "view-list" : "view-grid"}
                 size={22}
-                color="#4b5563"
+                color={isDarkMode ? "#9CA3AF" : "#4b5563"}
               />
             </TouchableOpacity>
             <TouchableOpacity
@@ -517,10 +520,16 @@ const CustomersScreen = () => {
 
       {/* Search Bar */}
       <View className="px-4 pt-4 pb-2">
-        <View className="flex-row items-center bg-white rounded-2xl px-4 h-14 shadow-sm border border-gray-100">
+        <View className={`flex-row items-center rounded-2xl px-4 h-14 shadow-sm border ${
+          isDarkMode 
+            ? 'bg-gray-800 border-gray-700' 
+            : 'bg-white border-gray-100'
+        }`}>
           <Icon name="magnify" size={22} color="#9ca3af" />
           <TextInput
-            className="flex-1 ml-3 text-base text-gray-800"
+            className={`flex-1 ml-3 text-base ${
+              isDarkMode ? 'text-white' : 'text-gray-800'
+            }`}
             placeholder="Search customers by name, email, phone..."
             placeholderTextColor="#9ca3af"
             value={searchQuery}
@@ -533,11 +542,13 @@ const CustomersScreen = () => {
           )}
           <TouchableOpacity 
             onPress={handleOpenFilter}
-            className="ml-2 p-2 border-l border-gray-200 relative"
+            className={`ml-2 p-2 border-l relative ${
+              isDarkMode ? 'border-gray-700' : 'border-gray-200'
+            }`}
           >
-            <Icon name="tune" size={22} color="#4b5563" />
+            <Icon name="tune" size={22} color={isDarkMode ? "#9CA3AF" : "#4b5563"} />
             {activeFilterCount > 0 && (
-              <View className="absolute -top-1 -right-1 bg-indigo-500 rounded-full min-w-[18px] h-[18px] justify-center items-center border-2 border-white">
+              <View className="absolute -top-1 -right-1 bg-indigo-500 rounded-full min-w-[18px] h-[18px] justify-center items-center border-2 border-white dark:border-gray-900">
                 <Text className="text-white text-[10px] font-bold">
                   {activeFilterCount}
                 </Text>
@@ -549,80 +560,101 @@ const CustomersScreen = () => {
 
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* Filter Chips */}
-      <View className="px-4 py-2">
-        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          <View className="flex-row gap-2">
-            {filterChips.map((filter) => (
-              <TouchableOpacity
-                key={filter.id}
-                onPress={() => handleFilterPress(filter.id)}
-                className={`flex-row items-center px-4 py-2.5 rounded-full border ${
-                  selectedFilter === filter.id
-                    ? "bg-indigo-500 border-indigo-500"
-                    : "bg-white border-gray-200"
-                } shadow-sm`}
-              >
-                <Icon
-                  name={filter.icon}
-                  size={18}
-                  color={selectedFilter === filter.id ? "#ffffff" : filter.color || "#6b7280"}
-                />
-                <Text
-                  className={`ml-2 font-medium ${
-                    selectedFilter === filter.id ? "text-white" : "text-gray-700"
-                  }`}
+        <View className="px-4 py-2">
+          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+            <View className="flex-row gap-2">
+              {filterChips.map((filter) => (
+                <TouchableOpacity
+                  key={filter.id}
+                  onPress={() => handleFilterPress(filter.id)}
+                  className={`flex-row items-center px-4 py-2.5 rounded-full border ${
+                    selectedFilter === filter.id
+                      ? "bg-indigo-500 border-indigo-500"
+                      : isDarkMode 
+                        ? 'bg-gray-800 border-gray-700' 
+                        : 'bg-white border-gray-200'
+                  } shadow-sm`}
                 >
-                  {filter.label}
-                </Text>
-                <View
-                  className={`ml-2 px-2 py-0.5 rounded-full ${
-                    selectedFilter === filter.id ? "bg-white/20" : "bg-gray-100"
-                  }`}
-                >
+                  <Icon
+                    name={filter.icon}
+                    size={18}
+                    color={
+                      selectedFilter === filter.id 
+                        ? "#ffffff" 
+                        : isDarkMode 
+                          ? '#9CA3AF' 
+                          : filter.color || "#6b7280"
+                    }
+                  />
                   <Text
-                    className={`text-xs ${
-                      selectedFilter === filter.id ? "text-white" : "text-gray-600"
+                    className={`ml-2 font-medium ${
+                      selectedFilter === filter.id 
+                        ? "text-white" 
+                        : isDarkMode ? 'text-gray-300' : 'text-gray-700'
                     }`}
                   >
-                    {filter.count}
+                    {filter.label}
                   </Text>
-                </View>
-              </TouchableOpacity>
-            ))}
-            
-            {/* Clear Filters Button */}
-            {activeFilterCount > 0 && (
-              <TouchableOpacity
-                onPress={handleClearFilters}
-                className="flex-row items-center px-4 py-2.5 rounded-full border border-red-200 bg-red-50"
-              >
-                <Icon name="close" size={18} color="#EF4444" />
-                <Text className="ml-2 font-medium text-red-600">Clear</Text>
-              </TouchableOpacity>
-            )}
-          </View>
-        </ScrollView>
-      </View>
+                  <View
+                    className={`ml-2 px-2 py-0.5 rounded-full ${
+                      selectedFilter === filter.id 
+                        ? "bg-white/20" 
+                        : isDarkMode ? 'bg-gray-700' : 'bg-gray-100'
+                    }`}
+                  >
+                    <Text
+                      className={`text-xs ${
+                        selectedFilter === filter.id 
+                          ? "text-white" 
+                          : isDarkMode ? 'text-gray-400' : 'text-gray-600'
+                      }`}
+                    >
+                      {filter.count}
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+              ))}
+              
+              {/* Clear Filters Button */}
+              {activeFilterCount > 0 && (
+                <TouchableOpacity
+                  onPress={handleClearFilters}
+                  className={`flex-row items-center px-4 py-2.5 rounded-full border ${
+                    isDarkMode 
+                      ? 'bg-red-900/30 border-red-800' 
+                      : 'bg-red-50 border-red-200'
+                  }`}
+                >
+                  <Icon name="close" size={18} color="#EF4444" />
+                  <Text className={`ml-2 font-medium ${
+                    isDarkMode ? 'text-red-400' : 'text-red-600'
+                  }`}>Clear</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          </ScrollView>
+        </View>
 
-      {/* Filter Modal */}
-      <FilterModal
-        visible={filterVisible}
-        onClose={() => setFilterVisible(false)}
-        filters={filters}
-        onApply={handleApplyFilters}
-        onClear={handleClearFilters}
-      />
-
-      {/* Customer List with filters */}
-      <View className="flex-1 px-4">
-        <CustomerList
-          viewMode={viewMode}
-          searchQuery={searchQuery}
+        {/* Filter Modal */}
+        <FilterModal
+          visible={filterVisible}
+          onClose={() => setFilterVisible(false)}
           filters={filters}
-          customers={STATIC_CUSTOMERS}
+          onApply={handleApplyFilters}
+          onClear={handleClearFilters}
+          isDarkMode={isDarkMode}
         />
-      </View>
-        
+
+        {/* Customer List with filters */}
+        <View className="flex-1 px-4">
+          <CustomerList
+            viewMode={viewMode}
+            searchQuery={searchQuery}
+            filters={filters}
+            customers={STATIC_CUSTOMERS}
+            isDarkMode={isDarkMode}
+          />
+        </View>
       </ScrollView>
     </View>
   );

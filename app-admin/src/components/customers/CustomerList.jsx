@@ -1,3 +1,4 @@
+// components/customers/CustomerList.js
 import { useNavigation } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
 import { useEffect, useMemo, useState } from "react";
@@ -10,6 +11,7 @@ import {
   View,
 } from "react-native";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
+import { useThemeStore } from "../../store/themeStore";
 import CustomerCard from "./CustomerCard";
 
 const CustomerList = ({
@@ -18,6 +20,7 @@ const CustomerList = ({
   filters = {},
   customers = [],
   onCustomerPress,
+  isDarkMode: propIsDarkMode,
 }) => {
   // Safely use navigation with fallback
   let navigation;
@@ -27,6 +30,8 @@ const CustomerList = ({
     console.log("Navigation not available in CustomerList");
   }
 
+  const { isDarkMode: storeIsDarkMode } = useThemeStore();
+  const isDarkMode = propIsDarkMode !== undefined ? propIsDarkMode : storeIsDarkMode;
   const [refreshing, setRefreshing] = useState(false);
   const [fadeAnim] = useState(new Animated.Value(0));
 
@@ -189,7 +194,9 @@ const CustomerList = ({
   const renderHeader = () => (
     <Animated.View style={{ opacity: fadeAnim, marginBottom: 16 }}>
       <View className="flex-row justify-between items-center">
-        <Text className="text-gray-600 text-sm">
+        <Text className={`text-sm ${
+          isDarkMode ? 'text-gray-400' : 'text-gray-600'
+        }`}>
           {filteredCustomers.length}{" "}
           {filteredCustomers.length === 1 ? "customer" : "customers"} found
         </Text>
@@ -206,6 +213,7 @@ const CustomerList = ({
         customer={item}
         viewMode={viewMode}
         onPress={handleCustomerPress}
+        isDarkMode={isDarkMode}
       />
     </View>
   );
@@ -239,11 +247,15 @@ const CustomerList = ({
         <View className="px-4">
           {renderHeader()}
           <View className="items-center justify-center py-16">
-            <Icon name="account-group" size={80} color="#d1d5db" />
-            <Text className="text-lg font-semibold text-gray-700 mt-4">
+            <Icon name="account-group" size={80} color={isDarkMode ? "#4B5563" : "#d1d5db"} />
+            <Text className={`text-lg font-semibold mt-4 ${
+              isDarkMode ? 'text-gray-300' : 'text-gray-700'
+            }`}>
               No Customers Found
             </Text>
-            <Text className="text-sm text-gray-400 text-center mt-2 px-8">
+            <Text className={`text-sm text-center mt-2 px-8 ${
+              isDarkMode ? 'text-gray-500' : 'text-gray-400'
+            }`}>
               {searchQuery ||
               Object.keys(filters).some(
                 (k) =>
@@ -278,24 +290,25 @@ const CustomerList = ({
   }
 
   return (
-    <View
-      className="flex-1"
-      
-      refreshControl={
-        <RefreshControl
-          refreshing={refreshing}
-          onRefresh={onRefresh}
-          colors={["#6366F1"]}
-          tintColor="#6366F1"
-        />
-      }
-    >
-      <View className="">
-        {renderHeader()}
-        {viewMode === "grid" 
-          ? renderGridItems() 
-          : filteredCustomers.map(item => renderItem(item))}
-      </View>
+    <View className="flex-1">
+      {renderHeader()}
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={["#6366F1"]}
+            tintColor="#6366F1"
+          />
+        }
+      >
+        <View className="pb-4">
+          {viewMode === "grid" 
+            ? renderGridItems() 
+            : filteredCustomers.map(item => renderItem(item))}
+        </View>
+      </ScrollView>
     </View>
   );
 };
