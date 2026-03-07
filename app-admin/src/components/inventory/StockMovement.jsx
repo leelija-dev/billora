@@ -1,4 +1,4 @@
-// screens/inventory/StockMovement.js
+// components/inventory/StockMovement.js
 import React, { useState, useMemo } from 'react';
 import {
   View,
@@ -14,6 +14,7 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { useThemeStore } from '../../store/themeStore';
 
 // Static stock movements data
 const STATIC_MOVEMENTS = {
@@ -106,6 +107,7 @@ const PRODUCT_DETAILS = {
 const StockMovement = () => {
   const navigation = useNavigation();
   const route = useRoute();
+  const { isDarkMode } = useThemeStore();
   const productId = route.params?.productId;
 
   const [showAddForm, setShowAddForm] = useState(false);
@@ -210,38 +212,64 @@ const StockMovement = () => {
   const getMovementIcon = (type) => {
     switch (type) {
       case 'in':
-        return { icon: 'arrow-down', color: '#10B981', bg: '#D1FAE5' };
+        return { 
+          icon: 'arrow-down', 
+          color: '#10B981', 
+          bg: isDarkMode ? '#065F46' : '#D1FAE5' 
+        };
       case 'out':
-        return { icon: 'arrow-up', color: '#EF4444', bg: '#FEE2E2' };
+        return { 
+          icon: 'arrow-up', 
+          color: '#EF4444', 
+          bg: isDarkMode ? '#7F1D1D' : '#FEE2E2' 
+        };
       case 'adjustment':
-        return { icon: 'swap-vertical', color: '#F59E0B', bg: '#FEF3C7' };
+        return { 
+          icon: 'swap-vertical', 
+          color: '#F59E0B', 
+          bg: isDarkMode ? '#92400E' : '#FEF3C7' 
+        };
       default:
-        return { icon: 'swap-horizontal', color: '#6366F1', bg: '#EEF2FF' };
+        return { 
+          icon: 'swap-horizontal', 
+          color: '#6366F1', 
+          bg: isDarkMode ? '#312E81' : '#EEF2FF' 
+        };
     }
   };
 
   if (!productId) {
     return (
-      <SafeAreaView className="flex-1 bg-gray-50">
-        <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
-        <View className="flex-row items-center px-4 py-3 bg-white border-b border-gray-100">
+      <SafeAreaView className={`flex-1 ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
+        <StatusBar barStyle={isDarkMode ? "light-content" : "dark-content"} backgroundColor={isDarkMode ? "#111827" : "#ffffff"} />
+        <View className={`flex-row items-center px-4 py-3 border-b ${
+          isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'
+        }`}>
           <TouchableOpacity
             onPress={() => navigation.goBack()}
-            className="w-10 h-10 bg-gray-100 rounded-2xl items-center justify-center"
+            className={`w-10 h-10 rounded-2xl items-center justify-center ${
+              isDarkMode ? 'bg-gray-700' : 'bg-gray-100'
+            }`}
           >
-            <Icon name="arrow-left" size={22} color="#374151" />
+            <Icon name="arrow-left" size={22} color={isDarkMode ? "#9CA3AF" : "#374151"} />
           </TouchableOpacity>
-          <Text className="flex-1 text-lg font-bold text-gray-900 text-center">
+          <Text className={`flex-1 text-lg font-bold text-center ${
+            isDarkMode ? 'text-white' : 'text-gray-900'
+          }`}>
             Stock Movements
           </Text>
           <View className="w-10" />
         </View>
         <View className="flex-1 items-center justify-center p-4">
-          <Icon name="package-variant" size={80} color="#d1d5db" />
-          <Text className="text-lg font-semibold text-gray-700 mt-4">
+          <Icon name="package-variant" size={80} color={isDarkMode ? "#4B5563" : "#d1d5db"} />
+          <Text className={`text-lg font-semibold mt-4 ${
+            isDarkMode ? 'text-gray-300' : 'text-gray-700'
+          }`}>
             No Product Selected
           </Text>
-          <Text className="text-sm text-gray-400 text-center mt-2">
+          <Text className={`text-sm text-center mt-2 ${
+            isDarkMode ? 'text-gray-500' : 'text-gray-400'
+          }`}>
             Please select a product to view its stock movements
           </Text>
         </View>
@@ -250,22 +278,30 @@ const StockMovement = () => {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-50" edges={['top']}
-    style={{ paddingBottom: 60 }}>
-      <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
+    <SafeAreaView className={`flex-1 ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`} edges={['top']}
+      style={{ paddingBottom: 60 }}>
+      <StatusBar barStyle={isDarkMode ? "light-content" : "dark-content"} backgroundColor={isDarkMode ? "#111827" : "#ffffff"} />
 
       {/* Header */}
-      <View className="flex-row items-center justify-between px-4 py-3 bg-white border-b border-gray-100">
+      <View className={`flex-row items-center justify-between px-4 py-3 border-b ${
+        isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'
+      }`}>
         <TouchableOpacity
           onPress={() => navigation.goBack()}
-          className="w-10 h-10 bg-gray-100 rounded-2xl items-center justify-center"
+          className={`w-10 h-10 rounded-2xl items-center justify-center ${
+            isDarkMode ? 'bg-gray-700' : 'bg-gray-100'
+          }`}
         >
-          <Icon name="arrow-left" size={22} color="#374151" />
+          <Icon name="arrow-left" size={22} color={isDarkMode ? "#9CA3AF" : "#374151"} />
         </TouchableOpacity>
-        <Text className="text-lg font-bold text-gray-900">Stock Movements</Text>
+        <Text className={`text-lg font-bold ${
+          isDarkMode ? 'text-white' : 'text-gray-900'
+        }`}>Stock Movements</Text>
         <TouchableOpacity
           onPress={() => setShowAddForm(true)}
-          className="w-10 h-10 bg-indigo-100 rounded-2xl items-center justify-center"
+          className={`w-10 h-10 rounded-2xl items-center justify-center ${
+            isDarkMode ? 'bg-indigo-900/30' : 'bg-indigo-100'
+          }`}
         >
           <Icon name="plus" size={22} color="#6366F1" />
         </TouchableOpacity>
@@ -317,15 +353,19 @@ const StockMovement = () => {
         {showAddForm && (
           <BlurView
             intensity={90}
-            tint="light"
+            tint={isDarkMode ? "dark" : "light"}
             className="mx-4 mt-4 overflow-hidden rounded-3xl"
             style={{
               borderWidth: 1,
-              borderColor: "rgba(255, 255, 255, 0.3)",
+              borderColor: isDarkMode ? "rgba(255, 255, 255, 0.1)" : "rgba(255, 255, 255, 0.3)",
             }}
           >
-            <View className="p-5 bg-white/70">
-              <Text className="text-gray-900 font-bold text-lg mb-4">
+            <View className={`p-5 ${
+              isDarkMode ? 'bg-gray-800/70' : 'bg-white/70'
+            }`}>
+              <Text className={`font-bold text-lg mb-4 ${
+                isDarkMode ? 'text-white' : 'text-gray-900'
+              }`}>
                 Add Stock Movement
               </Text>
 
@@ -334,30 +374,36 @@ const StockMovement = () => {
                 <TouchableOpacity
                   onPress={() => setMovementForm(prev => ({ ...prev, type: 'in' }))}
                   className={`flex-1 py-3 rounded-l-xl items-center ${
-                    movementForm.type === 'in' ? 'bg-green-500' : 'bg-gray-100'
+                    movementForm.type === 'in' 
+                      ? 'bg-green-500' 
+                      : isDarkMode ? 'bg-gray-700' : 'bg-gray-100'
                   }`}
                 >
-                  <Text className={movementForm.type === 'in' ? 'text-white' : 'text-gray-600'}>
+                  <Text className={movementForm.type === 'in' ? 'text-white' : (isDarkMode ? 'text-gray-400' : 'text-gray-600')}>
                     Stock In
                   </Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   onPress={() => setMovementForm(prev => ({ ...prev, type: 'out' }))}
                   className={`flex-1 py-3 items-center ${
-                    movementForm.type === 'out' ? 'bg-red-500' : 'bg-gray-100'
+                    movementForm.type === 'out' 
+                      ? 'bg-red-500' 
+                      : isDarkMode ? 'bg-gray-700' : 'bg-gray-100'
                   }`}
                 >
-                  <Text className={movementForm.type === 'out' ? 'text-white' : 'text-gray-600'}>
+                  <Text className={movementForm.type === 'out' ? 'text-white' : (isDarkMode ? 'text-gray-400' : 'text-gray-600')}>
                     Stock Out
                   </Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   onPress={() => setMovementForm(prev => ({ ...prev, type: 'adjustment' }))}
                   className={`flex-1 py-3 rounded-r-xl items-center ${
-                    movementForm.type === 'adjustment' ? 'bg-orange-500' : 'bg-gray-100'
+                    movementForm.type === 'adjustment' 
+                      ? 'bg-orange-500' 
+                      : isDarkMode ? 'bg-gray-700' : 'bg-gray-100'
                   }`}
                 >
-                  <Text className={movementForm.type === 'adjustment' ? 'text-white' : 'text-gray-600'}>
+                  <Text className={movementForm.type === 'adjustment' ? 'text-white' : (isDarkMode ? 'text-gray-400' : 'text-gray-600')}>
                     Adjustment
                   </Text>
                 </TouchableOpacity>
@@ -365,15 +411,21 @@ const StockMovement = () => {
 
               {/* Quantity Input */}
               <View className="mb-4">
-                <Text className="text-gray-700 text-sm font-medium mb-2">Quantity</Text>
-                <View className={`flex-row items-center bg-gray-50 rounded-xl px-4 border ${
-                  formErrors.quantity ? 'border-red-300' : 'border-gray-200'
+                <Text className={`text-sm font-medium mb-2 ${
+                  isDarkMode ? 'text-gray-300' : 'text-gray-700'
+                }`}>Quantity</Text>
+                <View className={`flex-row items-center rounded-xl px-4 border ${
+                  formErrors.quantity 
+                    ? 'border-red-500' 
+                    : isDarkMode ? 'border-gray-700 bg-gray-800' : 'border-gray-200 bg-gray-50'
                 }`}>
                   <Icon name="counter" size={20} color="#9ca3af" />
                   <TextInput
-                    className="flex-1 ml-3 py-3 text-gray-900"
+                    className={`flex-1 ml-3 py-3 ${
+                      isDarkMode ? 'text-white' : 'text-gray-900'
+                    }`}
                     placeholder="Enter quantity"
-                    placeholderTextColor="#9ca3af"
+                    placeholderTextColor={isDarkMode ? '#6B7280' : '#9ca3af'}
                     keyboardType="number-pad"
                     value={movementForm.quantity}
                     onChangeText={(text) => {
@@ -391,14 +443,20 @@ const StockMovement = () => {
 
               {/* Reason Input */}
               <View className="mb-4">
-                <Text className="text-gray-700 text-sm font-medium mb-2">Reason</Text>
-                <View className={`bg-gray-50 rounded-xl px-4 border ${
-                  formErrors.reason ? 'border-red-300' : 'border-gray-200'
+                <Text className={`text-sm font-medium mb-2 ${
+                  isDarkMode ? 'text-gray-300' : 'text-gray-700'
+                }`}>Reason</Text>
+                <View className={`rounded-xl px-4 border ${
+                  formErrors.reason 
+                    ? 'border-red-500' 
+                    : isDarkMode ? 'border-gray-700 bg-gray-800' : 'border-gray-200 bg-gray-50'
                 }`}>
                   <TextInput
-                    className="py-3 text-gray-900 min-h-[80px]"
+                    className={`py-3 min-h-[80px] ${
+                      isDarkMode ? 'text-white' : 'text-gray-900'
+                    }`}
                     placeholder="Enter reason for movement"
-                    placeholderTextColor="#9ca3af"
+                    placeholderTextColor={isDarkMode ? '#6B7280' : '#9ca3af'}
                     multiline
                     numberOfLines={3}
                     textAlignVertical="top"
@@ -418,13 +476,19 @@ const StockMovement = () => {
 
               {/* Reference Input */}
               <View className="mb-4">
-                <Text className="text-gray-700 text-sm font-medium mb-2">Reference (Optional)</Text>
-                <View className="flex-row items-center bg-gray-50 rounded-xl px-4 border border-gray-200">
+                <Text className={`text-sm font-medium mb-2 ${
+                  isDarkMode ? 'text-gray-300' : 'text-gray-700'
+                }`}>Reference (Optional)</Text>
+                <View className={`flex-row items-center rounded-xl px-4 border ${
+                  isDarkMode ? 'border-gray-700 bg-gray-800' : 'border-gray-200 bg-gray-50'
+                }`}>
                   <Icon name="tag" size={20} color="#9ca3af" />
                   <TextInput
-                    className="flex-1 ml-3 py-3 text-gray-900"
+                    className={`flex-1 ml-3 py-3 ${
+                      isDarkMode ? 'text-white' : 'text-gray-900'
+                    }`}
                     placeholder="PO number, invoice, etc."
-                    placeholderTextColor="#9ca3af"
+                    placeholderTextColor={isDarkMode ? '#6B7280' : '#9ca3af'}
                     value={movementForm.reference}
                     onChangeText={(text) => setMovementForm(prev => ({ ...prev, reference: text }))}
                   />
@@ -435,9 +499,13 @@ const StockMovement = () => {
               <View className="flex-row mt-2">
                 <TouchableOpacity
                   onPress={handleCancelForm}
-                  className="flex-1 bg-gray-100 py-3 rounded-xl mr-2"
+                  className={`flex-1 py-3 rounded-xl mr-2 ${
+                    isDarkMode ? 'bg-gray-700' : 'bg-gray-100'
+                  }`}
                 >
-                  <Text className="text-gray-700 font-semibold text-center">Cancel</Text>
+                  <Text className={`font-semibold text-center ${
+                    isDarkMode ? 'text-gray-300' : 'text-gray-700'
+                  }`}>Cancel</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   onPress={handleAddMovement}
@@ -460,13 +528,23 @@ const StockMovement = () => {
 
         {/* Movements List */}
         <View className="px-4 mt-4 mb-8">
-          <Text className="text-gray-900 font-bold text-lg mb-4">Movement History</Text>
+          <Text className={`font-bold text-lg mb-4 ${
+            isDarkMode ? 'text-white' : 'text-gray-900'
+          }`}>Movement History</Text>
 
           {movements.length === 0 ? (
-            <View className="items-center justify-center py-12 bg-white rounded-3xl border border-gray-100">
-              <Icon name="swap-horizontal" size={60} color="#d1d5db" />
-              <Text className="text-gray-700 font-semibold mt-4">No Movements Yet</Text>
-              <Text className="text-gray-400 text-sm text-center mt-2 px-8">
+            <View className={`items-center justify-center py-12 rounded-3xl border ${
+              isDarkMode 
+                ? 'bg-gray-800 border-gray-700' 
+                : 'bg-white border-gray-100'
+            }`}>
+              <Icon name="swap-horizontal" size={60} color={isDarkMode ? "#4B5563" : "#d1d5db"} />
+              <Text className={`font-semibold mt-4 ${
+                isDarkMode ? 'text-gray-300' : 'text-gray-700'
+              }`}>No Movements Yet</Text>
+              <Text className={`text-sm text-center mt-2 px-8 ${
+                isDarkMode ? 'text-gray-500' : 'text-gray-400'
+              }`}>
                 Add your first stock movement using the + button above
               </Text>
             </View>
@@ -477,14 +555,16 @@ const StockMovement = () => {
                 <BlurView
                   key={movement.id}
                   intensity={80}
-                  tint="light"
+                  tint={isDarkMode ? "dark" : "light"}
                   className="overflow-hidden rounded-2xl mb-3"
                   style={{
                     borderWidth: 1,
-                    borderColor: "rgba(255, 255, 255, 0.3)",
+                    borderColor: isDarkMode ? "rgba(255, 255, 255, 0.1)" : "rgba(255, 255, 255, 0.3)",
                   }}
                 >
-                  <View className="p-4 bg-white/70">
+                  <View className={`p-4 ${
+                    isDarkMode ? 'bg-gray-800/70' : 'bg-white/70'
+                  }`}>
                     <View className="flex-row items-center">
                       <View
                         className="w-12 h-12 rounded-xl items-center justify-center mr-3"
@@ -499,22 +579,31 @@ const StockMovement = () => {
 
                       <View className="flex-1">
                         <View className="flex-row justify-between items-start">
-                          <Text className="text-gray-900 font-bold">
+                          <Text className={`font-bold ${
+                            isDarkMode ? 'text-white' : 'text-gray-900'
+                          }`}>
                             {movement.type === 'in' ? 'Stock In' :
                              movement.type === 'out' ? 'Stock Out' : 'Adjustment'}
                           </Text>
-                          <Text className="text-xs text-gray-400">
+                          <Text className={`text-xs ${
+                            isDarkMode ? 'text-gray-500' : 'text-gray-400'
+                          }`}>
                             {formatDate(movement.createdAt)}
                           </Text>
                         </View>
 
                         <View className="flex-row mt-2">
                           <View className="flex-1">
-                            <Text className="text-gray-400 text-xs">Quantity</Text>
+                            <Text className={`text-xs ${
+                              isDarkMode ? 'text-gray-500' : 'text-gray-400'
+                            }`}>Quantity</Text>
                             <Text
                               className={`font-bold ${
-                                movement.type === 'in' ? 'text-green-600' :
-                                movement.type === 'out' ? 'text-red-600' : 'text-orange-600'
+                                movement.type === 'in' 
+                                  ? 'text-green-600' 
+                                  : movement.type === 'out' 
+                                    ? 'text-red-600' 
+                                    : 'text-orange-600'
                               }`}
                             >
                               {movement.type === 'in' ? '+' : movement.type === 'out' ? '-' : ''}
@@ -522,32 +611,46 @@ const StockMovement = () => {
                             </Text>
                           </View>
                           <View className="flex-1">
-                            <Text className="text-gray-400 text-xs">Balance</Text>
-                            <Text className="text-gray-900 font-bold">
+                            <Text className={`text-xs ${
+                              isDarkMode ? 'text-gray-500' : 'text-gray-400'
+                            }`}>Balance</Text>
+                            <Text className={`font-bold ${
+                              isDarkMode ? 'text-white' : 'text-gray-900'
+                            }`}>
                               {movement.balance} units
                             </Text>
                           </View>
                           {movement.unitPrice && (
                             <View className="flex-1">
-                              <Text className="text-gray-400 text-xs">Value</Text>
-                              <Text className="text-gray-900 font-bold">
+                              <Text className={`text-xs ${
+                                isDarkMode ? 'text-gray-500' : 'text-gray-400'
+                              }`}>Value</Text>
+                              <Text className={`font-bold ${
+                                isDarkMode ? 'text-white' : 'text-gray-900'
+                              }`}>
                                 {formatCurrency(movement.quantity * movement.unitPrice)}
                               </Text>
                             </View>
                           )}
                         </View>
 
-                        <Text className="text-gray-600 text-sm mt-2">
+                        <Text className={`text-sm mt-2 ${
+                          isDarkMode ? 'text-gray-300' : 'text-gray-600'
+                        }`}>
                           {movement.reason}
                         </Text>
 
                         <View className="flex-row items-center mt-2">
                           <Icon name="account" size={12} color="#9ca3af" />
-                          <Text className="text-gray-400 text-xs ml-1">
+                          <Text className={`text-xs ml-1 ${
+                            isDarkMode ? 'text-gray-500' : 'text-gray-400'
+                          }`}>
                             {movement.createdBy.name}
                           </Text>
                           <Icon name="map-marker" size={12} color="#9ca3af" style={{ marginLeft: 12 }} />
-                          <Text className="text-gray-400 text-xs ml-1">
+                          <Text className={`text-xs ml-1 ${
+                            isDarkMode ? 'text-gray-500' : 'text-gray-400'
+                          }`}>
                             {movement.location}
                           </Text>
                         </View>
@@ -555,7 +658,9 @@ const StockMovement = () => {
                         {movement.reference && (
                           <View className="flex-row items-center mt-1">
                             <Icon name="tag" size={12} color="#9ca3af" />
-                            <Text className="text-gray-400 text-xs ml-1">
+                            <Text className={`text-xs ml-1 ${
+                              isDarkMode ? 'text-gray-500' : 'text-gray-400'
+                            }`}>
                               Ref: {movement.reference}
                             </Text>
                           </View>
