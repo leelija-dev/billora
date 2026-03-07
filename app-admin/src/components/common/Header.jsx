@@ -78,7 +78,7 @@ const Header = ({
     id: "inventory",
     title: "Inventory",
     icon: "warehouse-outline",
-    iconActive: "warehouse",
+    iconActive: "warehouse-outline",
     parent: "InventoryStack",
     screen: "Inventory", // The actual screen name
     badge: "Low Stock",
@@ -564,11 +564,13 @@ const Header = ({
                     {navigationItems.map((item) => {
                       const isActive = 
                         activeScreen === item.title || 
-                        activeScreen === item.stack ||
                         activeScreen === item.screen ||
-                        (item.stack && activeScreen === item.stack) ||
+                        activeScreen === item.parent ||
+                        (item.parent && activeScreen.includes(item.title)) ||
                         (item.title === "Dashboard" && activeScreen === "Dashboard");
                       
+                      console.log('Item:', item.title, 'ActiveScreen:', activeScreen, 'IsActive:', isActive); // Debug log
+
                       return (
                         <TouchableOpacity
                           key={item.id}
@@ -587,7 +589,7 @@ const Header = ({
                                   : isDarkMode ? 'bg-gray-700' : 'bg-gray-100'
                               }`}>
                                 <Icon
-                                  name={isActive ? item.iconActive : item.icon}
+                                  name={isActive ? item.icon : item.icon}
                                   size={20}
                                   color={isActive ? "#667eea" : (isDarkMode ? "#9CA3AF" : "#666")}
                                 />
