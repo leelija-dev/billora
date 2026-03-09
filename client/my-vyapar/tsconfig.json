@@ -14,9 +14,7 @@
     "jsx": "react-jsx",
     "incremental": true,
     "plugins": [
-      {
-        "name": "next"
-      }
+      { "name": "next" }
     ],
     "paths": {
       "@/*": ["./*"]
@@ -26,9 +24,12 @@
     "next-env.d.ts",
     "**/*.ts",
     "**/*.tsx",
+    "**/*.mts",
+    "components/**/*.tsx",
+    "components/**/*.jsx",
+    "app/**/*.jsx",
     ".next/types/**/*.ts",
-    ".next/dev/types/**/*.ts",
-    "**/*.mts"
-, "app/components/Navbar.jsx", "app/components/Hero.jsx", "Components/Footer.jsx", "Components/Hero.jsx", "Components/Navbar.jsx"  ],
+    ".next/dev/types/**/*.ts"
+  ],
   "exclude": ["node_modules"]
 }
