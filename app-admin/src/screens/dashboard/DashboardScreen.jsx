@@ -138,7 +138,7 @@ const STATIC_DASHBOARD_DATA = {
   ],
 };
 
-// Navigation items for sidebar - FIXED: Changed "warehouse-outline" to "warehouse"
+// Navigation items for sidebar
 const navigationItems = [
   {
     id: "dashboard",
@@ -171,7 +171,7 @@ const navigationItems = [
   {
     id: "inventory",
     title: "Inventory",
-    icon: "warehouse", // Fixed: Changed from "warehouse-outline" to "warehouse"
+    icon: "warehouse",
     screen: "Inventory",
     badge: "Low Stock",
   },
@@ -321,27 +321,12 @@ const DashboardScreen = () => {
     ]);
   };
 
-  // Fixed: Instead of passing a custom rightComponent that includes the bell,
-  // we'll pass the view mode toggle as leftComponent and let Header handle notifications
-  const renderCustomLeftComponent = () => (
-    <TouchableOpacity
-      onPress={toggleViewMode}
-      className={`w-10 h-10 rounded-full items-center justify-center ${
-        isDarkMode ? 'bg-gray-700' : 'bg-gray-100'
-      }`}
-    >
-      <Icon
-        name={viewMode === "grid" ? "view-list" : "view-grid"}
-        size={22}
-        color={isDarkMode ? "#9CA3AF" : "#4b5563"}
-      />
-    </TouchableOpacity>
-  );
-
   return (
     <View className={`flex-1 ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'} pb-16`}>
       <Header
         title="Dashboard"
+        // REMOVED: backgroundColor="bg-white dark:bg-gray-900" - Let Header handle its own background
+        // REMOVED: textColor="text-gray-800 dark:text-white" - Let Header handle its own text color
         userName="John Doe"
         userEmail="john.doe@example.com"
         activeScreen="Dashboard"
@@ -350,9 +335,7 @@ const DashboardScreen = () => {
         onNotificationPress={handleNotificationPress}
         onSearchPress={handleSearchPress}
         onLogout={handleLogout}
-        // Remove rightComponent and use leftComponent for view toggle
-        leftComponent={renderCustomLeftComponent()}
-        // Don't pass rightComponent - let Header render its default bell and search
+       
       />
 
       <ScrollView
@@ -379,6 +362,7 @@ const DashboardScreen = () => {
             shadowOpacity: 0.3,
             shadowRadius: 8,
             elevation: 5,
+            borderRadius:10
           }}
         >
           <View className="flex-row justify-between items-center">
