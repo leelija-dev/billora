@@ -29,8 +29,6 @@ class CustomerController extends Controller
             'email' => 'required|email',
             'phone' => 'required',
             'password' => 'required',
-            'email_varified_at' => 'nullable',
-            'remember_token' => 'nullable',
             'company_name' => 'nullable',
             'gst_number' => 'nullable',
             'address' => 'nullable',
