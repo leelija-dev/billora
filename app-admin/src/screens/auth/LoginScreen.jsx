@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import LoginForm from '../../components/auth/LoginForm';
 import Loading from '../../components/common/Loading';
 import { useAuth } from '../../hooks/useAuth';

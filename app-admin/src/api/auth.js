@@ -5,11 +5,6 @@ import { mockAuth } from './mock/auth';
 // Get auth data based on project mode
 const getAuthData = () => {
   const projectMode = process.env.EXPO_PUBLIC_PROJECT_MODE || 'mock';
-  console.log('🔍 Auth Mode Check:', {
-    projectMode,
-    isMock: projectMode === 'mock',
-    envVar: process.env.EXPO_PUBLIC_PROJECT_MODE
-  });
   return projectMode === 'mock' ? mockAuth : apiClient;
 };
 

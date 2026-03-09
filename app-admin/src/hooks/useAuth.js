@@ -30,8 +30,6 @@ export const useAuth = () => {
   const login = async (credentials) => {
     try {
       setIsLoading(true);
-      console.log('🔑 Login Attempt:', { email: credentials.email, mode: process.env.EXPO_PUBLIC_PROJECT_MODE });
-      
       const response = await authAPI.login(credentials.email, credentials.password);
       
       const { user: userData, token } = response.data;

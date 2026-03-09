@@ -22,8 +22,6 @@ let mockUsers = [
 
 const mockAuth = {
   post: async (endpoint, data) => {
-    console.log('🎭 Mock Auth Called:', { endpoint, data });
-    
     // Simulate network delay
     await new Promise(resolve => setTimeout(resolve, 500));
 

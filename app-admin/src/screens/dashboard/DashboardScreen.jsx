@@ -17,10 +17,11 @@ import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 import { useThemeStore } from "../../store/themeStore";
 import Header from "../../components/common/Header";
 import StatsCard from "../../components/dashboard/StatsCard";
+import { useAuthStore } from "../../store/authStore";
 
 const { width } = Dimensions.get("window");
 
-// Static dashboard data - NO API CALLS
+// Static dashboard data - NO API CALLS (use this as fallback)
 const STATIC_DASHBOARD_DATA = {
   stats: {
     totalRevenue: 125890,
@@ -187,14 +188,20 @@ const navigationItems = [
 const DashboardScreen = () => {
   const { width } = useWindowDimensions();
   const { isDarkMode } = useThemeStore();
+  const { user } = useAuthStore();
+  
+  // Since you want NO API CALLS, use static data directly
+  const [dashboardData] = useState(STATIC_DASHBOARD_DATA);
+  const [loading] = useState(false);
+  const [error] = useState(null);
+  
   const cardWidth = Math.min(200, width * 0.8);
   const gap = 16;
   const navigation = useNavigation();
-  const [dashboardData] = useState(STATIC_DASHBOARD_DATA);
   const [selectedPeriod, setSelectedPeriod] = useState("week");
-  const [refreshing, setRefreshing] = useState(false);
   const [viewMode, setViewMode] = useState("grid");
   const [notificationCount] = useState(5);
+  const [refreshing, setRefreshing] = useState(false);
 
   const formatCurrency = (amount) => {
     return `$${amount.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, "$&,")}`;
@@ -216,13 +223,15 @@ const DashboardScreen = () => {
   };
 
   const getChartData = () => {
+    if (!dashboardData) return { labels: [], datasets: [] };
+    
     switch (selectedPeriod) {
       case "day":
         return {
-          labels: dashboardData.revenueData.daily.map((d) => d.date),
+          labels: dashboardData.revenueData?.daily?.map((d) => d.date) || [],
           datasets: [
             {
-              data: dashboardData.revenueData.daily.map((d) => d.revenue),
+              data: dashboardData.revenueData?.daily?.map((d) => d.revenue) || [],
               color: (opacity = 1) => `rgba(99, 102, 241, ${opacity})`,
               strokeWidth: 2,
             },
@@ -230,10 +239,10 @@ const DashboardScreen = () => {
         };
       case "week":
         return {
-          labels: dashboardData.revenueData.weekly.map((w) => w.week),
+          labels: dashboardData.revenueData?.weekly?.map((w) => w.week) || [],
           datasets: [
             {
-              data: dashboardData.revenueData.weekly.map((w) => w.revenue),
+              data: dashboardData.revenueData?.weekly?.map((w) => w.revenue) || [],
               color: (opacity = 1) => `rgba(99, 102, 241, ${opacity})`,
               strokeWidth: 2,
             },
@@ -241,10 +250,10 @@ const DashboardScreen = () => {
         };
       case "month":
         return {
-          labels: dashboardData.revenueData.monthly.map((m) => m.month),
+          labels: dashboardData.revenueData?.monthly?.map((m) => m.month) || [],
           datasets: [
             {
-              data: dashboardData.revenueData.monthly.map((m) => m.revenue),
+              data: dashboardData.revenueData?.monthly?.map((m) => m.revenue) || [],
               color: (opacity = 1) => `rgba(99, 102, 241, ${opacity})`,
               strokeWidth: 2,
             },
@@ -289,6 +298,7 @@ const DashboardScreen = () => {
 
   const onRefresh = () => {
     setRefreshing(true);
+    // Simulate refresh
     setTimeout(() => {
       setRefreshing(false);
     }, 1000);
@@ -321,21 +331,39 @@ const DashboardScreen = () => {
     ]);
   };
 
+  // Show loading state if needed
+  if (loading) {
+    return (
+      <View className={`flex-1 ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'} items-center justify-center`}>
+        <Text className={isDarkMode ? 'text-white' : 'text-gray-900'}>Loading...</Text>
+      </View>
+    );
+  }
+
+  // Show error state if needed
+  if (error) {
+    return (
+      <View className={`flex-1 ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'} items-center justify-center`}>
+        <Text className="text-red-500">Error: {error}</Text>
+      </View>
+    );
+  }
+
+  // If dashboardData is null for some reason, use a default empty object
+  const data = dashboardData || STATIC_DASHBOARD_DATA;
+
   return (
     <View className={`flex-1 ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'} pb-16`}>
       <Header
         title="Dashboard"
-        // REMOVED: backgroundColor="bg-white dark:bg-gray-900" - Let Header handle its own background
-        // REMOVED: textColor="text-gray-800 dark:text-white" - Let Header handle its own text color
-        userName="John Doe"
-        userEmail="john.doe@example.com"
+        userName={user?.name || "User"}
+        userEmail={user?.email || "guest@example.com"}
         activeScreen="Dashboard"
         navigationItems={navigationItems}
         notificationCount={notificationCount}
         onNotificationPress={handleNotificationPress}
         onSearchPress={handleSearchPress}
         onLogout={handleLogout}
-       
       />
 
       <ScrollView
@@ -362,14 +390,14 @@ const DashboardScreen = () => {
             shadowOpacity: 0.3,
             shadowRadius: 8,
             elevation: 5,
-            borderRadius:10
+            borderRadius: 10
           }}
         >
           <View className="flex-row justify-between items-center">
             <View>
               <Text className="text-white/80 text-sm">Welcome back!</Text>
               <Text className="text-white text-2xl font-bold mt-1">
-                John Doe
+                {user?.name || "User"}
               </Text>
               <Text className="text-white/60 text-xs mt-2">
                 Here's what's happening with your store today.
@@ -388,32 +416,32 @@ const DashboardScreen = () => {
               <StatsCard
                 icon="💰"
                 title="Total Revenue"
-                value={formatCurrency(dashboardData.stats.totalRevenue)}
-                trend={dashboardData.stats.revenueTrend}
+                value={formatCurrency(data.stats.totalRevenue)}
+                trend={data.stats.revenueTrend}
                 gradient={["#6366F1", "#8B5CF6"]}
                 style={{ width: cardWidth }}
               />
               <StatsCard
                 icon="📋"
                 title="Total Orders"
-                value={formatNumber(dashboardData.stats.totalOrders)}
-                trend={dashboardData.stats.ordersTrend}
+                value={formatNumber(data.stats.totalOrders)}
+                trend={data.stats.ordersTrend}
                 gradient={["#F59E0B", "#D97706"]}
                 style={{ width: cardWidth }}
               />
               <StatsCard
                 icon="👥"
                 title="Customers"
-                value={formatNumber(dashboardData.stats.totalCustomers)}
-                trend={dashboardData.stats.customersTrend}
+                value={formatNumber(data.stats.totalCustomers)}
+                trend={data.stats.customersTrend}
                 gradient={["#10B981", "#059669"]}
                 style={{ width: cardWidth }}
               />
               <StatsCard
                 icon="📦"
                 title="Products"
-                value={formatNumber(dashboardData.stats.totalProducts)}
-                trend={dashboardData.stats.productsTrend}
+                value={formatNumber(data.stats.totalProducts)}
+                trend={data.stats.productsTrend}
                 gradient={["#EF4444", "#DC2626"]}
                 style={{ width: cardWidth }}
               />
@@ -433,7 +461,7 @@ const DashboardScreen = () => {
             </Text>
             <Text className={`text-xl font-bold mt-1 ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
               {formatCurrency(
-                dashboardData.stats.totalRevenue / dashboardData.stats.totalOrders,
+                data.stats.totalRevenue / data.stats.totalOrders,
               )}
             </Text>
           </View>
@@ -461,7 +489,7 @@ const DashboardScreen = () => {
                 Revenue Overview
               </Text>
               <Text className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                Total: {formatCurrency(dashboardData.stats.totalRevenue)}
+                Total: {formatCurrency(data.stats.totalRevenue)}
               </Text>
             </View>
             <View className={`flex-row p-1 rounded-2xl ${isDarkMode ? 'bg-gray-700' : 'bg-gray-100'}`}>
@@ -529,7 +557,7 @@ const DashboardScreen = () => {
           </View>
 
           <View className="flex-row justify-around">
-            {Object.entries(dashboardData.orderStatus).map(
+            {Object.entries(data.orderStatus).map(
               ([status, count]) => {
                 const colors = getStatusColor(status);
                 const bgColor = isDarkMode ? colors.darkBg : colors.bg;
@@ -581,14 +609,14 @@ const DashboardScreen = () => {
             </TouchableOpacity>
           </View>
 
-          {dashboardData.topProducts.map((product, index) => (
+          {data.topProducts.map((product, index) => (
             <TouchableOpacity
               key={product.id}
               onPress={() =>
                 handleNavigate("ProductDetail", { productId: product.id })
               }
               className={`flex-row items-center py-3 ${
-                index !== dashboardData.topProducts.length - 1
+                index !== data.topProducts.length - 1
                   ? isDarkMode ? 'border-b border-gray-700' : 'border-b border-gray-100'
                   : ''
               }`}
@@ -635,7 +663,7 @@ const DashboardScreen = () => {
             </TouchableOpacity>
           </View>
 
-          {dashboardData.recentOrders.map((order, index) => {
+          {data.recentOrders.map((order, index) => {
             const colors = getStatusColor(order.status);
             const bgColor = isDarkMode ? colors.darkBg : colors.bg;
             const textColor = isDarkMode ? colors.darkText : colors.text;
@@ -647,7 +675,7 @@ const DashboardScreen = () => {
                   handleNavigate("OrderDetail", { orderId: order.id })
                 }
                 className={`flex-row items-center py-3 ${
-                  index !== dashboardData.recentOrders.length - 1
+                  index !== data.recentOrders.length - 1
                     ? isDarkMode ? 'border-b border-gray-700' : 'border-b border-gray-100'
                     : ''
                 }`}
