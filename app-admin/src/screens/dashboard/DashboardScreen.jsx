@@ -15,9 +15,10 @@ import {
 import { LineChart } from "react-native-chart-kit";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 import { useThemeStore } from "../../store/themeStore";
+import { useAuthStore } from "../../store/authStore";
+import { useDashboard } from "../../hooks/useDashboard";
 import Header from "../../components/common/Header";
 import StatsCard from "../../components/dashboard/StatsCard";
-import { useAuthStore } from "../../store/authStore";
 
 const { width } = Dimensions.get("window");
 
@@ -190,10 +191,8 @@ const DashboardScreen = () => {
   const { isDarkMode } = useThemeStore();
   const { user } = useAuthStore();
   
-  // Since you want NO API CALLS, use static data directly
-  const [dashboardData] = useState(STATIC_DASHBOARD_DATA);
-  const [loading] = useState(false);
-  const [error] = useState(null);
+  // Use real API data instead of static data
+  const { dashboardData, loading, error, refreshData } = useDashboard();
   
   const cardWidth = Math.min(200, width * 0.8);
   const gap = 16;
@@ -298,10 +297,8 @@ const DashboardScreen = () => {
 
   const onRefresh = () => {
     setRefreshing(true);
-    // Simulate refresh
-    setTimeout(() => {
-      setRefreshing(false);
-    }, 1000);
+    refreshData();
+    setRefreshing(false);
   };
 
   const handleNavigate = (screen, params = {}) => {
