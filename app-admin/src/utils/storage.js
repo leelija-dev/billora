@@ -110,6 +110,11 @@ export const authStorage = {
     return storage.removeItem(STORAGE_KEYS.REFRESH_TOKEN);
   },
 
+  async getUserId() {
+    const user = await storage.getItem(STORAGE_KEYS.USER);
+    return user ? user.id : null;
+  },
+
   async setUser(user) {
     return storage.setItem(STORAGE_KEYS.USER, user);
   },
