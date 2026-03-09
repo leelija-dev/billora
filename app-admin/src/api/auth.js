@@ -13,6 +13,23 @@ export const authAPI = {
   register: async (userData) => {
     try {
       const api = getAuthData();
+      console.log('Register API call:', {
+        endpoint: '/users/store',
+        data: {
+          name: userData.name,
+          email: userData.email,
+          phone: userData.phone,
+          password: userData.password,
+          city: userData.city,
+          state: userData.state,
+          country: userData.country,
+          pincode: userData.pincode,
+          companyName: userData.companyName || null,
+          gst_number: userData.gstNumber || null,
+          address: userData.address || null,
+          created_by: userData.created_by,
+        }
+      });
       return await api.post('/users/store', {
         name: userData.name,
         email: userData.email,

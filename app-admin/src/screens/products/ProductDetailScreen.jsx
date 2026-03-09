@@ -16,107 +16,28 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 import { useThemeStore } from "../../store/themeStore";
+import { useProductDetail } from "../../hooks/useProductDetail";
 import ErrorState from "../../components/common/ErrorState";
 import Header from "../../components/common/Header";
 import Loading from "../../components/common/Loading";
 import { formatCurrency } from "../../utils/helpers";
-
-// Mock product data (keep as is)
-const MOCK_PRODUCTS = {
-  1: {
-    id: "1",
-    name: "Classic White T-Shirt",
-    sku: "TS-001-WHT",
-    price: 29.99,
-    cost: 18.5,
-    originalPrice: 49.99,
-    image: "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=500",
-    stock: 45,
-    category: "Apparel",
-    supplier: "Fashion Corp",
-    rating: 4.5,
-    reviews: 128,
-    description:
-      "Premium quality cotton t-shirt. Perfect for everyday wear. Features a classic fit and comfortable fabric.",
-    location: "Warehouse A - R12",
-    minStock: 20,
-    brand: "Fashionista",
-    createdAt: "2024-01-15T10:30:00Z",
-    updatedAt: "2024-01-15T10:30:00Z",
-  },
-  2: {
-    id: "2",
-    name: "Slim Fit Jeans - Dark Blue",
-    sku: "JN-002-BLU",
-    price: 79.99,
-    cost: 45.0,
-    originalPrice: 0,
-    image: "https://images.unsplash.com/photo-1541099649105-f69ad21f3246?w=500",
-    stock: 15,
-    category: "Apparel",
-    supplier: "Denim Co",
-    rating: 4.2,
-    reviews: 89,
-    description:
-      "Modern slim fit jeans in dark blue wash. Stretch denim for extra comfort.",
-    location: "Warehouse A - R08",
-    minStock: 25,
-    brand: "DenimCo",
-    createdAt: "2024-01-20T14:20:00Z",
-    updatedAt: "2024-01-20T14:20:00Z",
-  },
-  3: {
-    id: "3",
-    name: "Leather Sneakers - White",
-    sku: "SN-003-WHT",
-    price: 89.99,
-    cost: 52.0,
-    originalPrice: 129.99,
-    image: "https://images.unsplash.com/photo-1549298916-b41d501d3772?w=500",
-    stock: 8,
-    category: "Footwear",
-    supplier: "Sporty Feet",
-    rating: 4.8,
-    reviews: 256,
-    description:
-      "Premium leather sneakers. Comfortable and stylish for everyday wear.",
-    location: "Warehouse B - F03",
-    minStock: 15,
-    brand: "SportMax",
-    createdAt: "2024-01-18T09:15:00Z",
-    updatedAt: "2024-01-18T09:15:00Z",
-  },
-};
 
 const ProductDetailScreen = () => {
   const navigation = useNavigation();
   const route = useRoute();
   const { productId } = route.params || {};
   const { isDarkMode } = useThemeStore();
-  const [loading, setLoading] = useState(true);
-  const [product, setProduct] = useState(null);
-  const [error, setError] = useState(null);
+  const { 
+    product, 
+    loading, 
+    error, 
+    updateProduct, 
+    deleteProduct, 
+    updateStock 
+  } = useProductDetail(productId);
   const [showStockModal, setShowStockModal] = useState(false);
   const [stockUpdate, setStockUpdate] = useState("");
   const [activeTab, setActiveTab] = useState("details");
-
-  useEffect(() => {
-    if (!productId) {
-      navigation.goBack();
-      return;
-    }
-
-    setTimeout(() => {
-      const foundProduct = MOCK_PRODUCTS[productId];
-      if (foundProduct) {
-        setProduct(foundProduct);
-        setStockUpdate(foundProduct.stock.toString());
-      } else {
-        setError("Product not found");
-      }
-      setLoading(false);
-    }, 1000);
-  }, [productId]);
 
   const handleEdit = () => {
     navigation.navigate("AddProduct", { productId });
@@ -131,9 +52,14 @@ const ProductDetailScreen = () => {
         {
           text: "Delete",
           style: "destructive",
-          onPress: () => {
-            Alert.alert("Success", "Product deleted successfully");
-            navigation.goBack();
+          onPress: async () => {
+            const result = await deleteProduct();
+            if (result.success) {
+              Alert.alert("Success", "Product deleted successfully");
+              navigation.goBack();
+            } else {
+              Alert.alert("Error", result.error || "Failed to delete product");
+            }
           },
         },
       ],
@@ -155,28 +81,34 @@ const ProductDetailScreen = () => {
     setShowStockModal(true);
   };
 
-  const confirmStockUpdate = () => {
+  const confirmStockUpdate = async () => {
     const newStock = parseInt(stockUpdate);
     if (isNaN(newStock) || newStock < 0) {
       Alert.alert("Invalid Stock", "Please enter a valid stock number");
       return;
     }
 
-    setProduct({ ...product, stock: newStock });
-    Alert.alert("Success", `Stock updated to ${newStock} units`);
-    setShowStockModal(false);
+    const result = await updateStock({ stock: newStock });
+    if (result.success) {
+      Alert.alert("Success", `Stock updated to ${newStock} units`);
+      setShowStockModal(false);
+    } else {
+      Alert.alert("Error", result.error || "Failed to update stock");
+    }
   };
 
   const getStockStatus = () => {
     if (!product)
       return { label: "Unknown", color: "text-gray-500 dark:text-gray-400", bg: "bg-gray-100 dark:bg-gray-800" };
-    if (product.stock === 0)
+    const stock = product.stock || 0;
+    const minStock = product.minStock || 5;
+    if (stock === 0)
       return { 
         label: "Out of Stock", 
         color: "text-red-600 dark:text-red-400", 
         bg: "bg-red-100 dark:bg-red-900/30" 
       };
-    if (product.stock <= (product.minStock || 5))
+    if (stock <= minStock)
       return {
         label: "Low Stock",
         color: "text-orange-600 dark:text-orange-400",
@@ -330,9 +262,9 @@ const ProductDetailScreen = () => {
                 </Text>
                 <View className="flex-row items-baseline justify-between">
                   <Text className="text-white text-3xl font-bold">
-                    {formatCurrency(product.price)}
+                    {formatCurrency(product.price || 0)}
                   </Text>
-                  {product.originalPrice > product.price && (
+                  {product.originalPrice && product.originalPrice > 0 && product.originalPrice > product.price && (
                     <View>
                       <Text className="text-white/60 text-sm line-through">
                         {formatCurrency(product.originalPrice)}
@@ -377,11 +309,11 @@ const ProductDetailScreen = () => {
                   <Text className={`text-2xl font-bold ${
                     isDarkMode ? 'text-white' : 'text-gray-800'
                   }`}>
-                    {product.stock} units
+                    {product.stock || 0} units
                   </Text>
                 </View>
 
-                {product.minStock > 0 && (
+                {product.minStock > 0 && product.stock >= 0 && (
                   <View className="mt-3">
                     <View className="flex-row justify-between mb-1">
                       <Text className={`text-xs ${

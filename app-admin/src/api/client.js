@@ -1,16 +1,32 @@
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8000/api';
+const API_URL = process.env.EXPO_PUBLIC_API_BASE_URL || 'http://localhost:8000/api';
 
 const apiClient = axios.create({
   baseURL: API_URL,
-  timeout: 10000,
+  timeout: 30000, // Increased from 10000 to 30 seconds
   headers: {
     'Content-Type': 'application/json',
     'Accept': 'application/json',
   },
 });
+
+// Add request interceptor for debugging
+apiClient.interceptors.request.use(
+  (config) => {
+    console.log('API Request:', {
+      method: config.method?.toUpperCase(),
+      url: config.url,
+      baseURL: config.baseURL,
+      headers: config.headers,
+    });
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
 
 // Request interceptor for auth token
 apiClient.interceptors.request.use(
@@ -33,9 +49,21 @@ apiClient.interceptors.request.use(
 // Response interceptor for error handling
 apiClient.interceptors.response.use(
   (response) => {
+    console.log('API Response:', {
+      status: response.status,
+      url: response.config.url,
+      data: response.data,
+    });
     return response;
   },
   async (error) => {
+    console.error('API Error Details:', {
+      message: error.message,
+      code: error.code,
+      response: error.response,
+      config: error.config,
+    });
+    
     if (error.response?.status === 401) {
       try {
         await AsyncStorage.removeItem('authToken');
@@ -48,7 +76,12 @@ apiClient.interceptors.response.use(
     
     // Handle network errors
     if (!error.response) {
-      console.error('Network Error:', error.message);
+      console.error('Network Error Details:', {
+        message: error.message,
+        code: error.code,
+        errno: error.errno,
+        syscall: error.syscall,
+      });
       error.response = {
         data: { message: 'Network error. Please check your connection.' },
         status: 0,

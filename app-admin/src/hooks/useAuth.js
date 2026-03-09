@@ -52,6 +52,7 @@ export const useAuth = () => {
   const register = async (userData) => {
     try {
       setIsLoading(true);
+      console.log('useAuth register called with:', userData);
       const response = await authAPI.register({
         name: userData.name,
         email: userData.email,
@@ -64,16 +65,15 @@ export const useAuth = () => {
         companyName: userData.companyName,
         gstNumber: userData.gstNumber,
         address: userData.address,
-        createdBy: userData.createdBy,
+        created_by: userData.created_by,
       });
       
-      const { user: newUser, token } = response.data;
+      // Backend response structure: { data: { user_data }, message: "User Created Successfully", status: true }
+      const newUser = response.data.data;
       
-      await authStorage.setAuthToken(token);
-      await authStorage.setUser(newUser);
-      
-      setUser(newUser);
-      setIsAuthenticated(true);
+      // For registration, user needs to login separately to get token
+      // So we don't set auth state here, just return the response
+      console.log('Registration successful:', response.data);
       
       return response;
     } catch (error) {

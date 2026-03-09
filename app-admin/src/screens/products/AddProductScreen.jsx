@@ -5,6 +5,7 @@ import { Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 import { useThemeStore } from "../../store/themeStore";
+import { useProductForm } from "../../hooks/useProductForm";
 import Header from "../../components/common/Header";
 import ProductForm from "../../components/products/ProductForm";
 
@@ -12,6 +13,7 @@ const AddProductScreen = () => {
   const route = useRoute();
   const { productId } = route.params || {};
   const { isDarkMode } = useThemeStore();
+  const { loading, error, saveProduct, clearError } = useProductForm(productId);
 
   return (
     <View className={`flex-1 ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'} pb-4`}>

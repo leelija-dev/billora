@@ -1,6 +1,6 @@
 // screens/products/ProductsScreen.js
 import { useNavigation } from "@react-navigation/native";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   ScrollView,
   StatusBar,
@@ -11,6 +11,8 @@ import {
 } from "react-native";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 import { useThemeStore } from "../../store/themeStore";
+import { useAuthStore } from "../../store/authStore";
+import { useProducts } from "../../hooks/useProducts";
 import Header from "../../components/common/Header";
 import ProductFilters from "../../components/products/ProductFilters";
 import ProductList from "../../components/products/ProductList";
@@ -57,10 +59,15 @@ const categories = [
 const ProductsScreen = () => {
   const navigation = useNavigation();
   const { isDarkMode } = useThemeStore();
+  const { user } = useAuthStore();
+  const { products = [], loading, error, refreshProducts, searchProducts, getProductsByCategory } = useProducts() || {};
   const [showFilters, setShowFilters] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [viewMode, setViewMode] = useState("grid");
+
+  // Safe product count with fallback
+  const productCount = products?.length || 0;
 
   const handleAddProduct = () => {
     navigation.navigate("AddProduct");
@@ -76,6 +83,20 @@ const ProductsScreen = () => {
 
   const handleCategorySelect = (categoryId) => {
     setSelectedCategory(categoryId);
+    if (categoryId === "all") {
+      refreshProducts?.();
+    } else {
+      getProductsByCategory?.(categoryId);
+    }
+  };
+
+  const handleSearch = (query) => {
+    setSearchQuery(query);
+    if (query.trim()) {
+      searchProducts?.(query);
+    } else {
+      refreshProducts?.();
+    }
   };
 
   const toggleViewMode = () => {
@@ -96,7 +117,7 @@ const ProductsScreen = () => {
       title: "Products",
       icon: "package-variant",
       screen: "Products",
-      badge: "156",
+      badge: productCount.toString(),
     },
     {
       id: "orders",
@@ -128,14 +149,32 @@ const ProductsScreen = () => {
     },
   ];
 
+  // Show loading state
+  if (loading) {
+    return (
+      <View className={`flex-1 ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'} items-center justify-center`}>
+        <Text className={isDarkMode ? 'text-white' : 'text-gray-900'}>Loading products...</Text>
+      </View>
+    );
+  }
+
+  // Show error state
+  if (error) {
+    return (
+      <View className={`flex-1 ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'} items-center justify-center`}>
+        <Text className="text-red-500">Error: {error}</Text>
+      </View>
+    );
+  }
+
   return (
     <View className={`flex-1 ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'} pb-16`}>
       <StatusBar barStyle={isDarkMode ? "light-content" : "dark-content"} backgroundColor={isDarkMode ? "#111827" : "#ffffff"} />
 
       <Header
         title="Products"
-        userName="John Doe"
-        userEmail="john@example.com"
+        userName={user?.name || "User"}
+        userEmail={user?.email || "guest@example.com"}
         activeScreen="Products"
         navigationItems={navigationItems}
         rightComponent={
@@ -175,7 +214,7 @@ const ProductsScreen = () => {
             placeholder="Search products, SKU, category..."
             placeholderTextColor="#9ca3af"
             value={searchQuery}
-            onChangeText={setSearchQuery}
+            onChangeText={handleSearch}
           />
           {searchQuery.length > 0 && (
             <TouchableOpacity onPress={() => setSearchQuery("")}>
@@ -262,7 +301,7 @@ const ProductsScreen = () => {
               Total Products
             </Text>
             <Text className={`text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
-              156
+              {productCount}
             </Text>
           </View>
           <View className={`rounded-xl p-3 flex-1 mx-2 shadow-sm ${
