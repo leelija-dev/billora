@@ -1,32 +1,32 @@
 import { NavigationContainer } from "@react-navigation/native";
+import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { LinearGradient } from "expo-linear-gradient";
 import { StatusBar } from "expo-status-bar";
 import { useEffect, useRef, useState } from "react";
 import { Animated, Easing, Image, Text, View } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
-import { useAuth } from "./hooks/useAuth";
-import { useTheme } from "./hooks/useTheme";
-// import './services/notificationService';
-import AuthNavigator from "./components/navigation/AuthNavigator";
+import { ThemeProvider, useTheme } from "./components/ThemeProvider";
+import { useAuthStore } from "./store/authStore";
+import LoginScreen from "./screens/auth/LoginScreen";
+import RegisterScreen from "./screens/auth/RegisterScreen";
+import ForgotPasswordScreen from "./screens/auth/ForgotPasswordScreen";
 import MainNavigator from "./components/navigation/MainNavigator";
 import "./global.css";
-import { theme } from "./theme";
 
-// Enhanced Loading Component with Animation
+const Stack = createNativeStackNavigator();
+
 const SplashScreen = ({ progress }) => {
   const spinValue = useRef(new Animated.Value(0)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(0.3)).current;
 
   useEffect(() => {
-    // Fade in animation
     Animated.timing(fadeAnim, {
       toValue: 1,
       duration: 800,
       useNativeDriver: true,
     }).start();
 
-    // Scale animation
     Animated.spring(scaleAnim, {
       toValue: 1,
       friction: 4,
@@ -34,7 +34,6 @@ const SplashScreen = ({ progress }) => {
       useNativeDriver: true,
     }).start();
 
-    // Rotation animation
     Animated.loop(
       Animated.timing(spinValue, {
         toValue: 1,
@@ -57,14 +56,7 @@ const SplashScreen = ({ progress }) => {
       end={{ x: 1, y: 1 }}
       style={{ flex: 1 }}
     >
-      <View
-        style={{
-          flex: 1,
-          justifyContent: "center",
-          alignItems: "center",
-          paddingHorizontal: 24,
-        }}
-      >
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 24 }}>
         <Animated.View
           style={{
             opacity: fadeAnim,
@@ -72,136 +64,102 @@ const SplashScreen = ({ progress }) => {
             alignItems: "center",
           }}
         >
-          {/* Animated Logo Container */}
-          <View
-            style={{
-              width: 128,
-              height: 128,
-              borderRadius: 24,
-              backgroundColor: "rgba(255,255,255,0.2)",
-              marginBottom: 32,
-              justifyContent: "center",
-              alignItems: "center",
-              shadowColor: "#000",
-              shadowOffset: { width: 0, height: 4 },
-              shadowOpacity: 0.3,
-              shadowRadius: 8,
-              elevation: 8,
-            }}
-          >
+          <View style={{
+            width: 128,
+            height: 128,
+            borderRadius: 24,
+            backgroundColor: 'rgba(255,255,255,0.2)',
+            marginBottom: 32,
+            justifyContent: 'center',
+            alignItems: 'center',
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 4 },
+            shadowOpacity: 0.3,
+            shadowRadius: 8,
+            elevation: 8,
+          }}>
             <Animated.View style={{ transform: [{ rotate: spin }] }}>
               <Image
-                source={require("../assets/images/icon.png")}
+                source={"./assets/icon.png"}
                 style={{ width: 80, height: 80 }}
                 resizeMode="contain"
               />
             </Animated.View>
           </View>
 
-          {/* App Name */}
-          <Text
-            style={{
-              fontSize: 36,
-              fontWeight: "bold",
-              color: "white",
-              marginBottom: 8,
-              letterSpacing: 1,
-            }}
-          >
+          <Text style={{
+            fontSize: 36,
+            fontWeight: 'bold',
+            color: 'white',
+            marginBottom: 8,
+            letterSpacing: 1,
+          }}>
             Your App Name
           </Text>
 
-          {/* Tagline */}
-          <Text
-            style={{
-              fontSize: 18,
-              color: "rgba(255,255,255,0.8)",
-              marginBottom: 48,
-              textAlign: "center",
-            }}
-          >
+          <Text style={{
+            fontSize: 18,
+            color: 'rgba(255,255,255,0.8)',
+            marginBottom: 48,
+            textAlign: 'center',
+          }}>
             Manage your business with ease
           </Text>
 
-          {/* Progress Bar */}
-          <View
-            style={{
-              width: 256,
-              height: 8,
-              backgroundColor: "rgba(255,255,255,0.2)",
-              borderRadius: 4,
-              overflow: "hidden",
-            }}
-          >
+          <View style={{
+            width: 256,
+            height: 8,
+            backgroundColor: 'rgba(255,255,255,0.2)',
+            borderRadius: 4,
+            overflow: 'hidden',
+          }}>
             <Animated.View
               style={{
                 width: progress.interpolate({
                   inputRange: [0, 100],
                   outputRange: ["0%", "100%"],
                 }),
-                height: "100%",
-                backgroundColor: "white",
+                height: '100%',
+                backgroundColor: 'white',
                 borderRadius: 4,
               }}
             />
           </View>
 
-          {/* Loading Text */}
-          <Text
-            style={{
-              color: "rgba(255,255,255,0.6)",
-              marginTop: 16,
-            }}
-          >
+          <Text style={{
+            color: 'rgba(255,255,255,0.6)',
+            marginTop: 16,
+          }}>
             Setting things up...
           </Text>
         </Animated.View>
       </View>
 
-      {/* Version Number */}
-      <Text
-        style={{
-          position: "absolute",
-          bottom: 32,
-          left: 0,
-          right: 0,
-          textAlign: "center",
-          color: "rgba(255,255,255,0.4)",
-          fontSize: 14,
-        }}
-      >
+      <Text style={{
+        position: 'absolute',
+        bottom: 32,
+        left: 0,
+        right: 0,
+        textAlign: 'center',
+        color: 'rgba(255,255,255,0.4)',
+        fontSize: 14,
+      }}>
         Version 1.0.0
       </Text>
     </LinearGradient>
   );
 };
 
-// Enhanced Loading Component
 const AppLoadingScreen = () => {
   const [progress] = useState(new Animated.Value(0));
-  const loadingTexts = [
-    "Loading awesome features...",
-    "Preparing your dashboard...",
-    "Almost there...",
-    "Welcome back!",
-  ];
-  const [textIndex, setTextIndex] = useState(0);
 
   useEffect(() => {
-    // Animate progress from 0 to 100 over 3 seconds
     Animated.timing(progress, {
       toValue: 100,
       duration: 3000,
       easing: Easing.linear,
       useNativeDriver: false,
     }).start();
-
-    // Cycle through loading texts
-    const interval = setInterval(() => {
-      setTextIndex((prev) => (prev + 1) % loadingTexts.length);
-    }, 800);
-
-    return () => clearInterval(interval);
   }, []);
 
   return (
@@ -212,27 +170,39 @@ const AppLoadingScreen = () => {
   );
 };
 
-// Theme-aware Status Bar
-const ThemedStatusBar = ({ currentTheme }) => {
-  const backgroundColor =
-    currentTheme?.colors?.background || theme.colors.background;
-  const barStyle = currentTheme?.colorScheme === "dark" ? "light" : "dark";
+const ThemedStatusBar = () => {
+  const theme = useTheme();
+  const barStyle = theme.isDark ? "light" : "dark";
 
   return (
     <StatusBar
       style={barStyle}
-      backgroundColor={backgroundColor}
+      backgroundColor={theme.colors.background}
       translucent={false}
     />
   );
 };
 
-// Main App Component with proper animation
-export default function App() {
-  const { isAuthenticated, isLoading: authLoading } = useAuth();
-  const { theme: currentTheme, isLoading: themeLoading } = useTheme();
+const AuthStack = () => {
+  const theme = useTheme();
+  
+  return (
+    <Stack.Navigator
+      screenOptions={{
+        headerShown: false,
+        contentStyle: { backgroundColor: theme.colors.background },
+      }}
+    >
+      <Stack.Screen name="Login" component={LoginScreen} />
+      <Stack.Screen name="Register" component={RegisterScreen} />
+      <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
+    </Stack.Navigator>
+  );
+};
+
+const AppContent = () => {
+  const { isAuthenticated, isLoading: authLoading } = useAuthStore();
   const [appReady, setAppReady] = useState(false);
-  const [initializing, setInitializing] = useState(true);
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -240,52 +210,44 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    // Fade in content when app is ready
-    if (appReady && !authLoading && !themeLoading && !initializing) {
+    if (appReady && !authLoading) {
       Animated.timing(fadeAnim, {
         toValue: 1,
         duration: 500,
         useNativeDriver: true,
       }).start();
     }
-  }, [appReady, authLoading, themeLoading, initializing]);
+  }, [appReady, authLoading]);
 
   const initializeApp = async () => {
     try {
-      // Simulate initialization with minimum display time
-      await Promise.all([
-        // Add your initialization services here
-        new Promise((resolve) => setTimeout(resolve, 2000)), // Minimum splash screen time
-      ]);
-
+      await new Promise((resolve) => setTimeout(resolve, 2000));
       setAppReady(true);
     } catch (error) {
       console.error("App initialization error:", error);
-    } finally {
-      setInitializing(false);
     }
   };
 
-  // Show enhanced splash screen during initialization
-  if (!appReady || authLoading || themeLoading || initializing) {
+  if (!appReady || authLoading) {
     return <AppLoadingScreen />;
   }
 
   return (
-    <SafeAreaProvider>
-      <NavigationContainer>
-        <ThemedStatusBar currentTheme={currentTheme} />
+    <NavigationContainer>
+      <ThemedStatusBar />
+      <Animated.View style={{ flex: 1, opacity: fadeAnim }}>
+        {isAuthenticated ? <MainNavigator /> : <AuthStack />}
+      </Animated.View>
+    </NavigationContainer>
+  );
+};
 
-        {/* Main Content with Fade Animation */}
-        <Animated.View
-          style={{
-            flex: 1,
-            opacity: fadeAnim,
-          }}
-        >
-          {isAuthenticated ? <MainNavigator /> : <AuthNavigator />}
-        </Animated.View>
-      </NavigationContainer>
+export default function App() {
+  return (
+    <SafeAreaProvider>
+      <ThemeProvider>
+        <AppContent />
+      </ThemeProvider>
     </SafeAreaProvider>
   );
 }

@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { theme } from '../../theme';
+import { useTheme } from '../../hooks/useTheme';
 import Button from '../common/Button';
 import Header from '../common/Header';
 import Input from '../common/Input';
 
 const LoginForm = ({ onSubmit, loading, error }) => {
+  const theme = useTheme();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [emailError, setEmailError] = useState('');
@@ -56,10 +57,10 @@ const LoginForm = ({ onSubmit, loading, error }) => {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['left', 'right']}>
-      <Header title="Login" />
-      <View style={styles.content}>
-        <View style={styles.form}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.background }} edges={['left', 'right']}>
+      <Header title="Login" showBackButton={false} />
+      <View style={{ flex: 1, padding: theme.spacing.lg }}>
+        <View style={{ flex: 1, justifyContent: 'center' }}>
           <Input
             label="Email"
             value={email}
@@ -71,7 +72,7 @@ const LoginForm = ({ onSubmit, loading, error }) => {
             autoCorrect={false}
             returnKeyType="next"
             error={emailError}
-            leftIcon={<Text>📧</Text>}
+            leftIcon="email-outline"
           />
 
           <Input
@@ -84,12 +85,23 @@ const LoginForm = ({ onSubmit, loading, error }) => {
             returnKeyType="done"
             onSubmitEditing={onFormSubmit}
             error={passwordError}
-            leftIcon={<Text>🔒</Text>}
+            leftIcon="lock-outline"
           />
 
           {error && (
-            <View style={styles.errorContainer}>
-              <Text style={styles.errorText}>{error}</Text>
+            <View style={{
+              backgroundColor: theme.colors.error + '20',
+              borderWidth: 1,
+              borderColor: theme.colors.error,
+              borderRadius: theme.borderRadius.md,
+              padding: theme.spacing.md,
+              marginBottom: theme.spacing.md,
+            }}>
+              <Text style={{
+                ...theme.typography.body2,
+                color: theme.colors.error,
+                textAlign: 'center',
+              }}>{error}</Text>
             </View>
           )}
 
@@ -98,43 +110,12 @@ const LoginForm = ({ onSubmit, loading, error }) => {
             onPress={onFormSubmit}
             loading={loading}
             disabled={!email || !password || loading}
-            style={styles.loginButton}
+            style={{ marginTop: theme.spacing.lg }}
           />
         </View>
       </View>
     </SafeAreaView>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: theme.colors.background,
-  },
-  content: {
-    flex: 1,
-    padding: theme.spacing.lg,
-  },
-  form: {
-    flex: 1,
-    justifyContent: 'center',
-  },
-  errorContainer: {
-    backgroundColor: theme.colors.error + '20',
-    borderWidth: 1,
-    borderColor: theme.colors.error,
-    borderRadius: theme.borderRadius.md,
-    padding: theme.spacing.md,
-    marginBottom: theme.spacing.md,
-  },
-  errorText: {
-    ...theme.typography.body2,
-    color: theme.colors.error,
-    textAlign: 'center',
-  },
-  loginButton: {
-    marginTop: theme.spacing.lg,
-  },
-});
 
 export default LoginForm;

@@ -12,6 +12,7 @@ import {
   View,
 } from "react-native";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
+import { useThemeStore } from "../../store/themeStore";
 import ProductCard from "./ProductCard";
 
 // Static product data (keep your existing STATIC_PRODUCTS array here)
@@ -150,6 +151,7 @@ const ProductList = ({
   category = "all",
 }) => {
   const navigation = useNavigation();
+  const { isDarkMode } = useThemeStore();
   const [refreshing, setRefreshing] = useState(false);
   const [products, setProducts] = useState(STATIC_PRODUCTS);
   const [loading, setLoading] = useState(false);
@@ -244,13 +246,17 @@ const ProductList = ({
   const renderHeader = () => (
     <Animated.View style={{ opacity: fadeAnim, marginBottom: 16 }}>
       <View className="flex-row justify-between items-center mb-3">
-        <Text className="text-gray-600">
+        <Text className={isDarkMode ? 'text-gray-400' : 'text-gray-600'}>
           {filteredProducts.length}{" "}
           {filteredProducts.length === 1 ? "product" : "products"} found
         </Text>
-        <View className="flex-row items-center bg-white px-3 py-1.5 rounded-full shadow-sm">
-          <Icon name="package-variant" size={16} color="#4b5563" />
-          <Text className="text-gray-600 text-sm ml-1">
+        <View className={`flex-row items-center px-3 py-1.5 rounded-full shadow-sm ${
+          isDarkMode ? 'bg-gray-800' : 'bg-white'
+        }`}>
+          <Icon name="package-variant" size={16} color={isDarkMode ? "#9CA3AF" : "#4b5563"} />
+          <Text className={`text-sm ml-1 ${
+            isDarkMode ? 'text-gray-300' : 'text-gray-600'
+          }`}>
             {stats.total} total
           </Text>
         </View>
@@ -268,7 +274,9 @@ const ProductList = ({
     <TouchableOpacity
       key={item.id}
       onPress={() => handleProductPress(item)}
-      className="flex-row bg-white rounded-xl mb-3 p-3 shadow-sm"
+      className={`flex-row rounded-xl mb-3 p-3 shadow-sm ${
+        isDarkMode ? 'bg-gray-800' : 'bg-white'
+      }`}
     >
       <Image
         source={{ uri: item.image }}
@@ -278,9 +286,13 @@ const ProductList = ({
       <View className="flex-1 ml-3">
         <View className="flex-row justify-between items-start">
           <View className="flex-1">
-            <Text className="text-xs text-gray-400">{item.sku}</Text>
+            <Text className={`text-xs ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}>
+              {item.sku}
+            </Text>
             <Text
-              className="text-base font-semibold text-gray-800"
+              className={`text-base font-semibold ${
+                isDarkMode ? 'text-white' : 'text-gray-800'
+              }`}
               numberOfLines={1}
             >
               {item.name}
@@ -297,10 +309,22 @@ const ProductList = ({
 
         <View className="flex-row items-center mt-1">
           <Icon name="tag" size={12} color="#9ca3af" />
-          <Text className="text-xs text-gray-500 ml-1">{item.category}</Text>
-          <Text className="text-xs text-gray-300 mx-2">•</Text>
+          <Text className={`text-xs ml-1 ${
+            isDarkMode ? 'text-gray-500' : 'text-gray-500'
+          }`}>
+            {item.category}
+          </Text>
+          <Text className={`text-xs mx-2 ${
+            isDarkMode ? 'text-gray-700' : 'text-gray-300'
+          }`}>
+            •
+          </Text>
           <Icon name="factory" size={12} color="#9ca3af" />
-          <Text className="text-xs text-gray-500 ml-1">{item.supplier}</Text>
+          <Text className={`text-xs ml-1 ${
+            isDarkMode ? 'text-gray-500' : 'text-gray-500'
+          }`}>
+            {item.supplier}
+          </Text>
         </View>
 
         <View className="flex-row justify-between items-center mt-2">
@@ -309,7 +333,9 @@ const ProductList = ({
               ${item.price.toFixed(2)}
             </Text>
             {item.originalPrice > 0 && (
-              <Text className="text-xs text-gray-400 line-through">
+              <Text className={`text-xs line-through ${
+                isDarkMode ? 'text-gray-600' : 'text-gray-400'
+              }`}>
                 ${item.originalPrice.toFixed(2)}
               </Text>
             )}
@@ -319,10 +345,10 @@ const ProductList = ({
             <View
               className={`px-2 py-1 rounded-full ${
                 item.stock === 0
-                  ? "bg-red-100"
+                  ? isDarkMode ? 'bg-red-900/30' : 'bg-red-100'
                   : item.stock <= item.reorderLevel
-                    ? "bg-orange-100"
-                    : "bg-green-100"
+                    ? isDarkMode ? 'bg-orange-900/30' : 'bg-orange-100'
+                    : isDarkMode ? 'bg-green-900/30' : 'bg-green-100'
               }`}
             >
               <Text
@@ -360,7 +386,9 @@ const ProductList = ({
     return (
       <View className="flex-1 justify-center items-center">
         <ActivityIndicator size="large" color="#3b82f6" />
-        <Text className="text-gray-500 mt-4">Loading products...</Text>
+        <Text className={`mt-4 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+          Loading products...
+        </Text>
       </View>
     );
   }
@@ -382,10 +410,14 @@ const ProductList = ({
           {renderHeader()}
           <View className="items-center justify-center py-16">
             <Icon name="package-variant" size={80} color="#d1d5db" />
-            <Text className="text-lg font-semibold text-gray-700 mt-4">
+            <Text className={`text-lg font-semibold mt-4 ${
+              isDarkMode ? 'text-gray-300' : 'text-gray-700'
+            }`}>
               No Products Found
             </Text>
-            <Text className="text-sm text-gray-400 text-center mt-2 px-8">
+            <Text className={`text-sm text-center mt-2 px-8 ${
+              isDarkMode ? 'text-gray-500' : 'text-gray-400'
+            }`}>
               {searchQuery || category !== "all"
                 ? "Try adjusting your search or filters"
                 : "Tap the + button to add your first product"}
@@ -397,24 +429,25 @@ const ProductList = ({
   }
 
   return (
-    <View
-      className="flex-1"
-      
-      refreshControl={
-        <RefreshControl
-          refreshing={refreshing}
-          onRefresh={onRefresh}
-          colors={["#3b82f6"]}
-          tintColor="#3b82f6"
-        />
-      }
-    >
-      <View className="">
-        {renderHeader()}
-        {viewMode === "grid" 
-          ? renderGridItems() 
-          : filteredProducts.map(item => renderListItem(item))}
-      </View>
+    <View className="flex-1">
+      {renderHeader()}
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={["#3b82f6"]}
+            tintColor="#3b82f6"
+          />
+        }
+      >
+        <View className="pb-4">
+          {viewMode === "grid" 
+            ? renderGridItems() 
+            : filteredProducts.map(item => renderListItem(item))}
+        </View>
+      </ScrollView>
     </View>
   );
 };

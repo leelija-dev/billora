@@ -1,67 +1,82 @@
-import { useState, useEffect } from 'react';
+import { useThemeStore } from '../store/themeStore';
 import { useColorScheme } from 'react-native';
-import { appStorage } from '../utils/storage';
-import { theme } from '../theme';
 
 export const useTheme = () => {
-  const deviceColorScheme = useColorScheme();
-  const [colorScheme, setColorScheme] = useState(deviceColorScheme);
-  const [isLoading, setIsLoading] = useState(true);
+  const { isDarkMode, systemTheme, toggleDarkMode, setDarkMode, setSystemTheme } = useThemeStore();
+  const systemColorScheme = useColorScheme();
 
-  useEffect(() => {
-    loadTheme();
-  }, []);
+  const effectiveDarkMode = systemTheme ? systemColorScheme === 'dark' : isDarkMode;
 
-  const loadTheme = async () => {
-    try {
-      const savedTheme = await appStorage.getTheme();
-      setColorScheme(savedTheme || deviceColorScheme);
-    } catch (error) {
-      console.error('Error loading theme:', error);
-      setColorScheme(deviceColorScheme);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const setTheme = async (newScheme) => {
-    try {
-      setColorScheme(newScheme);
-      await appStorage.setTheme(newScheme);
-    } catch (error) {
-      console.error('Error setting theme:', error);
-    }
-  };
-
-  const toggleTheme = async () => {
-    const newScheme = colorScheme === 'light' ? 'dark' : 'light';
-    await setTheme(newScheme);
-  };
-
-  const colors = {
-    ...theme.colors,
-    // Add dark mode colors if needed
-    ...(colorScheme === 'dark' && {
-      background: '#1a1a1a',
-      backgroundSecondary: '#2a2a2a',
-      backgroundTertiary: '#3a3a3a',
-      text: '#ffffff',
-      textSecondary: '#b0b0b0',
-      textTertiary: '#808080',
-      border: '#404040',
-      borderLight: '#505050',
-      borderDark: '#303030',
-    }),
-  };
-
-  return {
-    theme: {
-      ...theme,
-      colors,
-      colorScheme,
+  const theme = {
+    isDark: effectiveDarkMode,
+    colors: {
+      background: effectiveDarkMode ? '#111827' : '#FFFFFF',
+      surface: effectiveDarkMode ? '#1F2937' : '#F9FAFB',
+      card: effectiveDarkMode ? '#1F2937' : '#FFFFFF',
+      primary: '#667eea',
+      secondary: '#764ba2',
+      text: effectiveDarkMode ? '#FFFFFF' : '#1F2937',
+      textSecondary: effectiveDarkMode ? '#9CA3AF' : '#4B5563',
+      textTertiary: effectiveDarkMode ? '#6B7280' : '#9CA3AF',
+      border: effectiveDarkMode ? '#374151' : '#E5E7EB',
+      borderLight: effectiveDarkMode ? '#1F2937' : '#F3F4F6',
+      error: '#EF4444',
+      success: '#10B981',
+      warning: '#F59E0B',
+      info: '#3B82F6',
     },
-    setTheme,
-    toggleTheme,
-    isLoading,
+    spacing: {
+      xs: 4,
+      sm: 8,
+      md: 16,
+      lg: 24,
+      xl: 32,
+      xxl: 48,
+    },
+    borderRadius: {
+      sm: 4,
+      md: 8,
+      lg: 12,
+      xl: 16,
+      full: 9999,
+    },
+    typography: {
+      h1: {
+        fontSize: 32,
+        fontWeight: '700',
+        lineHeight: 40,
+      },
+      h2: {
+        fontSize: 24,
+        fontWeight: '600',
+        lineHeight: 32,
+      },
+      h3: {
+        fontSize: 20,
+        fontWeight: '600',
+        lineHeight: 28,
+      },
+      body1: {
+        fontSize: 16,
+        fontWeight: '400',
+        lineHeight: 24,
+      },
+      body2: {
+        fontSize: 14,
+        fontWeight: '400',
+        lineHeight: 20,
+      },
+      caption: {
+        fontSize: 12,
+        fontWeight: '400',
+        lineHeight: 16,
+      },
+    },
+    toggleTheme: toggleDarkMode,
+    setDarkMode,
+    setSystemTheme,
+    isSystemTheme: systemTheme,
   };
+
+  return theme;
 };

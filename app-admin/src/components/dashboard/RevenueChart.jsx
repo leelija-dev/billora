@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
-import { View, Text, StyleSheet, Dimensions } from 'react-native';
+import { View, Text, Dimensions } from 'react-native';
 import { LineChart } from 'react-native-chart-kit';
-import { theme } from '../../theme';
+import { useThemeStore } from '../../store/themeStore';
 import { formatCurrency } from '../../utils/helpers';
 
 const { width: screenWidth } = Dimensions.get('window');
@@ -12,6 +12,8 @@ const RevenueChart = ({
   period = 'month',
   style,
 }) => {
+  const { isDarkMode } = useThemeStore();
+
   const chartData = useMemo(() => {
     if (!data || data.length === 0) {
       return {
@@ -23,15 +25,15 @@ const RevenueChart = ({
     const labels = data.map(item => {
       switch (period) {
         case 'day':
-          return item.date.split('-')[2];
+          return item.date?.split('-')[2] || '';
         case 'week':
           return `W${item.week}`;
         case 'month':
-          return item.date.split('-')[1] + '/' + item.date.split('-')[0];
+          return item.month?.substring(0, 3) || '';
         case 'year':
-          return item.date;
+          return item.year?.toString() || '';
         default:
-          return item.date;
+          return item.date || '';
       }
     });
 
@@ -44,24 +46,33 @@ const RevenueChart = ({
   }, [data, period]);
 
   const chartConfig = {
-    backgroundColor: theme.colors.background,
-    backgroundGradientFrom: theme.colors.background,
-    backgroundGradientTo: theme.colors.background,
+    backgroundColor: isDarkMode ? '#1F2937' : '#FFFFFF',
+    backgroundGradientFrom: isDarkMode ? '#1F2937' : '#FFFFFF',
+    backgroundGradientTo: isDarkMode ? '#1F2937' : '#FFFFFF',
     decimalPlaces: 0,
-    color: (opacity = 1) => `rgba(37, 99, 235, ${opacity})`,
-    labelColor: (opacity = 1) => `rgba(100, 116, 139, ${opacity})`,
+    color: (opacity = 1) => `rgba(99, 102, 241, ${opacity})`,
+    labelColor: (opacity = 1) => isDarkMode 
+      ? `rgba(255, 255, 255, ${opacity})` 
+      : `rgba(75, 85, 99, ${opacity})`,
     style: {
-      borderRadius: theme.borderRadius.md,
+      borderRadius: 16,
     },
     propsForDots: {
       r: '4',
       strokeWidth: '2',
-      stroke: theme.colors.primary,
+      stroke: '#6366F1',
     },
     propsForBackgroundLines: {
       strokeDasharray: '',
-      stroke: theme.colors.borderLight,
+      stroke: isDarkMode ? '#374151' : '#E5E7EB',
       strokeWidth: 1,
+    },
+    formatYLabel: (value) => {
+      const num = parseFloat(value);
+      if (num >= 1000) {
+        return `$${Math.round(num / 1000)}k`;
+      }
+      return `$${Math.round(num)}`;
     },
   };
 
@@ -69,29 +80,57 @@ const RevenueChart = ({
   const averageRevenue = data.length > 0 ? totalRevenue / data.length : 0;
 
   return (
-    <View style={[styles.container, style]}>
-      <View style={styles.header}>
-        <Text style={styles.title}>{title}</Text>
-        <View style={styles.stats}>
-          <View style={styles.statItem}>
-            <Text style={styles.statLabel}>Total</Text>
-            <Text style={styles.statValue}>{formatCurrency(totalRevenue)}</Text>
+    <View 
+      className={`rounded-xl p-4 border ${
+        isDarkMode 
+          ? 'bg-gray-800 border-gray-700' 
+          : 'bg-white border-gray-100'
+      }`}
+      style={[
+        {
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.1,
+          shadowRadius: 4,
+          elevation: 3,
+        },
+        style,
+      ]}
+    >
+      <View className="mb-4">
+        <Text className={`text-lg font-bold mb-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+          {title}
+        </Text>
+        <View className="flex-row gap-6">
+          <View className="flex-1">
+            <Text className={`text-xs mb-1 ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}>
+              Total
+            </Text>
+            <Text className={`text-sm font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+              {formatCurrency(totalRevenue)}
+            </Text>
           </View>
-          <View style={styles.statItem}>
-            <Text style={styles.statLabel}>Avg</Text>
-            <Text style={styles.statValue}>{formatCurrency(averageRevenue)}</Text>
+          <View className="flex-1">
+            <Text className={`text-xs mb-1 ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}>
+              Average
+            </Text>
+            <Text className={`text-sm font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+              {formatCurrency(averageRevenue)}
+            </Text>
           </View>
         </View>
       </View>
       
-      <View style={styles.chartContainer}>
+      <View className="items-center">
         <LineChart
           data={chartData}
-          width={screenWidth - theme.spacing.lg * 2}
+          width={screenWidth - 64}
           height={220}
           chartConfig={chartConfig}
           bezier
-          style={styles.chart}
+          style={{
+            borderRadius: 16,
+          }}
           withInnerLines={true}
           withOuterLines={true}
           withVerticalLines={true}
@@ -104,45 +143,5 @@ const RevenueChart = ({
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    backgroundColor: theme.colors.background,
-    borderRadius: theme.borderRadius.lg,
-    padding: theme.spacing.md,
-    ...theme.shadows.sm,
-  },
-  header: {
-    marginBottom: theme.spacing.md,
-  },
-  title: {
-    ...theme.typography.h3,
-    color: theme.colors.text,
-    marginBottom: theme.spacing.sm,
-  },
-  stats: {
-    flexDirection: 'row',
-    gap: theme.spacing.lg,
-  },
-  statItem: {
-    flex: 1,
-  },
-  statLabel: {
-    ...theme.typography.caption,
-    color: theme.colors.textTertiary,
-    marginBottom: 2,
-  },
-  statValue: {
-    ...theme.typography.body2,
-    color: theme.colors.text,
-    fontWeight: '600',
-  },
-  chartContainer: {
-    alignItems: 'center',
-  },
-  chart: {
-    borderRadius: theme.borderRadius.md,
-  },
-});
 
 export default RevenueChart;

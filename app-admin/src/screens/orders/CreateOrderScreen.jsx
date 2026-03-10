@@ -1,22 +1,23 @@
 // screens/orders/CreateOrderScreen.js
 import React from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import OrderForm from '../../components/orders/OrderForm'
-import { theme } from '../../theme';
+import { useThemeStore } from '../../store/themeStore';
+import OrderForm from '../../components/orders/OrderForm';
 
 const CreateOrderScreen = () => {
+  const { isDarkMode } = useThemeStore();
+  
   return (
-    <SafeAreaView style={styles.container} edges={['left', 'right']}>
+    <SafeAreaView 
+      style={{ 
+        flex: 1, 
+        backgroundColor: isDarkMode ? '#111827' : '#FFFFFF' 
+      }} 
+      edges={['left', 'right']}
+    >
       <OrderForm />
     </SafeAreaView>
   );
-};
-
-const styles = {
-  container: {
-    flex: 1,
-    backgroundColor: theme.colors.background,
-  },
 };
 
 export default CreateOrderScreen;

@@ -1,3 +1,4 @@
+// components/customers/FilterModal.js
 import { LinearGradient } from "expo-linear-gradient";
 import { useEffect, useState } from "react";
 import {
@@ -10,6 +11,7 @@ import {
     View,
 } from "react-native";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
+import { useThemeStore } from "../../store/themeStore";
 
 const FilterModal = ({
   visible,
@@ -17,7 +19,10 @@ const FilterModal = ({
   filters: initialFilters,
   onApply,
   onClear,
+  isDarkMode: propIsDarkMode,
 }) => {
+  const { isDarkMode: storeIsDarkMode } = useThemeStore();
+  const isDarkMode = propIsDarkMode !== undefined ? propIsDarkMode : storeIsDarkMode;
   const [filters, setFilters] = useState(initialFilters);
 
   // Update local filters when initialFilters change or modal opens
@@ -123,7 +128,9 @@ const FilterModal = ({
       <TouchableWithoutFeedback onPress={onClose}>
         <View className="flex-1 bg-black/50 justify-end">
           <TouchableWithoutFeedback>
-            <View className="bg-white rounded-t-3xl max-h-[90%]">
+            <View className={`rounded-t-3xl max-h-[90%] ${
+              isDarkMode ? 'bg-gray-800' : 'bg-white'
+            }`}>
               {/* Header with Gradient */}
               <LinearGradient
                 colors={["#6366F1", "#8B5CF6"]}
@@ -154,7 +161,9 @@ const FilterModal = ({
               <ScrollView className="p-5" showsVerticalScrollIndicator={false}>
                 {/* Status Filter */}
                 <View className="mb-6">
-                  <Text className="text-gray-900 font-bold text-base mb-3">
+                  <Text className={`font-bold text-base mb-3 ${
+                    isDarkMode ? 'text-white' : 'text-gray-900'
+                  }`}>
                     Customer Status
                   </Text>
                   <View className="flex-row flex-wrap">
@@ -165,7 +174,9 @@ const FilterModal = ({
                         className={`flex-row items-center mr-3 mb-3 px-4 py-2.5 rounded-full border ${
                           filters.status === option.id
                             ? "bg-indigo-500 border-indigo-500"
-                            : "bg-white border-gray-200"
+                            : isDarkMode 
+                              ? 'bg-gray-700 border-gray-600' 
+                              : 'bg-white border-gray-200'
                         }`}
                       >
                         <Icon
@@ -174,14 +185,14 @@ const FilterModal = ({
                           color={
                             filters.status === option.id
                               ? "white"
-                              : option.color
+                              : isDarkMode ? '#9CA3AF' : option.color
                           }
                         />
                         <Text
                           className={`ml-2 text-sm ${
                             filters.status === option.id
                               ? "text-white font-medium"
-                              : "text-gray-700"
+                              : isDarkMode ? 'text-gray-300' : 'text-gray-700'
                           }`}
                         >
                           {option.label}
@@ -193,18 +204,22 @@ const FilterModal = ({
 
                 {/* Sort By */}
                 <View className="mb-6">
-                  <Text className="text-gray-900 font-bold text-base mb-3">
+                  <Text className={`font-bold text-base mb-3 ${
+                    isDarkMode ? 'text-white' : 'text-gray-900'
+                  }`}>
                     Sort By
                   </Text>
-                  <View className="bg-gray-50 rounded-xl p-1">
+                  <View className={`rounded-xl p-1 ${
+                    isDarkMode ? 'bg-gray-700' : 'bg-gray-50'
+                  }`}>
                     {sortOptions.map((option) => (
                       <TouchableOpacity
                         key={option.id}
                         onPress={() => updateFilter("sortBy", option.id)}
                         className={`flex-row items-center justify-between px-4 py-3 rounded-xl ${
                           filters.sortBy === option.id
-                            ? "bg-white shadow-sm"
-                            : ""
+                            ? isDarkMode ? 'bg-gray-800' : 'bg-white shadow-sm'
+                            : ''
                         }`}
                       >
                         <View className="flex-row items-center">
@@ -214,14 +229,14 @@ const FilterModal = ({
                             color={
                               filters.sortBy === option.id
                                 ? "#6366F1"
-                                : "#9ca3af"
+                                : isDarkMode ? '#9CA3AF' : '#9ca3af'
                             }
                           />
                           <Text
                             className={`ml-3 ${
                               filters.sortBy === option.id
-                                ? "text-indigo-600 font-medium"
-                                : "text-gray-600"
+                                ? "text-indigo-600 dark:text-indigo-400 font-medium"
+                                : isDarkMode ? 'text-gray-400' : 'text-gray-600'
                             }`}
                           >
                             {option.label}
@@ -237,7 +252,9 @@ const FilterModal = ({
 
                 {/* Date Range */}
                 <View className="mb-6">
-                  <Text className="text-gray-900 font-bold text-base mb-3">
+                  <Text className={`font-bold text-base mb-3 ${
+                    isDarkMode ? 'text-white' : 'text-gray-900'
+                  }`}>
                     Registration Date
                   </Text>
                   <ScrollView horizontal showsHorizontalScrollIndicator={false}>
@@ -249,14 +266,16 @@ const FilterModal = ({
                           className={`mr-2 px-4 py-2.5 rounded-full border ${
                             filters.dateRange === option.id
                               ? "bg-indigo-500 border-indigo-500"
-                              : "bg-white border-gray-200"
+                              : isDarkMode 
+                                ? 'bg-gray-700 border-gray-600' 
+                                : 'bg-white border-gray-200'
                           }`}
                         >
                           <Text
                             className={`text-sm ${
                               filters.dateRange === option.id
                                 ? "text-white font-medium"
-                                : "text-gray-700"
+                                : isDarkMode ? 'text-gray-300' : 'text-gray-700'
                             }`}
                           >
                             {option.label}
@@ -269,21 +288,29 @@ const FilterModal = ({
 
                 {/* Numeric Filters */}
                 <View className="mb-6">
-                  <Text className="text-gray-900 font-bold text-base mb-3">
+                  <Text className={`font-bold text-base mb-3 ${
+                    isDarkMode ? 'text-white' : 'text-gray-900'
+                  }`}>
                     Filter by Metrics
                   </Text>
 
                   {/* Minimum Orders */}
                   <View className="mb-4">
-                    <Text className="text-gray-600 text-sm mb-2">
+                    <Text className={`text-sm mb-2 ${
+                      isDarkMode ? 'text-gray-400' : 'text-gray-600'
+                    }`}>
                       Minimum Orders
                     </Text>
-                    <View className="flex-row items-center bg-gray-50 rounded-xl px-4 border border-gray-200">
+                    <View className={`flex-row items-center rounded-xl px-4 border ${
+                      isDarkMode ? 'bg-gray-700 border-gray-600' : 'bg-gray-50 border-gray-200'
+                    }`}>
                       <Icon name="clipboard-list" size={20} color="#9ca3af" />
                       <TextInput
-                        className="flex-1 ml-3 py-3 text-gray-900"
+                        className={`flex-1 ml-3 py-3 ${
+                          isDarkMode ? 'text-white' : 'text-gray-900'
+                        }`}
                         placeholder="e.g., 5"
-                        placeholderTextColor="#9ca3af"
+                        placeholderTextColor={isDarkMode ? '#6B7280' : '#9ca3af'}
                         keyboardType="number-pad"
                         value={filters.minOrders}
                         onChangeText={(text) => updateFilter("minOrders", text)}
@@ -300,15 +327,21 @@ const FilterModal = ({
 
                   {/* Minimum Spent */}
                   <View className="mb-4">
-                    <Text className="text-gray-600 text-sm mb-2">
+                    <Text className={`text-sm mb-2 ${
+                      isDarkMode ? 'text-gray-400' : 'text-gray-600'
+                    }`}>
                       Minimum Spent ($)
                     </Text>
-                    <View className="flex-row items-center bg-gray-50 rounded-xl px-4 border border-gray-200">
+                    <View className={`flex-row items-center rounded-xl px-4 border ${
+                      isDarkMode ? 'bg-gray-700 border-gray-600' : 'bg-gray-50 border-gray-200'
+                    }`}>
                       <Icon name="currency-usd" size={20} color="#9ca3af" />
                       <TextInput
-                        className="flex-1 ml-3 py-3 text-gray-900"
+                        className={`flex-1 ml-3 py-3 ${
+                          isDarkMode ? 'text-white' : 'text-gray-900'
+                        }`}
                         placeholder="e.g., 100"
-                        placeholderTextColor="#9ca3af"
+                        placeholderTextColor={isDarkMode ? '#6B7280' : '#9ca3af'}
                         keyboardType="numeric"
                         value={filters.minSpent}
                         onChangeText={(text) => updateFilter("minSpent", text)}
@@ -326,18 +359,24 @@ const FilterModal = ({
 
                 {/* Contact Preferences */}
                 <View className="mb-6">
-                  <Text className="text-gray-900 font-bold text-base mb-3">
+                  <Text className={`font-bold text-base mb-3 ${
+                    isDarkMode ? 'text-white' : 'text-gray-900'
+                  }`}>
                     Contact Preferences
                   </Text>
 
                   <TouchableOpacity
                     onPress={() => updateFilter("hasPhone", !filters.hasPhone)}
-                    className="flex-row items-center justify-between py-3 border-b border-gray-100"
+                    className={`flex-row items-center justify-between py-3 border-b ${
+                      isDarkMode ? 'border-gray-700' : 'border-gray-100'
+                    }`}
                   >
                     <View className="flex-row items-center">
                       <View
                         className={`w-8 h-8 rounded-lg items-center justify-center ${
-                          filters.hasPhone ? "bg-indigo-100" : "bg-gray-100"
+                          filters.hasPhone 
+                            ? (isDarkMode ? 'bg-indigo-900/30' : 'bg-indigo-100')
+                            : (isDarkMode ? 'bg-gray-700' : 'bg-gray-100')
                         }`}
                       >
                         <Icon
@@ -346,7 +385,9 @@ const FilterModal = ({
                           color={filters.hasPhone ? "#6366F1" : "#9ca3af"}
                         />
                       </View>
-                      <Text className="ml-3 text-gray-700 font-medium">
+                      <Text className={`ml-3 font-medium ${
+                        isDarkMode ? 'text-gray-300' : 'text-gray-700'
+                      }`}>
                         Has Phone Number
                       </Text>
                     </View>
@@ -354,7 +395,7 @@ const FilterModal = ({
                       className={`w-6 h-6 rounded-md border-2 ${
                         filters.hasPhone
                           ? "bg-indigo-500 border-indigo-500"
-                          : "border-gray-300"
+                          : isDarkMode ? 'border-gray-600' : 'border-gray-300'
                       } items-center justify-center`}
                     >
                       {filters.hasPhone && (
@@ -370,7 +411,9 @@ const FilterModal = ({
                     <View className="flex-row items-center">
                       <View
                         className={`w-8 h-8 rounded-lg items-center justify-center ${
-                          filters.hasEmail ? "bg-indigo-100" : "bg-gray-100"
+                          filters.hasEmail 
+                            ? (isDarkMode ? 'bg-indigo-900/30' : 'bg-indigo-100')
+                            : (isDarkMode ? 'bg-gray-700' : 'bg-gray-100')
                         }`}
                       >
                         <Icon
@@ -379,7 +422,9 @@ const FilterModal = ({
                           color={filters.hasEmail ? "#6366F1" : "#9ca3af"}
                         />
                       </View>
-                      <Text className="ml-3 text-gray-700 font-medium">
+                      <Text className={`ml-3 font-medium ${
+                        isDarkMode ? 'text-gray-300' : 'text-gray-700'
+                      }`}>
                         Has Email Address
                       </Text>
                     </View>
@@ -387,7 +432,7 @@ const FilterModal = ({
                       className={`w-6 h-6 rounded-md border-2 ${
                         filters.hasEmail
                           ? "bg-indigo-500 border-indigo-500"
-                          : "border-gray-300"
+                          : isDarkMode ? 'border-gray-600' : 'border-gray-300'
                       } items-center justify-center`}
                     >
                       {filters.hasEmail && (
@@ -399,21 +444,33 @@ const FilterModal = ({
 
                 {/* Active Filters Summary */}
                 {getActiveFilterCount() > 0 && (
-                  <View className="mb-6 p-4 bg-indigo-50 rounded-xl">
-                    <Text className="text-indigo-600 font-semibold text-sm mb-2">
+                  <View className={`mb-6 p-4 rounded-xl ${
+                    isDarkMode ? 'bg-indigo-900/30' : 'bg-indigo-50'
+                  }`}>
+                    <Text className={`font-semibold text-sm mb-2 ${
+                      isDarkMode ? 'text-indigo-400' : 'text-indigo-600'
+                    }`}>
                       Active Filters:
                     </Text>
                     <View className="flex-row flex-wrap">
                       {filters.status !== "all" && (
-                        <View className="bg-indigo-100 rounded-full px-3 py-1 mr-2 mb-2">
-                          <Text className="text-indigo-600 text-xs">
+                        <View className={`rounded-full px-3 py-1 mr-2 mb-2 ${
+                          isDarkMode ? 'bg-indigo-900/50' : 'bg-indigo-100'
+                        }`}>
+                          <Text className={`text-xs ${
+                            isDarkMode ? 'text-indigo-400' : 'text-indigo-600'
+                          }`}>
                             Status: {filters.status === 'active' ? 'Active' : filters.status === 'inactive' ? 'Inactive' : 'All'}
                           </Text>
                         </View>
                       )}
                       {filters.sortBy !== "newest" && (
-                        <View className="bg-indigo-100 rounded-full px-3 py-1 mr-2 mb-2">
-                          <Text className="text-indigo-600 text-xs">
+                        <View className={`rounded-full px-3 py-1 mr-2 mb-2 ${
+                          isDarkMode ? 'bg-indigo-900/50' : 'bg-indigo-100'
+                        }`}>
+                          <Text className={`text-xs ${
+                            isDarkMode ? 'text-indigo-400' : 'text-indigo-600'
+                          }`}>
                             Sort:{" "}
                             {
                               sortOptions.find((o) => o.id === filters.sortBy)
@@ -423,8 +480,12 @@ const FilterModal = ({
                         </View>
                       )}
                       {filters.dateRange !== "all" && (
-                        <View className="bg-indigo-100 rounded-full px-3 py-1 mr-2 mb-2">
-                          <Text className="text-indigo-600 text-xs">
+                        <View className={`rounded-full px-3 py-1 mr-2 mb-2 ${
+                          isDarkMode ? 'bg-indigo-900/50' : 'bg-indigo-100'
+                        }`}>
+                          <Text className={`text-xs ${
+                            isDarkMode ? 'text-indigo-400' : 'text-indigo-600'
+                          }`}>
                             Date:{" "}
                             {
                               dateRangeOptions.find(
@@ -435,29 +496,45 @@ const FilterModal = ({
                         </View>
                       )}
                       {filters.minOrders && (
-                        <View className="bg-indigo-100 rounded-full px-3 py-1 mr-2 mb-2">
-                          <Text className="text-indigo-600 text-xs">
+                        <View className={`rounded-full px-3 py-1 mr-2 mb-2 ${
+                          isDarkMode ? 'bg-indigo-900/50' : 'bg-indigo-100'
+                        }`}>
+                          <Text className={`text-xs ${
+                            isDarkMode ? 'text-indigo-400' : 'text-indigo-600'
+                          }`}>
                             Min Orders: {filters.minOrders}
                           </Text>
                         </View>
                       )}
                       {filters.minSpent && (
-                        <View className="bg-indigo-100 rounded-full px-3 py-1 mr-2 mb-2">
-                          <Text className="text-indigo-600 text-xs">
+                        <View className={`rounded-full px-3 py-1 mr-2 mb-2 ${
+                          isDarkMode ? 'bg-indigo-900/50' : 'bg-indigo-100'
+                        }`}>
+                          <Text className={`text-xs ${
+                            isDarkMode ? 'text-indigo-400' : 'text-indigo-600'
+                          }`}>
                             Min Spent: ${filters.minSpent}
                           </Text>
                         </View>
                       )}
                       {filters.hasPhone && (
-                        <View className="bg-indigo-100 rounded-full px-3 py-1 mr-2 mb-2">
-                          <Text className="text-indigo-600 text-xs">
+                        <View className={`rounded-full px-3 py-1 mr-2 mb-2 ${
+                          isDarkMode ? 'bg-indigo-900/50' : 'bg-indigo-100'
+                        }`}>
+                          <Text className={`text-xs ${
+                            isDarkMode ? 'text-indigo-400' : 'text-indigo-600'
+                          }`}>
                             Has Phone
                           </Text>
                         </View>
                       )}
                       {!filters.hasEmail && (
-                        <View className="bg-indigo-100 rounded-full px-3 py-1 mr-2 mb-2">
-                          <Text className="text-indigo-600 text-xs">
+                        <View className={`rounded-full px-3 py-1 mr-2 mb-2 ${
+                          isDarkMode ? 'bg-indigo-900/50' : 'bg-indigo-100'
+                        }`}>
+                          <Text className={`text-xs ${
+                            isDarkMode ? 'text-indigo-400' : 'text-indigo-600'
+                          }`}>
                             No Email
                           </Text>
                         </View>
@@ -470,9 +547,13 @@ const FilterModal = ({
                 <View className="flex-row mb-8">
                   <TouchableOpacity
                     onPress={handleClear}
-                    className="flex-1 bg-gray-100 py-4 rounded-xl mr-2"
+                    className={`flex-1 py-4 rounded-xl mr-2 ${
+                      isDarkMode ? 'bg-gray-700' : 'bg-gray-100'
+                    }`}
                   >
-                    <Text className="text-gray-700 font-semibold text-center">
+                    <Text className={`font-semibold text-center ${
+                      isDarkMode ? 'text-gray-300' : 'text-gray-700'
+                    }`}>
                       Clear All
                     </Text>
                   </TouchableOpacity>

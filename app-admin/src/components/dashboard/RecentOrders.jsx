@@ -1,60 +1,81 @@
 import React from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { theme } from '../../theme';
+import { useThemeStore } from '../../store/themeStore';
 import { formatCurrency, formatRelativeTime } from '../../utils/helpers';
-import { ORDER_STATUS_LABELS, getStatusColor } from '../../utils/constants';
 import StatusBadge from '../common/StatusBadge';
-import Card from '../common/Card';
 import EmptyState from '../common/EmptyState';
 
 const RecentOrders = ({ orders = [], loading, onRefresh }) => {
   const navigation = useNavigation();
+  const { isDarkMode } = useThemeStore();
 
   const renderOrderItem = ({ item }) => (
     <TouchableOpacity
       onPress={() => navigation.navigate('OrderDetail', { orderId: item.id })}
       activeOpacity={0.7}
+      className={`mb-2 p-4 rounded-xl border ${
+        isDarkMode 
+          ? 'bg-gray-800 border-gray-700' 
+          : 'bg-white border-gray-100'
+      }`}
     >
-      <Card style={styles.orderCard} padding="sm">
-        <View style={styles.orderHeader}>
-          <View style={styles.orderInfo}>
-            <Text style={styles.orderNumber}>#{item.orderNumber}</Text>
-            <Text style={styles.customerName}>{item.customer?.name}</Text>
-          </View>
-          <StatusBadge
-            status={ORDER_STATUS_LABELS[item.status] || item.status}
-            variant={item.status === 'delivered' ? 'success' : 
-                    item.status === 'cancelled' ? 'error' : 
-                    item.status === 'pending' ? 'warning' : 'default'}
-            size="small"
-          />
+      <View className="flex-row justify-between items-start mb-3">
+        <View className="flex-1">
+          <Text className={`font-semibold mb-1 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+            #{item.orderNumber}
+          </Text>
+          <Text className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+            {item.customer?.name}
+          </Text>
         </View>
-        
-        <View style={styles.orderDetails}>
-          <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>Amount:</Text>
-            <Text style={styles.detailValue}>{formatCurrency(item.total)}</Text>
-          </View>
-          <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>Items:</Text>
-            <Text style={styles.detailValue}>{item.items?.length || 0}</Text>
-          </View>
-          <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>Time:</Text>
-            <Text style={styles.detailValue}>{formatRelativeTime(item.createdAt)}</Text>
-          </View>
+        <StatusBadge
+          status={item.status}
+          size="small"
+        />
+      </View>
+      
+      <View className="flex-row justify-between">
+        <View className="items-center">
+          <Text className={`text-xs mb-1 ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}>
+            Amount
+          </Text>
+          <Text className={`text-sm font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+            {formatCurrency(item.total)}
+          </Text>
         </View>
-      </Card>
+        <View className="items-center">
+          <Text className={`text-xs mb-1 ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}>
+            Items
+          </Text>
+          <Text className={`text-sm font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+            {item.items?.length || 0}
+          </Text>
+        </View>
+        <View className="items-center">
+          <Text className={`text-xs mb-1 ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}>
+            Time
+          </Text>
+          <Text className={`text-sm font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+            {formatRelativeTime(item.createdAt)}
+          </Text>
+        </View>
+      </View>
     </TouchableOpacity>
   );
 
   if (loading) {
     return (
-      <View style={styles.container}>
-        <Text style={styles.title}>Recent Orders</Text>
-        <View style={styles.loadingContainer}>
-          <Text>Loading orders...</Text>
+      <View className="flex-1">
+        <View className="flex-row justify-between items-center mb-4">
+          <Text className={`text-lg font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+            Recent Orders
+          </Text>
+        </View>
+        <View className={`p-8 items-center ${isDarkMode ? 'bg-gray-800' : 'bg-gray-50'} rounded-xl`}>
+          <Text className={isDarkMode ? 'text-gray-400' : 'text-gray-600'}>
+            Loading orders...
+          </Text>
         </View>
       </View>
     );
@@ -62,23 +83,36 @@ const RecentOrders = ({ orders = [], loading, onRefresh }) => {
 
   if (!orders || orders.length === 0) {
     return (
-      <View style={styles.container}>
-        <Text style={styles.title}>Recent Orders</Text>
+      <View className="flex-1">
+        <View className="flex-row justify-between items-center mb-4">
+          <Text className={`text-lg font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+            Recent Orders
+          </Text>
+          <TouchableOpacity onPress={() => navigation.navigate('Orders')}>
+            <Text className="text-indigo-600 dark:text-indigo-400 text-sm font-semibold">
+              View All
+            </Text>
+          </TouchableOpacity>
+        </View>
         <EmptyState
           title="No Orders Yet"
           description="There are no recent orders to display"
-          image={<Text style={styles.emptyIcon}>📦</Text>}
+          icon="package-variant"
         />
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Recent Orders</Text>
+    <View className="flex-1">
+      <View className="flex-row justify-between items-center mb-4">
+        <Text className={`text-lg font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+          Recent Orders
+        </Text>
         <TouchableOpacity onPress={() => navigation.navigate('Orders')}>
-          <Text style={styles.viewAllText}>View All</Text>
+          <Text className="text-indigo-600 dark:text-indigo-400 text-sm font-semibold">
+            View All
+          </Text>
         </TouchableOpacity>
       </View>
       
@@ -87,80 +121,10 @@ const RecentOrders = ({ orders = [], loading, onRefresh }) => {
         renderItem={renderOrderItem}
         keyExtractor={(item) => item.id}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.listContainer}
+        contentContainerStyle={{ paddingBottom: 8 }}
       />
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: theme.spacing.md,
-  },
-  title: {
-    ...theme.typography.h3,
-    color: theme.colors.text,
-  },
-  viewAllText: {
-    ...theme.typography.body2,
-    color: theme.colors.primary,
-    fontWeight: '600',
-  },
-  loadingContainer: {
-    padding: theme.spacing.xl,
-    alignItems: 'center',
-  },
-  listContainer: {
-    gap: theme.spacing.sm,
-  },
-  orderCard: {
-    marginBottom: theme.spacing.sm,
-  },
-  orderHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: theme.spacing.sm,
-  },
-  orderInfo: {
-    flex: 1,
-  },
-  orderNumber: {
-    ...theme.typography.body1,
-    color: theme.colors.text,
-    fontWeight: '600',
-    marginBottom: 2,
-  },
-  customerName: {
-    ...theme.typography.body2,
-    color: theme.colors.textSecondary,
-  },
-  orderDetails: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  detailRow: {
-    alignItems: 'center',
-  },
-  detailLabel: {
-    ...theme.typography.caption,
-    color: theme.colors.textTertiary,
-    marginBottom: 2,
-  },
-  detailValue: {
-    ...theme.typography.body2,
-    color: theme.colors.text,
-    fontWeight: '500',
-  },
-  emptyIcon: {
-    fontSize: 48,
-  },
-});
 
 export default RecentOrders;

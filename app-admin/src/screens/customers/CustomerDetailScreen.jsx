@@ -1,3 +1,4 @@
+// screens/customers/CustomerDetailScreen.js
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
 import { useEffect, useState } from "react";
@@ -12,6 +13,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
+import { useThemeStore } from "../../store/themeStore";
 
 // Static customers data (same as in CustomerList)
 const STATIC_CUSTOMERS = {
@@ -424,6 +426,7 @@ const CUSTOMER_ORDERS = {
 const CustomerDetailScreen = () => {
   const navigation = useNavigation();
   const route = useRoute();
+  const { isDarkMode } = useThemeStore();
   const { customerId } = route.params;
   const [customer, setCustomer] = useState(null);
   const [recentOrders, setRecentOrders] = useState([]);
@@ -496,11 +499,13 @@ const CustomerDetailScreen = () => {
 
   if (!customer) {
     return (
-      <SafeAreaView className="flex-1 bg-gray-50">
-        <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
+      <SafeAreaView className={`flex-1 ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
+        <StatusBar barStyle={isDarkMode ? "light-content" : "dark-content"} backgroundColor={isDarkMode ? "#111827" : "#ffffff"} />
         <View className="flex-1 items-center justify-center">
-          <Icon name="account-off" size={80} color="#d1d5db" />
-          <Text className="text-lg font-semibold text-gray-700 mt-4">
+          <Icon name="account-off" size={80} color={isDarkMode ? "#4B5563" : "#d1d5db"} />
+          <Text className={`text-lg font-semibold mt-4 ${
+            isDarkMode ? 'text-gray-300' : 'text-gray-700'
+          }`}>
             Customer not found
           </Text>
         </View>
@@ -511,25 +516,33 @@ const CustomerDetailScreen = () => {
   const isActive = customer.status === "active";
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-50" edges={["top"]}
-    style={{ paddingBottom: 60 }}
+    <SafeAreaView className={`flex-1 ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`} edges={["top"]}
+      style={{ paddingBottom: 60 }}
     >
-      <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
+      <StatusBar barStyle={isDarkMode ? "light-content" : "dark-content"} backgroundColor={isDarkMode ? "#111827" : "#ffffff"} />
 
       {/* Header */}
-      <View className="flex-row items-center justify-between px-4 py-3 bg-white border-b border-gray-100">
+      <View className={`flex-row items-center justify-between px-4 py-3 border-b ${
+        isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'
+      }`}>
         <TouchableOpacity
           onPress={() => navigation.goBack()}
-          className="w-10 h-10 bg-gray-100 rounded-2xl items-center justify-center"
+          className={`w-10 h-10 rounded-2xl items-center justify-center ${
+            isDarkMode ? 'bg-gray-700' : 'bg-gray-100'
+          }`}
         >
-          <Icon name="arrow-left" size={22} color="#374151" />
+          <Icon name="arrow-left" size={22} color={isDarkMode ? "#9CA3AF" : "#374151"} />
         </TouchableOpacity>
-        <Text className="text-lg font-bold text-gray-900">
+        <Text className={`text-lg font-bold ${
+          isDarkMode ? 'text-white' : 'text-gray-900'
+        }`}>
           Customer Profile
         </Text>
         <TouchableOpacity
           onPress={handleEdit}
-          className="w-10 h-10 bg-indigo-100 rounded-2xl items-center justify-center"
+          className={`w-10 h-10 rounded-2xl items-center justify-center ${
+            isDarkMode ? 'bg-indigo-900/30' : 'bg-indigo-100'
+          }`}
         >
           <Icon name="pencil" size={20} color="#6366F1" />
         </TouchableOpacity>
@@ -548,7 +561,7 @@ const CustomerDetailScreen = () => {
             shadowOpacity: 0.3,
             shadowRadius: 8,
             elevation: 5,
-            borderRadius:10
+            borderRadius: 10
           }}
         >
           <View className="flex-row items-center">
@@ -587,50 +600,80 @@ const CustomerDetailScreen = () => {
           <TouchableOpacity
             onPress={handleCall}
             disabled={!customer.phone}
-            className={`flex-1 bg-white p-4 rounded-2xl mr-2 border border-gray-100 items-center ${
+            className={`flex-1 p-4 rounded-2xl mr-2 border items-center ${
               !customer.phone ? 'opacity-50' : ''
+            } ${
+              isDarkMode 
+                ? 'bg-gray-800 border-gray-700' 
+                : 'bg-white border-gray-100'
             }`}
           >
-            <View className="w-10 h-10 bg-green-100 rounded-xl items-center justify-center mb-2">
+            <View className={`w-10 h-10 rounded-xl items-center justify-center mb-2 ${
+              isDarkMode ? 'bg-green-900/30' : 'bg-green-100'
+            }`}>
               <Icon name="phone" size={22} color="#10B981" />
             </View>
-            <Text className="text-gray-700 text-sm font-medium">Call</Text>
+            <Text className={`text-sm font-medium ${
+              isDarkMode ? 'text-gray-300' : 'text-gray-700'
+            }`}>Call</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
             onPress={handleEmail}
             disabled={!customer.email}
-            className={`flex-1 bg-white p-4 rounded-2xl mx-2 border border-gray-100 items-center ${
+            className={`flex-1 p-4 rounded-2xl mx-2 border items-center ${
               !customer.email ? 'opacity-50' : ''
+            } ${
+              isDarkMode 
+                ? 'bg-gray-800 border-gray-700' 
+                : 'bg-white border-gray-100'
             }`}
           >
-            <View className="w-10 h-10 bg-blue-100 rounded-xl items-center justify-center mb-2">
+            <View className={`w-10 h-10 rounded-xl items-center justify-center mb-2 ${
+              isDarkMode ? 'bg-blue-900/30' : 'bg-blue-100'
+            }`}>
               <Icon name="email" size={22} color="#6366F1" />
             </View>
-            <Text className="text-gray-700 text-sm font-medium">Email</Text>
+            <Text className={`text-sm font-medium ${
+              isDarkMode ? 'text-gray-300' : 'text-gray-700'
+            }`}>Email</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
             onPress={handleMessage}
             disabled={!customer.phone}
-            className={`flex-1 bg-white p-4 rounded-2xl ml-2 border border-gray-100 items-center ${
+            className={`flex-1 p-4 rounded-2xl ml-2 border items-center ${
               !customer.phone ? 'opacity-50' : ''
+            } ${
+              isDarkMode 
+                ? 'bg-gray-800 border-gray-700' 
+                : 'bg-white border-gray-100'
             }`}
           >
-            <View className="w-10 h-10 bg-purple-100 rounded-xl items-center justify-center mb-2">
+            <View className={`w-10 h-10 rounded-xl items-center justify-center mb-2 ${
+              isDarkMode ? 'bg-purple-900/30' : 'bg-purple-100'
+            }`}>
               <Icon name="message" size={22} color="#8B5CF6" />
             </View>
-            <Text className="text-gray-700 text-sm font-medium">Message</Text>
+            <Text className={`text-sm font-medium ${
+              isDarkMode ? 'text-gray-300' : 'text-gray-700'
+            }`}>Message</Text>
           </TouchableOpacity>
         </View>
 
         {/* Contact Info */}
-        <View className="mx-4 mt-4 bg-white p-5 rounded-3xl border border-gray-100">
+        <View className={`mx-4 mt-4 p-5 rounded-3xl border ${
+          isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'
+        }`}>
           <View className="flex-row items-center mb-4">
-            <View className="w-10 h-10 bg-indigo-100 rounded-xl items-center justify-center mr-3">
+            <View className={`w-10 h-10 rounded-xl items-center justify-center mr-3 ${
+              isDarkMode ? 'bg-indigo-900/30' : 'bg-indigo-100'
+            }`}>
               <Icon name="card-account-details" size={20} color="#6366F1" />
             </View>
-            <Text className="text-lg font-bold text-gray-900">
+            <Text className={`text-lg font-bold ${
+              isDarkMode ? 'text-white' : 'text-gray-900'
+            }`}>
               Contact Information
             </Text>
           </View>
@@ -638,14 +681,18 @@ const CustomerDetailScreen = () => {
           <View className="space-y-3">
             <View className="flex-row items-center">
               <Icon name="email-outline" size={18} color="#9ca3af" />
-              <Text className="text-gray-600 ml-3 flex-1">
+              <Text className={`ml-3 flex-1 ${
+                isDarkMode ? 'text-gray-300' : 'text-gray-600'
+              }`}>
                 {customer.email || "No email provided"}
               </Text>
             </View>
 
             <View className="flex-row items-center">
               <Icon name="phone-outline" size={18} color="#9ca3af" />
-              <Text className="text-gray-600 ml-3 flex-1">
+              <Text className={`ml-3 flex-1 ${
+                isDarkMode ? 'text-gray-300' : 'text-gray-600'
+              }`}>
                 {customer.phone || "No phone number"}
               </Text>
             </View>
@@ -653,7 +700,9 @@ const CustomerDetailScreen = () => {
             {customer.preferredPayment && (
               <View className="flex-row items-center">
                 <Icon name="credit-card-outline" size={18} color="#9ca3af" />
-                <Text className="text-gray-600 ml-3 flex-1">
+                <Text className={`ml-3 flex-1 ${
+                  isDarkMode ? 'text-gray-300' : 'text-gray-600'
+                }`}>
                   {customer.preferredPayment}
                 </Text>
               </View>
@@ -662,7 +711,9 @@ const CustomerDetailScreen = () => {
             {customer.taxId && (
               <View className="flex-row items-center">
                 <Icon name="file-document-outline" size={18} color="#9ca3af" />
-                <Text className="text-gray-600 ml-3 flex-1">
+                <Text className={`ml-3 flex-1 ${
+                  isDarkMode ? 'text-gray-300' : 'text-gray-600'
+                }`}>
                   Tax ID: {customer.taxId}
                 </Text>
               </View>
@@ -672,81 +723,127 @@ const CustomerDetailScreen = () => {
 
         {/* Address */}
         {customer.address && (
-          <View className="mx-4 mt-4 bg-white p-5 rounded-3xl border border-gray-100">
+          <View className={`mx-4 mt-4 p-5 rounded-3xl border ${
+            isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'
+          }`}>
             <View className="flex-row items-center mb-4">
-              <View className="w-10 h-10 bg-green-100 rounded-xl items-center justify-center mr-3">
+              <View className={`w-10 h-10 rounded-xl items-center justify-center mr-3 ${
+                isDarkMode ? 'bg-green-900/30' : 'bg-green-100'
+              }`}>
                 <Icon name="map-marker" size={20} color="#10B981" />
               </View>
-              <Text className="text-lg font-bold text-gray-900">Address</Text>
+              <Text className={`text-lg font-bold ${
+                isDarkMode ? 'text-white' : 'text-gray-900'
+              }`}>Address</Text>
             </View>
 
-            <View className="bg-gray-50 p-4 rounded-2xl">
-              <Text className="text-gray-900 font-medium">
+            <View className={`p-4 rounded-2xl ${
+              isDarkMode ? 'bg-gray-700' : 'bg-gray-50'
+            }`}>
+              <Text className={`font-medium ${
+                isDarkMode ? 'text-white' : 'text-gray-900'
+              }`}>
                 {customer.address.street}
               </Text>
-              <Text className="text-gray-600 mt-1">
+              <Text className={`mt-1 ${
+                isDarkMode ? 'text-gray-400' : 'text-gray-600'
+              }`}>
                 {customer.address.city}, {customer.address.state}{" "}
                 {customer.address.zip}
               </Text>
-              <Text className="text-gray-600">{customer.address.country}</Text>
+              <Text className={`${
+                isDarkMode ? 'text-gray-400' : 'text-gray-600'
+              }`}>{customer.address.country}</Text>
             </View>
           </View>
         )}
 
         {/* Statistics */}
-        <View className="mx-4 mt-4 bg-white p-5 rounded-3xl border border-gray-100">
+        <View className={`mx-4 mt-4 p-5 rounded-3xl border ${
+          isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'
+        }`}>
           <View className="flex-row items-center mb-4">
-            <View className="w-10 h-10 bg-orange-100 rounded-xl items-center justify-center mr-3">
+            <View className={`w-10 h-10 rounded-xl items-center justify-center mr-3 ${
+              isDarkMode ? 'bg-orange-900/30' : 'bg-orange-100'
+            }`}>
               <Icon name="chart-line" size={20} color="#F59E0B" />
             </View>
-            <Text className="text-lg font-bold text-gray-900">Statistics</Text>
+            <Text className={`text-lg font-bold ${
+              isDarkMode ? 'text-white' : 'text-gray-900'
+            }`}>Statistics</Text>
           </View>
 
           <View className="flex-row justify-around">
             <View className="items-center">
-              <Text className="text-gray-900 text-2xl font-bold">
+              <Text className={`text-2xl font-bold ${
+                isDarkMode ? 'text-white' : 'text-gray-900'
+              }`}>
                 {customer.orderCount}
               </Text>
-              <Text className="text-gray-500 text-xs mt-1">Total Orders</Text>
+              <Text className={`text-xs mt-1 ${
+                isDarkMode ? 'text-gray-500' : 'text-gray-500'
+              }`}>Total Orders</Text>
             </View>
 
-            <View className="w-px h-10 bg-gray-200" />
+            <View className={`w-px h-10 ${
+              isDarkMode ? 'bg-gray-700' : 'bg-gray-200'
+            }`} />
 
             <View className="items-center">
-              <Text className="text-gray-900 text-2xl font-bold">
+              <Text className={`text-2xl font-bold ${
+                isDarkMode ? 'text-white' : 'text-gray-900'
+              }`}>
                 {formatCurrency(customer.totalSpent)}
               </Text>
-              <Text className="text-gray-500 text-xs mt-1">Total Spent</Text>
+              <Text className={`text-xs mt-1 ${
+                isDarkMode ? 'text-gray-500' : 'text-gray-500'
+              }`}>Total Spent</Text>
             </View>
 
-            <View className="w-px h-10 bg-gray-200" />
+            <View className={`w-px h-10 ${
+              isDarkMode ? 'bg-gray-700' : 'bg-gray-200'
+            }`} />
 
             <View className="items-center">
-              <Text className="text-gray-900 text-2xl font-bold">
+              <Text className={`text-2xl font-bold ${
+                isDarkMode ? 'text-white' : 'text-gray-900'
+              }`}>
                 {formatCurrency(customer.averageOrderValue)}
               </Text>
-              <Text className="text-gray-500 text-xs mt-1">Avg Order</Text>
+              <Text className={`text-xs mt-1 ${
+                isDarkMode ? 'text-gray-500' : 'text-gray-500'
+              }`}>Avg Order</Text>
             </View>
           </View>
         </View>
 
         {/* Tags */}
         {customer.tags && customer.tags.length > 0 && (
-          <View className="mx-4 mt-4 bg-white p-5 rounded-3xl border border-gray-100">
+          <View className={`mx-4 mt-4 p-5 rounded-3xl border ${
+            isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'
+          }`}>
             <View className="flex-row items-center mb-4">
-              <View className="w-10 h-10 bg-purple-100 rounded-xl items-center justify-center mr-3">
+              <View className={`w-10 h-10 rounded-xl items-center justify-center mr-3 ${
+                isDarkMode ? 'bg-purple-900/30' : 'bg-purple-100'
+              }`}>
                 <Icon name="tag-multiple" size={20} color="#8B5CF6" />
               </View>
-              <Text className="text-lg font-bold text-gray-900">Tags</Text>
+              <Text className={`text-lg font-bold ${
+                isDarkMode ? 'text-white' : 'text-gray-900'
+              }`}>Tags</Text>
             </View>
 
             <View className="flex-row flex-wrap">
               {customer.tags.map((tag, index) => (
                 <View
                   key={index}
-                  className="bg-indigo-50 px-3 py-1.5 rounded-full mr-2 mb-2"
+                  className={`px-3 py-1.5 rounded-full mr-2 mb-2 ${
+                    isDarkMode ? 'bg-indigo-900/30' : 'bg-indigo-50'
+                  }`}
                 >
-                  <Text className="text-indigo-600 text-xs font-medium">
+                  <Text className={`text-xs font-medium ${
+                    isDarkMode ? 'text-indigo-400' : 'text-indigo-600'
+                  }`}>
                     #{tag}
                   </Text>
                 </View>
@@ -757,34 +854,50 @@ const CustomerDetailScreen = () => {
 
         {/* Notes */}
         {customer.notes && (
-          <View className="mx-4 mt-4 bg-white p-5 rounded-3xl border border-gray-100">
+          <View className={`mx-4 mt-4 p-5 rounded-3xl border ${
+            isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'
+          }`}>
             <View className="flex-row items-center mb-4">
-              <View className="w-10 h-10 bg-blue-100 rounded-xl items-center justify-center mr-3">
+              <View className={`w-10 h-10 rounded-xl items-center justify-center mr-3 ${
+                isDarkMode ? 'bg-blue-900/30' : 'bg-blue-100'
+              }`}>
                 <Icon name="note-text" size={20} color="#6366F1" />
               </View>
-              <Text className="text-lg font-bold text-gray-900">Notes</Text>
+              <Text className={`text-lg font-bold ${
+                isDarkMode ? 'text-white' : 'text-gray-900'
+              }`}>Notes</Text>
             </View>
 
-            <View className="bg-gray-50 p-4 rounded-2xl">
-              <Text className="text-gray-600 leading-6">{customer.notes}</Text>
+            <View className={`p-4 rounded-2xl ${
+              isDarkMode ? 'bg-gray-700' : 'bg-gray-50'
+            }`}>
+              <Text className={`leading-6 ${
+                isDarkMode ? 'text-gray-300' : 'text-gray-600'
+              }`}>{customer.notes}</Text>
             </View>
           </View>
         )}
 
         {/* Recent Orders */}
         {recentOrders.length > 0 && (
-          <View className="mx-4 mt-4 mb-8 bg-white p-5 rounded-3xl border border-gray-100">
+          <View className={`mx-4 mt-4 mb-8 p-5 rounded-3xl border ${
+            isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'
+          }`}>
             <View className="flex-row justify-between items-center mb-4">
               <View className="flex-row items-center">
-                <View className="w-10 h-10 bg-pink-100 rounded-xl items-center justify-center mr-3">
+                <View className={`w-10 h-10 rounded-xl items-center justify-center mr-3 ${
+                  isDarkMode ? 'bg-pink-900/30' : 'bg-pink-100'
+                }`}>
                   <Icon name="clipboard-list" size={20} color="#EC4899" />
                 </View>
-                <Text className="text-lg font-bold text-gray-900">
+                <Text className={`text-lg font-bold ${
+                  isDarkMode ? 'text-white' : 'text-gray-900'
+                }`}>
                   Recent Orders
                 </Text>
               </View>
               <TouchableOpacity onPress={handleViewAllOrders}>
-                <Text className="text-indigo-600 text-sm font-semibold">
+                <Text className="text-indigo-600 dark:text-indigo-400 text-sm font-semibold">
                   View All →
                 </Text>
               </TouchableOpacity>
@@ -798,7 +911,7 @@ const CustomerDetailScreen = () => {
                 }
                 className={`flex-row items-center py-3 ${
                   index !== recentOrders.length - 1
-                    ? "border-b border-gray-100"
+                    ? isDarkMode ? 'border-b border-gray-700' : 'border-b border-gray-100'
                     : ""
                 }`}
               >
@@ -813,15 +926,21 @@ const CustomerDetailScreen = () => {
                 </LinearGradient>
 
                 <View className="flex-1">
-                  <Text className="text-gray-900 font-semibold">
+                  <Text className={`font-semibold ${
+                    isDarkMode ? 'text-white' : 'text-gray-900'
+                  }`}>
                     {order.orderNumber}
                   </Text>
-                  <Text className="text-gray-500 text-xs">
+                  <Text className={`text-xs ${
+                    isDarkMode ? 'text-gray-500' : 'text-gray-500'
+                  }`}>
                     {order.items} items • {formatDate(order.createdAt)}
                   </Text>
                 </View>
 
-                <Text className="text-gray-900 font-bold mr-3">
+                <Text className={`font-bold mr-3 ${
+                  isDarkMode ? 'text-white' : 'text-gray-900'
+                }`}>
                   {formatCurrency(order.total)}
                 </Text>
 
@@ -835,9 +954,15 @@ const CustomerDetailScreen = () => {
         <View className="mx-4 mb-8">
           <TouchableOpacity
             onPress={handleDelete}
-            className="bg-red-50 py-4 rounded-2xl border border-red-200"
+            className={`py-4 rounded-2xl border ${
+              isDarkMode 
+                ? 'bg-red-900/30 border-red-800' 
+                : 'bg-red-50 border-red-200'
+            }`}
           >
-            <Text className="text-red-600 font-semibold text-center">
+            <Text className={`font-semibold text-center ${
+              isDarkMode ? 'text-red-400' : 'text-red-600'
+            }`}>
               Delete Customer
             </Text>
           </TouchableOpacity>
