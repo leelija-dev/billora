@@ -1,5 +1,5 @@
 import { LinearGradient } from "expo-linear-gradient";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Modal,
   ScrollView,
@@ -26,21 +26,37 @@ const CategoryFilters = ({
       maxProducts: "",
       sortBy: "name",
       sortOrder: "asc",
+      dateRange: "all",
+      createdBy: "",
       hasProducts: null,
-    },
+    }
   );
+
+  useEffect(() => {
+    if (initialFilters) {
+      setFilters(initialFilters);
+    }
+  }, [initialFilters]);
 
   const sortOptions = [
     { label: "Name", value: "name", icon: "sort-alphabetical" },
-    { label: "Products", value: "products", icon: "package-variant" },
     { label: "Date", value: "date", icon: "calendar" },
-    { label: "Value", value: "value", icon: "currency-usd" },
+    { label: "ID", value: "id", icon: "numeric" },
+    { label: "Status", value: "status", icon: "checkbox-marked-circle-outline" },
   ];
 
   const statusOptions = [
     { label: "All", value: "all" },
     { label: "Active", value: "active" },
     { label: "Inactive", value: "inactive" },
+  ];
+
+  const dateRangeOptions = [
+    { label: "All Time", value: "all" },
+    { label: "Today", value: "today" },
+    { label: "This Week", value: "week" },
+    { label: "This Month", value: "month" },
+    { label: "This Year", value: "year" },
   ];
 
   const handleFilterChange = (key, value) => {
@@ -52,19 +68,22 @@ const CategoryFilters = ({
   };
 
   const handleReset = () => {
-    setFilters({
+    const resetFilters = {
       status: "all",
       minProducts: "",
       maxProducts: "",
       sortBy: "name",
       sortOrder: "asc",
+      dateRange: "all",
+      createdBy: "",
       hasProducts: null,
-    });
+    };
+    setFilters(resetFilters);
     onReset();
   };
 
   const activeFilterCount = Object.values(filters).filter(
-    (v) => v && v !== "" && v !== "all",
+    (v) => v && v !== "" && v !== "all" && v !== null,
   ).length;
 
   const getStatusButtonStyle = (optionValue) => {
@@ -76,6 +95,22 @@ const CategoryFilters = ({
           : isDarkMode ? 'bg-gray-700' : 'bg-gray-200'
       }`,
       textClass: `text-sm font-medium text-center ${
+        isActive 
+          ? "text-white" 
+          : isDarkMode ? 'text-gray-300' : 'text-gray-700'
+      }`,
+    };
+  };
+
+  const getDateRangeButtonStyle = (optionValue) => {
+    const isActive = filters.dateRange === optionValue;
+    return {
+      buttonClass: `flex-1 py-2 px-2 rounded-lg ${
+        isActive 
+          ? "bg-blue-500" 
+          : isDarkMode ? 'bg-gray-700' : 'bg-gray-200'
+      }`,
+      textClass: `text-xs font-medium text-center ${
         isActive 
           ? "text-white" 
           : isDarkMode ? 'text-gray-300' : 'text-gray-700'
@@ -104,7 +139,7 @@ const CategoryFilters = ({
                 Filter Categories
               </Text>
               <Text className="text-white/80 text-sm mt-1">
-                {activeFilterCount} active filters
+                {activeFilterCount} active {activeFilterCount === 1 ? 'filter' : 'filters'}
               </Text>
             </View>
             <TouchableOpacity
@@ -131,7 +166,10 @@ const CategoryFilters = ({
                 {sortOptions.map((option) => (
                   <TouchableOpacity
                     key={option.value}
-                    onPress={() => handleFilterChange("sortBy", option.value)}
+                    onPress={() => {
+                      handleFilterChange("sortBy", option.value);
+                      handleFilterChange("sortOrder", "asc");
+                    }}
                     className={`flex-1 flex-row items-center justify-center py-3 px-3 rounded-xl border ${
                       filters.sortBy === option.value
                         ? "bg-blue-500 border-blue-600"
@@ -163,7 +201,7 @@ const CategoryFilters = ({
               </View>
 
               {/* Sort Order */}
-              <View className="flex-row gap-2">
+              <View className="flex-row gap-2 mt-2">
                 <TouchableOpacity
                   onPress={() => handleFilterChange("sortOrder", "asc")}
                   className={`flex-1 flex-row items-center justify-center py-3 px-3 rounded-xl border ${
@@ -238,7 +276,7 @@ const CategoryFilters = ({
                   const styles = getStatusButtonStyle(option.value);
                   return (
                     <TouchableOpacity
-                      key={option.label}
+                      key={option.value}
                       onPress={() => handleFilterChange("status", option.value)}
                       className={styles.buttonClass}
                     >
@@ -249,61 +287,26 @@ const CategoryFilters = ({
               </View>
             </View>
 
-            {/* Product Count Range */}
+            {/* Date Range Filter */}
             <View className="mb-6">
               <Text className={`text-base font-semibold mb-3 ${
                 isDarkMode ? 'text-white' : 'text-gray-800'
               }`}>
-                Product Count Range
+                Date Range
               </Text>
-              <View className="flex-row items-center gap-3">
-                <View className="flex-1">
-                  <Text className={`text-xs mb-1 font-medium ${
-                    isDarkMode ? 'text-gray-400' : 'text-gray-600'
-                  }`}>
-                    Min
-                  </Text>
-                  <TextInput
-                    value={filters.minProducts}
-                    onChangeText={(value) =>
-                      handleFilterChange("minProducts", value)
-                    }
-                    placeholder="0"
-                    placeholderTextColor={isDarkMode ? '#6B7280' : '#9ca3af'}
-                    keyboardType="numeric"
-                    className={`rounded-xl px-4 py-3 border ${
-                      isDarkMode 
-                        ? 'bg-gray-700 text-white border-gray-600' 
-                        : 'bg-gray-200 text-gray-800 border-gray-100'
-                    }`}
-                  />
-                </View>
-                <Text className={`text-lg font-bold ${
-                  isDarkMode ? 'text-gray-500' : 'text-gray-500'
-                }`}>
-                  -
-                </Text>
-                <View className="flex-1">
-                  <Text className={`text-xs mb-1 font-medium ${
-                    isDarkMode ? 'text-gray-400' : 'text-gray-600'
-                  }`}>
-                    Max
-                  </Text>
-                  <TextInput
-                    value={filters.maxProducts}
-                    onChangeText={(value) =>
-                      handleFilterChange("maxProducts", value)
-                    }
-                    placeholder="100"
-                    placeholderTextColor={isDarkMode ? '#6B7280' : '#9ca3af'}
-                    keyboardType="numeric"
-                    className={`rounded-xl px-4 py-3 border ${
-                      isDarkMode 
-                        ? 'bg-gray-700 text-white border-gray-600' 
-                        : 'bg-gray-200 text-gray-800 border-gray-100'
-                    }`}
-                  />
-                </View>
+              <View className="flex-row flex-wrap gap-2">
+                {dateRangeOptions.map((option) => {
+                  const styles = getDateRangeButtonStyle(option.value);
+                  return (
+                    <TouchableOpacity
+                      key={option.value}
+                      onPress={() => handleFilterChange("dateRange", option.value)}
+                      className={styles.buttonClass}
+                    >
+                      <Text className={styles.textClass}>{option.label}</Text>
+                    </TouchableOpacity>
+                  );
+                })}
               </View>
             </View>
 
@@ -373,6 +376,27 @@ const CategoryFilters = ({
                 </TouchableOpacity>
               </View>
             </View>
+
+            {/* Created By Filter */}
+            <View className="mb-6">
+              <Text className={`text-base font-semibold mb-3 ${
+                isDarkMode ? 'text-white' : 'text-gray-800'
+              }`}>
+                Created By (User ID)
+              </Text>
+              <TextInput
+                value={filters.createdBy}
+                onChangeText={(value) => handleFilterChange("createdBy", value)}
+                placeholder="Enter user ID..."
+                placeholderTextColor={isDarkMode ? '#6B7280' : '#9ca3af'}
+                keyboardType="numeric"
+                className={`rounded-xl px-4 py-3 border ${
+                  isDarkMode 
+                    ? 'bg-gray-700 text-white border-gray-600' 
+                    : 'bg-gray-200 text-gray-800 border-gray-100'
+                }`}
+              />
+            </View>
           </ScrollView>
 
           {/* Footer */}
@@ -390,7 +414,7 @@ const CategoryFilters = ({
               <Text className={`font-semibold ${
                 isDarkMode ? 'text-gray-300' : 'text-gray-700'
               }`}>
-                Reset
+                Reset All
               </Text>
             </TouchableOpacity>
 

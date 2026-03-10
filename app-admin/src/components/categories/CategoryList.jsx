@@ -1,4 +1,3 @@
-// Updated CategoryList component
 import { useNavigation } from "@react-navigation/native";
 import { useEffect, useMemo, useState } from "react";
 import {
@@ -10,7 +9,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { LinearGradient } from "expo-linear-gradient"; // Add this import if missing
+import { LinearGradient } from "expo-linear-gradient";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 import { useThemeStore } from "../../store/themeStore";
 import CategoryCard from "./CategoryCard";
@@ -19,8 +18,10 @@ const CategoryList = ({
   viewMode = "grid",
   searchQuery = "",
   sortBy = "name",
-  categories = [], // New prop for real categories
-  onRefresh = () => {}, // New prop for refresh callback
+  categories = [],
+  loading = false,
+  onRefresh = () => {},
+  onDelete = () => {},
 }) => {
   const navigation = useNavigation();
   const { isDarkMode } = useThemeStore();
@@ -35,57 +36,56 @@ const CategoryList = ({
     }).start();
   }, []);
 
-  // Filter and sort categories based on props (using prop categories)
+  // Filter and sort categories
   const filteredCategories = useMemo(() => {
     if (!Array.isArray(categories)) return [];
     let filtered = [...categories];
-    // Search filter (client-side refinement on server results)
+    
+    // Search filter
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter(
         (c) =>
-          c.name.toLowerCase().includes(query) ||
+          c.name?.toLowerCase().includes(query) ||
           c.description?.toLowerCase().includes(query) ||
-          c.slug?.toLowerCase().includes(query),
+          c.slug?.toLowerCase().includes(query) ||
+          c.id?.toString().includes(query)
       );
     }
+    
     // Sort
     filtered.sort((a, b) => {
       switch (sortBy) {
         case 'name':
-          return a.name.localeCompare(b.name);
-        case 'products':
-          return (b.productCount || 0) - (a.productCount || 0);
+          return (a.name || '').localeCompare(b.name || '');
         case 'date':
-          return new Date(b.created_at) - new Date(a.created_at);
-        case 'value':
-          return (b.totalValue || 0) - (a.totalValue || 0);
+          return new Date(b.created_at || 0) - new Date(a.created_at || 0);
+        case 'id':
+          return (a.id || 0) - (b.id || 0);
+        case 'status':
+          return (b.is_active ? 1 : 0) - (a.is_active ? 1 : 0);
         default:
           return 0;
       }
     });
+    
     return filtered;
   }, [categories, searchQuery, sortBy]);
 
-  // Statistics (using prop categories)
+  // Statistics
   const stats = useMemo(() => {
     if (!Array.isArray(categories)) return {
       total: 0,
       active: 0,
-      totalProducts: 0,
-      empty: 0,
-      totalValue: 0,
+      inactive: 0,
     };
+    
     const activeCount = categories.filter(c => c.is_active).length;
-    const totalProducts = categories.reduce((sum, c) => sum + (c.productCount || 0), 0);
-    const emptyCategories = categories.filter(c => (c.productCount || 0) === 0).length;
-    const totalValue = categories.reduce((sum, c) => sum + (c.totalValue || 0), 0);
+    
     return {
       total: categories.length,
       active: activeCount,
-      totalProducts,
-      empty: emptyCategories,
-      totalValue,
+      inactive: categories.length - activeCount,
     };
   }, [categories]);
 
@@ -93,49 +93,56 @@ const CategoryList = ({
     navigation.navigate("CategoryDetail", { categoryId: category.id });
   };
 
-  const handleEditCategory = (category) => {
-    navigation.navigate("AddCategory", { categoryId: category.id });
+  const handleDeleteCategory = async (categoryId) => {
+    return await onDelete(categoryId);
   };
 
-  // Local handlers (can be extended with props for real API calls)
-  const handleDeleteCategory = (categoryId) => {
-    // For now, local filter; extend with prop onDelete for real delete
-    // setCategories((prev) => prev.filter((c) => c.id !== categoryId));
-  };
-
-  const handleToggleFavorite = (categoryId) => {
-    // Local toggle; extend if needed
-    // setCategories((prev) =>
-    //   prev.map((c) =>
-    //     c.id === categoryId ? { ...c, isFavorite: !c.isFavorite } : c,
-    //   ),
-    // );
-  };
-
-  const onRefreshLocal = () => {
+  const onRefreshLocal = async () => {
     setRefreshing(true);
-    onRefresh(); // Call parent refresh (from hook)
+    await onRefresh();
     setTimeout(() => {
       setRefreshing(false);
-    }, 1000); // UX delay
+    }, 500);
   };
 
   const renderHeader = () => (
     <Animated.View style={{ opacity: fadeAnim, marginBottom: 16 }}>
-      <View className="flex-row justify-between items-center mb-3">
-        <Text className={isDarkMode ? 'text-gray-400' : 'text-gray-600'}>
-          {filteredCategories.length}{" "}
-          {filteredCategories.length === 1 ? "category" : "categories"} found
-        </Text>
-        <View className={`flex-row items-center px-3 py-1.5 rounded-full shadow-sm ${
+      <View className="flex-row justify-between items-center">
+        <View className={`flex-row items-center px-3 py-1.5 rounded-full ${
           isDarkMode ? 'bg-gray-800' : 'bg-white'
         }`}>
           <Icon name="shape" size={16} color={isDarkMode ? "#9CA3AF" : "#4b5563"} />
-          <Text className={`text-sm ml-1 ${
+          <Text className={`text-sm ml-1 font-medium ${
             isDarkMode ? 'text-gray-300' : 'text-gray-600'
           }`}>
-            {stats.active} active
+            {filteredCategories.length} {filteredCategories.length === 1 ? 'category' : 'categories'}
           </Text>
+        </View>
+        
+        <View className="flex-row">
+          <View className={`flex-row items-center mr-2 px-2 py-1 rounded-full ${
+            isDarkMode ? 'bg-green-900/30' : 'bg-green-50'
+          }`}>
+            <View className="w-2 h-2 rounded-full bg-green-500 mr-1" />
+            <Text className={`text-xs ${
+              isDarkMode ? 'text-green-400' : 'text-green-600'
+            }`}>
+              {stats.active} active
+            </Text>
+          </View>
+          
+          {stats.inactive > 0 && (
+            <View className={`flex-row items-center px-2 py-1 rounded-full ${
+              isDarkMode ? 'bg-red-900/30' : 'bg-red-50'
+            }`}>
+              <View className="w-2 h-2 rounded-full bg-red-500 mr-1" />
+              <Text className={`text-xs ${
+                isDarkMode ? 'text-red-400' : 'text-red-600'
+              }`}>
+                {stats.inactive} inactive
+              </Text>
+            </View>
+          )}
         </View>
       </View>
     </Animated.View>
@@ -143,7 +150,10 @@ const CategoryList = ({
 
   const renderGridItem = (item) => (
     <View key={item.id} className="w-[48%] mx-[1%] mb-3">
-      <CategoryCard category={item} onUpdate={handleToggleFavorite} />
+      <CategoryCard 
+        category={item} 
+        onDelete={handleDeleteCategory}
+      />
     </View>
   );
 
@@ -151,20 +161,18 @@ const CategoryList = ({
     <TouchableOpacity
       key={item.id}
       onPress={() => handleCategoryPress(item)}
-      className={`flex-row rounded-xl mb-3 p-3 shadow-sm ${
+      className={`flex-row rounded-xl mb-3 p-4 shadow-sm ${
         isDarkMode ? 'bg-gray-800' : 'bg-white'
       }`}
     >
-      {/* Icon with Gradient */}
-      <LinearGradient
-        colors={item.colors || ["#3b82f6", "#2563eb"]}
-        className="w-16 h-16 rounded-xl items-center justify-center"
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-      >
-        <Icon name={item.icon || "shape"} size={28} color="#ffffff" />
-      </LinearGradient>
-      <View className="flex-1 ml-3">
+      {/* Status Indicator */}
+      <View className="mr-3 items-center">
+        <View className={`w-3 h-3 rounded-full ${
+          item.is_active ? 'bg-green-500' : 'bg-red-500'
+        }`} />
+      </View>
+
+      <View className="flex-1">
         <View className="flex-row justify-between items-start">
           <View className="flex-1">
             <Text
@@ -175,48 +183,49 @@ const CategoryList = ({
             >
               {item.name}
             </Text>
-            <Text
-              className={`text-xs mt-1 ${
-                isDarkMode ? 'text-gray-400' : 'text-gray-500'
-              }`}
-              numberOfLines={2}
-            >
-              {item.description}
-            </Text>
+            {item.slug && (
+              <Text
+                className={`text-xs ${
+                  isDarkMode ? 'text-gray-500' : 'text-gray-400'
+                }`}
+                numberOfLines={1}
+              >
+                {item.slug}
+              </Text>
+            )}
           </View>
-          <TouchableOpacity onPress={() => handleToggleFavorite(item.id)}>
-            <Icon
-              name={item.isFavorite ? "heart" : "heart-outline"}
-              size={20}
-              color={item.isFavorite ? "#ef4444" : "#9ca3af"}
-            />
-          </TouchableOpacity>
+          <Text className={`text-xs ${
+            isDarkMode ? 'text-gray-500' : 'text-gray-400'
+          }`}>
+            #{item.id}
+          </Text>
         </View>
+
+        {item.description && (
+          <Text
+            className={`text-sm mt-1 ${
+              isDarkMode ? 'text-gray-400' : 'text-gray-600'
+            }`}
+            numberOfLines={1}
+          >
+            {item.description}
+          </Text>
+        )}
+
         <View className="flex-row justify-between items-center mt-2">
           <View className="flex-row items-center">
-            <Icon name="package-variant" size={14} color="#9ca3af" />
+            <Icon name="account" size={14} color="#9ca3af" />
             <Text className={`text-xs ml-1 ${
-              isDarkMode ? 'text-gray-400' : 'text-gray-500'
+              isDarkMode ? 'text-gray-500' : 'text-gray-400'
             }`}>
-              {item.productCount || 0} products
+              By: {item.created_by || `User ${item.user_id}`}
             </Text>
           </View>
-          <View className="flex-row items-center">
-            <View
-              className={`w-2 h-2 rounded-full mr-1 ${
-                item.is_active ? 'bg-green-500' : 'bg-red-500'
-              }`}
-            />
-            <Text className={`text-xs ${
-              isDarkMode ? 'text-gray-400' : 'text-gray-500'
-            }`}>
-              {item.is_active ? 'Active' : 'Inactive'}
-            </Text>
-          </View>
-          <Text className={`text-xs font-semibold ${
-            isDarkMode ? 'text-green-400' : 'text-green-600'
+          
+          <Text className={`text-xs ${
+            isDarkMode ? 'text-gray-500' : 'text-gray-400'
           }`}>
-            ${(item.totalValue || 0).toLocaleString()}
+            {new Date(item.created_at).toLocaleDateString()}
           </Text>
         </View>
       </View>
@@ -236,7 +245,16 @@ const CategoryList = ({
     return rows;
   };
 
-  // Removed local loading state as parent handles it
+  if (loading && !refreshing) {
+    return (
+      <View className="flex-1 items-center justify-center py-8">
+        <ActivityIndicator size="large" color="#3b82f6" />
+        <Text className={`mt-3 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+          Loading categories...
+        </Text>
+      </View>
+    );
+  }
 
   if (!filteredCategories || filteredCategories.length === 0) {
     return (
@@ -254,8 +272,12 @@ const CategoryList = ({
         <View className="px-4">
           {renderHeader()}
           <View className="items-center justify-center py-16">
-            <Icon name="shape" size={80} color="#d1d5db" />
-            <Text className={`text-lg font-semibold mt-4 ${
+            <View className={`w-24 h-24 rounded-3xl items-center justify-center mb-4 ${
+              isDarkMode ? 'bg-gray-800' : 'bg-gray-100'
+            }`}>
+              <Icon name="shape" size={48} color="#9ca3af" />
+            </View>
+            <Text className={`text-lg font-semibold ${
               isDarkMode ? 'text-gray-300' : 'text-gray-700'
             }`}>
               No Categories Found
@@ -264,7 +286,7 @@ const CategoryList = ({
               isDarkMode ? 'text-gray-500' : 'text-gray-400'
             }`}>
               {searchQuery
-                ? "Try adjusting your search"
+                ? `No results for "${searchQuery}"`
                 : "Tap the + button to add your first category"}
             </Text>
           </View>

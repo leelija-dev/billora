@@ -1,6 +1,5 @@
-// Updated CategoriesScreen component
 import { useNavigation } from "@react-navigation/native";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import {
   ScrollView,
   StatusBar,
@@ -8,6 +7,7 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  Alert,
 } from "react-native";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 import { LinearGradient } from "expo-linear-gradient";
@@ -28,27 +28,48 @@ const CategoriesScreen = () => {
     error,
     refreshCategories,
     searchCategories,
-    deleteCategory, // From hook
+    deleteCategory,
   } = useCategories() || {};
-
- 
 
   const [showFilters, setShowFilters] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [viewMode, setViewMode] = useState("grid");
   const [sortBy, setSortBy] = useState("name");
+  const [activeFilters, setActiveFilters] = useState({
+    status: "all",
+    minProducts: "",
+    maxProducts: "",
+    sortBy: "name",
+    sortOrder: "asc",
+    dateRange: "all",
+    createdBy: "",
+    hasProducts: null,
+  });
 
-  // Calculate dynamic stats from real categories
+  // Calculate dynamic stats from real categories (based on API response)
   const totalCategories = categories?.length || 0;
   const activeCategories = useMemo(() => 
-    Array.isArray(categories) ? categories.filter(cat => cat.is_active).length : 0, [categories]
+    Array.isArray(categories) ? categories.filter(cat => cat.is_active).length : 0, 
+    [categories]
   );
-  const emptyCategories = useMemo(() => 
-    Array.isArray(categories) ? categories.filter(cat => (cat.productCount || 0) === 0).length : 0, [categories]
-  );
-  const totalProducts = useMemo(() => 
-    Array.isArray(categories) ? categories.reduce((sum, cat) => sum + (cat.productCount || 0), 0) : 0, [categories]
-  );
+  
+  // Since API doesn't have productCount, we'll set these to 0 or derive from products if available
+  const emptyCategories = 0; // Will need to be calculated if you have products data
+  const totalProducts = 0; // Will need to be calculated if you have products data
+
+  // Get latest update date
+  const latestUpdate = useMemo(() => {
+    if (!Array.isArray(categories) || categories.length === 0) return 'N/A';
+    const dates = categories.map(c => new Date(c.updated_at).getTime());
+    return new Date(Math.max(...dates)).toLocaleDateString();
+  }, [categories]);
+
+  // Get unique creators
+  const uniqueCreators = useMemo(() => {
+    if (!Array.isArray(categories)) return [];
+    const creators = new Set(categories.map(c => c.created_by || `User ${c.user_id}`));
+    return Array.from(creators);
+  }, [categories]);
 
   const handleAddCategory = () => {
     navigation.navigate("AddCategory");
@@ -62,6 +83,29 @@ const CategoriesScreen = () => {
     setShowFilters(false);
   };
 
+  const handleApplyFilters = (filters) => {
+    setActiveFilters(filters);
+    setSortBy(filters.sortBy);
+    setShowFilters(false);
+    
+    // Apply filters to categories
+    // This will be handled in the CategoryList component via props
+  };
+
+  const handleResetFilters = () => {
+    setActiveFilters({
+      status: "all",
+      minProducts: "",
+      maxProducts: "",
+      sortBy: "name",
+      sortOrder: "asc",
+      dateRange: "all",
+      createdBy: "",
+      hasProducts: null,
+    });
+    setSortBy("name");
+  };
+
   const handleSearch = (query) => {
     setSearchQuery(query);
     if (query.trim()) {
@@ -73,6 +117,28 @@ const CategoriesScreen = () => {
 
   const toggleViewMode = () => {
     setViewMode(viewMode === "grid" ? "list" : "grid");
+  };
+
+  const handleDeleteCategory = async (categoryId) => {
+    Alert.alert(
+      "Delete Category",
+      "Are you sure you want to delete this category?",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            const result = await deleteCategory(categoryId);
+            if (result?.success) {
+              Alert.alert("Success", "Category deleted successfully");
+            } else {
+              Alert.alert("Error", result?.error || "Failed to delete category");
+            }
+          },
+        },
+      ]
+    );
   };
 
   // Navigation items for sidebar
@@ -89,21 +155,21 @@ const CategoriesScreen = () => {
       title: "Products",
       icon: "package-variant",
       screen: "Products",
-      badge: "156",
+      badge: totalProducts.toString(),
     },
     {
       id: "categories",
       title: "Categories",
       icon: "shape",
       screen: "Categories",
-      badge: totalCategories.toString(), // Dynamic badge
+      badge: totalCategories.toString(),
     },
     {
       id: "orders",
       title: "Orders",
       icon: "clipboard-list",
       screen: "Orders",
-      badge: "12",
+      badge: "0",
     },
     {
       id: "customers",
@@ -117,7 +183,7 @@ const CategoriesScreen = () => {
       title: "Inventory",
       icon: "warehouse",
       screen: "Inventory",
-      badge: "Low Stock",
+      badge: null,
     },
     {
       id: "settings",
@@ -132,7 +198,17 @@ const CategoriesScreen = () => {
   if (loading) {
     return (
       <View className={`flex-1 ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'} items-center justify-center`}>
-        <Text className={isDarkMode ? 'text-white' : 'text-gray-900'}>Loading categories...</Text>
+        <View className={`w-16 h-16 rounded-2xl items-center justify-center mb-4 ${
+          isDarkMode ? 'bg-gray-800' : 'bg-white'
+        }`}>
+          <Icon name="shape" size={32} color="#3b82f6" />
+        </View>
+        <Text className={`text-lg font-semibold ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
+          Loading categories...
+        </Text>
+        <Text className={`text-sm mt-2 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+          Please wait a moment
+        </Text>
       </View>
     );
   }
@@ -140,15 +216,35 @@ const CategoriesScreen = () => {
   // Show error state
   if (error) {
     return (
-      <View className={`flex-1 ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'} items-center justify-center`}>
-        <Text className="text-red-500">Error: {error}</Text>
+      <View className={`flex-1 ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'} items-center justify-center px-6`}>
+        <View className={`w-20 h-20 rounded-3xl items-center justify-center mb-4 ${
+          isDarkMode ? 'bg-red-900/30' : 'bg-red-100'
+        }`}>
+          <Icon name="alert-circle" size={40} color="#ef4444" />
+        </View>
+        <Text className={`text-lg font-semibold text-center ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
+          Failed to Load Categories
+        </Text>
+        <Text className={`text-sm text-center mt-2 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+          {error}
+        </Text>
+        <TouchableOpacity
+          onPress={refreshCategories}
+          className="mt-6 bg-blue-500 px-6 py-3 rounded-xl"
+        >
+          <Text className="text-white font-semibold">Try Again</Text>
+        </TouchableOpacity>
       </View>
     );
   }
 
   return (
     <View className={`flex-1 ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'} pb-16`}>
-      <StatusBar barStyle={isDarkMode ? "light-content" : "dark-content"} backgroundColor={isDarkMode ? "#111827" : "#ffffff"} />
+      <StatusBar 
+        barStyle={isDarkMode ? "light-content" : "dark-content"} 
+        backgroundColor={isDarkMode ? "#111827" : "#ffffff"} 
+      />
+      
       <Header
         title="Categories"
         userName={user?.name || "User"}
@@ -178,6 +274,7 @@ const CategoriesScreen = () => {
           </View>
         }
       />
+
       {/* Search Bar */}
       <View className="px-4 pt-4 pb-2">
         <View className={`flex-row items-center rounded-2xl px-4 h-14 shadow-sm ${
@@ -188,28 +285,32 @@ const CategoriesScreen = () => {
             className={`flex-1 ml-3 text-base ${
               isDarkMode ? 'text-white' : 'text-gray-800'
             }`}
-            placeholder="Search categories..."
+            placeholder="Search by name, description, or slug..."
             placeholderTextColor="#9ca3af"
             value={searchQuery}
             onChangeText={handleSearch}
           />
           {searchQuery.length > 0 && (
-            <TouchableOpacity onPress={() => setSearchQuery("")}>
+            <TouchableOpacity onPress={() => handleSearch("")}>
               <Icon name="close-circle" size={20} color="#9ca3af" />
             </TouchableOpacity>
           )}
           <TouchableOpacity
             onPress={handleFilterPress}
-            className={`ml-2 p-2 border-l ${
+            className={`ml-2 p-2 border-l relative ${
               isDarkMode ? 'border-gray-700' : 'border-gray-200'
             }`}
           >
             <Icon name="tune" size={22} color={isDarkMode ? "#9CA3AF" : "#4b5563"} />
+            {Object.values(activeFilters).some(v => v && v !== "" && v !== "all" && v !== null) && (
+              <View className="absolute top-0 right-0 w-2 h-2 bg-blue-500 rounded-full" />
+            )}
           </TouchableOpacity>
         </View>
       </View>
+
       <ScrollView showsVerticalScrollIndicator={false}>
-        {/* Stats Cards - Using dynamic calculations */}
+        {/* Stats Cards - Updated for API response */}
         <View className="flex-row flex-wrap px-4 py-3">
           <LinearGradient
             colors={["#3b82f6", "#2563eb"]}
@@ -220,10 +321,11 @@ const CategoriesScreen = () => {
             <Text className="text-white/80 text-xs">Total Categories</Text>
             <Text className="text-white text-2xl font-bold">{totalCategories}</Text>
             <View className="flex-row items-center mt-1">
-              <Icon name="arrow-up" size={16} color="#86efac" />
-              <Text className="text-white/80 text-xs ml-1">+12% from last month</Text>
+              <Icon name="shape" size={16} color="#86efac" />
+              <Text className="text-white/80 text-xs ml-1">All categories</Text>
             </View>
           </LinearGradient>
+
           <View className={`rounded-xl p-4 flex-1 ml-2 shadow-sm ${
             isDarkMode ? 'bg-gray-800' : 'bg-white'
           }`}>
@@ -241,129 +343,211 @@ const CategoriesScreen = () => {
             </View>
           </View>
         </View>
+
         <View className="flex-row px-4 mb-4">
           <View className={`rounded-xl p-3 flex-1 mr-2 shadow-sm ${
             isDarkMode ? 'bg-gray-800' : 'bg-white'
           }`}>
             <View className="flex-row items-center">
-              <Icon name="package-variant" size={20} color="#3b82f6" />
+              <Icon name="account" size={20} color="#8b5cf6" />
               <Text className={`ml-2 text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                Total Products
+                Creators
               </Text>
             </View>
             <Text className={`text-xl font-bold mt-1 ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
-              {totalProducts}
+              {uniqueCreators.length}
+            </Text>
+            <Text className={`text-xs mt-1 ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}>
+              Unique users
             </Text>
           </View>
+
           <View className={`rounded-xl p-3 flex-1 ml-2 shadow-sm ${
             isDarkMode ? 'bg-gray-800' : 'bg-white'
           }`}>
             <View className="flex-row items-center">
-              <Icon name="alert-circle" size={20} color="#f97316" />
+              <Icon name="calendar" size={20} color="#f97316" />
               <Text className={`ml-2 text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                Empty Categories
+                Latest Update
               </Text>
             </View>
-            <Text className={`text-xl font-bold mt-1 ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
-              {emptyCategories}
+            <Text className={`text-sm font-bold mt-1 ${isDarkMode ? 'text-white' : 'text-gray-800'}`} numberOfLines={1}>
+              {latestUpdate}
+            </Text>
+            <Text className={`text-xs mt-1 ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}>
+              Recent activity
             </Text>
           </View>
         </View>
-        {/* Quick Actions */}
+
+        {/* Filter Chips */}
+        {(activeFilters.status !== 'all' || activeFilters.hasProducts !== null) && (
+          <View className="px-4 mb-3 flex-row flex-wrap">
+            {activeFilters.status !== 'all' && (
+              <View className={`flex-row items-center mr-2 mb-2 px-3 py-1.5 rounded-full ${
+                isDarkMode ? 'bg-gray-800' : 'bg-gray-100'
+              }`}>
+                <Text className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                  Status: {activeFilters.status}
+                </Text>
+                <TouchableOpacity 
+                  onPress={() => setActiveFilters({...activeFilters, status: 'all'})}
+                  className="ml-2"
+                >
+                  <Icon name="close" size={16} color={isDarkMode ? "#9CA3AF" : "#6b7280"} />
+                </TouchableOpacity>
+              </View>
+            )}
+            {activeFilters.hasProducts !== null && (
+              <View className={`flex-row items-center mr-2 mb-2 px-3 py-1.5 rounded-full ${
+                isDarkMode ? 'bg-gray-800' : 'bg-gray-100'
+              }`}>
+                <Text className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                  {activeFilters.hasProducts ? 'With Products' : 'Empty'}
+                </Text>
+                <TouchableOpacity 
+                  onPress={() => setActiveFilters({...activeFilters, hasProducts: null})}
+                  className="ml-2"
+                >
+                  <Icon name="close" size={16} color={isDarkMode ? "#9CA3AF" : "#6b7280"} />
+                </TouchableOpacity>
+              </View>
+            )}
+          </View>
+        )}
+
+        {/* Sort Options */}
         <View className="flex-row px-4 mb-4">
-          <TouchableOpacity
-            onPress={() => setSortBy('name')}
-            className={`flex-row items-center mr-3 px-4 py-2 rounded-full border ${
-              sortBy === 'name'
-                ? "bg-blue-500 border-blue-500"
-                : isDarkMode
-                  ? 'bg-gray-800 border-gray-700'
-                  : 'bg-white border-gray-200'
-            }`}
-          >
-            <Icon
-              name="sort-alphabetical"
-              size={16}
-              color={sortBy === 'name' ? "#ffffff" : isDarkMode ? "#9CA3AF" : "#4b5563"}
-            />
-            <Text
-              className={`ml-2 text-sm ${
-                sortBy === 'name'
-                  ? "text-white"
-                  : isDarkMode ? 'text-gray-300' : 'text-gray-700'
-              }`}
-            >
-              Name
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={() => setSortBy('products')}
-            className={`flex-row items-center mr-3 px-4 py-2 rounded-full border ${
-              sortBy === 'products'
-                ? "bg-blue-500 border-blue-500"
-                : isDarkMode
-                  ? 'bg-gray-800 border-gray-700'
-                  : 'bg-white border-gray-200'
-            }`}
-          >
-            <Icon
-              name="package-variant"
-              size={16}
-              color={sortBy === 'products' ? "#ffffff" : isDarkMode ? "#9CA3AF" : "#4b5563"}
-            />
-            <Text
-              className={`ml-2 text-sm ${
-                sortBy === 'products'
-                  ? "text-white"
-                  : isDarkMode ? 'text-gray-300' : 'text-gray-700'
-              }`}
-            >
-              Product Count
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={() => setSortBy('date')}
-            className={`flex-row items-center px-4 py-2 rounded-full border ${
-              sortBy === 'date'
-                ? "bg-blue-500 border-blue-500"
-                : isDarkMode
-                  ? 'bg-gray-800 border-gray-700'
-                  : 'bg-white border-gray-200'
-            }`}
-          >
-            <Icon
-              name="calendar"
-              size={16}
-              color={sortBy === 'date' ? "#ffffff" : isDarkMode ? "#9CA3AF" : "#4b5563"}
-            />
-            <Text
-              className={`ml-2 text-sm ${
-                sortBy === 'date'
-                  ? "text-white"
-                  : isDarkMode ? 'text-gray-300' : 'text-gray-700'
-              }`}
-            >
-              Latest
-            </Text>
-          </TouchableOpacity>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+            <View className="flex-row">
+              <TouchableOpacity
+                onPress={() => setSortBy('name')}
+                className={`flex-row items-center mr-2 px-4 py-2 rounded-full border ${
+                  sortBy === 'name'
+                    ? "bg-blue-500 border-blue-500"
+                    : isDarkMode
+                      ? 'bg-gray-800 border-gray-700'
+                      : 'bg-white border-gray-200'
+                }`}
+              >
+                <Icon
+                  name="sort-alphabetical"
+                  size={16}
+                  color={sortBy === 'name' ? "#ffffff" : isDarkMode ? "#9CA3AF" : "#4b5563"}
+                />
+                <Text
+                  className={`ml-2 text-sm ${
+                    sortBy === 'name'
+                      ? "text-white"
+                      : isDarkMode ? 'text-gray-300' : 'text-gray-700'
+                  }`}
+                >
+                  Name
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                onPress={() => setSortBy('date')}
+                className={`flex-row items-center mr-2 px-4 py-2 rounded-full border ${
+                  sortBy === 'date'
+                    ? "bg-blue-500 border-blue-500"
+                    : isDarkMode
+                      ? 'bg-gray-800 border-gray-700'
+                      : 'bg-white border-gray-200'
+                }`}
+              >
+                <Icon
+                  name="calendar"
+                  size={16}
+                  color={sortBy === 'date' ? "#ffffff" : isDarkMode ? "#9CA3AF" : "#4b5563"}
+                />
+                <Text
+                  className={`ml-2 text-sm ${
+                    sortBy === 'date'
+                      ? "text-white"
+                      : isDarkMode ? 'text-gray-300' : 'text-gray-700'
+                  }`}
+                >
+                  Date
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                onPress={() => setSortBy('id')}
+                className={`flex-row items-center mr-2 px-4 py-2 rounded-full border ${
+                  sortBy === 'id'
+                    ? "bg-blue-500 border-blue-500"
+                    : isDarkMode
+                      ? 'bg-gray-800 border-gray-700'
+                      : 'bg-white border-gray-200'
+                }`}
+              >
+                <Icon
+                  name="numeric"
+                  size={16}
+                  color={sortBy === 'id' ? "#ffffff" : isDarkMode ? "#9CA3AF" : "#4b5563"}
+                />
+                <Text
+                  className={`ml-2 text-sm ${
+                    sortBy === 'id'
+                      ? "text-white"
+                      : isDarkMode ? 'text-gray-300' : 'text-gray-700'
+                  }`}
+                >
+                  ID
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                onPress={() => setSortBy('status')}
+                className={`flex-row items-center px-4 py-2 rounded-full border ${
+                  sortBy === 'status'
+                    ? "bg-blue-500 border-blue-500"
+                    : isDarkMode
+                      ? 'bg-gray-800 border-gray-700'
+                      : 'bg-white border-gray-200'
+                }`}
+              >
+                <Icon
+                  name="checkbox-marked-circle-outline"
+                  size={16}
+                  color={sortBy === 'status' ? "#ffffff" : isDarkMode ? "#9CA3AF" : "#4b5563"}
+                />
+                <Text
+                  className={`ml-2 text-sm ${
+                    sortBy === 'status'
+                      ? "text-white"
+                      : isDarkMode ? 'text-gray-300' : 'text-gray-700'
+                  }`}
+                >
+                  Status
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </ScrollView>
         </View>
-        {/* Category List - Pass real categories and refresh */}
-        <View className="flex-1 px-4">
+
+        {/* Category List */}
+        <View className="flex-1 px-4 pb-4">
           <CategoryList
-            categories={categories} // Pass real data
+            categories={categories}
             viewMode={viewMode}
             searchQuery={searchQuery}
             sortBy={sortBy}
-            onRefresh={refreshCategories} // Pass hook refresh
-            onDelete={deleteCategory} // Optional: pass for delete integration
+            filters={activeFilters}
+            onRefresh={refreshCategories}
+            onDelete={handleDeleteCategory}
           />
         </View>
       </ScrollView>
+
       {/* Filters Modal */}
       <CategoryFilters
         visible={showFilters}
         onClose={handleFiltersClose}
-        isDarkMode={isDarkMode}
+        onApply={handleApplyFilters}
+        onReset={handleResetFilters}
+        initialFilters={activeFilters}
       />
     </View>
   );

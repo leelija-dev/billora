@@ -4,14 +4,11 @@ import { useEffect, useState } from "react";
 import {
   Alert,
   Image,
-  Modal,
   ScrollView,
   Share,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
-  FlatList,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
@@ -31,10 +28,11 @@ const CategoryDetailScreen = () => {
     error, 
     updateCategory, 
     deleteCategory,
-    products
+    products = []
   } = useCategoryDetail(categoryId);
   const [activeTab, setActiveTab] = useState("details");
-  const [selectedProduct, setSelectedProduct] = useState(null);
+
+  console.log('Category Data:', category); // Debug log
 
   const handleEdit = () => {
     navigation.navigate("AddCategory", { categoryId });
@@ -43,7 +41,7 @@ const CategoryDetailScreen = () => {
   const handleDelete = () => {
     Alert.alert(
       "Delete Category",
-      "Are you sure you want to delete this category? Products in this category will become uncategorized.",
+      "Are you sure you want to delete this category?",
       [
         { text: "Cancel", style: "cancel" },
         {
@@ -66,7 +64,7 @@ const CategoryDetailScreen = () => {
   const handleShare = async () => {
     try {
       await Share.share({
-        message: `Category: ${category?.name}\nDescription: ${category?.description}\nProducts: ${category?.productCount || 0}`,
+        message: `Category: ${category?.name}\nDescription: ${category?.description || 'No description'}\nStatus: ${category?.is_active ? 'Active' : 'Inactive'}`,
         title: category?.name,
       });
     } catch (error) {
@@ -78,11 +76,27 @@ const CategoryDetailScreen = () => {
     navigation.navigate("ProductDetail", { productId: product.id });
   };
 
+  // Format date safely
+  const formatDate = (dateString) => {
+    if (!dateString) return 'N/A';
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    } catch {
+      return 'Invalid date';
+    }
+  };
+
   if (loading) {
     return (
       <View className={`flex-1 ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
         <SafeAreaView className="flex-1" edges={["top", "left", "right"]}>
-          {/* Custom Header for Loading State */}
           <View className={`px-4 py-3 flex-row items-center border-b ${
             isDarkMode ? 'border-gray-800' : 'border-gray-200'
           }`}>
@@ -111,7 +125,6 @@ const CategoryDetailScreen = () => {
     return (
       <View className={`flex-1 ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
         <SafeAreaView className="flex-1" edges={["top", "left", "right"]}>
-          {/* Custom Header for Error State */}
           <View className={`px-4 py-3 flex-row items-center border-b ${
             isDarkMode ? 'border-gray-800' : 'border-gray-200'
           }`}>
@@ -132,7 +145,8 @@ const CategoryDetailScreen = () => {
           </View>
           <ErrorState
             title="Category Not Found"
-            description="The category you're looking for doesn't exist."
+            description="The category you're looking for doesn't exist or couldn't be loaded."
+            onRetry={() => navigation.goBack()}
           />
         </SafeAreaView>
       </View>
@@ -140,72 +154,49 @@ const CategoryDetailScreen = () => {
   }
 
   return (
-    <View className={`flex-1 ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
-      <SafeAreaView className="flex-1 pb-16" edges={["top", "left", "right"]}>
+    <View className={`flex-1 pb-24 ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
+      <SafeAreaView className="flex-1" edges={["top", "left", "right"]}>
         {/* Custom Header with Back, Share, and Edit Buttons */}
         <View className={`px-4 py-3 flex-row items-center border-b ${
           isDarkMode ? 'border-gray-800' : 'border-gray-200'
         }`}>
-          {/* Back Button */}
           <TouchableOpacity
             onPress={() => navigation.goBack()}
             className={`w-10 h-10 rounded-full items-center justify-center ${
               isDarkMode ? 'bg-gray-800' : 'bg-gray-100'
             }`}
           >
-            <Icon 
-              name="arrow-left" 
-              size={24} 
-              color={isDarkMode ? '#FFFFFF' : '#1F2937'} 
-            />
+            <Icon name="arrow-left" size={24} color={isDarkMode ? '#FFFFFF' : '#1F2937'} />
           </TouchableOpacity>
-
-          {/* Title */}
           <Text className={`flex-1 text-center text-lg font-semibold ${
             isDarkMode ? 'text-white' : 'text-gray-800'
           }`}>
             Category Details
           </Text>
-
-          {/* Action Buttons */}
           <View className="flex-row items-center gap-2">
-            {/* Share Button */}
             <TouchableOpacity
               onPress={handleShare}
               className={`w-10 h-10 rounded-full items-center justify-center ${
                 isDarkMode ? 'bg-gray-800' : 'bg-gray-100'
               }`}
             >
-              <Icon 
-                name="share-variant" 
-                size={22} 
-                color={isDarkMode ? '#FFFFFF' : '#1F2937'} 
-              />
+              <Icon name="share-variant" size={22} color={isDarkMode ? '#FFFFFF' : '#1F2937'} />
             </TouchableOpacity>
-
-            {/* Edit Button */}
             <TouchableOpacity
               onPress={handleEdit}
               className={`w-10 h-10 rounded-full items-center justify-center ${
                 isDarkMode ? 'bg-blue-900/30' : 'bg-blue-100'
               }`}
             >
-              <Icon 
-                name="pencil" 
-                size={22} 
-                color="#3b82f6" 
-              />
+              <Icon name="pencil" size={22} color="#3b82f6" />
             </TouchableOpacity>
           </View>
         </View>
 
-        <ScrollView
-          className="flex-1 px-4"
-          showsVerticalScrollIndicator={false}
-        >
+        <ScrollView className="flex-1 px-4" showsVerticalScrollIndicator={false}>
           {/* Category Header with Gradient */}
           <LinearGradient
-            colors={category.colors || ["#3b82f6", "#2563eb"]}
+            colors={category.is_active ? ["#3b82f6", "#2563eb"] : ["#6b7280", "#4b5563"]}
             className="rounded-2xl p-6 mt-4 mb-4"
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
@@ -213,7 +204,7 @@ const CategoryDetailScreen = () => {
             <View className="items-center">
               <View className="w-20 h-20 bg-white/20 rounded-2xl items-center justify-center mb-4">
                 <Icon 
-                  name={category.icon || "shape"} 
+                  name={category.is_active ? "shape" : "shape-outline"} 
                   size={40} 
                   color="#ffffff" 
                 />
@@ -221,17 +212,24 @@ const CategoryDetailScreen = () => {
               <Text className="text-white text-2xl font-bold mb-2">
                 {category.name}
               </Text>
+              {category.slug && (
+                <Text className="text-white/80 text-sm mb-3">
+                  Slug: {category.slug}
+                </Text>
+              )}
               <View className="flex-row items-center">
                 <View className="bg-white/20 px-3 py-1 rounded-full mr-2">
                   <Text className="text-white text-sm">
-                    {category.productCount || 0} Products
+                    ID: #{category.id}
                   </Text>
                 </View>
-                {category.is_active && (
-                  <View className="bg-green-500/20 px-3 py-1 rounded-full">
-                    <Text className="text-green-300 text-sm">Active</Text>
-                  </View>
-                )}
+                <View className={`px-3 py-1 rounded-full ${
+                  category.is_active ? 'bg-green-500' : 'bg-red-500'
+                }`}>
+                  <Text className="text-white text-sm">
+                    {category.is_active ? 'Active' : 'Inactive'}
+                  </Text>
+                </View>
               </View>
             </View>
           </LinearGradient>
@@ -240,7 +238,7 @@ const CategoryDetailScreen = () => {
           <View className={`flex-row rounded-2xl p-1 mb-4 shadow-sm ${
             isDarkMode ? 'bg-gray-800' : 'bg-white'
           }`}>
-            {["details", "products", "stats"].map((tab) => (
+            {["details", "products"].map((tab) => (
               <TouchableOpacity
                 key={tab}
                 onPress={() => setActiveTab(tab)}
@@ -264,7 +262,7 @@ const CategoryDetailScreen = () => {
           {activeTab === "details" && (
             <>
               {/* Description */}
-              {category.description && (
+              {category.description ? (
                 <View className={`rounded-2xl p-4 mb-4 shadow-sm ${
                   isDarkMode ? 'bg-gray-800' : 'bg-white'
                 }`}>
@@ -277,6 +275,16 @@ const CategoryDetailScreen = () => {
                     isDarkMode ? 'text-gray-300' : 'text-gray-600'
                   }`}>
                     {category.description}
+                  </Text>
+                </View>
+              ) : (
+                <View className={`rounded-2xl p-4 mb-4 shadow-sm ${
+                  isDarkMode ? 'bg-gray-800' : 'bg-white'
+                }`}>
+                  <Text className={`text-center italic ${
+                    isDarkMode ? 'text-gray-400' : 'text-gray-500'
+                  }`}>
+                    No description available
                   </Text>
                 </View>
               )}
@@ -327,12 +335,25 @@ const CategoryDetailScreen = () => {
                     <Text className={`text-xs ${
                       isDarkMode ? 'text-gray-400' : 'text-gray-500'
                     }`}>
-                      Created By
+                      Created By (User ID)
                     </Text>
                     <Text className={`text-sm font-medium ${
                       isDarkMode ? 'text-white' : 'text-gray-800'
                     }`}>
-                      {category.created_by || "Admin"}
+                      #{category.created_by || category.user_id || 'N/A'}
+                    </Text>
+                  </View>
+
+                  <View className="w-1/2 mb-4">
+                    <Text className={`text-xs ${
+                      isDarkMode ? 'text-gray-400' : 'text-gray-500'
+                    }`}>
+                      User ID
+                    </Text>
+                    <Text className={`text-sm font-medium ${
+                      isDarkMode ? 'text-white' : 'text-gray-800'
+                    }`}>
+                      #{category.user_id || category.created_by || 'N/A'}
                     </Text>
                   </View>
 
@@ -345,7 +366,7 @@ const CategoryDetailScreen = () => {
                     <Text className={`text-sm font-medium ${
                       isDarkMode ? 'text-white' : 'text-gray-800'
                     }`}>
-                      {new Date(category.created_at).toLocaleDateString()}
+                      {formatDate(category.created_at)}
                     </Text>
                   </View>
 
@@ -358,49 +379,42 @@ const CategoryDetailScreen = () => {
                     <Text className={`text-sm font-medium ${
                       isDarkMode ? 'text-white' : 'text-gray-800'
                     }`}>
-                      {new Date(category.updated_at).toLocaleDateString()}
-                    </Text>
-                  </View>
-
-                  <View className="w-1/2 mb-4">
-                    <Text className={`text-xs ${
-                      isDarkMode ? 'text-gray-400' : 'text-gray-500'
-                    }`}>
-                      Product Count
-                    </Text>
-                    <Text className={`text-sm font-medium ${
-                      isDarkMode ? 'text-white' : 'text-gray-800'
-                    }`}>
-                      {category.productCount || 0}
+                      {formatDate(category.updated_at)}
                     </Text>
                   </View>
                 </View>
-
-                {/* Category Meta */}
-                {(category.meta_title || category.meta_description) && (
-                  <View className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
-                    <Text className={`text-sm font-semibold mb-2 ${
-                      isDarkMode ? 'text-white' : 'text-gray-800'
-                    }`}>
-                      SEO Information
-                    </Text>
-                    {category.meta_title && (
-                      <Text className={`text-xs mb-1 ${
-                        isDarkMode ? 'text-gray-400' : 'text-gray-500'
-                      }`}>
-                        Meta Title: {category.meta_title}
-                      </Text>
-                    )}
-                    {category.meta_description && (
-                      <Text className={`text-xs ${
-                        isDarkMode ? 'text-gray-400' : 'text-gray-500'
-                      }`}>
-                        Meta Description: {category.meta_description}
-                      </Text>
-                    )}
-                  </View>
-                )}
               </View>
+
+              {/* Slug Information */}
+              {category.slug && (
+                <View className={`rounded-2xl p-4 mb-4 shadow-sm ${
+                  isDarkMode ? 'bg-gray-800' : 'bg-white'
+                }`}>
+                  <Text className={`text-lg font-semibold mb-4 ${
+                    isDarkMode ? 'text-white' : 'text-gray-800'
+                  }`}>
+                    URL Information
+                  </Text>
+                  
+                  <View className="flex-row items-center">
+                    <Icon name="link-variant" size={20} color={isDarkMode ? '#9CA3AF' : '#6b7280'} />
+                    <Text className={`ml-3 text-sm ${
+                      isDarkMode ? 'text-gray-300' : 'text-gray-600'
+                    }`}>
+                      Slug: {category.slug}
+                    </Text>
+                  </View>
+                  
+                  <View className="flex-row items-center mt-3">
+                    <Icon name="web" size={20} color={isDarkMode ? '#9CA3AF' : '#6b7280'} />
+                    <Text className={`ml-3 text-sm ${
+                      isDarkMode ? 'text-gray-300' : 'text-gray-600'
+                    }`}>
+                      URL: /categories/{category.slug}
+                    </Text>
+                  </View>
+                </View>
+              )}
             </>
           )}
 
@@ -457,33 +471,23 @@ const CategoryDetailScreen = () => {
                         <Text className={`text-xs ${
                           isDarkMode ? 'text-gray-400' : 'text-gray-500'
                         }`}>
-                          SKU: {product.sku}
+                          ID: #{product.id}
                         </Text>
-                        <Text className={`text-xs mx-2 ${
-                          isDarkMode ? 'text-gray-700' : 'text-gray-300'
-                        }`}>
-                          •
-                        </Text>
-                        <Text className={`text-xs font-semibold ${
-                          isDarkMode ? 'text-green-400' : 'text-green-600'
-                        }`}>
-                          ${product.price}
-                        </Text>
+                        {product.price && (
+                          <>
+                            <Text className={`text-xs mx-2 ${
+                              isDarkMode ? 'text-gray-700' : 'text-gray-300'
+                            }`}>
+                              •
+                            </Text>
+                            <Text className={`text-xs font-semibold ${
+                              isDarkMode ? 'text-green-400' : 'text-green-600'
+                            }`}>
+                              ${product.price}
+                            </Text>
+                          </>
+                        )}
                       </View>
-                    </View>
-
-                    <View className={`px-2 py-1 rounded-full ${
-                      product.stock > 0
-                        ? isDarkMode ? 'bg-green-900/30' : 'bg-green-100'
-                        : isDarkMode ? 'bg-red-900/30' : 'bg-red-100'
-                    }`}>
-                      <Text className={`text-xs font-medium ${
-                        product.stock > 0
-                          ? 'text-green-600'
-                          : 'text-red-600'
-                      }`}>
-                        {product.stock} in stock
-                      </Text>
                     </View>
                   </TouchableOpacity>
                 ))
@@ -503,132 +507,6 @@ const CategoryDetailScreen = () => {
                   </TouchableOpacity>
                 </View>
               )}
-            </View>
-          )}
-
-          {activeTab === "stats" && (
-            <View className={`rounded-2xl p-4 mb-4 shadow-sm ${
-              isDarkMode ? 'bg-gray-800' : 'bg-white'
-            }`}>
-              <Text className={`text-lg font-semibold mb-4 ${
-                isDarkMode ? 'text-white' : 'text-gray-800'
-              }`}>
-                Category Statistics
-              </Text>
-
-              <View className="flex-row flex-wrap">
-                <View className="w-1/2 mb-4 pr-2">
-                  <View className={`rounded-xl p-4 ${
-                    isDarkMode ? 'bg-blue-900/30' : 'bg-blue-50'
-                  }`}>
-                    <Icon name="package-variant" size={24} color="#3b82f6" />
-                    <Text className={`text-2xl font-bold mt-2 ${
-                      isDarkMode ? 'text-white' : 'text-gray-800'
-                    }`}>
-                      {category.productCount || 0}
-                    </Text>
-                    <Text className={`text-xs ${
-                      isDarkMode ? 'text-gray-400' : 'text-gray-500'
-                    }`}>
-                      Total Products
-                    </Text>
-                  </View>
-                </View>
-
-                <View className="w-1/2 mb-4 pl-2">
-                  <View className={`rounded-xl p-4 ${
-                    isDarkMode ? 'bg-green-900/30' : 'bg-green-50'
-                  }`}>
-                    <Icon name="currency-usd" size={24} color="#10b981" />
-                    <Text className={`text-2xl font-bold mt-2 ${
-                      isDarkMode ? 'text-white' : 'text-gray-800'
-                    }`}>
-                      ${(category.totalValue || 0).toLocaleString()}
-                    </Text>
-                    <Text className={`text-xs ${
-                      isDarkMode ? 'text-gray-400' : 'text-gray-500'
-                    }`}>
-                      Total Value
-                    </Text>
-                  </View>
-                </View>
-
-                <View className="w-1/2 mb-4 pr-2">
-                  <View className={`rounded-xl p-4 ${
-                    isDarkMode ? 'bg-purple-900/30' : 'bg-purple-50'
-                  }`}>
-                    <Icon name="star" size={24} color="#8b5cf6" />
-                    <Text className={`text-2xl font-bold mt-2 ${
-                      isDarkMode ? 'text-white' : 'text-gray-800'
-                    }`}>
-                      {category.avgRating || "4.5"}
-                    </Text>
-                    <Text className={`text-xs ${
-                      isDarkMode ? 'text-gray-400' : 'text-gray-500'
-                    }`}>
-                      Avg. Rating
-                    </Text>
-                  </View>
-                </View>
-
-                <View className="w-1/2 mb-4 pl-2">
-                  <View className={`rounded-xl p-4 ${
-                    isDarkMode ? 'bg-orange-900/30' : 'bg-orange-50'
-                  }`}>
-                    <Icon name="trending-up" size={24} color="#f97316" />
-                    <Text className={`text-2xl font-bold mt-2 ${
-                      isDarkMode ? 'text-white' : 'text-gray-800'
-                    }`}>
-                      {category.growth || "+12%"}
-                    </Text>
-                    <Text className={`text-xs ${
-                      isDarkMode ? 'text-gray-400' : 'text-gray-500'
-                    }`}>
-                      Growth Rate
-                    </Text>
-                  </View>
-                </View>
-              </View>
-
-              {/* Additional Stats */}
-              <View className="mt-2">
-                <View className={`flex-row justify-between py-3 border-b ${
-                  isDarkMode ? 'border-gray-700' : 'border-gray-100'
-                }`}>
-                  <Text className={isDarkMode ? 'text-gray-400' : 'text-gray-500'}>
-                    Best Selling Product
-                  </Text>
-                  <Text className={`font-semibold ${
-                    isDarkMode ? 'text-white' : 'text-gray-800'
-                  }`}>
-                    {category.bestSeller || "Classic T-Shirt"}
-                  </Text>
-                </View>
-
-                <View className={`flex-row justify-between py-3 border-b ${
-                  isDarkMode ? 'border-gray-700' : 'border-gray-100'
-                }`}>
-                  <Text className={isDarkMode ? 'text-gray-400' : 'text-gray-500'}>
-                    Top Brand
-                  </Text>
-                  <Text className={`font-semibold ${
-                    isDarkMode ? 'text-white' : 'text-gray-800'
-                  }`}>
-                    {category.topBrand || "Nike"}
-                  </Text>
-                </View>
-
-                <View className="flex-row justify-between py-3">
-                  <Text className={isDarkMode ? 'text-gray-400' : 'text-gray-500'}>
-                    Monthly Revenue
-                  </Text>
-                  <Text className={`font-semibold ${
-                    isDarkMode ? 'text-white' : 'text-gray-800'
-                  }`}>
-                    ${(category.monthlyRevenue || 12500).toLocaleString()}
-                  </Text>
-                </View>
-              </View>
             </View>
           )}
 

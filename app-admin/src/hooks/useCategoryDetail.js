@@ -5,6 +5,7 @@ export const useCategoryDetail = (categoryId) => {
   const [category, setCategory] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [products, setProducts] = useState([]); // Added for products if needed
 
   const fetchCategory = async () => {
     if (!categoryId) {
@@ -17,8 +18,37 @@ export const useCategoryDetail = (categoryId) => {
       setLoading(true);
       setError(null);
       const response = await categoriesAPI.getById(categoryId);
-      setCategory(response.category || response);
+      
+      console.log('Raw API Response:', response); // Debug log
+      
+      // Handle the nested response structure
+      // Your API returns: { data: { data: { ...category } } }
+      let categoryData = null;
+      
+      if (response?.data?.data) {
+        // Structure: { data: { data: { ... } } }
+        categoryData = response.data.data;
+      } else if (response?.data) {
+        // Structure: { data: { ... } }
+        categoryData = response.data;
+      } else if (response?.category) {
+        // Structure: { category: { ... } }
+        categoryData = response.category;
+      } else {
+        // Direct object
+        categoryData = response;
+      }
+      
+      console.log('Extracted Category Data:', categoryData); // Debug log
+      setCategory(categoryData);
+      
+      // If you have products in the response, extract them too
+      if (response?.data?.products) {
+        setProducts(response.data.products);
+      }
+      
     } catch (err) {
+      console.error('Error fetching category:', err);
       setError(err.message || 'Failed to fetch category');
       setCategory(null);
     } finally {
@@ -36,7 +66,20 @@ export const useCategoryDetail = (categoryId) => {
       setLoading(true);
       setError(null);
       const response = await categoriesAPI.update(categoryId, categoryData);
-      const updatedCategory = response.category || response;
+      
+      // Handle the nested response structure for update
+      let updatedCategory = null;
+      
+      if (response?.data?.data) {
+        updatedCategory = response.data.data;
+      } else if (response?.data) {
+        updatedCategory = response.data;
+      } else if (response?.category) {
+        updatedCategory = response.category;
+      } else {
+        updatedCategory = response;
+      }
+      
       setCategory(updatedCategory);
       return { success: true, data: updatedCategory };
     } catch (err) {
@@ -56,8 +99,14 @@ export const useCategoryDetail = (categoryId) => {
     try {
       setLoading(true);
       setError(null);
-      await categoriesAPI.delete(categoryId);
-      return { success: true };
+      const response = await categoriesAPI.delete(categoryId);
+      
+      // Check if deletion was successful
+      if (response?.status === true || response?.success === true) {
+        return { success: true };
+      } else {
+        return { success: false, error: 'Delete operation failed' };
+      }
     } catch (err) {
       setError(err.message || 'Failed to delete category');
       return { success: false, error: err.message };
@@ -95,6 +144,7 @@ export const useCategoryDetail = (categoryId) => {
     category,
     loading,
     error,
+    products, // Added to return products
     updateCategory,
     deleteCategory,
     toggleCategoryStatus,
