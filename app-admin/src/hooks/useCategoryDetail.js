@@ -5,7 +5,7 @@ export const useCategoryDetail = (categoryId) => {
   const [category, setCategory] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [products, setProducts] = useState([]); // Added for products if needed
+  const [products, setProducts] = useState([]);
 
   const fetchCategory = async () => {
     if (!categoryId) {
@@ -21,31 +21,23 @@ export const useCategoryDetail = (categoryId) => {
       
       console.log('Raw API Response:', response); // Debug log
       
-      // Handle the nested response structure
-      // Your API returns: { data: { data: { ...category } } }
+      // Extract category data from the nested structure
+      // Response structure: { data: { data: { ...category }, message, status } }
       let categoryData = null;
       
       if (response?.data?.data) {
-        // Structure: { data: { data: { ... } } }
+        // Your actual structure: response.data.data contains the category
         categoryData = response.data.data;
+        console.log('Extracted Category Data:', categoryData);
       } else if (response?.data) {
-        // Structure: { data: { ... } }
+        // Fallback: if data is directly the category
         categoryData = response.data;
-      } else if (response?.category) {
-        // Structure: { category: { ... } }
-        categoryData = response.category;
       } else {
-        // Direct object
+        // Fallback: response itself is the category
         categoryData = response;
       }
       
-      console.log('Extracted Category Data:', categoryData); // Debug log
       setCategory(categoryData);
-      
-      // If you have products in the response, extract them too
-      if (response?.data?.products) {
-        setProducts(response.data.products);
-      }
       
     } catch (err) {
       console.error('Error fetching category:', err);
@@ -65,17 +57,24 @@ export const useCategoryDetail = (categoryId) => {
     try {
       setLoading(true);
       setError(null);
-      const response = await categoriesAPI.update(categoryId, categoryData);
       
-      // Handle the nested response structure for update
+      // Prepare data for API
+      const updatePayload = {
+        name: categoryData.name,
+        description: categoryData.description,
+        isActive: categoryData.is_active !== undefined ? categoryData.is_active : categoryData.isActive,
+      };
+      
+      const response = await categoriesAPI.update(categoryId, updatePayload);
+      console.log('Update Response:', response);
+      
+      // Extract updated category from response
       let updatedCategory = null;
       
       if (response?.data?.data) {
         updatedCategory = response.data.data;
       } else if (response?.data) {
         updatedCategory = response.data;
-      } else if (response?.category) {
-        updatedCategory = response.category;
       } else {
         updatedCategory = response;
       }
@@ -83,6 +82,7 @@ export const useCategoryDetail = (categoryId) => {
       setCategory(updatedCategory);
       return { success: true, data: updatedCategory };
     } catch (err) {
+      console.error('Error updating category:', err);
       setError(err.message || 'Failed to update category');
       return { success: false, error: err.message };
     } finally {
@@ -100,14 +100,17 @@ export const useCategoryDetail = (categoryId) => {
       setLoading(true);
       setError(null);
       const response = await categoriesAPI.delete(categoryId);
+      console.log('Delete Response:', response);
       
       // Check if deletion was successful
-      if (response?.status === true || response?.success === true) {
+      // Your API returns { status: true, message: "...", data: null }
+      if (response?.status === true || response?.data?.status === true) {
         return { success: true };
       } else {
         return { success: false, error: 'Delete operation failed' };
       }
     } catch (err) {
+      console.error('Error deleting category:', err);
       setError(err.message || 'Failed to delete category');
       return { success: false, error: err.message };
     } finally {
@@ -144,7 +147,7 @@ export const useCategoryDetail = (categoryId) => {
     category,
     loading,
     error,
-    products, // Added to return products
+    products,
     updateCategory,
     deleteCategory,
     toggleCategoryStatus,

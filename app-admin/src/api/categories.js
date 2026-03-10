@@ -32,19 +32,25 @@ export const categoriesAPI = {
   },
 
   // Create new category
-  create: async (categoryData) => {
+   create: async (categoryData) => {
     try {
       const api = getCategoriesData();
-      const response = await api.post('/categories/store', {
-        user_id: categoryData.userId,
+      
+      // Map frontend field names to API expected field names
+      const payload = {
+        user_id: categoryData.userId || categoryData.user_id,
         name: categoryData.name,
         is_active: categoryData.isActive ?? true,
-        created_by: categoryData.createdBy,
-        description: categoryData.description,
-      });
+        created_by: categoryData.createdBy || categoryData.userId || categoryData.user_id,
+        description: categoryData.description || '',
+      };
+      
+      console.log('Create API payload:', payload);
+      const response = await api.post('/categories/store', payload);
       return response.data;
     } catch (error) {
-      throw error.response?.data || error.message;
+      console.error('Create API error:', error.response?.data || error.message);
+      throw error;
     }
   },
 
@@ -52,16 +58,28 @@ export const categoriesAPI = {
   update: async (id, categoryData) => {
     try {
       const api = getCategoriesData();
-      const response = await api.put(`/categories/${id}`, {
+      
+      // Map frontend field names to API expected field names
+      const payload = {
         name: categoryData.name,
-        is_active: categoryData.isActive,
-        description: categoryData.description,
-      });
+        is_active: categoryData.isActive ?? categoryData.is_active,
+        description: categoryData.description || '',
+      };
+      
+      // Add user_id if provided (required for update)
+      if (categoryData.user_id) {
+        payload.user_id = categoryData.user_id;
+      }
+      
+      console.log('Update API payload:', payload);
+      const response = await api.put(`/categories/${id}`, payload);
       return response.data;
     } catch (error) {
-      throw error.response?.data || error.message;
+      console.error('Update API error:', error.response?.data || error.message);
+      throw error;
     }
   },
+
 
   // Delete category
   delete: async (id) => {
