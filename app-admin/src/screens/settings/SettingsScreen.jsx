@@ -106,6 +106,9 @@ const SettingsScreen = () => {
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           className="w-10 h-10 rounded-xl items-center justify-center mr-4"
+          style={{
+            borderRadius:5,
+          }}
         >
           <Ionicons name={icon} size={20} color="#FFFFFF" />
         </LinearGradient>
@@ -184,6 +187,7 @@ const SettingsScreen = () => {
             shadowOpacity: 0.3,
             shadowRadius: 12,
             elevation: 8,
+            borderRadius:10,
           }}
         >
           <View className="flex-row justify-between items-center mb-5">
@@ -197,6 +201,7 @@ const SettingsScreen = () => {
                   shadowOpacity: 0.2,
                   shadowRadius: 8,
                   elevation: 5,
+                  borderRadius:100,
                 }}
               >
                 <Text className="text-2xl font-bold text-[#4158D0]">
@@ -249,6 +254,7 @@ const SettingsScreen = () => {
             label="Dark Mode"
             value={isDarkMode ? 'Enabled' : 'Disabled'}
             gradient={['#FF512F', '#F09819']}
+            
             rightElement={
               <Switch
                 value={isDarkMode}

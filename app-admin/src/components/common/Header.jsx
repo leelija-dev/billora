@@ -18,6 +18,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 import { useThemeStore } from "../../store/themeStore";
+import { useAuth } from "../../hooks/useAuth";
 
 const { width } = Dimensions.get("window");
 const DRAWER_WIDTH = width * 0.8;
@@ -107,6 +108,9 @@ const Header = ({
   // Use theme store
   const { isDarkMode, toggleDarkMode } = useThemeStore();
   const systemColorScheme = useColorScheme();
+  
+  // Use auth hook for logout
+  const { logout: authLogout } = useAuth();
   
   // Animation values
   const slideAnim = useRef(new Animated.Value(-DRAWER_WIDTH)).current;
@@ -241,26 +245,32 @@ const Header = ({
   ]).start();
 };
 
-  const handleLogout = () => {
-    Animated.parallel([
-      Animated.timing(slideAnim, {
-        toValue: -DRAWER_WIDTH,
-        duration: 200,
-        useNativeDriver: true,
-        easing: Easing.in(Easing.cubic),
-      }),
-      Animated.timing(fadeAnim, {
-        toValue: 0,
-        duration: 150,
-        useNativeDriver: true,
-        easing: Easing.in(Easing.cubic),
-      }),
-    ]).start(() => {
+  const handleLogout = async () => {
+    try {
+      // Close sidebar first
+      setSidebarVisible(false);
+      
+      // Call the real logout function from useAuth hook
+      await authLogout();
+      
+      // Call the onLogout prop if provided (for additional cleanup)
+      if (onLogout) {
+        onLogout();
+      }
+      
+      // Navigate to login screen
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'Login' }],
+      });
+    } catch (error) {
+      console.error('Logout error:', error);
+      // Even if API call fails, clear local state
       setSidebarVisible(false);
       if (onLogout) {
         onLogout();
       }
-    });
+    }
   };
 
   const handleThemeToggle = () => {

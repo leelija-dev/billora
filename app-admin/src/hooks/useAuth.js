@@ -30,33 +30,11 @@ export const useAuth = () => {
   const login = async (credentials) => {
     try {
       setIsLoading(true);
-      // Mock API call - replace with actual API
-      const response = await new Promise((resolve, reject) => {
-        setTimeout(() => {
-          // Simple validation for demo
-          if (credentials.email && credentials.password) {
-            resolve({
-              user: {
-                id: '1',
-                email: credentials.email,
-                firstName: 'John',
-                lastName: 'Doe',
-              },
-              token: 'mock-jwt-token',
-              refreshToken: 'mock-refresh-token',
-            });
-          } else {
-            reject(new Error('Invalid credentials'));
-          }
-        }, 1000);
-      });
+      const response = await authAPI.login(credentials.email, credentials.password);
       
-      const { user: userData, token, refreshToken } = response;
+      const { user: userData, token } = response.data;
       
       await authStorage.setAuthToken(token);
-      if (refreshToken) {
-        await authStorage.setRefreshToken(refreshToken);
-      }
       await authStorage.setUser(userData);
       
       setUser(userData);
@@ -74,36 +52,28 @@ export const useAuth = () => {
   const register = async (userData) => {
     try {
       setIsLoading(true);
-      // Mock API call - replace with actual API
-      const response = await new Promise((resolve, reject) => {
-        setTimeout(() => {
-          if (userData.email && userData.password) {
-            resolve({
-              user: {
-                id: '1',
-                email: userData.email,
-                firstName: userData.firstName,
-                lastName: userData.lastName,
-              },
-              token: 'mock-jwt-token',
-              refreshToken: 'mock-refresh-token',
-            });
-          } else {
-            reject(new Error('Registration failed'));
-          }
-        }, 1000);
+      console.log('useAuth register called with:', userData);
+      const response = await authAPI.register({
+        name: userData.name,
+        email: userData.email,
+        phone: userData.phone,
+        password: userData.password,
+        city: userData.city,
+        state: userData.state,
+        country: userData.country,
+        pincode: userData.pincode,
+        companyName: userData.companyName,
+        gstNumber: userData.gstNumber,
+        address: userData.address,
+        created_by: userData.created_by,
       });
       
-      const { user: newUser, token, refreshToken } = response;
+      // Backend response structure: { data: { user_data }, message: "User Created Successfully", status: true }
+      const newUser = response.data.data;
       
-      await authStorage.setAuthToken(token);
-      if (refreshToken) {
-        await authStorage.setRefreshToken(refreshToken);
-      }
-      await authStorage.setUser(newUser);
-      
-      setUser(newUser);
-      setIsAuthenticated(true);
+      // For registration, user needs to login separately to get token
+      // So we don't set auth state here, just return the response
+      console.log('Registration successful:', response.data);
       
       return response;
     } catch (error) {
@@ -117,8 +87,10 @@ export const useAuth = () => {
   const logout = async () => {
     try {
       setIsLoading(true);
-      // Mock API call - replace with actual API
-      await new Promise((resolve) => setTimeout(resolve, 500));
+      const userId = await authStorage.getUserId();
+      if (userId) {
+        await authAPI.logout(userId);
+      }
     } catch (error) {
       console.error('Logout API error:', error);
     } finally {
@@ -132,12 +104,7 @@ export const useAuth = () => {
   const forgotPassword = async (email) => {
     try {
       setIsLoading(true);
-      // Mock API call - replace with actual API
-      const response = await new Promise((resolve) => {
-        setTimeout(() => {
-          resolve({ success: true });
-        }, 1000);
-      });
+      const response = await authAPI.forgotPassword(email);
       return response;
     } catch (error) {
       console.error('Forgot password error:', error);
@@ -150,12 +117,7 @@ export const useAuth = () => {
   const resetPassword = async (token, newPassword) => {
     try {
       setIsLoading(true);
-      // Mock API call - replace with actual API
-      const response = await new Promise((resolve) => {
-        setTimeout(() => {
-          resolve({ success: true });
-        }, 1000);
-      });
+      const response = await authAPI.resetPassword(token, newPassword);
       return response;
     } catch (error) {
       console.error('Reset password error:', error);
@@ -168,20 +130,14 @@ export const useAuth = () => {
   const updateProfile = async (userData) => {
     try {
       setIsLoading(true);
-      // Mock API call - replace with actual API
-      const response = await new Promise((resolve) => {
-        setTimeout(() => {
-          resolve({
-            user: {
-              ...user,
-              ...userData,
-            },
-          });
-        }, 1000);
-      });
+      const userId = user?.id;
+      if (!userId) {
+        throw new Error('User not found');
+      }
       
-      await authStorage.setUser(response.user);
-      setUser(response.user);
+      const response = await authAPI.updateProfile(userId, userData);
+      await authStorage.setUser(response.data.user);
+      setUser(response.data.user);
       
       return response;
     } catch (error) {

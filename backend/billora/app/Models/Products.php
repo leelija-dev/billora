@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 class Products extends Model
 {
     use HasFactory,SoftDeletes;
@@ -19,9 +20,13 @@ class Products extends Model
         'category_id',
         'unit_amount',
         'unit_id',	
+        'selling_price',
+        'purchase_price',
+        'gst_percentage',
+        'discount_percentage',
         'description',
         'is_active',
-        'created_by'	
+        'created_by'
 
     ];
     public function brand(){
@@ -35,5 +40,9 @@ class Products extends Model
     }
     public function user(){
         return $this->belongsTo(Customers::class);
+    }
+    public function stocks(): HasMany
+    {
+        return $this->hasMany( Stocks::class, 'product_id');
     }
 }

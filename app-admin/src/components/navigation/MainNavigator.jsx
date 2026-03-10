@@ -8,6 +8,8 @@ import { BlurView } from "expo-blur";
 import { Text, TouchableOpacity, View, Dimensions } from "react-native";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 import { useThemeStore } from "../../store/themeStore";
+
+// Import all screens
 import AddCustomerScreen from "../../screens/customers/AddCustomerScreen";
 import CustomerDetailScreen from "../../screens/customers/CustomerDetailScreen";
 import CustomersScreen from "../../screens/customers/CustomersScreen";
@@ -22,6 +24,12 @@ import ProductDetailScreen from "../../screens/products/ProductDetailScreen";
 import ProductsScreen from "../../screens/products/ProductsScreen";
 import ProfileScreen from "../../screens/profile/ProfileScreen";
 import SettingsScreen from "../../screens/settings/SettingsScreen";
+
+// Import Category Screens
+import CategoriesScreen from "../../screens/categories/CategoriesScreen";
+import AddCategoryScreen from "../../screens/categories/AddCategoryScreen";
+import CategoryDetailScreen from "../../screens/categories/CategoryDetailScreen";
+
 import { NAVIGATION_SCREENS } from "../../utils/constants";
 
 const { width } = Dimensions.get("window");
@@ -31,7 +39,7 @@ const Stack = createNativeStackNavigator();
 // Modern Header with Gradient (Dark Mode Aware)
 const StackHeader = ({ title, navigation, showBack = true }) => {
   const { isDarkMode } = useThemeStore();
-  
+
   return (
     <LinearGradient
       colors={isDarkMode ? ["#4f46e5", "#7c3aed"] : ["#6366F1", "#8B5CF6"]}
@@ -81,7 +89,7 @@ const StackHeader = ({ title, navigation, showBack = true }) => {
 // Products Stack with Dark Mode
 const ProductsStack = () => {
   const { isDarkMode } = useThemeStore();
-  
+
   return (
     <Stack.Navigator
       screenOptions={{
@@ -125,10 +133,57 @@ const ProductsStack = () => {
   );
 };
 
+// Categories Stack with Dark Mode
+const CategoriesStack = () => {
+  const { isDarkMode } = useThemeStore();
+
+  return (
+    <Stack.Navigator
+      screenOptions={{
+        headerShown: false,
+        animation: "slide_from_right",
+        contentStyle: { backgroundColor: isDarkMode ? "#111827" : "#F8FAFC" },
+      }}
+    >
+      <Stack.Screen
+        name={NAVIGATION_SCREENS.MAIN.CATEGORIES}
+        component={CategoriesScreen}
+        options={{
+          header: ({ navigation }) => (
+            <StackHeader
+              title="Categories"
+              navigation={navigation}
+              showBack={false}
+            />
+          ),
+        }}
+      />
+      <Stack.Screen
+        name={NAVIGATION_SCREENS.MAIN.CATEGORY_DETAIL}
+        component={CategoryDetailScreen}
+        options={({ navigation }) => ({
+          header: () => (
+            <StackHeader title="Category Details" navigation={navigation} />
+          ),
+        })}
+      />
+      <Stack.Screen
+        name={NAVIGATION_SCREENS.MAIN.ADD_CATEGORY}
+        component={AddCategoryScreen}
+        options={({ navigation }) => ({
+          header: () => (
+            <StackHeader title="Add Category" navigation={navigation} />
+          ),
+        })}
+      />
+    </Stack.Navigator>
+  );
+};
+
 // Orders Stack with Dark Mode
 const OrdersStack = () => {
   const { isDarkMode } = useThemeStore();
-  
+
   return (
     <Stack.Navigator
       screenOptions={{
@@ -175,7 +230,7 @@ const OrdersStack = () => {
 // Customers Stack with Dark Mode
 const CustomersStack = () => {
   const { isDarkMode } = useThemeStore();
-  
+
   return (
     <Stack.Navigator
       screenOptions={{
@@ -219,10 +274,10 @@ const CustomersStack = () => {
   );
 };
 
-// Inventory Stack with Dark Mode (hidden from tab bar)
+// Inventory Stack with Dark Mode
 const InventoryStack = () => {
   const { isDarkMode } = useThemeStore();
-  
+
   return (
     <Stack.Navigator
       screenOptions={{
@@ -257,10 +312,10 @@ const InventoryStack = () => {
   );
 };
 
-// Settings Stack with Dark Mode (hidden from tab bar)
+// Settings Stack with Dark Mode
 const SettingsStack = () => {
   const { isDarkMode } = useThemeStore();
-  
+
   return (
     <Stack.Navigator
       screenOptions={{
@@ -301,7 +356,7 @@ const ModernTabBar = ({ state, descriptors, navigation }) => {
   const [sliderLeft, setSliderLeft] = useState(0);
   const animation = useRef(new Animated.Value(0)).current;
 
-  // Define only the tabs we want to show
+  // Define all tabs we want to show in the bottom bar
   const tabs = [
     {
       name: "Home",
@@ -317,6 +372,7 @@ const ModernTabBar = ({ state, descriptors, navigation }) => {
       label: "Products",
       screen: "ProductsStack",
     },
+
     {
       name: "Orders",
       icon: "clipboard-list-outline",
@@ -332,11 +388,11 @@ const ModernTabBar = ({ state, descriptors, navigation }) => {
       screen: "CustomersStack",
     },
     {
-      name: "Inventory",
-      icon: "warehouse",
-      iconActive: "warehouse",
-      label: "Inventory",
-      screen: "InventoryStack",
+      name: "Categories",
+      icon: "shape-outline",
+      iconActive: "shape",
+      label: "Categories",
+      screen: "CategoriesStack",
     },
   ];
 
@@ -344,14 +400,14 @@ const ModernTabBar = ({ state, descriptors, navigation }) => {
   useEffect(() => {
     if (tabPositions[state.index]) {
       const { x, width } = tabPositions[state.index];
-      
+
       Animated.spring(animation, {
         toValue: x,
         useNativeDriver: false,
         tension: 300,
         friction: 25,
       }).start();
-      
+
       setSliderWidth(width);
     }
   }, [state.index, tabPositions]);
@@ -391,7 +447,7 @@ const ModernTabBar = ({ state, descriptors, navigation }) => {
           className="overflow-hidden"
           style={{
             borderWidth: 0,
-            backgroundColor: isDarkMode ? "rgba(31, 41, 55, 0.8)" : "#ff0dfbcf",
+            backgroundColor: isDarkMode ? "rgba(31, 41, 55, 0.8)" : "rgba(255, 255, 255, 0.8)",
             padding: 0,
             borderRadius: 30,
           }}
@@ -399,8 +455,8 @@ const ModernTabBar = ({ state, descriptors, navigation }) => {
           <View
             className="flex-row items-center"
             style={{
-              backgroundColor: isDarkMode 
-                ? "rgba(31, 41, 55, 0.7)" 
+              backgroundColor: isDarkMode
+                ? "rgba(31, 41, 55, 0.7)"
                 : "rgba(255, 255, 255, 0.7)",
               position: 'relative',
               height: 50,
@@ -439,11 +495,16 @@ const ModernTabBar = ({ state, descriptors, navigation }) => {
                   <Icon
                     name={isFocused ? tab.iconActive : tab.icon}
                     size={22}
-                    color={isFocused 
-                      ? "white" 
-                      : isDarkMode ? "#9CA3AF" : "#758A93"
+                    color={isFocused
+                      ? "white"
+                      : isDarkMode ? "#9CA3AF" : "#6B7280"
                     }
                   />
+                  {/* {isFocused && (
+                    <Text className="text-white text-xs font-medium ml-1">
+                      {tab.label}
+                    </Text>
+                  )} */}
                 </TouchableOpacity>
               );
             })}
@@ -455,7 +516,7 @@ const ModernTabBar = ({ state, descriptors, navigation }) => {
       <View
         style={{
           height: 20,
-          backgroundColor: isDarkMode ? "#111827" : "white",
+          backgroundColor: isDarkMode ? "#111827" : "#F8FAFC",
           width: "100%",
         }}
       />
@@ -466,7 +527,7 @@ const ModernTabBar = ({ state, descriptors, navigation }) => {
 // Main Navigator with modern design
 const MainNavigator = () => {
   const { isDarkMode } = useThemeStore();
-  
+
   return (
     <Tab.Navigator
       tabBar={(props) => <ModernTabBar {...props} />}
@@ -476,12 +537,19 @@ const MainNavigator = () => {
     >
       <Tab.Screen name="Dashboard" component={DashboardScreen} />
       <Tab.Screen name="ProductsStack" component={ProductsStack} />
+
       <Tab.Screen name="OrdersStack" component={OrdersStack} />
       <Tab.Screen name="CustomersStack" component={CustomersStack} />
+
       {/* Hidden screens - accessible via navigation only */}
+      <Tab.Screen name="CategoriesStack" component={CategoriesStack} />
       <Tab.Screen
         name="InventoryStack"
         component={InventoryStack}
+        options={{
+          tabBarButton: () => null,
+          tabBarItemStyle: { display: "none" },
+        }}
       />
       <Tab.Screen
         name="SettingsStack"

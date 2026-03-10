@@ -16,107 +16,27 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 import { useThemeStore } from "../../store/themeStore";
+import { useProductDetail } from "../../hooks/useProductDetail";
 import ErrorState from "../../components/common/ErrorState";
-import Header from "../../components/common/Header";
 import Loading from "../../components/common/Loading";
 import { formatCurrency } from "../../utils/helpers";
-
-// Mock product data (keep as is)
-const MOCK_PRODUCTS = {
-  1: {
-    id: "1",
-    name: "Classic White T-Shirt",
-    sku: "TS-001-WHT",
-    price: 29.99,
-    cost: 18.5,
-    originalPrice: 49.99,
-    image: "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=500",
-    stock: 45,
-    category: "Apparel",
-    supplier: "Fashion Corp",
-    rating: 4.5,
-    reviews: 128,
-    description:
-      "Premium quality cotton t-shirt. Perfect for everyday wear. Features a classic fit and comfortable fabric.",
-    location: "Warehouse A - R12",
-    minStock: 20,
-    brand: "Fashionista",
-    createdAt: "2024-01-15T10:30:00Z",
-    updatedAt: "2024-01-15T10:30:00Z",
-  },
-  2: {
-    id: "2",
-    name: "Slim Fit Jeans - Dark Blue",
-    sku: "JN-002-BLU",
-    price: 79.99,
-    cost: 45.0,
-    originalPrice: 0,
-    image: "https://images.unsplash.com/photo-1541099649105-f69ad21f3246?w=500",
-    stock: 15,
-    category: "Apparel",
-    supplier: "Denim Co",
-    rating: 4.2,
-    reviews: 89,
-    description:
-      "Modern slim fit jeans in dark blue wash. Stretch denim for extra comfort.",
-    location: "Warehouse A - R08",
-    minStock: 25,
-    brand: "DenimCo",
-    createdAt: "2024-01-20T14:20:00Z",
-    updatedAt: "2024-01-20T14:20:00Z",
-  },
-  3: {
-    id: "3",
-    name: "Leather Sneakers - White",
-    sku: "SN-003-WHT",
-    price: 89.99,
-    cost: 52.0,
-    originalPrice: 129.99,
-    image: "https://images.unsplash.com/photo-1549298916-b41d501d3772?w=500",
-    stock: 8,
-    category: "Footwear",
-    supplier: "Sporty Feet",
-    rating: 4.8,
-    reviews: 256,
-    description:
-      "Premium leather sneakers. Comfortable and stylish for everyday wear.",
-    location: "Warehouse B - F03",
-    minStock: 15,
-    brand: "SportMax",
-    createdAt: "2024-01-18T09:15:00Z",
-    updatedAt: "2024-01-18T09:15:00Z",
-  },
-};
 
 const ProductDetailScreen = () => {
   const navigation = useNavigation();
   const route = useRoute();
   const { productId } = route.params || {};
   const { isDarkMode } = useThemeStore();
-  const [loading, setLoading] = useState(true);
-  const [product, setProduct] = useState(null);
-  const [error, setError] = useState(null);
+  const { 
+    product, 
+    loading, 
+    error, 
+    updateProduct, 
+    deleteProduct, 
+    updateStock 
+  } = useProductDetail(productId);
   const [showStockModal, setShowStockModal] = useState(false);
   const [stockUpdate, setStockUpdate] = useState("");
   const [activeTab, setActiveTab] = useState("details");
-
-  useEffect(() => {
-    if (!productId) {
-      navigation.goBack();
-      return;
-    }
-
-    setTimeout(() => {
-      const foundProduct = MOCK_PRODUCTS[productId];
-      if (foundProduct) {
-        setProduct(foundProduct);
-        setStockUpdate(foundProduct.stock.toString());
-      } else {
-        setError("Product not found");
-      }
-      setLoading(false);
-    }, 1000);
-  }, [productId]);
 
   const handleEdit = () => {
     navigation.navigate("AddProduct", { productId });
@@ -131,9 +51,14 @@ const ProductDetailScreen = () => {
         {
           text: "Delete",
           style: "destructive",
-          onPress: () => {
-            Alert.alert("Success", "Product deleted successfully");
-            navigation.goBack();
+          onPress: async () => {
+            const result = await deleteProduct();
+            if (result.success) {
+              Alert.alert("Success", "Product deleted successfully");
+              navigation.goBack();
+            } else {
+              Alert.alert("Error", result.error || "Failed to delete product");
+            }
           },
         },
       ],
@@ -143,7 +68,7 @@ const ProductDetailScreen = () => {
   const handleShare = async () => {
     try {
       await Share.share({
-        message: `Check out ${product?.name}\nPrice: ${formatCurrency(product?.price)}\nSKU: ${product?.sku}`,
+        message: `Check out ${product?.name}\nPrice: ${formatCurrency(product?.selling_price || product?.price)}\nSKU: ${product?.sku}`,
         title: product?.name,
       });
     } catch (error) {
@@ -155,28 +80,34 @@ const ProductDetailScreen = () => {
     setShowStockModal(true);
   };
 
-  const confirmStockUpdate = () => {
+  const confirmStockUpdate = async () => {
     const newStock = parseInt(stockUpdate);
     if (isNaN(newStock) || newStock < 0) {
       Alert.alert("Invalid Stock", "Please enter a valid stock number");
       return;
     }
 
-    setProduct({ ...product, stock: newStock });
-    Alert.alert("Success", `Stock updated to ${newStock} units`);
-    setShowStockModal(false);
+    const result = await updateStock({ stock: newStock });
+    if (result.success) {
+      Alert.alert("Success", `Stock updated to ${newStock} units`);
+      setShowStockModal(false);
+    } else {
+      Alert.alert("Error", result.error || "Failed to update stock");
+    }
   };
 
   const getStockStatus = () => {
     if (!product)
       return { label: "Unknown", color: "text-gray-500 dark:text-gray-400", bg: "bg-gray-100 dark:bg-gray-800" };
-    if (product.stock === 0)
+    const stock = product.stock || 0;
+    const minStock = product.minStock || 5;
+    if (stock === 0)
       return { 
         label: "Out of Stock", 
         color: "text-red-600 dark:text-red-400", 
         bg: "bg-red-100 dark:bg-red-900/30" 
       };
-    if (product.stock <= (product.minStock || 5))
+    if (stock <= minStock)
       return {
         label: "Low Stock",
         color: "text-orange-600 dark:text-orange-400",
@@ -194,8 +125,26 @@ const ProductDetailScreen = () => {
   if (loading) {
     return (
       <View className={`flex-1 ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
-        <SafeAreaView className="flex-1">
-          <Header title="Product Details" showBackButton />
+        <SafeAreaView className="flex-1" edges={["top", "left", "right"]}>
+          {/* Custom Header for Loading State */}
+          <View className={`px-4 py-3 flex-row items-center border-b ${
+            isDarkMode ? 'border-gray-800' : 'border-gray-200'
+          }`}>
+            <TouchableOpacity
+              onPress={() => navigation.goBack()}
+              className={`w-10 h-10 rounded-full items-center justify-center ${
+                isDarkMode ? 'bg-gray-800' : 'bg-gray-100'
+              }`}
+            >
+              <Icon name="arrow-left" size={24} color={isDarkMode ? '#FFFFFF' : '#1F2937'} />
+            </TouchableOpacity>
+            <Text className={`flex-1 text-center text-lg font-semibold ${
+              isDarkMode ? 'text-white' : 'text-gray-800'
+            }`}>
+              Product Details
+            </Text>
+            <View className="w-10" />
+          </View>
           <Loading text="Loading product..." />
         </SafeAreaView>
       </View>
@@ -205,8 +154,26 @@ const ProductDetailScreen = () => {
   if (error || !product) {
     return (
       <View className={`flex-1 ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
-        <SafeAreaView className="flex-1">
-          <Header title="Product Details" showBackButton />
+        <SafeAreaView className="flex-1" edges={["top", "left", "right"]}>
+          {/* Custom Header for Error State */}
+          <View className={`px-4 py-3 flex-row items-center border-b ${
+            isDarkMode ? 'border-gray-800' : 'border-gray-200'
+          }`}>
+            <TouchableOpacity
+              onPress={() => navigation.goBack()}
+              className={`w-10 h-10 rounded-full items-center justify-center ${
+                isDarkMode ? 'bg-gray-800' : 'bg-gray-100'
+              }`}
+            >
+              <Icon name="arrow-left" size={24} color={isDarkMode ? '#FFFFFF' : '#1F2937'} />
+            </TouchableOpacity>
+            <Text className={`flex-1 text-center text-lg font-semibold ${
+              isDarkMode ? 'text-white' : 'text-gray-800'
+            }`}>
+              Product Details
+            </Text>
+            <View className="w-10" />
+          </View>
           <ErrorState
             title="Product Not Found"
             description="The product you're looking for doesn't exist."
@@ -218,36 +185,70 @@ const ProductDetailScreen = () => {
 
   return (
     <View className={`flex-1 ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
-      <SafeAreaView className="flex-1 pb-16" edges={["left", "right"]}>
-        <Header
-          title="Product Details"
-          showBackButton
-          rightComponent={
-            <View className="flex-row items-center gap-2">
-              <TouchableOpacity
-                onPress={handleShare}
-                className={`w-10 h-10 rounded-full items-center justify-center ${
-                  isDarkMode ? 'bg-gray-800' : 'bg-gray-100'
-                }`}
-              >
-                <Icon name="share-variant" size={22} color={isDarkMode ? "#9CA3AF" : "#4b5563"} />
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={handleEdit}
-                className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-full items-center justify-center"
-              >
-                <Icon name="pencil" size={22} color="#3b82f6" />
-              </TouchableOpacity>
-            </View>
-          }
-        />
+      <SafeAreaView className="flex-1 pb-16" edges={["top", "left", "right"]}>
+        {/* Custom Header with Back, Share, and Edit Buttons */}
+        <View className={`px-4 py-3 flex-row items-center border-b ${
+          isDarkMode ? 'border-gray-800' : 'border-gray-200'
+        }`}>
+          {/* Back Button */}
+          <TouchableOpacity
+            onPress={() => navigation.goBack()}
+            className={`w-10 h-10 rounded-full items-center justify-center ${
+              isDarkMode ? 'bg-gray-800' : 'bg-gray-100'
+            }`}
+          >
+            <Icon 
+              name="arrow-left" 
+              size={24} 
+              color={isDarkMode ? '#FFFFFF' : '#1F2937'} 
+            />
+          </TouchableOpacity>
+
+          {/* Title */}
+          <Text className={`flex-1 text-center text-lg font-semibold ${
+            isDarkMode ? 'text-white' : 'text-gray-800'
+          }`}>
+            Product Details
+          </Text>
+
+          {/* Action Buttons */}
+          <View className="flex-row items-center gap-2">
+            {/* Share Button */}
+            <TouchableOpacity
+              onPress={handleShare}
+              className={`w-10 h-10 rounded-full items-center justify-center ${
+                isDarkMode ? 'bg-gray-800' : 'bg-gray-100'
+              }`}
+            >
+              <Icon 
+                name="share-variant" 
+                size={22} 
+                color={isDarkMode ? '#FFFFFF' : '#1F2937'} 
+              />
+            </TouchableOpacity>
+
+            {/* Edit Button */}
+            <TouchableOpacity
+              onPress={handleEdit}
+              className={`w-10 h-10 rounded-full items-center justify-center ${
+                isDarkMode ? 'bg-blue-900/30' : 'bg-blue-100'
+              }`}
+            >
+              <Icon 
+                name="pencil" 
+                size={22} 
+                color="#3b82f6" 
+              />
+            </TouchableOpacity>
+          </View>
+        </View>
 
         <ScrollView
           className="flex-1 px-4"
           showsVerticalScrollIndicator={false}
         >
           {/* Product Image Section */}
-          <View className={`rounded-2xl p-4 mb-4 shadow-sm ${
+          <View className={`rounded-2xl p-4 mb-4 mt-4 shadow-sm ${
             isDarkMode ? 'bg-gray-800' : 'bg-white'
           }`}>
             <View className="flex-row">
@@ -273,14 +274,32 @@ const ProductDetailScreen = () => {
                 }`}>
                   {product.name}
                 </Text>
-                <View className="flex-row items-center mt-1">
-                  <Icon name="tag" size={14} color="#9ca3af" />
-                  <Text className={`text-sm ml-1 ${
-                    isDarkMode ? 'text-gray-400' : 'text-gray-500'
-                  }`}>
-                    {product.category || "Uncategorized"}
-                  </Text>
-                </View>
+                
+                {/* Category */}
+                {product.category_id && (
+                  <View className="flex-row items-center mt-1">
+                    <Icon name="tag" size={14} color="#9ca3af" />
+                    <Text className={`text-sm ml-1 ${
+                      isDarkMode ? 'text-gray-400' : 'text-gray-500'
+                    }`}>
+                      Category ID: {product.category_id}
+                    </Text>
+                  </View>
+                )}
+
+                {/* Brand */}
+                {product.brand_id && (
+                  <View className="flex-row items-center mt-1">
+                    <Icon name="factory" size={14} color="#9ca3af" />
+                    <Text className={`text-sm ml-1 ${
+                      isDarkMode ? 'text-gray-400' : 'text-gray-500'
+                    }`}>
+                      Brand ID: {product.brand_id}
+                    </Text>
+                  </View>
+                )}
+
+                {/* SKU */}
                 <View className="flex-row items-center mt-1">
                   <Icon name="barcode" size={14} color="#9ca3af" />
                   <Text className={`text-sm ml-1 ${
@@ -326,27 +345,49 @@ const ProductDetailScreen = () => {
                 className="rounded-2xl p-4 mb-4"
               >
                 <Text className="text-white/80 text-sm mb-1">
-                  Current Price
+                  Selling Price
                 </Text>
                 <View className="flex-row items-baseline justify-between">
                   <Text className="text-white text-3xl font-bold">
-                    {formatCurrency(product.price)}
+                    {formatCurrency(product.selling_price || product.price || 0)}
                   </Text>
-                  {product.originalPrice > product.price && (
+                  {product.purchase_price > 0 && (
                     <View>
                       <Text className="text-white/60 text-sm line-through">
-                        {formatCurrency(product.originalPrice)}
+                        {formatCurrency(product.purchase_price)}
                       </Text>
                       <Text className="text-white text-xs font-semibold">
-                        Save{" "}
+                        Margin:{" "}
                         {Math.round(
-                          (1 - product.price / product.originalPrice) * 100,
-                        )}
-                        %
+                          ((product.selling_price - product.purchase_price) / 
+                           product.purchase_price) * 100
+                        )}%
                       </Text>
                     </View>
                   )}
                 </View>
+
+                {/* GST & Discount */}
+                {(product.gst_percentage > 0 || product.discount_percentage > 0) && (
+                  <View className="flex-row mt-2 pt-2 border-t border-white/20">
+                    {product.gst_percentage > 0 && (
+                      <View className="flex-row items-center mr-3">
+                        <Icon name="percent" size={14} color="white" />
+                        <Text className="text-white text-xs ml-1">
+                          GST: {product.gst_percentage}%
+                        </Text>
+                      </View>
+                    )}
+                    {product.discount_percentage > 0 && (
+                      <View className="flex-row items-center">
+                        <Icon name="sale" size={14} color="white" />
+                        <Text className="text-white text-xs ml-1">
+                          Discount: {product.discount_percentage}%
+                        </Text>
+                      </View>
+                    )}
+                  </View>
+                )}
               </LinearGradient>
 
               {/* Stock Status Card */}
@@ -377,20 +418,20 @@ const ProductDetailScreen = () => {
                   <Text className={`text-2xl font-bold ${
                     isDarkMode ? 'text-white' : 'text-gray-800'
                   }`}>
-                    {product.stock} units
+                    {product.stock || 0} units
                   </Text>
                 </View>
 
-                {product.minStock > 0 && (
+                {product.minStock > 0 && product.stock >= 0 && (
                   <View className="mt-3">
                     <View className="flex-row justify-between mb-1">
                       <Text className={`text-xs ${
-                        isDarkMode ? 'text-gray-500' : 'text-gray-500'
+                        isDarkMode ? 'text-gray-400' : 'text-gray-500'
                       }`}>
                         Min Stock Level
                       </Text>
                       <Text className={`text-xs ${
-                        isDarkMode ? 'text-gray-500' : 'text-gray-500'
+                        isDarkMode ? 'text-gray-400' : 'text-gray-500'
                       }`}>
                         {product.minStock} units
                       </Text>
@@ -407,6 +448,15 @@ const ProductDetailScreen = () => {
                     </View>
                   </View>
                 )}
+
+                {/* Unit Information */}
+                <View className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
+                  <Text className={`text-xs ${
+                    isDarkMode ? 'text-gray-400' : 'text-gray-500'
+                  }`}>
+                    Unit: {product.unit_id || "N/A"} | Amount: {product.unit_amount || 1}
+                  </Text>
+                </View>
               </View>
 
               {/* Description */}
@@ -434,58 +484,36 @@ const ProductDetailScreen = () => {
                 <Text className={`text-lg font-semibold mb-3 ${
                   isDarkMode ? 'text-white' : 'text-gray-800'
                 }`}>
-                  Additional Details
+                  Product Information
                 </Text>
 
                 <View className="flex-row flex-wrap">
                   <View className="w-1/2 mb-3">
                     <Text className={`text-xs ${
-                      isDarkMode ? 'text-gray-500' : 'text-gray-400'
+                      isDarkMode ? 'text-gray-400' : 'text-gray-500'
                     }`}>
-                      Supplier
+                      Created By
                     </Text>
                     <Text className={`text-sm font-medium ${
                       isDarkMode ? 'text-white' : 'text-gray-800'
                     }`}>
-                      {product.supplier || "N/A"}
+                      User #{product.created_by || "N/A"}
                     </Text>
                   </View>
                   <View className="w-1/2 mb-3">
                     <Text className={`text-xs ${
-                      isDarkMode ? 'text-gray-500' : 'text-gray-400'
+                      isDarkMode ? 'text-gray-400' : 'text-gray-500'
                     }`}>
-                      Location
-                    </Text>
-                    <Text className={`text-sm font-medium ${
-                      isDarkMode ? 'text-white' : 'text-gray-800'
-                    }`}>
-                      {product.location || "N/A"}
-                    </Text>
-                  </View>
-                  <View className="w-1/2 mb-3">
-                    <Text className={`text-xs ${
-                      isDarkMode ? 'text-gray-500' : 'text-gray-400'
-                    }`}>
-                      Brand
-                    </Text>
-                    <Text className={`text-sm font-medium ${
-                      isDarkMode ? 'text-white' : 'text-gray-800'
-                    }`}>
-                      {product.brand || "N/A"}
-                    </Text>
-                  </View>
-                  <View className="w-1/2 mb-3">
-                    <Text className={`text-xs ${
-                      isDarkMode ? 'text-gray-500' : 'text-gray-400'
-                    }`}>
-                      Rating
+                      Status
                     </Text>
                     <View className="flex-row items-center">
-                      <Icon name="star" size={16} color="#fbbf24" />
-                      <Text className={`text-sm font-medium ml-1 ${
+                      <View className={`w-2 h-2 rounded-full mr-1 ${
+                        product.is_active ? 'bg-green-500' : 'bg-red-500'
+                      }`} />
+                      <Text className={`text-sm font-medium ${
                         isDarkMode ? 'text-white' : 'text-gray-800'
                       }`}>
-                        {product.rating || "0"} ({product.reviews || 0})
+                        {product.is_active ? 'Active' : 'Inactive'}
                       </Text>
                     </View>
                   </View>
@@ -507,6 +535,7 @@ const ProductDetailScreen = () => {
               <View className={`border-l-2 pl-4 ml-2 ${
                 isDarkMode ? 'border-blue-900' : 'border-blue-200'
               }`}>
+                {/* Sample history items - replace with actual data */}
                 <View className="mb-4">
                   <View className="flex-row items-center">
                     <View className={`w-2 h-2 rounded-full -ml-5 mr-3 ${
@@ -524,7 +553,7 @@ const ProductDetailScreen = () => {
                     </Text>
                   </View>
                   <Text className={`text-xs ml-4 mt-1 ${
-                    isDarkMode ? 'text-gray-500' : 'text-gray-500'
+                    isDarkMode ? 'text-gray-400' : 'text-gray-500'
                   }`}>
                     Quantity changed from 45 to 50 units
                   </Text>
@@ -547,7 +576,7 @@ const ProductDetailScreen = () => {
                     </Text>
                   </View>
                   <Text className={`text-xs ml-4 mt-1 ${
-                    isDarkMode ? 'text-gray-500' : 'text-gray-500'
+                    isDarkMode ? 'text-gray-400' : 'text-gray-500'
                   }`}>
                     Received 20 units from supplier
                   </Text>
@@ -570,7 +599,7 @@ const ProductDetailScreen = () => {
                     </Text>
                   </View>
                   <Text className={`text-xs ml-4 mt-1 ${
-                    isDarkMode ? 'text-gray-500' : 'text-gray-500'
+                    isDarkMode ? 'text-gray-400' : 'text-gray-500'
                   }`}>
                     Sold 5 units to customer
                   </Text>
@@ -598,7 +627,7 @@ const ProductDetailScreen = () => {
                     <Text className={`text-2xl font-bold mt-2 ${
                       isDarkMode ? 'text-white' : 'text-gray-800'
                     }`}>
-                      {formatCurrency(product.price * product.stock)}
+                      {formatCurrency((product.selling_price || 0) * (product.stock || 0))}
                     </Text>
                     <Text className={`text-xs ${
                       isDarkMode ? 'text-gray-400' : 'text-gray-500'

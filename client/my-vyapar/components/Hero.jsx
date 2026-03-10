@@ -1,6 +1,7 @@
 "use client";
 import React from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 
 const Hero = () => {
   return (
@@ -10,54 +11,20 @@ const Hero = () => {
 
         {/* Ultra Animated Background */}
         <style>{`
-          @keyframes float-blob-1 {
-            0%, 100% { transform: translate(0px, 0px) scale(1); }
-            25% { transform: translate(40px, -50px) scale(1.1); }
-            50% { transform: translate(-30px, 40px) scale(0.95); }
-            75% { transform: translate(50px, 30px) scale(1.05); }
-          }
-          @keyframes float-blob-2 {
-            0%, 100% { transform: translate(0px, 0px) scale(1); }
-            25% { transform: translate(-40px, 50px) scale(0.95); }
-            50% { transform: translate(35px, -45px) scale(1.1); }
-            75% { transform: translate(-45px, -35px) scale(1.05); }
-          }
-          @keyframes float-blob-3 {
-            0%, 100% { transform: translate(0px, 0px) rotate(0deg); }
-            25% { transform: translate(50px, 25px) rotate(90deg); }
-            50% { transform: translate(-40px, -50px) rotate(180deg); }
-            75% { transform: translate(30px, -40px) rotate(270deg); }
-          }
-          @keyframes float-blob-4 {
-            0%, 100% { transform: translate(0px, 0px) scale(1); }
-            33% { transform: translate(-50px, -30px) scale(1.15); }
-            66% { transform: translate(45px, 45px) scale(0.9); }
-          }
-          @keyframes glow-pulse {
-            0%, 100% { opacity: 0.25; filter: blur(40px); }
-            50% { opacity: 0.5; filter: blur(50px); }
-          }
-          @keyframes rotate-slow {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-          }
-          @keyframes shimmer {
-            0%, 100% { opacity: 0.1; }
-            50% { opacity: 0.3; }
-          }
-          @keyframes gradient-shift {
-            0%, 100% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-          }
-          
+          @keyframes float-blob-1 { 0%, 100% { transform: translate(0px, 0px) scale(1); } 25% { transform: translate(40px, -50px) scale(1.1); } 50% { transform: translate(-30px, 40px) scale(0.95); } 75% { transform: translate(50px, 30px) scale(1.05); } }
+          @keyframes float-blob-2 { 0%, 100% { transform: translate(0px, 0px) scale(1); } 25% { transform: translate(-40px, 50px) scale(0.95); } 50% { transform: translate(35px, -45px) scale(1.1); } 75% { transform: translate(-45px, -35px) scale(1.05); } }
+          @keyframes fadeInUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+          @keyframes floatIcons { 0%, 100% { transform: translateY(0px) rotate(0deg); } 50% { transform: translateY(-25px) rotate(8deg); } }
+          @keyframes custom-bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-15px); } }
+
+          .animate-fadeInUp { animation: fadeInUp 0.8s ease-out forwards; }
+          .animate-custom-bounce { animation: custom-bounce 3s ease-in-out infinite; }
           .blob-float-1 { animation: float-blob-1 12s ease-in-out infinite; }
           .blob-float-2 { animation: float-blob-2 14s ease-in-out infinite 1s; }
-          .blob-float-3 { animation: float-blob-3 16s ease-in-out infinite 2s; }
-          .blob-float-4 { animation: float-blob-4 18s ease-in-out infinite 1.5s; }
-          .glow-pulse { animation: glow-pulse 6s ease-in-out infinite; }
-          .rotate-slow { animation: rotate-slow 25s linear infinite; }
-          .shimmer-bg { animation: shimmer 4s ease-in-out infinite; }
-          .gradient-shift { animation: gradient-shift 8s ease infinite; background-size: 200% 200%; }
+          .float-icon { animation: floatIcons 8s ease-in-out infinite; font-size: 48px; position: absolute; }
+          .delay-1 { animation-delay: 0.5s; }
+          .delay-2 { animation-delay: 1s; }
+          .delay-3 { animation-delay: 1.5s; }
         `}</style>
 
         {/* Fading GST Icons Container */}
@@ -148,6 +115,16 @@ const Hero = () => {
               <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 w-[150px] md:w-[200px] h-3 bg-slate-700 rounded-b-xl"></div>
             </div>
 
+            {/* MOBILE BUTTONS (Visible only on Mobile, right below image) */}
+            <div className="lg:hidden mt-10 flex flex-col sm:flex-row gap-4 justify-center animate-fadeInUp" style={{animationDelay: "0.5s"}}>
+              <Link href="/bookdemo" className="px-10 py-4 bg-gradient-to-r from-blue-600 to-purple-500 text-white rounded-full text-sm font-semibold shadow-md text-center">
+                Start Free Trial
+              </Link>
+              <Link href="/bookdemo" className="px-10 py-4 bg-white border border-slate-200 text-slate-900 rounded-full text-sm font-semibold shadow-sm text-center">
+                Book free demo
+              </Link>
+            </div>
+
             {/* Phone Mockup */}
             <div className="absolute -left-4 md:-left-8 -bottom-5 w-[100px] md:w-[130px] h-[200px] md:h-[280px] bg-slate-800 rounded-[30px] p-1.5 shadow-xl z-20 hidden sm:block animate-fadeInUp" style={{ animationDelay: "0.45s" }}>
               <div className=" w-full h-full bg-slate-900 rounded-[25px] overflow-hidden relative">
@@ -164,8 +141,8 @@ const Hero = () => {
               </div>
             </div>
 
-            {/* Floating Badges with Animations */}
-            <div className="absolute top-[20%] -right-4 bg-white px-4 py-2 rounded-full font-semibold text-sm shadow-lg border border-blue-100 text-blue-600 z-30 hidden md:block animate-bounce">
+            {/* JUMPING THREE BADGES */}
+            <div className="absolute top-[20%] -right-4 bg-white px-4 py-2 rounded-full font-semibold text-sm shadow-lg border border-blue-100 text-blue-600 z-30 hidden md:block animate-custom-bounce">
               ✨ Easy to Use
             </div>
             <div className="absolute bottom-[40%] right-4 bg-white px-4 py-2 rounded-full font-semibold text-sm shadow-lg border border-purple-100 text-purple-600 z-30 hidden md:block animate-bounce" style={{ animationDelay: "0.5s" }}>
@@ -178,56 +155,9 @@ const Hero = () => {
         </div>
       </section>
 
-      {/* ===== SUPERB FEATURES SECTION ===== */}
-      <section className="relative -mt-12 max-w-[1100px] mx-auto z-10">
-
-        {/* Dark Pocket Card with Ultra Animated Background */}
-        <div className="relative
-                        bg-[#0f172a] 
-                        rounded-[40px_40px_30px_30px]
-                        pt-[30px] pb-[5px] px-[40px] 
-                        max-w-[900px] mx-auto
-                        shadow-[0_20px_30px_rgba(0,0,0,0.3)]
-                        border border-white/10
-                        overflow-hidden">
-
-          {/* Ultra Animated Background Styles */}
-          <style>{`
-        @keyframes floatIcons {
-  0% {
-    transform: translateY(0px) rotate(0deg);
-  }
-  50% {
-    transform: translateY(-25px) rotate(8deg);
-  }
-  100% {
-    transform: translateY(0px) rotate(0deg);
-  }
-}
-
-.float-icon {
-  font-size: 48px;
-  animation: floatIcons 8s ease-in-out infinite;
-}
-
-.delay-2 {
-  animation-delay: 2s;
-}
-
-.delay-3 {
-  animation-delay: 3s;
-}
-
-.delay-4 {
-  animation-delay: 4s;
-}
-
-.delay-5 {
-  animation-delay: 5s;
-}
-          `}</style>
-
-          {/* Animated Blob Background Elements */}
+      {/* ===== SUPERB FEATURES SECTION (BLACK CARD) ===== */}
+      <section className="relative -mt-12 w-full mx-auto z-10 hidden md:block"> 
+        <div className="relative bg-[#0f172a] rounded-[40px_40px_30px_30px] pt-[30px] pb-[5px] px-[40px] max-w-[900px] mx-auto shadow-2xl border border-white/10 overflow-hidden">
           <div className="absolute inset-0 overflow-hidden pointer-events-none">
 
             {/* Blob 1 - Blue */}
@@ -258,22 +188,8 @@ const Hero = () => {
                             opacity-40"></div>
           </div>
 
-          {/* Blur Glow Top */}
-          <div className="absolute -top-5 left-[30px] right-[30px] h-[40px] 
-                          bg-[rgba(15,23,42,0.3)] blur-[15px] 
-                          rounded-full -z-10" />
-
-          {/* Title */}
           <h2 className="text-[42px] font-bold text-white text-center mb-[30px] relative z-20">
-            We made it{" "}
-            <span className="relative bg-gradient-to-r from-blue-500 to-purple-500 
-                             bg-clip-text text-transparent">
-              superb
-              <span className="absolute left-0 -bottom-[5px] w-full h-[3px] 
-                               bg-gradient-to-r from-blue-500 to-purple-500 
-                               rounded-full opacity-30"></span>
-            </span>{" "}
-            & usability
+            We made it <span className="bg-gradient-to-r from-blue-500 to-purple-500 bg-clip-text text-transparent">superb</span> & usability
           </h2>
 
           {/* Pills */}
@@ -295,121 +211,40 @@ const Hero = () => {
             ))}
           </div>
 
-          {/* Mini White Card */}
-          <div className="group relative top-[40px]
-                         min-h-[500px]
-                          bg-white
-                          rounded-[40px_40px_30px_30px]
-                         p-[16px]
-                          border border-white/80
-                          shadow-[0_-10px_30px_rgba(0,0,0,0.1),_0_20px_40px_rgba(0,0,0,0.15)]
-                          transition-transform duration-300
-                          hover:-translate-y-[5px]
-                          z-30">
-
-            {/* Mini Navbar */}
-            <div className="flex justify-between items-center
-                            mb-[30px] pb-[20px]
-                            border-b border-[#e2e8f0]">
-
+          {/* Mini White Card Mockup */}
+          <div className="group relative top-[40px] min-h-[500px] bg-white rounded-[40px_40px_30px_30px] p-[16px] border border-white/80 shadow-2xl z-30">
+            <div className="flex justify-between items-center mb-[30px] pb-[20px] border-b border-slate-100">
               <div className="flex items-center gap-2">
-                <div className="w-[35px] h-[35px]
-                                bg-gradient-to-br from-blue-500 to-purple-500
-                                text-white flex items-center justify-center
-                                rounded-[8px] font-bold text-[18px]">
-                  B
-                </div>
-                <span className="text-[#1e293b] font-bold text-[16px]">
-                  Billora
-                </span>
-              </div>
-
-              <div className="hidden md:flex gap-[25px]">
-                <span className="text-[#64748b] text-[14px] font-medium hover:text-blue-500 transition-colors">Features</span>
-                <span className="text-[#64748b] text-[14px] font-medium hover:text-blue-500 transition-colors">Pricing</span>
-                <span className="text-[#64748b] text-[14px] font-medium hover:text-blue-500 transition-colors">About</span>
+                <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-500 text-white flex items-center justify-center rounded-lg font-bold">B</div>
+                <span className="text-slate-800 font-bold">Billora</span>
               </div>
             </div>
-
-            {/* Mini Hero */}
-            <div className="flex items-center gap-[30px]">
-
+            <div className="flex items-center gap-8">
               <div className="flex-1">
-                <h3 className="text-[24px] font-extrabold text-[#0f172a] mb-[10px]">
-                  GST Billing Software
-                </h3>
-
-                <p className="text-[14px] text-[#475569] mb-[20px] leading-[1.5]">
-                  Manage your business professionally
-                </p>
-
-                <button className="px-[22px] py-[8px]
-                                   bg-gradient-to-r from-blue-500 to-purple-500
-                                   text-white rounded-[30px]
-                                   text-[13px] font-semibold
-                                   shadow-[0_4px_10px_rgba(59,130,246,0.3)]">
-                  Download Now
-                </button>
+                <h3 className="text-2xl font-extrabold text-slate-900 mb-2">GST Billing Software</h3>
+                <p className="text-slate-500 mb-4">Manage your business professionally.</p>
+                <button className="px-6 py-2 bg-gradient-to-r from-blue-600 to-purple-500 text-white rounded-full text-sm font-semibold">Download Now</button>
               </div>
-
-              {/* Mini Mockup */}
-              <div className="flex-1 relative min-h-[120px]">
-
-                <div className="w-[200px] h-[100px]
-                                bg-[#1e293b]
-                                rounded-t-[12px]
-                                p-[5px]
-                                shadow-[0_10px_20px_rgba(0,0,0,0.1)]">
-
-                  <div className="w-full h-full bg-[#0f172a] rounded-[8px] overflow-hidden">
-
-                    <div className="h-[16px] bg-[#334155] flex items-center px-[8px] gap-[4px]">
-                      <div className="w-[6px] h-[6px] bg-red-500 rounded-full"></div>
-                      <div className="w-[6px] h-[6px] bg-amber-500 rounded-full"></div>
-                      <div className="w-[6px] h-[6px] bg-emerald-500 rounded-full"></div>
-                    </div>
-
-                    <div className="h-[40px] m-[8px]
-                                    bg-gradient-to-r from-blue-500 to-purple-500
-                                    opacity-30 rounded-[4px]"></div>
-                  </div>
+              <div className="flex-1 relative">
+                <div className="w-full aspect-video bg-slate-900 rounded-lg p-2">
+                   <div className="w-full h-full bg-slate-800 rounded flex items-center justify-center text-white/20 font-bold">MOCKUP</div>
                 </div>
-
-                {/* Floating Labels */}
-                <div className="absolute -top-[10px] right-[20px]
-                                px-[10px] py-[4px]
-                                bg-white rounded-[20px]
-                                text-[10px] font-semibold text-[#1e293b]
-                                border border-[#e2e8f0]
-                                shadow-[0_3px_8px_rgba(0,0,0,0.1)]">
-                  Inventory
-                </div>
-
-                <div className="absolute bottom-[20px] right-0
-                                px-[10px] py-[4px]
-                                bg-white rounded-[20px]
-                                text-[10px] font-semibold text-[#1e293b]
-                                border border-[#e2e8f0]
-                                shadow-[0_3px_8px_rgba(0,0,0,0.1)]">
-                  GST Ready
-                </div>
-
+                <div className="absolute -top-4 right-4 px-3 py-1 bg-white shadow-md border rounded-full text-[10px] font-bold">Inventory</div>
+                <div className="absolute -bottom-4 right-0 px-3 py-1 bg-white shadow-md border rounded-full text-[10px] font-bold">GST Ready</div>
               </div>
-
+        
             </div>
           </div>
-
+       
         </div>
-
-        {/* Dotted Background */}
+                      {/* Dotted Background */}
         <div className="absolute inset-0 -z-10 opacity-50 pointer-events-none
                         bg-[radial-gradient(#cbd5e1_1.5px,transparent_1.5px)]
                         bg-[size:25px_25px]">
         </div>
-
       </section>
     </div>
   );
 };
 
-export default Hero;       
+export default Hero;

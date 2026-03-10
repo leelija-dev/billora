@@ -5,6 +5,8 @@ namespace App\Http\Controllers\admin;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Stocks;
+use App\Models\Products;
+use App\Models\Unit;
 class StocksController extends Controller
 {
 
@@ -24,6 +26,15 @@ class StocksController extends Controller
                 'message' => $e->getMessage()
             ]);
         }
+    }
+    public function create(){
+        $products = Products::all();
+        $units = Unit::all();
+        return response()->json([
+            'status' => true,   
+            'message' => 'Stock Create',
+            'data' => ['products'=>$products,'units'=>$units]
+        ]);
     }
     public function store(Request $request){
         $stocks =$request->validate([

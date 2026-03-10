@@ -1,59 +1,42 @@
 // screens/products/AddProductScreen.js
-import { useRoute } from "@react-navigation/native";
+import { useNavigation, useRoute } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
-import { Text, View } from "react-native";
+import { Text, View, TouchableOpacity } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 import { useThemeStore } from "../../store/themeStore";
-import Header from "../../components/common/Header";
+import { useProductForm } from "../../hooks/useProductForm";
 import ProductForm from "../../components/products/ProductForm";
 
 const AddProductScreen = () => {
+  const navigation = useNavigation();
   const route = useRoute();
   const { productId } = route.params || {};
   const { isDarkMode } = useThemeStore();
 
   return (
-    <View className={`flex-1 ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'} pb-4`}>
-      <SafeAreaView className="flex-1" edges={["left", "right"]}>
-        <Header
-          title={productId ? "Edit Product" : "Add Product"}
-          showBackButton
-          rightComponent={
-            <View className="flex-row items-center">
-              <LinearGradient
-                colors={["#3b82f6", "#2563eb"]}
-                className="w-10 h-10 rounded-full items-center justify-center"
-                style={{ borderRadius: 100 }}
-              >
-                <Icon name="help" size={22} color="#ffffff" />
-              </LinearGradient>
-            </View>
-          }
-        />
-
-        {/* Decorative Header */}
-        <LinearGradient
-          colors={["#3b82f6", "#2563eb"]}
-          className="px-5 py-6 mx-4 rounded-2xl mb-0 mt-3"
-          style={{ borderRadius: 10 }}
-        >
-          <View className="flex-row items-center">
-            <View className="w-12 h-12 bg-white/20 rounded-full items-center justify-center mr-4">
-              <Icon name="package-variant" size={28} color="#ffffff" />
-            </View>
-            <View className="flex-1">
-              <Text className="text-white text-lg font-semibold">
-                {productId ? "Edit Product" : "Add New Product"}
-              </Text>
-              <Text className="text-white/80 text-sm">
-                {productId
-                  ? "Update product details"
-                  : "Fill in the details below"}
-              </Text>
-            </View>
-          </View>
-        </LinearGradient>
+    <View className={`flex-1 ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
+      <SafeAreaView className="flex-1" edges={["top", "left", "right"]}>
+        {/* Minimal Header */}
+        <View className={`px-4 py-3 flex-row items-center ${
+          isDarkMode ? 'bg-gray-900' : 'bg-gray-50'
+        }`}>
+          <TouchableOpacity
+            onPress={() => navigation.goBack()}
+            className="mr-4"
+          >
+            <Icon 
+              name="arrow-left" 
+              size={24} 
+              color={isDarkMode ? '#FFFFFF' : '#1F2937'} 
+            />
+          </TouchableOpacity>
+          <Text className={`text-xl font-semibold ${
+            isDarkMode ? 'text-white' : 'text-gray-800'
+          }`}>
+            {productId ? "Edit Product" : "Add Product"}
+          </Text>
+        </View>
 
         <ProductForm productId={productId} />
       </SafeAreaView>
