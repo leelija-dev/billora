@@ -1,5 +1,6 @@
+// Updated CategoriesScreen component
 import { useNavigation } from "@react-navigation/native";
-import { useState, useEffect } from "react";
+import { useState, useMemo } from "react";
 import {
   ScrollView,
   StatusBar,
@@ -7,8 +8,6 @@ import {
   TextInput,
   TouchableOpacity,
   View,
-  Animated,
-  Alert,
 } from "react-native";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 import { LinearGradient } from "expo-linear-gradient";
@@ -19,32 +18,37 @@ import Header from "../../components/common/Header";
 import CategoryFilters from "../../components/categories/CategoryFilters";
 import CategoryList from "../../components/categories/CategoryList";
 
-// Category stats data
-const categoryStats = {
-  totalCategories: 24,
-  activeCategories: 18,
-  totalProducts: 1245,
-  emptyCategories: 3,
-};
-
 const CategoriesScreen = () => {
   const navigation = useNavigation();
   const { isDarkMode } = useThemeStore();
   const { user } = useAuthStore();
-  const { 
-    categories = [], 
-    loading, 
-    error, 
-    refreshCategories, 
-    searchCategories 
+  const {
+    categories = [],
+    loading,
+    error,
+    refreshCategories,
+    searchCategories,
+    deleteCategory, // From hook
   } = useCategories() || {};
+
+ 
+
   const [showFilters, setShowFilters] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [viewMode, setViewMode] = useState("grid");
   const [sortBy, setSortBy] = useState("name");
 
-  // Safe category count with fallback
-  const categoryCount = categories?.length || 0;
+  // Calculate dynamic stats from real categories
+  const totalCategories = categories?.length || 0;
+  const activeCategories = useMemo(() => 
+    Array.isArray(categories) ? categories.filter(cat => cat.is_active).length : 0, [categories]
+  );
+  const emptyCategories = useMemo(() => 
+    Array.isArray(categories) ? categories.filter(cat => (cat.productCount || 0) === 0).length : 0, [categories]
+  );
+  const totalProducts = useMemo(() => 
+    Array.isArray(categories) ? categories.reduce((sum, cat) => sum + (cat.productCount || 0), 0) : 0, [categories]
+  );
 
   const handleAddCategory = () => {
     navigation.navigate("AddCategory");
@@ -61,9 +65,9 @@ const CategoriesScreen = () => {
   const handleSearch = (query) => {
     setSearchQuery(query);
     if (query.trim()) {
-      searchCategories?.(query);
+      searchCategories(query);
     } else {
-      refreshCategories?.();
+      refreshCategories();
     }
   };
 
@@ -92,7 +96,7 @@ const CategoriesScreen = () => {
       title: "Categories",
       icon: "shape",
       screen: "Categories",
-      badge: categoryCount.toString(),
+      badge: totalCategories.toString(), // Dynamic badge
     },
     {
       id: "orders",
@@ -145,7 +149,6 @@ const CategoriesScreen = () => {
   return (
     <View className={`flex-1 ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'} pb-16`}>
       <StatusBar barStyle={isDarkMode ? "light-content" : "dark-content"} backgroundColor={isDarkMode ? "#111827" : "#ffffff"} />
-
       <Header
         title="Categories"
         userName={user?.name || "User"}
@@ -175,7 +178,6 @@ const CategoriesScreen = () => {
           </View>
         }
       />
-
       {/* Search Bar */}
       <View className="px-4 pt-4 pb-2">
         <View className={`flex-row items-center rounded-2xl px-4 h-14 shadow-sm ${
@@ -206,9 +208,8 @@ const CategoriesScreen = () => {
           </TouchableOpacity>
         </View>
       </View>
-
       <ScrollView showsVerticalScrollIndicator={false}>
-        {/* Stats Cards */}
+        {/* Stats Cards - Using dynamic calculations */}
         <View className="flex-row flex-wrap px-4 py-3">
           <LinearGradient
             colors={["#3b82f6", "#2563eb"]}
@@ -217,13 +218,12 @@ const CategoriesScreen = () => {
             end={{ x: 1, y: 1 }}
           >
             <Text className="text-white/80 text-xs">Total Categories</Text>
-            <Text className="text-white text-2xl font-bold">{categoryStats.totalCategories}</Text>
+            <Text className="text-white text-2xl font-bold">{totalCategories}</Text>
             <View className="flex-row items-center mt-1">
               <Icon name="arrow-up" size={16} color="#86efac" />
               <Text className="text-white/80 text-xs ml-1">+12% from last month</Text>
             </View>
           </LinearGradient>
-
           <View className={`rounded-xl p-4 flex-1 ml-2 shadow-sm ${
             isDarkMode ? 'bg-gray-800' : 'bg-white'
           }`}>
@@ -231,17 +231,16 @@ const CategoriesScreen = () => {
               Active Categories
             </Text>
             <Text className={`text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
-              {categoryStats.activeCategories}
+              {activeCategories}
             </Text>
             <View className="flex-row items-center mt-1">
               <View className="w-2 h-2 rounded-full bg-green-500 mr-1" />
               <Text className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                {((categoryStats.activeCategories / categoryStats.totalCategories) * 100).toFixed(0)}% active
+                {totalCategories > 0 ? ((activeCategories / totalCategories) * 100).toFixed(0) : 0}% active
               </Text>
             </View>
           </View>
         </View>
-
         <View className="flex-row px-4 mb-4">
           <View className={`rounded-xl p-3 flex-1 mr-2 shadow-sm ${
             isDarkMode ? 'bg-gray-800' : 'bg-white'
@@ -253,10 +252,9 @@ const CategoriesScreen = () => {
               </Text>
             </View>
             <Text className={`text-xl font-bold mt-1 ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
-              {categoryStats.totalProducts}
+              {totalProducts}
             </Text>
           </View>
-
           <View className={`rounded-xl p-3 flex-1 ml-2 shadow-sm ${
             isDarkMode ? 'bg-gray-800' : 'bg-white'
           }`}>
@@ -267,11 +265,10 @@ const CategoriesScreen = () => {
               </Text>
             </View>
             <Text className={`text-xl font-bold mt-1 ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
-              {categoryStats.emptyCategories}
+              {emptyCategories}
             </Text>
           </View>
         </View>
-
         {/* Quick Actions */}
         <View className="flex-row px-4 mb-4">
           <TouchableOpacity
@@ -279,8 +276,8 @@ const CategoriesScreen = () => {
             className={`flex-row items-center mr-3 px-4 py-2 rounded-full border ${
               sortBy === 'name'
                 ? "bg-blue-500 border-blue-500"
-                : isDarkMode 
-                  ? 'bg-gray-800 border-gray-700' 
+                : isDarkMode
+                  ? 'bg-gray-800 border-gray-700'
                   : 'bg-white border-gray-200'
             }`}
           >
@@ -299,14 +296,13 @@ const CategoriesScreen = () => {
               Name
             </Text>
           </TouchableOpacity>
-
           <TouchableOpacity
             onPress={() => setSortBy('products')}
             className={`flex-row items-center mr-3 px-4 py-2 rounded-full border ${
               sortBy === 'products'
                 ? "bg-blue-500 border-blue-500"
-                : isDarkMode 
-                  ? 'bg-gray-800 border-gray-700' 
+                : isDarkMode
+                  ? 'bg-gray-800 border-gray-700'
                   : 'bg-white border-gray-200'
             }`}
           >
@@ -325,14 +321,13 @@ const CategoriesScreen = () => {
               Product Count
             </Text>
           </TouchableOpacity>
-
           <TouchableOpacity
             onPress={() => setSortBy('date')}
             className={`flex-row items-center px-4 py-2 rounded-full border ${
               sortBy === 'date'
                 ? "bg-blue-500 border-blue-500"
-                : isDarkMode 
-                  ? 'bg-gray-800 border-gray-700' 
+                : isDarkMode
+                  ? 'bg-gray-800 border-gray-700'
                   : 'bg-white border-gray-200'
             }`}
           >
@@ -352,20 +347,21 @@ const CategoriesScreen = () => {
             </Text>
           </TouchableOpacity>
         </View>
-
-        {/* Category List */}
+        {/* Category List - Pass real categories and refresh */}
         <View className="flex-1 px-4">
           <CategoryList
+            categories={categories} // Pass real data
             viewMode={viewMode}
             searchQuery={searchQuery}
             sortBy={sortBy}
+            onRefresh={refreshCategories} // Pass hook refresh
+            onDelete={deleteCategory} // Optional: pass for delete integration
           />
         </View>
       </ScrollView>
-
       {/* Filters Modal */}
-      <CategoryFilters 
-        visible={showFilters} 
+      <CategoryFilters
+        visible={showFilters}
         onClose={handleFiltersClose}
         isDarkMode={isDarkMode}
       />

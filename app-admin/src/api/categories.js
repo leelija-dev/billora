@@ -13,6 +13,7 @@ export const categoriesAPI = {
     try {
       const api = getCategoriesData();
       const response = await api.get('/categories', { params });
+      console.log('API Response:', response.data);
       return response.data;
     } catch (error) {
       throw error.response?.data || error.message;

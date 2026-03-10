@@ -1,3 +1,4 @@
+// Updated CategoryList component
 import { useNavigation } from "@react-navigation/native";
 import { useEffect, useMemo, useState } from "react";
 import {
@@ -9,102 +10,21 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { LinearGradient } from "expo-linear-gradient"; // Add this import if missing
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 import { useThemeStore } from "../../store/themeStore";
 import CategoryCard from "./CategoryCard";
-
-// Static category data
-const STATIC_CATEGORIES = [
-  {
-    id: "1",
-    name: "Apparel",
-    description: "Clothing, fashion wear, and accessories for all ages",
-    icon: "tshirt-crew",
-    colors: ["#3b82f6", "#2563eb"],
-    productCount: 78,
-    totalValue: 45600,
-    is_active: true,
-    isFavorite: false,
-    created_at: "2024-01-15T10:30:00Z",
-    slug: "apparel",
-  },
-  {
-    id: "2",
-    name: "Footwear",
-    description: "Shoes, sneakers, boots, and sandals",
-    icon: "shoe-sneaker",
-    colors: ["#ec4899", "#db2777"],
-    productCount: 45,
-    totalValue: 23400,
-    is_active: true,
-    isFavorite: true,
-    created_at: "2024-01-10T14:20:00Z",
-    slug: "footwear",
-  },
-  {
-    id: "3",
-    name: "Accessories",
-    description: "Watches, jewelry, bags, and fashion accessories",
-    icon: "watch",
-    colors: ["#8b5cf6", "#7c3aed"],
-    productCount: 23,
-    totalValue: 18900,
-    is_active: true,
-    isFavorite: false,
-    created_at: "2024-01-20T09:15:00Z",
-    slug: "accessories",
-  },
-  {
-    id: "4",
-    name: "Outerwear",
-    description: "Jackets, coats, and winter wear",
-    icon: "jacket",
-    colors: ["#f97316", "#ea580c"],
-    productCount: 10,
-    totalValue: 8900,
-    is_active: true,
-    isFavorite: false,
-    created_at: "2024-01-18T16:45:00Z",
-    slug: "outerwear",
-  },
-  {
-    id: "5",
-    name: "Knitwear",
-    description: "Sweaters, cardigans, and knitted garments",
-    icon: "knitting",
-    colors: ["#10b981", "#059669"],
-    productCount: 15,
-    totalValue: 12300,
-    is_active: true,
-    isFavorite: true,
-    created_at: "2024-01-22T11:30:00Z",
-    slug: "knitwear",
-  },
-  {
-    id: "6",
-    name: "Electronics",
-    description: "Gadgets, devices, and electronic accessories",
-    icon: "laptop",
-    colors: ["#ef4444", "#dc2626"],
-    productCount: 0,
-    totalValue: 0,
-    is_active: false,
-    isFavorite: false,
-    created_at: "2024-01-19T13:20:00Z",
-    slug: "electronics",
-  },
-];
 
 const CategoryList = ({
   viewMode = "grid",
   searchQuery = "",
   sortBy = "name",
+  categories = [], // New prop for real categories
+  onRefresh = () => {}, // New prop for refresh callback
 }) => {
   const navigation = useNavigation();
   const { isDarkMode } = useThemeStore();
   const [refreshing, setRefreshing] = useState(false);
-  const [categories, setCategories] = useState(STATIC_CATEGORIES);
-  const [loading, setLoading] = useState(false);
   const [fadeAnim] = useState(new Animated.Value(0));
 
   useEffect(() => {
@@ -115,11 +35,11 @@ const CategoryList = ({
     }).start();
   }, []);
 
-  // Filter and sort categories based on props
+  // Filter and sort categories based on props (using prop categories)
   const filteredCategories = useMemo(() => {
+    if (!Array.isArray(categories)) return [];
     let filtered = [...categories];
-
-    // Search filter
+    // Search filter (client-side refinement on server results)
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter(
@@ -129,7 +49,6 @@ const CategoryList = ({
           c.slug?.toLowerCase().includes(query),
       );
     }
-
     // Sort
     filtered.sort((a, b) => {
       switch (sortBy) {
@@ -145,17 +64,22 @@ const CategoryList = ({
           return 0;
       }
     });
-
     return filtered;
   }, [categories, searchQuery, sortBy]);
 
-  // Statistics
+  // Statistics (using prop categories)
   const stats = useMemo(() => {
+    if (!Array.isArray(categories)) return {
+      total: 0,
+      active: 0,
+      totalProducts: 0,
+      empty: 0,
+      totalValue: 0,
+    };
     const activeCount = categories.filter(c => c.is_active).length;
     const totalProducts = categories.reduce((sum, c) => sum + (c.productCount || 0), 0);
-    const emptyCategories = categories.filter(c => c.productCount === 0).length;
+    const emptyCategories = categories.filter(c => (c.productCount || 0) === 0).length;
     const totalValue = categories.reduce((sum, c) => sum + (c.totalValue || 0), 0);
-
     return {
       total: categories.length,
       active: activeCount,
@@ -173,24 +97,27 @@ const CategoryList = ({
     navigation.navigate("AddCategory", { categoryId: category.id });
   };
 
+  // Local handlers (can be extended with props for real API calls)
   const handleDeleteCategory = (categoryId) => {
-    setCategories((prev) => prev.filter((c) => c.id !== categoryId));
+    // For now, local filter; extend with prop onDelete for real delete
+    // setCategories((prev) => prev.filter((c) => c.id !== categoryId));
   };
 
   const handleToggleFavorite = (categoryId) => {
-    setCategories((prev) =>
-      prev.map((c) =>
-        c.id === categoryId ? { ...c, isFavorite: !c.isFavorite } : c,
-      ),
-    );
+    // Local toggle; extend if needed
+    // setCategories((prev) =>
+    //   prev.map((c) =>
+    //     c.id === categoryId ? { ...c, isFavorite: !c.isFavorite } : c,
+    //   ),
+    // );
   };
 
-  const onRefresh = () => {
+  const onRefreshLocal = () => {
     setRefreshing(true);
+    onRefresh(); // Call parent refresh (from hook)
     setTimeout(() => {
-      setCategories(STATIC_CATEGORIES);
       setRefreshing(false);
-    }, 1000);
+    }, 1000); // UX delay
   };
 
   const renderHeader = () => (
@@ -237,7 +164,6 @@ const CategoryList = ({
       >
         <Icon name={item.icon || "shape"} size={28} color="#ffffff" />
       </LinearGradient>
-
       <View className="flex-1 ml-3">
         <View className="flex-row justify-between items-start">
           <View className="flex-1">
@@ -266,7 +192,6 @@ const CategoryList = ({
             />
           </TouchableOpacity>
         </View>
-
         <View className="flex-row justify-between items-center mt-2">
           <View className="flex-row items-center">
             <Icon name="package-variant" size={14} color="#9ca3af" />
@@ -276,7 +201,6 @@ const CategoryList = ({
               {item.productCount || 0} products
             </Text>
           </View>
-
           <View className="flex-row items-center">
             <View
               className={`w-2 h-2 rounded-full mr-1 ${
@@ -289,7 +213,6 @@ const CategoryList = ({
               {item.is_active ? 'Active' : 'Inactive'}
             </Text>
           </View>
-
           <Text className={`text-xs font-semibold ${
             isDarkMode ? 'text-green-400' : 'text-green-600'
           }`}>
@@ -313,16 +236,7 @@ const CategoryList = ({
     return rows;
   };
 
-  if (loading) {
-    return (
-      <View className="flex-1 justify-center items-center">
-        <ActivityIndicator size="large" color="#3b82f6" />
-        <Text className={`mt-4 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-          Loading categories...
-        </Text>
-      </View>
-    );
-  }
+  // Removed local loading state as parent handles it
 
   if (!filteredCategories || filteredCategories.length === 0) {
     return (
@@ -331,7 +245,7 @@ const CategoryList = ({
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
-            onRefresh={onRefresh}
+            onRefresh={onRefreshLocal}
             colors={["#3b82f6"]}
             tintColor="#3b82f6"
           />
@@ -367,15 +281,15 @@ const CategoryList = ({
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
-            onRefresh={onRefresh}
+            onRefresh={onRefreshLocal}
             colors={["#3b82f6"]}
             tintColor="#3b82f6"
           />
         }
       >
         <View className="pb-4">
-          {viewMode === "grid" 
-            ? renderGridItems() 
+          {viewMode === "grid"
+            ? renderGridItems()
             : filteredCategories.map(item => renderListItem(item))}
         </View>
       </ScrollView>

@@ -11,7 +11,9 @@ export const useCategories = (params = {}) => {
       setLoading(true);
       setError(null);
       const response = await categoriesAPI.getAll(params);
-      setCategories(response.categories || response);
+      console.log('useCategories response:', response);
+      // Handle the API response structure: { data: { data: [...categories] } }
+      setCategories(response.data?.data || response.data || response);
     } catch (err) {
       setError(err.message || 'Failed to fetch categories');
     } finally {
