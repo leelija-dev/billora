@@ -7,7 +7,7 @@ const Hero = () => {
     <div className="overflow-x-hidden font-sans">
       {/* ===== ANIMATED HERO SECTION ===== */}
       <section className="relative z-10 min-h-[90vh] flex items-center px-5 md:px-20 pb-32 pt-10 bg-gradient-to-br from-slate-50 via-indigo-50 to-sky-100 overflow-hidden">
-        
+
         {/* Ultra Animated Background */}
         <style>{`
           @keyframes float-blob-1 {
@@ -62,35 +62,35 @@ const Hero = () => {
 
         {/* Fading GST Icons Container */}
         {/* Floating Business Icons Background */}
-<div className="absolute inset-0 pointer-events-none z-0">
+        <div className="absolute inset-0 pointer-events-none z-0">
 
-  {/* Invoice */}
-  <div className="absolute top-[12%] left-[8%] float-icon opacity-20">
-    📄
-  </div>
+          {/* Invoice */}
+          <div className="absolute top-[12%] left-[8%] float-icon opacity-20">
+            📄
+          </div>
 
-  {/* Rupee */}
-  <div className="absolute top-[65%] left-[15%] float-icon delay-2 opacity-20">
-    ₹
-  </div>
+          {/* Rupee */}
+          <div className="absolute top-[65%] left-[15%] float-icon delay-2 opacity-20">
+            ₹
+          </div>
 
-  {/* Chart */}
-  <div className="absolute top-[30%] right-[12%] float-icon delay-3 opacity-20">
-    📊
-  </div>
+          {/* Chart */}
+          <div className="absolute top-[30%] right-[12%] float-icon delay-3 opacity-20">
+            📊
+          </div>
 
-  {/* Calculator */}
-  <div className="absolute bottom-[20%] right-[18%] float-icon delay-4 opacity-20">
-    🧮
-  </div>
+          {/* Calculator */}
+          <div className="absolute bottom-[20%] right-[18%] float-icon delay-4 opacity-20">
+            🧮
+          </div>
 
-  {/* Bill */}
-  <div className="absolute top-[50%] left-[40%] float-icon delay-5 opacity-20">
-    🧾
-  </div>
+          {/* Bill */}
+          <div className="absolute top-[50%] left-[40%] float-icon delay-5 opacity-20">
+            🧾
+          </div>
 
-</div>
-    
+        </div>
+
 
         {/* Gradient Overlay at bottom */}
         <div className="absolute bottom-0 left-0 right-0 h-40 
@@ -99,40 +99,40 @@ const Hero = () => {
 
         {/* Main Content */}
         <div className="relative z-30 max-w-[1400px] mx-auto w-full flex flex-col lg:flex-row items-center gap-10 lg:gap-16">
-          
+
           {/* Hero Content */}
           <div className="flex-1 text-center lg:text-left">
             <h1 className="text-4xl md:text-5xl lg:text-[52px] font-extrabold text-slate-900 leading-tight mb-8 tracking-tight animate-fadeInUp">
               GST Billing Software for Small Businesses in India
             </h1>
-            <p className="text-sm sm:text-base md:text-lg text-slate-600 leading-relaxed mb-6 sm:mb-10 max-w-[550px] mx-auto lg:mx-0 animate-fadeInUp" style={{animationDelay: "0.2s"}}>
+            <p className="text-sm sm:text-base md:text-lg text-slate-600 leading-relaxed mb-6 sm:mb-10 max-w-[550px] mx-auto lg:mx-0 animate-fadeInUp" style={{ animationDelay: "0.2s" }}>
               Manage your business professionally with Billora, India's leading small business software for billing, inventory, and accounting. Join 1 Cr+ satisfied SMEs in India who trust Billora.
             </p>
-           <div className="flex flex-col sm:flex-row gap-6">
+            <div className="flex flex-col sm:flex-row gap-6">
 
-<button className="px-10 py-4 bg-gradient-to-r from-blue-600 to-purple-500 text-white rounded-full text-sm font-semibold shadow-md transition-all hover:-translate-y-1">
-Start Free Trial
-</button>
+              <button className="px-10 py-4 bg-gradient-to-r from-blue-600 to-purple-500 text-white rounded-full text-sm font-semibold shadow-md transition-all hover:-translate-y-1">
+                Start Free Trial
+              </button>
 
-<button className="px-10 py-4 bg-gradient-to-r from-blue-600 to-purple-500 text-white rounded-full text-sm font-semibold shadow-md transition-all hover:-translate-y-1">
-Book free demo
-</button>
+              <button className="px-10 py-4 bg-gradient-to-r from-blue-600 to-purple-500 text-white rounded-full text-sm font-semibold shadow-md transition-all hover:-translate-y-1">
+                Book free demo
+              </button>
 
-</div>
-</div>
+            </div>
+          </div>
 
           {/* Hero Images Container */}
           <div className="flex-1 relative min-h-[350px] md:min-h-[500px] w-full max-w-[600px]">
-            
+
             {/* Laptop Mockup */}
-            <div className="relative w-full aspect-[16/9] bg-slate-900 rounded-t-[20px] p-2 shadow-2xl z-10 animate-fadeInUp" style={{animationDelay: "0.3s"}}>
+            <div className="relative w-full aspect-[16/9] bg-slate-900 rounded-t-[20px] p-2 shadow-2xl z-10 animate-fadeInUp" style={{ animationDelay: "0.3s" }}>
               <div className="w-full h-full bg-slate-800 rounded-xl overflow-hidden">
                 <div className="h-8 bg-slate-700 flex items-center px-4 gap-2">
                   <span className="w-3 h-3 rounded-full bg-red-500"></span>
                   <span className="w-3 h-3 rounded-full bg-amber-500"></span>
                   <span className="w-3 h-3 rounded-full bg-emerald-500"></span>
                 </div>
-                
+
                 {/* Desktop Image */}
                 <div className="relative w-full h-[250px] md:h-[350px] bg-slate-800 overflow-hidden">
                   <Image
@@ -149,9 +149,9 @@ Book free demo
             </div>
 
             {/* Phone Mockup */}
-            <div className="absolute -left-4 md:-left-8 -bottom-5 w-[100px] md:w-[130px] h-[200px] md:h-[280px] bg-slate-800 rounded-[30px] p-1.5 shadow-xl z-20 hidden sm:block animate-fadeInUp" style={{animationDelay: "0.45s"}}>
+            <div className="absolute -left-4 md:-left-8 -bottom-5 w-[100px] md:w-[130px] h-[200px] md:h-[280px] bg-slate-800 rounded-[30px] p-1.5 shadow-xl z-20 hidden sm:block animate-fadeInUp" style={{ animationDelay: "0.45s" }}>
               <div className=" w-full h-full bg-slate-900 rounded-[25px] overflow-hidden relative">
-                
+
                 {/* Mobile Image */}
                 <Image
                   src="/image/mobail.png"
@@ -168,10 +168,10 @@ Book free demo
             <div className="absolute top-[20%] -right-4 bg-white px-4 py-2 rounded-full font-semibold text-sm shadow-lg border border-blue-100 text-blue-600 z-30 hidden md:block animate-bounce">
               ✨ Easy to Use
             </div>
-            <div className="absolute bottom-[40%] right-4 bg-white px-4 py-2 rounded-full font-semibold text-sm shadow-lg border border-purple-100 text-purple-600 z-30 hidden md:block animate-bounce" style={{animationDelay: "0.5s"}}>
+            <div className="absolute bottom-[40%] right-4 bg-white px-4 py-2 rounded-full font-semibold text-sm shadow-lg border border-purple-100 text-purple-600 z-30 hidden md:block animate-bounce" style={{ animationDelay: "0.5s" }}>
               👥 Collaborative
             </div>
-            <div className="absolute top-[40%] -left-4 bg-white px-4 py-2 rounded-full font-semibold text-sm shadow-lg border border-emerald-100 text-emerald-600 z-30 hidden md:block animate-bounce" style={{animationDelay: "1s"}}>
+            <div className="absolute top-[40%] -left-4 bg-white px-4 py-2 rounded-full font-semibold text-sm shadow-lg border border-emerald-100 text-emerald-600 z-30 hidden md:block animate-bounce" style={{ animationDelay: "1s" }}>
               📊 Activity Stream
             </div>
           </div>
@@ -229,17 +229,17 @@ Book free demo
 
           {/* Animated Blob Background Elements */}
           <div className="absolute inset-0 overflow-hidden pointer-events-none">
-            
+
             {/* Blob 1 - Blue */}
             <div className="absolute -top-40 -left-40 w-80 h-80 
                             bg-gradient-to-br from-blue-500/30 to-blue-600/20 
                             rounded-full blur-3xl blob-float-dark-1 glow-pulse-dark"></div>
-            
+
             {/* Blob 2 - Purple */}
             <div className="absolute -bottom-32 -right-40 w-96 h-96 
                             bg-gradient-to-br from-purple-500/30 to-purple-600/20 
                             rounded-full blur-3xl blob-float-dark-2 glow-pulse-dark"></div>
-            
+
             {/* Blob 3 - Cyan */}
             <div className="absolute top-1/3 right-1/4 w-72 h-72 
                             bg-gradient-to-br from-cyan-500/25 to-cyan-600/15 
@@ -278,7 +278,7 @@ Book free demo
 
           {/* Pills */}
           <div className="flex justify-center gap-[20px] mb-[50px] flex-wrap relative z-20">
-            {["Easy to Use","Collaborative","Activity Stream"].map((pill)=>(
+            {["Easy to Use", "Collaborative", "Activity Stream"].map((pill) => (
               <span key={pill}
                 className="px-[32px] py-[14px]
                            bg-white/10 backdrop-blur-sm
