@@ -50,15 +50,18 @@ const CategoryCard = ({ category, onDelete, onUpdate }) => {
         { text: "Cancel", style: "cancel" },
         {
           text: "Delete",
+          style: "destructive",
           onPress: async () => {
             if (onDelete) {
               const result = await onDelete(id);
+              console.log('CategoryCard: Delete result:', result);
               if (result?.success) {
                 Alert.alert("Success", "Category deleted successfully");
+              } else {
+                Alert.alert("Error", result?.error || "Failed to delete category");
               }
             }
           },
-          style: "destructive",
         },
       ]
     );

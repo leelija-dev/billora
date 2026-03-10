@@ -1,5 +1,5 @@
-import { useNavigation } from "@react-navigation/native";
-import { useState, useMemo, useEffect } from "react";
+import { useNavigation, useFocusEffect } from "@react-navigation/native";
+import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import {
   ScrollView,
   StatusBar,
@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   View,
   Alert,
+  RefreshControl,
 } from "react-native";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 import { LinearGradient } from "expo-linear-gradient";
@@ -35,6 +36,7 @@ const CategoriesScreen = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [viewMode, setViewMode] = useState("grid");
   const [sortBy, setSortBy] = useState("name");
+  const [refreshing, setRefreshing] = useState(false);
   const [activeFilters, setActiveFilters] = useState({
     status: "all",
     minProducts: "",
@@ -46,17 +48,91 @@ const CategoriesScreen = () => {
     hasProducts: null,
   });
 
-  // Calculate dynamic stats from real categories (based on API response)
+  // Use refs to track state without causing re-renders
+  const lastRefreshTime = useRef(Date.now());
+  const isRefreshing = useRef(false);
+  const focusCount = useRef(0);
+  const isMounted = useRef(true);
+
+  // Stable refresh callback
+  const stableRefresh = useCallback(async () => {
+    if (isRefreshing.current || !isMounted.current) return;
+    
+    isRefreshing.current = true;
+    setRefreshing(true);
+    
+    try {
+      await refreshCategories();
+      lastRefreshTime.current = Date.now();
+    } finally {
+      if (isMounted.current) {
+        setRefreshing(false);
+        isRefreshing.current = false;
+      }
+    }
+  }, [refreshCategories]);
+
+  // Focus effect - refresh when screen comes into focus, but not too frequently
+  useFocusEffect(
+    useCallback(() => {
+      focusCount.current += 1;
+      console.log('Categories screen focused - focus count:', focusCount.current);
+      
+      // Don't refresh if we're already refreshing
+      if (isRefreshing.current) {
+        console.log('Already refreshing, skipping...');
+        return;
+      }
+      
+      const now = Date.now();
+      const timeSinceLastRefresh = now - lastRefreshTime.current;
+      
+      // Only refresh if it's been more than 5 seconds or we have no categories
+      if (timeSinceLastRefresh > 5000 || categories.length === 0) {
+        console.log('Refreshing categories on focus...');
+        stableRefresh();
+      } else {
+        console.log('Skipping refresh - last refresh was', Math.round(timeSinceLastRefresh / 1000), 'seconds ago');
+      }
+
+      return () => {
+        console.log('Categories screen unfocused');
+      };
+    }, [stableRefresh])
+  );
+
+  // Navigation listener - with proper cleanup
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('focus', () => {
+      const routes = navigation.getState()?.routes;
+      const previousRoute = routes?.[routes.length - 2]?.name;
+      
+      // Refresh when coming back from add/edit/detail screens
+      if (previousRoute === 'AddCategory' || previousRoute === 'CategoryDetail') {
+        console.log(`Returning from ${previousRoute} - refreshing categories`);
+        stableRefresh();
+      }
+    });
+
+    return unsubscribe;
+  }, [navigation, stableRefresh]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    isMounted.current = true;
+    
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
+
+  // Calculate dynamic stats from real categories
   const totalCategories = categories?.length || 0;
   const activeCategories = useMemo(() => 
     Array.isArray(categories) ? categories.filter(cat => cat.is_active).length : 0, 
     [categories]
   );
   
-  // Since API doesn't have productCount, we'll set these to 0 or derive from products if available
-  const emptyCategories = 0; // Will need to be calculated if you have products data
-  const totalProducts = 0; // Will need to be calculated if you have products data
-
   // Get latest update date
   const latestUpdate = useMemo(() => {
     if (!Array.isArray(categories) || categories.length === 0) return 'N/A';
@@ -87,9 +163,6 @@ const CategoriesScreen = () => {
     setActiveFilters(filters);
     setSortBy(filters.sortBy);
     setShowFilters(false);
-    
-    // Apply filters to categories
-    // This will be handled in the CategoryList component via props
   };
 
   const handleResetFilters = () => {
@@ -111,7 +184,7 @@ const CategoriesScreen = () => {
     if (query.trim()) {
       searchCategories(query);
     } else {
-      refreshCategories();
+      stableRefresh();
     }
   };
 
@@ -129,9 +202,16 @@ const CategoriesScreen = () => {
           text: "Delete",
           style: "destructive",
           onPress: async () => {
+            console.log('Deleting category:', categoryId);
             const result = await deleteCategory(categoryId);
+            console.log('Delete result:', result);
+            
             if (result?.success) {
               Alert.alert("Success", "Category deleted successfully");
+              // Force refresh to get updated data from backend
+              await stableRefresh();
+              // Also reset last refresh time to ensure immediate refresh on focus
+              lastRefreshTime.current = 0;
             } else {
               Alert.alert("Error", result?.error || "Failed to delete category");
             }
@@ -141,8 +221,12 @@ const CategoriesScreen = () => {
     );
   };
 
+  const onRefresh = async () => {
+    await stableRefresh();
+  };
+
   // Navigation items for sidebar
-  const navigationItems = [
+  const navigationItems = useMemo(() => [
     {
       id: "dashboard",
       title: "Dashboard",
@@ -155,7 +239,7 @@ const CategoriesScreen = () => {
       title: "Products",
       icon: "package-variant",
       screen: "Products",
-      badge: totalProducts.toString(),
+      badge: "0",
     },
     {
       id: "categories",
@@ -192,10 +276,10 @@ const CategoriesScreen = () => {
       screen: "Settings",
       badge: null,
     },
-  ];
+  ], [totalCategories]);
 
   // Show loading state
-  if (loading) {
+  if (loading && categories.length === 0 && !refreshing) {
     return (
       <View className={`flex-1 ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'} items-center justify-center`}>
         <View className={`w-16 h-16 rounded-2xl items-center justify-center mb-4 ${
@@ -214,7 +298,7 @@ const CategoriesScreen = () => {
   }
 
   // Show error state
-  if (error) {
+  if (error && categories.length === 0) {
     return (
       <View className={`flex-1 ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'} items-center justify-center px-6`}>
         <View className={`w-20 h-20 rounded-3xl items-center justify-center mb-4 ${
@@ -229,7 +313,7 @@ const CategoriesScreen = () => {
           {error}
         </Text>
         <TouchableOpacity
-          onPress={refreshCategories}
+          onPress={onRefresh}
           className="mt-6 bg-blue-500 px-6 py-3 rounded-xl"
         >
           <Text className="text-white font-semibold">Try Again</Text>
@@ -309,8 +393,18 @@ const CategoriesScreen = () => {
         </View>
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false}>
-        {/* Stats Cards - Updated for API response */}
+      <ScrollView 
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={["#3b82f6"]}
+            tintColor={isDarkMode ? "#ffffff" : "#3b82f6"}
+          />
+        }
+      >
+        {/* Stats Cards */}
         <View className="flex-row flex-wrap px-4 py-3">
           <LinearGradient
             colors={["#3b82f6", "#2563eb"]}
@@ -392,21 +486,6 @@ const CategoriesScreen = () => {
                 </Text>
                 <TouchableOpacity 
                   onPress={() => setActiveFilters({...activeFilters, status: 'all'})}
-                  className="ml-2"
-                >
-                  <Icon name="close" size={16} color={isDarkMode ? "#9CA3AF" : "#6b7280"} />
-                </TouchableOpacity>
-              </View>
-            )}
-            {activeFilters.hasProducts !== null && (
-              <View className={`flex-row items-center mr-2 mb-2 px-3 py-1.5 rounded-full ${
-                isDarkMode ? 'bg-gray-800' : 'bg-gray-100'
-              }`}>
-                <Text className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                  {activeFilters.hasProducts ? 'With Products' : 'Empty'}
-                </Text>
-                <TouchableOpacity 
-                  onPress={() => setActiveFilters({...activeFilters, hasProducts: null})}
                   className="ml-2"
                 >
                   <Icon name="close" size={16} color={isDarkMode ? "#9CA3AF" : "#6b7280"} />
@@ -535,8 +614,9 @@ const CategoriesScreen = () => {
             searchQuery={searchQuery}
             sortBy={sortBy}
             filters={activeFilters}
-            onRefresh={refreshCategories}
+            onRefresh={onRefresh}
             onDelete={handleDeleteCategory}
+            loading={loading}
           />
         </View>
       </ScrollView>

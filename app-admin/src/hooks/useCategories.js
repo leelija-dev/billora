@@ -12,8 +12,19 @@ export const useCategories = (params = {}) => {
       setError(null);
       const response = await categoriesAPI.getAll(params);
       console.log('useCategories response:', response);
+      
       // Handle the API response structure: { data: { data: [...categories] } }
-      setCategories(response.data?.data || response.data || response);
+      let categoriesData = [];
+      
+      if (response?.data?.data) {
+        categoriesData = response.data.data;
+      } else if (response?.data) {
+        categoriesData = response.data;
+      } else if (Array.isArray(response)) {
+        categoriesData = response;
+      }
+      
+      setCategories(categoriesData);
     } catch (err) {
       setError(err.message || 'Failed to fetch categories');
     } finally {
@@ -30,7 +41,17 @@ export const useCategories = (params = {}) => {
       setLoading(true);
       setError(null);
       const response = await categoriesAPI.search(query, filters);
-      setCategories(response.categories || response);
+      
+      let categoriesData = [];
+      if (response?.data?.data) {
+        categoriesData = response.data.data;
+      } else if (response?.data) {
+        categoriesData = response.data;
+      } else if (Array.isArray(response)) {
+        categoriesData = response;
+      }
+      
+      setCategories(categoriesData);
     } catch (err) {
       setError(err.message || 'Failed to search categories');
     } finally {
@@ -43,8 +64,14 @@ export const useCategories = (params = {}) => {
       setLoading(true);
       setError(null);
       const response = await categoriesAPI.create(categoryData);
-      setCategories(prev => [...prev, response.category || response]);
-      return { success: true, data: response.category || response };
+      
+      // Refresh categories after creation
+      await fetchCategories();
+      
+      return { 
+        success: true, 
+        data: response?.data?.data || response 
+      };
     } catch (err) {
       setError(err.message || 'Failed to create category');
       return { success: false, error: err.message };
@@ -58,10 +85,14 @@ export const useCategories = (params = {}) => {
       setLoading(true);
       setError(null);
       const response = await categoriesAPI.update(id, categoryData);
-      setCategories(prev => 
-        prev.map(cat => cat.id === id ? { ...cat, ...(response.category || response) } : cat)
-      );
-      return { success: true, data: response.category || response };
+      
+      // Refresh categories after update
+      await fetchCategories();
+      
+      return { 
+        success: true, 
+        data: response?.data?.data || response 
+      };
     } catch (err) {
       setError(err.message || 'Failed to update category');
       return { success: false, error: err.message };
@@ -75,7 +106,10 @@ export const useCategories = (params = {}) => {
       setLoading(true);
       setError(null);
       await categoriesAPI.delete(id);
-      setCategories(prev => prev.filter(cat => cat.id !== id));
+      
+      // Refresh categories after deletion
+      await fetchCategories();
+      
       return { success: true };
     } catch (err) {
       setError(err.message || 'Failed to delete category');
@@ -90,7 +124,7 @@ export const useCategories = (params = {}) => {
       setLoading(true);
       setError(null);
       const response = await categoriesAPI.getById(id);
-      return response.category || response;
+      return response?.data?.data || response?.data || response;
     } catch (err) {
       setError(err.message || 'Failed to fetch category');
       return null;

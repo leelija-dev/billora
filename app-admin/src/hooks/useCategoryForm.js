@@ -147,14 +147,14 @@ export const useCategoryForm = (categoryId = null) => {
       
       // Handle nested response structure
       if (response?.status === true || response?.data?.status === true) {
-        const updatedCategory = response?.data?.data || response?.data || response;
+        const newCategory = response?.data?.data || response?.data || response;
         
-        // Navigate to the updated category detail screen
-        navigation.replace('CategoryDetail', { categoryId: updateId });
+        // Navigate back to categories screen to show updated data
+        navigation.goBack();
         
         return { 
           success: true, 
-          data: updatedCategory 
+          data: newCategory 
         };
       } else {
         throw new Error(response?.message || 'Failed to update category');

@@ -9,7 +9,6 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 import { useThemeStore } from "../../store/themeStore";
 import CategoryCard from "./CategoryCard";
@@ -94,15 +93,22 @@ const CategoryList = ({
   };
 
   const handleDeleteCategory = async (categoryId) => {
-    return await onDelete(categoryId);
+    console.log('CategoryList: Deleting category:', categoryId);
+    if (onDelete) {
+      const result = await onDelete(categoryId);
+      console.log('CategoryList: Delete result:', result);
+      return result;
+    }
+    return { success: false };
   };
 
   const onRefreshLocal = async () => {
+    console.log('CategoryList: Refreshing...');
     setRefreshing(true);
-    await onRefresh();
-    setTimeout(() => {
-      setRefreshing(false);
-    }, 500);
+    if (onRefresh) {
+      await onRefresh();
+    }
+    setRefreshing(false);
   };
 
   const renderHeader = () => (
@@ -245,7 +251,7 @@ const CategoryList = ({
     return rows;
   };
 
-  if (loading && !refreshing) {
+  if (loading && !refreshing && filteredCategories.length === 0) {
     return (
       <View className="flex-1 items-center justify-center py-8">
         <ActivityIndicator size="large" color="#3b82f6" />
@@ -265,7 +271,7 @@ const CategoryList = ({
             refreshing={refreshing}
             onRefresh={onRefreshLocal}
             colors={["#3b82f6"]}
-            tintColor="#3b82f6"
+            tintColor={isDarkMode ? "#ffffff" : "#3b82f6"}
           />
         }
       >
@@ -305,7 +311,7 @@ const CategoryList = ({
             refreshing={refreshing}
             onRefresh={onRefreshLocal}
             colors={["#3b82f6"]}
-            tintColor="#3b82f6"
+            tintColor={isDarkMode ? "#ffffff" : "#3b82f6"}
           />
         }
       >
