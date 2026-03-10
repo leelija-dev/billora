@@ -1,4 +1,3 @@
-// components/navigation/MainNavigator.js
 import { Animated } from "react-native";
 import { useState, useEffect, useRef } from "react";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
@@ -29,6 +28,11 @@ import SettingsScreen from "../../screens/settings/SettingsScreen";
 import CategoriesScreen from "../../screens/categories/CategoriesScreen";
 import AddCategoryScreen from "../../screens/categories/AddCategoryScreen";
 import CategoryDetailScreen from "../../screens/categories/CategoryDetailScreen";
+
+// Import Brand Screens
+import BrandsScreen from "../../screens/brands/BrandsScreen";
+import AddBrandScreen from "../../screens/brands/AddBrandScreen";
+import BrandDetailScreen from "../../screens/brands/BrandDetailScreen";
 
 import { NAVIGATION_SCREENS } from "../../utils/constants";
 
@@ -173,6 +177,53 @@ const CategoriesStack = () => {
         options={({ navigation }) => ({
           header: () => (
             <StackHeader title="Add Category" navigation={navigation} />
+          ),
+        })}
+      />
+    </Stack.Navigator>
+  );
+};
+
+// Brands Stack with Dark Mode
+const BrandsStack = () => {
+  const { isDarkMode } = useThemeStore();
+
+  return (
+    <Stack.Navigator
+      screenOptions={{
+        headerShown: false,
+        animation: "slide_from_right",
+        contentStyle: { backgroundColor: isDarkMode ? "#111827" : "#F8FAFC" },
+      }}
+    >
+      <Stack.Screen
+        name={NAVIGATION_SCREENS.MAIN.BRANDS}
+        component={BrandsScreen}
+        options={{
+          header: ({ navigation }) => (
+            <StackHeader
+              title="Brands"
+              navigation={navigation}
+              showBack={false}
+            />
+          ),
+        }}
+      />
+      <Stack.Screen
+        name={NAVIGATION_SCREENS.MAIN.BRAND_DETAIL}
+        component={BrandDetailScreen}
+        options={({ navigation }) => ({
+          header: () => (
+            <StackHeader title="Brand Details" navigation={navigation} />
+          ),
+        })}
+      />
+      <Stack.Screen
+        name={NAVIGATION_SCREENS.MAIN.ADD_BRAND}
+        component={AddBrandScreen}
+        options={({ navigation }) => ({
+          header: () => (
+            <StackHeader title="Add Brand" navigation={navigation} />
           ),
         })}
       />
@@ -372,7 +423,13 @@ const ModernTabBar = ({ state, descriptors, navigation }) => {
       label: "Products",
       screen: "ProductsStack",
     },
-
+    {
+      name: "Brands",
+      icon: "trademark",
+      iconActive: "trademark",
+      label: "Brands",
+      screen: "BrandsStack",
+    },
     {
       name: "Orders",
       icon: "clipboard-list-outline",
@@ -381,18 +438,18 @@ const ModernTabBar = ({ state, descriptors, navigation }) => {
       screen: "OrdersStack",
     },
     {
-      name: "Clients",
-      icon: "account-group-outline",
-      iconActive: "account-group",
-      label: "Clients",
-      screen: "CustomersStack",
-    },
-    {
       name: "Categories",
       icon: "shape-outline",
       iconActive: "shape",
       label: "Categories",
       screen: "CategoriesStack",
+    },
+    {
+      name: "Clients",
+      icon: "account-group-outline",
+      iconActive: "account-group",
+      label: "Clients",
+      screen: "CustomersStack",
     },
   ];
 
@@ -537,12 +594,12 @@ const MainNavigator = () => {
     >
       <Tab.Screen name="Dashboard" component={DashboardScreen} />
       <Tab.Screen name="ProductsStack" component={ProductsStack} />
-
+      <Tab.Screen name="BrandsStack" component={BrandsStack} />
       <Tab.Screen name="OrdersStack" component={OrdersStack} />
+      <Tab.Screen name="CategoriesStack" component={CategoriesStack} />
       <Tab.Screen name="CustomersStack" component={CustomersStack} />
 
       {/* Hidden screens - accessible via navigation only */}
-      <Tab.Screen name="CategoriesStack" component={CategoriesStack} />
       <Tab.Screen
         name="InventoryStack"
         component={InventoryStack}

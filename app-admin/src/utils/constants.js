@@ -131,25 +131,42 @@ export const NAVIGATION_SCREENS = {
     REGISTER: 'Register',
     FORGOT_PASSWORD: 'ForgotPassword',
   },
-   MAIN: {
+  MAIN: {
     DASHBOARD: 'Dashboard',
+    
+    // Products
     PRODUCTS: 'Products',
     PRODUCT_DETAIL: 'ProductDetail',
     ADD_PRODUCT: 'AddProduct',
+    
+    // Categories
     CATEGORIES: 'Categories',
     CATEGORY_DETAIL: 'CategoryDetail',
     ADD_CATEGORY: 'AddCategory',
+    
+    // Brands
+    BRANDS: 'Brands',
+    BRAND_DETAIL: 'BrandDetail',
+    ADD_BRAND: 'AddBrand',
+    
+    // Orders
     ORDERS: 'Orders',
     ORDER_DETAIL: 'OrderDetail',
     CREATE_ORDER: 'CreateOrder',
+    
+    // Customers
     CUSTOMERS: 'Customers',
     CUSTOMER_DETAIL: 'CustomerDetail',
     ADD_CUSTOMER: 'AddCustomer',
+    
+    // Inventory
     INVENTORY: 'Inventory',
     STOCK_MOVEMENT: 'StockMovement',
+    
+    // Settings
     SETTINGS: 'Settings',
     PROFILE: 'Profile',
-  }
+  },
 };
 
 export const DATE_FORMATS = {
