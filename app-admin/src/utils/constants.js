@@ -149,6 +149,11 @@ export const NAVIGATION_SCREENS = {
     BRAND_DETAIL: 'BrandDetail',
     ADD_BRAND: 'AddBrand',
     
+    // Units
+    UNITS: 'Units',
+    UNIT_DETAIL: 'UnitDetail',
+    ADD_UNIT: 'AddUnit',
+    
     // Orders
     ORDERS: 'Orders',
     ORDER_DETAIL: 'OrderDetail',

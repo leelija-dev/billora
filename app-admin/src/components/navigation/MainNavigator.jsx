@@ -34,6 +34,11 @@ import BrandsScreen from "../../screens/brands/BrandsScreen";
 import AddBrandScreen from "../../screens/brands/AddBrandScreen";
 import BrandDetailScreen from "../../screens/brands/BrandDetailScreen";
 
+// Import Unit Screens
+import UnitsScreen from "../../screens/units/UnitsScreen";
+import AddUnitScreen from "../../screens/units/AddUnitScreen";
+import UnitDetailScreen from "../../screens/units/UnitDetailScreen";
+
 import { NAVIGATION_SCREENS } from "../../utils/constants";
 
 const { width } = Dimensions.get("window");
@@ -231,6 +236,53 @@ const BrandsStack = () => {
   );
 };
 
+// Units Stack with Dark Mode
+const UnitsStack = () => {
+  const { isDarkMode } = useThemeStore();
+
+  return (
+    <Stack.Navigator
+      screenOptions={{
+        headerShown: false,
+        animation: "slide_from_right",
+        contentStyle: { backgroundColor: isDarkMode ? "#111827" : "#F8FAFC" },
+      }}
+    >
+      <Stack.Screen
+        name={NAVIGATION_SCREENS.MAIN.UNITS}
+        component={UnitsScreen}
+        options={{
+          header: ({ navigation }) => (
+            <StackHeader
+              title="Units"
+              navigation={navigation}
+              showBack={false}
+            />
+          ),
+        }}
+      />
+      <Stack.Screen
+        name={NAVIGATION_SCREENS.MAIN.UNIT_DETAIL}
+        component={UnitDetailScreen}
+        options={({ navigation }) => ({
+          header: () => (
+            <StackHeader title="Unit Details" navigation={navigation} />
+          ),
+        })}
+      />
+      <Stack.Screen
+        name={NAVIGATION_SCREENS.MAIN.ADD_UNIT}
+        component={AddUnitScreen}
+        options={({ navigation }) => ({
+          header: () => (
+            <StackHeader title="Add Unit" navigation={navigation} />
+          ),
+        })}
+      />
+    </Stack.Navigator>
+  );
+};
+
 // Orders Stack with Dark Mode
 const OrdersStack = () => {
   const { isDarkMode } = useThemeStore();
@@ -407,7 +459,7 @@ const ModernTabBar = ({ state, descriptors, navigation }) => {
   const [sliderLeft, setSliderLeft] = useState(0);
   const animation = useRef(new Animated.Value(0)).current;
 
-  // Define all tabs we want to show in the bottom bar
+  // Define all tabs we want to show in the bottom bar - Now with 7 tabs
   const tabs = [
     {
       name: "Home",
@@ -424,6 +476,13 @@ const ModernTabBar = ({ state, descriptors, navigation }) => {
       screen: "ProductsStack",
     },
     {
+      name: "Categories",
+      icon: "shape-outline",
+      iconActive: "shape",
+      label: "Categories",
+      screen: "CategoriesStack",
+    },
+    {
       name: "Brands",
       icon: "trademark",
       iconActive: "trademark",
@@ -431,18 +490,18 @@ const ModernTabBar = ({ state, descriptors, navigation }) => {
       screen: "BrandsStack",
     },
     {
+      name: "Units",
+      icon: "ruler",
+      iconActive: "ruler",
+      label: "Units",
+      screen: "UnitsStack",
+    },
+    {
       name: "Orders",
       icon: "clipboard-list-outline",
       iconActive: "clipboard-list",
       label: "Orders",
       screen: "OrdersStack",
-    },
-    {
-      name: "Categories",
-      icon: "shape-outline",
-      iconActive: "shape",
-      label: "Categories",
-      screen: "CategoriesStack",
     },
     {
       name: "Clients",
@@ -594,9 +653,10 @@ const MainNavigator = () => {
     >
       <Tab.Screen name="Dashboard" component={DashboardScreen} />
       <Tab.Screen name="ProductsStack" component={ProductsStack} />
-      <Tab.Screen name="BrandsStack" component={BrandsStack} />
-      <Tab.Screen name="OrdersStack" component={OrdersStack} />
       <Tab.Screen name="CategoriesStack" component={CategoriesStack} />
+      <Tab.Screen name="BrandsStack" component={BrandsStack} />
+      <Tab.Screen name="UnitsStack" component={UnitsStack} />
+      <Tab.Screen name="OrdersStack" component={OrdersStack} />
       <Tab.Screen name="CustomersStack" component={CustomersStack} />
 
       {/* Hidden screens - accessible via navigation only */}
