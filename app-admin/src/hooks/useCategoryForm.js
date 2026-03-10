@@ -78,8 +78,8 @@ export const useCategoryForm = (categoryId = null) => {
       if (response?.status === true || response?.data?.status === true) {
         const createdCategory = response?.data?.data || response?.data || response;
         
-        // Navigate back to categories list after successful creation
-        navigation.goBack();
+        // Navigate back to categories screen after successful creation
+        navigation.navigate('Categories');
         
         return { 
           success: true, 
@@ -150,7 +150,7 @@ export const useCategoryForm = (categoryId = null) => {
         const newCategory = response?.data?.data || response?.data || response;
         
         // Navigate back to categories screen to show updated data
-        navigation.goBack();
+        navigation.navigate('Categories');
         
         return { 
           success: true, 

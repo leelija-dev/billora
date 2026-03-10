@@ -24,6 +24,7 @@ const CategoryForm = ({ categoryId }) => {
         categoryId ? 'Category updated successfully' : 'Category created successfully',
         [{ text: 'OK' }]
       );
+      
     } else {
       // Show error message if needed
       if (result.error && !validationErrors) {
