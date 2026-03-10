@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from 'react';
+import SectionTitle from "../components/SectionTitle";
 
 const Pricing = () => {
   const [billingCycle, setBillingCycle] = useState('monthly');
@@ -96,9 +97,12 @@ const Pricing = () => {
   return (
     <div className="py-10 sm:py-[60px] px-4 sm:px-6 lg:px-[30px] bg-gradient-to-br from-[#f8fafc] to-[#f1f5f9] min-h-screen font-sans">
       <div className="text-center mb-8 sm:mb-10">
-        <h1 className="text-3xl sm:text-4xl md:text-[42px] font-bold text-[#1a237e] mb-4 relative inline-block after:content-[''] after:absolute after:bottom-[-12px] after:left-1/2 after:-translate-x-1/2 after:w-[80px] md:after:w-[100px] after:h-1 after:bg-gradient-to-r after:from-[#3b82f6] after:via-[#8b5cf6] after:to-[#10b981] after:rounded-[2px]">
-          Simple, Transparent Pricing
-        </h1>
+          <SectionTitle
+            title="Simple, Transparent Pricing"
+          />
+        
+        
+        
         <p className="text-[#475569] text-base sm:text-lg md:text-xl max-w-[600px] mx-auto mt-4 sm:mt-6 px-4">
           Choose the perfect plan for your business
         </p>
@@ -203,7 +207,7 @@ const Pricing = () => {
           ))}
         </div>
 
-        <div className="flex flex-row items-center justify-center gap-2 sm:gap-2.5 p-3 sm:p-5 bg-white rounded-[30px] sm:rounded-[50px] max-w-[480px] mx-auto shadow-[0_5px_15px_rgba(0,0,0,0.05)]">
+         <div className=" mt-6 flex flex-row items-center justify-center gap-2 sm:gap-2.8 p-3 sm:p-5 bg-white rounded-[30px] sm:rounded-[50px] max-w-[480px] mx-auto shadow-[0_5px_15px_rgba(0,0,0,0.05)]">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="flex-shrink-0 sm:w-6 sm:h-6">
             <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="#3b82f6" strokeWidth="2" />
             <path d="M12 6V12L16 14" stroke="#3b82f6" strokeWidth="2" strokeLinecap="round" />
@@ -212,13 +216,13 @@ const Pricing = () => {
         </div>
       </div>
 
-      <style jsx>{`
+       <style jsx>{`
         .card-visible {
           opacity: 1 !important;
           transform: translateY(0) !important;
         }
-      `}</style>
-    </div>
+      `}</style> 
+    </div> 
   );
 };
 

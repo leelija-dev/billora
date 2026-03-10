@@ -1,5 +1,5 @@
 "use client";
-
+import SectionTitle from "../components/SectionTitle";
 import Image from 'next/image';
 import { useState } from 'react'; 
 
@@ -137,7 +137,7 @@ export default function Home() {
   </div>
 
   {/* Front Phone */}
-  <div className="relative z-10 top-0 sm:top-9 lg:top-14 left-0 sm:left-6 lg:left-18 md:bottom-20flex justify-center">
+  <div className="relative z-10 top-0 sm:top-7 lg:top-14 left-0 sm:left-6 lg:left-18 md:bottom-20flex justify-center">
     <Image
       src="/image/Phone1.png"
       alt="Phone Front View"

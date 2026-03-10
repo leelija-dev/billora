@@ -78,7 +78,7 @@ const FAQ = () => {
         </div>
 
         {/* RIGHT SIDE - FAQ Cards */}
-        <div className="flex-1 w-full lg:max-w-[600px]">
+        <div className="flex-1 w-full ">
           {faqs.map((item, index) => (
             <div
               key={index}
