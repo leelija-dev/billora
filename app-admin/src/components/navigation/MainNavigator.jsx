@@ -39,7 +39,7 @@ const Stack = createNativeStackNavigator();
 // Modern Header with Gradient (Dark Mode Aware)
 const StackHeader = ({ title, navigation, showBack = true }) => {
   const { isDarkMode } = useThemeStore();
-  
+
   return (
     <LinearGradient
       colors={isDarkMode ? ["#4f46e5", "#7c3aed"] : ["#6366F1", "#8B5CF6"]}
@@ -89,7 +89,7 @@ const StackHeader = ({ title, navigation, showBack = true }) => {
 // Products Stack with Dark Mode
 const ProductsStack = () => {
   const { isDarkMode } = useThemeStore();
-  
+
   return (
     <Stack.Navigator
       screenOptions={{
@@ -136,7 +136,7 @@ const ProductsStack = () => {
 // Categories Stack with Dark Mode
 const CategoriesStack = () => {
   const { isDarkMode } = useThemeStore();
-  
+
   return (
     <Stack.Navigator
       screenOptions={{
@@ -183,7 +183,7 @@ const CategoriesStack = () => {
 // Orders Stack with Dark Mode
 const OrdersStack = () => {
   const { isDarkMode } = useThemeStore();
-  
+
   return (
     <Stack.Navigator
       screenOptions={{
@@ -230,7 +230,7 @@ const OrdersStack = () => {
 // Customers Stack with Dark Mode
 const CustomersStack = () => {
   const { isDarkMode } = useThemeStore();
-  
+
   return (
     <Stack.Navigator
       screenOptions={{
@@ -277,7 +277,7 @@ const CustomersStack = () => {
 // Inventory Stack with Dark Mode
 const InventoryStack = () => {
   const { isDarkMode } = useThemeStore();
-  
+
   return (
     <Stack.Navigator
       screenOptions={{
@@ -315,7 +315,7 @@ const InventoryStack = () => {
 // Settings Stack with Dark Mode
 const SettingsStack = () => {
   const { isDarkMode } = useThemeStore();
-  
+
   return (
     <Stack.Navigator
       screenOptions={{
@@ -372,13 +372,7 @@ const ModernTabBar = ({ state, descriptors, navigation }) => {
       label: "Products",
       screen: "ProductsStack",
     },
-    {
-      name: "Categories",
-      icon: "shape-outline",
-      iconActive: "shape",
-      label: "Categories",
-      screen: "CategoriesStack",
-    },
+
     {
       name: "Orders",
       icon: "clipboard-list-outline",
@@ -393,20 +387,27 @@ const ModernTabBar = ({ state, descriptors, navigation }) => {
       label: "Clients",
       screen: "CustomersStack",
     },
+    {
+      name: "Categories",
+      icon: "shape-outline",
+      iconActive: "shape",
+      label: "Categories",
+      screen: "CategoriesStack",
+    },
   ];
 
   // Update slider position when active tab changes
   useEffect(() => {
     if (tabPositions[state.index]) {
       const { x, width } = tabPositions[state.index];
-      
+
       Animated.spring(animation, {
         toValue: x,
         useNativeDriver: false,
         tension: 300,
         friction: 25,
       }).start();
-      
+
       setSliderWidth(width);
     }
   }, [state.index, tabPositions]);
@@ -454,8 +455,8 @@ const ModernTabBar = ({ state, descriptors, navigation }) => {
           <View
             className="flex-row items-center"
             style={{
-              backgroundColor: isDarkMode 
-                ? "rgba(31, 41, 55, 0.7)" 
+              backgroundColor: isDarkMode
+                ? "rgba(31, 41, 55, 0.7)"
                 : "rgba(255, 255, 255, 0.7)",
               position: 'relative',
               height: 50,
@@ -494,16 +495,16 @@ const ModernTabBar = ({ state, descriptors, navigation }) => {
                   <Icon
                     name={isFocused ? tab.iconActive : tab.icon}
                     size={22}
-                    color={isFocused 
-                      ? "white" 
+                    color={isFocused
+                      ? "white"
                       : isDarkMode ? "#9CA3AF" : "#6B7280"
                     }
                   />
-                  {isFocused && (
+                  {/* {isFocused && (
                     <Text className="text-white text-xs font-medium ml-1">
                       {tab.label}
                     </Text>
-                  )}
+                  )} */}
                 </TouchableOpacity>
               );
             })}
@@ -526,7 +527,7 @@ const ModernTabBar = ({ state, descriptors, navigation }) => {
 // Main Navigator with modern design
 const MainNavigator = () => {
   const { isDarkMode } = useThemeStore();
-  
+
   return (
     <Tab.Navigator
       tabBar={(props) => <ModernTabBar {...props} />}
@@ -536,11 +537,12 @@ const MainNavigator = () => {
     >
       <Tab.Screen name="Dashboard" component={DashboardScreen} />
       <Tab.Screen name="ProductsStack" component={ProductsStack} />
-      <Tab.Screen name="CategoriesStack" component={CategoriesStack} />
+
       <Tab.Screen name="OrdersStack" component={OrdersStack} />
       <Tab.Screen name="CustomersStack" component={CustomersStack} />
-      
+
       {/* Hidden screens - accessible via navigation only */}
+      <Tab.Screen name="CategoriesStack" component={CategoriesStack} />
       <Tab.Screen
         name="InventoryStack"
         component={InventoryStack}
