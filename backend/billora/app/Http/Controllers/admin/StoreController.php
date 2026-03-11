@@ -8,11 +8,19 @@ use App\Models\Store;
 
 class StoreController extends Controller
 {
-    public function index($id)
+    public function index(Request $request, $id)
     {
         try {
+            $search = $request->search;
 
-            $store = Store::where('user_id', $id)->paginate(15);
+            $store = Store::where('user_id', $id)
+            ->where('name', 'like', '%' . $search . '%')
+            ->orWhere('gst', 'like', '%' . $search . '%')
+            ->orWhere('email', 'like', '%' . $search . '%')
+            ->orWhere('mobile', 'like', '%' . $search . '%')
+            ->orWhere('address', 'like', '%' . $search . '%')
+            ->orWhere('city', 'like', '%' . $search . '%')
+            ->paginate(15);
 
             if ($store->isEmpty()) {
                 return response()->json([

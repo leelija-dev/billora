@@ -10,23 +10,39 @@ use App\Models\Unit;
 class StocksController extends Controller
 {
 
-    public function index() // all stocks data
-    {
-        // $user = auth()->customer();
-        try{
-        $stocks = Stocks::paginate(15);
+    public function index(Request $request)
+{
+    try {
+
+        $search = $request->search;
+
+        $stocks = Stocks::with('product')
+            ->when($search, function ($query) use ($search) {
+
+                $query->where('id', 'like', "%$search%")
+                ->orWhere('selling_price', 'like', "%$search%")
+                ->orWhere('purchase_price', 'like', "%$search%")
+                ->orWhereHas('product', function ($q) use ($search) {
+                    $q->where('name', 'like', "%$search%");
+                });
+
+            })
+            ->paginate(15);
+
         return response()->json([
             'status' => true,
             'message' => 'Stock List',
             'data' => $stocks
         ]);
-        }catch(\Exception $e){
-            return response()->json([
-                'status' => false,
-                'message' => $e->getMessage()
-            ]);
-        }
+
+    } catch (\Exception $e) {
+
+        return response()->json([
+            'status' => false,
+            'message' => $e->getMessage()
+        ]);
     }
+}
     public function create(){
         $products = Products::all();
         $units = Unit::all();

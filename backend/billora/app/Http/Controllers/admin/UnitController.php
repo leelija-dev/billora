@@ -10,12 +10,17 @@ use Illuminate\Support\Str;
 
 class UnitController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
         try {
             //     $units=Unit::where('user_id',auth()->user()->id)
             //     ->OrWhere('user_id',auth()->user()->created_by)->get();
-            $units = Unit::paginate(15);
+            $search =$request->search;
+            $units = Unit::where('id', 'like', "%$search%")
+            ->orWhere('name', 'like', "%$search%")
+            ->orWhere('code', 'like', "%$search%")
+            ->orWhere('slug', 'like', "%$search%")
+            ->paginate(15);
             return response()->json([
                 'status' => true,
                 'message' => 'Unit List',

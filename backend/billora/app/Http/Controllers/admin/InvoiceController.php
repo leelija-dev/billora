@@ -231,22 +231,46 @@ class InvoiceController extends Controller
             ]);
         }
     }
-    public function billHistory()
-    {
-        $billHistory = Invoice::with('invoiceItems')->orderBy('created_at', 'desc')->paginate(15); //with('invoiceItems')->get();
+   public function billHistory(Request $request)
+{
+    try {
 
-        if ($billHistory === null) {
-            return response()->json([
-                'status' => false,
-                'message' => 'Bill History Not Found'
-            ]);
-        }
+        $search = $request->search;
+
+        $billHistory = Invoice::with(['invoiceItems.product'])
+            ->when($search, function ($query) use ($search) {
+
+                $query->where('id', 'like', "%$search%")
+                    ->orWhere('total_amount', 'like', "%$search%")
+
+                    ->orWhereHas('invoiceItems', function ($q) use ($search) {
+                        $q->where('price', 'like', "%$search%")
+                        ->orWhere('quantity', 'like', "%$search%");
+                    })
+
+                    ->orWhereHas('invoiceItems.product', function ($q) use ($search) {
+                        $q->where('name', 'like', "%$search%")
+                        ->orWhere('sku', 'like', "%$search%");
+                    });
+
+            })
+            ->orderBy('created_at', 'desc')
+            ->paginate(15);
+
         return response()->json([
             'status' => true,
             'message' => 'Bill History',
             'data' => $billHistory
         ]);
+
+    } catch (\Exception $e) {
+
+        return response()->json([
+            'status' => false,
+            'message' => $e->getMessage()
+        ]);
     }
+} 
 
         /* with out stock management bill generate */
     public function bill($id){

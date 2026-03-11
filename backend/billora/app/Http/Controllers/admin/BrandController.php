@@ -9,10 +9,16 @@ use Illuminate\Support\Str;
 
 class BrandController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
         try {
-            $brands = Brand::paginate(15);
+            $search = $request->search;
+
+            $brands = Brand::where('name', 'like', "%$search%")
+            ->orWhere('id', 'like', "%$search%")
+            ->orWhere('description', 'like', "%$search%")
+            ->orWhere('slug', 'like', "%$search%")
+            ->paginate(15);
             return response()->json([
                 'status' => 'success',
                 'message' => 'Brand List',
@@ -66,30 +72,43 @@ class BrandController extends Controller
             ]);
         }
     }
-    public function update($id, Request $request)
-    {
-        $brand = $request->validate([
+    public function update(Request $request, $id)
+{
+    try {
+        $brand = Brand::findOrFail($id);
+        
+        $validated = $request->validate([
             'user_id' => 'required',
             'name' => 'required',
             'created_by' => 'nullable',
-            'is_active' => 'nullable',
+            'is_active' => 'nullable|boolean',
             'description' => 'nullable',
         ]);
-        try {
-            $brand = Brand::findOrFail($id);
-            $brand->update($brand);
-            return response()->json([
-                'status' => 'success',
-                'message' => 'Brand Updated Successfully',
-                'data' => $brand
-            ]);
-        } catch (\Exception $e) {
-            return response()->json([
-                'status' => false,
-                'message' => $e->getMessage()
-            ]);
-        }
+
+        // Update slug when name changes
+        $validated['slug'] = Str::slug($validated['name']);
+        
+        $brand->update($validated);
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Brand Updated Successfully',
+            'data' => $brand
+        ]);
+
+    } catch (\Illuminate\Validation\ValidationException $e) {
+        return response()->json([
+            'status' => false,
+            'message' => 'Validation failed',
+            'errors' => $e->errors()
+        ], 422);
+    } catch (\Exception $e) {
+        return response()->json([
+            'status' => false,
+            'message' => $e->getMessage()
+        ], 500);
     }
+}
     public function delete($id)
     {
         try {

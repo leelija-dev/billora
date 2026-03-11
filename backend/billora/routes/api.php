@@ -70,16 +70,17 @@ Route::prefix('brands')->group(function () {
    Route::get('/', [BrandController::class, 'index']);
    Route::post('/store', [BrandController::class, 'store']);
    Route::get('/{id}', [BrandController::class, 'edit']);
-   Route::put('/{id}', [BrandController::class, 'update']);
+   Route::post('/{id}', [BrandController::class, 'update']);
    Route::delete('/{id}', [BrandController::class, 'delete']);
 });
 //invoices & bill generate from stock table(stock management)
 Route::prefix('invoice')->group(function () {
    Route::get('/', [InvoiceController::class, 'index']); //for bill generate
    Route::post('/store', [InvoiceController::class, 'store']);
+   Route::put('/{id}', [InvoiceController::class, 'update']);
    Route::get('/bill-history', [InvoiceController::class, 'billHistory']);
    Route::get('/{id}', [InvoiceController::class, 'show']);
-   Route::put('/{id}', [InvoiceController::class, 'update']);
+   
    Route::delete('/{id}', [InvoiceController::class, 'destroy']);
    
 });

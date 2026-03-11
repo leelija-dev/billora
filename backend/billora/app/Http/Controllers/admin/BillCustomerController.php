@@ -8,9 +8,17 @@ use App\Models\BillCustomer;
 
 class BillCustomerController extends Controller
 {
-    public function index($id)
+    public function index(Request $request, $id)
     {
-        $billCustomer = BillCustomer::where('admin_id', $id)->paginate(15);
+        $search = $request->search;
+        $billCustomer = BillCustomer::where('admin_id', $id)
+        ->where('name', 'like', "%$search%")
+        ->orWhere('email', 'like', "%$search%")
+        ->orWhere('phone', 'like', "%$search%")
+        ->orWhere('address', 'like', "%$search%")
+        ->orWhere('city', 'like', "%$search%")
+        ->orWhere('due_amount', 'like', "%$search%")
+        ->paginate(15);
         return response()->json([
             'status' => true,
             'message' => 'Bill Customer List',
