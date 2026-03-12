@@ -75,17 +75,17 @@ const Hero = () => {
             <p className="text-sm sm:text-base md:text-lg text-slate-600 leading-relaxed mb-6 sm:mb-10 max-w-[550px] mx-auto lg:mx-0 animate-fadeInUp" style={{ animationDelay: "0.2s" }}>
               Manage your business professionally with Billora, India's leading small business software for billing, inventory, and accounting. Join 1 Cr+ satisfied SMEs in India who trust Billora.
             </p>
-            <div className="flex flex-col sm:flex-row gap-6">
+            <div className="flex flex-row gap-7 justify-center lg:justify-start flex-wrap">
 
-              <button className="px-10 py-4 bg-gradient-to-r from-blue-600 to-purple-500 text-white rounded-full text-sm font-semibold shadow-md transition-all hover:-translate-y-1">
-                Start Free Trial
-              </button>
+  <button className="px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-500 text-white rounded-full text-sm font-semibold shadow-md transition-all hover:-translate-y-1">
+    Start Free Trial
+  </button>
 
-              <button className="px-10 py-4 bg-gradient-to-r from-blue-600 to-purple-500 text-white rounded-full text-sm font-semibold shadow-md transition-all hover:-translate-y-1">
-                Book free demo
-              </button>
+  <button className="px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-500 text-white rounded-full text-sm font-semibold shadow-md transition-all hover:-translate-y-1">
+    Book free demo
+  </button>
 
-            </div>
+</div>
           </div>
 
           {/* Hero Images Container */}
@@ -116,14 +116,14 @@ const Hero = () => {
             </div>
 
             {/* MOBILE BUTTONS (Visible only on Mobile, right below image) */}
-            <div className="lg:hidden mt-10 flex flex-col sm:flex-row gap-4 justify-center animate-fadeInUp" style={{animationDelay: "0.5s"}}>
+            {/* <div className="lg:hidden mt-10 flex flex-col sm:flex-row gap-4 justify-center animate-fadeInUp" style={{animationDelay: "0.5s"}}>
               <Link href="/bookdemo" className="px-10 py-4 bg-gradient-to-r from-blue-600 to-purple-500 text-white rounded-full text-sm font-semibold shadow-md text-center">
                 Start Free Trial
               </Link>
               <Link href="/bookdemo" className="px-10 py-4 bg-white border border-slate-200 text-slate-900 rounded-full text-sm font-semibold shadow-sm text-center">
                 Book free demo
               </Link>
-            </div>
+            </div> */}
 
             {/* Phone Mockup */}
             <div className="absolute -left-4 md:-left-8 -bottom-5 w-[100px] md:w-[130px] h-[200px] md:h-[280px] bg-slate-800 rounded-[30px] p-1.5 shadow-xl z-20 hidden sm:block animate-fadeInUp" style={{ animationDelay: "0.45s" }}>
@@ -226,9 +226,13 @@ const Hero = () => {
                 <button className="px-6 py-2 bg-gradient-to-r from-blue-600 to-purple-500 text-white rounded-full text-sm font-semibold">Download Now</button>
               </div>
               <div className="flex-1 relative">
-                <div className="w-full aspect-video bg-slate-900 rounded-lg p-2">
-                   <div className="w-full h-full bg-slate-800 rounded flex items-center justify-center text-white/20 font-bold">MOCKUP</div>
-                </div>
+               <div className="w-full aspect-video bg-slate-900 rounded-lg p-2">
+  <img 
+    src="/image/desktop.png"
+    alt="Software Dashboard"
+    className="w-full h-full object-cover rounded"
+  />
+</div>
                 <div className="absolute -top-4 right-4 px-3 py-1 bg-white shadow-md border rounded-full text-[10px] font-bold">Inventory</div>
                 <div className="absolute -bottom-4 right-0 px-3 py-1 bg-white shadow-md border rounded-full text-[10px] font-bold">GST Ready</div>
               </div>

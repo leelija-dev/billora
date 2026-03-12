@@ -55,7 +55,7 @@ const FAQ = () => {
           <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-slate-900 mb-4 sm:mb-6 tracking-tight leading-tight">
             Frequently asked
             <br className="hidden sm:block" />
-            <span className="block sm:inline bg-[#f6c453] px-1  sm:py-1 rounded-sm">
+            <span className="block sm:inline bg-[#f6c453] px-1  sm:py-0 rounded-sm">
               Questions
             </span>
           </h2>

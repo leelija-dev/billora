@@ -10,6 +10,7 @@ const login = () => {
   const router = useRouter();
 
   return (
+    
     <div className="h-screen bg-gradient-to-br from-[#ece9f1] to-[#dfe3f8] flex justify-center items-center font-sans">
       <div className="w-[550px] bg-white py-10 px-[50px] rounded-[25px] shadow-[0_10px_25px_rgba(0,0,0,0.08)] max-md:w-[450px] max-md:px-8 max-sm:w-[90%] max-sm:px-5 max-sm:py-8">
         {/* Logo */}
