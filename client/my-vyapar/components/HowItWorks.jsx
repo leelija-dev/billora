@@ -88,7 +88,7 @@ const HowItWorks = () => {
             {/* Steps Section */}
             <div className="max-w-[1200px] mx-auto relative">
                 <div className="relative flex flex-col lg:flex-row justify-between items-stretch gap-6 sm:gap-6 md:gap-8 lg:gap-[30px] py-6 sm:py-8 md:py-12 lg:py-[60px] px-2 sm:px-4 md:px-6 lg:px-0">
-                    
+
                     {/* Desktop Horizontal Line */}
                     <div className="hidden lg:block absolute bottom-[200px] left-0 right-0 h-1 bg-gray-200 z-[1] rounded overflow-hidden">
                         <div className="absolute top-0 left-0 h-full w-0 bg-gradient-to-r from-[#3b82f6] via-[#8b5cf6] to-[#blue] rounded animate-[progressFill_2s_ease-out_forwards] shadow-[0_0_20px_rgba(59,130,246,0.5)]"></div>
@@ -107,12 +107,12 @@ const HowItWorks = () => {
                             className="flex-1 relative z-[2] opacity-0 translate-y-[30px] transition-all duration-600 ease-in step-item"
                             style={{ transitionDelay: `${0.1 + index * 0.2}s` }}
                         >
-                            <div 
+                            <div
                                 className="bg-white rounded-lg sm:rounded-xl md:rounded-2xl lg:rounded-[30px] p-5 sm:p-6 md:p-8 lg:p-[45px_30px_35px] shadow-[0_10px_25px_rgba(0,0,0,0.06)] md:shadow-[0_20px_40px_rgba(0,0,0,0.08)] relative transition-all duration-400 ease-[cubic-bezier(0.34,1.56,0.64,1)] border border-black/5 h-full w-full flex flex-col items-center text-center hover:-translate-y-2 hover:scale-105 hover:shadow-[0_30px_60px_rgba(59,130,246,0.15)] group"
                                 style={{ '--step-color': step.color }}
                             >
                                 {/* Circle Number Badge */}
-                                <div 
+                                <div
                                     className="absolute -top-5 sm:-top-6 md:-top-8 lg:-top-5 left-1/2 lg:left-6 transform lg:transform-none -translate-x-1/2 lg:translate-x-0 w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 lg:w-[50px] lg:h-[50px] rounded-full flex items-center justify-center text-white font-bold text-base sm:text-lg md:text-xl shadow-[0_8px_16px_rgba(0,0,0,0.1)] md:shadow-[0_10px_20px_rgba(0,0,0,0.1)] border-3 border-white z-[3] animate-[pulse_2s_infinite] flex-shrink-0"
                                     style={{ background: step.color }}
                                 >
@@ -120,7 +120,7 @@ const HowItWorks = () => {
                                 </div>
 
                                 {/* Icon Circle */}
-                                <div 
+                                <div
                                     className="w-14 h-14 sm:w-16 sm:h-16 md:w-20 md:h-20 lg:w-[90px] lg:h-[90px] rounded-full flex items-center justify-center mb-3 sm:mb-4 md:mb-5 lg:mb-6 text-2xl sm:text-3xl md:text-4xl lg:text-5xl transition-all duration-300 group-hover:scale-110 group-hover:rotate-5 mt-3 sm:mt-4 md:mt-6"
                                     style={{ background: `${step.color}15` }}
                                 >

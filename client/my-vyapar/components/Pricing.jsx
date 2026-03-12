@@ -63,12 +63,12 @@ const Pricing = () => {
   return (
     <div className="py-10 sm:py-[60px] px-4 sm:px-6 lg:px-[30px] bg-gradient-to-br from-[#f8fafc] to-[#f1f5f9] min-h-screen font-sans">
       <div className="text-center mb-8 sm:mb-10">
-          <SectionTitle
-            title="Simple, Transparent Pricing"
-          />
-        
-        
-        
+        <SectionTitle
+          title="Simple, Transparent Pricing"
+        />
+
+
+
         <p className="text-[#475569] text-base sm:text-lg md:text-xl max-w-[600px] mx-auto mt-4 sm:mt-6 px-4">
           Choose the perfect plan for your business
         </p>
@@ -136,9 +136,9 @@ const Pricing = () => {
                 <button
                   className={`w-full py-4 rounded-[50px] text-base font-bold transition-all duration-300 shadow-lg hover:-translate-y-1 active:translate-y-0
                     ${plan.popular ? 'bg-[#8b5cf6] text-white hover:bg-[#7c3aed] shadow-[#8b5cf6]/20' : 'bg-transparent border-2 hover:text-white relative overflow-hidden group'}`}
-                  style={{ 
-                    color: plan.popular ? 'white' : plan.color, 
-                    borderColor: plan.color 
+                  style={{
+                    color: plan.popular ? 'white' : plan.color,
+                    borderColor: plan.color
                   }}
                 >
                   {!plan.popular && (
@@ -161,13 +161,13 @@ const Pricing = () => {
         </div>
       </div>
 
-       <style jsx>{`
+      <style jsx>{`
         .card-visible {
           opacity: 1 !important;
           transform: translateY(0) !important;
         }
-      `}</style> 
-    </div> 
+      `}</style>
+    </div>
   );
 };
 

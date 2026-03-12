@@ -6,14 +6,25 @@ import Link from "next/link";
 export default function AboutPage() {
   return (
     <div className="bg-white text-gray-900 overflow-hidden">
+       {/* Back to Home Button */}
+      <div className="fixed top-20 sm:top-24 left-4 z-50">
+        <Link
+          href="/"
+          className="flex items-center gap-2 bg-white px-3 sm:px-4 py-2 rounded-full shadow-lg hover:shadow-xl transition-all hover:-translate-y-0.5 border border-gray-200 group text-sm sm:text-base"
+        >
+          <span className="text-lg sm:text-xl group-hover:-translate-x-1 transition-transform">
+            ←
+          </span>
+          <span className="font-medium hidden sm:inline">Back to Home</span>
+          <span className="font-medium sm:hidden">Back</span>
+        </Link>
+      </div>
 
       {/* Hero Section */}
       <section className="relative bg-gradient-to-br from-blue-50 via-white to-purple-50 py-24">
         <div className="max-w-7xl mx-auto px-6 text-center">
 
-          <span className="inline-block px-4 py-1 mb-6 text-sm font-medium text-blue-600 bg-blue-100 rounded-full">
-            About Our Company
-          </span>
+          
 
           <h1 className="text-4xl md:text-6xl font-bold leading-tight mb-6">
             Empowering Small Businesses <br />
