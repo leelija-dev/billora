@@ -13,8 +13,6 @@ import AddCustomerScreen from "../../screens/customers/AddCustomerScreen";
 import CustomerDetailScreen from "../../screens/customers/CustomerDetailScreen";
 import CustomersScreen from "../../screens/customers/CustomersScreen";
 import DashboardScreen from "../../screens/dashboard/DashboardScreen";
-import InventoryScreen from "../../screens/inventory/InventoryScreen";
-import StockMovementScreen from "../../screens/inventory/StockMovementScreen";
 import CreateOrderScreen from "../../screens/orders/CreateOrderScreen";
 import OrderDetailScreen from "../../screens/orders/OrderDetailScreen";
 import OrdersScreen from "../../screens/orders/OrdersScreen";
@@ -38,6 +36,12 @@ import BrandDetailScreen from "../../screens/brands/BrandDetailScreen";
 import UnitsScreen from "../../screens/units/UnitsScreen";
 import AddUnitScreen from "../../screens/units/AddUnitScreen";
 import UnitDetailScreen from "../../screens/units/UnitDetailScreen";
+
+// Import Stock Screens (replacing Inventory)
+import StocksScreen from "../../screens/stocks/StocksScreen";
+import AddStockScreen from "../../screens/stocks/AddStockScreen";
+import StockDetailScreen from "../../screens/stocks/StockDetailScreen";
+import AddStockQuantityScreen from "../../screens/stocks/AddStockQuantityScreen";
 
 import { NAVIGATION_SCREENS } from "../../utils/constants";
 
@@ -377,8 +381,8 @@ const CustomersStack = () => {
   );
 };
 
-// Inventory Stack with Dark Mode
-const InventoryStack = () => {
+// Stock Stack with Dark Mode (Replacing InventoryStack)
+const StocksStack = () => {
   const { isDarkMode } = useThemeStore();
 
   return (
@@ -390,12 +394,12 @@ const InventoryStack = () => {
       }}
     >
       <Stack.Screen
-        name={NAVIGATION_SCREENS.MAIN.INVENTORY}
-        component={InventoryScreen}
+        name={NAVIGATION_SCREENS.MAIN.STOCKS}
+        component={StocksScreen}
         options={{
           header: ({ navigation }) => (
             <StackHeader
-              title="Inventory"
+              title="Stock Management"
               navigation={navigation}
               showBack={false}
             />
@@ -403,11 +407,29 @@ const InventoryStack = () => {
         }}
       />
       <Stack.Screen
-        name={NAVIGATION_SCREENS.MAIN.STOCK_MOVEMENT}
-        component={StockMovementScreen}
+        name={NAVIGATION_SCREENS.MAIN.STOCK_DETAIL}
+        component={StockDetailScreen}
         options={({ navigation }) => ({
           header: () => (
-            <StackHeader title="Stock Movement" navigation={navigation} />
+            <StackHeader title="Stock Details" navigation={navigation} />
+          ),
+        })}
+      />
+      <Stack.Screen
+        name={NAVIGATION_SCREENS.MAIN.ADD_STOCK}
+        component={AddStockScreen}
+        options={({ navigation }) => ({
+          header: () => (
+            <StackHeader title="Add Stock Entry" navigation={navigation} />
+          ),
+        })}
+      />
+      <Stack.Screen
+        name={NAVIGATION_SCREENS.MAIN.ADD_STOCK_QUANTITY}
+        component={AddStockQuantityScreen}
+        options={({ navigation }) => ({
+          header: () => (
+            <StackHeader title="Add Stock Quantity" navigation={navigation} />
           ),
         })}
       />
@@ -459,7 +481,7 @@ const ModernTabBar = ({ state, descriptors, navigation }) => {
   const [sliderLeft, setSliderLeft] = useState(0);
   const animation = useRef(new Animated.Value(0)).current;
 
-  // Define all tabs we want to show in the bottom bar - Now with 7 tabs
+  // Define all tabs we want to show in the bottom bar - Now with 8 tabs (added Stocks)
   const tabs = [
     {
       name: "Home",
@@ -495,6 +517,13 @@ const ModernTabBar = ({ state, descriptors, navigation }) => {
       iconActive: "ruler",
       label: "Units",
       screen: "UnitsStack",
+    },
+    {
+      name: "Stocks",
+      icon: "warehouse",
+      iconActive: "warehouse",
+      label: "Stocks",
+      screen: "StocksStack",
     },
     {
       name: "Orders",
@@ -616,11 +645,6 @@ const ModernTabBar = ({ state, descriptors, navigation }) => {
                       : isDarkMode ? "#9CA3AF" : "#6B7280"
                     }
                   />
-                  {/* {isFocused && (
-                    <Text className="text-white text-xs font-medium ml-1">
-                      {tab.label}
-                    </Text>
-                  )} */}
                 </TouchableOpacity>
               );
             })}
@@ -656,18 +680,11 @@ const MainNavigator = () => {
       <Tab.Screen name="CategoriesStack" component={CategoriesStack} />
       <Tab.Screen name="BrandsStack" component={BrandsStack} />
       <Tab.Screen name="UnitsStack" component={UnitsStack} />
+      <Tab.Screen name="StocksStack" component={StocksStack} />
       <Tab.Screen name="OrdersStack" component={OrdersStack} />
       <Tab.Screen name="CustomersStack" component={CustomersStack} />
 
       {/* Hidden screens - accessible via navigation only */}
-      <Tab.Screen
-        name="InventoryStack"
-        component={InventoryStack}
-        options={{
-          tabBarButton: () => null,
-          tabBarItemStyle: { display: "none" },
-        }}
-      />
       <Tab.Screen
         name="SettingsStack"
         component={SettingsStack}
