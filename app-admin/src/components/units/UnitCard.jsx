@@ -12,40 +12,38 @@ import {
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 import { useThemeStore } from "../../store/themeStore";
 
-const CategoryCard = ({ category, onDelete, onUpdate }) => {
+const UnitCard = ({ unit, onDelete, onUpdate }) => {
   const navigation = useNavigation();
   const { isDarkMode } = useThemeStore();
   const [showActions, setShowActions] = useState(false);
   const scaleValue = useState(new Animated.Value(1))[0];
 
-  if (!category) return null;
+  if (!unit) return null;
 
   const {
     id,
+    code,
     name,
-    description,
-    slug,
-    is_active,
     created_at,
     updated_at,
     user_id,
     created_by
-  } = category;
+  } = unit;
 
   const handlePress = () => {
-    navigation.navigate("CategoryDetail", { categoryId: id });
+    navigation.navigate("UnitDetail", { unitId: id });
   };
 
   const handleEdit = () => {
     setShowActions(false);
-    navigation.navigate("AddCategory", { categoryId: id });
+    navigation.navigate("AddUnit", { unitId: id });
   };
 
   const handleDelete = () => {
     setShowActions(false);
     Alert.alert(
-      "Delete Category", 
-      `Are you sure you want to delete "${name}"?`,
+      "Delete Unit", 
+      `Are you sure you want to delete "${code} - ${name}"?`,
       [
         { text: "Cancel", style: "cancel" },
         {
@@ -54,11 +52,11 @@ const CategoryCard = ({ category, onDelete, onUpdate }) => {
           onPress: async () => {
             if (onDelete) {
               const result = await onDelete(id);
-              console.log('CategoryCard: Delete result:', result);
+              console.log('UnitCard: Delete result:', result);
               if (result?.success) {
-                Alert.alert("Success", "Category deleted successfully");
+                Alert.alert("Success", "Unit deleted successfully");
               } else {
-                Alert.alert("Error", result?.error || "Failed to delete category");
+                Alert.alert("Error", result?.error || "Failed to delete unit");
               }
             }
           },
@@ -71,7 +69,7 @@ const CategoryCard = ({ category, onDelete, onUpdate }) => {
     setShowActions(true);
   };
 
-  // Generate consistent gradient based on category name or ID
+  // Generate consistent gradient based on unit code
   const getGradientColors = () => {
     const gradients = [
       ["#3b82f6", "#2563eb"], // Blue
@@ -84,8 +82,8 @@ const CategoryCard = ({ category, onDelete, onUpdate }) => {
       ["#14b8a6", "#0d9488"], // Teal
     ];
     
-    // Use ID or name to pick a consistent color
-    const index = (id?.toString().length || name?.length || 0) % gradients.length;
+    // Use code to pick a consistent color
+    const index = (code?.charCodeAt(0) || 0) % gradients.length;
     return gradients[index];
   };
 
@@ -112,30 +110,22 @@ const CategoryCard = ({ category, onDelete, onUpdate }) => {
           <View className="flex-row justify-between items-start">
             <View className="flex-row items-center flex-1">
               <View className="w-12 h-12 bg-white/20 rounded-xl items-center justify-center">
-                <Icon 
-                  name={is_active ? "shape" : "shape-outline"} 
-                  size={24} 
-                  color="#ffffff" 
-                />
+                <Icon name="ruler" size={24} color="#ffffff" />
               </View>
               <View className="ml-3 flex-1">
                 <Text className="text-white text-lg font-bold" numberOfLines={1}>
                   {name}
                 </Text>
-                {slug && (
-                  <Text className="text-white/60 text-xs" numberOfLines={1}>
-                    {slug}
-                  </Text>
-                )}
+                <Text className="text-white/80 text-sm" numberOfLines={1}>
+                  Code: {code}
+                </Text>
               </View>
             </View>
 
-            {/* Status Badge */}
-            <View className={`px-2 py-1 rounded-full ${
-              is_active ? 'bg-green-500/30' : 'bg-red-500/30'
-            }`}>
+            {/* ID Badge */}
+            <View className="bg-white/20 px-2 py-1 rounded-full">
               <Text className="text-white text-xs font-medium">
-                {is_active ? 'Active' : 'Inactive'}
+                #{id}
               </Text>
             </View>
           </View>
@@ -143,40 +133,8 @@ const CategoryCard = ({ category, onDelete, onUpdate }) => {
 
         {/* Body */}
         <View className="p-4">
-          {/* Description */}
-          {description && (
-            <View className="mb-3">
-              <Text className={`text-xs mb-1 ${
-                isDarkMode ? 'text-gray-500' : 'text-gray-400'
-              }`}>
-                Description
-              </Text>
-              <Text
-                className={`text-sm ${
-                  isDarkMode ? 'text-gray-300' : 'text-gray-600'
-                }`}
-                numberOfLines={2}
-              >
-                {description}
-              </Text>
-            </View>
-          )}
-
           {/* Info Grid */}
           <View className="flex-row flex-wrap">
-            <View className="w-1/2 mb-2">
-              <Text className={`text-xs ${
-                isDarkMode ? 'text-gray-500' : 'text-gray-400'
-              }`}>
-                Category ID
-              </Text>
-              <Text className={`text-sm font-medium ${
-                isDarkMode ? 'text-gray-300' : 'text-gray-700'
-              }`}>
-                #{id}
-              </Text>
-            </View>
-
             <View className="w-1/2 mb-2">
               <Text className={`text-xs ${
                 isDarkMode ? 'text-gray-500' : 'text-gray-400'
@@ -244,7 +202,7 @@ const CategoryCard = ({ category, onDelete, onUpdate }) => {
               <Text className={`text-lg font-semibold mb-4 text-center ${
                 isDarkMode ? 'text-white' : 'text-gray-800'
               }`}>
-                {name}
+                {code} - {name}
               </Text>
 
               <TouchableOpacity
@@ -262,12 +220,12 @@ const CategoryCard = ({ category, onDelete, onUpdate }) => {
                   <Text className={`text-base font-semibold ${
                     isDarkMode ? 'text-white' : 'text-gray-800'
                   }`}>
-                    Edit Category
+                    Edit Unit
                   </Text>
                   <Text className={`text-xs ${
                     isDarkMode ? 'text-gray-400' : 'text-gray-500'
                   }`}>
-                    Modify category details
+                    Modify unit details
                   </Text>
                 </View>
                 <Icon name="chevron-right" size={20} color="#9ca3af" />
@@ -279,7 +237,7 @@ const CategoryCard = ({ category, onDelete, onUpdate }) => {
                 }`}
                 onPress={() => {
                   setShowActions(false);
-                  navigation.navigate("Products", { categoryId: id });
+                  navigation.navigate("Products", { unitId: id });
                 }}
               >
                 <View className={`w-10 h-10 rounded-full items-center justify-center ${
@@ -296,7 +254,7 @@ const CategoryCard = ({ category, onDelete, onUpdate }) => {
                   <Text className={`text-xs ${
                     isDarkMode ? 'text-gray-400' : 'text-gray-500'
                   }`}>
-                    See all products in this category
+                    See products using this unit
                   </Text>
                 </View>
                 <Icon name="chevron-right" size={20} color="#9ca3af" />
@@ -317,12 +275,12 @@ const CategoryCard = ({ category, onDelete, onUpdate }) => {
                   <Text className={`text-base font-semibold ${
                     isDarkMode ? 'text-white' : 'text-gray-800'
                   }`}>
-                    Delete Category
+                    Delete Unit
                   </Text>
                   <Text className={`text-xs ${
                     isDarkMode ? 'text-gray-400' : 'text-gray-500'
                   }`}>
-                    Remove from categories
+                    Remove from units
                   </Text>
                 </View>
                 <Icon name="chevron-right" size={20} color="#9ca3af" />
@@ -348,4 +306,4 @@ const CategoryCard = ({ category, onDelete, onUpdate }) => {
   );
 };
 
-export default CategoryCard;
+export default UnitCard;

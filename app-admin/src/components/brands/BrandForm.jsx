@@ -1,9 +1,9 @@
 import { View, Text, TextInput, TouchableOpacity, ScrollView, Switch, ActivityIndicator, Alert } from 'react-native';
 import { useThemeStore } from '../../store/themeStore';
-import { useCategoryForm } from '../../hooks/useCategoryForm';
+import { useBrandForm } from '../../hooks/useBrandForm';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
-const CategoryForm = ({ categoryId }) => {
+const BrandForm = ({ brandId }) => {
   const { isDarkMode } = useThemeStore();
   const { 
     formData, 
@@ -11,17 +11,17 @@ const CategoryForm = ({ categoryId }) => {
     error, 
     validationErrors, 
     handleChange, 
-    saveCategory 
-  } = useCategoryForm(categoryId);
+    saveBrand 
+  } = useBrandForm(brandId);
 
   const handleSubmit = async () => {
-    const result = await saveCategory(formData);
+    const result = await saveBrand(formData);
     
     if (result.success) {
       // Show success message
       Alert.alert(
         'Success', 
-        categoryId ? 'Category updated successfully' : 'Category created successfully',
+        brandId ? 'Brand updated successfully' : 'Brand created successfully',
         [{ text: 'OK' }]
       );
       
@@ -40,12 +40,12 @@ const CategoryForm = ({ categoryId }) => {
         <Text className={`text-sm font-medium mb-2 ${
           isDarkMode ? 'text-gray-300' : 'text-gray-700'
         }`}>
-          Category Name <Text className="text-red-500">*</Text>
+          Brand Name <Text className="text-red-500">*</Text>
         </Text>
         <TextInput
           value={formData.name}
           onChangeText={(value) => handleChange('name', value)}
-          placeholder="Enter category name"
+          placeholder="Enter brand name"
           placeholderTextColor={isDarkMode ? '#6B7280' : '#9CA3AF'}
           className={`rounded-xl px-4 py-3 ${
             isDarkMode 
@@ -72,7 +72,7 @@ const CategoryForm = ({ categoryId }) => {
         <TextInput
           value={formData.description}
           onChangeText={(value) => handleChange('description', value)}
-          placeholder="Enter category description"
+          placeholder="Enter brand description"
           placeholderTextColor={isDarkMode ? '#6B7280' : '#9CA3AF'}
           multiline
           numberOfLines={4}
@@ -113,8 +113,8 @@ const CategoryForm = ({ categoryId }) => {
           isDarkMode ? 'text-gray-500' : 'text-gray-400'
         }`}>
           {formData.is_active 
-            ? 'Category is active and visible' 
-            : 'Category is inactive and hidden'}
+            ? 'Brand is active and visible' 
+            : 'Brand is inactive and hidden'}
         </Text>
       </View>
 
@@ -154,7 +154,7 @@ const CategoryForm = ({ categoryId }) => {
           </>
         ) : (
           <Text className="text-white text-center font-semibold text-base">
-            {categoryId ? 'Update Category' : 'Create Category'}
+            {brandId ? 'Update Brand' : 'Create Brand'}
           </Text>
         )}
       </TouchableOpacity>
@@ -162,4 +162,4 @@ const CategoryForm = ({ categoryId }) => {
   );
 };
 
-export default CategoryForm;
+export default BrandForm;

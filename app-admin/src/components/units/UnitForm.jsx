@@ -1,9 +1,9 @@
-import { View, Text, TextInput, TouchableOpacity, ScrollView, Switch, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ScrollView, ActivityIndicator, Alert } from 'react-native';
 import { useThemeStore } from '../../store/themeStore';
-import { useCategoryForm } from '../../hooks/useCategoryForm';
+import { useUnitForm } from '../../hooks/useUnitForm';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
-const CategoryForm = ({ categoryId }) => {
+const UnitForm = ({ unitId }) => {
   const { isDarkMode } = useThemeStore();
   const { 
     formData, 
@@ -11,17 +11,17 @@ const CategoryForm = ({ categoryId }) => {
     error, 
     validationErrors, 
     handleChange, 
-    saveCategory 
-  } = useCategoryForm(categoryId);
+    saveUnit 
+  } = useUnitForm(unitId);
 
   const handleSubmit = async () => {
-    const result = await saveCategory(formData);
+    const result = await saveUnit(formData);
     
     if (result.success) {
       // Show success message
       Alert.alert(
         'Success', 
-        categoryId ? 'Category updated successfully' : 'Category created successfully',
+        unitId ? 'Unit updated successfully' : 'Unit created successfully',
         [{ text: 'OK' }]
       );
       
@@ -35,17 +35,45 @@ const CategoryForm = ({ categoryId }) => {
 
   return (
     <ScrollView className="flex-1 px-4" showsVerticalScrollIndicator={false}>
-      {/* Name Field */}
+      {/* Code Field */}
       <View className="mb-4">
         <Text className={`text-sm font-medium mb-2 ${
           isDarkMode ? 'text-gray-300' : 'text-gray-700'
         }`}>
-          Category Name <Text className="text-red-500">*</Text>
+          Unit Code <Text className="text-red-500">*</Text>
+        </Text>
+        <TextInput
+          value={formData.code}
+          onChangeText={(value) => handleChange('code', value)}
+          placeholder="e.g., KG, L, PC, M"
+          placeholderTextColor={isDarkMode ? '#6B7280' : '#9CA3AF'}
+          className={`rounded-xl px-4 py-3 ${
+            isDarkMode 
+              ? 'bg-gray-800 text-white border-gray-700' 
+              : 'bg-white text-gray-900 border-gray-200'
+          } border ${
+            validationErrors.code ? 'border-red-500' : ''
+          }`}
+          autoCapitalize="characters"
+        />
+        {validationErrors.code && (
+          <Text className="text-red-500 text-xs mt-1">
+            {validationErrors.code}
+          </Text>
+        )}
+      </View>
+
+      {/* Name Field */}
+      <View className="mb-6">
+        <Text className={`text-sm font-medium mb-2 ${
+          isDarkMode ? 'text-gray-300' : 'text-gray-700'
+        }`}>
+          Unit Name <Text className="text-red-500">*</Text>
         </Text>
         <TextInput
           value={formData.name}
           onChangeText={(value) => handleChange('name', value)}
-          placeholder="Enter category name"
+          placeholder="e.g., Kilogram, Liter, Piece, Meter"
           placeholderTextColor={isDarkMode ? '#6B7280' : '#9CA3AF'}
           className={`rounded-xl px-4 py-3 ${
             isDarkMode 
@@ -60,62 +88,6 @@ const CategoryForm = ({ categoryId }) => {
             {validationErrors.name}
           </Text>
         )}
-      </View>
-
-      {/* Description Field */}
-      <View className="mb-4">
-        <Text className={`text-sm font-medium mb-2 ${
-          isDarkMode ? 'text-gray-300' : 'text-gray-700'
-        }`}>
-          Description
-        </Text>
-        <TextInput
-          value={formData.description}
-          onChangeText={(value) => handleChange('description', value)}
-          placeholder="Enter category description"
-          placeholderTextColor={isDarkMode ? '#6B7280' : '#9CA3AF'}
-          multiline
-          numberOfLines={4}
-          textAlignVertical="top"
-          className={`rounded-xl px-4 py-3 min-h-[100px] ${
-            isDarkMode 
-              ? 'bg-gray-800 text-white border-gray-700' 
-              : 'bg-white text-gray-900 border-gray-200'
-          } border`}
-        />
-      </View>
-
-      {/* Status Switch */}
-      <View className="mb-6">
-        <View className={`flex-row items-center justify-between p-4 rounded-xl ${
-          isDarkMode ? 'bg-gray-800' : 'bg-white'
-        }`}>
-          <View className="flex-row items-center">
-            <Icon 
-              name={formData.is_active ? "checkbox-marked-circle" : "checkbox-blank-circle-outline"} 
-              size={24} 
-              color={formData.is_active ? "#10b981" : "#9ca3af"} 
-            />
-            <Text className={`ml-3 text-base font-medium ${
-              isDarkMode ? 'text-white' : 'text-gray-800'
-            }`}>
-              Active Status
-            </Text>
-          </View>
-          <Switch
-            value={formData.is_active}
-            onValueChange={(value) => handleChange('is_active', value)}
-            trackColor={{ false: '#d1d5db', true: '#3b82f6' }}
-            thumbColor="#ffffff"
-          />
-        </View>
-        <Text className={`text-xs mt-1 ${
-          isDarkMode ? 'text-gray-500' : 'text-gray-400'
-        }`}>
-          {formData.is_active 
-            ? 'Category is active and visible' 
-            : 'Category is inactive and hidden'}
-        </Text>
       </View>
 
       {/* Validation Errors Display */}
@@ -154,7 +126,7 @@ const CategoryForm = ({ categoryId }) => {
           </>
         ) : (
           <Text className="text-white text-center font-semibold text-base">
-            {categoryId ? 'Update Category' : 'Create Category'}
+            {unitId ? 'Update Unit' : 'Create Unit'}
           </Text>
         )}
       </TouchableOpacity>
@@ -162,4 +134,4 @@ const CategoryForm = ({ categoryId }) => {
   );
 };
 
-export default CategoryForm;
+export default UnitForm;

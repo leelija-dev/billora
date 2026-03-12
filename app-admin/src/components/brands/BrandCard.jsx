@@ -12,13 +12,13 @@ import {
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 import { useThemeStore } from "../../store/themeStore";
 
-const CategoryCard = ({ category, onDelete, onUpdate }) => {
+const BrandCard = ({ brand, onDelete, onUpdate }) => {
   const navigation = useNavigation();
   const { isDarkMode } = useThemeStore();
   const [showActions, setShowActions] = useState(false);
   const scaleValue = useState(new Animated.Value(1))[0];
 
-  if (!category) return null;
+  if (!brand) return null;
 
   const {
     id,
@@ -30,21 +30,21 @@ const CategoryCard = ({ category, onDelete, onUpdate }) => {
     updated_at,
     user_id,
     created_by
-  } = category;
+  } = brand;
 
   const handlePress = () => {
-    navigation.navigate("CategoryDetail", { categoryId: id });
+    navigation.navigate("BrandDetail", { brandId: id });
   };
 
   const handleEdit = () => {
     setShowActions(false);
-    navigation.navigate("AddCategory", { categoryId: id });
+    navigation.navigate("AddBrand", { brandId: id });
   };
 
   const handleDelete = () => {
     setShowActions(false);
     Alert.alert(
-      "Delete Category", 
+      "Delete Brand", 
       `Are you sure you want to delete "${name}"?`,
       [
         { text: "Cancel", style: "cancel" },
@@ -54,11 +54,11 @@ const CategoryCard = ({ category, onDelete, onUpdate }) => {
           onPress: async () => {
             if (onDelete) {
               const result = await onDelete(id);
-              console.log('CategoryCard: Delete result:', result);
+              console.log('BrandCard: Delete result:', result);
               if (result?.success) {
-                Alert.alert("Success", "Category deleted successfully");
+                Alert.alert("Success", "Brand deleted successfully");
               } else {
-                Alert.alert("Error", result?.error || "Failed to delete category");
+                Alert.alert("Error", result?.error || "Failed to delete brand");
               }
             }
           },
@@ -71,7 +71,7 @@ const CategoryCard = ({ category, onDelete, onUpdate }) => {
     setShowActions(true);
   };
 
-  // Generate consistent gradient based on category name or ID
+  // Generate consistent gradient based on brand name or ID
   const getGradientColors = () => {
     const gradients = [
       ["#3b82f6", "#2563eb"], // Blue
@@ -84,7 +84,6 @@ const CategoryCard = ({ category, onDelete, onUpdate }) => {
       ["#14b8a6", "#0d9488"], // Teal
     ];
     
-    // Use ID or name to pick a consistent color
     const index = (id?.toString().length || name?.length || 0) % gradients.length;
     return gradients[index];
   };
@@ -113,7 +112,7 @@ const CategoryCard = ({ category, onDelete, onUpdate }) => {
             <View className="flex-row items-center flex-1">
               <View className="w-12 h-12 bg-white/20 rounded-xl items-center justify-center">
                 <Icon 
-                  name={is_active ? "shape" : "shape-outline"} 
+                  name={is_active ? "trademark" : "trademark"} 
                   size={24} 
                   color="#ffffff" 
                 />
@@ -168,7 +167,7 @@ const CategoryCard = ({ category, onDelete, onUpdate }) => {
               <Text className={`text-xs ${
                 isDarkMode ? 'text-gray-500' : 'text-gray-400'
               }`}>
-                Category ID
+                Brand ID
               </Text>
               <Text className={`text-sm font-medium ${
                 isDarkMode ? 'text-gray-300' : 'text-gray-700'
@@ -262,12 +261,12 @@ const CategoryCard = ({ category, onDelete, onUpdate }) => {
                   <Text className={`text-base font-semibold ${
                     isDarkMode ? 'text-white' : 'text-gray-800'
                   }`}>
-                    Edit Category
+                    Edit Brand
                   </Text>
                   <Text className={`text-xs ${
                     isDarkMode ? 'text-gray-400' : 'text-gray-500'
                   }`}>
-                    Modify category details
+                    Modify brand details
                   </Text>
                 </View>
                 <Icon name="chevron-right" size={20} color="#9ca3af" />
@@ -279,7 +278,7 @@ const CategoryCard = ({ category, onDelete, onUpdate }) => {
                 }`}
                 onPress={() => {
                   setShowActions(false);
-                  navigation.navigate("Products", { categoryId: id });
+                  navigation.navigate("Products", { brandId: id });
                 }}
               >
                 <View className={`w-10 h-10 rounded-full items-center justify-center ${
@@ -296,7 +295,7 @@ const CategoryCard = ({ category, onDelete, onUpdate }) => {
                   <Text className={`text-xs ${
                     isDarkMode ? 'text-gray-400' : 'text-gray-500'
                   }`}>
-                    See all products in this category
+                    See all products from this brand
                   </Text>
                 </View>
                 <Icon name="chevron-right" size={20} color="#9ca3af" />
@@ -317,12 +316,12 @@ const CategoryCard = ({ category, onDelete, onUpdate }) => {
                   <Text className={`text-base font-semibold ${
                     isDarkMode ? 'text-white' : 'text-gray-800'
                   }`}>
-                    Delete Category
+                    Delete Brand
                   </Text>
                   <Text className={`text-xs ${
                     isDarkMode ? 'text-gray-400' : 'text-gray-500'
                   }`}>
-                    Remove from categories
+                    Remove from brands
                   </Text>
                 </View>
                 <Icon name="chevron-right" size={20} color="#9ca3af" />
@@ -348,4 +347,4 @@ const CategoryCard = ({ category, onDelete, onUpdate }) => {
   );
 };
 
-export default CategoryCard;
+export default BrandCard;

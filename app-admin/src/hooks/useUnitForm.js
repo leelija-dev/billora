@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useNavigation } from '@react-navigation/native';
-import { categoriesAPI } from '../api';
-import { useCategoryDetail } from './useCategoryDetail';
+import { unitsAPI } from '../api/units';
+import { useUnitDetail } from './useUnitDetail';
 import { useAuthStore } from '../store/authStore';
 
-export const useCategoryForm = (categoryId = null) => {
+export const useUnitForm = (unitId = null) => {
   const navigation = useNavigation();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -13,26 +13,24 @@ export const useCategoryForm = (categoryId = null) => {
   // Get current user from auth store
   const { user } = useAuthStore?.() || { user: null };
   
-  // Fetch category details if editing
-  const { category, loading: loadingCategory } = useCategoryDetail(categoryId);
+  // Fetch unit details if editing
+  const { unit, loading: loadingUnit } = useUnitDetail(unitId);
 
   // Form state
   const [formData, setFormData] = useState({
+    code: '',
     name: '',
-    description: '',
-    is_active: true,
   });
 
   // Populate form when editing
   useEffect(() => {
-    if (category && categoryId) {
+    if (unit && unitId) {
       setFormData({
-        name: category.name || '',
-        description: category.description || '',
-        is_active: category.is_active === 1 || category.is_active === true,
+        code: unit.code || '',
+        name: unit.name || '',
       });
     }
-  }, [category, categoryId]);
+  }, [unit, unitId]);
 
   const handleChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -45,51 +43,61 @@ export const useCategoryForm = (categoryId = null) => {
   const validateForm = () => {
     const errors = {};
     
+    if (!formData.code?.trim()) {
+      errors.code = 'Unit code is required';
+    }
+    
     if (!formData.name?.trim()) {
-      errors.name = 'Category name is required';
+      errors.name = 'Unit name is required';
     }
     
     return errors;
   };
 
-  const createCategory = async (categoryData) => {
+  const createUnit = async (unitData) => {
     try {
       setLoading(true);
       setError(null);
       setValidationErrors({});
+      
+      const errors = validateForm();
+      if (Object.keys(errors).length > 0) {
+        setValidationErrors(errors);
+        setError('Please check the form for errors');
+        return { success: false, error: 'Validation failed', errors };
+      }
       
       // Get user_id from current user or use default
       const userId = user?.id || user?.user_id || '1';
       
       // Prepare data for API
       const payload = {
-        name: categoryData.name?.trim() || formData.name?.trim(),
-        description: categoryData.description?.trim() || formData.description?.trim() || '',
-        isActive: categoryData.is_active !== undefined ? categoryData.is_active : formData.is_active,
-        userId: userId,
-        createdBy: userId,
+        code: unitData.code?.trim() || formData.code?.trim(),
+        name: unitData.name?.trim() || formData.name?.trim(),
+        user_id: userId,
+        created_by: userId,
       };
       
-      console.log('Create payload:', payload);
-      const response = await categoriesAPI.create(payload);
-      console.log('Create response:', response);
+      console.log('Create unit payload:', payload);
+      const response = await unitsAPI.create(payload);
+      console.log('Create unit response:', response);
       
       // Handle nested response structure
-      if (response?.status === true || response?.data?.status === true) {
-        const createdCategory = response?.data?.data || response?.data || response;
+      if (response?.data?.status === true || response?.status === true || response?.data?.status === 'success') {
+        const createdUnit = response?.data?.data || response?.data || response;
         
-        // Navigate back to categories screen after successful creation
-        navigation.navigate('Categories');
+        // Navigate back to units screen after successful creation
+        navigation.navigate('Units');
         
         return { 
           success: true, 
-          data: createdCategory 
+          data: createdUnit 
         };
       } else {
-        throw new Error(response?.message || 'Failed to create category');
+        throw new Error(response?.message || response?.data?.message || 'Failed to create unit');
       }
     } catch (err) {
-      console.error('Create category error:', err);
+      console.error('Create unit error:', err);
       
       // Handle validation errors
       if (err.response?.status === 422) {
@@ -103,19 +111,19 @@ export const useCategoryForm = (categoryId = null) => {
         };
       }
       
-      setError(err.message || 'Failed to create category');
+      setError(err.message || 'Failed to create unit');
       return { success: false, error: err.message };
     } finally {
       setLoading(false);
     }
   };
 
-  const updateCategory = async (id, categoryData) => {
-    const updateId = categoryId || id;
+  const updateUnit = async (id, unitData) => {
+    const updateId = unitId || id;
     
     if (!updateId) {
-      setError('Category ID is required for update');
-      return { success: false, error: 'Category ID is required for update' };
+      setError('Unit ID is required for update');
+      return { success: false, error: 'Unit ID is required for update' };
     }
     
     try {
@@ -123,14 +131,20 @@ export const useCategoryForm = (categoryId = null) => {
       setError(null);
       setValidationErrors({});
       
-      // Get user_id from the existing category
-      const userId = category?.user_id || category?.created_by;
+      const errors = validateForm();
+      if (Object.keys(errors).length > 0) {
+        setValidationErrors(errors);
+        setError('Please check the form for errors');
+        return { success: false, error: 'Validation failed', errors };
+      }
+      
+      // Get user_id from the existing unit
+      const userId = unit?.user_id || unit?.created_by;
       
       // Prepare data for API
       const payload = {
-        name: categoryData.name?.trim() || formData.name?.trim(),
-        description: categoryData.description?.trim() || formData.description?.trim() || '',
-        isActive: categoryData.is_active !== undefined ? categoryData.is_active : formData.is_active,
+        code: unitData.code?.trim() || formData.code?.trim(),
+        name: unitData.name?.trim() || formData.name?.trim(),
       };
       
       // Include user_id if available (required by API)
@@ -141,26 +155,26 @@ export const useCategoryForm = (categoryId = null) => {
         payload.user_id = user?.id?.toString() || user?.user_id?.toString() || '1';
       }
       
-      console.log('Update payload:', payload);
-      const response = await categoriesAPI.update(updateId, payload);
-      console.log('Update response:', response);
+      console.log('Update unit payload:', payload);
+      const response = await unitsAPI.update(updateId, payload);
+      console.log('Update unit response:', response);
       
       // Handle nested response structure
-      if (response?.status === true || response?.data?.status === true) {
-        const newCategory = response?.data?.data || response?.data || response;
+      if (response?.data?.status === true || response?.status === true || response?.data?.status === 'success') {
+        const newUnit = response?.data?.data || response?.data || response;
         
-        // Navigate back to categories screen to show updated data
-        navigation.navigate('Categories');
+        // Navigate back to units screen to show updated data
+        navigation.navigate('Units');
         
         return { 
           success: true, 
-          data: newCategory 
+          data: newUnit 
         };
       } else {
-        throw new Error(response?.message || 'Failed to update category');
+        throw new Error(response?.message || response?.data?.message || 'Failed to update unit');
       }
     } catch (err) {
-      console.error('Update category error:', err);
+      console.error('Update unit error:', err);
       
       // Handle validation errors
       if (err.response?.status === 422) {
@@ -174,18 +188,18 @@ export const useCategoryForm = (categoryId = null) => {
         };
       }
       
-      setError(err.message || 'Failed to update category');
+      setError(err.message || 'Failed to update unit');
       return { success: false, error: err.message };
     } finally {
       setLoading(false);
     }
   };
 
-  const saveCategory = async (categoryData) => {
-    if (categoryId) {
-      return await updateCategory(categoryId, categoryData);
+  const saveUnit = async (unitData) => {
+    if (unitId) {
+      return await updateUnit(unitId, unitData);
     } else {
-      return await createCategory(categoryData);
+      return await createUnit(unitData);
     }
   };
 
@@ -196,13 +210,13 @@ export const useCategoryForm = (categoryId = null) => {
 
   return {
     formData,
-    loading: loading || loadingCategory,
+    loading: loading || loadingUnit,
     error,
     validationErrors,
     handleChange,
-    createCategory,
-    updateCategory,
-    saveCategory,
+    createUnit,
+    updateUnit,
+    saveUnit,
     setFormData,
     setError,
     clearError,
