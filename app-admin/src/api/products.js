@@ -33,20 +33,20 @@ export const productsAPI = {
     try {
       const api = getProductsData();
       return await api.post('/products/store', {
-        user_id: productData.userId,
+        user_id: productData.user_id,
         sku: productData.sku,
         name: productData.name,
-        brand_id: productData.brandId,
-        category_id: productData.categoryId,
-        unit_amount: productData.unitAmount,
-        unit_id: productData.unitId,
-        selling_price: productData.sellingPrice,
-        purchase_price: productData.purchasePrice,
-        gst_percentage: productData.gstPercentage,
-        discount_percentage: productData.discountPercentage,
+        brand_id: productData.brand_id,
+        category_id: productData.category_id,
+        unit_amount: productData.unit_amount,
+        unit_id: productData.unit_id,
+        selling_price: productData.selling_price,
+        purchase_price: productData.purchase_price,
+        gst_percentage: productData.gst_percentage,
+        discount_percentage: productData.discount_percentage,
         description: productData.description,
-        is_active: productData.isActive ?? true,
-        created_by: productData.createdBy,
+        is_active: productData.is_active ?? true,
+        created_by: productData.created_by,
       });
     } catch (error) {
       throw error.response?.data || error.message;
@@ -58,18 +58,20 @@ export const productsAPI = {
     try {
       const api = getProductsData();
       return await api.put(`/products/${id}`, {
+        user_id: productData.user_id,
         sku: productData.sku,
         name: productData.name,
-        brand_id: productData.brandId,
-        category_id: productData.categoryId,
-        unit_amount: productData.unitAmount,
-        unit_id: productData.unitId,
-        selling_price: productData.sellingPrice,
-        purchase_price: productData.purchasePrice,
-        gst_percentage: productData.gstPercentage,
-        discount_percentage: productData.discountPercentage,
+        brand_id: productData.brand_id,
+        category_id: productData.category_id,
+        unit_amount: productData.unit_amount,
+        unit_id: productData.unit_id,
+        selling_price: productData.selling_price,
+        purchase_price: productData.purchase_price,
+        gst_percentage: productData.gst_percentage,
+        discount_percentage: productData.discount_percentage,
         description: productData.description,
-        is_active: productData.isActive,
+        is_active: productData.is_active,
+        created_by: productData.created_by,
       });
     } catch (error) {
       throw error.response?.data || error.message;
@@ -86,12 +88,32 @@ export const productsAPI = {
     }
   },
 
+  // Restore product (soft delete undo)
+  restore: async (id) => {
+    try {
+      const api = getProductsData();
+      return await api.patch(`/products/${id}`);
+    } catch (error) {
+      throw error.response?.data || error.message;
+    }
+  },
+
+  // Permanently delete product
+  forceDelete: async (id) => {
+    try {
+      const api = getProductsData();
+      return await api.delete(`/products/${id}/force`);
+    } catch (error) {
+      throw error.response?.data || error.message;
+    }
+  },
+
   // Search products
   search: async (query, filters = {}) => {
     try {
       const api = getProductsData();
-      return await api.get('/products/search', {
-        params: { q: query, ...filters }
+      return await api.get('/products', {
+        params: { search: query, ...filters }
       });
     } catch (error) {
       throw error.response?.data || error.message;

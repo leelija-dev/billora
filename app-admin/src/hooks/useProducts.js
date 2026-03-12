@@ -11,7 +11,24 @@ export const useProducts = (params = {}) => {
       setLoading(true);
       setError(null);
       const response = await productsAPI.getAll(params);
-      setProducts(response.data || response);
+      
+      // Handle the API response structure: { data: { data: [...products] } }
+      let productsData = [];
+      
+      if (response?.data?.data) {
+        // Check if it's paginated data
+        if (response.data.data.data && Array.isArray(response.data.data.data)) {
+          productsData = response.data.data.data; // Paginated: { data: { data: { data: [...] } } }
+        } else if (Array.isArray(response.data.data)) {
+          productsData = response.data.data; // Non-paginated: { data: { data: [...] } }
+        }
+      } else if (response?.data) {
+        productsData = response.data;
+      } else if (Array.isArray(response)) {
+        productsData = response;
+      }
+      
+      setProducts(productsData);
     } catch (err) {
       setError(err.message || 'Failed to fetch products');
     } finally {
@@ -28,7 +45,22 @@ export const useProducts = (params = {}) => {
       setLoading(true);
       setError(null);
       const response = await productsAPI.search(query, filters);
-      setProducts(response.data || response);
+      
+      let productsData = [];
+      if (response?.data?.data) {
+        // Check if it's paginated data
+        if (response.data.data.data && Array.isArray(response.data.data.data)) {
+          productsData = response.data.data.data; // Paginated: { data: { data: { data: [...] } } }
+        } else if (Array.isArray(response.data.data)) {
+          productsData = response.data.data; // Non-paginated: { data: { data: [...] } }
+        }
+      } else if (response?.data) {
+        productsData = response.data;
+      } else if (Array.isArray(response)) {
+        productsData = response;
+      }
+      
+      setProducts(productsData);
     } catch (err) {
       setError(err.message || 'Failed to search products');
     } finally {

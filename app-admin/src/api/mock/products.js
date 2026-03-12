@@ -78,12 +78,30 @@ const mockProducts = {
 
       return {
         data: {
-          success: true,
-          products: filteredProducts,
-          brands: mockBrands,
-          categories: mockCategories,
-          units: mockUnits,
-        }
+          data: {
+            current_page: 1,
+            data: filteredProducts,
+            first_page_url: "http://10.0.2.2:8000/api/products?page=1",
+            from: 1,
+            last_page: 1,
+            last_page_url: "http://10.0.2.2:8000/api/products?page=1",
+            links: [
+              { url: null, label: "&laquo; Previous", active: false },
+              { url: "http://10.0.2.2:8000/api/products?page=1", label: "1", active: true },
+              { url: null, label: "Next &raquo;", active: false }
+            ],
+            next_page_url: null,
+            path: "http://10.0.2.2:8000/api/products",
+            per_page: 15,
+            prev_page_url: null,
+            to: filteredProducts.length,
+            total: filteredProducts.length
+          },
+          message: 'Product List',
+          status: true
+        },
+        status: 200,
+        url: "/products"
       };
     }
 
@@ -101,9 +119,12 @@ const mockProducts = {
 
       return {
         data: {
-          success: true,
-          product: { ...product, brand: mockBrands.find(b => b.id === product.brand_id) },
-        }
+          data: { ...product, brand: mockBrands.find(b => b.id === product.brand_id) },
+          message: 'Product retrieved successfully',
+          status: true
+        },
+        status: 200,
+        url: `/products/${id}`
       };
     }
 
@@ -138,10 +159,12 @@ const mockProducts = {
 
       return {
         data: {
-          success: true,
+          data: newProduct,
           message: 'Product created successfully',
-          product: newProduct,
-        }
+          status: true
+        },
+        status: 201,
+        url: "/products/store"
       };
     }
 
@@ -175,10 +198,12 @@ const mockProducts = {
 
       return {
         data: {
-          success: true,
+          data: mockProductsList[productIndex],
           message: 'Product updated successfully',
-          product: mockProductsList[productIndex],
-        }
+          status: true
+        },
+        status: 200,
+        url: `/products/${id}`
       };
     }
 
@@ -208,9 +233,12 @@ const mockProducts = {
 
       return {
         data: {
-          success: true,
+          data: null,
           message: 'Product deleted successfully',
-        }
+          status: true
+        },
+        status: 200,
+        url: `/products/${id}`
       };
     }
 
