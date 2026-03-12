@@ -5,7 +5,7 @@ namespace App\Http\Controllers\admin;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\BillCustomer;
-
+use App\Models\BillPaymentHistory;
 class BillCustomerController extends Controller
 {
     public function index(Request $request, $id)
@@ -53,10 +53,23 @@ class BillCustomerController extends Controller
     public function show($id){
         try{
         $billCustomer = BillCustomer::findOrFail($id);
+        // $billCustomer = BillCustomer::with('paymentHistories')->findOrFail($id);
+            $query = BillPaymentHistory::where('customer_id', $billCustomer->id);
+            if (request()->start_date) {
+                $query->whereDate('created_at', '>=', request()->start_date);
+            }
+
+            if (request()->end_date) {
+                $query->whereDate('created_at', '<=', request()->end_date);
+            }
+
+            $data = $query->latest()->get();
+
         return response()->json([
             'status' => true,
             'message' => 'Single Bill Customer',
-            'data' => $billCustomer
+            'data' => $billCustomer,
+            'bill_payment_history' => $data,
         ]);
         }catch(\Exception $e){
             return response()->json([

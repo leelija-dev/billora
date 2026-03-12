@@ -234,7 +234,7 @@ class InvoiceController extends Controller
    public function billHistory(Request $request)
 {
     try {
-
+    
         $search = $request->search;
 
         $billHistory = Invoice::with(['invoiceItems.product'])

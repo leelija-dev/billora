@@ -19,4 +19,9 @@ class BillCustomer extends Model
         'due_amount'
     ];
 
+    public function paymentHistories()
+{
+    return $this->hasMany(BillPaymentHistory::class, 'customer_id');
+}
+
 }
