@@ -40,7 +40,7 @@ const StockFilters = ({
   }, [initialFilters]);
 
   const sortOptions = [
-    { label: "Product Name", value: "name", icon: "sort-alphabetical" },
+    { label: "Product Name", value: "name", icon: "sort-ascending" },
     { label: "Quantity", value: "quantity", icon: "sort-numeric" },
     { label: "Price", value: "price", icon: "currency-usd" },
     { label: "Date", value: "date", icon: "calendar" },

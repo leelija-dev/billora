@@ -13,11 +13,16 @@ let mockProductsList = [
     purchase_price: 15.50,
     gst_percentage: 5,
     discount_percentage: 0,
-    description: 'High quality cotton t-shirt',
+    description: 'High quality cotton t-shirt perfect for everyday wear',
     is_active: true,
     created_by: 1,
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
+    stock: 50,
+    minStock: 10,
+    brand_name: 'Nike',
+    category_name: 'T-Shirts',
+    unit_name: 'Pieces'
   },
   {
     id: 2,
@@ -32,11 +37,16 @@ let mockProductsList = [
     purchase_price: 45.00,
     gst_percentage: 5,
     discount_percentage: 10,
-    description: 'Comfortable denim jeans',
+    description: 'Comfortable denim jeans with modern fit',
     is_active: true,
     created_by: 1,
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
+    stock: 25,
+    minStock: 5,
+    brand_name: 'Levis',
+    category_name: 'Jeans',
+    unit_name: 'Pieces'
   },
 ];
 
@@ -119,7 +129,12 @@ const mockProducts = {
 
       return {
         data: {
-          data: { ...product, brand: mockBrands.find(b => b.id === product.brand_id) },
+          data: { 
+            ...product, 
+            brand: mockBrands.find(b => b.id === product.brand_id),
+            category: mockCategories.find(c => c.id === product.category_id),
+            unit: mockUnits.find(u => u.id === product.unit_id)
+          },
           message: 'Product retrieved successfully',
           status: true
         },

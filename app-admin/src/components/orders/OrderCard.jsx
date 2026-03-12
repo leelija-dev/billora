@@ -86,7 +86,7 @@ const OrderCard = ({ order, viewMode = "list" }) => {
         </View>
 
         <Text className="text-lg font-bold text-blue-600 text-center">
-          ${order.total.toFixed(2)}
+          ${parseFloat(order.total || 0).toFixed(2)}
         </Text>
 
         <Text className={`text-xs text-center mt-1 ${
@@ -154,7 +154,7 @@ const OrderCard = ({ order, viewMode = "list" }) => {
             Total Amount
           </Text>
           <Text className="text-lg font-bold text-blue-600">
-            ${order.total.toFixed(2)}
+            ${parseFloat(order.total || 0).toFixed(2)}
           </Text>
         </View>
         <View className="flex-row items-center">

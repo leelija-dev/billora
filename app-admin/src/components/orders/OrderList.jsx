@@ -281,7 +281,7 @@ const OrderList = ({
               Total Amount
             </Text>
             <Text className="text-lg font-bold text-blue-600">
-              ${item.total.toFixed(2)}
+              ${parseFloat(item.total || 0).toFixed(2)}
             </Text>
           </View>
           <View className="flex-row items-center">
@@ -349,7 +349,7 @@ const OrderList = ({
         </View>
 
         <Text className="text-lg font-bold text-blue-600 text-center">
-          ${item.total.toFixed(2)}
+          ${parseFloat(item.total || 0).toFixed(2)}
         </Text>
 
         <Text className={`text-xs text-center mt-1 ${

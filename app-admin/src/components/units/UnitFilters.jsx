@@ -35,8 +35,8 @@ const UnitFilters = ({
   }, [initialFilters]);
 
   const sortOptions = [
-    { label: "Code", value: "code", icon: "sort-alphabetical" },
-    { label: "Name", value: "name", icon: "sort-alphabetical" },
+    { label: "Code", value: "code", icon: "sort-ascending" },
+    { label: "Name", value: "name", icon: "sort-ascending" },
     { label: "Date", value: "date", icon: "calendar" },
     { label: "ID", value: "id", icon: "numeric" },
   ];

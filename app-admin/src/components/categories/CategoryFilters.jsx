@@ -39,7 +39,7 @@ const CategoryFilters = ({
   }, [initialFilters]);
 
   const sortOptions = [
-    { label: "Name", value: "name", icon: "sort-alphabetical" },
+    { label: "Name", value: "name", icon: "sort-ascending" },
     { label: "Date", value: "date", icon: "calendar" },
     { label: "ID", value: "id", icon: "numeric" },
     { label: "Status", value: "status", icon: "checkbox-marked-circle-outline" },
