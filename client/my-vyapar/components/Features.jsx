@@ -10,28 +10,28 @@ const Features = () => {
       title: "Manage cashflow seamlessly",
       description: "The billing software by Vyapar helps automate management. It is done to prevent mistakes in accounting. By investing in this billing software, you can manage your business cash flow effortlessly.",
       extraDescription: "With real-time tracking and automated reminders, you'll never miss a payment again. The dashboard provides clear insights into your accounts receivable and payable, helping you make informed financial decisions.",
-      image: "/image/feature1.png",
+      image: "/image/gst1.png",
       reverse: false
     },
-    { 
+    {
       title: "Online/Offline GST billing",
       description: "The Vyapar app helps you generate invoices for your customers without requiring you to stay online. You can rely on our business accounting software to validate your transactions and update your database when connecting it to the internet.",
       extraDescription: "Automatic GST calculations ensure compliance with the latest tax rates. The software generates GSTR-1, GSTR-3B reports instantly, saving hours of manual work during filing season.",
-      image: "/image/feature2.png",
+      image: "/image/invoice.png",
       reverse: true
     },
     {
       title: "Provide multiple payment options",
       description: "Choose the perfect convenience for customers; the biggest comfort you can provide is allowing them to choose how they pay you. Using the Vyapar invoicing app, you can create invoices that include multiple payment options for your business.",
       extraDescription: "Accept payments via UPI, credit/debit cards, net banking, and digital wallets. The system automatically marks invoices as paid when payment is received, reducing manual reconciliation work.",
-      image: "/image/feature3.png",
+      image: "/image/payments.png",
       reverse: false
     },
     {
       title: "Track your business status",
       description: "With free GST billing software and invoicing tools, you can manage your business using a mobile. Accounting in your business becomes quite simple and efficient with this free software. As all data is stored during invoicing.",
       extraDescription: "Get real-time insights into your business performance with interactive charts and graphs. Monitor sales trends, top products, and customer behavior to make data-driven decisions.",
-      image: "/image/feature4.png",
+      image: "/image/track.png",
       reverse: true
     }
   ];
@@ -66,11 +66,11 @@ const Features = () => {
       [index]: !prev[index]
     }));
   };
-  
+
 
   return (
     <section className="py-20 sm:py-24 md:py-[100px] bg-white font-sans overflow-hidden relative">
-      
+
       {/* Animated Circular Background */}
       <style>{`
         @keyframes float-circle-1 {
@@ -107,9 +107,9 @@ const Features = () => {
           {/* <h2 className="text-2xl sm:text-3xl md:text-4xl text-[#2f5fa5] mb-3 sm:mb-4 font-bold leading-tight">
             Features of GST Billing and Accounting Software
           </h2> */}
-          <SectionTitle 
-                    title=  "Features of GST Billing and Accounting Software"
-                  />
+          <SectionTitle
+            title="Features of GST Billing and Accounting Software"
+          />
           <p className="text-sm sm:text-base md:text-lg text-[#666]">
             Everything you need to manage your business professionally
           </p>
@@ -123,21 +123,19 @@ const Features = () => {
                 key={index}
                 ref={(el) => (sectionRefs.current[index] = el)}
                 data-index={index}
-                className={`flex flex-col lg:flex-row items-center gap-6 sm:gap-10 md:gap-[60px] mb-12 sm:mb-20 md:mb-[100px] transition-all duration-1000 ${
-                  feature.reverse ? 'lg:flex-row-reverse' : ''
-                }`}
+                className={`flex flex-col lg:flex-row items-center gap-6 sm:gap-10 md:gap-[60px] mb-12 sm:mb-20 md:mb-[100px] transition-all duration-1000 ${feature.reverse ? 'lg:flex-row-reverse' : ''
+                  }`}
               >
                 {/* Image with left-right animation */}
-                <div 
-                  className={`w-full lg:flex-1 flex justify-center items-center transition-all duration-1000 ${
-                    visibleItems[index]
+                <div
+                  className={`w-full lg:flex-1 flex justify-center items-center transition-all duration-1000 ${visibleItems[index]
                       ? 'opacity-100 translate-x-0'
-                      : isEven 
-                        ? 'opacity-0 -translate-x-20' 
+                      : isEven
+                        ? 'opacity-0 -translate-x-20'
                         : 'opacity-0 translate-x-20'
-                  }`}
+                    }`}
                 >
-                  <div className="w-full max-w-[500px] overflow-hidden rounded-lg sm:rounded-xl md:rounded-[20px]">
+                  <div className="w-full max-w-[500px] overflow-hidden rounded-lg sm:rounded-2xl md:rounded-[20px]">
                     <Image
                       src={feature.image}
                       alt={feature.title}
@@ -150,14 +148,13 @@ const Features = () => {
                 </div>
 
                 {/* Content with opposite left-right animation */}
-                <div 
-                  className={`w-full lg:flex-1 px-0 sm:px-2 md:px-5 text-center lg:text-left transition-all duration-1000 delay-200 ${
-                    visibleItems[index]
+                <div
+                  className={`w-full lg:flex-1 px-0 sm:px-2 md:px-5 text-center lg:text-left transition-all duration-1000 delay-200 ${visibleItems[index]
                       ? 'opacity-100 translate-x-0'
-                      : isEven 
-                        ? 'opacity-0 translate-x-20' 
+                      : isEven
+                        ? 'opacity-0 translate-x-20'
                         : 'opacity-0 -translate-x-20'
-                  }`}
+                    }`}
                 >
                   <h3 className="text-xl sm:text-2xl md:text-[28px] text-black mb-3 sm:mb-4 md:mb-5 font-semibold leading-snug transition-colors duration-300 hover:text-[#2f5fa5]">
                     {feature.title}
@@ -165,14 +162,14 @@ const Features = () => {
                   <p className="text-xs sm:text-sm md:text-base text-[#555] leading-relaxed sm:leading-[1.7] md:leading-[1.8] m-0">
                     {feature.description}
                   </p>
-                  
+
                   {/* Extra paragraph that appears when expanded */}
                   {expandedItems[index] && (
                     <p className="text-xs sm:text-sm md:text-base text-[#555] leading-relaxed sm:leading-[1.7] md:leading-[1.8] mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-[#2f5fa5]/20 animate-in slide-in-from-top duration-500">
                       {feature.extraDescription}
                     </p>
                   )}
-                  
+
                   {/* Clickable read more/less link */}
                   <button
                     onClick={() => toggleReadMore(index)}
@@ -182,17 +179,17 @@ const Features = () => {
                       {expandedItems[index] ? 'Show less' : 'Read more'}
                       <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-[#2f5fa5] transition-all duration-300 group-hover:w-full"></span>
                     </span>
-                    <svg 
+                    <svg
                       className={`w-3 h-3 sm:w-4 sm:h-4 transition-all duration-300 ${expandedItems[index] ? 'rotate-180' : 'group-hover:translate-x-1'}`}
-                      fill="none" 
-                      stroke="currentColor" 
+                      fill="none"
+                      stroke="currentColor"
                       viewBox="0 0 24 24"
                     >
-                      <path 
-                        strokeLinecap="round" 
-                        strokeLinejoin="round" 
-                        strokeWidth={2} 
-                        d={expandedItems[index] ? "M19 9l-7 7-7-7" : "M9 5l7 7-7 7"} 
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d={expandedItems[index] ? "M19 9l-7 7-7-7" : "M9 5l7 7-7 7"}
                       />
                     </svg>
                   </button>

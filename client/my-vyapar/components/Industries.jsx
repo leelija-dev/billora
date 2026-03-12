@@ -45,7 +45,7 @@ const Industries = () => {
       const cardHeight = 120;
       const containerHeight = 400;
       const scrollPosition = (currentIndex + leftCards.length) * cardHeight - (containerHeight / 2) + (cardHeight / 2);
-      
+
       sliderRef.current.scrollTo({
         top: scrollPosition,
         behavior: 'smooth'
@@ -54,7 +54,7 @@ const Industries = () => {
   }, [currentIndex, leftCards.length]);
 
   const getRightPanelImage = () => {
-    switch(leftCards[currentIndex].image) {
+    switch (leftCards[currentIndex].image) {
       case 'innovation':
         return 'url("https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80")';
       case 'growth':
@@ -84,13 +84,16 @@ const Industries = () => {
     setTimeout(() => setIsPlaying(true), 5000);
   };
 
-  const handleMouseEnter = () => {
-    setIsPlaying(false);
-  };
+ const handleMouseEnter = () => {
+  setIsPlaying(false);
+  if (autoPlayRef.current) {
+    clearInterval(autoPlayRef.current);
+  }
+};
 
-  const handleMouseLeave = () => {
-    setIsPlaying(true);
-  };
+const handleMouseLeave = () => {
+  setIsPlaying(true);
+};
 
   return (
     <section className="relative w-full py-12 sm:py-16 md:py-20 lg:py-[100px] bg-gradient-to-b from-[#f8fafc] to-white font-['Inter',sans-serif] overflow-hidden">
@@ -110,35 +113,37 @@ const Industries = () => {
       `}</style>
 
       <div className=" text-center max-w-[1400px] mx-auto px-4 sm:px-6 md:px-8 lg:px-[60px] relative">
-        
+
         {/* SECTION TITLE COMPONENT */}
-        <SectionTitle 
+        <SectionTitle
           title="Supporting businesses from a wide range of industries"
           description="We understand your unique billing and accounting needs, Vyapar India billing software is specially designed for Indian SMBs."
         />
-         <p className="text-[#475569] text-xl max-w-[600px] mx-auto mt-6 animate-[fadeInUp_0.8s_ease-out_0.2s_both] max-md:text-lg max-sm:text-base">
-                    Get started with Billora in three simple steps
-                </p>
+        <p className="text-[#475569] text-xl max-w-[600px] mx-auto mt-6 animate-[fadeInUp_0.8s_ease-out_0.2s_both] max-md:text-lg max-sm:text-base">
+          Get started with Billora in three simple steps
+        </p>
 
         <div className="flex flex-col lg:flex-row gap-8 sm:gap-10 md:gap-12 lg:gap-[60px] items-center justify-between mt-12 sm:mt-14 md:mt-16 lg:mt-20">
           {/* LEFT PANEL - Hidden on mobile, visible on desktop */}
-          <div 
+          <div
             className="flex-1 relative py-[30px] max-w-[550px] max-lg:max-w-full max-lg:w-full hidden lg:block"
             onMouseEnter={handleMouseEnter}
             onMouseLeave={handleMouseLeave}
           >
             <div className="h-[450px] overflow-hidden rounded-[30px] bg-transparent py-[15px] relative max-md:h-[400px]">
-              <div 
-                className="h-full overflow-y-auto scroll-smooth px-[30px]"
-                ref={sliderRef}
-                style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-              >
+ <div
+  className="h-full overflow-y-auto scroll-smooth px-[30px]"
+  ref={sliderRef}
+  style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+  onMouseOver={handleMouseEnter}
+  onMouseOut={handleMouseLeave}
+>
                 {infiniteCards.map((card, index) => {
                   const originalIndex = index % leftCards.length;
-                  const isCenter = originalIndex === currentIndex && 
-                    index >= leftCards.length && 
+                  const isCenter = originalIndex === currentIndex &&
+                    index >= leftCards.length &&
                     index < leftCards.length * 2;
-                  
+
                   let opacity = card.opacity;
                   if (isCenter) {
                     opacity = 1;
@@ -147,21 +152,19 @@ const Industries = () => {
                   } else {
                     opacity = 0.4;
                   }
-                  
+
                   return (
                     <div
                       key={index}
-                      className={`w-full max-w-[450px] h-[110px] bg-white border border-[#E0E2E7] rounded-[20px] flex items-center pl-[35px] mx-auto mb-[25px] transition-all duration-300 cursor-pointer relative hover:translate-x-2 hover:shadow-md ${
-                        isCenter ? 'industries__card--center' : 'shadow-sm'
-                      }`}
-                      style={{ 
+                      className={`w-full max-w-[450px] h-[110px] bg-white border border-[#E0E2E7] rounded-[20px] flex items-center pl-[35px] mx-auto mb-[25px] transition-all duration-300 cursor-pointer relative hover:translate-x-2 hover:shadow-md ${isCenter ? 'industries__card--center' : 'shadow-sm'
+                        }`}
+                      style={{
                         opacity: opacity,
                       }}
                       onClick={() => handleCardClick(originalIndex)}
                     >
-                      <span className={`text-2xl font-semibold text-[#1e293b] whitespace-nowrap transition-all duration-300 max-md:text-[22px] max-sm:text-xl ${
-                        isCenter ? 'text-[#3B82F6] font-bold' : ''
-                      }`}>
+                      <span className={`text-2xl font-semibold text-[#1e293b] whitespace-nowrap transition-all duration-300 max-md:text-[22px] max-sm:text-xl ${isCenter ? 'text-[#3B82F6] font-bold' : ''
+                        }`}>
                         {card.text}
                       </span>
                     </div>
@@ -172,12 +175,14 @@ const Industries = () => {
           </div>
 
           {/* RIGHT PANEL - Image with content, full width on mobile */}
-          <div 
+          <div
             className="flex-1 h-[350px] sm:h-[400px] md:h-[450px] lg:h-[550px] rounded-[30px] sm:rounded-[40px] md:rounded-[45px] overflow-hidden relative transition-all duration-500 shadow-[0_20px_40px_rgba(0,0,0,0.15)] max-w-[650px] max-lg:max-w-full w-full"
-            style={{ 
-              backgroundImage: getRightPanelImage(), 
-              backgroundSize: 'cover', 
-              backgroundPosition: 'center' 
+             onMouseEnter={handleMouseEnter}
+            onMouseLeave={handleMouseLeave}
+            style={{
+              backgroundImage: getRightPanelImage(),
+              backgroundSize: 'cover',
+              backgroundPosition: 'center'
             }}
           >
             <div className="absolute top-0 left-0 right-0 bottom-0 bg-gradient-to-br from-black/70 via-black/40 to-black/20 flex items-end p-6 sm:p-8 md:p-10 lg:p-[50px]">
@@ -206,60 +211,59 @@ const Industries = () => {
         </div>
 
         {/* MOBILE SECTION - Only visible on mobile, shows current selection and dots */}
-     {/* MOBILE SECTION - Only visible on mobile */}
-<div className="lg:hidden mt-8 sm:mt-10 space-y-5 sm:space-y-6">
+        {/* MOBILE SECTION - Only visible on mobile */}
+        <div className="lg:hidden mt-8 sm:mt-10 space-y-5 sm:space-y-6">
 
-  {/* Mobile Image Card */}
-  <div
-    className="w-full h-[260px] rounded-[25px] overflow-hidden relative shadow-lg"
-    style={{
-      backgroundImage: getRightPanelImage(),
-      backgroundSize: "cover",
-      backgroundPosition: "center"
-    }}
-  >
-    <div className="absolute inset-0 bg-gradient-to-br from-black/70 via-black/40 to-black/20 flex items-end p-5">
-      <div className="text-white">
-        <h3 className="text-xl font-bold mb-2">
-          {leftCards[currentIndex].text}
-        </h3>
+          {/* Mobile Image Card */}
+          <div
+            className="w-full h-[260px] rounded-[25px] overflow-hidden relative shadow-lg"
+            style={{
+              backgroundImage: getRightPanelImage(),
+              backgroundSize: "cover",
+              backgroundPosition: "center"
+            }}
+          >
+            <div className="absolute inset-0 bg-gradient-to-br from-black/70 via-black/40 to-black/20 flex items-end p-5">
+              <div className="text-white">
+                <h3 className="text-xl font-bold mb-2">
+                  {leftCards[currentIndex].text}
+                </h3>
 
-        <p className="text-sm leading-relaxed">
-          {leftCards[currentIndex].text === 'Drive Innovation' && 'Transform your business with cutting-edge billing solutions'}
-          {leftCards[currentIndex].text === 'Empower Growth' && 'Scale your business with powerful accounting tools'}
-          {leftCards[currentIndex].text === 'GSTR Filing' && 'Simplify GST returns with automated filing'}
-          {leftCards[currentIndex].text === 'Unite Industries' && 'Connect all your business operations seamlessly'}
-          {leftCards[currentIndex].text === 'Expand Reach' && 'Grow your customer base with digital invoices'}
-          {leftCards[currentIndex].text === 'Boost Resilience' && 'Build a resilient business with smart financial management'}
-        </p>
-      </div>
-    </div>
-  </div>
+                <p className="text-sm leading-relaxed">
+                  {leftCards[currentIndex].text === 'Drive Innovation' && 'Transform your business with cutting-edge billing solutions'}
+                  {leftCards[currentIndex].text === 'Empower Growth' && 'Scale your business with powerful accounting tools'}
+                  {leftCards[currentIndex].text === 'GSTR Filing' && 'Simplify GST returns with automated filing'}
+                  {leftCards[currentIndex].text === 'Unite Industries' && 'Connect all your business operations seamlessly'}
+                  {leftCards[currentIndex].text === 'Expand Reach' && 'Grow your customer base with digital invoices'}
+                  {leftCards[currentIndex].text === 'Boost Resilience' && 'Build a resilient business with smart financial management'}
+                </p>
+              </div>
+            </div>
+          </div>
 
-  {/* Current viewing text */}
-  <div className="text-center">
-    <h3 className="text-lg sm:text-xl font-bold text-blue-600">
-      {leftCards[currentIndex].text}
-    </h3>
-  </div>
+          {/* Current viewing text */}
+          <div className="text-center">
+            <h3 className="text-lg sm:text-xl font-bold text-blue-600">
+              {leftCards[currentIndex].text}
+            </h3>
+          </div>
 
-  {/* Navigation dots */}
-  <div className="flex justify-center gap-3 sm:gap-4">
-    {leftCards.map((_, idx) => (
-      <button
-        key={idx}
-        onClick={() => handleDotClick(idx)}
-        className={`transition-all duration-300 ${
-          idx === currentIndex
-            ? "w-8 sm:w-10 h-2 sm:h-2.5 bg-blue-600 rounded-full"
-            : "w-2 sm:w-2.5 h-2 sm:h-2.5 bg-gray-300 rounded-full hover:bg-gray-400"
-        }`}
-        aria-label={`View ${leftCards[idx].text}`}
-      />
-    ))}
-  </div>
+          {/* Navigation dots */}
+          <div className="flex justify-center gap-3 sm:gap-4">
+            {leftCards.map((_, idx) => (
+              <button
+                key={idx}
+                onClick={() => handleDotClick(idx)}
+                className={`transition-all duration-300 ${idx === currentIndex
+                    ? "w-8 sm:w-10 h-2 sm:h-2.5 bg-blue-600 rounded-full"
+                    : "w-2 sm:w-2.5 h-2 sm:h-2.5 bg-gray-300 rounded-full hover:bg-gray-400"
+                  }`}
+                aria-label={`View ${leftCards[idx].text}`}
+              />
+            ))}
+          </div>
 
-</div>
+        </div>
       </div>
     </section>
   );

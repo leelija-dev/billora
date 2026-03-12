@@ -77,7 +77,7 @@ const Navbar = () => {
               )
             )}
 
-             <li className="w-full lg:w-auto border-b lg:border-none border-slate-100">
+            <li className="w-full lg:w-auto border-b lg:border-none border-slate-100">
               <Link
                 href="/trymobile"
                 className="block py-4 lg:py-0 text-slate-500 font-medium text-sm transition-colors hover:text-blue-600 lg:border-b-2 lg:border-transparent lg:hover:border-blue-600 capitalize whitespace-nowrap w-full text-left"
@@ -151,7 +151,7 @@ const Navbar = () => {
 
           {/* CTA Buttons */}
           <div className="flex flex-col lg:flex-row items-center gap-4 mt-5 lg:mt-0">
-            
+
             <Link
               href="/bookdemo"
               className="w-full lg:w-auto flex items-center justify-center gap-2 px-4 h-10 bg-gradient-to-br from-blue-500 to-purple-600 text-white rounded-full font-semibold text-sm transition-all hover:-translate-y-0.5 hover:shadow-[0_5px_15px_rgba(59,130,246,0.3)] whitespace-nowrap"

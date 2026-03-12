@@ -7,7 +7,7 @@ const Hero = () => {
   return (
     <div className="overflow-x-hidden font-sans">
       {/* ===== ANIMATED HERO SECTION ===== */}
-      <section className="relative z-10 min-h-[90vh] flex items-center px-5 md:px-20 pb-32 pt-10 bg-gradient-to-br from-slate-50 via-indigo-50 to-sky-100 overflow-hidden">
+      <section className="relative z-10 min-h-[100vh] flex items-center px-5 md:px-20 pb-32 pt-10 bg-gradient-to-br from-slate-50 via-indigo-50 to-sky-100 overflow-hidden">
 
         {/* Ultra Animated Background */}
         <style>{`

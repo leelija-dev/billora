@@ -84,8 +84,8 @@ const FAQ = () => {
             <div
               key={index}
               className={`bg-white rounded-lg sm:rounded-xl p-4 sm:p-5 md:p-6 mb-3 sm:mb-4 md:mb-5 transition-all duration-300 ease-in border border-[#e0e0e0] hover:border-[#1e88e5] ${activeIndex === index
-                  ? "shadow-[0_8px_20px_rgba(30,136,229,0.15)] border-[#1e88e5]"
-                  : "hover:shadow-[0_4px_12px_rgba(0,0,0,0.05)]"
+                ? "shadow-[0_8px_20px_rgba(30,136,229,0.15)] border-[#1e88e5]"
+                : "hover:shadow-[0_4px_12px_rgba(0,0,0,0.05)]"
                 }`}
             >
               <div
@@ -114,8 +114,8 @@ const FAQ = () => {
 
               <div
                 className={`overflow-hidden transition-all duration-400 ease-in-out ${activeIndex === index
-                    ? "max-h-[300px] sm:max-h-[350px] pt-3 sm:pt-4 md:pt-5"
-                    : "max-h-0 pt-0"
+                  ? "max-h-[300px] sm:max-h-[350px] pt-3 sm:pt-4 md:pt-5"
+                  : "max-h-0 pt-0"
                   }`}
               >
                 <div className="text-slate-600 text-xs sm:text-sm md:text-base leading-relaxed sm:leading-[1.7] border-t border-[#e0e0e0] pt-3 sm:pt-4">
