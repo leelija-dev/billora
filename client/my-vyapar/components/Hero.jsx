@@ -156,7 +156,7 @@ const Hero = () => {
 
       {/* ===== SUPERB FEATURES SECTION (BLACK CARD) ===== */}
      <section className="relative -mt-24 w-full mx-auto z-40 px-4 md:px-0 mb-48 hidden sm:block animate-slideUp"> 
-        <div className="relative bg-[#0f172a] rounded-[40px] pt-[100px] pb-[100px] px-[20px] md:px-[40px] max-w-[1000px] mx-auto shadow-[0_20px_50px_rgba(0,0,0,0.4)] border border-white/10 overflow-visible" style={{ backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.1) 1px, transparent 1px)', backgroundSize: '20px 20px' }}>
+        <div className="relative bg-[#0f172a] rounded-[40px] pt-[100px] pb-[100px] px-[20px] md:px-[40px] max-w-[1000px] mx-auto shadow-[0_20px_50px_rgba(0,0,0,0.4)] border border-white/10 overflow-visible">
           
           {/* Internal Glow for depth */}
           <div className="absolute top-0 left-1/2 -translate-x-1/2 w-3/4 h-1 bg-gradient-to-r from-transparent via-blue-500/50 to-transparent"></div>
@@ -192,10 +192,16 @@ const Hero = () => {
                    <div className="w-full aspect-video bg-slate-100 rounded-2xl overflow-hidden border border-slate-200 shadow-inner">
                       <Image src="/image/desktop.png" alt="Dashboard" width={500} height={300} className="w-full h-full object-cover" />
                    </div>
+       
                 </div>
              </div>
           </div>
+
         </div>
+                                                 {/* Dotted Background */}
+        <div className="absolute inset-0 -z-10 opacity-50 pointer-events-none
+                        bg-[radial-gradient(#cbd5e1_1.5px,transparent_1.5px)]
+                        bg-[size:25px_25px]"></div>
       </section>
     </div>
   );
