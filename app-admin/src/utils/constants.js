@@ -163,6 +163,11 @@ export const NAVIGATION_SCREENS = {
     CUSTOMERS: 'Customers',
     CUSTOMER_DETAIL: 'CustomerDetail',
     ADD_CUSTOMER: 'AddCustomer',
+
+    STOCKS: 'Stocks',
+    STOCK_DETAIL: 'StockDetail',
+    ADD_STOCK: 'AddStock',
+    ADD_STOCK_QUANTITY: 'AddStockQuantity',
     
     // Inventory
     INVENTORY: 'Inventory',
