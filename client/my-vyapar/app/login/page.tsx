@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
-import { FaEye, FaEyeSlash } from "react-icons/fa";
+import { FaEye, FaEyeSlash, FaHome } from "react-icons/fa";
 import { FcGoogle } from "react-icons/fc";
 
 const login = () => {
@@ -10,15 +10,23 @@ const login = () => {
   const router = useRouter();
 
   return (
-    
-    <div className="h-screen bg-gradient-to-br from-[#ece9f1] to-[#dfe3f8] flex justify-center items-center font-sans">
+    <div className="h-screen bg-gradient-to-br from-[#ece9f1] to-[#dfe3f8] flex justify-center items-center font-sans relative">
+      {/* Back to Home Button */}
+      <button
+        onClick={() => router.push("/")}
+        className="absolute top-6 left-6 flex items-center gap-2 px-4 py-2 bg-white rounded-lg shadow-md hover:shadow-lg transition-all duration-300 hover:scale-105 text-[#2d236b] font-medium z-10"
+      >
+        <FaHome className="text-[#5b5bd6]" size={20} />
+        <span>Back to Home</span>
+      </button>
+
       <div className="w-[550px] bg-white py-10 px-[50px] rounded-[25px] shadow-[0_10px_25px_rgba(0,0,0,0.08)] max-md:w-[450px] max-md:px-8 max-sm:w-[90%] max-sm:px-5 max-sm:py-8">
         {/* Logo */}
         <div className="flex items-center gap-2.5">
           <div className="w-[35px] h-[35px] bg-[#5b5bd6] text-white flex justify-center items-center rounded-md font-bold">
-            V
+          B
           </div>
-          <h2 className="text-[#2d236b] text-xl font-bold">Vyapar</h2>
+          <h2 className="text-[#2d236b] text-xl font-bold">Billora</h2>
         </div>
 
         <h1 className="text-center text-[#2d236b] my-6 text-3xl font-bold max-sm:text-2xl">

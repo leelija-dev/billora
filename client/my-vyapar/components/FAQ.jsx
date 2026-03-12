@@ -53,7 +53,7 @@ const FAQ = () => {
           </h4>
 
           <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-slate-900 mb-4 sm:mb-6 tracking-tight leading-tight">
-            Frequently asked
+            Frequently asked 
             <br className="hidden sm:block" />
             <span className="  sm:inline bg-[#f6c453] px-1 py-1 sm:px-15 sm:py-[15px] text-base sm:text-3xl rounded-sm">
   Questions
