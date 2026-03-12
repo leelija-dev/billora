@@ -11,13 +11,13 @@ import {
 } from "react-native";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 import { useThemeStore } from "../../store/themeStore";
-import CategoryCard from "./CategoryCard";
+import BrandCard from "./BrandCard";
 
-const CategoryList = ({
+const BrandList = ({
   viewMode = "grid",
   searchQuery = "",
   sortBy = "name",
-  categories = [],
+  brands = [],
   loading = false,
   onRefresh = () => {},
   onDelete = () => {},
@@ -35,20 +35,20 @@ const CategoryList = ({
     }).start();
   }, []);
 
-  // Filter and sort categories
-  const filteredCategories = useMemo(() => {
-    if (!Array.isArray(categories)) return [];
-    let filtered = [...categories];
+  // Filter and sort brands
+  const filteredBrands = useMemo(() => {
+    if (!Array.isArray(brands)) return [];
+    let filtered = [...brands];
     
     // Search filter
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter(
-        (c) =>
-          c.name?.toLowerCase().includes(query) ||
-          c.description?.toLowerCase().includes(query) ||
-          c.slug?.toLowerCase().includes(query) ||
-          c.id?.toString().includes(query)
+        (b) =>
+          b.name?.toLowerCase().includes(query) ||
+          b.description?.toLowerCase().includes(query) ||
+          b.slug?.toLowerCase().includes(query) ||
+          b.id?.toString().includes(query)
       );
     }
     
@@ -69,41 +69,41 @@ const CategoryList = ({
     });
     
     return filtered;
-  }, [categories, searchQuery, sortBy]);
+  }, [brands, searchQuery, sortBy]);
 
   // Statistics
   const stats = useMemo(() => {
-    if (!Array.isArray(categories)) return {
+    if (!Array.isArray(brands)) return {
       total: 0,
       active: 0,
       inactive: 0,
     };
     
-    const activeCount = categories.filter(c => c.is_active).length;
+    const activeCount = brands.filter(b => b.is_active).length;
     
     return {
-      total: categories.length,
+      total: brands.length,
       active: activeCount,
-      inactive: categories.length - activeCount,
+      inactive: brands.length - activeCount,
     };
-  }, [categories]);
+  }, [brands]);
 
-  const handleCategoryPress = (category) => {
-    navigation.navigate("CategoryDetail", { categoryId: category.id });
+  const handleBrandPress = (brand) => {
+    navigation.navigate("BrandDetail", { brandId: brand.id });
   };
 
-  const handleDeleteCategory = async (categoryId) => {
-    console.log('CategoryList: Deleting category:', categoryId);
+  const handleDeleteBrand = async (brandId) => {
+    console.log('BrandList: Deleting brand:', brandId);
     if (onDelete) {
-      const result = await onDelete(categoryId);
-      console.log('CategoryList: Delete result:', result);
+      const result = await onDelete(brandId);
+      console.log('BrandList: Delete result:', result);
       return result;
     }
     return { success: false };
   };
 
   const onRefreshLocal = async () => {
-    console.log('CategoryList: Refreshing...');
+    console.log('BrandList: Refreshing...');
     setRefreshing(true);
     if (onRefresh) {
       await onRefresh();
@@ -117,11 +117,11 @@ const CategoryList = ({
         <View className={`flex-row items-center px-3 py-1.5 rounded-full ${
           isDarkMode ? 'bg-gray-800' : 'bg-white'
         }`}>
-          <Icon name="shape" size={16} color={isDarkMode ? "#9CA3AF" : "#4b5563"} />
+          <Icon name="trademark" size={16} color={isDarkMode ? "#9CA3AF" : "#4b5563"} />
           <Text className={`text-sm ml-1 font-medium ${
             isDarkMode ? 'text-gray-300' : 'text-gray-600'
           }`}>
-            {filteredCategories.length} {filteredCategories.length === 1 ? 'category' : 'categories'}
+            {filteredBrands.length} {filteredBrands.length === 1 ? 'brand' : 'brands'}
           </Text>
         </View>
         
@@ -156,9 +156,9 @@ const CategoryList = ({
 
   const renderGridItem = (item) => (
     <View key={item.id} className="w-[48%] mx-[1%] mb-3">
-      <CategoryCard 
-        category={item} 
-        onDelete={handleDeleteCategory}
+      <BrandCard 
+        brand={item} 
+        onDelete={handleDeleteBrand}
       />
     </View>
   );
@@ -166,7 +166,7 @@ const CategoryList = ({
   const renderListItem = (item) => (
     <TouchableOpacity
       key={item.id}
-      onPress={() => handleCategoryPress(item)}
+      onPress={() => handleBrandPress(item)}
       className={`flex-row rounded-xl mb-3 p-4 shadow-sm ${
         isDarkMode ? 'bg-gray-800' : 'bg-white'
       }`}
@@ -240,8 +240,8 @@ const CategoryList = ({
 
   const renderGridItems = () => {
     const rows = [];
-    for (let i = 0; i < filteredCategories.length; i += 2) {
-      const rowItems = filteredCategories.slice(i, i + 2);
+    for (let i = 0; i < filteredBrands.length; i += 2) {
+      const rowItems = filteredBrands.slice(i, i + 2);
       rows.push(
         <View key={`row-${i}`} className="flex-row justify-between mb-2">
           {rowItems.map(item => renderGridItem(item))}
@@ -251,18 +251,18 @@ const CategoryList = ({
     return rows;
   };
 
-  if (loading && !refreshing && filteredCategories.length === 0) {
+  if (loading && !refreshing && filteredBrands.length === 0) {
     return (
       <View className="flex-1 items-center justify-center py-8">
         <ActivityIndicator size="large" color="#3b82f6" />
         <Text className={`mt-3 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-          Loading categories...
+          Loading brands...
         </Text>
       </View>
     );
   }
 
-  if (!filteredCategories || filteredCategories.length === 0) {
+  if (!filteredBrands || filteredBrands.length === 0) {
     return (
       <ScrollView
         className="flex-1"
@@ -281,19 +281,19 @@ const CategoryList = ({
             <View className={`w-24 h-24 rounded-3xl items-center justify-center mb-4 ${
               isDarkMode ? 'bg-gray-800' : 'bg-gray-100'
             }`}>
-              <Icon name="shape" size={48} color="#9ca3af" />
+              <Icon name="trademark" size={48} color="#9ca3af" />
             </View>
             <Text className={`text-lg font-semibold ${
               isDarkMode ? 'text-gray-300' : 'text-gray-700'
             }`}>
-              No Categories Found
+              No Brands Found
             </Text>
             <Text className={`text-sm text-center mt-2 px-8 ${
               isDarkMode ? 'text-gray-500' : 'text-gray-400'
             }`}>
               {searchQuery
                 ? `No results for "${searchQuery}"`
-                : "Tap the + button to add your first category"}
+                : "Tap the + button to add your first brand"}
             </Text>
           </View>
         </View>
@@ -318,11 +318,11 @@ const CategoryList = ({
         <View className="pb-4">
           {viewMode === "grid"
             ? renderGridItems()
-            : filteredCategories.map(item => renderListItem(item))}
+            : filteredBrands.map(item => renderListItem(item))}
         </View>
       </ScrollView>
     </View>
   );
 };
 
-export default CategoryList;
+export default BrandList;

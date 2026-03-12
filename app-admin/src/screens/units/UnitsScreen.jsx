@@ -14,38 +14,34 @@ import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useThemeStore } from "../../store/themeStore";
 import { useAuthStore } from "../../store/authStore";
-import { useCategories } from "../../hooks/useCategories";
+import { useUnits } from "../../hooks/useUnits";
 import Header from "../../components/common/Header";
-import CategoryFilters from "../../components/categories/CategoryFilters";
-import CategoryList from "../../components/categories/CategoryList";
+import UnitFilters from "../../components/units/UnitFilters";
+import UnitList from "../../components/units/UnitList";
 
-const CategoriesScreen = () => {
+const UnitsScreen = () => {
   const navigation = useNavigation();
   const { isDarkMode } = useThemeStore();
   const { user } = useAuthStore();
   const {
-    categories = [],
+    units = [],
     loading,
     error,
-    refreshCategories,
-    searchCategories,
-    deleteCategory,
-  } = useCategories() || {};
+    refreshUnits,
+    searchUnits,
+    deleteUnit,
+  } = useUnits() || {};
 
   const [showFilters, setShowFilters] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [viewMode, setViewMode] = useState("grid");
-  const [sortBy, setSortBy] = useState("name");
+  const [sortBy, setSortBy] = useState("code");
   const [refreshing, setRefreshing] = useState(false);
   const [activeFilters, setActiveFilters] = useState({
-    status: "all",
-    minProducts: "",
-    maxProducts: "",
-    sortBy: "name",
+    sortBy: "code",
     sortOrder: "asc",
     dateRange: "all",
     createdBy: "",
-    hasProducts: null,
   });
 
   // Use refs to track state without causing re-renders
@@ -62,7 +58,7 @@ const CategoriesScreen = () => {
     setRefreshing(true);
     
     try {
-      await refreshCategories();
+      await refreshUnits();
       lastRefreshTime.current = Date.now();
     } finally {
       if (isMounted.current) {
@@ -70,13 +66,13 @@ const CategoriesScreen = () => {
         isRefreshing.current = false;
       }
     }
-  }, [refreshCategories]);
+  }, [refreshUnits]);
 
   // Focus effect - refresh when screen comes into focus, but not too frequently
   useFocusEffect(
     useCallback(() => {
       focusCount.current += 1;
-      console.log('Categories screen focused - focus count:', focusCount.current);
+      console.log('Units screen focused - focus count:', focusCount.current);
       
       // Don't refresh if we're already refreshing
       if (isRefreshing.current) {
@@ -87,16 +83,16 @@ const CategoriesScreen = () => {
       const now = Date.now();
       const timeSinceLastRefresh = now - lastRefreshTime.current;
       
-      // Only refresh if it's been more than 5 seconds or we have no categories
-      if (timeSinceLastRefresh > 5000 || categories.length === 0) {
-        console.log('Refreshing categories on focus...');
+      // Only refresh if it's been more than 5 seconds or we have no units
+      if (timeSinceLastRefresh > 5000 || units.length === 0) {
+        console.log('Refreshing units on focus...');
         stableRefresh();
       } else {
         console.log('Skipping refresh - last refresh was', Math.round(timeSinceLastRefresh / 1000), 'seconds ago');
       }
 
       return () => {
-        console.log('Categories screen unfocused');
+        console.log('Units screen unfocused');
       };
     }, [stableRefresh])
   );
@@ -108,8 +104,8 @@ const CategoriesScreen = () => {
       const previousRoute = routes?.[routes.length - 2]?.name;
       
       // Refresh when coming back from add/edit/detail screens
-      if (previousRoute === 'AddCategory' || previousRoute === 'CategoryDetail') {
-        console.log(`Returning from ${previousRoute} - refreshing categories`);
+      if (previousRoute === 'AddUnit' || previousRoute === 'UnitDetail') {
+        console.log(`Returning from ${previousRoute} - refreshing units`);
         stableRefresh();
       }
     });
@@ -126,29 +122,25 @@ const CategoriesScreen = () => {
     };
   }, []);
 
-  // Calculate dynamic stats from real categories
-  const totalCategories = categories?.length || 0;
-  const activeCategories = useMemo(() => 
-    Array.isArray(categories) ? categories.filter(cat => cat.is_active).length : 0, 
-    [categories]
-  );
+  // Calculate dynamic stats from real units
+  const totalUnits = units?.length || 0;
   
   // Get latest update date
   const latestUpdate = useMemo(() => {
-    if (!Array.isArray(categories) || categories.length === 0) return 'N/A';
-    const dates = categories.map(c => new Date(c.updated_at).getTime());
+    if (!Array.isArray(units) || units.length === 0) return 'N/A';
+    const dates = units.map(u => new Date(u.updated_at).getTime());
     return new Date(Math.max(...dates)).toLocaleDateString();
-  }, [categories]);
+  }, [units]);
 
   // Get unique creators
   const uniqueCreators = useMemo(() => {
-    if (!Array.isArray(categories)) return [];
-    const creators = new Set(categories.map(c => c.created_by || `User ${c.user_id}`));
+    if (!Array.isArray(units)) return [];
+    const creators = new Set(units.map(u => u.created_by || `User ${u.user_id}`));
     return Array.from(creators);
-  }, [categories]);
+  }, [units]);
 
-  const handleAddCategory = () => {
-    navigation.navigate("AddCategory");
+  const handleAddUnit = () => {
+    navigation.navigate("AddUnit");
   };
 
   const handleFilterPress = () => {
@@ -167,22 +159,18 @@ const CategoriesScreen = () => {
 
   const handleResetFilters = () => {
     setActiveFilters({
-      status: "all",
-      minProducts: "",
-      maxProducts: "",
-      sortBy: "name",
+      sortBy: "code",
       sortOrder: "asc",
       dateRange: "all",
       createdBy: "",
-      hasProducts: null,
     });
-    setSortBy("name");
+    setSortBy("code");
   };
 
   const handleSearch = (query) => {
     setSearchQuery(query);
     if (query.trim()) {
-      searchCategories(query);
+      searchUnits(query);
     } else {
       stableRefresh();
     }
@@ -192,28 +180,28 @@ const CategoriesScreen = () => {
     setViewMode(viewMode === "grid" ? "list" : "grid");
   };
 
-  const handleDeleteCategory = async (categoryId) => {
+  const handleDeleteUnit = async (unitId) => {
     Alert.alert(
-      "Delete Category",
-      "Are you sure you want to delete this category?",
+      "Delete Unit",
+      "Are you sure you want to delete this unit?",
       [
         { text: "Cancel", style: "cancel" },
         {
           text: "Delete",
           style: "destructive",
           onPress: async () => {
-            console.log('Deleting category:', categoryId);
-            const result = await deleteCategory(categoryId);
+            console.log('Deleting unit:', unitId);
+            const result = await deleteUnit(unitId);
             console.log('Delete result:', result);
             
             if (result?.success) {
-              Alert.alert("Success", "Category deleted successfully");
+              Alert.alert("Success", "Unit deleted successfully");
               // Force refresh to get updated data from backend
               await stableRefresh();
               // Also reset last refresh time to ensure immediate refresh on focus
               lastRefreshTime.current = 0;
             } else {
-              Alert.alert("Error", result?.error || "Failed to delete category");
+              Alert.alert("Error", result?.error || "Failed to delete unit");
             }
           },
         },
@@ -246,7 +234,14 @@ const CategoriesScreen = () => {
       title: "Categories",
       icon: "shape",
       screen: "Categories",
-      badge: totalCategories.toString(),
+      badge: "0",
+    },
+    {
+      id: "units",
+      title: "Units",
+      icon: "ruler",
+      screen: "Units",
+      badge: totalUnits.toString(),
     },
     {
       id: "orders",
@@ -276,19 +271,19 @@ const CategoriesScreen = () => {
       screen: "Settings",
       badge: null,
     },
-  ], [totalCategories]);
+  ], [totalUnits]);
 
   // Show loading state
-  if (loading && categories.length === 0 && !refreshing) {
+  if (loading && units.length === 0 && !refreshing) {
     return (
       <View className={`flex-1 ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'} items-center justify-center`}>
         <View className={`w-16 h-16 rounded-2xl items-center justify-center mb-4 ${
           isDarkMode ? 'bg-gray-800' : 'bg-white'
         }`}>
-          <Icon name="shape" size={32} color="#3b82f6" />
+          <Icon name="ruler" size={32} color="#3b82f6" />
         </View>
         <Text className={`text-lg font-semibold ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
-          Loading categories...
+          Loading units...
         </Text>
         <Text className={`text-sm mt-2 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
           Please wait a moment
@@ -298,7 +293,7 @@ const CategoriesScreen = () => {
   }
 
   // Show error state
-  if (error && categories.length === 0) {
+  if (error && units.length === 0) {
     return (
       <View className={`flex-1 ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'} items-center justify-center px-6`}>
         <View className={`w-20 h-20 rounded-3xl items-center justify-center mb-4 ${
@@ -307,7 +302,7 @@ const CategoriesScreen = () => {
           <Icon name="alert-circle" size={40} color="#ef4444" />
         </View>
         <Text className={`text-lg font-semibold text-center ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
-          Failed to Load Categories
+          Failed to Load Units
         </Text>
         <Text className={`text-sm text-center mt-2 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
           {error}
@@ -330,10 +325,10 @@ const CategoriesScreen = () => {
       />
       
       <Header
-        title="Categories"
+        title="Units"
         userName={user?.name || "User"}
         userEmail={user?.email || "guest@example.com"}
-        activeScreen="Categories"
+        activeScreen="Units"
         navigationItems={navigationItems}
         rightComponent={
           <View className="flex-row items-center">
@@ -350,7 +345,7 @@ const CategoriesScreen = () => {
               />
             </TouchableOpacity>
             <TouchableOpacity
-              onPress={handleAddCategory}
+              onPress={handleAddUnit}
               className="w-10 h-10 bg-blue-500 rounded-full items-center justify-center shadow-md shadow-blue-500/30"
             >
               <Icon name="plus" size={24} color="#ffffff" />
@@ -369,7 +364,7 @@ const CategoriesScreen = () => {
             className={`flex-1 ml-3 text-base ${
               isDarkMode ? 'text-white' : 'text-gray-800'
             }`}
-            placeholder="Search by name, description, or slug..."
+            placeholder="Search by code, name, or description..."
             placeholderTextColor="#9ca3af"
             value={searchQuery}
             onChangeText={handleSearch}
@@ -412,11 +407,11 @@ const CategoriesScreen = () => {
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
           >
-            <Text className="text-white/80 text-xs">Total Categories</Text>
-            <Text className="text-white text-2xl font-bold">{totalCategories}</Text>
+            <Text className="text-white/80 text-xs">Total Units</Text>
+            <Text className="text-white text-2xl font-bold">{totalUnits}</Text>
             <View className="flex-row items-center mt-1">
-              <Icon name="shape" size={16} color="#86efac" />
-              <Text className="text-white/80 text-xs ml-1">All categories</Text>
+              <Icon name="ruler" size={16} color="#86efac" />
+              <Text className="text-white/80 text-xs ml-1">Measurement units</Text>
             </View>
           </LinearGradient>
 
@@ -424,15 +419,15 @@ const CategoriesScreen = () => {
             isDarkMode ? 'bg-gray-800' : 'bg-white'
           }`}>
             <Text className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-              Active Categories
+              Unique Codes
             </Text>
             <Text className={`text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
-              {activeCategories}
+              {totalUnits}
             </Text>
             <View className="flex-row items-center mt-1">
-              <View className="w-2 h-2 rounded-full bg-green-500 mr-1" />
+              <View className="w-2 h-2 rounded-full bg-blue-500 mr-1" />
               <Text className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                {totalCategories > 0 ? ((activeCategories / totalCategories) * 100).toFixed(0) : 0}% active
+                All unique codes
               </Text>
             </View>
           </View>
@@ -475,17 +470,17 @@ const CategoriesScreen = () => {
         </View>
 
         {/* Filter Chips */}
-        {(activeFilters.status !== 'all' || activeFilters.hasProducts !== null) && (
+        {activeFilters.dateRange !== 'all' && (
           <View className="px-4 mb-3 flex-row flex-wrap">
-            {activeFilters.status !== 'all' && (
+            {activeFilters.dateRange !== 'all' && (
               <View className={`flex-row items-center mr-2 mb-2 px-3 py-1.5 rounded-full ${
                 isDarkMode ? 'bg-gray-800' : 'bg-gray-100'
               }`}>
                 <Text className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                  Status: {activeFilters.status}
+                  Date: {activeFilters.dateRange}
                 </Text>
                 <TouchableOpacity 
-                  onPress={() => setActiveFilters({...activeFilters, status: 'all'})}
+                  onPress={() => setActiveFilters({...activeFilters, dateRange: 'all'})}
                   className="ml-2"
                 >
                   <Icon name="close" size={16} color={isDarkMode ? "#9CA3AF" : "#6b7280"} />
@@ -499,6 +494,32 @@ const CategoriesScreen = () => {
         <View className="flex-row px-4 mb-4">
           <ScrollView horizontal showsHorizontalScrollIndicator={false}>
             <View className="flex-row">
+              <TouchableOpacity
+                onPress={() => setSortBy('code')}
+                className={`flex-row items-center mr-2 px-4 py-2 rounded-full border ${
+                  sortBy === 'code'
+                    ? "bg-blue-500 border-blue-500"
+                    : isDarkMode
+                      ? 'bg-gray-800 border-gray-700'
+                      : 'bg-white border-gray-200'
+                }`}
+              >
+                <Icon
+                  name="sort-alphabetical"
+                  size={16}
+                  color={sortBy === 'code' ? "#ffffff" : isDarkMode ? "#9CA3AF" : "#4b5563"}
+                />
+                <Text
+                  className={`ml-2 text-sm ${
+                    sortBy === 'code'
+                      ? "text-white"
+                      : isDarkMode ? 'text-gray-300' : 'text-gray-700'
+                  }`}
+                >
+                  Code
+                </Text>
+              </TouchableOpacity>
+
               <TouchableOpacity
                 onPress={() => setSortBy('name')}
                 className={`flex-row items-center mr-2 px-4 py-2 rounded-full border ${
@@ -553,7 +574,7 @@ const CategoriesScreen = () => {
 
               <TouchableOpacity
                 onPress={() => setSortBy('id')}
-                className={`flex-row items-center mr-2 px-4 py-2 rounded-full border ${
+                className={`flex-row items-center px-4 py-2 rounded-full border ${
                   sortBy === 'id'
                     ? "bg-blue-500 border-blue-500"
                     : isDarkMode
@@ -576,53 +597,27 @@ const CategoriesScreen = () => {
                   ID
                 </Text>
               </TouchableOpacity>
-
-              <TouchableOpacity
-                onPress={() => setSortBy('status')}
-                className={`flex-row items-center px-4 py-2 rounded-full border ${
-                  sortBy === 'status'
-                    ? "bg-blue-500 border-blue-500"
-                    : isDarkMode
-                      ? 'bg-gray-800 border-gray-700'
-                      : 'bg-white border-gray-200'
-                }`}
-              >
-                <Icon
-                  name="checkbox-marked-circle-outline"
-                  size={16}
-                  color={sortBy === 'status' ? "#ffffff" : isDarkMode ? "#9CA3AF" : "#4b5563"}
-                />
-                <Text
-                  className={`ml-2 text-sm ${
-                    sortBy === 'status'
-                      ? "text-white"
-                      : isDarkMode ? 'text-gray-300' : 'text-gray-700'
-                  }`}
-                >
-                  Status
-                </Text>
-              </TouchableOpacity>
             </View>
           </ScrollView>
         </View>
 
-        {/* Category List */}
+        {/* Unit List */}
         <View className="flex-1 px-4 pb-4">
-          <CategoryList
-            categories={categories}
+          <UnitList
+            units={units}
             viewMode={viewMode}
             searchQuery={searchQuery}
             sortBy={sortBy}
             filters={activeFilters}
             onRefresh={onRefresh}
-            onDelete={handleDeleteCategory}
+            onDelete={handleDeleteUnit}
             loading={loading}
           />
         </View>
       </ScrollView>
 
       {/* Filters Modal */}
-      <CategoryFilters
+      <UnitFilters
         visible={showFilters}
         onClose={handleFiltersClose}
         onApply={handleApplyFilters}
@@ -633,4 +628,4 @@ const CategoriesScreen = () => {
   );
 };
 
-export default CategoriesScreen;
+export default UnitsScreen;
