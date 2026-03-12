@@ -154,10 +154,7 @@ export const NAVIGATION_SCREENS = {
     UNIT_DETAIL: 'UnitDetail',
     ADD_UNIT: 'AddUnit',
     
-    // Orders
-    ORDERS: 'Orders',
-    ORDER_DETAIL: 'OrderDetail',
-    CREATE_ORDER: 'CreateOrder',
+   
     
     // Customers
     CUSTOMERS: 'Customers',
