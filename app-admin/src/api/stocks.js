@@ -12,7 +12,9 @@ export const stocksAPI = {
   getAll: async (params = {}) => {
     try {
       const api = getStocksData();
-      return await api.get('/brands/stocks/', { params });
+      const response = await api.get('/stocks/', { params });
+      console.log('Stocks API Response:', response.data);
+      return response.data;
     } catch (error) {
       throw error.response?.data || error.message;
     }
@@ -22,28 +24,36 @@ export const stocksAPI = {
   getById: async (id) => {
     try {
       const api = getStocksData();
-      return await api.get(`/brands/stocks/${id}`);
+      const response = await api.get(`/stocks/${id}`);
+      return response.data;
     } catch (error) {
       throw error.response?.data || error.message;
     }
   },
 
-  // Create stock
+  // Create new stock
   create: async (stockData) => {
     try {
       const api = getStocksData();
-      return await api.post('/brands/stocks/store', {
-        user_id: stockData.userId,
+      
+      // Map frontend field names to API expected field names
+      const payload = {
+        user_id: stockData.userId || stockData.user_id,
         product_id: stockData.productId,
-        quantity: stockData.quantity,
-        selling_price: stockData.sellingPrice,
-        product_package_id: stockData.productPackageId,
-        purchase_price: stockData.purchasePrice,
-        unit_id: stockData.unitId,
-        created_by: stockData.createdBy,
-      });
+        quantity: parseInt(stockData.quantity) || 0,
+        selling_price: parseFloat(stockData.sellingPrice) || 0,
+        product_package_id: stockData.productPackageId || null,
+        purchase_price: parseFloat(stockData.purchasePrice) || null,
+        unit_id: stockData.unitId || null,
+        created_by: stockData.createdBy || stockData.userId || stockData.user_id,
+      };
+      
+      console.log('Create Stock API payload:', payload);
+      const response = await api.post('/stocks/store', payload);
+      return response.data;
     } catch (error) {
-      throw error.response?.data || error.message;
+      console.error('Create Stock API error:', error.response?.data || error.message);
+      throw error;
     }
   },
 
@@ -51,16 +61,22 @@ export const stocksAPI = {
   update: async (id, stockData) => {
     try {
       const api = getStocksData();
-      return await api.put(`/brands/stocks/${id}`, {
-        product_id: stockData.productId,
-        quantity: stockData.quantity,
-        selling_price: stockData.sellingPrice,
-        product_package_id: stockData.productPackageId,
-        purchase_price: stockData.purchasePrice,
-        unit_id: stockData.unitId,
-      });
+      
+      // Map frontend field names to API expected field names
+      const payload = {
+        quantity: parseInt(stockData.quantity) || 0,
+        selling_price: parseFloat(stockData.sellingPrice) || 0,
+        product_package_id: stockData.productPackageId || null,
+        purchase_price: parseFloat(stockData.purchasePrice) || null,
+        unit_id: stockData.unitId || null,
+      };
+      
+      console.log('Update Stock API payload:', payload);
+      const response = await api.put(`/stocks/${id}`, payload);
+      return response.data;
     } catch (error) {
-      throw error.response?.data || error.message;
+      console.error('Update Stock API error:', error.response?.data || error.message);
+      throw error;
     }
   },
 
@@ -68,66 +84,47 @@ export const stocksAPI = {
   delete: async (id) => {
     try {
       const api = getStocksData();
-      return await api.delete(`/brands/stocks/${id}`);
+      const response = await api.delete(`/stocks/${id}`);
+      return response.data;
     } catch (error) {
       throw error.response?.data || error.message;
     }
   },
 
-  // Add stock / Update stock quantity
-  addStock: async (id, quantity, price = null) => {
+  // Add stock (increment quantity)
+  addStock: async (id, stockData) => {
     try {
       const api = getStocksData();
-      return await api.post(`/brands/stocks/add-stock/${id}`, {
-        quantity,
-        selling_price: price,
+      const response = await api.post(`/stocks/add-stock/${id}`, {
+        quantity: parseInt(stockData.quantity) || 0,
+        user_id: stockData.userId || stockData.user_id,
       });
+      return response.data;
+    } catch (error) {
+      console.error('Add Stock API error:', error.response?.data || error.message);
+      throw error;
+    }
+  },
+
+  // Search stocks
+  search: async (query, filters = {}) => {
+    try {
+      const api = getStocksData();
+      const response = await api.get('/stocks/', {
+        params: { search: query, ...filters }
+      });
+      return response.data;
     } catch (error) {
       throw error.response?.data || error.message;
     }
   },
 
-  // Get stock by product
+  // Get stocks by product
   getByProduct: async (productId) => {
     try {
       const api = getStocksData();
-      return await api.get(`/brands/stocks/product/${productId}`);
-    } catch (error) {
-      throw error.response?.data || error.message;
-    }
-  },
-
-  // Get low stock items
-  getLowStock: async (threshold = 10) => {
-    try {
-      const api = getStocksData();
-      return await api.get('/brands/stocks/low-stock', {
-        params: { threshold }
-      });
-    } catch (error) {
-      throw error.response?.data || error.message;
-    }
-  },
-
-  // Get stock movements
-  getMovements: async (stockId, params = {}) => {
-    try {
-      const api = getStocksData();
-      return await api.get(`/brands/stocks/${stockId}/movements`, { params });
-    } catch (error) {
-      throw error.response?.data || error.message;
-    }
-  },
-
-  // Stock transfer between locations
-  transfer: async (fromStockId, toStockId, quantity) => {
-    try {
-      const api = getStocksData();
-      return await api.post('/brands/stocks/transfer', {
-        from_stock_id: fromStockId,
-        to_stock_id: toStockId,
-        quantity,
-      });
+      const response = await api.get(`/stocks/product/${productId}`);
+      return response.data;
     } catch (error) {
       throw error.response?.data || error.message;
     }
