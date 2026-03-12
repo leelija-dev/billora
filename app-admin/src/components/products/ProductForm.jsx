@@ -226,31 +226,65 @@ const ProductForm = ({ productId }) => {
   );
 
   useEffect(() => {
-    if (isEditing && selectedProduct) {
-      reset({
-        user_id: selectedProduct.user_id?.toString() || "1",
-        name: selectedProduct.name || "",
-        sku: selectedProduct.sku || "",
-        description: selectedProduct.description || "",
-        selling_price: selectedProduct.selling_price?.toString() || "",
-        purchase_price: selectedProduct.purchase_price?.toString() || "",
-        gst_percentage: selectedProduct.gst_percentage?.toString() || "",
-        discount_percentage: selectedProduct.discount_percentage?.toString() || "",
-        unit_amount: selectedProduct.unit_amount?.toString() || "",
-        is_active: selectedProduct.is_active ?? true,
-        created_by: selectedProduct.created_by || "1",
-      });
-      setSelectedCategory(selectedProduct.category_id || "");
-      setSelectedBrand(selectedProduct.brand_id || "");
-      setSelectedUnit(selectedProduct.unit_id || "");
-      setIsActive(selectedProduct.is_active ?? true);
+    if (isEditing && productId) {
+      // Fetch product data for editing
+      const fetchProductForEdit = async () => {
+        try {
+          setLoading(true);
+          const response = await productsAPI.getById(productId);
+          
+          // Handle paginated API response structure
+          let productData = null;
+          if (response?.data?.data) {
+            if (response.data.data.data && Array.isArray(response.data.data.data)) {
+              // This is for list endpoints - not expected here
+              productData = response.data.data.data.find(item => item.id == productId);
+            } else if (response.data.data.id) {
+              // Single product response
+              productData = response.data.data;
+            }
+          } else if (response?.data?.id) {
+            // Direct product data
+            productData = response.data;
+          } else if (response?.id) {
+            // Response itself is the product
+            productData = response;
+          }
+          
+          if (productData) {
+            reset({
+              user_id: productData.user_id?.toString() || "1",
+              name: productData.name || "",
+              sku: productData.sku || "",
+              description: productData.description || "",
+              selling_price: productData.selling_price?.toString() || "",
+              purchase_price: productData.purchase_price?.toString() || "",
+              gst_percentage: productData.gst_percentage?.toString() || "",
+              discount_percentage: productData.discount_percentage?.toString() || "",
+              unit_amount: productData.unit_amount?.toString() || "",
+              is_active: productData.is_active ?? true,
+              created_by: productData.created_by || "1",
+            });
+            setSelectedCategory(productData.category_id || "");
+            setSelectedBrand(productData.brand_id || "");
+            setSelectedUnit(productData.unit_id || "");
+            setIsActive(productData.is_active ?? true);
+          }
+        } catch (error) {
+          console.error('Error fetching product for edit:', error);
+          showError('Failed to load product data');
+        } finally {
+          setLoading(false);
+        }
+      };
+      
+      fetchProductForEdit();
     }
-  }, [isEditing, selectedProduct, reset]);
+  }, [isEditing, productId, reset]);
 
   const onSubmit = async (data) => {
     try {
       setLoading(true);
-
       const productData = {
         user_id: parseInt(data.user_id) || 1, // Ensure user_id is sent as integer
         name: data.name,
@@ -556,7 +590,7 @@ const ProductForm = ({ productId }) => {
                 isDarkMode ? 'text-white' : 'text-gray-900'
               }`}>
                 {selectedCategory 
-                  ? categories.find(c => c.id === selectedCategory)?.name 
+                  ? categories.find(c => c.id == selectedCategory)?.name 
                   : 'Select category'}
               </Text>
               <Icon name="chevron-down" size={20} color={isDarkMode ? '#9CA3AF' : '#6B7280'} />
@@ -583,7 +617,7 @@ const ProductForm = ({ productId }) => {
                 isDarkMode ? 'text-white' : 'text-gray-900'
               }`}>
                 {selectedBrand 
-                  ? brands.find(b => b.id === selectedBrand)?.name 
+                  ? brands.find(b => b.id == selectedBrand)?.name 
                   : 'Select brand'}
               </Text>
               <Icon name="chevron-down" size={20} color={isDarkMode ? '#9CA3AF' : '#6B7280'} />
@@ -610,14 +644,23 @@ const ProductForm = ({ productId }) => {
                 isDarkMode ? 'text-white' : 'text-gray-900'
               }`}>
                 {selectedUnit 
-                  ? `${units.find(u => u.id === selectedUnit)?.name} (${units.find(u => u.id === selectedUnit)?.code})`
+                  ? `${units.find(u => u.id == selectedUnit)?.name} (${units.find(u => u.id == selectedUnit)?.code})`
                   : 'Select unit'}
               </Text>
               <Icon name="chevron-down" size={20} color={isDarkMode ? '#9CA3AF' : '#6B7280'} />
             </TouchableOpacity>
           </View>
+        </View>
 
-          {/* Unit Amount */}
+        {/* Unit Amount */}
+        <View className={`rounded-2xl p-4 shadow-sm mb-6 ${
+          isDarkMode ? 'bg-gray-800' : 'bg-white'
+        }`}>
+          <Text className={`text-base font-semibold mb-4 ${
+            isDarkMode ? 'text-white' : 'text-gray-800'
+          }`}>
+            Unit Information
+          </Text>
           <Controller
             control={control}
             name="unit_amount"
