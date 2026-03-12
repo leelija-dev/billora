@@ -24,9 +24,7 @@ export default function AboutPage() {
       <section className="relative bg-gradient-to-br from-blue-50 via-white to-purple-50 py-24">
         <div className="max-w-7xl mx-auto px-6 text-center">
 
-          <span className="inline-block px-4 py-1 mb-6 text-sm font-medium text-blue-600 bg-blue-100 rounded-full">
-            About Our Company
-          </span>
+          
 
           <h1 className="text-4xl md:text-6xl font-bold leading-tight mb-6">
             Empowering Small Businesses <br />

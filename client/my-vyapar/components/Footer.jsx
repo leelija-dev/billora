@@ -1,4 +1,4 @@
- 
+
 "use client";
 
 import React from 'react';
@@ -58,11 +58,11 @@ const Footer = () => {
           {/* Brand Section */}
           <div>
             <span className="bg-blue-600 text-white px-2.5 py-1 rounded text-1xl lg:text-1xl font-bold leading-none">
-            B
-          </span>
-          <span className="text-slate-800 text-white  lg:text-1xl font-bold leading-none">
-            Billora
-          </span>
+              B
+            </span>
+            <span className="text-slate-800 text-white  lg:text-1xl font-bold leading-none">
+              Billora
+            </span>
             <p className="text-[#94a3b8] leading-[1.6] max-w-[300px] max-lg:max-w-full">
               Modern GST billing software for Indian businesses. Simplify your invoicing and compliance.
             </p>
