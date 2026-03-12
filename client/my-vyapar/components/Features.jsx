@@ -10,28 +10,28 @@ const Features = () => {
       title: "Manage cashflow seamlessly",
       description: "The billing software by Vyapar helps automate management. It is done to prevent mistakes in accounting. By investing in this billing software, you can manage your business cash flow effortlessly.",
       extraDescription: "With real-time tracking and automated reminders, you'll never miss a payment again. The dashboard provides clear insights into your accounts receivable and payable, helping you make informed financial decisions.",
-      image: "/image/feature1.png",
+      image: "/image/gst1.png",
       reverse: false
     },
     {
       title: "Online/Offline GST billing",
       description: "The Vyapar app helps you generate invoices for your customers without requiring you to stay online. You can rely on our business accounting software to validate your transactions and update your database when connecting it to the internet.",
       extraDescription: "Automatic GST calculations ensure compliance with the latest tax rates. The software generates GSTR-1, GSTR-3B reports instantly, saving hours of manual work during filing season.",
-      image: "/image/feature2.png",
+      image: "/image/invoice.png",
       reverse: true
     },
     {
       title: "Provide multiple payment options",
       description: "Choose the perfect convenience for customers; the biggest comfort you can provide is allowing them to choose how they pay you. Using the Vyapar invoicing app, you can create invoices that include multiple payment options for your business.",
       extraDescription: "Accept payments via UPI, credit/debit cards, net banking, and digital wallets. The system automatically marks invoices as paid when payment is received, reducing manual reconciliation work.",
-      image: "/image/feature3.png",
+      image: "/image/payments.png",
       reverse: false
     },
     {
       title: "Track your business status",
       description: "With free GST billing software and invoicing tools, you can manage your business using a mobile. Accounting in your business becomes quite simple and efficient with this free software. As all data is stored during invoicing.",
       extraDescription: "Get real-time insights into your business performance with interactive charts and graphs. Monitor sales trends, top products, and customer behavior to make data-driven decisions.",
-      image: "/image/feature4.png",
+      image: "/image/track.png",
       reverse: true
     }
   ];
@@ -135,7 +135,7 @@ const Features = () => {
                         : 'opacity-0 translate-x-20'
                     }`}
                 >
-                  <div className="w-full max-w-[500px] overflow-hidden rounded-lg sm:rounded-xl md:rounded-[20px]">
+                  <div className="w-full max-w-[500px] overflow-hidden rounded-lg sm:rounded-2xl md:rounded-[20px]">
                     <Image
                       src={feature.image}
                       alt={feature.title}

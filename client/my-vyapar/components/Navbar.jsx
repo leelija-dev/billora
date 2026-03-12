@@ -87,7 +87,7 @@ const Navbar = () => {
               </Link>
             </li>
 
-            <li className="w-full lg:w-auto border-b lg:border-none border-slate-100">
+             {/* <li className="w-full lg:w-auto border-b lg:border-none border-slate-100">
               <Link
                 href="/desktop"
                 className="block py-4 lg:py-0 text-slate-500 font-medium text-sm transition-colors hover:text-blue-600 lg:border-b-2 lg:border-transparent lg:hover:border-blue-600 capitalize whitespace-nowrap w-full text-left"
@@ -95,7 +95,7 @@ const Navbar = () => {
               >
                 Desktop
               </Link>
-            </li>
+            </li> */}
 
             <li className="w-full lg:w-auto border-b lg:border-none border-slate-100">
               <Link

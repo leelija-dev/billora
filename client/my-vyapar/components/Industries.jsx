@@ -84,13 +84,16 @@ const Industries = () => {
     setTimeout(() => setIsPlaying(true), 5000);
   };
 
-  const handleMouseEnter = () => {
-    setIsPlaying(false);
-  };
+ const handleMouseEnter = () => {
+  setIsPlaying(false);
+  if (autoPlayRef.current) {
+    clearInterval(autoPlayRef.current);
+  }
+};
 
-  const handleMouseLeave = () => {
-    setIsPlaying(true);
-  };
+const handleMouseLeave = () => {
+  setIsPlaying(true);
+};
 
   return (
     <section className="relative w-full py-12 sm:py-16 md:py-20 lg:py-[100px] bg-gradient-to-b from-[#f8fafc] to-white font-['Inter',sans-serif] overflow-hidden">
@@ -128,11 +131,13 @@ const Industries = () => {
             onMouseLeave={handleMouseLeave}
           >
             <div className="h-[450px] overflow-hidden rounded-[30px] bg-transparent py-[15px] relative max-md:h-[400px]">
-              <div
-                className="h-full overflow-y-auto scroll-smooth px-[30px]"
-                ref={sliderRef}
-                style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-              >
+ <div
+  className="h-full overflow-y-auto scroll-smooth px-[30px]"
+  ref={sliderRef}
+  style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+  onMouseOver={handleMouseEnter}
+  onMouseOut={handleMouseLeave}
+>
                 {infiniteCards.map((card, index) => {
                   const originalIndex = index % leftCards.length;
                   const isCenter = originalIndex === currentIndex &&
@@ -172,6 +177,8 @@ const Industries = () => {
           {/* RIGHT PANEL - Image with content, full width on mobile */}
           <div
             className="flex-1 h-[350px] sm:h-[400px] md:h-[450px] lg:h-[550px] rounded-[30px] sm:rounded-[40px] md:rounded-[45px] overflow-hidden relative transition-all duration-500 shadow-[0_20px_40px_rgba(0,0,0,0.15)] max-w-[650px] max-lg:max-w-full w-full"
+             onMouseEnter={handleMouseEnter}
+            onMouseLeave={handleMouseLeave}
             style={{
               backgroundImage: getRightPanelImage(),
               backgroundSize: 'cover',
