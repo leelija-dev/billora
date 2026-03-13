@@ -282,7 +282,7 @@ const ProductDetailScreen = () => {
                     <Text className={`text-sm ml-1 ${
                       isDarkMode ? 'text-gray-400' : 'text-gray-500'
                     }`}>
-                      Category ID: {product.category_id}
+                      Category: {product.category_name || `ID: ${product.category_id}`}
                     </Text>
                   </View>
                 )}
@@ -294,7 +294,7 @@ const ProductDetailScreen = () => {
                     <Text className={`text-sm ml-1 ${
                       isDarkMode ? 'text-gray-400' : 'text-gray-500'
                     }`}>
-                      Brand ID: {product.brand_id}
+                      Brand: {product.brand_name || `ID: ${product.brand_id}`}
                     </Text>
                   </View>
                 )}
@@ -305,7 +305,7 @@ const ProductDetailScreen = () => {
                   <Text className={`text-sm ml-1 ${
                     isDarkMode ? 'text-gray-400' : 'text-gray-500'
                   }`}>
-                    SKU: {product.sku || "N/A"}
+                    SKU: {product.sku || "Not Set"}
                   </Text>
                 </View>
               </View>
@@ -454,7 +454,7 @@ const ProductDetailScreen = () => {
                   <Text className={`text-xs ${
                     isDarkMode ? 'text-gray-400' : 'text-gray-500'
                   }`}>
-                    Unit: {product.unit_id || "N/A"} | Amount: {product.unit_amount || 1}
+                    Unit: {product.unit_name || `ID: ${product.unit_id}` || "Not Set"} | Amount: {product.unit_amount || 1}
                   </Text>
                 </View>
               </View>
@@ -492,6 +492,18 @@ const ProductDetailScreen = () => {
                     <Text className={`text-xs ${
                       isDarkMode ? 'text-gray-400' : 'text-gray-500'
                     }`}>
+                      Product ID
+                    </Text>
+                    <Text className={`text-sm font-medium ${
+                      isDarkMode ? 'text-white' : 'text-gray-800'
+                    }`}>
+                      #{product.id}
+                    </Text>
+                  </View>
+                  <View className="w-1/2 mb-3">
+                    <Text className={`text-xs ${
+                      isDarkMode ? 'text-gray-400' : 'text-gray-500'
+                    }`}>
                       Created By
                     </Text>
                     <Text className={`text-sm font-medium ${
@@ -516,6 +528,18 @@ const ProductDetailScreen = () => {
                         {product.is_active ? 'Active' : 'Inactive'}
                       </Text>
                     </View>
+                  </View>
+                  <View className="w-1/2 mb-3">
+                    <Text className={`text-xs ${
+                      isDarkMode ? 'text-gray-400' : 'text-gray-500'
+                    }`}>
+                      Created At
+                    </Text>
+                    <Text className={`text-sm font-medium ${
+                      isDarkMode ? 'text-white' : 'text-gray-800'
+                    }`}>
+                      {new Date(product.created_at).toLocaleDateString()}
+                    </Text>
                   </View>
                 </View>
               </View>

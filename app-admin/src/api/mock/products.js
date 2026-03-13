@@ -13,11 +13,16 @@ let mockProductsList = [
     purchase_price: 15.50,
     gst_percentage: 5,
     discount_percentage: 0,
-    description: 'High quality cotton t-shirt',
+    description: 'High quality cotton t-shirt perfect for everyday wear',
     is_active: true,
     created_by: 1,
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
+    stock: 50,
+    minStock: 10,
+    brand_name: 'Nike',
+    category_name: 'T-Shirts',
+    unit_name: 'Pieces'
   },
   {
     id: 2,
@@ -32,11 +37,16 @@ let mockProductsList = [
     purchase_price: 45.00,
     gst_percentage: 5,
     discount_percentage: 10,
-    description: 'Comfortable denim jeans',
+    description: 'Comfortable denim jeans with modern fit',
     is_active: true,
     created_by: 1,
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
+    stock: 25,
+    minStock: 5,
+    brand_name: 'Levis',
+    category_name: 'Jeans',
+    unit_name: 'Pieces'
   },
 ];
 
@@ -78,12 +88,30 @@ const mockProducts = {
 
       return {
         data: {
-          success: true,
-          products: filteredProducts,
-          brands: mockBrands,
-          categories: mockCategories,
-          units: mockUnits,
-        }
+          data: {
+            current_page: 1,
+            data: filteredProducts,
+            first_page_url: "http://10.0.2.2:8000/api/products?page=1",
+            from: 1,
+            last_page: 1,
+            last_page_url: "http://10.0.2.2:8000/api/products?page=1",
+            links: [
+              { url: null, label: "&laquo; Previous", active: false },
+              { url: "http://10.0.2.2:8000/api/products?page=1", label: "1", active: true },
+              { url: null, label: "Next &raquo;", active: false }
+            ],
+            next_page_url: null,
+            path: "http://10.0.2.2:8000/api/products",
+            per_page: 15,
+            prev_page_url: null,
+            to: filteredProducts.length,
+            total: filteredProducts.length
+          },
+          message: 'Product List',
+          status: true
+        },
+        status: 200,
+        url: "/products"
       };
     }
 
@@ -101,9 +129,17 @@ const mockProducts = {
 
       return {
         data: {
-          success: true,
-          product: { ...product, brand: mockBrands.find(b => b.id === product.brand_id) },
-        }
+          data: { 
+            ...product, 
+            brand: mockBrands.find(b => b.id === product.brand_id),
+            category: mockCategories.find(c => c.id === product.category_id),
+            unit: mockUnits.find(u => u.id === product.unit_id)
+          },
+          message: 'Product retrieved successfully',
+          status: true
+        },
+        status: 200,
+        url: `/products/${id}`
       };
     }
 
@@ -138,10 +174,12 @@ const mockProducts = {
 
       return {
         data: {
-          success: true,
+          data: newProduct,
           message: 'Product created successfully',
-          product: newProduct,
-        }
+          status: true
+        },
+        status: 201,
+        url: "/products/store"
       };
     }
 
@@ -175,10 +213,12 @@ const mockProducts = {
 
       return {
         data: {
-          success: true,
+          data: mockProductsList[productIndex],
           message: 'Product updated successfully',
-          product: mockProductsList[productIndex],
-        }
+          status: true
+        },
+        status: 200,
+        url: `/products/${id}`
       };
     }
 
@@ -208,9 +248,12 @@ const mockProducts = {
 
       return {
         data: {
-          success: true,
+          data: null,
           message: 'Product deleted successfully',
-        }
+          status: true
+        },
+        status: 200,
+        url: `/products/${id}`
       };
     }
 

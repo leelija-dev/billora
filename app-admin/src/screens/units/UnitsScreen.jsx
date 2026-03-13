@@ -490,116 +490,127 @@ const UnitsScreen = () => {
           </View>
         )}
 
-        {/* Sort Options */}
-        <View className="flex-row px-4 mb-4">
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            <View className="flex-row">
-              <TouchableOpacity
-                onPress={() => setSortBy('code')}
-                className={`flex-row items-center mr-2 px-4 py-2 rounded-full border ${
-                  sortBy === 'code'
-                    ? "bg-blue-500 border-blue-500"
-                    : isDarkMode
-                      ? 'bg-gray-800 border-gray-700'
-                      : 'bg-white border-gray-200'
-                }`}
+      {/* Filter Chips */}
+      {activeFilters.dateRange !== 'all' && (
+        <View className="px-4 mb-3 flex-row flex-wrap">
+          {activeFilters.dateRange !== 'all' && (
+            <View className={`flex-row items-center mr-2 mb-2 px-3 py-1.5 rounded-full ${
+              isDarkMode ? 'bg-gray-800' : 'bg-gray-100'
+            }`}>
+              <Text className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                Date: {activeFilters.dateRange}
+              </Text>
+              <TouchableOpacity 
+                onPress={() => setActiveFilters({...activeFilters, dateRange: 'all'})}
+                className="ml-2"
               >
-                <Icon
-                  name="sort-alphabetical"
-                  size={16}
-                  color={sortBy === 'code' ? "#ffffff" : isDarkMode ? "#9CA3AF" : "#4b5563"}
-                />
-                <Text
-                  className={`ml-2 text-sm ${
-                    sortBy === 'code'
-                      ? "text-white"
-                      : isDarkMode ? 'text-gray-300' : 'text-gray-700'
-                  }`}
-                >
-                  Code
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                onPress={() => setSortBy('name')}
-                className={`flex-row items-center mr-2 px-4 py-2 rounded-full border ${
-                  sortBy === 'name'
-                    ? "bg-blue-500 border-blue-500"
-                    : isDarkMode
-                      ? 'bg-gray-800 border-gray-700'
-                      : 'bg-white border-gray-200'
-                }`}
-              >
-                <Icon
-                  name="sort-alphabetical"
-                  size={16}
-                  color={sortBy === 'name' ? "#ffffff" : isDarkMode ? "#9CA3AF" : "#4b5563"}
-                />
-                <Text
-                  className={`ml-2 text-sm ${
-                    sortBy === 'name'
-                      ? "text-white"
-                      : isDarkMode ? 'text-gray-300' : 'text-gray-700'
-                  }`}
-                >
-                  Name
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                onPress={() => setSortBy('date')}
-                className={`flex-row items-center mr-2 px-4 py-2 rounded-full border ${
-                  sortBy === 'date'
-                    ? "bg-blue-500 border-blue-500"
-                    : isDarkMode
-                      ? 'bg-gray-800 border-gray-700'
-                      : 'bg-white border-gray-200'
-                }`}
-              >
-                <Icon
-                  name="calendar"
-                  size={16}
-                  color={sortBy === 'date' ? "#ffffff" : isDarkMode ? "#9CA3AF" : "#4b5563"}
-                />
-                <Text
-                  className={`ml-2 text-sm ${
-                    sortBy === 'date'
-                      ? "text-white"
-                      : isDarkMode ? 'text-gray-300' : 'text-gray-700'
-                  }`}
-                >
-                  Date
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                onPress={() => setSortBy('id')}
-                className={`flex-row items-center px-4 py-2 rounded-full border ${
-                  sortBy === 'id'
-                    ? "bg-blue-500 border-blue-500"
-                    : isDarkMode
-                      ? 'bg-gray-800 border-gray-700'
-                      : 'bg-white border-gray-200'
-                }`}
-              >
-                <Icon
-                  name="numeric"
-                  size={16}
-                  color={sortBy === 'id' ? "#ffffff" : isDarkMode ? "#9CA3AF" : "#4b5563"}
-                />
-                <Text
-                  className={`ml-2 text-sm ${
-                    sortBy === 'id'
-                      ? "text-white"
-                      : isDarkMode ? 'text-gray-300' : 'text-gray-700'
-                  }`}
-                >
-                  ID
-                </Text>
+                <Icon name="close" size={16} color={isDarkMode ? "#9CA3AF" : "#6b7280"} />
               </TouchableOpacity>
             </View>
-          </ScrollView>
+          )}
         </View>
+      )}
+
+      {/* Sort Options */}
+      <View className="flex-row px-4 mb-4">
+        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+          <View className="flex-row">
+            <TouchableOpacity
+              onPress={() => setSortBy('code')}
+              className={`flex-row items-center mr-2 px-4 py-2 rounded-full border ${
+                sortBy === 'code'
+                  ? "bg-blue-500 border-blue-500"
+                  : isDarkMode
+                    ? 'bg-gray-800 border-gray-700'
+                    : 'bg-white border-gray-200'
+              }`}
+            >
+              <Text
+                className={`text-sm ${
+                  sortBy === 'code'
+                    ? "text-white"
+                    : isDarkMode ? 'text-gray-300' : 'text-gray-700'
+                }`}
+              >
+                Code
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={() => setSortBy('name')}
+              className={`flex-row items-center mr-2 px-4 py-2 rounded-full border ${
+                sortBy === 'name'
+                  ? "bg-blue-500 border-blue-500"
+                  : isDarkMode
+                    ? 'bg-gray-800 border-gray-700'
+                    : 'bg-white border-gray-200'
+              }`}
+            >
+              <Icon
+                name="sort-ascending"
+                size={16}
+                color={sortBy === 'name' ? "#ffffff" : isDarkMode ? "#9CA3AF" : "#4b5563"}
+              />
+              <Text
+                className={`ml-2 text-sm ${
+                  sortBy === 'name'
+                    ? "text-white"
+                    : isDarkMode ? 'text-gray-300' : 'text-gray-700'
+                }`}
+              >
+                Name
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={() => setSortBy('date')}
+              className={`flex-row items-center mr-2 px-4 py-2 rounded-full border ${
+                sortBy === 'date'
+                  ? "bg-blue-500 border-blue-500"
+                  : isDarkMode
+                    ? 'bg-gray-800 border-gray-700'
+                    : 'bg-white border-gray-200'
+              }`}
+            >
+              <Icon
+                name="calendar"
+                size={16}
+                color={sortBy === 'date' ? "#ffffff" : isDarkMode ? "#9CA3AF" : "#4b5563"}
+              />
+              <Text
+                className={`ml-2 text-sm ${
+                  sortBy === 'date'
+                    ? "text-white"
+                    : isDarkMode ? 'text-gray-300' : 'text-gray-700'
+                }`}
+              >
+                Date
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={() => setSortBy('id')}
+              className={`flex-row items-center px-4 py-2 rounded-full border ${
+                sortBy === 'id'
+                  ? "bg-blue-500 border-blue-500"
+                  : isDarkMode
+                    ? 'bg-gray-800 border-gray-700'
+                    : 'bg-white border-gray-200'
+              }`}
+            >
+              <Text
+                className={`ml-2 text-sm ${
+                  sortBy === 'id'
+                    ? "text-white"
+                    : isDarkMode ? 'text-gray-300' : 'text-gray-700'
+                }`}
+              >
+                ID
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+      </View>
 
         {/* Unit List */}
         <View className="flex-1 px-4 pb-4">

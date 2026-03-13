@@ -31,7 +31,7 @@ const Features = () => {
       title: "Track your business status",
       description: "With free GST billing software and invoicing tools, you can manage your business using a mobile. Accounting in your business becomes quite simple and efficient with this free software. As all data is stored during invoicing.",
       extraDescription: "Get real-time insights into your business performance with interactive charts and graphs. Monitor sales trends, top products, and customer behavior to make data-driven decisions.",
-      image: "/image/track.png",
+      image: "/image/trace.png",
       reverse: true
     }
   ];

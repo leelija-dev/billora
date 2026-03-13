@@ -59,12 +59,12 @@ const FilterModal = ({
     {
       id: "name-asc",
       label: "Name (A-Z)",
-      icon: "sort-alphabetical-ascending",
+      icon: "sort-ascending",
     },
     {
       id: "name-desc",
       label: "Name (Z-A)",
-      icon: "sort-alphabetical-descending",
+      icon: "sort-descending",
     },
     {
       id: "orders-high",

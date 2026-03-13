@@ -487,23 +487,25 @@ const BrandsScreen = () => {
             <View className="flex-row">
               <TouchableOpacity
                 onPress={() => setSortBy('name')}
-                className={`flex-row items-center mr-2 px-4 py-2 rounded-full border ${sortBy === 'name'
+                className={`flex-row items-center mr-2 px-4 py-2 rounded-full border ${
+                  sortBy === 'name'
                     ? "bg-blue-500 border-blue-500"
                     : isDarkMode
                       ? 'bg-gray-800 border-gray-700'
                       : 'bg-white border-gray-200'
-                  }`}
+                }`}
               >
                 <Icon
-                  name="sort-alphabetical-ascending"
+                  name="sort-ascending"
                   size={16}
                   color={sortBy === 'name' ? "#ffffff" : isDarkMode ? "#9CA3AF" : "#4b5563"}
                 />
                 <Text
-                  className={`ml-2 text-sm ${sortBy === 'name'
+                  className={`ml-2 text-sm ${
+                    sortBy === 'name'
                       ? "text-white"
                       : isDarkMode ? 'text-gray-300' : 'text-gray-700'
-                    }`}
+                  }`}
                 >
                   Name
                 </Text>
@@ -511,12 +513,13 @@ const BrandsScreen = () => {
 
               <TouchableOpacity
                 onPress={() => setSortBy('date')}
-                className={`flex-row items-center mr-2 px-4 py-2 rounded-full border ${sortBy === 'date'
+                className={`flex-row items-center mr-2 px-4 py-2 rounded-full border ${
+                  sortBy === 'date'
                     ? "bg-blue-500 border-blue-500"
                     : isDarkMode
                       ? 'bg-gray-800 border-gray-700'
                       : 'bg-white border-gray-200'
-                  }`}
+                }`}
               >
                 <Icon
                   name="calendar"
@@ -524,10 +527,11 @@ const BrandsScreen = () => {
                   color={sortBy === 'date' ? "#ffffff" : isDarkMode ? "#9CA3AF" : "#4b5563"}
                 />
                 <Text
-                  className={`ml-2 text-sm ${sortBy === 'date'
+                  className={`ml-2 text-sm ${
+                    sortBy === 'date'
                       ? "text-white"
                       : isDarkMode ? 'text-gray-300' : 'text-gray-700'
-                    }`}
+                  }`}
                 >
                   Date
                 </Text>
@@ -535,12 +539,13 @@ const BrandsScreen = () => {
 
               <TouchableOpacity
                 onPress={() => setSortBy('id')}
-                className={`flex-row items-center mr-2 px-4 py-2 rounded-full border ${sortBy === 'id'
+                className={`flex-row items-center mr-2 px-4 py-2 rounded-full border ${
+                  sortBy === 'id'
                     ? "bg-blue-500 border-blue-500"
                     : isDarkMode
                       ? 'bg-gray-800 border-gray-700'
                       : 'bg-white border-gray-200'
-                  }`}
+                }`}
               >
                 <Icon
                   name="numeric"
@@ -548,10 +553,11 @@ const BrandsScreen = () => {
                   color={sortBy === 'id' ? "#ffffff" : isDarkMode ? "#9CA3AF" : "#4b5563"}
                 />
                 <Text
-                  className={`ml-2 text-sm ${sortBy === 'id'
+                  className={`ml-2 text-sm ${
+                    sortBy === 'id'
                       ? "text-white"
                       : isDarkMode ? 'text-gray-300' : 'text-gray-700'
-                    }`}
+                  }`}
                 >
                   ID
                 </Text>
@@ -559,12 +565,13 @@ const BrandsScreen = () => {
 
               <TouchableOpacity
                 onPress={() => setSortBy('status')}
-                className={`flex-row items-center px-4 py-2 rounded-full border ${sortBy === 'status'
+                className={`flex-row items-center px-4 py-2 rounded-full border ${
+                  sortBy === 'status'
                     ? "bg-blue-500 border-blue-500"
                     : isDarkMode
                       ? 'bg-gray-800 border-gray-700'
                       : 'bg-white border-gray-200'
-                  }`}
+                }`}
               >
                 <Icon
                   name="checkbox-marked-circle-outline"
@@ -572,10 +579,11 @@ const BrandsScreen = () => {
                   color={sortBy === 'status' ? "#ffffff" : isDarkMode ? "#9CA3AF" : "#4b5563"}
                 />
                 <Text
-                  className={`ml-2 text-sm ${sortBy === 'status'
+                  className={`ml-2 text-sm ${
+                    sortBy === 'status'
                       ? "text-white"
                       : isDarkMode ? 'text-gray-300' : 'text-gray-700'
-                    }`}
+                  }`}
                 >
                   Status
                 </Text>

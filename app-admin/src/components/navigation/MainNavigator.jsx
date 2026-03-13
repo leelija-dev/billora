@@ -13,9 +13,7 @@ import AddCustomerScreen from "../../screens/customers/AddCustomerScreen";
 import CustomerDetailScreen from "../../screens/customers/CustomerDetailScreen";
 import CustomersScreen from "../../screens/customers/CustomersScreen";
 import DashboardScreen from "../../screens/dashboard/DashboardScreen";
-import CreateOrderScreen from "../../screens/orders/CreateOrderScreen";
-import OrderDetailScreen from "../../screens/orders/OrderDetailScreen";
-import OrdersScreen from "../../screens/orders/OrdersScreen";
+
 import AddProductScreen from "../../screens/products/AddProductScreen";
 import ProductDetailScreen from "../../screens/products/ProductDetailScreen";
 import ProductsScreen from "../../screens/products/ProductsScreen";
@@ -287,52 +285,7 @@ const UnitsStack = () => {
   );
 };
 
-// Orders Stack with Dark Mode
-const OrdersStack = () => {
-  const { isDarkMode } = useThemeStore();
 
-  return (
-    <Stack.Navigator
-      screenOptions={{
-        headerShown: false,
-        animation: "slide_from_right",
-        contentStyle: { backgroundColor: isDarkMode ? "#111827" : "#F8FAFC" },
-      }}
-    >
-      <Stack.Screen
-        name={NAVIGATION_SCREENS.MAIN.ORDERS}
-        component={OrdersScreen}
-        options={{
-          header: ({ navigation }) => (
-            <StackHeader
-              title="Orders"
-              navigation={navigation}
-              showBack={false}
-            />
-          ),
-        }}
-      />
-      <Stack.Screen
-        name={NAVIGATION_SCREENS.MAIN.ORDER_DETAIL}
-        component={OrderDetailScreen}
-        options={({ navigation }) => ({
-          header: () => (
-            <StackHeader title="Order Details" navigation={navigation} />
-          ),
-        })}
-      />
-      <Stack.Screen
-        name={NAVIGATION_SCREENS.MAIN.CREATE_ORDER}
-        component={CreateOrderScreen}
-        options={({ navigation }) => ({
-          header: () => (
-            <StackHeader title="Create Order" navigation={navigation} />
-          ),
-        })}
-      />
-    </Stack.Navigator>
-  );
-};
 
 // Customers Stack with Dark Mode
 const CustomersStack = () => {
@@ -525,13 +478,7 @@ const ModernTabBar = ({ state, descriptors, navigation }) => {
       label: "Stocks",
       screen: "StocksStack",
     },
-    {
-      name: "Orders",
-      icon: "clipboard-list-outline",
-      iconActive: "clipboard-list",
-      label: "Orders",
-      screen: "OrdersStack",
-    },
+   
     {
       name: "Clients",
       icon: "account-group-outline",
@@ -681,7 +628,7 @@ const MainNavigator = () => {
       <Tab.Screen name="BrandsStack" component={BrandsStack} />
       <Tab.Screen name="UnitsStack" component={UnitsStack} />
       <Tab.Screen name="StocksStack" component={StocksStack} />
-      <Tab.Screen name="OrdersStack" component={OrdersStack} />
+      
       <Tab.Screen name="CustomersStack" component={CustomersStack} />
 
       {/* Hidden screens - accessible via navigation only */}

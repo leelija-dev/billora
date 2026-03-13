@@ -57,15 +57,7 @@ const Header = ({
     screen: "Products", // The actual screen name inside the stack
     badge: "156",
   },
-  {
-    id: "orders",
-    title: "Orders",
-    icon: "clipboard-list-outline",
-    iconActive: "clipboard-list",
-    parent: "OrdersStack",
-    screen: "Orders", // The actual screen name
-    badge: "12",
-  },
+  
   {
     id: "customers",
     title: "Customers",
@@ -219,7 +211,7 @@ const Header = ({
     const targetStack = item.parent || `${item.title}Stack`;
     const targetScreen = item.screen || item.title;
     
-    if (item.parent || ['products', 'orders', 'customers', 'inventory', 'settings'].includes(item.id)) {
+    if (item.parent || ['products',  'customers', 'inventory', 'settings'].includes(item.id)) {
       // console.log('Navigating to parent stack:', targetStack);
       navigation.navigate(targetStack);
     } else {

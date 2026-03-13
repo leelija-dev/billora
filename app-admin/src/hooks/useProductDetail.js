@@ -13,7 +13,26 @@ export const useProductDetail = (productId) => {
       setLoading(true);
       setError(null);
       const response = await productsAPI.getById(productId);
-      setProduct(response.data || response);
+      
+      // Handle paginated API response structure
+      let productData = null;
+      if (response?.data?.data) {
+        if (response.data.data.data && Array.isArray(response.data.data.data)) {
+          // This is for list endpoints - not expected here
+          productData = response.data.data.data.find(item => item.id == productId);
+        } else if (response.data.data.id) {
+          // Single product response
+          productData = response.data.data;
+        }
+      } else if (response?.data?.id) {
+        // Direct product data
+        productData = response.data;
+      } else if (response?.id) {
+        // Response itself is the product
+        productData = response;
+      }
+      
+      setProduct(productData);
     } catch (err) {
       setError(err.message || 'Failed to fetch product');
     } finally {

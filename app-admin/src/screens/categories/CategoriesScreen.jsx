@@ -510,7 +510,7 @@ const CategoriesScreen = () => {
                 }`}
               >
                 <Icon
-                  name="sort-alphabetical"
+                  name="sort-ascending"
                   size={16}
                   color={sortBy === 'name' ? "#ffffff" : isDarkMode ? "#9CA3AF" : "#4b5563"}
                 />

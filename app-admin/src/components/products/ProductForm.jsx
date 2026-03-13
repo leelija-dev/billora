@@ -3,45 +3,20 @@ import { useNavigation, useRoute } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
 import { useEffect, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
-import { Alert, ScrollView, Text, TouchableOpacity, View, Modal, FlatList } from "react-native";
+import { Alert, ScrollView, Text, TouchableOpacity, View, Modal, FlatList, Image } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import * as ImagePicker from 'expo-image-picker';
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 import { useThemeStore } from "../../store/themeStore";
 import { productsAPI } from "../../api";
+import { brandsAPI } from "../../api/brands";
+import { categoriesAPI } from "../../api/categories";
+import { unitsAPI } from "../../api/units";
 import { useMutation } from "../../hooks/useApi";
 import { useProductStore } from "../../store/productStore";
 import { useUIStore } from "../../store/uiStore";
 import Button from "../common/Button";
 import Input from "../common/Input";
-
-// Mock data for dropdowns - Replace with actual API calls
-const categories = [
-  { id: "1", name: "Apparel", icon: "tshirt-crew" },
-  { id: "2", name: "Footwear", icon: "shoe-sneaker" },
-  { id: "3", name: "Accessories", icon: "watch" },
-  { id: "4", name: "Outerwear", icon: "jacket" },
-  { id: "5", name: "Knitwear", icon: "knitting" },
-  { id: "6", name: "Electronics", icon: "laptop" },
-];
-
-const brands = [
-  { id: "1", name: "Nike" },
-  { id: "2", name: "Adidas" },
-  { id: "3", name: "Puma" },
-  { id: "4", name: "Zara" },
-  { id: "5", name: "H&M" },
-];
-
-const units = [
-  { id: "1", name: "Piece", code: "pc" },
-  { id: "2", name: "Kilogram", code: "kg" },
-  { id: "3", name: "Gram", code: "g" },
-  { id: "4", name: "Liter", code: "l" },
-  { id: "5", name: "Meter", code: "m" },
-  { id: "6", name: "Box", code: "box" },
-  { id: "7", name: "Pair", code: "pr" },
-  { id: "8", name: "Dozen", code: "dz" },
-];
 
 const ProductForm = ({ productId }) => {
   const navigation = useNavigation();
@@ -57,10 +32,167 @@ const ProductForm = ({ productId }) => {
   const [selectedUnit, setSelectedUnit] = useState("");
   const [isActive, setIsActive] = useState(true);
   
+  // Image upload state
+  const [productImages, setProductImages] = useState([]);
+  
+  // API data states
+  const [categories, setCategories] = useState([]);
+  const [brands, setBrands] = useState([]);
+  const [units, setUnits] = useState([]);
+  const [loadingDropdowns, setLoadingDropdowns] = useState(false);
+  
   // Dropdown visibility states
   const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
   const [showBrandDropdown, setShowBrandDropdown] = useState(false);
   const [showUnitDropdown, setShowUnitDropdown] = useState(false);
+
+  // Image picker function
+  const handleImagePicker = async () => {
+    try {
+      // Request permission
+      const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (permissionResult.granted === false) {
+        Alert.alert('Permission Required', 'Please grant camera roll permissions to upload images.');
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: false,
+        quality: 0.8,
+        allowsMultipleSelection: true,
+      });
+
+      if (!result.canceled && result.assets) {
+        const newImages = result.assets.map(asset => ({
+          uri: asset.uri,
+          name: asset.fileName || `product_${Date.now()}.jpg`,
+          type: asset.mimeType || 'image/jpeg'
+        }));
+        setProductImages(prev => [...prev, ...newImages]);
+      }
+    } catch (error) {
+      console.error('Error picking image:', error);
+      showError('Failed to pick image');
+    }
+  };
+
+  // Camera function
+  const handleCamera = async () => {
+    try {
+      // Request permission
+      const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
+      if (permissionResult.granted === false) {
+        Alert.alert('Permission Required', 'Please grant camera permissions to take photos.');
+        return;
+      }
+
+      const result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [4, 3],
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets) {
+        const newImage = {
+          uri: result.assets[0].uri,
+          name: result.assets[0].fileName || `product_${Date.now()}.jpg`,
+          type: result.assets[0].mimeType || 'image/jpeg'
+        };
+        setProductImages(prev => [...prev, newImage]);
+      }
+    } catch (error) {
+      console.error('Error taking photo:', error);
+      showError('Failed to take photo');
+    }
+  };
+
+  // Show image options
+  const showImageOptions = () => {
+    Alert.alert(
+      'Add Product Image',
+      'Choose an option',
+      [
+        {
+          text: 'Take Photo',
+          onPress: handleCamera,
+        },
+        {
+          text: 'Choose from Gallery',
+          onPress: handleImagePicker,
+        },
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+      ],
+    );
+  };
+
+  // Remove image
+  const removeImage = (index) => {
+    setProductImages(prev => prev.filter((_, i) => i !== index));
+  };
+
+  // Fetch dropdown data
+  useEffect(() => {
+    const fetchDropdownData = async () => {
+      try {
+        setLoadingDropdowns(true);
+        
+        // Fetch categories
+        const categoriesResponse = await categoriesAPI.getAll();
+        let categoriesData = [];
+        if (categoriesResponse?.data?.data) {
+          if (categoriesResponse.data.data.data && Array.isArray(categoriesResponse.data.data.data)) {
+            categoriesData = categoriesResponse.data.data.data;
+          } else if (Array.isArray(categoriesResponse.data.data)) {
+            categoriesData = categoriesResponse.data.data;
+          }
+        } else if (Array.isArray(categoriesResponse?.data)) {
+          categoriesData = categoriesResponse.data;
+        }
+        setCategories(categoriesData);
+        
+        // Fetch brands
+        const brandsResponse = await brandsAPI.getAll();
+        let brandsData = [];
+        if (brandsResponse?.data?.data) {
+          if (brandsResponse.data.data.data && Array.isArray(brandsResponse.data.data.data)) {
+            brandsData = brandsResponse.data.data.data;
+          } else if (Array.isArray(brandsResponse.data.data)) {
+            brandsData = brandsResponse.data.data;
+          }
+        } else if (Array.isArray(brandsResponse?.data)) {
+          brandsData = brandsResponse.data;
+        }
+        setBrands(brandsData);
+        
+        // Fetch units
+        const unitsResponse = await unitsAPI.getAll();
+        let unitsData = [];
+        if (unitsResponse?.data?.data) {
+          if (unitsResponse.data.data.data && Array.isArray(unitsResponse.data.data.data)) {
+            unitsData = unitsResponse.data.data.data;
+          } else if (Array.isArray(unitsResponse.data.data)) {
+            unitsData = unitsResponse.data.data;
+          }
+        } else if (Array.isArray(unitsResponse?.data)) {
+          unitsData = unitsResponse.data;
+        }
+        setUnits(unitsData);
+        
+      } catch (error) {
+        console.error('Error fetching dropdown data:', error);
+        showError('Failed to load dropdown data');
+      } finally {
+        setLoadingDropdowns(false);
+      }
+    };
+
+    fetchDropdownData();
+  }, []);
 
   const {
     control,
@@ -71,6 +203,7 @@ const ProductForm = ({ productId }) => {
     setValue,
   } = useForm({
     defaultValues: {
+      user_id: "1", // This should come from auth store
       name: "",
       sku: "",
       description: "",
@@ -93,57 +226,106 @@ const ProductForm = ({ productId }) => {
   );
 
   useEffect(() => {
-    if (isEditing && selectedProduct) {
-      reset({
-        name: selectedProduct.name || "",
-        sku: selectedProduct.sku || "",
-        description: selectedProduct.description || "",
-        selling_price: selectedProduct.selling_price?.toString() || "",
-        purchase_price: selectedProduct.purchase_price?.toString() || "",
-        gst_percentage: selectedProduct.gst_percentage?.toString() || "",
-        discount_percentage: selectedProduct.discount_percentage?.toString() || "",
-        unit_amount: selectedProduct.unit_amount?.toString() || "",
-        is_active: selectedProduct.is_active ?? true,
-        created_by: selectedProduct.created_by || "1",
-      });
-      setSelectedCategory(selectedProduct.category_id || "");
-      setSelectedBrand(selectedProduct.brand_id || "");
-      setSelectedUnit(selectedProduct.unit_id || "");
-      setIsActive(selectedProduct.is_active ?? true);
+    if (isEditing && productId) {
+      // Fetch product data for editing
+      const fetchProductForEdit = async () => {
+        try {
+          setLoading(true);
+          const response = await productsAPI.getById(productId);
+          
+          // Handle paginated API response structure
+          let productData = null;
+          if (response?.data?.data) {
+            if (response.data.data.data && Array.isArray(response.data.data.data)) {
+              // This is for list endpoints - not expected here
+              productData = response.data.data.data.find(item => item.id == productId);
+            } else if (response.data.data.id) {
+              // Single product response
+              productData = response.data.data;
+            }
+          } else if (response?.data?.id) {
+            // Direct product data
+            productData = response.data;
+          } else if (response?.id) {
+            // Response itself is the product
+            productData = response;
+          }
+          
+          if (productData) {
+            reset({
+              user_id: productData.user_id?.toString() || "1",
+              name: productData.name || "",
+              sku: productData.sku || "",
+              description: productData.description || "",
+              selling_price: productData.selling_price?.toString() || "",
+              purchase_price: productData.purchase_price?.toString() || "",
+              gst_percentage: productData.gst_percentage?.toString() || "",
+              discount_percentage: productData.discount_percentage?.toString() || "",
+              unit_amount: productData.unit_amount?.toString() || "",
+              is_active: productData.is_active ?? true,
+              created_by: productData.created_by || "1",
+            });
+            setSelectedCategory(productData.category_id || "");
+            setSelectedBrand(productData.brand_id || "");
+            setSelectedUnit(productData.unit_id || "");
+            setIsActive(productData.is_active ?? true);
+          }
+        } catch (error) {
+          console.error('Error fetching product for edit:', error);
+          showError('Failed to load product data');
+        } finally {
+          setLoading(false);
+        }
+      };
+      
+      fetchProductForEdit();
     }
-  }, [isEditing, selectedProduct, reset]);
+  }, [isEditing, productId, reset]);
 
   const onSubmit = async (data) => {
     try {
       setLoading(true);
-
       const productData = {
-        ...data,
+        user_id: parseInt(data.user_id) || 1, // Ensure user_id is sent as integer
+        name: data.name,
+        sku: data.sku,
+        description: data.description,
         selling_price: parseFloat(data.selling_price) || 0,
         purchase_price: parseFloat(data.purchase_price) || 0,
         gst_percentage: parseFloat(data.gst_percentage) || 0,
         discount_percentage: parseFloat(data.discount_percentage) || 0,
         unit_amount: parseFloat(data.unit_amount) || 1,
-        category_id: selectedCategory,
-        brand_id: selectedBrand,
-        unit_id: selectedUnit,
+        category_id: selectedCategory ? parseInt(selectedCategory) : null,
+        brand_id: selectedBrand ? parseInt(selectedBrand) : null,
+        unit_id: selectedUnit ? parseInt(selectedUnit) : null,
         is_active: isActive,
-        created_by: data.created_by || "1",
+        created_by: parseInt(data.created_by) || 1,
       };
+
+      console.log('Submitting product data:', productData);
 
       if (isEditing) {
         const response = await updateProductApi(productData);
-        updateProduct(selectedProduct.id, response.product);
+        console.log('Update response:', response);
+        const product = response.data?.data || response.data || response;
+        updateProduct(selectedProduct.id, product);
         showSuccess("Product updated successfully");
       } else {
         const response = await createProduct(productData);
-        addProduct(response.product);
+        console.log('Create response:', response);
+        const product = response.data?.data || response.data || response;
+        addProduct(product);
         showSuccess("Product created successfully");
       }
 
       navigation.goBack();
     } catch (error) {
-      showError(error.message || "Failed to save product");
+      console.error('Product creation error:', error);
+      const errorMessage = error.response?.data?.message || 
+                          error.response?.data?.error || 
+                          error.message || 
+                          "Failed to save product";
+      showError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -232,19 +414,50 @@ const ProductForm = ({ productId }) => {
         contentContainerClassName="px-5 pb-16 pt-0"
         showsVerticalScrollIndicator={false}
       >
-        {/* Image Upload Section - Keep as is */}
-        <TouchableOpacity className="mb-6">
-          <View className={`w-full h-48 rounded-2xl overflow-hidden border-2 border-dashed items-center justify-center ${
-            isDarkMode 
-              ? 'bg-gray-800 border-gray-700' 
-              : 'bg-gray-200 border-gray-300'
+        {/* Image Upload Section */}
+        <View className="mb-6">
+          <Text className={`text-base font-semibold mb-4 ${
+            isDarkMode ? 'text-white' : 'text-gray-800'
           }`}>
+            Product Images
+          </Text>
+          
+          {/* Image Preview */}
+          {productImages.length > 0 && (
+            <View className="flex-row flex-wrap gap-2 mb-4">
+              {productImages.map((image, index) => (
+                <View key={index} className="relative">
+                  <Image 
+                    source={{ uri: image.uri }} 
+                    className="w-20 h-20 rounded-lg"
+                    style={{ width: 80, height: 80 }}
+                  />
+                  <TouchableOpacity
+                    onPress={() => removeImage(index)}
+                    className="absolute -top-2 -right-2 bg-red-500 rounded-full w-6 h-6 items-center justify-center"
+                  >
+                    <Icon name="close" size={16} color="white" />
+                  </TouchableOpacity>
+                </View>
+              ))}
+            </View>
+          )}
+          
+          {/* Add Image Button */}
+          <TouchableOpacity
+            onPress={showImageOptions}
+            className={`w-full h-32 rounded-2xl border-2 border-dashed items-center justify-center ${
+              isDarkMode 
+                ? 'bg-gray-800 border-gray-700' 
+                : 'bg-gray-200 border-gray-300'
+            }`}
+          >
             <Icon name="camera-plus" size={40} color="#9ca3af" />
             <Text className={`mt-2 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
               Add Product Images
             </Text>
-          </View>
-        </TouchableOpacity>
+          </TouchableOpacity>
+        </View>
 
         {/* Basic Information Section */}
         <View className={`rounded-2xl p-4 shadow-sm mb-6 ${
@@ -255,6 +468,20 @@ const ProductForm = ({ productId }) => {
           }`}>
             Basic Information
           </Text>
+
+          {/* Hidden user_id field */}
+          <Controller
+            control={control}
+            name="user_id"
+            render={({ field: { onChange, value } }) => (
+              <Input
+                value={value}
+                onChangeText={onChange}
+                containerClassName="hidden"
+                isDarkMode={isDarkMode}
+              />
+            )}
+          />
 
           {/* Product Name */}
           <Controller
@@ -363,7 +590,7 @@ const ProductForm = ({ productId }) => {
                 isDarkMode ? 'text-white' : 'text-gray-900'
               }`}>
                 {selectedCategory 
-                  ? categories.find(c => c.id === selectedCategory)?.name 
+                  ? categories.find(c => c.id == selectedCategory)?.name 
                   : 'Select category'}
               </Text>
               <Icon name="chevron-down" size={20} color={isDarkMode ? '#9CA3AF' : '#6B7280'} />
@@ -390,7 +617,7 @@ const ProductForm = ({ productId }) => {
                 isDarkMode ? 'text-white' : 'text-gray-900'
               }`}>
                 {selectedBrand 
-                  ? brands.find(b => b.id === selectedBrand)?.name 
+                  ? brands.find(b => b.id == selectedBrand)?.name 
                   : 'Select brand'}
               </Text>
               <Icon name="chevron-down" size={20} color={isDarkMode ? '#9CA3AF' : '#6B7280'} />
@@ -417,14 +644,23 @@ const ProductForm = ({ productId }) => {
                 isDarkMode ? 'text-white' : 'text-gray-900'
               }`}>
                 {selectedUnit 
-                  ? `${units.find(u => u.id === selectedUnit)?.name} (${units.find(u => u.id === selectedUnit)?.code})`
+                  ? `${units.find(u => u.id == selectedUnit)?.name} (${units.find(u => u.id == selectedUnit)?.code})`
                   : 'Select unit'}
               </Text>
               <Icon name="chevron-down" size={20} color={isDarkMode ? '#9CA3AF' : '#6B7280'} />
             </TouchableOpacity>
           </View>
+        </View>
 
-          {/* Unit Amount */}
+        {/* Unit Amount */}
+        <View className={`rounded-2xl p-4 shadow-sm mb-6 ${
+          isDarkMode ? 'bg-gray-800' : 'bg-white'
+        }`}>
+          <Text className={`text-base font-semibold mb-4 ${
+            isDarkMode ? 'text-white' : 'text-gray-800'
+          }`}>
+            Unit Information
+          </Text>
           <Controller
             control={control}
             name="unit_amount"
