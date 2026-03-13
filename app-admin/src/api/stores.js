@@ -37,10 +37,11 @@ export const storesAPI = {
   getById: async (id) => {
     try {
       const api = getStoresData();
-      const response = await api.post(`/store/edit/${id}`);
+      const response = await api.get(`/store/edit/${id}`);
       return response.data;
     } catch (error) {
-      throw error.response?.data || error.message;
+      console.error('Get Store API error:', error.response?.data || error.message);
+      throw error;
     }
   },
 
