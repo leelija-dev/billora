@@ -1,3 +1,4 @@
+// solution/page.tsx
 "use client";
 
 import {
@@ -9,6 +10,8 @@ import {
   Layers,
 } from "lucide-react";
 import Link from "next/link";
+import Navbar from "@/components/Navbar";
+import Footer from "@/components/Footer";
 
 
 // export const metadata = {
@@ -49,15 +52,19 @@ export default function SolutionPage() {
 
   return (
     <div className="min-h-screen bg-white">
-      {/* Back to Home Button */}
-      <div className="fixed top-24 left-4 z-50">
-        <Link 
-          href="/"
-          className="flex items-center gap-2 bg-white px-4 py-2 rounded-full shadow-lg hover:shadow-xl transition-all hover:-translate-y-0.5 border border-gray-200 group"
-        >
-          <span className="text-xl group-hover:-translate-x-1 transition-transform">←</span>
-          <span className="font-medium">Back to Home</span>
-        </Link>
+      <Navbar />
+      
+      {/* Back to Home Button - positioned below navbar */}
+      <div className="pt-20">
+        <div className="fixed top-24 left-4 z-50">
+          <Link 
+            href="/"
+            className="flex items-center gap-2 bg-white px-4 py-2 rounded-full shadow-lg hover:shadow-xl transition-all hover:-translate-y-0.5 border border-gray-200 group"
+          >
+            <span className="text-xl group-hover:-translate-x-1 transition-transform">←</span>
+            <span className="font-medium">Back to Home</span>
+          </Link>
+        </div>
       </div>
 
       {/* Main Content */}
@@ -101,6 +108,8 @@ export default function SolutionPage() {
           </div>
         </div>
       </div>
+
+      <Footer />
     </div>
   );
 }

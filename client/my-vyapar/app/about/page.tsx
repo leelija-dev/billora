@@ -1,12 +1,17 @@
+// about/page.tsx
 "use client";
 
 import { Users, Target, ShieldCheck, Sparkles } from "lucide-react";
 import Link from "next/link";
+import Navbar from "@/components/Navbar";
+import Footer from "@/components/Footer";
 
 export default function AboutPage() {
   return (
     <div className="bg-white text-gray-900 overflow-hidden">
-       {/* Back to Home Button */}
+      <Navbar />
+      
+      {/* Back to Home Button */}
       <div className="fixed top-20 sm:top-24 left-4 z-50">
         <Link
           href="/"
@@ -23,8 +28,6 @@ export default function AboutPage() {
       {/* Hero Section */}
       <section className="relative bg-gradient-to-br from-blue-50 via-white to-purple-50 py-24">
         <div className="max-w-7xl mx-auto px-6 text-center">
-
-          
 
           <h1 className="text-4xl md:text-6xl font-bold leading-tight mb-6">
             Empowering Small Businesses <br />
@@ -159,6 +162,7 @@ export default function AboutPage() {
         </Link>
       </section>
 
+      <Footer />
     </div>
   );
 }
