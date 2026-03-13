@@ -1,5 +1,7 @@
 
 "use client";
+import Navbar from "@/components/Navbar";  
+import Footer from "@/components/Footer" ;
 
 import React, { useState } from "react";
 
@@ -36,8 +38,10 @@ export default function Contact() {
     });
   };
 
+
   return (
     <div className="w-full bg-gray-50 min-h-screen">
+        <Navbar/>
 
       {/* Top Banner */}
       <div className="bg-blue-500 text-white py-4">
@@ -224,6 +228,7 @@ export default function Contact() {
 
         </div>
       </div>
+      <Footer/>
     </div>
   );
 }
