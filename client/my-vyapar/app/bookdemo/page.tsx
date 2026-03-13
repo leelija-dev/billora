@@ -1,3 +1,4 @@
+// bookdemo/page.tsx
 "use client";
 
 import React, { useState, useEffect } from "react";
@@ -20,6 +21,8 @@ import {
   AlertCircle
 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import Navbar from "@/components/Navbar";
+import Footer from "@/components/Footer";
 
 const AppointmentPage = () => {
   const router = useRouter();
@@ -324,617 +327,623 @@ const AppointmentPage = () => {
   });
 
   return (
-    <div className="min-h-screen bg-[#F0F7FF] py-4 sm:py-6 md:py-8 px-3 sm:px-4 md:px-6 lg:px-8 relative">
-      {/* Back to Home Button */}
-      <button
-        onClick={() => router.push("/")}
-        className="absolute top-4 left-4 z-50 flex items-center gap-2 px-4 py-2 bg-white rounded-lg shadow-md hover:shadow-lg transition-all duration-300 hover:scale-105 text-[#0F172A] font-semibold border border-gray-200"
-      >
-        <Home size={20} className="text-[#4461F2]" />
-        <span className="hidden sm:inline text-base">Home</span>
-      </button>
-
-      <style jsx>{`
-        .ripple-hover {
-          position: relative;
-          overflow: hidden;
-          transition: background-color 0.3s, color 0.3s, border-color 0.3s;
-        }
-
-        .ripple-hover::before {
-          content: '';
-          position: absolute;
-          top: 50%;
-          left: 50%;
-          width: 10px;
-          height: 10px;
-          background: rgba(255, 255, 255, 0.5);
-          border-radius: 50%;
-          transform: translate(-50%, -50%) scale(0);
-          opacity: 0;
-          transition: transform 0.6s, opacity 0.6s;
-          pointer-events: none;
-          z-index: 0;
-        }
-
-        .ripple-hover:hover::before {
-          transform: translate(-50%, -50%) scale(10);
-          opacity: 1;
-        }
-
-        .ripple-hover span {
-          position: relative;
-          z-index: 1;
-        }
-      `}</style>
+    <div className="min-h-screen bg-[#F0F7FF] relative">
+      <Navbar />
       
-      <div className="max-w-7xl xl:max-w-screen-xl mx-auto">
+      <div className="py-4 sm:py-6 md:py-8 px-3 sm:px-4 md:px-6 lg:px-8">
+        {/* Back to Home Button */}
+        <button
+          onClick={() => router.push("/")}
+          className="absolute top-24 left-4 z-50 flex items-center gap-2 px-4 py-2 bg-white rounded-lg shadow-md hover:shadow-lg transition-all duration-300 hover:scale-105 text-[#0F172A] font-semibold border border-gray-200"
+        >
+          <Home size={20} className="text-[#4461F2]" />
+          <span className="hidden sm:inline text-base">Home</span>
+        </button>
+
+        <style jsx>{`
+          .ripple-hover {
+            position: relative;
+            overflow: hidden;
+            transition: background-color 0.3s, color 0.3s, border-color 0.3s;
+          }
+
+          .ripple-hover::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 10px;
+            height: 10px;
+            background: rgba(255, 255, 255, 0.5);
+            border-radius: 50%;
+            transform: translate(-50%, -50%) scale(0);
+            opacity: 0;
+            transition: transform 0.6s, opacity 0.6s;
+            pointer-events: none;
+            z-index: 0;
+          }
+
+          .ripple-hover:hover::before {
+            transform: translate(-50%, -50%) scale(10);
+            opacity: 1;
+          }
+
+          .ripple-hover span {
+            position: relative;
+            z-index: 1;
+          }
+        `}</style>
         
-        {/* Header with Real-time Date/Time */}
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-center mb-6 sm:mb-8"
-        >
-          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-[#0F172A] mb-3">
-            Book Your Free Demo
-          </h1>
+        <div className="max-w-7xl xl:max-w-screen-xl mx-auto">
           
-          {/* Real-time Current Date/Time Display */}
-          <motion.div 
-            initial={{ scale: 0.95 }}
-            animate={{ scale: 1 }}
-            transition={{ duration: 0.5 }}
-            className="inline-flex flex-wrap items-center justify-center gap-3 bg-white px-4 sm:px-5 py-2 sm:py-3 rounded-full shadow-md border border-[#4461F2] mb-4 max-w-[95%] sm:max-w-full mx-auto"
-          >
-            <div className="flex items-center gap-2">
-              <Calendar className="w-4 h-4 sm:w-5 sm:h-5 text-[#4461F2]" />
-              <span className="text-sm sm:text-base font-semibold text-[#0F172A]">
-                {formattedCurrentDate}
-              </span>
-            </div>
-            <div className="w-px h-5 bg-gray-300"></div>
-            <div className="flex items-center gap-2">
-              <Clock className="w-4 h-4 sm:w-5 sm:h-5 text-[#9E5CF2]" />
-              <span className="text-sm sm:text-base font-mono font-semibold text-[#0F172A]">
-                {formatTimeInZone(realTimeCurrentDate, selectedTimeZone)}
-              </span>
-            </div>
-            <motion.div
-              animate={{ scale: [1, 1.2, 1] }}
-              transition={{ duration: 1, repeat: Infinity }}
-              className="w-2 h-2 bg-[#4461F2] rounded-full"
-            />
-          </motion.div>
-          
-          {/* 1-Day Advance Booking Notice */}
-          <div className="flex items-center justify-center gap-2 text-amber-600 bg-amber-50 px-4 py-2 rounded-lg max-w-2xl mx-auto">
-            <AlertCircle size={18} />
-            <p className="text-sm sm:text-base font-medium">
-              Bookings require 1 day advance notice. Today's slots are unavailable.
-            </p>
-          </div>
-        </motion.div>
-
-        {/* Simple 3-Step Process - Redesigned */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="mb-8 sm:mb-10"
-        >
-          <h2 className="text-2xl sm:text-3xl font-bold text-[#0F172A] text-center mb-4">
-            Simple 3-Step Process
-          </h2>
-          
-          <div className="flex flex-col sm:flex-row justify-center items-center gap-4 sm:gap-6">
-            {/* Step 1 */}
-            <div className="flex items-center gap-3 bg-white rounded-xl p-4 shadow-md border border-gray-200 w-full sm:w-auto">
-              <div className="w-12 h-12 bg-[#4461F2] bg-opacity-10 rounded-full flex items-center justify-center">
-                <span className="text-2xl">📅</span>
-              </div>
-              <div>
-                <h3 className="font-bold text-[#0F172A] text-lg">Pick Date</h3>
-                <p className="text-sm text-gray-600">Choose from available dates</p>
-              </div>
-            </div>
-
-            {/* Arrow for desktop */}
-            <div className="hidden sm:block text-2xl text-[#4461F2]">→</div>
-
-            {/* Step 2 */}
-            <div className="flex items-center gap-3 bg-white rounded-xl p-4 shadow-md border border-gray-200 w-full sm:w-auto">
-              <div className="w-12 h-12 bg-[#9E5CF2] bg-opacity-10 rounded-full flex items-center justify-center">
-                <span className="text-2xl">⏰</span>
-              </div>
-              <div>
-                <h3 className="font-bold text-[#0F172A] text-lg">Choose Time</h3>
-                <p className="text-sm text-gray-600">Select your preferred slot</p>
-              </div>
-            </div>
-
-            {/* Arrow for desktop */}
-            <div className="hidden sm:block text-2xl text-[#9E5CF2]">→</div>
-
-            {/* Step 3 */}
-            <div className="flex items-center gap-3 bg-white rounded-xl p-4 shadow-md border border-gray-200 w-full sm:w-auto">
-              <div className="w-12 h-12 bg-gradient-to-r from-[#4461F2] to-[#9E5CF2] bg-opacity-10 rounded-full flex items-center justify-center">
-                <span className="text-2xl">🚀</span>
-              </div>
-              <div>
-                <h3 className="font-bold text-[#0F172A] text-lg">Get Demo</h3>
-                <p className="text-sm text-gray-600">Live demo with our expert</p>
-              </div>
-            </div>
-          </div>
-        </motion.div>
-
-        {/* Main Container - 60/40 Split */}
-        <div className="flex flex-col lg:flex-row gap-6 items-stretch">
-          
-          {/* Left Side - Calendar (60%) */}
+          {/* Header with Real-time Date/Time */}
           <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.4 }}
-            className="lg:w-[60%] bg-white rounded-xl shadow-lg p-5 sm:p-6 border border-gray-200"
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-center mb-6 sm:mb-8"
           >
-            {/* Calendar Header */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-5">
-              <div className="flex items-center gap-3">
-                <h2 className="text-xl sm:text-2xl font-bold text-[#0F172A] flex items-center gap-2">
-                  <CalendarDays size={24} className="text-[#4461F2]" />
-                  <span>Select Date</span>
-                </h2>
-                
-                {/* Time Zone Selector */}
-                <div className="relative">
-                  <button
-                    onClick={() => setShowTimeZonePicker(!showTimeZonePicker)}
-                    className="flex items-center gap-2 px-3 py-2 bg-[#F0F7FF] rounded-lg text-sm font-semibold text-[#0F172A] hover:bg-[#4461F2] hover:text-white transition-colors group"
-                  >
-                    <Globe size={16} className="group-hover:text-white" />
-                    <span className="hidden md:inline">{currentTimeZone.name}</span>
-                    <span className="md:hidden">{currentTimeZone.offset}</span>
-                    <ChevronDown size={14} className={`transition-transform ${showTimeZonePicker ? 'rotate-180' : ''}`} />
-                  </button>
+            <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-[#0F172A] mb-3">
+              Book Your Free Demo
+            </h1>
+            
+            {/* Real-time Current Date/Time Display */}
+            <motion.div 
+              initial={{ scale: 0.95 }}
+              animate={{ scale: 1 }}
+              transition={{ duration: 0.5 }}
+              className="inline-flex flex-wrap items-center justify-center gap-3 bg-white px-4 sm:px-5 py-2 sm:py-3 rounded-full shadow-md border border-[#4461F2] mb-4 max-w-[95%] sm:max-w-full mx-auto"
+            >
+              <div className="flex items-center gap-2">
+                <Calendar className="w-4 h-4 sm:w-5 sm:h-5 text-[#4461F2]" />
+                <span className="text-sm sm:text-base font-semibold text-[#0F172A]">
+                  {formattedCurrentDate}
+                </span>
+              </div>
+              <div className="w-px h-5 bg-gray-300"></div>
+              <div className="flex items-center gap-2">
+                <Clock className="w-4 h-4 sm:w-5 sm:h-5 text-[#9E5CF2]" />
+                <span className="text-sm sm:text-base font-mono font-semibold text-[#0F172A]">
+                  {formatTimeInZone(realTimeCurrentDate, selectedTimeZone)}
+                </span>
+              </div>
+              <motion.div
+                animate={{ scale: [1, 1.2, 1] }}
+                transition={{ duration: 1, repeat: Infinity }}
+                className="w-2 h-2 bg-[#4461F2] rounded-full"
+              />
+            </motion.div>
+            
+            {/* 1-Day Advance Booking Notice */}
+            <div className="flex items-center justify-center gap-2 text-amber-600 bg-amber-50 px-4 py-2 rounded-lg max-w-2xl mx-auto">
+              <AlertCircle size={18} />
+              <p className="text-sm sm:text-base font-medium">
+                Bookings require 1 day advance notice. Today's slots are unavailable.
+              </p>
+            </div>
+          </motion.div>
 
-                  {/* Time Zone Picker Popup */}
-                  <AnimatePresence>
-                    {showTimeZonePicker && (
-                      <motion.div
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: 10 }}
-                        className="absolute top-full left-0 mt-2 bg-white rounded-lg shadow-xl border border-gray-200 p-3 z-20 min-w-[250px] max-h-64 overflow-y-auto"
-                      >
-                        {timeZones.map((tz) => (
-                          <button
-                            key={tz.value}
-                            onClick={() => {
-                              setSelectedTimeZone(tz.value);
-                              setShowTimeZonePicker(false);
-                            }}
-                            className={`
-                              w-full text-left px-3 py-2 rounded-md text-sm font-medium transition-colors
-                              ${selectedTimeZone === tz.value 
-                                ? 'bg-[#4461F2] text-white' 
-                                : 'hover:bg-[#F0F7FF] text-[#0F172A]'
-                              }
-                            `}
-                          >
-                            <div className="flex justify-between items-center">
-                              <span>{tz.name}</span>
-                              <span className="text-xs opacity-70">UTC{tz.offset}</span>
-                            </div>
-                          </button>
-                        ))}
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
+          {/* Simple 3-Step Process - Redesigned */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="mb-8 sm:mb-10"
+          >
+            <h2 className="text-2xl sm:text-3xl font-bold text-[#0F172A] text-center mb-4">
+              Simple 3-Step Process
+            </h2>
+            
+            <div className="flex flex-col sm:flex-row justify-center items-center gap-4 sm:gap-6">
+              {/* Step 1 */}
+              <div className="flex items-center gap-3 bg-white rounded-xl p-4 shadow-md border border-gray-200 w-full sm:w-auto">
+                <div className="w-12 h-12 bg-[#4461F2] bg-opacity-10 rounded-full flex items-center justify-center">
+                  <span className="text-2xl">📅</span>
+                </div>
+                <div>
+                  <h3 className="font-bold text-[#0F172A] text-lg">Pick Date</h3>
+                  <p className="text-sm text-gray-600">Choose from available dates</p>
                 </div>
               </div>
 
-              {/* Month Navigation */}
-              <div className="flex items-center gap-2">
-                {/* Month/Year Selector */}
-                <div className="relative">
-                  <button
-                    onClick={() => setShowMonthPicker(!showMonthPicker)}
-                    className="px-4 py-2 bg-[#F0F7FF] rounded-lg text-base font-semibold text-[#0F172A] hover:bg-[#4461F2] hover:text-white transition-colors min-w-[140px]"
-                  >
-                    {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
-                  </button>
+              {/* Arrow for desktop */}
+              <div className="hidden sm:block text-2xl text-[#4461F2]">→</div>
+
+              {/* Step 2 */}
+              <div className="flex items-center gap-3 bg-white rounded-xl p-4 shadow-md border border-gray-200 w-full sm:w-auto">
+                <div className="w-12 h-12 bg-[#9E5CF2] bg-opacity-10 rounded-full flex items-center justify-center">
+                  <span className="text-2xl">⏰</span>
+                </div>
+                <div>
+                  <h3 className="font-bold text-[#0F172A] text-lg">Choose Time</h3>
+                  <p className="text-sm text-gray-600">Select your preferred slot</p>
+                </div>
+              </div>
+
+              {/* Arrow for desktop */}
+              <div className="hidden sm:block text-2xl text-[#9E5CF2]">→</div>
+
+              {/* Step 3 */}
+              <div className="flex items-center gap-3 bg-white rounded-xl p-4 shadow-md border border-gray-200 w-full sm:w-auto">
+                <div className="w-12 h-12 bg-gradient-to-r from-[#4461F2] to-[#9E5CF2] bg-opacity-10 rounded-full flex items-center justify-center">
+                  <span className="text-2xl">🚀</span>
+                </div>
+                <div>
+                  <h3 className="font-bold text-[#0F172A] text-lg">Get Demo</h3>
+                  <p className="text-sm text-gray-600">Live demo with our expert</p>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Main Container - 60/40 Split */}
+          <div className="flex flex-col lg:flex-row gap-6 items-stretch">
+            
+            {/* Left Side - Calendar (60%) */}
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.4 }}
+              className="lg:w-[60%] bg-white rounded-xl shadow-lg p-5 sm:p-6 border border-gray-200"
+            >
+              {/* Calendar Header */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-5">
+                <div className="flex items-center gap-3">
+                  <h2 className="text-xl sm:text-2xl font-bold text-[#0F172A] flex items-center gap-2">
+                    <CalendarDays size={24} className="text-[#4461F2]" />
+                    <span>Select Date</span>
+                  </h2>
                   
-                  {/* Month Picker Popup */}
-                  <AnimatePresence>
-                    {showMonthPicker && (
-                      <motion.div
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: 10 }}
-                        className="absolute top-full right-0 mt-2 bg-white rounded-lg shadow-xl border border-gray-200 p-4 z-20 min-w-[280px]"
-                      >
-                        <div className="flex items-center justify-between mb-4">
-                          <button
-                            onClick={() => handleYearChange(-1)}
-                            className="p-2 hover:bg-[#F0F7FF] rounded"
-                          >
-                            <ChevronLeft size={18} />
-                          </button>
-                          <span className="font-bold text-lg text-[#0F172A]">{currentDate.getFullYear()}</span>
-                          <button
-                            onClick={() => handleYearChange(1)}
-                            className="p-2 hover:bg-[#F0F7FF] rounded"
-                          >
-                            <ChevronRight size={18} />
-                          </button>
-                        </div>
-                        <div className="grid grid-cols-3 gap-2">
-                          {monthNames.map((month, index) => (
+                  {/* Time Zone Selector */}
+                  <div className="relative">
+                    <button
+                      onClick={() => setShowTimeZonePicker(!showTimeZonePicker)}
+                      className="flex items-center gap-2 px-3 py-2 bg-[#F0F7FF] rounded-lg text-sm font-semibold text-[#0F172A] hover:bg-[#4461F2] hover:text-white transition-colors group"
+                    >
+                      <Globe size={16} className="group-hover:text-white" />
+                      <span className="hidden md:inline">{currentTimeZone.name}</span>
+                      <span className="md:hidden">{currentTimeZone.offset}</span>
+                      <ChevronDown size={14} className={`transition-transform ${showTimeZonePicker ? 'rotate-180' : ''}`} />
+                    </button>
+
+                    {/* Time Zone Picker Popup */}
+                    <AnimatePresence>
+                      {showTimeZonePicker && (
+                        <motion.div
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: 10 }}
+                          className="absolute top-full left-0 mt-2 bg-white rounded-lg shadow-xl border border-gray-200 p-3 z-20 min-w-[250px] max-h-64 overflow-y-auto"
+                        >
+                          {timeZones.map((tz) => (
                             <button
-                              key={month}
-                              onClick={() => handleMonthSelect(index)}
+                              key={tz.value}
+                              onClick={() => {
+                                setSelectedTimeZone(tz.value);
+                                setShowTimeZonePicker(false);
+                              }}
                               className={`
-                                p-3 text-sm font-semibold rounded-lg transition-colors
-                                ${currentDate.getMonth() === index 
+                                w-full text-left px-3 py-2 rounded-md text-sm font-medium transition-colors
+                                ${selectedTimeZone === tz.value 
                                   ? 'bg-[#4461F2] text-white' 
                                   : 'hover:bg-[#F0F7FF] text-[#0F172A]'
                                 }
                               `}
                             >
-                              {month.slice(0, 3)}
+                              <div className="flex justify-between items-center">
+                                <span>{tz.name}</span>
+                                <span className="text-xs opacity-70">UTC{tz.offset}</span>
+                              </div>
                             </button>
                           ))}
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
                 </div>
 
-                {/* Reset Button */}
-                <button
-                  onClick={handleResetToCurrent}
-                  className="p-2 bg-[#F0F7FF] rounded-lg hover:bg-[#4461F2] hover:text-white transition-colors"
-                  title="Back to Current Month"
-                >
-                  <RotateCw size={18} />
-                </button>
+                {/* Month Navigation */}
+                <div className="flex items-center gap-2">
+                  {/* Month/Year Selector */}
+                  <div className="relative">
+                    <button
+                      onClick={() => setShowMonthPicker(!showMonthPicker)}
+                      className="px-4 py-2 bg-[#F0F7FF] rounded-lg text-base font-semibold text-[#0F172A] hover:bg-[#4461F2] hover:text-white transition-colors min-w-[140px]"
+                    >
+                      {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
+                    </button>
+                    
+                    {/* Month Picker Popup */}
+                    <AnimatePresence>
+                      {showMonthPicker && (
+                        <motion.div
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: 10 }}
+                          className="absolute top-full right-0 mt-2 bg-white rounded-lg shadow-xl border border-gray-200 p-4 z-20 min-w-[280px]"
+                        >
+                          <div className="flex items-center justify-between mb-4">
+                            <button
+                              onClick={() => handleYearChange(-1)}
+                              className="p-2 hover:bg-[#F0F7FF] rounded"
+                            >
+                              <ChevronLeft size={18} />
+                            </button>
+                            <span className="font-bold text-lg text-[#0F172A]">{currentDate.getFullYear()}</span>
+                            <button
+                              onClick={() => handleYearChange(1)}
+                              className="p-2 hover:bg-[#F0F7FF] rounded"
+                            >
+                              <ChevronRight size={18} />
+                            </button>
+                          </div>
+                          <div className="grid grid-cols-3 gap-2">
+                            {monthNames.map((month, index) => (
+                              <button
+                                key={month}
+                                onClick={() => handleMonthSelect(index)}
+                                className={`
+                                  p-3 text-sm font-semibold rounded-lg transition-colors
+                                  ${currentDate.getMonth() === index 
+                                    ? 'bg-[#4461F2] text-white' 
+                                    : 'hover:bg-[#F0F7FF] text-[#0F172A]'
+                                  }
+                                `}
+                              >
+                                {month.slice(0, 3)}
+                              </button>
+                            ))}
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
 
-                <button
-                  onClick={handlePrevMonth}
-                  className="p-2 hover:bg-[#F0F7FF] rounded-lg transition-colors text-[#0F172A]"
-                >
-                  <ChevronLeft size={20} />
-                </button>
-                <button
-                  onClick={handleNextMonth}
-                  className="p-2 hover:bg-[#F0F7FF] rounded-lg transition-colors text-[#0F172A]"
-                >
-                  <ChevronRight size={20} />
-                </button>
-              </div>
-            </div>
-
-            {/* Day Names */}
-            <div className="grid grid-cols-7 gap-1 mb-3">
-              {dayNames.map((day: string) => (
-                <div key={day} className="text-center text-sm font-bold text-gray-500 py-2">
-                  {day}
-                </div>
-              ))}
-            </div>
-
-            {/* Calendar Days */}
-            <div className="grid grid-cols-7 gap-1">
-              {days.map((day: number | null, index: number) => {
-                const available = isAvailable(day);
-                const booked = isBooked(day);
-                const past = isPastDate(day);
-                const current = isCurrentDate(day);
-                const isSelected = selectedDate === day;
-
-                let bgColor = "bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed";
-                
-                if (available && !past) {
-                  bgColor = isSelected
-                    ? 'bg-[#4461F2] text-white shadow-lg scale-105 ring-2 ring-[#9E5CF2] cursor-pointer'
-                    : 'bg-white text-[#0F172A] border-2 border-[#4461F2] cursor-pointer hover:bg-[#4461F2] hover:text-white font-bold ripple-hover';
-                } else if (booked || past) {
-                  bgColor = 'bg-gray-200 text-gray-500 border border-gray-300 cursor-not-allowed line-through opacity-70';
-                }
-
-                return (
+                  {/* Reset Button */}
                   <button
-                    key={index}
-                    onClick={() => !past && !booked && handleDateSelect(day)}
-                    disabled={past || booked || !day}
-                    className={`
-                      relative aspect-square flex items-center justify-center rounded-lg text-base sm:text-lg font-bold
-                      transition-all duration-200
-                      ${!day ? 'invisible' : ''}
-                      ${bgColor}
-                    `}
+                    onClick={handleResetToCurrent}
+                    className="p-2 bg-[#F0F7FF] rounded-lg hover:bg-[#4461F2] hover:text-white transition-colors"
+                    title="Back to Current Month"
                   >
-                    <span className="relative z-10">{day}</span>
-                    
-                    {available && !isSelected && !past && (
-                      <span className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-2 h-2 bg-[#4461F2] rounded-full z-10" />
-                    )}
-                    
-                    {current && (
-                      <span className="absolute -top-1 -right-1 w-3 h-3 bg-[#9E5CF2] rounded-full border-2 border-white z-10" />
-                    )}
+                    <RotateCw size={18} />
                   </button>
-                );
-              })}
-            </div>
 
-            {/* Legend */}
-            <div className="flex flex-wrap gap-4 mt-5 pt-4 border-t border-gray-200">
-              {[
-                { color: "bg-[#4461F2]", label: "Available" },
-                { color: "bg-[#4461F2] ring-2 ring-[#9E5CF2]", label: "Selected" },
-                { color: "bg-[#9E5CF2] w-3 h-3 rounded-full", label: "Today" },
-                { color: "bg-gray-200 line-through", label: "Booked" },
-                { color: "bg-gray-200 opacity-70", label: "Past" }
-              ].map((item, i) => (
-                <div key={i} className="flex items-center gap-2">
-                  <div className={`w-4 h-4 ${item.color} rounded-sm`}></div>
-                  <span className="text-sm font-semibold text-gray-700">{item.label}</span>
+                  <button
+                    onClick={handlePrevMonth}
+                    className="p-2 hover:bg-[#F0F7FF] rounded-lg transition-colors text-[#0F172A]"
+                  >
+                    <ChevronLeft size={20} />
+                  </button>
+                  <button
+                    onClick={handleNextMonth}
+                    className="p-2 hover:bg-[#F0F7FF] rounded-lg transition-colors text-[#0F172A]"
+                  >
+                    <ChevronRight size={20} />
+                  </button>
                 </div>
-              ))}
-            </div>
+              </div>
 
-            
-          </motion.div>
-
-          {/* Right Side - Working Panel (40%) */}
-          <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.4 }}
-            className="lg:w-[40%] bg-white rounded-xl shadow-lg p-6 border border-gray-200 min-h-[500px]"
-          >
-            <AnimatePresence mode="wait">
-              {!selectedDate && (
-                <motion.div
-                  key="welcome"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  className="h-full flex flex-col items-center justify-center text-center py-8"
-                >
-                  <Calendar className="w-16 h-16 text-[#4461F2] mb-4 opacity-50" />
-                  <h3 className="text-xl sm:text-2xl font-bold text-[#0F172A] mb-3">
-                    Pick a Date
-                  </h3>
-                  <p className="text-base sm:text-lg text-gray-600 max-w-sm">
-                    Select an available date from the calendar to see time slots
-                  </p>
-                  <div className="mt-6 p-4 bg-amber-50 rounded-lg">
-                    <p className="text-sm font-medium text-amber-700">
-                      ⏰ Next available: {formattedTomorrow}
-                    </p>
+              {/* Day Names */}
+              <div className="grid grid-cols-7 gap-1 mb-3">
+                {dayNames.map((day: string) => (
+                  <div key={day} className="text-center text-sm font-bold text-gray-500 py-2">
+                    {day}
                   </div>
-                </motion.div>
-              )}
+                ))}
+              </div>
 
-              {selectedDate && !selectedTime && (
-                <motion.div
-                  key="time"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                >
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-xl sm:text-2xl font-bold text-[#0F172A] flex items-center gap-2">
-                      <Clock size={24} className="text-[#4461F2]" />
-                      <span>Available Slots</span>
-                    </h3>
-                    <button
-                      onClick={() => {
-                        setSelectedDate(null);
-                        setSelectedTime(null);
-                      }}
-                      className="flex items-center gap-1 text-base font-semibold text-[#4461F2] hover:text-[#9E5CF2] transition-colors"
-                    >
-                      <ChevronLeft size={20} />
-                      <span>Back</span>
-                    </button>
-                  </div>
+              {/* Calendar Days */}
+              <div className="grid grid-cols-7 gap-1">
+                {days.map((day: number | null, index: number) => {
+                  const available = isAvailable(day);
+                  const booked = isBooked(day);
+                  const past = isPastDate(day);
+                  const current = isCurrentDate(day);
+                  const isSelected = selectedDate === day;
+
+                  let bgColor = "bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed";
                   
-                  <div className="mb-4 p-4 bg-[#F0F7FF] rounded-lg">
-                    <p className="text-lg sm:text-xl font-bold text-[#0F172A]">
-                      {selectedDate} {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
-                    </p>
-                    <p className="text-base font-semibold text-gray-600 mt-1">
-                      {currentTimeZone.name}
-                    </p>
-                  </div>
+                  if (available && !past) {
+                    bgColor = isSelected
+                      ? 'bg-[#4461F2] text-white shadow-lg scale-105 ring-2 ring-[#9E5CF2] cursor-pointer'
+                      : 'bg-white text-[#0F172A] border-2 border-[#4461F2] cursor-pointer hover:bg-[#4461F2] hover:text-white font-bold ripple-hover';
+                  } else if (booked || past) {
+                    bgColor = 'bg-gray-200 text-gray-500 border border-gray-300 cursor-not-allowed line-through opacity-70';
+                  }
 
-                  <div className="grid grid-cols-2 gap-3">
-                    {timeSlots.map((time: string, index: number) => (
-                      <motion.button
-                        key={index}
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: index * 0.05 }}
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        onClick={() => handleTimeSelect(time)}
-                        className={`
-                          py-4 px-3 rounded-lg text-base font-bold transition-all
-                          ${selectedTime === time 
-                            ? 'bg-[#4461F2] text-white shadow-lg scale-105 ring-2 ring-[#9E5CF2]' 
-                            : 'bg-[#F0F7FF] text-[#0F172A] border-2 border-[#4461F2] hover:bg-[#4461F2] hover:text-white'
-                          }
-                        `}
-                      >
-                        {time}
-                      </motion.button>
-                    ))}
-                  </div>
-                </motion.div>
-              )}
-
-              {selectedDate && selectedTime && !showForm && (
-                <motion.div
-                  key="proceed"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  className="space-y-5"
-                >
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-xl sm:text-2xl font-bold text-[#0F172A]">Selected Slot</h3>
+                  return (
                     <button
-                      onClick={() => {
-                        setSelectedTime(null);
-                      }}
-                      className="flex items-center gap-1 text-base font-semibold text-[#4461F2] hover:text-[#9E5CF2] transition-colors"
+                      key={index}
+                      onClick={() => !past && !booked && handleDateSelect(day)}
+                      disabled={past || booked || !day}
+                      className={`
+                        relative aspect-square flex items-center justify-center rounded-lg text-base sm:text-lg font-bold
+                        transition-all duration-200
+                        ${!day ? 'invisible' : ''}
+                        ${bgColor}
+                      `}
                     >
-                      <ChevronLeft size={20} />
-                      <span>Back</span>
+                      <span className="relative z-10">{day}</span>
+                      
+                      {available && !isSelected && !past && (
+                        <span className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-2 h-2 bg-[#4461F2] rounded-full z-10" />
+                      )}
+                      
+                      {current && (
+                        <span className="absolute -top-1 -right-1 w-3 h-3 bg-[#9E5CF2] rounded-full border-2 border-white z-10" />
+                      )}
                     </button>
-                  </div>
+                  );
+                })}
+              </div>
 
-                  <div className="p-5 bg-[#F0F7FF] rounded-lg">
-                    <div className="space-y-3">
-                      <div className="flex items-center gap-3 text-gray-700">
-                        <Calendar size={20} className="text-[#4461F2]" />
-                        <span className="text-lg font-bold">{selectedDate} {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}</span>
-                      </div>
-                      <div className="flex items-center gap-3 text-gray-700">
-                        <Clock size={20} className="text-[#4461F2]" />
-                        <span className="text-lg font-bold">{selectedTime}</span>
-                      </div>
-                      <div className="flex items-center gap-3 text-gray-600 pt-3 border-t border-gray-200">
-                        <Globe size={18} />
-                        <span className="text-base font-semibold">{currentTimeZone.name} ({currentTimeZone.offset})</span>
+              {/* Legend */}
+              <div className="flex flex-wrap gap-4 mt-5 pt-4 border-t border-gray-200">
+                {[
+                  { color: "bg-[#4461F2]", label: "Available" },
+                  { color: "bg-[#4461F2] ring-2 ring-[#9E5CF2]", label: "Selected" },
+                  { color: "bg-[#9E5CF2] w-3 h-3 rounded-full", label: "Today" },
+                  { color: "bg-gray-200 line-through", label: "Booked" },
+                  { color: "bg-gray-200 opacity-70", label: "Past" }
+                ].map((item, i) => (
+                  <div key={i} className="flex items-center gap-2">
+                    <div className={`w-4 h-4 ${item.color} rounded-sm`}></div>
+                    <span className="text-sm font-semibold text-gray-700">{item.label}</span>
+                  </div>
+                ))}
+              </div>
+
+              
+            </motion.div>
+
+            {/* Right Side - Working Panel (40%) */}
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.4 }}
+              className="lg:w-[40%] bg-white rounded-xl shadow-lg p-6 border border-gray-200 min-h-[500px]"
+            >
+              <AnimatePresence mode="wait">
+                {!selectedDate && (
+                  <motion.div
+                    key="welcome"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="h-full flex flex-col items-center justify-center text-center py-8"
+                  >
+                    <Calendar className="w-16 h-16 text-[#4461F2] mb-4 opacity-50" />
+                    <h3 className="text-xl sm:text-2xl font-bold text-[#0F172A] mb-3">
+                      Pick a Date
+                    </h3>
+                    <p className="text-base sm:text-lg text-gray-600 max-w-sm">
+                      Select an available date from the calendar to see time slots
+                    </p>
+                    <div className="mt-6 p-4 bg-amber-50 rounded-lg">
+                      <p className="text-sm font-medium text-amber-700">
+                        ⏰ Next available: {formattedTomorrow}
+                      </p>
+                    </div>
+                  </motion.div>
+                )}
+
+                {selectedDate && !selectedTime && (
+                  <motion.div
+                    key="time"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                  >
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-xl sm:text-2xl font-bold text-[#0F172A] flex items-center gap-2">
+                        <Clock size={24} className="text-[#4461F2]" />
+                        <span>Available Slots</span>
+                      </h3>
+                      <button
+                        onClick={() => {
+                          setSelectedDate(null);
+                          setSelectedTime(null);
+                        }}
+                        className="flex items-center gap-1 text-base font-semibold text-[#4461F2] hover:text-[#9E5CF2] transition-colors"
+                      >
+                        <ChevronLeft size={20} />
+                        <span>Back</span>
+                      </button>
+                    </div>
+                    
+                    <div className="mb-4 p-4 bg-[#F0F7FF] rounded-lg">
+                      <p className="text-lg sm:text-xl font-bold text-[#0F172A]">
+                        {selectedDate} {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
+                      </p>
+                      <p className="text-base font-semibold text-gray-600 mt-1">
+                        {currentTimeZone.name}
+                      </p>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      {timeSlots.map((time: string, index: number) => (
+                        <motion.button
+                          key={index}
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: index * 0.05 }}
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          onClick={() => handleTimeSelect(time)}
+                          className={`
+                            py-4 px-3 rounded-lg text-base font-bold transition-all
+                            ${selectedTime === time 
+                              ? 'bg-[#4461F2] text-white shadow-lg scale-105 ring-2 ring-[#9E5CF2]' 
+                              : 'bg-[#F0F7FF] text-[#0F172A] border-2 border-[#4461F2] hover:bg-[#4461F2] hover:text-white'
+                            }
+                          `}
+                        >
+                          {time}
+                        </motion.button>
+                      ))}
+                    </div>
+                  </motion.div>
+                )}
+
+                {selectedDate && selectedTime && !showForm && (
+                  <motion.div
+                    key="proceed"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="space-y-5"
+                  >
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-xl sm:text-2xl font-bold text-[#0F172A]">Selected Slot</h3>
+                      <button
+                        onClick={() => {
+                          setSelectedTime(null);
+                        }}
+                        className="flex items-center gap-1 text-base font-semibold text-[#4461F2] hover:text-[#9E5CF2] transition-colors"
+                      >
+                        <ChevronLeft size={20} />
+                        <span>Back</span>
+                      </button>
+                    </div>
+
+                    <div className="p-5 bg-[#F0F7FF] rounded-lg">
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-3 text-gray-700">
+                          <Calendar size={20} className="text-[#4461F2]" />
+                          <span className="text-lg font-bold">{selectedDate} {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}</span>
+                        </div>
+                        <div className="flex items-center gap-3 text-gray-700">
+                          <Clock size={20} className="text-[#4461F2]" />
+                          <span className="text-lg font-bold">{selectedTime}</span>
+                        </div>
+                        <div className="flex items-center gap-3 text-gray-600 pt-3 border-t border-gray-200">
+                          <Globe size={18} />
+                          <span className="text-base font-semibold">{currentTimeZone.name} ({currentTimeZone.offset})</span>
+                        </div>
                       </div>
                     </div>
-                  </div>
-
-                  <motion.button
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    onClick={handleProceedToForm}
-                    className="w-full py-4 bg-[#4461F2] text-white rounded-lg text-lg font-bold hover:bg-[#9E5CF2] transition-colors"
-                  >
-                    Continue →
-                  </motion.button>
-                </motion.div>
-              )}
-
-              {showForm && (
-                <motion.div
-                  key="form"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                >
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-xl sm:text-2xl font-bold text-[#0F172A] flex items-center gap-2">
-                      <User size={24} className="text-[#4461F2]" />
-                      <span>Your Details</span>
-                    </h3>
-                    <button
-                      onClick={() => {
-                        setShowForm(false);
-                      }}
-                      className="flex items-center gap-1 text-base font-semibold text-[#4461F2] hover:text-[#9E5CF2] transition-colors"
-                    >
-                      <ChevronLeft size={20} />
-                      <span>Back</span>
-                    </button>
-                  </div>
-
-                  <div className="mb-4 p-4 bg-[#F0F7FF] rounded-lg">
-                    <p className="text-lg font-bold text-gray-700">
-                      {selectedDate} {monthNames[currentDate.getMonth()]} at {selectedTime}
-                    </p>
-                    <p className="text-base font-semibold text-gray-600 mt-2">
-                      {currentTimeZone.name} ({currentTimeZone.offset})
-                    </p>
-                  </div>
-
-                  <form onSubmit={handleSubmit} className="space-y-4">
-                    <input
-                      type="text"
-                      name="name"
-                      value={formData.name}
-                      onChange={handleInputChange}
-                      placeholder="Your Name"
-                      required
-                      className="w-full border-2 border-gray-300 px-4 py-3 rounded-lg text-base font-semibold focus:outline-none focus:ring-2 focus:ring-[#4461F2] focus:border-transparent"
-                    />
-
-                    <input
-                      type="tel"
-                      name="mobile"
-                      value={formData.mobile}
-                      onChange={handleInputChange}
-                      placeholder="Mobile Number"
-                      required
-                      className="w-full border-2 border-gray-300 px-4 py-3 rounded-lg text-base font-semibold focus:outline-none focus:ring-2 focus:ring-[#4461F2] focus:border-transparent"
-                    />
-
-                    <input
-                      type="text"
-                      name="businessName"
-                      value={formData.businessName}
-                      onChange={handleInputChange}
-                      placeholder="Business Name"
-                      required
-                      className="w-full border-2 border-gray-300 px-4 py-3 rounded-lg text-base font-semibold focus:outline-none focus:ring-2 focus:ring-[#4461F2] focus:border-transparent"
-                    />
-
-                    <select
-                      name="enquiryType"
-                      value={formData.enquiryType}
-                      onChange={handleInputChange}
-                      className="w-full border-2 border-gray-300 px-4 py-3 rounded-lg text-base font-semibold focus:outline-none focus:ring-2 focus:ring-[#4461F2] focus:border-transparent"
-                    >
-                      <option className="text-base">Product demo</option>
-                      <option className="text-base">Pricing enquiry</option>
-                      <option className="text-base">Technical support</option>
-                      <option className="text-base">Partnership</option>
-                    </select>
 
                     <motion.button
-                      type="submit"
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
-                      className="w-full py-4 bg-[#4461F2] text-white rounded-lg text-lg font-bold hover:bg-[#9E5CF2] transition-colors mt-4"
+                      onClick={handleProceedToForm}
+                      className="w-full py-4 bg-[#4461F2] text-white rounded-lg text-lg font-bold hover:bg-[#9E5CF2] transition-colors"
                     >
-                      Book Appointment
+                      Continue →
                     </motion.button>
-                  </form>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </motion.div>
-        </div>
+                  </motion.div>
+                )}
 
-        {/* Success Popup */}
-        <AnimatePresence>
-          {bookingSuccess && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 20 }}
-              className="fixed bottom-4 right-4 left-4 sm:left-auto bg-[#4461F2] text-white px-5 py-4 rounded-xl shadow-2xl flex items-center gap-3 max-w-md mx-auto sm:mx-0"
-            >
-              <CheckCircle size={24} />
-              <div>
-                <p className="text-lg font-bold">Demo Booked Successfully!</p>
-                <p className="text-sm opacity-90">We'll contact you shortly</p>
-              </div>
+                {showForm && (
+                  <motion.div
+                    key="form"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                  >
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-xl sm:text-2xl font-bold text-[#0F172A] flex items-center gap-2">
+                        <User size={24} className="text-[#4461F2]" />
+                        <span>Your Details</span>
+                      </h3>
+                      <button
+                        onClick={() => {
+                          setShowForm(false);
+                        }}
+                        className="flex items-center gap-1 text-base font-semibold text-[#4461F2] hover:text-[#9E5CF2] transition-colors"
+                      >
+                        <ChevronLeft size={20} />
+                        <span>Back</span>
+                      </button>
+                    </div>
+
+                    <div className="mb-4 p-4 bg-[#F0F7FF] rounded-lg">
+                      <p className="text-lg font-bold text-gray-700">
+                        {selectedDate} {monthNames[currentDate.getMonth()]} at {selectedTime}
+                      </p>
+                      <p className="text-base font-semibold text-gray-600 mt-2">
+                        {currentTimeZone.name} ({currentTimeZone.offset})
+                      </p>
+                    </div>
+
+                    <form onSubmit={handleSubmit} className="space-y-4">
+                      <input
+                        type="text"
+                        name="name"
+                        value={formData.name}
+                        onChange={handleInputChange}
+                        placeholder="Your Name"
+                        required
+                        className="w-full border-2 border-gray-300 px-4 py-3 rounded-lg text-base font-semibold focus:outline-none focus:ring-2 focus:ring-[#4461F2] focus:border-transparent"
+                      />
+
+                      <input
+                        type="tel"
+                        name="mobile"
+                        value={formData.mobile}
+                        onChange={handleInputChange}
+                        placeholder="Mobile Number"
+                        required
+                        className="w-full border-2 border-gray-300 px-4 py-3 rounded-lg text-base font-semibold focus:outline-none focus:ring-2 focus:ring-[#4461F2] focus:border-transparent"
+                      />
+
+                      <input
+                        type="text"
+                        name="businessName"
+                        value={formData.businessName}
+                        onChange={handleInputChange}
+                        placeholder="Business Name"
+                        required
+                        className="w-full border-2 border-gray-300 px-4 py-3 rounded-lg text-base font-semibold focus:outline-none focus:ring-2 focus:ring-[#4461F2] focus:border-transparent"
+                      />
+
+                      <select
+                        name="enquiryType"
+                        value={formData.enquiryType}
+                        onChange={handleInputChange}
+                        className="w-full border-2 border-gray-300 px-4 py-3 rounded-lg text-base font-semibold focus:outline-none focus:ring-2 focus:ring-[#4461F2] focus:border-transparent"
+                      >
+                        <option className="text-base">Product demo</option>
+                        <option className="text-base">Pricing enquiry</option>
+                        <option className="text-base">Technical support</option>
+                        <option className="text-base">Partnership</option>
+                      </select>
+
+                      <motion.button
+                        type="submit"
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        className="w-full py-4 bg-[#4461F2] text-white rounded-lg text-lg font-bold hover:bg-[#9E5CF2] transition-colors mt-4"
+                      >
+                        Book Appointment
+                      </motion.button>
+                    </form>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </motion.div>
-          )}
-        </AnimatePresence>
+          </div>
+
+          {/* Success Popup */}
+          <AnimatePresence>
+            {bookingSuccess && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 20 }}
+                className="fixed bottom-4 right-4 left-4 sm:left-auto bg-[#4461F2] text-white px-5 py-4 rounded-xl shadow-2xl flex items-center gap-3 max-w-md mx-auto sm:mx-0"
+              >
+                <CheckCircle size={24} />
+                <div>
+                  <p className="text-lg font-bold">Demo Booked Successfully!</p>
+                  <p className="text-sm opacity-90">We'll contact you shortly</p>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
       </div>
+      
+      <Footer />
     </div>
   );
 };
