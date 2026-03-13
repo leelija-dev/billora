@@ -14,7 +14,6 @@ import CustomerDetailScreen from "../../screens/customers/CustomerDetailScreen";
 import CustomersScreen from "../../screens/customers/CustomersScreen";
 import DashboardScreen from "../../screens/dashboard/DashboardScreen";
 
-
 import AddProductScreen from "../../screens/products/AddProductScreen";
 import ProductDetailScreen from "../../screens/products/ProductDetailScreen";
 import ProductsScreen from "../../screens/products/ProductsScreen";
@@ -36,7 +35,7 @@ import UnitsScreen from "../../screens/units/UnitsScreen";
 import AddUnitScreen from "../../screens/units/AddUnitScreen";
 import UnitDetailScreen from "../../screens/units/UnitDetailScreen";
 
-// Import Stock Screens (replacing Inventory)
+// Import Stock Screens
 import StocksScreen from "../../screens/stocks/StocksScreen";
 import AddStockScreen from "../../screens/stocks/AddStockScreen";
 import StockDetailScreen from "../../screens/stocks/StockDetailScreen";
@@ -46,6 +45,11 @@ import AddStockQuantityScreen from "../../screens/stocks/AddStockQuantityScreen"
 import StoresScreen from "../../screens/stores/StoresScreen";
 import AddStoreScreen from "../../screens/stores/AddStoreScreen";
 import StoreDetailScreen from "../../screens/stores/StoreDetailScreen";
+
+// Import Bill Screens
+import BillsScreen from "../../screens/bills/BillsScreen";
+import CreateBillScreen from "../../screens/bills/CreateBillScreen";
+import BillDetailScreen from "../../screens/bills/BillDetailScreen";
 
 import { NAVIGATION_SCREENS } from "../../utils/constants";
 
@@ -338,7 +342,6 @@ const StoresStack = () => {
   );
 };
 
-
 // Customers Stack with Dark Mode
 const CustomersStack = () => {
   const { isDarkMode } = useThemeStore();
@@ -386,7 +389,7 @@ const CustomersStack = () => {
   );
 };
 
-// Stock Stack with Dark Mode (Replacing InventoryStack)
+// Stock Stack with Dark Mode
 const StocksStack = () => {
   const { isDarkMode } = useThemeStore();
 
@@ -442,6 +445,53 @@ const StocksStack = () => {
   );
 };
 
+// Bills Stack with Dark Mode
+const BillsStack = () => {
+  const { isDarkMode } = useThemeStore();
+
+  return (
+    <Stack.Navigator
+      screenOptions={{
+        headerShown: false,
+        animation: "slide_from_right",
+        contentStyle: { backgroundColor: isDarkMode ? "#111827" : "#F8FAFC" },
+      }}
+    >
+      <Stack.Screen
+        name={NAVIGATION_SCREENS.MAIN.BILLS}
+        component={BillsScreen}
+        options={{
+          header: ({ navigation }) => (
+            <StackHeader
+              title="Bills & Invoices"
+              navigation={navigation}
+              showBack={false}
+            />
+          ),
+        }}
+      />
+      <Stack.Screen
+        name={NAVIGATION_SCREENS.MAIN.BILL_DETAIL}
+        component={BillDetailScreen}
+        options={({ navigation }) => ({
+          header: () => (
+            <StackHeader title="Bill Details" navigation={navigation} />
+          ),
+        })}
+      />
+      <Stack.Screen
+        name={NAVIGATION_SCREENS.MAIN.CREATE_BILL}
+        component={CreateBillScreen}
+        options={({ navigation }) => ({
+          header: () => (
+            <StackHeader title="Create Bill" navigation={navigation} />
+          ),
+        })}
+      />
+    </Stack.Navigator>
+  );
+};
+
 // Settings Stack with Dark Mode
 const SettingsStack = () => {
   const { isDarkMode } = useThemeStore();
@@ -486,7 +536,7 @@ const ModernTabBar = ({ state, descriptors, navigation }) => {
   const [sliderLeft, setSliderLeft] = useState(0);
   const animation = useRef(new Animated.Value(0)).current;
 
-  // Define all tabs we want to show in bottom bar - Now with 9 tabs (added Stores)
+  // Define all tabs we want to show in bottom bar - Now with 10 tabs (added Bills)
   const tabs = [
     {
       name: "Home",
@@ -537,7 +587,13 @@ const ModernTabBar = ({ state, descriptors, navigation }) => {
       label: "Stocks",
       screen: "StocksStack",
     },
-    
+    {
+      name: "Bills",
+      icon: "file-document-outline",
+      iconActive: "file-document",
+      label: "Bills",
+      screen: "BillsStack",
+    },
     {
       name: "Clients",
       icon: "account-group-outline",
@@ -688,7 +744,7 @@ const MainNavigator = () => {
       <Tab.Screen name="BrandsStack" component={BrandsStack} />
       <Tab.Screen name="UnitsStack" component={UnitsStack} />
       <Tab.Screen name="StocksStack" component={StocksStack} />
-      
+      <Tab.Screen name="BillsStack" component={BillsStack} />
       <Tab.Screen name="CustomersStack" component={CustomersStack} />
 
       {/* Hidden screens - accessible via navigation only */}

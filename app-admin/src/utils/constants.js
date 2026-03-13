@@ -159,7 +159,9 @@ export const NAVIGATION_SCREENS = {
     UNIT_DETAIL: 'UnitDetail',
     ADD_UNIT: 'AddUnit',
     
-   
+    BILLS: 'Bills',
+    BILL_DETAIL: 'BillDetail',
+    CREATE_BILL: 'CreateBill',
     
     // Customers
     CUSTOMERS: 'Customers',
