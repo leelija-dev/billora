@@ -13,9 +13,7 @@ import AddCustomerScreen from "../../screens/customers/AddCustomerScreen";
 import CustomerDetailScreen from "../../screens/customers/CustomerDetailScreen";
 import CustomersScreen from "../../screens/customers/CustomersScreen";
 import DashboardScreen from "../../screens/dashboard/DashboardScreen";
-import BillGenerationScreen from "../../screens/billing/BillGenerationScreen";
-import BillHistoryScreen from "../../screens/billing/BillHistoryScreen";
-import BillDetailScreen from "../../screens/billing/BillDetailScreen";
+
 
 import AddProductScreen from "../../screens/products/AddProductScreen";
 import ProductDetailScreen from "../../screens/products/ProductDetailScreen";
@@ -340,52 +338,6 @@ const StoresStack = () => {
   );
 };
 
-// Billing Stack with Dark Mode
-const BillingStack = () => {
-  const { isDarkMode } = useThemeStore();
-
-  return (
-    <Stack.Navigator
-      screenOptions={{
-        headerShown: false,
-        animation: "slide_from_right",
-        contentStyle: { backgroundColor: isDarkMode ? "#111827" : "#F8FAFC" },
-      }}
-    >
-      <Stack.Screen
-        name={NAVIGATION_SCREENS.MAIN.BILL_HISTORY}
-        component={BillHistoryScreen}
-        options={{
-          header: ({ navigation }) => (
-            <StackHeader
-              title="Bill History"
-              navigation={navigation}
-              showBack={false}
-            />
-          ),
-        }}
-      />
-      <Stack.Screen
-        name={NAVIGATION_SCREENS.MAIN.BILL_DETAIL}
-        component={BillDetailScreen}
-        options={({ navigation }) => ({
-          header: () => (
-            <StackHeader title="Bill Details" navigation={navigation} />
-          ),
-        })}
-      />
-      <Stack.Screen
-        name={NAVIGATION_SCREENS.MAIN.BILL_GENERATION}
-        component={BillGenerationScreen}
-        options={({ navigation }) => ({
-          header: () => (
-            <StackHeader title="Generate Bill" navigation={navigation} />
-          ),
-        })}
-      />
-    </Stack.Navigator>
-  );
-};
 
 // Customers Stack with Dark Mode
 const CustomersStack = () => {
@@ -585,13 +537,7 @@ const ModernTabBar = ({ state, descriptors, navigation }) => {
       label: "Stocks",
       screen: "StocksStack",
     },
-    {
-      name: "Billing",
-      icon: "receipt-text-outline",
-      iconActive: "receipt-text",
-      label: "Billing",
-      screen: "BillingStack",
-    },
+    
     {
       name: "Clients",
       icon: "account-group-outline",
@@ -742,7 +688,7 @@ const MainNavigator = () => {
       <Tab.Screen name="BrandsStack" component={BrandsStack} />
       <Tab.Screen name="UnitsStack" component={UnitsStack} />
       <Tab.Screen name="StocksStack" component={StocksStack} />
-      <Tab.Screen name="BillingStack" component={BillingStack} />
+      
       <Tab.Screen name="CustomersStack" component={CustomersStack} />
 
       {/* Hidden screens - accessible via navigation only */}
