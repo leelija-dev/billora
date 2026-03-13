@@ -13,7 +13,7 @@ const AddStoreScreen = () => {
   const { isDarkMode } = useThemeStore();
 
   return (
-    <View className={`flex-1 ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
+    <View className={`flex-1 pb-24 ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
       <SafeAreaView className="flex-1" edges={["top", "left", "right"]}>
         {/* Minimal Header */}
         <View className={`px-4 py-3 flex-row items-center ${

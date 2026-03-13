@@ -1,5 +1,5 @@
-import React, { useState, useMemo, useCallback, useEffect, useRef } from "react";
-import { useNavigation, useFocusEffect } from "@react-navigation/native";
+import React, { useState, useMemo, useCallback, useEffect } from "react";
+import { useNavigation } from "@react-navigation/native";
 import {
   ScrollView,
   StatusBar,
@@ -46,75 +46,22 @@ const StoresScreen = () => {
     dateRange: "all",
   });
 
-  // Use refs to track state without causing re-renders
-  const lastRefreshTime = useRef(Date.now());
-  const isRefreshing = useRef(false);
-  const focusCount = useRef(0);
-  const isMounted = useRef(true);
-
-  // Stable refresh callback
-  const stableRefresh = useCallback(async () => {
-    if (isRefreshing.current || !isMounted.current) return;
-    
-    isRefreshing.current = true;
+  // Simple refresh callback like ProductsScreen
+  const onRefresh = async () => {
     setRefreshing(true);
-    
     try {
       await refreshStores();
-      lastRefreshTime.current = Date.now();
     } finally {
-      if (isMounted.current) {
-        setRefreshing(false);
-        isRefreshing.current = false;
-      }
+      setRefreshing(false);
     }
-  }, [refreshStores]);
+  };
 
-  // Focus effect - refresh when screen comes into focus
-  useFocusEffect(
-    useCallback(() => {
-      focusCount.current += 1;
-      console.log('Stores screen focused - focus count:', focusCount.current);
-      
-      // Only refresh on first focus or if stores are empty
-      if (focusCount.current === 1 || stores.length === 0) {
-        console.log('Refreshing stores on first focus...');
-        stableRefresh();
-      } else {
-        console.log('Skipping refresh - data already loaded');
-      }
-
-      return () => {
-        console.log('Stores screen unfocused');
-      };
-    }, [stableRefresh, stores.length])
-  );
-
-  // Navigation listener - only refresh when returning from add/edit screens
+  // Simple initial fetch like ProductsScreen
   useEffect(() => {
-    const unsubscribe = navigation.addListener('focus', () => {
-      const routes = navigation.getState()?.routes;
-      const previousRoute = routes?.[routes.length - 2]?.name;
-      
-      // Only refresh if coming from AddStore or StoreDetail
-      if (previousRoute === 'AddStore' || previousRoute === 'StoreDetail') {
-        console.log(`Returning from ${previousRoute} - refreshing stores`);
-        stableRefresh();
-        lastRefreshTime.current = 0; // Force refresh
-      }
-    });
-
-    return unsubscribe;
-  }, [navigation, stableRefresh]);
-
-  // Cleanup on unmount
-  useEffect(() => {
-    isMounted.current = true;
-    
-    return () => {
-      isMounted.current = false;
-    };
+    refreshStores();
   }, []);
+
+ 
 
   // Calculate dynamic stats from real stores
   const totalStores = stores?.length || 0;
@@ -172,7 +119,7 @@ const StoresScreen = () => {
     if (query.trim()) {
       searchStores(query);
     } else {
-      stableRefresh();
+      onRefresh();
     }
   };
 
@@ -196,8 +143,7 @@ const StoresScreen = () => {
             
             if (result?.success) {
               Alert.alert("Success", "Store deleted successfully");
-              await stableRefresh();
-              lastRefreshTime.current = 0;
+              await onRefresh();
             } else {
               Alert.alert("Error", result?.error || "Failed to delete store");
             }
@@ -207,9 +153,7 @@ const StoresScreen = () => {
     );
   };
 
-  const onRefresh = async () => {
-    await stableRefresh();
-  };
+  
 
   // Navigation items for sidebar
   const navigationItems = useMemo(() => [

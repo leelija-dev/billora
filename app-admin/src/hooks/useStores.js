@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { storesAPI } from '../api/stores';
 import { useAuthStore } from '../store/authStore';
 
@@ -8,7 +8,6 @@ export const useStores = (params = {}) => {
   const [error, setError] = useState(null);
   const { user } = useAuthStore?.() || { user: null };
   
-  const isMounted = useRef(true);
   const userId = user?.id || user?.user_id || 1; // Fallback to 1 for demo
 
   const fetchStores = useCallback(async () => {
@@ -35,17 +34,11 @@ export const useStores = (params = {}) => {
         storesData = response;
       }
       
-      if (isMounted.current) {
-        setStores(storesData);
-      }
+      setStores(storesData);
     } catch (err) {
-      if (isMounted.current) {
-        setError(err.message || 'Failed to fetch stores');
-      }
+      setError(err.message || 'Failed to fetch stores');
     } finally {
-      if (isMounted.current) {
-        setLoading(false);
-      }
+      setLoading(false);
     }
   }, [userId, params]);
 
@@ -73,17 +66,11 @@ export const useStores = (params = {}) => {
         storesData = response;
       }
       
-      if (isMounted.current) {
-        setStores(storesData);
-      }
+      setStores(storesData);
     } catch (err) {
-      if (isMounted.current) {
-        setError(err.message || 'Failed to search stores');
-      }
+      setError(err.message || 'Failed to search stores');
     } finally {
-      if (isMounted.current) {
-        setLoading(false);
-      }
+      setLoading(false);
     }
   }, [userId]);
 
@@ -162,16 +149,8 @@ export const useStores = (params = {}) => {
   }, []);
 
   useEffect(() => {
-    isMounted.current = true;
-    // Only fetch stores if not already loaded
-    if (stores.length === 0 && !loading) {
-      fetchStores();
-    }
-    
-    return () => {
-      isMounted.current = false;
-    };
-  }, [fetchStores, stores.length, loading]);
+    fetchStores();
+  }, []);
 
   return {
     stores,
