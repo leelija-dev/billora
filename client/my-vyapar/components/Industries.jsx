@@ -111,13 +111,15 @@ const Industries = () => {
   const nextIndex = (currentIndex + 1) % leftCards.length;
 
   return (
-    <section className="relative w-full py-16 lg:py-24 bg-[#f8fafc] overflow-hidden font-['Inter']">
-      <div className="max-w-7xl mx-auto px-6">
-        
-        <SectionTitle
-          title="Supporting businesses from a wide range of industries"
-          description="We understand your unique billing and accounting needs, Billora software is specially designed for modern SMBs."
-        />
+  <section className="relative w-full py-16 lg:py-24 bg-[#f8fafc] overflow-hidden font-['Inter']">
+  <div className="max-w-7xl mx-auto px-6">
+
+    <div className="text-center max-w-3xl mx-auto">
+      <SectionTitle
+        title="Supporting businesses from a wide range of industries"
+      />
+
+  </div>
 
         {/* DESKTOP/TV VIEW - Visible on lg screens and above */}
         <div className="hidden lg:block">
