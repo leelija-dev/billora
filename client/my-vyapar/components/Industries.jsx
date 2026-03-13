@@ -1,32 +1,32 @@
-// components/Industries.jsx
 "use client";
-import SectionTitle from "../components/SectionTitle";
 import React, { useState, useEffect, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
+import SectionTitle from "../components/SectionTitle";
 
 const Industries = () => {
   const [currentIndex, setCurrentIndex] = useState(2);
-  const [isPlaying, setIsPlaying] = useState(false); // Starts paused
-  const [isHovering, setIsHovering] = useState(false); // Track if hovering
-  const sliderRef = useRef(null);
+  const [isPlaying, setIsPlaying] = useState(true);
+  const [isHovering, setIsHovering] = useState(false);
+  const [mobileIndex, setMobileIndex] = useState(0);
+  const [isMobileAutoPlaying, setIsMobileAutoPlaying] = useState(true);
   const autoPlayRef = useRef(null);
-  const timeoutRef = useRef(null); // For tracking setTimeout
+  const mobileAutoPlayRef = useRef(null);
+  const timeoutRef = useRef(null);
+  const mobileContainerRef = useRef(null);
 
-  // 11 panels total (6 old + 5 new)
   const leftCards = [
-    // Original 6 panels
-    { text: 'Drive Innovation', image: 'innovation', color: '#7fa1d0' },
-    { text: 'Empower Growth', image: 'growth', color: '#6366f1' },
-    { text: 'GSTR Filing', image: 'gstr', color: '#7bb2cc' },
-    { text: 'Unite Industries', image: 'unite', color: '#edf3f6' },
-    { text: 'Expand Reach', image: 'expand', color: '#4b22c5' },
-    { text: 'Boost Resilience', image: 'resilience', color: '#3287ab' },
-    
-    // 5 New panels
-    { text: 'Retail Solutions', image: 'retail', color: '#8148ec' },
-    { text: 'Manufacturing Hub', image: 'manufacturing', color: '#5cb8f6' },
-    { text: 'Healthcare Plus', image: 'healthcare', color: '#1d3bd2' },
-    { text: 'Education Suite', image: 'education', color: '#9b9bdd' },
-    { text: 'Real Estate Pro', image: 'realestate', color: '#3b82f6' }
+    { text: 'Drive Innovation', image: 'innovation', color: '#7fa1d0', desc: 'Transform your business with cutting-edge billing solutions' },
+    { text: 'Empower Growth', image: 'growth', color: '#6366f1', desc: 'Scale your business with powerful accounting tools' },
+    { text: 'GSTR Filing', image: 'gstr', color: '#7bb2cc', desc: 'Simplify GST returns with automated filing' },
+    { text: 'Unite Industries', image: 'unite', color: '#edf3f6', desc: 'Connect all your business operations seamlessly' },
+    { text: 'Expand Reach', image: 'expand', color: '#4b22c5', desc: 'Grow your customer base with digital invoices' },
+    { text: 'Boost Resilience', image: 'resilience', color: '#3287ab', desc: 'Build a resilient business with smart financial management' },
+    { text: 'Retail Solutions', image: 'retail', color: '#8148ec', desc: 'Complete POS and inventory management for retail stores' },
+    { text: 'Manufacturing Hub', image: 'manufacturing', color: '#5cb8f6', desc: 'Streamline production with smart manufacturing tools' },
+    { text: 'Healthcare Plus', image: 'healthcare', color: '#1d3bd2', desc: 'Secure billing and patient management solutions' },
+    { text: 'Education Suite', image: 'education', color: '#9b9bdd', desc: 'Simplify fee collection and academic administration' },
+    { text: 'Real Estate Pro', image: 'realestate', color: '#3b82f6', desc: 'Manage properties, rentals, and commissions easily' }
   ];
 
   const tagCloud = [
@@ -36,442 +36,285 @@ const Industries = () => {
     'hospitality', 'healthcare', 'education', 'real estate', 'transport'
   ];
 
-  // Clean up function for intervals and timeouts
-  const clearAllTimers = () => {
-    if (autoPlayRef.current) {
-      clearInterval(autoPlayRef.current);
-      autoPlayRef.current = null;
-    }
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
-      timeoutRef.current = null;
-    }
-  };
-
-  // Start auto-play only if not hovering
+  // Desktop auto-play logic
   useEffect(() => {
-    clearAllTimers();
+    if (autoPlayRef.current) clearInterval(autoPlayRef.current);
     
     if (isPlaying && !isHovering) {
       autoPlayRef.current = setInterval(() => {
         setCurrentIndex(prev => (prev + 1) % leftCards.length);
-      }, 3000);
+      }, 4000);
     }
-
-    return clearAllTimers;
+    return () => clearInterval(autoPlayRef.current);
   }, [isPlaying, isHovering, leftCards.length]);
 
-  const getRightPanelImage = () => {
-    switch (leftCards[currentIndex].image) {
-      // Original images
-      case 'innovation':
-        return 'url("https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80")';
-      case 'growth':
-        return 'url("https://images.unsplash.com/photo-1460925895917-afdab827c52f?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80")';
-      case 'gstr':
-        return 'url("https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80")';
-      case 'unite':
-        return 'url("https://images.unsplash.com/photo-1522071820081-009f0129c71c?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80")';
-      case 'expand':
-        return 'url("https://images.unsplash.com/photo-1542744173-8e7e53415bb0?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80")';
-      case 'resilience':
-        return 'url("https://images.unsplash.com/photo-1552664730-d307ca884978?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80")';
-      
-      // New images
-      case 'retail':
-        return 'url("https://images.unsplash.com/photo-1441986300917-64674bd600d8?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80")';
-      case 'manufacturing':
-        return 'url("https://images.unsplash.com/photo-1581091226033-d5c48150dbaa?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80")';
-      case 'healthcare':
-        return 'url("https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80")';
-      case 'education':
-        return 'url("https://images.unsplash.com/photo-1524995997946-a1c2e315a42f?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80")';
-      case 'realestate':
-        return 'url("https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80")';
-      default:
-        return 'url("https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80")';
+  // Mobile auto-play logic
+  useEffect(() => {
+    if (mobileAutoPlayRef.current) clearInterval(mobileAutoPlayRef.current);
+    
+    if (isMobileAutoPlaying) {
+      mobileAutoPlayRef.current = setInterval(() => {
+        setMobileIndex(prev => (prev + 1) % leftCards.length);
+      }, 3000);
     }
-  };
+    return () => clearInterval(mobileAutoPlayRef.current);
+  }, [isMobileAutoPlaying, leftCards.length]);
 
-  const handleCardClick = (index) => {
+  const handleManualNav = (index) => {
     setCurrentIndex(index);
-    
-    // Clear any existing timers
-    clearAllTimers();
-    
-    // Stop auto-play
     setIsPlaying(false);
-    
-    // Resume auto-play after 5 seconds
-    timeoutRef.current = setTimeout(() => {
-      setIsPlaying(true);
-    }, 5000);
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    timeoutRef.current = setTimeout(() => setIsPlaying(true), 5000);
   };
 
-  const handleMouseEnter = () => {
-    setIsHovering(true);
-    setIsPlaying(false); // ALWAYS stop auto-play when hovering
-    clearAllTimers(); // Clear any running timers
+  const handleMobilePrev = () => {
+    setIsMobileAutoPlaying(false);
+    setMobileIndex(prev => (prev === 0 ? leftCards.length - 1 : prev - 1));
   };
 
-  const handleMouseLeave = () => {
-    setIsHovering(false);
-    setIsPlaying(true); // ALWAYS resume auto-play when not hovering
+  const handleMobileNext = () => {
+    setIsMobileAutoPlaying(false);
+    setMobileIndex(prev => (prev + 1) % leftCards.length);
   };
 
-  const handleNext = () => {
-    setCurrentIndex((prev) => (prev + 1) % leftCards.length);
-    
-    clearAllTimers();
-    setIsPlaying(false);
-    
-    timeoutRef.current = setTimeout(() => {
-      setIsPlaying(true);
-    }, 5000);
+  const handleMobileDotClick = (index) => {
+    setIsMobileAutoPlaying(false);
+    setMobileIndex(index);
   };
 
-  const handlePrev = () => {
-    setCurrentIndex((prev) => (prev - 1 + leftCards.length) % leftCards.length);
-    
-    clearAllTimers();
-    setIsPlaying(false);
-    
-    // Set timeout to resume playing after 5 seconds
-    timeoutRef.current = setTimeout(() => {
-      setIsPlaying(true);
-    }, 5000);
+  const handleMobileHover = () => {
+    setIsMobileAutoPlaying(false);
   };
 
-  const handleDotClick = (index) => {
-    setCurrentIndex(index);
-    
-    clearAllTimers();
-    setIsPlaying(false);
-    
-    timeoutRef.current = setTimeout(() => {
-      setIsPlaying(true);
-    }, 5000);
+  const handleMobileLeave = () => {
+    setIsMobileAutoPlaying(true);
   };
 
-  // Get previous and next indices
+  const getImageUrl = (key) => {
+    const urls = {
+      innovation: "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&w=1200&q=80",
+      growth: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=1200&q=80",
+      gstr: "https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?auto=format&fit=crop&w=1200&q=80",
+      unite: "https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=1200&q=80",
+      expand: "https://images.unsplash.com/photo-1542744173-8e7e53415bb0?auto=format&fit=crop&w=1200&q=80",
+      resilience: "https://images.unsplash.com/photo-1552664730-d307ca884978?auto=format&fit=crop&w=1200&q=80",
+      retail: "https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&w=1200&q=80",
+      manufacturing: "https://images.unsplash.com/photo-1581091226033-d5c48150dbaa?auto=format&fit=crop&w=1200&q=80",
+      healthcare: "https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?auto=format&fit=crop&w=1200&q=80",
+      education: "https://images.unsplash.com/photo-1524995997946-a1c2e315a42f?auto=format&fit=crop&w=1200&q=80",
+      realestate: "https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&w=1200&q=80"
+    };
+    return urls[key];
+  };
+
   const prevIndex = (currentIndex - 1 + leftCards.length) % leftCards.length;
   const nextIndex = (currentIndex + 1) % leftCards.length;
 
   return (
-    <section className="relative w-full py-8 sm:py-12 md:py-16 lg:py-[100px] bg-gradient-to-b from-[#f8fafc] to-white font-['Inter',sans-serif] overflow-hidden">
-      <style jsx>{`
-        .panel {
-          position: absolute;
-          width: 100%;
-          height: 90px;
-          border-radius: 20px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-size: 20px;
-          font-weight: 600;
-          color: white;
-          transition: all 0.45s cubic-bezier(0.4, 0, 0.2, 1);
-          box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15);
-          cursor: pointer;
-          left: 0;
-          right: 0;
-          margin: 0 auto;
-          max-width: 90%;
-        }
-
-        @media (min-width: 640px) {
-          .panel {
-            height: 100px;
-            font-size: 22px;
-            max-width: 400px;
-          }
-        }
-
-        @media (min-width: 768px) {
-          .panel {
-            height: 110px;
-            font-size: 24px;
-            max-width: 420px;
-          }
-        }
-
-        @media (min-width: 1024px) {
-          .panel {
-            height: 110px;
-            font-size: 26px;
-            max-width: 450px;
-          }
-        }
-
-        .panel.prev {
-          top: 0;
-          opacity: 0.45;
-          transform: scale(0.95);
-          z-index: 1;
-        }
-
-        .panel.active {
-          top: 100px;
-          transform: scale(1.05);
-          z-index: 3;
-          box-shadow: 0 20px 35px rgba(59, 130, 246, 0.3);
-          border: 3px solid #3B82F6;
-        }
-
-        @media (min-width: 640px) {
-          .panel.active {
-            top: 115px;
-            transform: scale(1.06);
-          }
-        }
-
-        @media (min-width: 768px) {
-          .panel.active {
-            top: 120px;
-            transform: scale(1.07);
-          }
-        }
-
-        @media (min-width: 1024px) {
-          .panel.active {
-            top: 125px;
-            transform: scale(1.08);
-          }
-        }
-
-        .panel.next {
-          top: 200px;
-          opacity: 0.45;
-          transform: scale(0.95);
-          z-index: 1;
-        }
-
-        @media (min-width: 640px) {
-          .panel.next {
-            top: 230px;
-          }
-        }
-
-        @media (min-width: 768px) {
-          .panel.next {
-            top: 240px;
-          }
-        }
-
-        @media (min-width: 1024px) {
-          .panel.next {
-            top: 250px;
-          }
-        }
-
-        .panel.hidden {
-          opacity: 0;
-          pointer-events: none;
-        }
-
-        .arrow-button {
-          width: 45px;
-          height: 45px;
-          border-radius: 50%;
-          background: linear-gradient(145deg, #3B82F6, #2563EB);
-          color: white;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-size: 18px;
-          cursor: pointer;
-          box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
-          transition: all 0.25s ease;
-          border: 1px solid rgba(255,255,255,0.3);
-          margin: 0 auto;
-        }
-
-        @media (min-width: 640px) {
-          .arrow-button {
-            width: 50px;
-            height: 50px;
-            font-size: 20px;
-          }
-        }
-
-        @media (min-width: 1024px) {
-          .arrow-button {
-            width: 55px;
-            height: 55px;
-            font-size: 22px;
-          }
-        }
-
-        .arrow-button:hover {
-          transform: scale(1.1);
-          box-shadow: 0 15px 25px rgba(37, 99, 235, 0.3);
-        }
-
-        .arrow-button:active {
-          transform: scale(0.95);
-        }
-
-        .cards-container {
-          position: relative;
-          height: 300px;
-          width: 100%;
-          max-width: 500px;
-          margin: 0 auto;
-        }
-
-        @media (min-width: 640px) {
-          .cards-container {
-            height: 340px;
-          }
-        }
-
-        @media (min-width: 768px) {
-          .cards-container {
-            height: 350px;
-          }
-        }
-
-        @media (min-width: 1024px) {
-          .cards-container {
-            height: 360px;
-          }
-        }
-      `}</style>
-
-      <div className="text-center max-w-[1400px] mx-auto px-3 sm:px-4 md:px-6 lg:px-[60px] relative">
-
-        {/* SECTION TITLE COMPONENT */}
+    <section className="relative w-full py-16 lg:py-24 bg-[#f8fafc] overflow-hidden font-['Inter']">
+      <div className="max-w-7xl mx-auto px-6">
+        
         <SectionTitle
           title="Supporting businesses from a wide range of industries"
-          description="We understand your unique billing and accounting needs, Vyapar India billing software is specially designed for Indian SMBs."
+          description="We understand your unique billing and accounting needs, Billora software is specially designed for modern SMBs."
         />
-        <p className="text-[#475569] text-base sm:text-lg md:text-xl max-w-[600px] mx-auto mt-4 sm:mt-5 md:mt-6 animate-[fadeInUp_0.8s_ease-out_0.2s_both]">
-          Get started with Billora in three simple steps
-        </p>
 
-        <div className="flex flex-col lg:flex-row gap-6 sm:gap-8 md:gap-10 lg:gap-[60px] items-center justify-between mt-8 sm:mt-10 md:mt-12 lg:mt-20">
-          {/* LEFT PANEL - Panel Stack */}
-          <div
-            className="flex-1 relative py-4 sm:py-5 md:py-[20px] max-w-[500px] max-lg:max-w-full max-lg:w-full w-full px-2 sm:px-4"
-            ref={sliderRef}
-            onMouseEnter={handleMouseEnter}
-            onMouseLeave={handleMouseLeave}
-          >
-            {/* UP ARROW */}
-            <div className="flex justify-center mb-3 sm:mb-4">
+        {/* DESKTOP/TV VIEW - Visible on lg screens and above */}
+        <div className="hidden lg:block">
+          <div className="flex flex-col lg:flex-row gap-12 lg:gap-20 items-center justify-between mt-16">
+            
+            {/* LEFT SIDE: The Panel Stack */}
+            <div 
+              className="w-full lg:w-1/2 flex flex-col items-center"
+              onMouseEnter={() => setIsHovering(true)}
+              onMouseLeave={() => setIsHovering(false)}
+            >
               <button 
-                onClick={handlePrev}
-                className="arrow-button"
-                aria-label="Previous panel"
+                onClick={() => handleManualNav(prevIndex)}
+                className="mb-8 w-12 h-12 rounded-full bg-white shadow-lg flex items-center justify-center text-blue-600 hover:bg-blue-600 hover:text-white transition-all z-10 border border-slate-100"
               >
-                <span className="text-lg">▲</span>
+                ▲
               </button>
+
+              <div className="relative h-[350px] w-full max-w-[450px]">
+                <AnimatePresence initial={false}>
+                  {leftCards.map((card, index) => {
+                    const isActive = index === currentIndex;
+                    const isPrev = index === prevIndex;
+                    const isNext = index === nextIndex;
+
+                    if (!isActive && !isPrev && !isNext) return null;
+
+                    return (
+                      <motion.div
+                        key={index}
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        animate={{
+                          opacity: isActive ? 1 : 0.4,
+                          y: isActive ? 120 : (isPrev ? 0 : 240),
+                          scale: isActive ? 1.05 : 0.9,
+                          zIndex: isActive ? 20 : 10,
+                        }}
+                        exit={{ opacity: 0, scale: 0.8 }}
+                        transition={{ type: "spring", stiffness: 260, damping: 20 }}
+                        onClick={() => handleManualNav(index)}
+                        className="absolute inset-x-0 mx-auto h-[100px] rounded-[24px] flex items-center justify-center cursor-pointer shadow-xl"
+                        style={{ backgroundColor: card.color }}
+                      >
+                        <span className="text-white text-xl md:text-2xl font-bold px-4 text-center">
+                          {card.text}
+                        </span>
+                        {isActive && (
+                          <motion.div 
+                            layoutId="activeBorder"
+                            className="absolute inset-0 rounded-[24px] border-4 border-blue-500/50"
+                          />
+                        )}
+                      </motion.div>
+                    );
+                  })}
+                </AnimatePresence>
+              </div>
+
+              <button 
+                onClick={() => handleManualNav(nextIndex)}
+                className="mt-8 w-12 h-12 rounded-full bg-white shadow-lg flex items-center justify-center text-blue-600 hover:bg-blue-600 hover:text-white transition-all z-10 border border-slate-100"
+              >
+                ▼
+              </button>
+              <p className="mt-4 text-slate-400 text-sm font-medium">{currentIndex + 1} of {leftCards.length} Industries</p>
             </div>
 
-            {/* Cards Stack */}
-            <div className="cards-container">
-              {leftCards.map((card, index) => {
-                let positionClass = 'hidden';
-                
-                if (index === prevIndex) {
-                  positionClass = 'prev';
-                } else if (index === currentIndex) {
-                  positionClass = 'active';
-                } else if (index === nextIndex) {
-                  positionClass = 'next';
-                }
-
-                return (
-                  <div
-                    key={index}
-                    className={`panel ${positionClass}`}
-                    style={{ backgroundColor: card.color }}
-                    onClick={() => handleCardClick(index)}
+            {/* RIGHT SIDE: The Animated Showcase */}
+            <div className="w-full lg:w-1/2">
+              <div className="relative h-[450px] lg:h-[550px] w-full rounded-[40px] shadow-[0_30px_60px_rgba(0,0,0,0.12)] overflow-hidden bg-slate-200">
+                <AnimatePresence mode="wait">
+                  <motion.div
+                    key={currentIndex}
+                    initial={{ x: -150, opacity: 0, scale: 0.9 }}
+                    animate={{ x: 0, opacity: 1, scale: 1 }}
+                    exit={{ x: 150, opacity: 0, scale: 1.1 }}
+                    transition={{ 
+                      x: { type: "spring", stiffness: 100, damping: 20 },
+                      opacity: { duration: 0.4 }
+                    }}
+                    className="absolute inset-0"
                   >
-                    <span className="text-white font-semibold text-center px-2">
-                      {card.text}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* DOWN ARROW */}
-            <div className="flex justify-center mt-3 sm:mt-4">
-              <button 
-                onClick={handleNext}
-                className="arrow-button"
-                aria-label="Next panel"
-              >
-                <span className="text-lg">▼</span>
-              </button>
-            </div>
-
-            {/* Panel count indicator - visible on all screens */}
-            <div className="text-center mt-4 sm:mt-5 text-xs sm:text-sm text-gray-500">
-              {currentIndex + 1} of {leftCards.length} industries
-            </div>
-          </div>
-
-          {/* RIGHT PANEL - Image with content */}
-          <div
-            className="flex-1 h-[250px] sm:h-[300px] md:h-[350px] lg:h-[450px] rounded-[20px] sm:rounded-[25px] md:rounded-[30px] lg:rounded-[40px] overflow-hidden relative transition-all duration-500 shadow-[0_20px_35px_rgba(0,0,0,0.2)] max-w-[600px] max-lg:max-w-full w-full mx-2 sm:mx-4"
-            onMouseEnter={handleMouseEnter}
-            onMouseLeave={handleMouseLeave}
-            style={{
-              backgroundImage: getRightPanelImage(),
-              backgroundSize: 'cover',
-              backgroundPosition: 'center'
-            }}
-          >
-            <div className="absolute top-0 left-0 right-0 bottom-0 bg-gradient-to-br from-black/70 via-black/40 to-black/20 flex items-end p-4 sm:p-5 md:p-6 lg:p-[40px]">
-              <div className="text-white w-full">
-                <h3 className="text-xl sm:text-2xl md:text-3xl lg:text-[36px] font-bold mb-2 sm:mb-3 lg:mb-4 drop-shadow-lg">
-                  {leftCards[currentIndex].text}
-                </h3>
-                <p className="text-xs sm:text-sm md:text-base lg:text-lg mb-3 sm:mb-4 leading-relaxed drop-shadow max-w-[450px]">
-                  {leftCards[currentIndex].text === 'Drive Innovation' && 'Transform your business with cutting-edge billing solutions'}
-                  {leftCards[currentIndex].text === 'Empower Growth' && 'Scale your business with powerful accounting tools'}
-                  {leftCards[currentIndex].text === 'GSTR Filing' && 'Simplify GST returns with automated filing'}
-                  {leftCards[currentIndex].text === 'Unite Industries' && 'Connect all your business operations seamlessly'}
-                  {leftCards[currentIndex].text === 'Expand Reach' && 'Grow your customer base with digital invoices'}
-                  {leftCards[currentIndex].text === 'Boost Resilience' && 'Build a resilient business with smart financial management'}
-                  
-                  {/* New panel descriptions */}
-                  {leftCards[currentIndex].text === 'Retail Solutions' && 'Complete POS and inventory management for retail stores'}
-                  {leftCards[currentIndex].text === 'Manufacturing Hub' && 'Streamline production with smart manufacturing tools'}
-                  {leftCards[currentIndex].text === 'Healthcare Plus' && 'Secure billing and patient management solutions'}
-                  {leftCards[currentIndex].text === 'Education Suite' && 'Simplify fee collection and academic administration'}
-                  {leftCards[currentIndex].text === 'Real Estate Pro' && 'Manage properties, rentals, and commissions easily'}
-                </p>
-                <div className="flex flex-wrap gap-1 sm:gap-2">
-                  {tagCloud.slice(0, 4).map((tag, i) => (
-                    <span key={i} className="text-[10px] sm:text-xs md:text-sm lg:text-[15px] px-2 sm:px-3 lg:px-4 py-1 sm:py-1.5 lg:py-2 bg-white/20 backdrop-blur-[8px] rounded-full border border-white/40 text-white font-medium transition-all duration-300 hover:bg-[#3b82f699] hover:-translate-y-1">
-                      {tag}
-                    </span>
-                  ))}
-                </div>
+                    {/* Background Image */}
+                    <div 
+                      className="absolute inset-0 bg-cover bg-center transition-transform duration-[2000ms] hover:scale-110"
+                      style={{ backgroundImage: `url(${getImageUrl(leftCards[currentIndex].image)})` }}
+                    />
+                    
+                    {/* Content Overlay */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent flex flex-col justify-end p-8 lg:p-12">
+                      <motion.div
+                        initial={{ y: 30, opacity: 0 }}
+                        animate={{ y: 0, opacity: 1 }}
+                        transition={{ delay: 0.2 }}
+                      >
+                        <h3 className="text-white text-3xl lg:text-5xl font-bold mb-4 drop-shadow-md">
+                          {leftCards[currentIndex].text}
+                        </h3>
+                        <p className="text-slate-200 text-base lg:text-xl mb-6 max-w-lg leading-relaxed">
+                          {leftCards[currentIndex].desc}
+                        </p>
+                        
+                        {/* Tags */}
+                        <div className="flex flex-wrap gap-2">
+                          {tagCloud.slice(currentIndex, currentIndex + 4).map((tag, i) => (
+                            <span 
+                              key={i} 
+                              className="px-4 py-2 bg-white/10 backdrop-blur-md rounded-full text-white text-xs lg:text-sm border border-white/20"
+                            >
+                              {tag}
+                            </span>
+                          ))}
+                        </div>
+                      </motion.div>
+                    </div>
+                  </motion.div>
+                </AnimatePresence>
               </div>
             </div>
           </div>
         </div>
 
-        {/* MOBILE SECTION - Navigation Dots (Visible on mobile only) */}
-        <div className="lg:hidden mt-6 sm:mt-8">
-          <div className="flex justify-center gap-2 flex-wrap max-w-[300px] mx-auto">
-            {leftCards.map((_, idx) => (
-              <button
-                key={idx}
-                onClick={() => handleDotClick(idx)}
-                className={`transition-all duration-300 ${
-                  idx === currentIndex
-                    ? "w-6 sm:w-7 h-1.5 sm:h-2 bg-blue-600 rounded-full"
-                    : "w-1.5 sm:w-2 h-1.5 sm:h-2 bg-gray-300 rounded-full hover:bg-gray-400"
-                }`}
-                aria-label={`View ${leftCards[idx].text}`}
-              />
-            ))}
+        {/* MOBILE/TABLET VIEW - Visible below lg screens */}
+        <div className="lg:hidden mt-8">
+          <div className="relative max-w-md mx-auto">
+            {/* Carousel Container with hover pause */}
+            <div 
+              className="overflow-hidden rounded-xl"
+              ref={mobileContainerRef}
+              onMouseEnter={handleMobileHover}
+              onMouseLeave={handleMobileLeave}
+            >
+              <div 
+                className="flex transition-transform duration-500 ease-out"
+                style={{ transform: `translateX(-${mobileIndex * 100}%)` }}
+              >
+                {leftCards.map((industry, index) => (
+                  <div key={index} className="w-full flex-shrink-0 px-2">
+                    <div className="bg-white rounded-xl p-4 shadow-md">
+                      {/* Image - wider than tall (16:9 aspect ratio) */}
+                      <div className="relative w-full aspect-[16/9] rounded-lg overflow-hidden">
+                        <img
+                          src={getImageUrl(industry.image)}
+                          alt={industry.text}
+                          className="w-full h-full object-cover"
+                          loading="lazy"
+                        />
+                      </div>
+                      
+                      {/* Name below image */}
+                      <h3 className="text-lg font-semibold text-center mt-3" 
+                          style={{ color: industry.color }}>
+                        {industry.text}
+                      </h3>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Navigation Buttons */}
+            <button
+              onClick={handleMobilePrev}
+              className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-2 w-10 h-10 bg-white rounded-full shadow-lg flex items-center justify-center hover:bg-gray-50 transition-all border border-gray-200"
+              aria-label="Previous"
+            >
+              <ChevronLeft className="w-5 h-5 text-gray-600" />
+            </button>
+
+            <button
+              onClick={handleMobileNext}
+              className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-2 w-10 h-10 bg-white rounded-full shadow-lg flex items-center justify-center hover:bg-gray-50 transition-all border border-gray-200"
+              aria-label="Next"
+            >
+              <ChevronRight className="w-5 h-5 text-gray-600" />
+            </button>
+
+            {/* Dot Indicators */}
+            <div className="flex justify-center gap-2 mt-6">
+              {leftCards.map((_, index) => (
+                <button
+                  key={index}
+                  onClick={() => handleMobileDotClick(index)}
+                  className={`transition-all duration-300 ${
+                    index === mobileIndex
+                      ? "w-6 h-2 bg-blue-600 rounded-full"
+                      : "w-2 h-2 bg-gray-300 rounded-full hover:bg-gray-400"
+                  }`}
+                  aria-label={`Go to slide ${index + 1}`}
+                />
+              ))}
+            </div>
+
+            {/* Current index indicator */}
+            <p className="text-center text-sm text-gray-500 mt-3">
+              {mobileIndex + 1} of {leftCards.length}
+            </p>
           </div>
         </div>
       </div>
