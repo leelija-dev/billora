@@ -133,6 +133,11 @@ export const NAVIGATION_SCREENS = {
   },
   MAIN: {
     DASHBOARD: 'Dashboard',
+
+     // Store screens
+    STORES: 'Stores',
+    STORE_DETAIL: 'StoreDetail',
+    ADD_STORE: 'AddStore',
     
     // Products
     PRODUCTS: 'Products',
@@ -154,7 +159,10 @@ export const NAVIGATION_SCREENS = {
     UNIT_DETAIL: 'UnitDetail',
     ADD_UNIT: 'AddUnit',
     
-   
+    // Billing
+    BILL_GENERATION: 'BillGeneration',
+    BILL_HISTORY: 'BillHistory',
+    BILL_DETAIL: 'BillDetail',
     
     // Customers
     CUSTOMERS: 'Customers',
