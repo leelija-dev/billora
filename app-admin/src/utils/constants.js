@@ -177,6 +177,7 @@ export const NAVIGATION_SCREENS = {
     INVENTORY: 'Inventory',
     STOCK_MOVEMENT: 'StockMovement',
     
+    
     // Settings
     SETTINGS: 'Settings',
     PROFILE: 'Profile',

@@ -150,7 +150,7 @@ export const billsAPI = {
   getCustomers: async () => {
     try {
       const api = getBillsData();
-      const response = await api.get('/bill-customers');
+      const response = await api.get('/customer/1'); // Use admin_id = 1 for now
       return response.data;
     } catch (error) {
       throw error.response?.data || error.message;

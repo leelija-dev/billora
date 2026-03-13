@@ -8,7 +8,6 @@ export const useProducts = (params = {}) => {
 
   const fetchProducts = async () => {
     try {
-      setLoading(true);
       setError(null);
       const response = await productsAPI.getAll(params);
       
@@ -37,6 +36,7 @@ export const useProducts = (params = {}) => {
   };
 
   const refreshProducts = async () => {
+    setLoading(true);
     await fetchProducts();
   };
 
