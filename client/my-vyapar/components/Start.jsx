@@ -1,156 +1,74 @@
 "use client";
 
-import Image from 'next/image';
-import { useState } from 'react'; 
+import React from 'react';
 
-export default function Home() {
-  const [mobileNumber, setMobileNumber] = useState('');
-  const [isSearching, setIsSearching] = useState(false);
-
-  const handleSearch = () => {
-    if (!mobileNumber.trim()) {
-      alert('Please enter a mobile number');
-      return;
-    }
-    
-    if (mobileNumber.length !== 10) {
-      alert('Please enter a valid 10-digit mobile number');
-      return;
-    }
-    
-    setIsSearching(true);
-    
-    // Simulate search/validation
-    setTimeout(() => {
-      setIsSearching(false);
-      alert(`Searching for mobile number: ${mobileNumber}`);
-      // You can replace this with actual search logic
-    }, 1500);
-  };
-
-  const handleKeyPress = (e) => {
-    if (e.key === 'Enter') {
-      handleSearch();
-    }
-  };
-
-  // Only allow numbers
-  const handleNumberChange = (e) => {
-    const value = e.target.value.replace(/[^0-9]/g, '');
-    setMobileNumber(value);
-  };
-
+export default function BilloraUniversalHero() {
   return (
-    <main className="bg-white min-h-[50vh] md:min-h-[60vh] lg:min-h-[50vh] flex items-center">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
-        <div className="grid grid-cols-1 lg:grid-cols-2 items-center gap-10">
-           
-          {/* LEFT CONTENT */}
-          <div className="space-y-6">
-            <h1 className="text-4xl md:text-4xl font-bold text-gray-900 leading-tight">
-              Start using <br /> myBillora today
-            </h1>
+    <section className="relative w-full min-h-[450px] lg:h-[40vh] lg:min-h-[450px] bg-gradient-to-b from-[#f8faff] to-white px-4 md:px-10 lg:px-20 overflow-hidden flex items-center py-10 lg:py-0">
+      <div className="max-w-7xl mx-auto flex flex-col lg:flex-row items-center justify-between w-full gap-8 lg:gap-12">
+        
+        {/* LEFT SIDE */}
+        <div className="z-20 flex flex-col items-center lg:items-start text-center lg:text-left w-full lg:w-1/2">
+          <h1 className="text-[28px] sm:text-[36px] md:text-[44px] lg:text-[52px] font-bold text-slate-900 leading-[1.1] mb-6 tracking-tight">
+            Start using <br />
+            <span className="text-[#1e266e]">myBillora today</span>
+          </h1>
 
-            {/* Premium Input Section with Clickable Search */}
-            <div className="flex flex-col md:flex-row items-start md:items-center gap-4">
-              <div className="relative w-full md:w-auto whitespace-nowrap bg-gradient-to-r ...">
-                <div className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-500 text-sm font-medium">
-                  +91
-                </div>
-                <input
-                  type="tel"
-                  value={mobileNumber}
-                  onChange={handleNumberChange}
-                  onKeyPress={handleKeyPress}
-                  placeholder="Enter mobile number"
-                  className="w-full sm:w-72 pl-16 pr-5 py-3.5 text-gray-700 bg-white rounded-xl sm:rounded-full shadow-lg hover:shadow-xl transition-shadow duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500/50 border border-gray-100 placeholder:text-gray-400"
-                  maxLength="10"
-                />
-              </div>
-              
-              <button 
-                onClick={handleSearch}
-                disabled={isSearching}
-                className="relative w-full sm:w-auto whitespace-nowrap bg-gradient-to-r from-blue-600 to-blue-700  hover:to-blue-800 text-white px-8 py-3.5 rounded-xl lg:rounded-full "
-              >
-                <span className="relative z-10 flex justify-center md:justify-end">"
-                  {isSearching ? (
-                    <>
-                      <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                      </svg>
-                      <span>Searching...</span>
-                    </>
-                  ) : (
-                    <>
-                      <span>Start Free Trial</span>
-                      <svg 
-                        className="w-5 h-5 transition-transform duration-300 group-hover:translate-x-1" 
-                        fill="none" 
-                        
-                        stroke="currentColor" 
-                        viewBox="0 0 24 24"
-                      >
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                      </svg>
-                    </>
-                  )}
-                </span>
-                <span className="absolute inset-0 bg-gradient-to-r from-blue-400 to-blue-600 opacity-0 group-hover:opacity-20 transition-opacity duration-300"></span>
-              </button>
+          {/* INPUT BAR */}
+          <div className="flex w-full max-w-[320px] sm:max-w-[400px] md:max-w-md bg-white border border-gray-200 rounded-full p-1 md:p-1.5 shadow-md mb-6 transition-all focus-within:ring-2 focus-within:ring-blue-100">
+            <div className="flex items-center px-3 md:px-4 py-1.5 md:py-2 flex-grow">
+              <span className="text-gray-400 mr-2 text-[12px] md:text-[14px] font-medium">+91</span>
+              <input 
+                type="tel" 
+                placeholder="Mobile number" 
+                className="outline-none text-[12px] md:text-[14px] w-full bg-transparent text-slate-700 font-medium"
+              />
             </div>
-
-            {/* Premium Download Section */}
-            <div className="space-y-3">
-              <p className="text-gray-600 text-sm font-medium">Download app on</p>
-              <button 
-                onClick={() => window.open('https://play.google.com/store/apps', '_blank')}
-                className="transition-transform duration-300 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500/50 rounded-lg"
-                aria-label="Download from Google Play"
-              >
-                <Image
-                  src="https://upload.wikimedia.org/wikipedia/commons/7/78/Google_Play_Store_badge_EN.svg"
-                  alt="Google Play Store"
-                  width={150}
-                  height={50}
-                  className="h-12 w-auto hover:drop-shadow-lg transition-all duration-300"
-                  priority={false}
-                />
-              </button>
-            </div>
+            <button className="bg-[#2563eb] text-white px-4 sm:px-6 md:px-8 py-2 md:py-2.5 rounded-full font-bold text-[10px] sm:text-[12px] whitespace-nowrap hover:bg-blue-700 transition-colors">
+              Start Free Trial →
+            </button>
           </div>
 
-{/* RIGHT CONTENT (Phone Mockups) */}
-<div className="relative flex justify-center items-center min-h-[260px] sm:min-h-[360px] md:min-h-[420px] lg:min-h-[400px] mt-8 md:mt-0">
-
-  {/* Back Phone */}
-  <div className="absolute hidden lg:block left-4 sm:left-6 md:left-10 lg:left-15 top-10 sm:top-16 md:top-24 lg:top-38">
-    <Image
-      src="/image/Phone2.png"
-      alt="Phone Back View"
-      width={250}
-      height={500}
-      className="w-40 sm:w-48 md:w-56 lg:w-64 drop-shadow-xl max-h-[320px] sm:max-h-[360px] md:max-h-[380px] lg:max-h-[400px] object-contain"
-      priority={false}
-    />
-  </div>
-
-  {/* Front Phone */}
-  <div className="relative z-10 top-0 sm:top-9 lg:top-14 left-0 sm:left-6 lg:left-18 md:bottom-20flex justify-center">
-    <Image
-      src="/image/Phone1.png"
-      alt="Phone Front View"
-      width={250}
-      height={500}
-      className="w-44 sm:w-52 md:w-56 lg:w-64 drop-shadow-2xl max-h-[340px] sm:max-h-[360px] md:max-h-[380px] lg:max-h-[400px] object-contain"
-      priority={false}
-    />
-  </div>
-
-</div>
+          {/* DOWNLOAD CONTAINER */}
+          <div className="flex flex-col items-center lg:items-start">
+            <p className="text-[9px] md:text-[10px] text-gray-400 uppercase tracking-widest font-bold mb-3">Download app on</p>
+            <div className="w-24 md:w-28 lg:w-32 cursor-pointer hover:scale-105 transition-transform">
+              <img 
+                src="https://upload.wikimedia.org/wikipedia/commons/7/78/Google_Play_Store_badge_EN.svg" 
+                alt="Google Play" 
+                className="w-full h-auto"
+              />
+            </div>
+          </div>
         </div>
+
+        {/* RIGHT SIDE - Desktop Fix implemented here */}
+        <div className="relative w-full lg:w-1/2 flex justify-center lg:justify-center items-center h-[280px] sm:h-[320px] lg:h-[400px]">
+          {/* Changed lg:absolute to lg:relative to stay within the max-w-7xl container on desktop */}
+          <div className="relative flex items-end lg:scale-110 xl:scale-125 transition-transform">
+            
+            {/* Back Mockup (Phone2) */}
+            <div className="absolute bottom-4 right-16 sm:right-20 lg:right-24 w-20 h-[150px] sm:w-28 sm:h-[210px] lg:w-36 lg:h-[260px] bg-[#5a6b8d] rounded-[1rem] border-[1.5px] sm:border-[2px] border-[#2c3344] shadow-lg -rotate-6 z-0 overflow-hidden">
+               <img 
+                src="/image/Phone2.png" 
+                alt="App Screenshot 2" 
+                className="w-full h-full object-cover"
+               />
+            </div>
+            
+            {/* Front Mockup (Phone1) */}
+            <div className="relative w-24 h-[190px] sm:w-32 sm:h-[250px] lg:w-44 lg:h-[320px] bg-white rounded-[1.2rem] border-[4px] sm:border-[6px] lg:border-[3px] border-[#1e266e] shadow-2xl rotate-3 z-10 flex flex-col items-center overflow-hidden">
+               <div className="w-1/4 h-0.5 bg-gray-200 rounded-full absolute top-1 sm:top-2 z-20"></div>
+               <img 
+                src="/image/Phone1.png" 
+                alt="App Screenshot 1" 
+                className="w-full h-full object-cover"
+               />
+            </div>
+          </div>
+        </div>
+
       </div>
-    </main>
+    </section>
   );
 }

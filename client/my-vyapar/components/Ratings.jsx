@@ -15,7 +15,7 @@ const Ratings = () => {
       setVoteCount(voteCount + 1);
       setHasVoted(true);
       setShowThankYou(true);
-      
+
       setTimeout(() => {
         setShowThankYou(false);
       }, 3000);
@@ -36,7 +36,7 @@ const Ratings = () => {
 
   return (
     <section className="py-12 sm:py-16 md:py-20 lg:py-[60px] bg-gradient-to-br from-[#f8fafc] to-[#f1f5f9] font-['Inter',-apple-system,BlinkMacSystemFont,'Segoe_UI',sans-serif] text-center relative overflow-hidden">
-      
+
       {/* Animated Billing Instruments Background */}
       <style>{`
         @keyframes float {
@@ -76,15 +76,14 @@ const Ratings = () => {
         <h2 className="text-xl sm:text-2xl md:text-[28px] font-bold text-[#0f172a] mb-6 sm:mb-8 lg:mb-[30px] leading-tight">
           How useful is Billora for<br className="sm:hidden" /> Your Business?
         </h2>
-        
+
         {/* Stars Rating */}
         <div className="flex justify-center gap-2 sm:gap-3 md:gap-4 mb-6 sm:mb-8">
           {[1, 2, 3, 4, 5].map((starValue) => (
             <span
               key={starValue}
-              className={`text-2xl sm:text-3xl md:text-4xl lg:text-[40px] inline-block transition-all duration-200 ${
-                (hoverRating || rating) >= starValue ? "text-[#fbbf24] [text-shadow:0_0_10px_rgba(251,191,36,0.3)]" : "text-[#cbd5e1]"
-              } ${hasVoted ? "cursor-not-allowed opacity-60" : "cursor-pointer hover:scale-110 hover:text-[#fbbf24]"}`}
+              className={`text-2xl sm:text-3xl md:text-4xl lg:text-[40px] inline-block transition-all duration-200 ${(hoverRating || rating) >= starValue ? "text-[#fbbf24] [text-shadow:0_0_10px_rgba(251,191,36,0.3)]" : "text-[#cbd5e1]"
+                } ${hasVoted ? "cursor-not-allowed opacity-60" : "cursor-pointer hover:scale-110 hover:text-[#fbbf24]"}`}
               onClick={() => handleRatingClick(starValue)}
               onMouseEnter={() => handleMouseEnter(starValue)}
               onMouseLeave={handleMouseLeave}
@@ -113,7 +112,7 @@ const Ratings = () => {
             Thank you for rating this post!
           </p>
         )}
-        
+
         {/* Vote Confirmation Message */}
         {hasVoted && !showThankYou && (
           <p className="text-[#3b82f6] font-medium py-2 sm:py-2.5 px-4 bg-[#dbeafe] rounded-full max-w-xs sm:max-w-sm mx-auto text-xs sm:text-sm md:text-base">
@@ -126,3 +125,4 @@ const Ratings = () => {
 };
 
 export default Ratings;
+

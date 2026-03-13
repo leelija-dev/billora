@@ -1,3 +1,4 @@
+// components/customers/CustomerForm.js
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useEffect, useState } from 'react';
@@ -15,6 +16,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { useThemeStore } from '../../store/themeStore';
 
 // Static customers data for editing
 const STATIC_CUSTOMERS = {
@@ -197,10 +199,13 @@ const InputField = ({
   secureTextEntry = false,
   autoCapitalize = 'none',
   editable = true,
+  isDarkMode = false,
 }) => (
   <View className="mb-4">
     <View className="flex-row items-center mb-2">
-      <Text className="text-gray-700 text-sm font-medium">
+      <Text className={`text-sm font-medium ${
+        isDarkMode ? 'text-gray-300' : 'text-gray-700'
+      }`}>
         {label} {required && <Text className="text-red-500">*</Text>}
       </Text>
     </View>
@@ -210,8 +215,10 @@ const InputField = ({
       rules={{ required: required ? `${label} is required` : false }}
       render={({ field: { onChange, onBlur, value } }) => (
         <View
-          className={`flex-row items-center bg-gray-50 rounded-xl px-4 border ${
-            errors[name] ? 'border-red-300' : 'border-gray-200'
+          className={`flex-row items-center rounded-xl px-4 border ${
+            errors[name] 
+              ? 'border-red-500' 
+              : isDarkMode ? 'border-gray-700 bg-gray-800' : 'border-gray-200 bg-gray-50'
           } ${!editable ? 'opacity-60' : ''}`}
         >
           {icon && (
@@ -220,9 +227,11 @@ const InputField = ({
             </View>
           )}
           <TextInput
-            className={`flex-1 py-3 ${icon ? 'ml-2' : ''} text-gray-900`}
+            className={`flex-1 py-3 ${icon ? 'ml-2' : ''} ${
+              isDarkMode ? 'text-white' : 'text-gray-900'
+            }`}
             placeholder={placeholder}
-            placeholderTextColor="#9ca3af"
+            placeholderTextColor={isDarkMode ? '#6B7280' : '#9ca3af'}
             onChangeText={onChange}
             onBlur={onBlur}
             value={value}
@@ -246,9 +255,11 @@ const InputField = ({
   </View>
 );
 
-const CustomerForm = () => {
+const CustomerForm = ({ isDarkMode: propIsDarkMode }) => {
   const navigation = useNavigation();
   const route = useRoute();
+  const { isDarkMode: storeIsDarkMode } = useThemeStore();
+  const isDarkMode = propIsDarkMode !== undefined ? propIsDarkMode : storeIsDarkMode;
   const { customerId } = route.params || {};
   const [loading, setLoading] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -257,7 +268,7 @@ const CustomerForm = () => {
   const {
     control,
     handleSubmit,
-    formState: { errors, isValid },
+    formState: { errors },
     reset,
     watch,
   } = useForm({
@@ -328,22 +339,30 @@ const CustomerForm = () => {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-50" edges={['top']}>
+    <SafeAreaView className={`flex-1 ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`} edges={['top']}>
       {/* Header */}
-      <View className="flex-row items-center justify-between px-4 py-3 bg-white border-b border-gray-100">
+      <View className={`flex-row items-center justify-between px-4 py-3 border-b ${
+        isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'
+      }`}>
         <TouchableOpacity
           onPress={() => navigation.goBack()}
-          className="w-10 h-10 bg-gray-100 rounded-xl items-center justify-center"
+          className={`w-10 h-10 rounded-xl items-center justify-center ${
+            isDarkMode ? 'bg-gray-700' : 'bg-gray-100'
+          }`}
         >
-          <Icon name="arrow-left" size={22} color="#374151" />
+          <Icon name="arrow-left" size={22} color={isDarkMode ? "#9CA3AF" : "#374151"} />
         </TouchableOpacity>
-        <Text className="text-lg font-bold text-gray-900">
+        <Text className={`text-lg font-bold ${
+          isDarkMode ? 'text-white' : 'text-gray-900'
+        }`}>
           {customerId ? 'Edit Customer' : 'New Customer'}
         </Text>
         {customerId ? (
           <TouchableOpacity
             onPress={handleDelete}
-            className="w-10 h-10 bg-red-100 rounded-xl items-center justify-center"
+            className={`w-10 h-10 rounded-xl items-center justify-center ${
+              isDarkMode ? 'bg-red-900/30' : 'bg-red-100'
+            }`}
           >
             <Icon name="delete" size={20} color="#EF4444" />
           </TouchableOpacity>
@@ -395,7 +414,9 @@ const CustomerForm = () => {
 
           {/* Live Preview (only when editing/adding) */}
           {formValues.name && (
-            <View className="mx-4 mt-4 bg-white p-4 rounded-2xl border border-indigo-100">
+            <View className={`mx-4 mt-4 p-4 rounded-2xl border ${
+              isDarkMode ? 'bg-gray-800 border-indigo-900' : 'bg-white border-indigo-100'
+            }`}>
               <View className="flex-row items-center">
                 <LinearGradient
                   colors={["#4158D0", "#C850C0"]}
@@ -406,11 +427,23 @@ const CustomerForm = () => {
                   </Text>
                 </LinearGradient>
                 <View className="flex-1 ml-3">
-                  <Text className="text-gray-900 font-bold">{formValues.name || 'Customer Name'}</Text>
-                  <Text className="text-gray-500 text-sm">{formValues.email || 'email@example.com'}</Text>
+                  <Text className={`font-bold ${
+                    isDarkMode ? 'text-white' : 'text-gray-900'
+                  }`}>
+                    {formValues.name || 'Customer Name'}
+                  </Text>
+                  <Text className={`text-sm ${
+                    isDarkMode ? 'text-gray-400' : 'text-gray-500'
+                  }`}>
+                    {formValues.email || 'email@example.com'}
+                  </Text>
                 </View>
-                <View className="bg-green-100 px-3 py-1 rounded-full">
-                  <Text className="text-green-600 text-xs font-medium">New</Text>
+                <View className={`px-3 py-1 rounded-full ${
+                  isDarkMode ? 'bg-green-900/30' : 'bg-green-100'
+                }`}>
+                  <Text className={`text-xs font-medium ${
+                    isDarkMode ? 'text-green-400' : 'text-green-600'
+                  }`}>New</Text>
                 </View>
               </View>
             </View>
@@ -419,16 +452,24 @@ const CustomerForm = () => {
           {/* Main Form */}
           <View className="p-4">
             {/* Basic Information Card */}
-            <View className="bg-white rounded-3xl border border-gray-100 mb-4 overflow-hidden">
+            <View className={`rounded-3xl border mb-4 overflow-hidden ${
+              isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'
+            }`}>
               <LinearGradient
-                colors={["#f8f9ff", "#ffffff"]}
-                className="px-5 py-4 border-b border-gray-100"
+                colors={isDarkMode ? ["#1F2937", "#111827"] : ["#f8f9ff", "#ffffff"]}
+                className={`px-5 py-4 border-b ${
+                  isDarkMode ? 'border-gray-700' : 'border-gray-100'
+                }`}
               >
                 <View className="flex-row items-center">
-                  <View className="w-8 h-8 bg-indigo-100 rounded-lg items-center justify-center mr-3">
+                  <View className={`w-8 h-8 rounded-lg items-center justify-center mr-3 ${
+                    isDarkMode ? 'bg-indigo-900/30' : 'bg-indigo-100'
+                  }`}>
                     <Icon name="account-details" size={18} color="#6366F1" />
                   </View>
-                  <Text className="text-gray-900 font-bold text-lg">Basic Information</Text>
+                  <Text className={`font-bold text-lg ${
+                    isDarkMode ? 'text-white' : 'text-gray-900'
+                  }`}>Basic Information</Text>
                 </View>
               </LinearGradient>
               
@@ -442,6 +483,7 @@ const CustomerForm = () => {
                   required
                   errors={errors}
                   autoCapitalize="words"
+                  isDarkMode={isDarkMode}
                 />
 
                 <InputField
@@ -453,6 +495,7 @@ const CustomerForm = () => {
                   required
                   keyboardType="email-address"
                   errors={errors}
+                  isDarkMode={isDarkMode}
                 />
 
                 <InputField
@@ -463,6 +506,7 @@ const CustomerForm = () => {
                   icon="phone-outline"
                   keyboardType="phone-pad"
                   errors={errors}
+                  isDarkMode={isDarkMode}
                 />
 
                 <InputField
@@ -473,6 +517,7 @@ const CustomerForm = () => {
                   icon="office-building"
                   errors={errors}
                   autoCapitalize="words"
+                  isDarkMode={isDarkMode}
                 />
 
                 <InputField
@@ -482,21 +527,30 @@ const CustomerForm = () => {
                   placeholder="Enter tax ID (optional)"
                   icon="file-document-outline"
                   errors={errors}
+                  isDarkMode={isDarkMode}
                 />
               </View>
             </View>
 
             {/* Address Card */}
-            <View className="bg-white rounded-3xl border border-gray-100 mb-4 overflow-hidden">
+            <View className={`rounded-3xl border mb-4 overflow-hidden ${
+              isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'
+            }`}>
               <LinearGradient
-                colors={["#f8f9ff", "#ffffff"]}
-                className="px-5 py-4 border-b border-gray-100"
+                colors={isDarkMode ? ["#1F2937", "#111827"] : ["#f8f9ff", "#ffffff"]}
+                className={`px-5 py-4 border-b ${
+                  isDarkMode ? 'border-gray-700' : 'border-gray-100'
+                }`}
               >
                 <View className="flex-row items-center">
-                  <View className="w-8 h-8 bg-green-100 rounded-lg items-center justify-center mr-3">
+                  <View className={`w-8 h-8 rounded-lg items-center justify-center mr-3 ${
+                    isDarkMode ? 'bg-green-900/30' : 'bg-green-100'
+                  }`}>
                     <Icon name="map-marker" size={18} color="#10B981" />
                   </View>
-                  <Text className="text-gray-900 font-bold text-lg">Address Information</Text>
+                  <Text className={`font-bold text-lg ${
+                    isDarkMode ? 'text-white' : 'text-gray-900'
+                  }`}>Address Information</Text>
                 </View>
               </LinearGradient>
               
@@ -509,6 +563,7 @@ const CustomerForm = () => {
                   icon="home-outline"
                   errors={errors}
                   autoCapitalize="words"
+                  isDarkMode={isDarkMode}
                 />
 
                 <View className="flex-row mb-4">
@@ -518,13 +573,19 @@ const CustomerForm = () => {
                       name="address.city"
                       render={({ field: { onChange, onBlur, value } }) => (
                         <View>
-                          <Text className="text-gray-700 text-sm font-medium mb-2">City</Text>
-                          <View className="flex-row items-center bg-gray-50 rounded-xl px-4 border border-gray-200">
+                          <Text className={`text-sm font-medium mb-2 ${
+                            isDarkMode ? 'text-gray-300' : 'text-gray-700'
+                          }`}>City</Text>
+                          <View className={`flex-row items-center rounded-xl px-4 border ${
+                            isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-gray-50 border-gray-200'
+                          }`}>
                             <Icon name="city" size={20} color="#9ca3af" />
                             <TextInput
-                              className="flex-1 ml-2 py-3 text-gray-900"
+                              className={`flex-1 ml-2 py-3 ${
+                                isDarkMode ? 'text-white' : 'text-gray-900'
+                              }`}
                               placeholder="City"
-                              placeholderTextColor="#9ca3af"
+                              placeholderTextColor={isDarkMode ? '#6B7280' : '#9ca3af'}
                               onChangeText={onChange}
                               onBlur={onBlur}
                               value={value}
@@ -540,12 +601,18 @@ const CustomerForm = () => {
                       name="address.state"
                       render={({ field: { onChange, onBlur, value } }) => (
                         <View>
-                          <Text className="text-gray-700 text-sm font-medium mb-2">State</Text>
-                          <View className="flex-row items-center bg-gray-50 rounded-xl px-4 border border-gray-200">
+                          <Text className={`text-sm font-medium mb-2 ${
+                            isDarkMode ? 'text-gray-300' : 'text-gray-700'
+                          }`}>State</Text>
+                          <View className={`flex-row items-center rounded-xl px-4 border ${
+                            isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-gray-50 border-gray-200'
+                          }`}>
                             <TextInput
-                              className="flex-1 py-3 text-gray-900"
+                              className={`flex-1 py-3 ${
+                                isDarkMode ? 'text-white' : 'text-gray-900'
+                              }`}
                               placeholder="State"
-                              placeholderTextColor="#9ca3af"
+                              placeholderTextColor={isDarkMode ? '#6B7280' : '#9ca3af'}
                               onChangeText={onChange}
                               onBlur={onBlur}
                               value={value}
@@ -564,13 +631,19 @@ const CustomerForm = () => {
                       name="address.zip"
                       render={({ field: { onChange, onBlur, value } }) => (
                         <View>
-                          <Text className="text-gray-700 text-sm font-medium mb-2">ZIP Code</Text>
-                          <View className="flex-row items-center bg-gray-50 rounded-xl px-4 border border-gray-200">
+                          <Text className={`text-sm font-medium mb-2 ${
+                            isDarkMode ? 'text-gray-300' : 'text-gray-700'
+                          }`}>ZIP Code</Text>
+                          <View className={`flex-row items-center rounded-xl px-4 border ${
+                            isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-gray-50 border-gray-200'
+                          }`}>
                             <Icon name="zip-box" size={20} color="#9ca3af" />
                             <TextInput
-                              className="flex-1 ml-2 py-3 text-gray-900"
+                              className={`flex-1 ml-2 py-3 ${
+                                isDarkMode ? 'text-white' : 'text-gray-900'
+                              }`}
                               placeholder="ZIP"
-                              placeholderTextColor="#9ca3af"
+                              placeholderTextColor={isDarkMode ? '#6B7280' : '#9ca3af'}
                               onChangeText={onChange}
                               onBlur={onBlur}
                               value={value}
@@ -587,13 +660,19 @@ const CustomerForm = () => {
                       name="address.country"
                       render={({ field: { onChange, onBlur, value } }) => (
                         <View>
-                          <Text className="text-gray-700 text-sm font-medium mb-2">Country</Text>
-                          <View className="flex-row items-center bg-gray-50 rounded-xl px-4 border border-gray-200">
+                          <Text className={`text-sm font-medium mb-2 ${
+                            isDarkMode ? 'text-gray-300' : 'text-gray-700'
+                          }`}>Country</Text>
+                          <View className={`flex-row items-center rounded-xl px-4 border ${
+                            isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-gray-50 border-gray-200'
+                          }`}>
                             <Icon name="earth" size={20} color="#9ca3af" />
                             <TextInput
-                              className="flex-1 ml-2 py-3 text-gray-900"
+                              className={`flex-1 ml-2 py-3 ${
+                                isDarkMode ? 'text-white' : 'text-gray-900'
+                              }`}
                               placeholder="Country"
-                              placeholderTextColor="#9ca3af"
+                              placeholderTextColor={isDarkMode ? '#6B7280' : '#9ca3af'}
                               onChangeText={onChange}
                               onBlur={onBlur}
                               value={value}
@@ -609,20 +688,30 @@ const CustomerForm = () => {
 
             {/* Tags Preview (if editing) */}
             {customer?.tags && customer.tags.length > 0 && (
-              <View className="bg-white rounded-3xl border border-gray-100 mb-4 p-5">
+              <View className={`rounded-3xl border mb-4 p-5 ${
+                isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'
+              }`}>
                 <View className="flex-row items-center mb-4">
-                  <View className="w-8 h-8 bg-purple-100 rounded-lg items-center justify-center mr-3">
+                  <View className={`w-8 h-8 rounded-lg items-center justify-center mr-3 ${
+                    isDarkMode ? 'bg-purple-900/30' : 'bg-purple-100'
+                  }`}>
                     <Icon name="tag-multiple" size={18} color="#8B5CF6" />
                   </View>
-                  <Text className="text-gray-900 font-bold text-lg">Tags</Text>
+                  <Text className={`font-bold text-lg ${
+                    isDarkMode ? 'text-white' : 'text-gray-900'
+                  }`}>Tags</Text>
                 </View>
                 <View className="flex-row flex-wrap">
                   {customer.tags.map((tag, index) => (
                     <View
                       key={index}
-                      className="bg-indigo-50 px-3 py-1.5 rounded-full mr-2 mb-2"
+                      className={`px-3 py-1.5 rounded-full mr-2 mb-2 ${
+                        isDarkMode ? 'bg-indigo-900/30' : 'bg-indigo-50'
+                      }`}
                     >
-                      <Text className="text-indigo-600 text-xs font-medium">
+                      <Text className={`text-xs font-medium ${
+                        isDarkMode ? 'text-indigo-400' : 'text-indigo-600'
+                      }`}>
                         #{tag}
                       </Text>
                     </View>
@@ -632,16 +721,24 @@ const CustomerForm = () => {
             )}
 
             {/* Notes Card */}
-            <View className="bg-white rounded-3xl border border-gray-100 mb-6 overflow-hidden">
+            <View className={`rounded-3xl border mb-6 overflow-hidden ${
+              isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'
+            }`}>
               <LinearGradient
-                colors={["#f8f9ff", "#ffffff"]}
-                className="px-5 py-4 border-b border-gray-100"
+                colors={isDarkMode ? ["#1F2937", "#111827"] : ["#f8f9ff", "#ffffff"]}
+                className={`px-5 py-4 border-b ${
+                  isDarkMode ? 'border-gray-700' : 'border-gray-100'
+                }`}
               >
                 <View className="flex-row items-center">
-                  <View className="w-8 h-8 bg-orange-100 rounded-lg items-center justify-center mr-3">
+                  <View className={`w-8 h-8 rounded-lg items-center justify-center mr-3 ${
+                    isDarkMode ? 'bg-orange-900/30' : 'bg-orange-100'
+                  }`}>
                     <Icon name="note-text" size={18} color="#F59E0B" />
                   </View>
-                  <Text className="text-gray-900 font-bold text-lg">Notes</Text>
+                  <Text className={`font-bold text-lg ${
+                    isDarkMode ? 'text-white' : 'text-gray-900'
+                  }`}>Notes</Text>
                 </View>
               </LinearGradient>
               
@@ -650,11 +747,15 @@ const CustomerForm = () => {
                   control={control}
                   name="notes"
                   render={({ field: { onChange, onBlur, value } }) => (
-                    <View className="bg-gray-50 rounded-xl px-4 border border-gray-200">
+                    <View className={`rounded-xl px-4 border ${
+                      isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-gray-50 border-gray-200'
+                    }`}>
                       <TextInput
-                        className="py-3 text-gray-900 min-h-[100px]"
+                        className={`py-3 min-h-[100px] ${
+                          isDarkMode ? 'text-white' : 'text-gray-900'
+                        }`}
                         placeholder="Add any notes about this customer..."
-                        placeholderTextColor="#9ca3af"
+                        placeholderTextColor={isDarkMode ? '#6B7280' : '#9ca3af'}
                         onChangeText={onChange}
                         onBlur={onBlur}
                         value={value}
@@ -676,7 +777,7 @@ const CustomerForm = () => {
               activeOpacity={0.8}
             >
               <LinearGradient
-                colors={isFormValid() ? ["#4158D0", "#C850C0"] : ["#E5E7EB", "#E5E7EB"]}
+                colors={isFormValid() ? ["#4158D0", "#C850C0"] : (isDarkMode ? ["#374151", "#374151"] : ["#E5E7EB", "#E5E7EB"])}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
                 className="py-4 rounded-2xl"
@@ -693,10 +794,12 @@ const CustomerForm = () => {
                   <Icon 
                     name={customerId ? "account-edit" : "account-plus"} 
                     size={20} 
-                    color={isFormValid() ? "white" : "#9CA3AF"} 
+                    color={isFormValid() ? "white" : (isDarkMode ? "#6B7280" : "#9CA3AF")} 
                   />
                   <Text className={`font-bold text-center text-lg ml-2 ${
-                    isFormValid() ? "text-white" : "text-gray-400"
+                    isFormValid() 
+                      ? "text-white" 
+                      : (isDarkMode ? 'text-gray-500' : 'text-gray-400')
                   }`}>
                     {customerId ? "Update Customer" : "Create Customer"}
                   </Text>
@@ -715,15 +818,23 @@ const CustomerForm = () => {
         onRequestClose={() => setShowDeleteModal(false)}
       >
         <View className="flex-1 bg-black/50 justify-center items-center px-6">
-          <View className="bg-white rounded-3xl p-6 w-full max-w-sm">
+          <View className={`rounded-3xl p-6 w-full max-w-sm ${
+            isDarkMode ? 'bg-gray-800' : 'bg-white'
+          }`}>
             <View className="items-center mb-4">
-              <View className="w-16 h-16 bg-red-100 rounded-2xl items-center justify-center mb-3">
+              <View className={`w-16 h-16 rounded-2xl items-center justify-center mb-3 ${
+                isDarkMode ? 'bg-red-900/30' : 'bg-red-100'
+              }`}>
                 <Icon name="delete" size={32} color="#EF4444" />
               </View>
-              <Text className="text-gray-900 font-bold text-xl text-center">
+              <Text className={`font-bold text-xl text-center ${
+                isDarkMode ? 'text-white' : 'text-gray-900'
+              }`}>
                 Delete Customer
               </Text>
-              <Text className="text-gray-500 text-center mt-2">
+              <Text className={`text-center mt-2 ${
+                isDarkMode ? 'text-gray-400' : 'text-gray-500'
+              }`}>
                 Are you sure you want to delete this customer? This action cannot be undone.
               </Text>
             </View>
@@ -731,9 +842,13 @@ const CustomerForm = () => {
             <View className="flex-row mt-6">
               <TouchableOpacity
                 onPress={() => setShowDeleteModal(false)}
-                className="flex-1 bg-gray-100 py-3 rounded-xl mr-2"
+                className={`flex-1 py-3 rounded-xl mr-2 ${
+                  isDarkMode ? 'bg-gray-700' : 'bg-gray-100'
+                }`}
               >
-                <Text className="text-gray-700 font-semibold text-center">Cancel</Text>
+                <Text className={`font-semibold text-center ${
+                  isDarkMode ? 'text-gray-300' : 'text-gray-700'
+                }`}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={confirmDelete}

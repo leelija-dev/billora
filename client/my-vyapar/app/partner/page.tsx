@@ -1,7 +1,10 @@
+// partner/page.tsx
 "use client";
 
 import { Handshake, TrendingUp, ShieldCheck, Users, Globe } from "lucide-react";
 import Link from "next/link";
+import Navbar from "@/components/Navbar";
+import Footer from "@/components/Footer";
 
 // export const metadata = {
 //   title: 'Partner with Vyapar | Grow Your Business Together',
@@ -45,16 +48,9 @@ export default function PartnerPage() {
 
   return (
     <div className="min-h-screen bg-white">
-      {/* Back to Home Button */}
-      <div className="fixed top-24 left-4 z-50">
-        <Link 
-          href="/"
-          className="flex items-center gap-2 bg-white px-4 py-2 rounded-full shadow-lg hover:shadow-xl transition-all hover:-translate-y-0.5 border border-gray-200 group"
-        >
-          <span className="text-xl group-hover:-translate-x-1 transition-transform">←</span>
-          <span className="font-medium">Back to Home</span>
-        </Link>
-      </div>
+      <Navbar />
+      
+      
 
       {/* Hero */}
       <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white py-24 px-4">
@@ -146,6 +142,8 @@ export default function PartnerPage() {
           </div>
         </div>
       </div>
+
+      <Footer />
     </div>
   );
 }

@@ -12,137 +12,9 @@ import {
   View,
 } from "react-native";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
+import { useThemeStore } from "../../store/themeStore";
+import { useProducts } from "../../hooks/useProducts";
 import ProductCard from "./ProductCard";
-
-// Static product data (keep your existing STATIC_PRODUCTS array here)
-const STATIC_PRODUCTS = [
-  {
-    id: "1",
-    name: "Classic White T-Shirt",
-    sku: "TS-001-WHT",
-    price: 29.99,
-    cost: 18.5,
-    originalPrice: 49.99,
-    image: "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=500",
-    stock: 45,
-    category: "Apparel",
-    supplier: "Fashion Corp",
-    rating: 4.5,
-    reviews: 128,
-    discount: 40,
-    isNew: false,
-    isFavorite: false,
-    location: "Warehouse A - R12",
-    reorderLevel: 20,
-    lastUpdated: "2024-01-15T10:30:00Z",
-    brand: "Fashionista",
-  },
-  {
-    id: "2",
-    name: "Slim Fit Jeans - Dark Blue",
-    sku: "JN-002-BLU",
-    price: 79.99,
-    cost: 45.0,
-    originalPrice: 0,
-    image: "https://images.unsplash.com/photo-1541099649105-f69ad21f3246?w=500",
-    stock: 15,
-    category: "Apparel",
-    supplier: "Denim Co",
-    rating: 4.2,
-    reviews: 89,
-    discount: 0,
-    isNew: true,
-    isFavorite: true,
-    location: "Warehouse A - R08",
-    reorderLevel: 25,
-    lastUpdated: "2024-01-20T14:20:00Z",
-    brand: "DenimCo",
-  },
-  {
-    id: "3",
-    name: "Leather Sneakers - White",
-    sku: "SN-003-WHT",
-    price: 89.99,
-    cost: 52.0,
-    originalPrice: 129.99,
-    image: "https://images.unsplash.com/photo-1549298916-b41d501d3772?w=500",
-    stock: 8,
-    category: "Footwear",
-    supplier: "Sporty Feet",
-    rating: 4.8,
-    reviews: 256,
-    discount: 30,
-    isNew: false,
-    isFavorite: false,
-    location: "Warehouse B - F03",
-    reorderLevel: 15,
-    lastUpdated: "2024-01-18T09:15:00Z",
-    brand: "SportMax",
-  },
-  {
-    id: "4",
-    name: "Wool Blend Overcoat - Camel",
-    sku: "OC-004-CML",
-    price: 199.99,
-    cost: 120.0,
-    originalPrice: 299.99,
-    image: "https://images.unsplash.com/photo-1539533113208-f6df8cc8b543?w=500",
-    stock: 5,
-    category: "Outerwear",
-    supplier: "Luxury Wear",
-    rating: 4.6,
-    reviews: 67,
-    discount: 33,
-    isNew: false,
-    isFavorite: false,
-    location: "Warehouse C - H02",
-    reorderLevel: 10,
-    lastUpdated: "2024-01-10T16:45:00Z",
-    brand: "LuxeStyle",
-  },
-  {
-    id: "5",
-    name: "Cashmere Sweater - Gray",
-    sku: "SW-005-GRY",
-    price: 129.99,
-    cost: 75.0,
-    originalPrice: 189.99,
-    image: "https://images.unsplash.com/photo-1624378439575-d8705ad7ae80?w=500",
-    stock: 12,
-    category: "Knitwear",
-    supplier: "Soft Touch",
-    rating: 4.7,
-    reviews: 145,
-    discount: 31,
-    isNew: true,
-    isFavorite: true,
-    location: "Warehouse A - R15",
-    reorderLevel: 8,
-    lastUpdated: "2024-01-22T11:30:00Z",
-    brand: "CashmereCo",
-  },
-  {
-    id: "6",
-    name: "Sports Watch - Black",
-    sku: "WT-006-BLK",
-    price: 149.99,
-    cost: 89.0,
-    originalPrice: 0,
-    image: "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=500",
-    stock: 0,
-    category: "Accessories",
-    supplier: "TechTime",
-    rating: 4.4,
-    reviews: 203,
-    discount: 0,
-    isNew: false,
-    isFavorite: false,
-    location: "Warehouse B - E10",
-    reorderLevel: 5,
-    lastUpdated: "2024-01-19T13:20:00Z",
-    brand: "TechGear",
-  },
-];
 
 const ProductList = ({
   viewMode = "grid",
@@ -150,10 +22,19 @@ const ProductList = ({
   category = "all",
 }) => {
   const navigation = useNavigation();
+  const { isDarkMode } = useThemeStore();
   const [refreshing, setRefreshing] = useState(false);
-  const [products, setProducts] = useState(STATIC_PRODUCTS);
-  const [loading, setLoading] = useState(false);
   const [fadeAnim] = useState(new Animated.Value(0));
+  
+  // Use real API data instead of static data
+  const { 
+    products = [], 
+    loading, 
+    error, 
+    refreshProducts, 
+    searchProducts, 
+    getProductsByCategory 
+  } = useProducts() || {};
 
   useEffect(() => {
     Animated.timing(fadeAnim, {
@@ -163,14 +44,14 @@ const ProductList = ({
     }).start();
   }, []);
 
-  // Filter and sort products based on props
+  // Filter products based on props
   const filteredProducts = useMemo(() => {
     let filtered = [...products];
 
     // Category filter
     if (category !== "all") {
       filtered = filtered.filter(
-        (p) => p.category.toLowerCase() === category.toLowerCase(),
+        (p) => p.category?.name?.toLowerCase() === category.toLowerCase(),
       );
     }
 
@@ -179,10 +60,10 @@ const ProductList = ({
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter(
         (p) =>
-          p.name.toLowerCase().includes(query) ||
-          p.sku.toLowerCase().includes(query) ||
-          p.supplier.toLowerCase().includes(query) ||
-          p.brand?.toLowerCase().includes(query),
+          p.name?.toLowerCase().includes(query) ||
+          p.sku?.toLowerCase().includes(query) ||
+          p.brand?.name?.toLowerCase().includes(query) ||
+          p.category?.name?.toLowerCase().includes(query),
       );
     }
 
@@ -191,12 +72,12 @@ const ProductList = ({
 
   // Statistics
   const stats = useMemo(() => {
-    const totalStock = products.reduce((sum, p) => sum + p.stock, 0);
+    const totalStock = products.reduce((sum, p) => sum + (p.stock || 0), 0);
     const lowStockCount = products.filter(
-      (p) => p.stock <= p.reorderLevel && p.stock > 0,
+      (p) => (p.stock || 0) <= (p.reorder_level || 10) && (p.stock || 0) > 0,
     ).length;
-    const outOfStockCount = products.filter((p) => p.stock === 0).length;
-    const totalValue = products.reduce((sum, p) => sum + p.price * p.stock, 0);
+    const outOfStockCount = products.filter((p) => (p.stock || 0) === 0).length;
+    const totalValue = products.reduce((sum, p) => sum + (p.selling_price || 0) * (p.stock || 0), 0);
 
     return {
       total: products.length,
@@ -216,41 +97,48 @@ const ProductList = ({
   };
 
   const handleDeleteProduct = (productId) => {
-    setProducts((prev) => prev.filter((p) => p.id !== productId));
+    // This should call the API to delete the product
+    // For now, we'll just let the hook handle the state
+    refreshProducts();
   };
 
   const handleUpdateStock = (productId, newStock) => {
-    setProducts((prev) =>
-      prev.map((p) => (p.id === productId ? { ...p, stock: newStock } : p)),
-    );
+    // This should call the API to update stock
+    // For now, we'll just refresh the data
+    refreshProducts();
   };
 
   const handleToggleFavorite = (productId) => {
-    setProducts((prev) =>
-      prev.map((p) =>
-        p.id === productId ? { ...p, isFavorite: !p.isFavorite } : p,
-      ),
-    );
+    // This should call the API to toggle favorite
+    // For now, we'll just refresh the data
+    refreshProducts();
   };
 
-  const onRefresh = () => {
+  const onRefresh = async () => {
     setRefreshing(true);
-    setTimeout(() => {
-      setProducts(STATIC_PRODUCTS);
+    try {
+      await refreshProducts();
+    } catch (error) {
+      console.error('Refresh error:', error);
+    } finally {
       setRefreshing(false);
-    }, 1000);
+    }
   };
 
   const renderHeader = () => (
     <Animated.View style={{ opacity: fadeAnim, marginBottom: 16 }}>
       <View className="flex-row justify-between items-center mb-3">
-        <Text className="text-gray-600">
+        <Text className={isDarkMode ? 'text-gray-400' : 'text-gray-600'}>
           {filteredProducts.length}{" "}
           {filteredProducts.length === 1 ? "product" : "products"} found
         </Text>
-        <View className="flex-row items-center bg-white px-3 py-1.5 rounded-full shadow-sm">
-          <Icon name="package-variant" size={16} color="#4b5563" />
-          <Text className="text-gray-600 text-sm ml-1">
+        <View className={`flex-row items-center px-3 py-1.5 rounded-full shadow-sm ${
+          isDarkMode ? 'bg-gray-800' : 'bg-white'
+        }`}>
+          <Icon name="package-variant" size={16} color={isDarkMode ? "#9CA3AF" : "#4b5563"} />
+          <Text className={`text-sm ml-1 ${
+            isDarkMode ? 'text-gray-300' : 'text-gray-600'
+          }`}>
             {stats.total} total
           </Text>
         </View>
@@ -268,19 +156,25 @@ const ProductList = ({
     <TouchableOpacity
       key={item.id}
       onPress={() => handleProductPress(item)}
-      className="flex-row bg-white rounded-xl mb-3 p-3 shadow-sm"
+      className={`flex-row rounded-xl mb-3 p-3 shadow-sm ${
+        isDarkMode ? 'bg-gray-800' : 'bg-white'
+      }`}
     >
       <Image
-        source={{ uri: item.image }}
+        source={{ uri: item.image || 'https://via.placeholder.com/80' }}
         className="w-20 h-20 rounded-lg"
         resizeMode="cover"
       />
       <View className="flex-1 ml-3">
         <View className="flex-row justify-between items-start">
           <View className="flex-1">
-            <Text className="text-xs text-gray-400">{item.sku}</Text>
+            <Text className={`text-xs ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}>
+              {item.sku}
+            </Text>
             <Text
-              className="text-base font-semibold text-gray-800"
+              className={`text-base font-semibold ${
+                isDarkMode ? 'text-white' : 'text-gray-800'
+              }`}
               numberOfLines={1}
             >
               {item.name}
@@ -288,29 +182,41 @@ const ProductList = ({
           </View>
           <TouchableOpacity onPress={() => handleToggleFavorite(item.id)}>
             <Icon
-              name={item.isFavorite ? "heart" : "heart-outline"}
+              name={item.is_favorite ? "heart" : "heart-outline"}
               size={20}
-              color={item.isFavorite ? "#ef4444" : "#9ca3af"}
+              color={item.is_favorite ? "#ef4444" : "#9ca3af"}
             />
           </TouchableOpacity>
         </View>
 
         <View className="flex-row items-center mt-1">
           <Icon name="tag" size={12} color="#9ca3af" />
-          <Text className="text-xs text-gray-500 ml-1">{item.category}</Text>
-          <Text className="text-xs text-gray-300 mx-2">•</Text>
+          <Text className={`text-xs ml-1 ${
+            isDarkMode ? 'text-gray-500' : 'text-gray-500'
+          }`}>
+            {item.category?.name || 'No Category'}
+          </Text>
+          <Text className={`text-xs mx-2 ${
+            isDarkMode ? 'text-gray-700' : 'text-gray-300'
+          }`}>
+            •
+          </Text>
           <Icon name="factory" size={12} color="#9ca3af" />
-          <Text className="text-xs text-gray-500 ml-1">{item.supplier}</Text>
+          <Text className={`text-xs ml-1 ${
+            isDarkMode ? 'text-gray-500' : 'text-gray-500'
+          }`}>
+            {item.brand?.name || 'No Brand'}
+          </Text>
         </View>
 
         <View className="flex-row justify-between items-center mt-2">
           <View>
             <Text className="text-lg font-bold text-blue-600">
-              ${item.price.toFixed(2)}
+              ${(item.selling_price || 0).toFixed(2)}
             </Text>
-            {item.originalPrice > 0 && (
-              <Text className="text-xs text-gray-400 line-through">
-                ${item.originalPrice.toFixed(2)}
+            {item.purchase_price && item.purchase_price > 0 && (
+              <Text className={`text-xs ${isDarkMode ? 'text-gray-600' : 'text-gray-400'}`}>
+                Cost: ${(item.purchase_price || 0).toFixed(2)}
               </Text>
             )}
           </View>
@@ -318,23 +224,23 @@ const ProductList = ({
           <View className="flex-row items-center">
             <View
               className={`px-2 py-1 rounded-full ${
-                item.stock === 0
-                  ? "bg-red-100"
-                  : item.stock <= item.reorderLevel
-                    ? "bg-orange-100"
-                    : "bg-green-100"
+                (item.stock || 0) === 0
+                  ? isDarkMode ? 'bg-red-900/30' : 'bg-red-100'
+                  : (item.stock || 0) <= (item.reorder_level || 10)
+                    ? isDarkMode ? 'bg-orange-900/30' : 'bg-orange-100'
+                    : isDarkMode ? 'bg-green-900/30' : 'bg-green-100'
               }`}
             >
               <Text
                 className={`text-xs font-medium ${
-                  item.stock === 0
+                  (item.stock || 0) === 0
                     ? "text-red-600"
-                    : item.stock <= item.reorderLevel
+                    : (item.stock || 0) <= (item.reorder_level || 10)
                       ? "text-orange-600"
                       : "text-green-600"
                 }`}
               >
-                {item.stock} in stock
+                {(item.stock || 0)} in stock
               </Text>
             </View>
           </View>
@@ -360,7 +266,9 @@ const ProductList = ({
     return (
       <View className="flex-1 justify-center items-center">
         <ActivityIndicator size="large" color="#3b82f6" />
-        <Text className="text-gray-500 mt-4">Loading products...</Text>
+        <Text className={`mt-4 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+          Loading products...
+        </Text>
       </View>
     );
   }
@@ -382,10 +290,14 @@ const ProductList = ({
           {renderHeader()}
           <View className="items-center justify-center py-16">
             <Icon name="package-variant" size={80} color="#d1d5db" />
-            <Text className="text-lg font-semibold text-gray-700 mt-4">
+            <Text className={`text-lg font-semibold mt-4 ${
+              isDarkMode ? 'text-gray-300' : 'text-gray-700'
+            }`}>
               No Products Found
             </Text>
-            <Text className="text-sm text-gray-400 text-center mt-2 px-8">
+            <Text className={`text-sm text-center mt-2 px-8 ${
+              isDarkMode ? 'text-gray-500' : 'text-gray-400'
+            }`}>
               {searchQuery || category !== "all"
                 ? "Try adjusting your search or filters"
                 : "Tap the + button to add your first product"}
@@ -397,24 +309,25 @@ const ProductList = ({
   }
 
   return (
-    <View
-      className="flex-1"
-      
-      refreshControl={
-        <RefreshControl
-          refreshing={refreshing}
-          onRefresh={onRefresh}
-          colors={["#3b82f6"]}
-          tintColor="#3b82f6"
-        />
-      }
-    >
-      <View className="">
-        {renderHeader()}
-        {viewMode === "grid" 
-          ? renderGridItems() 
-          : filteredProducts.map(item => renderListItem(item))}
-      </View>
+    <View className="flex-1">
+      {renderHeader()}
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={["#3b82f6"]}
+            tintColor="#3b82f6"
+          />
+        }
+      >
+        <View className="pb-4">
+          {viewMode === "grid" 
+            ? renderGridItems() 
+            : filteredProducts.map(item => renderListItem(item))}
+        </View>
+      </ScrollView>
     </View>
   );
 };

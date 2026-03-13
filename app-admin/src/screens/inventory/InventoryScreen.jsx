@@ -14,6 +14,7 @@ import { useNavigation } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { useThemeStore } from '../../store/themeStore';
 import Header from '../../components/common/Header';
 import StockList from '../../components/inventory/StockList';
 
@@ -82,6 +83,7 @@ const navigationItems = [
 
 const InventoryScreen = () => {
   const navigation = useNavigation();
+  const { isDarkMode } = useThemeStore();
   const [searchQuery, setSearchQuery] = useState('');
   const [viewMode, setViewMode] = useState('grid');
   const [filterVisible, setFilterVisible] = useState(false);
@@ -132,13 +134,11 @@ const InventoryScreen = () => {
   );
 
   return (
-    <View className="flex-1 bg-gray-50 pb-16">
-      <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
+    <View className={`flex-1 ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'} pb-16`}>
+      <StatusBar barStyle={isDarkMode ? "light-content" : "dark-content"} backgroundColor={isDarkMode ? "#111827" : "#ffffff"} />
 
       <Header
         title="Inventory"
-        backgroundColor="bg-white"
-        textColor="text-gray-800"
         userName="John Doe"
         userEmail="john.doe@example.com"
         activeScreen="Inventory"
@@ -147,12 +147,14 @@ const InventoryScreen = () => {
           <View className="flex-row items-center">
             <TouchableOpacity
               onPress={toggleViewMode}
-              className="w-10 h-10 bg-gray-100 rounded-full items-center justify-center mr-2"
+              className={`w-10 h-10 rounded-full items-center justify-center mr-2 ${
+                isDarkMode ? 'bg-gray-800' : 'bg-gray-100'
+              }`}
             >
               <Icon
                 name={viewMode === "grid" ? "view-list" : "view-grid"}
                 size={22}
-                color="#4b5563"
+                color={isDarkMode ? "#9CA3AF" : "#4b5563"}
               />
             </TouchableOpacity>
             <TouchableOpacity
@@ -205,17 +207,21 @@ const InventoryScreen = () => {
       <View className="px-4 pt-4 pb-2">
         <BlurView
           intensity={80}
-          tint="light"
+          tint={isDarkMode ? "dark" : "light"}
           className="overflow-hidden rounded-3xl shadow-md"
           style={{
             borderWidth: 1,
-            borderColor: "rgba(255, 255, 255, 0.3)",
+            borderColor: isDarkMode ? "rgba(255, 255, 255, 0.1)" : "rgba(255, 255, 255, 0.3)",
           }}
         >
-          <View className="flex-row items-center px-4 py-1 bg-white/70">
+          <View className={`flex-row items-center px-4 py-1 ${
+            isDarkMode ? 'bg-gray-800/70' : 'bg-white/70'
+          }`}>
             <Icon name="magnify" size={22} color="#9ca3af" />
             <TextInput
-              className="flex-1 ml-3 text-base text-gray-800"
+              className={`flex-1 ml-3 text-base ${
+                isDarkMode ? 'text-white' : 'text-gray-800'
+              }`}
               placeholder="Search products, SKU, location..."
               placeholderTextColor="#9ca3af"
               value={searchQuery}
@@ -230,94 +236,109 @@ const InventoryScreen = () => {
         </BlurView>
       </View>
 
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-      >
+      <ScrollView showsVerticalScrollIndicator={false}>
         {/* Filter Chips */}
-      <View className="px-4 py-2">
-        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          <View className="flex-row gap-2">
-            <TouchableOpacity
-              onPress={() => setFilters(prev => ({ ...prev, lowStock: !prev.lowStock }))}
-              className={`flex-row items-center px-4 py-2.5 rounded-full border ${
-                filters.lowStock
-                  ? "bg-orange-500 border-orange-500"
-                  : "bg-white border-gray-200"
-              } shadow-sm`}
-            >
-              <Icon
-                name="alert"
-                size={18}
-                color={filters.lowStock ? "#ffffff" : "#F59E0B"}
-              />
-              <Text
-                className={`ml-2 font-medium ${
-                  filters.lowStock ? "text-white" : "text-gray-700"
-                }`}
+        <View className="px-4 py-2">
+          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+            <View className="flex-row gap-2">
+              <TouchableOpacity
+                onPress={() => setFilters(prev => ({ ...prev, lowStock: !prev.lowStock }))}
+                className={`flex-row items-center px-4 py-2.5 rounded-full border ${
+                  filters.lowStock
+                    ? "bg-orange-500 border-orange-500"
+                    : isDarkMode 
+                      ? 'bg-gray-800 border-gray-700' 
+                      : 'bg-white border-gray-200'
+                } shadow-sm`}
               >
-                Low Stock
-              </Text>
-              <View
-                className={`ml-2 px-2 py-0.5 rounded-full ${
-                  filters.lowStock ? "bg-white/20" : "bg-orange-100"
-                }`}
-              >
+                <Icon
+                  name="alert"
+                  size={18}
+                  color={filters.lowStock ? "#ffffff" : (isDarkMode ? "#9CA3AF" : "#F59E0B")}
+                />
                 <Text
-                  className={`text-xs ${
-                    filters.lowStock ? "text-white" : "text-orange-600"
+                  className={`ml-2 font-medium ${
+                    filters.lowStock 
+                      ? "text-white" 
+                      : isDarkMode ? 'text-gray-300' : 'text-gray-700'
                   }`}
                 >
-                  {inventoryStats.lowStock}
+                  Low Stock
                 </Text>
-              </View>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              onPress={() => setFilters(prev => ({ ...prev, outOfStock: !prev.outOfStock }))}
-              className={`flex-row items-center px-4 py-2.5 rounded-full border ${
-                filters.outOfStock
-                  ? "bg-red-500 border-red-500"
-                  : "bg-white border-gray-200"
-              } shadow-sm`}
-            >
-              <Icon
-                name="close-circle"
-                size={18}
-                color={filters.outOfStock ? "#ffffff" : "#EF4444"}
-              />
-              <Text
-                className={`ml-2 font-medium ${
-                  filters.outOfStock ? "text-white" : "text-gray-700"
-                }`}
-              >
-                Out of Stock
-              </Text>
-              <View
-                className={`ml-2 px-2 py-0.5 rounded-full ${
-                  filters.outOfStock ? "bg-white/20" : "bg-red-100"
-                }`}
-              >
-                <Text
-                  className={`text-xs ${
-                    filters.outOfStock ? "text-white" : "text-red-600"
+                <View
+                  className={`ml-2 px-2 py-0.5 rounded-full ${
+                    filters.lowStock 
+                      ? "bg-white/20" 
+                      : isDarkMode ? 'bg-orange-900/30' : 'bg-orange-100'
                   }`}
                 >
-                  {inventoryStats.outOfStock}
-                </Text>
-              </View>
-            </TouchableOpacity>
-          </View>
-        </ScrollView>
-      </View>
+                  <Text
+                    className={`text-xs ${
+                      filters.lowStock 
+                        ? "text-white" 
+                        : isDarkMode ? 'text-orange-400' : 'text-orange-600'
+                    }`}
+                  >
+                    {inventoryStats.lowStock}
+                  </Text>
+                </View>
+              </TouchableOpacity>
 
-      {/* Stock List */}
-      <View className="flex-1 px-4">
-        <StockList
-          viewMode={viewMode}
-          searchQuery={searchQuery}
-          filters={filters}
-        />
-      </View>
+              <TouchableOpacity
+                onPress={() => setFilters(prev => ({ ...prev, outOfStock: !prev.outOfStock }))}
+                className={`flex-row items-center px-4 py-2.5 rounded-full border ${
+                  filters.outOfStock
+                    ? "bg-red-500 border-red-500"
+                    : isDarkMode 
+                      ? 'bg-gray-800 border-gray-700' 
+                      : 'bg-white border-gray-200'
+                } shadow-sm`}
+              >
+                <Icon
+                  name="close-circle"
+                  size={18}
+                  color={filters.outOfStock ? "#ffffff" : (isDarkMode ? "#9CA3AF" : "#EF4444")}
+                />
+                <Text
+                  className={`ml-2 font-medium ${
+                    filters.outOfStock 
+                      ? "text-white" 
+                      : isDarkMode ? 'text-gray-300' : 'text-gray-700'
+                  }`}
+                >
+                  Out of Stock
+                </Text>
+                <View
+                  className={`ml-2 px-2 py-0.5 rounded-full ${
+                    filters.outOfStock 
+                      ? "bg-white/20" 
+                      : isDarkMode ? 'bg-red-900/30' : 'bg-red-100'
+                  }`}
+                >
+                  <Text
+                    className={`text-xs ${
+                      filters.outOfStock 
+                        ? "text-white" 
+                        : isDarkMode ? 'text-red-400' : 'text-red-600'
+                    }`}
+                  >
+                    {inventoryStats.outOfStock}
+                  </Text>
+                </View>
+              </TouchableOpacity>
+            </View>
+          </ScrollView>
+        </View>
+
+        {/* Stock List */}
+        <View className="flex-1 px-4">
+          <StockList
+            viewMode={viewMode}
+            searchQuery={searchQuery}
+            filters={filters}
+            isDarkMode={isDarkMode}
+          />
+        </View>
       </ScrollView>
     </View>
   );

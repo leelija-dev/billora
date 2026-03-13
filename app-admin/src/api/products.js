@@ -1,10 +1,150 @@
-import apiClient from './client';
+import { apiClient } from './client';
+import { mockProducts } from './mock/products';
+
+// Get products data based on project mode
+const getProductsData = () => {
+  const projectMode = process.env.EXPO_PUBLIC_PROJECT_MODE || 'mock';
+  return projectMode === 'mock' ? mockProducts : apiClient;
+};
 
 export const productsAPI = {
+  // Get all products
+  getAll: async (params = {}) => {
+    try {
+      const api = getProductsData();
+      return await api.get('/products', { params });
+    } catch (error) {
+      throw error.response?.data || error.message;
+    }
+  },
+
+  // Get single product
+  getById: async (id) => {
+    try {
+      const api = getProductsData();
+      return await api.get(`/products/${id}`);
+    } catch (error) {
+      throw error.response?.data || error.message;
+    }
+  },
+
+  // Create new product
+  create: async (productData) => {
+    try {
+      const api = getProductsData();
+      return await api.post('/products/store', {
+        user_id: productData.user_id,
+        sku: productData.sku,
+        name: productData.name,
+        brand_id: productData.brand_id,
+        category_id: productData.category_id,
+        unit_amount: productData.unit_amount,
+        unit_id: productData.unit_id,
+        selling_price: productData.selling_price,
+        purchase_price: productData.purchase_price,
+        gst_percentage: productData.gst_percentage,
+        discount_percentage: productData.discount_percentage,
+        description: productData.description,
+        is_active: productData.is_active ?? true,
+        created_by: productData.created_by,
+      });
+    } catch (error) {
+      throw error.response?.data || error.message;
+    }
+  },
+
+  // Update product
+  update: async (id, productData) => {
+    try {
+      const api = getProductsData();
+      return await api.put(`/products/${id}`, {
+        user_id: productData.user_id,
+        sku: productData.sku,
+        name: productData.name,
+        brand_id: productData.brand_id,
+        category_id: productData.category_id,
+        unit_amount: productData.unit_amount,
+        unit_id: productData.unit_id,
+        selling_price: productData.selling_price,
+        purchase_price: productData.purchase_price,
+        gst_percentage: productData.gst_percentage,
+        discount_percentage: productData.discount_percentage,
+        description: productData.description,
+        is_active: productData.is_active,
+        created_by: productData.created_by,
+      });
+    } catch (error) {
+      throw error.response?.data || error.message;
+    }
+  },
+
+  // Delete product
+  delete: async (id) => {
+    try {
+      const api = getProductsData();
+      return await api.delete(`/products/${id}`);
+    } catch (error) {
+      throw error.response?.data || error.message;
+    }
+  },
+
+  // Restore product (soft delete undo)
+  restore: async (id) => {
+    try {
+      const api = getProductsData();
+      return await api.patch(`/products/${id}`);
+    } catch (error) {
+      throw error.response?.data || error.message;
+    }
+  },
+
+  // Permanently delete product
+  forceDelete: async (id) => {
+    try {
+      const api = getProductsData();
+      return await api.delete(`/products/${id}/force`);
+    } catch (error) {
+      throw error.response?.data || error.message;
+    }
+  },
+
+  // Search products
+  search: async (query, filters = {}) => {
+    try {
+      const api = getProductsData();
+      return await api.get('/products', {
+        params: { search: query, ...filters }
+      });
+    } catch (error) {
+      throw error.response?.data || error.message;
+    }
+  },
+
+  // Get products by category
+  getByCategory: async (categoryId) => {
+    try {
+      const api = getProductsData();
+      return await api.get(`/products/category/${categoryId}`);
+    } catch (error) {
+      throw error.response?.data || error.message;
+    }
+  },
+
+  // Get products by brand
+  getByBrand: async (brandId) => {
+    try {
+      const api = getProductsData();
+      return await api.get(`/products/brand/${brandId}`);
+    } catch (error) {
+      throw error.response?.data || error.message;
+    }
+  },
+
+  // Legacy methods for backward compatibility
   getProducts: async (params = {}) => {
     try {
-      const response = await apiClient.get('/products', { params });
-      return response.data;
+      const api = getProductsData();
+      return await api.get('/products', { params });
     } catch (error) {
       throw error.response?.data || error.message;
     }
@@ -12,55 +152,33 @@ export const productsAPI = {
 
   getProduct: async (id) => {
     try {
-      const response = await apiClient.get(`/products/${id}`);
-      return response.data;
+      const api = getProductsData();
+      return await api.get(`/products/${id}`);
     } catch (error) {
       throw error.response?.data || error.message;
     }
   },
 
   createProduct: async (productData) => {
-    try {
-      const response = await apiClient.post('/products', productData);
-      return response.data;
-    } catch (error) {
-      throw error.response?.data || error.message;
-    }
+    return await productsAPI.create(productData);
   },
 
   updateProduct: async (id, productData) => {
-    try {
-      const response = await apiClient.put(`/products/${id}`, productData);
-      return response.data;
-    } catch (error) {
-      throw error.response?.data || error.message;
-    }
+    return await productsAPI.update(id, productData);
   },
 
   deleteProduct: async (id) => {
-    try {
-      const response = await apiClient.delete(`/products/${id}`);
-      return response.data;
-    } catch (error) {
-      throw error.response?.data || error.message;
-    }
+    return await productsAPI.delete(id);
   },
 
   searchProducts: async (query, filters = {}) => {
-    try {
-      const response = await apiClient.get('/products/search', {
-        params: { q: query, ...filters },
-      });
-      return response.data;
-    } catch (error) {
-      throw error.response?.data || error.message;
-    }
+    return await productsAPI.search(query, filters);
   },
 
   getProductCategories: async () => {
     try {
-      const response = await apiClient.get('/products/categories');
-      return response.data;
+      const api = getProductsData();
+      return await api.get('/products/categories');
     } catch (error) {
       throw error.response?.data || error.message;
     }
@@ -68,8 +186,8 @@ export const productsAPI = {
 
   updateStock: async (id, stockData) => {
     try {
-      const response = await apiClient.patch(`/products/${id}/stock`, stockData);
-      return response.data;
+      const api = getProductsData();
+      return await api.patch(`/products/${id}/stock`, stockData);
     } catch (error) {
       throw error.response?.data || error.message;
     }

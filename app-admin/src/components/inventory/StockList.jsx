@@ -12,6 +12,7 @@ import { useNavigation } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { useThemeStore } from '../../store/themeStore';
 
 // Static inventory data
 const STATIC_INVENTORY = [
@@ -137,8 +138,15 @@ const STATIC_INVENTORY = [
   },
 ];
 
-const StockList = ({ viewMode = 'grid', searchQuery = '', filters = {} }) => {
+const StockList = ({ 
+  viewMode = 'grid', 
+  searchQuery = '', 
+  filters = {},
+  isDarkMode: propIsDarkMode 
+}) => {
   const navigation = useNavigation();
+  const { isDarkMode: storeIsDarkMode } = useThemeStore();
+  const isDarkMode = propIsDarkMode !== undefined ? propIsDarkMode : storeIsDarkMode;
   const [refreshing, setRefreshing] = useState(false);
   const [inventory] = useState(STATIC_INVENTORY);
   const [fadeAnim] = useState(new Animated.Value(0));
@@ -216,13 +224,29 @@ const StockList = ({ viewMode = 'grid', searchQuery = '', filters = {} }) => {
   const getStatusColor = (status) => {
     switch (status) {
       case 'in-stock':
-        return { bg: '#D1FAE5', text: '#059669', icon: 'check-circle' };
+        return { 
+          bg: isDarkMode ? '#065F46' : '#D1FAE5', 
+          text: isDarkMode ? '#6EE7B7' : '#059669', 
+          icon: 'check-circle' 
+        };
       case 'low-stock':
-        return { bg: '#FEF3C7', text: '#D97706', icon: 'alert' };
+        return { 
+          bg: isDarkMode ? '#92400E' : '#FEF3C7', 
+          text: isDarkMode ? '#FCD34D' : '#D97706', 
+          icon: 'alert' 
+        };
       case 'out-of-stock':
-        return { bg: '#FEE2E2', text: '#DC2626', icon: 'close-circle' };
+        return { 
+          bg: isDarkMode ? '#7F1D1D' : '#FEE2E2', 
+          text: isDarkMode ? '#FCA5A5' : '#DC2626', 
+          icon: 'close-circle' 
+        };
       default:
-        return { bg: '#F3F4F6', text: '#6B7280', icon: 'help' };
+        return { 
+          bg: isDarkMode ? '#374151' : '#F3F4F6', 
+          text: isDarkMode ? '#9CA3AF' : '#6B7280', 
+          icon: 'help' 
+        };
     }
   };
 
@@ -230,11 +254,15 @@ const StockList = ({ viewMode = 'grid', searchQuery = '', filters = {} }) => {
     <Animated.View style={{ opacity: fadeAnim, marginBottom: 16 }}>
       <BlurView
         intensity={50}
-        tint="light"
+        tint={isDarkMode ? "dark" : "light"}
         className="overflow-hidden rounded-2xl shadow-md"
       >
-        <View className="flex-row justify-between items-center px-4 py-3 bg-white">
-          <Text className="text-gray-600 text-sm">
+        <View className={`flex-row justify-between items-center px-4 py-3 ${
+          isDarkMode ? 'bg-gray-800/70' : 'bg-white'
+        }`}>
+          <Text className={`text-sm ${
+            isDarkMode ? 'text-gray-400' : 'text-gray-600'
+          }`}>
             {filteredInventory.length} {filteredInventory.length === 1 ? 'item' : 'items'} found
           </Text>
           <View className="flex-row items-center">
@@ -262,14 +290,16 @@ const StockList = ({ viewMode = 'grid', searchQuery = '', filters = {} }) => {
       >
         <BlurView
           intensity={80}
-          tint="light"
+          tint={isDarkMode ? "dark" : "light"}
           className="overflow-hidden rounded-2xl mb-3 shadow-md"
           style={{
             borderWidth: 1,
-            borderColor: "rgba(255, 255, 255, 0.3)",
+            borderColor: isDarkMode ? "rgba(255, 255, 255, 0.1)" : "rgba(255, 255, 255, 0.3)",
           }}
         >
-          <View className="p-4 bg-white/70">
+          <View className={`p-4 ${
+            isDarkMode ? 'bg-gray-800/70' : 'bg-white/70'
+          }`}>
             <View className="flex-row items-center">
               <LinearGradient
                 colors={['#6366F1', '#8B5CF6']}
@@ -282,10 +312,14 @@ const StockList = ({ viewMode = 'grid', searchQuery = '', filters = {} }) => {
               <View className="flex-1">
                 <View className="flex-row justify-between items-start">
                   <View className="flex-1">
-                    <Text className="text-gray-900 font-bold text-lg">
+                    <Text className={`font-bold text-lg ${
+                      isDarkMode ? 'text-white' : 'text-gray-900'
+                    }`}>
                       {item.productName}
                     </Text>
-                    <Text className="text-gray-500 text-sm">SKU: {item.sku}</Text>
+                    <Text className={`text-sm ${
+                      isDarkMode ? 'text-gray-400' : 'text-gray-500'
+                    }`}>SKU: {item.sku}</Text>
                   </View>
                   <View
                     className="px-3 py-1 rounded-full"
@@ -300,23 +334,36 @@ const StockList = ({ viewMode = 'grid', searchQuery = '', filters = {} }) => {
 
                 <View className="flex-row mt-3">
                   <View className="flex-1">
-                    <Text className="text-gray-400 text-xs">Stock</Text>
+                    <Text className={`text-xs ${
+                      isDarkMode ? 'text-gray-500' : 'text-gray-400'
+                    }`}>Stock</Text>
                     <Text
                       className={`font-bold ${
-                        item.status === 'low-stock' ? 'text-orange-600' :
-                        item.status === 'out-of-stock' ? 'text-red-600' : 'text-gray-900'
+                        item.status === 'low-stock' 
+                          ? (isDarkMode ? 'text-orange-400' : 'text-orange-600')
+                          : item.status === 'out-of-stock' 
+                            ? (isDarkMode ? 'text-red-400' : 'text-red-600')
+                            : (isDarkMode ? 'text-white' : 'text-gray-900')
                       }`}
                     >
                       {item.currentStock} units
                     </Text>
                   </View>
                   <View className="flex-1">
-                    <Text className="text-gray-400 text-xs">Min Stock</Text>
-                    <Text className="text-gray-900 font-bold">{item.minStock}</Text>
+                    <Text className={`text-xs ${
+                      isDarkMode ? 'text-gray-500' : 'text-gray-400'
+                    }`}>Min Stock</Text>
+                    <Text className={`font-bold ${
+                      isDarkMode ? 'text-white' : 'text-gray-900'
+                    }`}>{item.minStock}</Text>
                   </View>
                   <View className="flex-1">
-                    <Text className="text-gray-400 text-xs">Value</Text>
-                    <Text className="text-gray-900 font-bold">
+                    <Text className={`text-xs ${
+                      isDarkMode ? 'text-gray-500' : 'text-gray-400'
+                    }`}>Value</Text>
+                    <Text className={`font-bold ${
+                      isDarkMode ? 'text-white' : 'text-gray-900'
+                    }`}>
                       {formatCurrency(totalValue)}
                     </Text>
                   </View>
@@ -324,9 +371,13 @@ const StockList = ({ viewMode = 'grid', searchQuery = '', filters = {} }) => {
 
                 <View className="flex-row items-center mt-2">
                   <Icon name="map-marker" size={14} color="#9ca3af" />
-                  <Text className="text-gray-500 text-xs ml-1">{item.location}</Text>
+                  <Text className={`text-xs ml-1 ${
+                    isDarkMode ? 'text-gray-500' : 'text-gray-500'
+                  }`}>{item.location}</Text>
                   <Icon name="store" size={14} color="#9ca3af" style={{ marginLeft: 12 }} />
-                  <Text className="text-gray-500 text-xs ml-1">{item.supplier}</Text>
+                  <Text className={`text-xs ml-1 ${
+                    isDarkMode ? 'text-gray-500' : 'text-gray-500'
+                  }`}>{item.supplier}</Text>
                 </View>
               </View>
             </View>
@@ -349,14 +400,16 @@ const StockList = ({ viewMode = 'grid', searchQuery = '', filters = {} }) => {
       >
         <BlurView
           intensity={80}
-          tint="light"
+          tint={isDarkMode ? "dark" : "light"}
           className="overflow-hidden rounded-2xl mb-3 shadow-md"
           style={{
             borderWidth: 1,
-            borderColor: "rgba(255, 255, 255, 0.3)",
+            borderColor: isDarkMode ? "rgba(255, 255, 255, 0.1)" : "rgba(255, 255, 255, 0.3)",
           }}
         >
-          <View className="p-4 bg-white/70">
+          <View className={`p-4 ${
+            isDarkMode ? 'bg-gray-800/70' : 'bg-white/70'
+          }`}>
             <LinearGradient
               colors={['#6366F1', '#8B5CF6']}
               className="w-16 h-16 rounded-2xl items-center justify-center self-center mb-3"
@@ -365,10 +418,14 @@ const StockList = ({ viewMode = 'grid', searchQuery = '', filters = {} }) => {
               <Icon name="package-variant" size={32} color="white" />
             </LinearGradient>
 
-            <Text className="text-gray-900 font-bold text-base text-center" numberOfLines={1}>
+            <Text className={`font-bold text-base text-center ${
+              isDarkMode ? 'text-white' : 'text-gray-900'
+            }`} numberOfLines={1}>
               {item.productName}
             </Text>
-            <Text className="text-gray-500 text-xs text-center mb-2">
+            <Text className={`text-xs text-center mb-2 ${
+              isDarkMode ? 'text-gray-500' : 'text-gray-500'
+            }`}>
               SKU: {item.sku}
             </Text>
 
@@ -384,23 +441,36 @@ const StockList = ({ viewMode = 'grid', searchQuery = '', filters = {} }) => {
 
             <View className="flex-row justify-between mt-2">
               <View className="items-center">
-                <Text className="text-gray-400 text-xs">Stock</Text>
+                <Text className={`text-xs ${
+                  isDarkMode ? 'text-gray-500' : 'text-gray-400'
+                }`}>Stock</Text>
                 <Text
                   className={`font-bold ${
-                    item.status === 'low-stock' ? 'text-orange-600' :
-                    item.status === 'out-of-stock' ? 'text-red-600' : 'text-gray-900'
+                    item.status === 'low-stock' 
+                      ? (isDarkMode ? 'text-orange-400' : 'text-orange-600')
+                      : item.status === 'out-of-stock' 
+                        ? (isDarkMode ? 'text-red-400' : 'text-red-600')
+                        : (isDarkMode ? 'text-white' : 'text-gray-900')
                   }`}
                 >
                   {item.currentStock}
                 </Text>
               </View>
               <View className="items-center">
-                <Text className="text-gray-400 text-xs">Min</Text>
-                <Text className="text-gray-900 font-bold">{item.minStock}</Text>
+                <Text className={`text-xs ${
+                  isDarkMode ? 'text-gray-500' : 'text-gray-400'
+                }`}>Min</Text>
+                <Text className={`font-bold ${
+                  isDarkMode ? 'text-white' : 'text-gray-900'
+                }`}>{item.minStock}</Text>
               </View>
               <View className="items-center">
-                <Text className="text-gray-400 text-xs">Value</Text>
-                <Text className="text-gray-900 font-bold">
+                <Text className={`text-xs ${
+                  isDarkMode ? 'text-gray-500' : 'text-gray-400'
+                }`}>Value</Text>
+                <Text className={`font-bold ${
+                  isDarkMode ? 'text-white' : 'text-gray-900'
+                }`}>
                   ${totalValue.toFixed(0)}
                 </Text>
               </View>
@@ -408,7 +478,9 @@ const StockList = ({ viewMode = 'grid', searchQuery = '', filters = {} }) => {
 
             <View className="flex-row items-center justify-center mt-2">
               <Icon name="map-marker" size={12} color="#9ca3af" />
-              <Text className="text-gray-400 text-xs ml-1" numberOfLines={1}>
+              <Text className={`text-xs ml-1 ${
+                isDarkMode ? 'text-gray-500' : 'text-gray-400'
+              }`} numberOfLines={1}>
                 {item.location.split(',')[0]}
               </Text>
             </View>
@@ -434,11 +506,15 @@ const StockList = ({ viewMode = 'grid', searchQuery = '', filters = {} }) => {
   if (!filteredInventory || filteredInventory.length === 0) {
     return (
       <View className="flex-1 items-center justify-center py-16">
-        <Icon name="package-variant" size={80} color="#d1d5db" />
-        <Text className="text-lg font-semibold text-gray-700 mt-4">
+        <Icon name="package-variant" size={80} color={isDarkMode ? "#4B5563" : "#d1d5db"} />
+        <Text className={`text-lg font-semibold mt-4 ${
+          isDarkMode ? 'text-gray-300' : 'text-gray-700'
+        }`}>
           No Items Found
         </Text>
-        <Text className="text-sm text-gray-400 text-center mt-2 px-8">
+        <Text className={`text-sm text-center mt-2 px-8 ${
+          isDarkMode ? 'text-gray-500' : 'text-gray-400'
+        }`}>
           {searchQuery || filters.lowStock || filters.outOfStock
             ? "Try adjusting your search or filters"
             : "Add products to inventory by adding products first"}
@@ -448,22 +524,23 @@ const StockList = ({ viewMode = 'grid', searchQuery = '', filters = {} }) => {
   }
 
   return (
-    <View
-      className="flex-1"
-      
-      refreshControl={
-        <RefreshControl
-          refreshing={refreshing}
-          onRefresh={onRefresh}
-          colors={['#6366F1']}
-          tintColor="#6366F1"
-        />
-      }
-    >
-      <View className="">
-        {renderHeader()}
-        {viewMode === 'grid' ? renderGridItems() : filteredInventory.map(item => renderListItem(item))}
-      </View>
+    <View className="flex-1">
+      {renderHeader()}
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={['#6366F1']}
+            tintColor="#6366F1"
+          />
+        }
+      >
+        <View className="pb-4">
+          {viewMode === 'grid' ? renderGridItems() : filteredInventory.map(item => renderListItem(item))}
+        </View>
+      </ScrollView>
     </View>
   );
 };

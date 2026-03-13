@@ -131,22 +131,57 @@ export const NAVIGATION_SCREENS = {
     REGISTER: 'Register',
     FORGOT_PASSWORD: 'ForgotPassword',
   },
-   MAIN: {
+  MAIN: {
     DASHBOARD: 'Dashboard',
+
+     // Store screens
+    STORES: 'Stores',
+    STORE_DETAIL: 'StoreDetail',
+    ADD_STORE: 'AddStore',
+    
+    // Products
     PRODUCTS: 'Products',
     PRODUCT_DETAIL: 'ProductDetail',
     ADD_PRODUCT: 'AddProduct',
-    ORDERS: 'Orders',
-    ORDER_DETAIL: 'OrderDetail',
-    CREATE_ORDER: 'CreateOrder',
+    
+    // Categories
+    CATEGORIES: 'Categories',
+    CATEGORY_DETAIL: 'CategoryDetail',
+    ADD_CATEGORY: 'AddCategory',
+    
+    // Brands
+    BRANDS: 'Brands',
+    BRAND_DETAIL: 'BrandDetail',
+    ADD_BRAND: 'AddBrand',
+    
+    // Units
+    UNITS: 'Units',
+    UNIT_DETAIL: 'UnitDetail',
+    ADD_UNIT: 'AddUnit',
+    
+    // Billing
+    BILL_GENERATION: 'BillGeneration',
+    BILL_HISTORY: 'BillHistory',
+    BILL_DETAIL: 'BillDetail',
+    
+    // Customers
     CUSTOMERS: 'Customers',
     CUSTOMER_DETAIL: 'CustomerDetail',
     ADD_CUSTOMER: 'AddCustomer',
+
+    STOCKS: 'Stocks',
+    STOCK_DETAIL: 'StockDetail',
+    ADD_STOCK: 'AddStock',
+    ADD_STOCK_QUANTITY: 'AddStockQuantity',
+    
+    // Inventory
     INVENTORY: 'Inventory',
     STOCK_MOVEMENT: 'StockMovement',
+    
+    // Settings
     SETTINGS: 'Settings',
     PROFILE: 'Profile',
-  }
+  },
 };
 
 export const DATE_FORMATS = {

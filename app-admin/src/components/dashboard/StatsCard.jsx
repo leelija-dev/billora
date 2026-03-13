@@ -1,26 +1,28 @@
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient'; // or 'react-native-linear-gradient'
-import { theme } from '../../theme';
+import { Text, TouchableOpacity, View } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useThemeStore } from '../../store/themeStore';
 
 const StatsCard = ({
   title,
   value,
   subtitle,
   icon,
-  color = theme.colors.primary,
+  color = '#6366F1',
   gradient,
   trend,
   onPress,
   style,
 }) => {
+  const { isDarkMode } = useThemeStore();
+
   const getTrendIcon = () => {
     if (!trend) return null;
     return trend > 0 ? '📈' : trend < 0 ? '📉' : '➡️';
   };
 
   const getTrendColor = () => {
-    if (!trend) return theme.colors.textSecondary;
-    return trend > 0 ? theme.colors.success : trend < 0 ? theme.colors.error : theme.colors.textSecondary;
+    if (!trend) return isDarkMode ? '#9CA3AF' : '#6B7280';
+    return trend > 0 ? '#10B981' : trend < 0 ? '#EF4444' : (isDarkMode ? '#9CA3AF' : '#6B7280');
   };
 
   const CardComponent = onPress ? TouchableOpacity : View;
@@ -37,128 +39,94 @@ const StatsCard = ({
           colors={gradient}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 0 }}
-          style={styles.gradientContainer}
+          className="rounded-xl overflow-hidden"
+          style={{
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.1,
+            shadowRadius: 4,
+            elevation: 3,
+          }}
         >
-          <View style={styles.content}>
-            <View style={styles.header}>
-              <View style={[styles.iconContainer, { backgroundColor: 'rgba(255,255,255,0.2)' }]}>
-                <Text style={[styles.icon, { color: '#FFFFFF' }]}>{icon}</Text>
+          <View className="p-4">
+            <View className="flex-row justify-between items-start mb-2">
+              <View className="w-10 h-10 rounded-lg bg-white/20 items-center justify-center">
+                <Text className="text-white text-xl">{icon}</Text>
               </View>
               {trend !== undefined && (
-                <View style={styles.trendContainer}>
-                  <Text style={[styles.trendIcon, { color: getTrendColor() }]}>
+                <View className="flex-row items-center">
+                  <Text style={{ color: getTrendColor() }} className="text-xs mr-1">
                     {getTrendIcon()}
                   </Text>
-                  <Text style={[styles.trendValue, { color: getTrendColor() }]}>
+                  <Text style={{ color: getTrendColor() }} className="text-xs font-semibold">
                     {Math.abs(trend)}%
                   </Text>
                 </View>
               )}
             </View>
             
-            <Text style={[styles.value, styles.lightText]}>{value}</Text>
-            <Text style={[styles.title, styles.lightSubtext]}>{title}</Text>
-            {subtitle && <Text style={[styles.subtitle, styles.lightSubtext]}>{subtitle}</Text>}
+            <Text className="text-white text-2xl font-bold mb-1">{value}</Text>
+            <Text className="text-white/80 text-sm">{title}</Text>
+            {subtitle && <Text className="text-white/60 text-xs mt-1">{subtitle}</Text>}
           </View>
         </LinearGradient>
       </CardComponent>
     );
   }
 
-  // Original non-gradient version
+  // Original non-gradient version with dark mode support
   return (
     <CardComponent
-      style={[styles.container, { borderLeftColor: color }, style]}
+      className={`rounded-xl p-4 border ${
+        isDarkMode 
+          ? 'bg-gray-800 border-gray-700' 
+          : 'bg-white border-gray-100'
+      }`}
+      style={[
+        {
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.1,
+          shadowRadius: 4,
+          elevation: 3,
+        },
+        style,
+      ]}
       onPress={onPress}
       activeOpacity={onPress ? 0.8 : 1}
     >
-      <View style={styles.header}>
-        <View style={[styles.iconContainer, { backgroundColor: color + '20' }]}>
-          <Text style={[styles.icon, { color }]}>{icon}</Text>
+      <View className="flex-row justify-between items-start mb-2">
+        <View 
+          className="w-10 h-10 rounded-lg items-center justify-center"
+          style={{ backgroundColor: isDarkMode ? `${color}30` : `${color}20` }}
+        >
+          <Text className="text-xl" style={{ color }}>{icon}</Text>
         </View>
         {trend !== undefined && (
-          <View style={styles.trendContainer}>
-            <Text style={[styles.trendIcon, { color: getTrendColor() }]}>
+          <View className="flex-row items-center">
+            <Text style={{ color: getTrendColor() }} className="text-xs mr-1">
               {getTrendIcon()}
             </Text>
-            <Text style={[styles.trendValue, { color: getTrendColor() }]}>
+            <Text style={{ color: getTrendColor() }} className="text-xs font-semibold">
               {Math.abs(trend)}%
             </Text>
           </View>
         )}
       </View>
       
-      <Text style={styles.value}>{value}</Text>
-      <Text style={styles.title}>{title}</Text>
-      {subtitle && <Text style={styles.subtitle}>{subtitle}</Text>}
+      <Text className={`text-2xl font-bold mb-1 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+        {value}
+      </Text>
+      <Text className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+        {title}
+      </Text>
+      {subtitle && (
+        <Text className={`text-xs mt-1 ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}>
+          {subtitle}
+        </Text>
+      )}
     </CardComponent>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    backgroundColor: theme.colors.background,
-    borderRadius: theme.borderRadius.lg,
-    padding: theme.spacing.md,
-    borderLeftWidth: 4,
-    ...theme.shadows.sm,
-  },
-  gradientContainer: {
-    borderRadius: theme.borderRadius.lg,
-    overflow: 'hidden',
-    ...theme.shadows.sm,
-  },
-  content: {
-    padding: theme.spacing.md,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: theme.spacing.sm,
-  },
-  iconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: theme.borderRadius.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  icon: {
-    fontSize: 20,
-  },
-  trendContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 2,
-  },
-  trendIcon: {
-    fontSize: 12,
-  },
-  trendValue: {
-    ...theme.typography.caption,
-    fontWeight: '600',
-  },
-  value: {
-    ...theme.typography.h2,
-    color: theme.colors.text,
-    marginBottom: theme.spacing.xs,
-  },
-  title: {
-    ...theme.typography.body2,
-    color: theme.colors.textSecondary,
-    marginBottom: theme.spacing.xs / 2,
-  },
-  subtitle: {
-    ...theme.typography.caption,
-    color: theme.colors.textTertiary,
-  },
-  lightText: {
-    color: '#FFFFFF',
-  },
-  lightSubtext: {
-    color: 'rgba(255,255,255,0.9)',
-  },
-});
 
 export default StatsCard;
