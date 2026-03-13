@@ -22,7 +22,7 @@ const Register = () => {
           onClick={() => router.push("/")}
           className="absolute top-24 left-6 flex items-center gap-2 px-4 py-2 bg-white rounded-lg shadow-md hover:shadow-lg transition-all duration-300 hover:scale-105 text-[#2d236b] font-medium z-10"
         >
-          <FaHome className="text-[#5b5bd6]" size={20} />
+          <span className="text-[#5b5bd6]"><FaHome size={20} /></span>
           <span>Back to Home</span>
         </button>
 
