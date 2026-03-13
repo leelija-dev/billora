@@ -10,7 +10,9 @@ use App\Http\Controllers\admin\BrandController;
 use App\Http\Controllers\admin\InvoiceController;
 use App\Http\Controllers\admin\StoreController;
 use App\Models\Unit;
+use App\Http\Controllers\admin\PlanController;
 use App\Http\Controllers\admin\CategoriesController;
+use App\Http\Controllers\admin\DashboardController;
 
 Route::get('/test', function () {
    return response()->json([
@@ -123,4 +125,19 @@ Route::prefix('categories')->group(function () {
    Route::get('/{id}', [CategoriesController::class, 'edit']);
    Route::put('/{id}', [CategoriesController::class, 'update']);
    Route::delete('/{id}', [CategoriesController::class, 'delete']);
+});
+
+Route::prefix('plans')->group(function (){
+   Route::get('/', [PlanController::class, 'index']);
+   Route::post('/store',[PlanController::class, 'store']);
+   Route::get('/trashed', [PlanController::class, 'trashed']);
+
+   Route::get('/{id}', [PlanController::class, 'edit']);
+   Route::put('/{id}', [PlanController::class, 'update']);
+   Route::delete('/{id}', [PlanController::class, 'delete']);
+   Route::patch('/{id}', [PlanController::class, 'restore']);
+   Route::delete('/{id}/force', [PlanController::class, 'forceDelete']);
+});
+Route::prefix('dashboard')->group(function (){
+   Route::get('/overview', [DashboardController::class, 'index']);
 });

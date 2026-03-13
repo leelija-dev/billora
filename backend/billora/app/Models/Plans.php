@@ -3,9 +3,12 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Plans extends Model
 {
+    use SoftDeletes;
+    
     protected $table='plans';
 
     protected $fillable = [
@@ -24,7 +27,7 @@ class Plans extends Model
         'features'=>'array',
         'is_active'=>'boolean:2',
         'duration_days'=>'integer',
-        'price'=>'decimal:10,2',
-        'slug'=>'unique'
+        'price'=>'decimal:2'
     ];
+    
 }

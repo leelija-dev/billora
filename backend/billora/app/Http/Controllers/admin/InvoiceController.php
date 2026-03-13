@@ -135,6 +135,7 @@ class InvoiceController extends Controller
                 'total_items' => $totalItems,
                 'paid_amount' => $request->paid_amount,
                 'created_by' => $request->created_by,
+                'status' => 'completed'
             ]);
 
             // Store invoice items
