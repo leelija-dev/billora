@@ -15,6 +15,7 @@ import {
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 import { useThemeStore } from "../../store/themeStore";
 import CustomerCard from "./CustomerCard";
+import { LinearGradient } from "expo-linear-gradient";
 
 const CustomerList = ({
   viewMode = "grid",

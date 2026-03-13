@@ -99,9 +99,9 @@ Customer: ${customer?.name}
 Phone: ${customer?.phone}
 Email: ${customer?.email || 'N/A'}
 Address: ${customer?.address}, ${customer?.city || ''}
-Total Purchases: $${customer?.total_purchases?.toFixed(2) || '0.00'}
-Total Paid: $${customer?.total_paid?.toFixed(2) || '0.00'}
-Due Amount: $${customer?.due_amount?.toFixed(2) || '0.00'}
+Total Purchases: $${(parseFloat(customer?.total_purchases) || 0).toFixed(2)}
+Total Paid: $${(parseFloat(customer?.total_paid) || 0).toFixed(2)}
+Due Amount: $${(parseFloat(customer?.due_amount) || 0).toFixed(2)}
       `;
       
       await Share.share({
@@ -226,7 +226,7 @@ Due Amount: $${customer?.due_amount?.toFixed(2) || '0.00'}
                   customer.due_amount > 0 ? 'bg-yellow-500' : 'bg-green-500'
                 }`}>
                   <Text className="text-white font-semibold">
-                    Due: ${customer.due_amount?.toFixed(2)}
+                    Due: ${(parseFloat(customer.due_amount) || 0).toFixed(2)}
                   </Text>
                 </View>
                 <TouchableOpacity
@@ -346,31 +346,27 @@ Due Amount: $${customer?.due_amount?.toFixed(2) || '0.00'}
                       Total Purchases
                     </Text>
                     <Text className={`text-lg font-bold text-blue-500`}>
-                      ${customer.total_purchases?.toFixed(2) || '0.00'}
+                      ${(parseFloat(customer.total_purchases) || 0).toFixed(2)}
                     </Text>
                   </View>
 
-                  <View className="w-1/2 mb-4">
-                    <Text className={`text-xs ${
-                      isDarkMode ? 'text-gray-400' : 'text-gray-500'
-                    }`}>
+                  <View className={`flex-1 ${isDarkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-3 shadow-sm`}>
+                    <Text className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
                       Total Paid
                     </Text>
                     <Text className={`text-lg font-bold text-green-500`}>
-                      ${customer.total_paid?.toFixed(2) || '0.00'}
+                      ${(parseFloat(customer.total_paid) || 0).toFixed(2)}
                     </Text>
                   </View>
 
-                  <View className="w-1/2 mb-4">
-                    <Text className={`text-xs ${
-                      isDarkMode ? 'text-gray-400' : 'text-gray-500'
-                    }`}>
-                      Current Due
+                  <View className={`flex-1 ${isDarkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-3 shadow-sm`}>
+                    <Text className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                      Due Amount
                     </Text>
                     <Text className={`text-lg font-bold ${
-                      customer.due_amount > 0 ? 'text-yellow-500' : 'text-green-500'
+                      parseFloat(customer.due_amount) > 0 ? 'text-yellow-500' : 'text-green-500'
                     }`}>
-                      ${customer.due_amount?.toFixed(2) || '0.00'}
+                      ${(parseFloat(customer.due_amount) || 0).toFixed(2)}
                     </Text>
                   </View>
 
@@ -525,7 +521,7 @@ Due Amount: $${customer?.due_amount?.toFixed(2) || '0.00'}
                     <Text className={`text-base font-bold ${
                       payment.type === 'payment' ? 'text-green-500' : 'text-blue-500'
                     }`}>
-                      {payment.type === 'payment' ? '-' : '+'} ${payment.amount?.toFixed(2)}
+                      {payment.type === 'payment' ? '-' : '+'} ${(parseFloat(payment.amount) || 0).toFixed(2)}
                     </Text>
                   </View>
                 ))

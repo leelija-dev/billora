@@ -1,5 +1,6 @@
-import { useNavigation, useFocusEffect } from "@react-navigation/native";
-import { useState, useMemo, useCallback, useEffect, useRef } from "react";
+// screens/customers/CustomersScreen.js
+import { useNavigation } from "@react-navigation/native";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import {
   ScrollView,
   StatusBar,
@@ -9,10 +10,8 @@ import {
   View,
   Alert,
   RefreshControl,
-  Modal,
 } from "react-native";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
-import { LinearGradient } from "expo-linear-gradient";
 import { useThemeStore } from "../../store/themeStore";
 import { useAuthStore } from "../../store/authStore";
 import { useCustomers } from "../../hooks/useCustomers";
@@ -25,25 +24,25 @@ const CustomersScreen = () => {
   const navigation = useNavigation();
   const { isDarkMode } = useThemeStore();
   const { user } = useAuthStore();
-  const {
-    customers = [],
-    loading,
-    error,
-    totalDue,
-    refreshCustomers,
+  const { 
+    customers = [], 
+    loading, 
+    error, 
+    refreshCustomers, 
     searchCustomers,
+    getCustomersByCity,
     deleteCustomer,
     getTrashedCustomers,
     restoreCustomer,
-    forceDeleteCustomer,
+    forceDeleteCustomer
   } = useCustomers() || {};
 
   const [showFilters, setShowFilters] = useState(false);
   const [showTrashed, setShowTrashed] = useState(false);
   const [trashedCustomers, setTrashedCustomers] = useState([]);
+  const [selectedCity, setSelectedCity] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [viewMode, setViewMode] = useState("list");
-  const [sortBy, setSortBy] = useState("name");
   const [refreshing, setRefreshing] = useState(false);
   const [activeFilters, setActiveFilters] = useState({
     dueStatus: "all",
@@ -55,82 +54,64 @@ const CustomersScreen = () => {
     city: "",
   });
 
-  // Use refs to track state without causing re-renders
-  const lastRefreshTime = useRef(Date.now());
-  const isRefreshing = useRef(false);
-  const isMounted = useRef(true);
-
-  // Calculate statistics
+  // Calculate statistics safely from customers array
   const totalCustomers = customers?.length || 0;
-  const customersWithDue = useMemo(() => 
-    customers.filter(c => (c.due_amount || 0) > 0).length, 
-    [customers]
-  );
-  const averageDue = totalCustomers > 0 ? (totalDue / totalCustomers).toFixed(2) : 0;
+  
+  // Calculate total due amount from all customers
+  const totalDue = useMemo(() => {
+    if (!customers?.length) return 0;
+    return customers.reduce((sum, customer) => {
+      // Check different possible field names for due amount
+      const dueAmount = customer.due_amount || customer.due || customer.balance || 0;
+      return sum + (parseFloat(dueAmount) || 0);
+    }, 0);
+  }, [customers]);
 
-  // Stable refresh callback
-  const stableRefresh = useCallback(async () => {
-    if (isRefreshing.current || !isMounted.current) return;
-    
-    isRefreshing.current = true;
-    setRefreshing(true);
-    
-    try {
-      await refreshCustomers();
-      lastRefreshTime.current = Date.now();
-    } finally {
-      if (isMounted.current) {
-        setRefreshing(false);
-        isRefreshing.current = false;
-      }
-    }
-  }, [refreshCustomers]);
+  const customersWithDue = useMemo(() => {
+    if (!customers?.length) return 0;
+    return customers.filter(c => {
+      const dueAmount = c.due_amount || c.due || c.balance || 0;
+      return parseFloat(dueAmount) > 0;
+    }).length;
+  }, [customers]);
 
-  // Focus effect
-  useFocusEffect(
-    useCallback(() => {
-      if (isRefreshing.current) {
-        console.log('Already refreshing, skipping...');
-        return;
-      }
-      
-      const now = Date.now();
-      const timeSinceLastRefresh = now - lastRefreshTime.current;
-      
-      if (timeSinceLastRefresh > 5000 || customers.length === 0) {
-        console.log('Refreshing customers on focus...');
-        stableRefresh();
-      }
+  const averageDue = totalCustomers > 0 ? totalDue / totalCustomers : 0;
 
-      return () => {
-        console.log('Customers screen unfocused');
-      };
-    }, [stableRefresh])
-  );
+  // Get unique cities from customers
+  const uniqueCities = useMemo(() => {
+    if (!customers?.length) return [];
+    const cities = [...new Set(customers.map(c => c.city).filter(Boolean))];
+    return cities;
+  }, [customers]);
 
-  // Navigation listener
-  useEffect(() => {
-    const unsubscribe = navigation.addListener('focus', () => {
-      const routes = navigation.getState()?.routes;
-      const previousRoute = routes?.[routes.length - 2]?.name;
-      
-      if (previousRoute === 'AddCustomer' || previousRoute === 'CustomerDetail') {
-        console.log(`Returning from ${previousRoute} - refreshing customers`);
-        stableRefresh();
-      }
-    });
+  // Build cities list with "All Cities" option
+  const allCities = useMemo(() => {
+    return [
+      {
+        id: "all",
+        name: "All Cities",
+        icon: "map-marker-radius",
+        count: customers?.length || 0,
+        color: "#3b82f6",
+      },
+      ...uniqueCities.map(city => ({
+        id: city,
+        name: city,
+        icon: "map-marker",
+        count: customers?.filter(c => c.city === city)?.length || 0,
+        color: "#8b5cf6",
+      }))
+    ];
+  }, [customers, uniqueCities]);
 
-    return unsubscribe;
-  }, [navigation, stableRefresh]);
-
-  // Cleanup on unmount
-  useEffect(() => {
-    isMounted.current = true;
-    
-    return () => {
-      isMounted.current = false;
-    };
-  }, []);
+  // Calculate real stats
+  const stats = {
+    total: totalCustomers,
+    withDue: customersWithDue,
+    totalDue: totalDue,
+    averageDue: averageDue,
+    cities: uniqueCities.length,
+  };
 
   const handleAddCustomer = () => {
     navigation.navigate("AddCustomer");
@@ -138,7 +119,7 @@ const CustomersScreen = () => {
 
   const handleViewTrashed = async () => {
     const trashed = await getTrashedCustomers();
-    setTrashedCustomers(trashed);
+    setTrashedCustomers(trashed || []);
     setShowTrashed(true);
   };
 
@@ -154,11 +135,9 @@ const CustomersScreen = () => {
             const result = await restoreCustomer(customerId);
             if (result?.success) {
               Alert.alert("Success", "Customer restored successfully");
-              // Refresh trashed list
               const trashed = await getTrashedCustomers();
-              setTrashedCustomers(trashed);
-              // Refresh main list
-              await stableRefresh();
+              setTrashedCustomers(trashed || []);
+              await refreshCustomers?.();
             } else {
               Alert.alert("Error", result?.error || "Failed to restore customer");
             }
@@ -181,9 +160,8 @@ const CustomersScreen = () => {
             const result = await forceDeleteCustomer(customerId);
             if (result?.success) {
               Alert.alert("Success", "Customer permanently deleted");
-              // Refresh trashed list
               const trashed = await getTrashedCustomers();
-              setTrashedCustomers(trashed);
+              setTrashedCustomers(trashed || []);
             } else {
               Alert.alert("Error", result?.error || "Failed to delete customer");
             }
@@ -203,7 +181,7 @@ const CustomersScreen = () => {
 
   const handleApplyFilters = (filters) => {
     setActiveFilters(filters);
-    setSortBy(filters.sortBy);
+    setSelectedCity(filters.city || "all");
     setShowFilters(false);
   };
 
@@ -217,15 +195,25 @@ const CustomersScreen = () => {
       dateRange: "all",
       city: "",
     });
-    setSortBy("name");
+    setSelectedCity("all");
+    refreshCustomers?.();
+  };
+
+  const handleCitySelect = (cityId) => {
+    setSelectedCity(cityId);
+    if (cityId === "all") {
+      refreshCustomers?.();
+    } else {
+      getCustomersByCity?.(cityId);
+    }
   };
 
   const handleSearch = (query) => {
     setSearchQuery(query);
     if (query.trim()) {
-      searchCustomers(query);
+      searchCustomers?.(query);
     } else {
-      stableRefresh();
+      refreshCustomers?.();
     }
   };
 
@@ -243,13 +231,10 @@ const CustomersScreen = () => {
           text: "Delete",
           style: "destructive",
           onPress: async () => {
-            console.log('Deleting customer:', customerId);
             const result = await deleteCustomer(customerId);
-            
             if (result?.success) {
               Alert.alert("Success", "Customer deleted successfully");
-              await stableRefresh();
-              lastRefreshTime.current = 0;
+              await refreshCustomers?.();
             } else {
               Alert.alert("Error", result?.error || "Failed to delete customer");
             }
@@ -260,11 +245,16 @@ const CustomersScreen = () => {
   };
 
   const onRefresh = async () => {
-    await stableRefresh();
+    setRefreshing(true);
+    try {
+      await refreshCustomers?.();
+    } finally {
+      setRefreshing(false);
+    }
   };
 
   // Navigation items for sidebar
-  const navigationItems = useMemo(() => [
+  const navigationItems = [
     {
       id: "dashboard",
       title: "Dashboard",
@@ -284,7 +274,7 @@ const CustomersScreen = () => {
       title: "Customers",
       icon: "account-group",
       screen: "Customers",
-      badge: totalCustomers.toString(),
+      badge: stats.total.toString(),
     },
     {
       id: "bills",
@@ -294,10 +284,10 @@ const CustomersScreen = () => {
       badge: null,
     },
     {
-      id: "stocks",
-      title: "Stocks",
+      id: "inventory",
+      title: "Inventory",
       icon: "warehouse",
-      screen: "Stocks",
+      screen: "Inventory",
       badge: null,
     },
     {
@@ -307,23 +297,22 @@ const CustomersScreen = () => {
       screen: "Settings",
       badge: null,
     },
-  ], [totalCustomers]);
+  ];
 
   // Show loading state
-  if (loading && customers.length === 0 && !refreshing) {
+  if (loading && customers.length === 0) {
     return (
       <View className={`flex-1 ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'} items-center justify-center`}>
-        <View className={`w-16 h-16 rounded-2xl items-center justify-center mb-4 ${
-          isDarkMode ? 'bg-gray-800' : 'bg-white'
-        }`}>
-          <Icon name="account-group" size={32} color="#3b82f6" />
-        </View>
-        <Text className={`text-lg font-semibold ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
-          Loading customers...
-        </Text>
-        <Text className={`text-sm mt-2 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-          Please wait a moment
-        </Text>
+        <Text className={isDarkMode ? 'text-white' : 'text-gray-900'}>Loading customers...</Text>
+      </View>
+    );
+  }
+
+  // Show error state
+  if (error) {
+    return (
+      <View className={`flex-1 ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'} items-center justify-center`}>
+        <Text className="text-red-500">Error: {error}</Text>
       </View>
     );
   }
@@ -395,14 +384,11 @@ const CustomersScreen = () => {
           )}
           <TouchableOpacity
             onPress={handleFilterPress}
-            className={`ml-2 p-2 border-l relative ${
+            className={`ml-2 p-2 border-l ${
               isDarkMode ? 'border-gray-700' : 'border-gray-200'
             }`}
           >
             <Icon name="tune" size={22} color={isDarkMode ? "#9CA3AF" : "#4b5563"} />
-            {Object.values(activeFilters).some(v => v && v !== "" && v !== "all" && v !== null) && (
-              <View className="absolute top-0 right-0 w-2 h-2 bg-blue-500 rounded-full" />
-            )}
           </TouchableOpacity>
         </View>
       </View>
@@ -418,40 +404,98 @@ const CustomersScreen = () => {
           />
         }
       >
-        {/* Stats Cards */}
-        <View className="flex-row flex-wrap px-4 py-3">
-          <LinearGradient
-            colors={["#3b82f6", "#2563eb"]}
-            className="rounded-xl p-4 flex-1 mr-2"
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
+        {/* Cities Scroll - Like Categories in Products */}
+        <View className="py-2">
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            className="px-4"
           >
-            <Text className="text-white/80 text-xs">Total Customers</Text>
-            <Text className="text-white text-2xl font-bold">{totalCustomers}</Text>
-            <View className="flex-row items-center mt-1">
-              <Icon name="account-group" size={16} color="#86efac" />
-              <Text className="text-white/80 text-xs ml-1">Active customers</Text>
-            </View>
-          </LinearGradient>
+            {allCities.map((city) => (
+              <TouchableOpacity
+                key={city.id}
+                onPress={() => handleCitySelect(city.id)}
+                className={`flex-row items-center mr-3 px-4 py-2.5 rounded-full border ${
+                  selectedCity === city.id
+                    ? "bg-blue-500 border-blue-500"
+                    : isDarkMode 
+                      ? 'bg-gray-800 border-gray-700' 
+                      : 'bg-white border-white'
+                } shadow-sm`}
+              >
+                <Icon
+                  name={city.icon}
+                  size={18}
+                  color={
+                    selectedCity === city.id 
+                      ? "#ffffff" 
+                      : isDarkMode ? '#9CA3AF' : city.color
+                  }
+                />
+                <Text
+                  className={`ml-2 font-medium ${
+                    selectedCity === city.id
+                      ? "text-white"
+                      : isDarkMode ? 'text-gray-300' : 'text-gray-700'
+                  }`}
+                >
+                  {city.name}
+                </Text>
+                <View
+                  className={`ml-2 px-2 py-0.5 rounded-full ${
+                    selectedCity === city.id
+                      ? "bg-white/20"
+                      : isDarkMode ? 'bg-gray-700' : 'bg-gray-100'
+                  }`}
+                >
+                  <Text
+                    className={`text-xs ${
+                      selectedCity === city.id
+                        ? "text-white"
+                        : isDarkMode ? 'text-gray-400' : 'text-gray-600'
+                    }`}
+                  >
+                    {city.count}
+                  </Text>
+                </View>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
 
-          <View className={`rounded-xl p-4 flex-1 ml-2 shadow-sm ${
+        {/* Stats Cards - Similar to Products */}
+        <View className="flex-row justify-between px-4 py-3">
+          <View className={`rounded-xl p-3 flex-1 mr-2 shadow-sm ${
             isDarkMode ? 'bg-gray-800' : 'bg-white'
           }`}>
             <Text className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-              Total Due Amount
+              Total Customers
             </Text>
             <Text className={`text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
-              ${totalDue.toFixed(2)}
+              {stats.total}
             </Text>
-            <View className="flex-row items-center mt-1">
-              <Icon name="alert-circle" size={16} color="#f59e0b" />
-              <Text className={`text-xs ml-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                {customersWithDue} customers with due
-              </Text>
-            </View>
+          </View>
+          <View className={`rounded-xl p-3 flex-1 mx-2 shadow-sm ${
+            isDarkMode ? 'bg-gray-800' : 'bg-white'
+          }`}>
+            <Text className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+              With Due
+            </Text>
+            <Text className="text-2xl font-bold text-orange-500">{stats.withDue}</Text>
+          </View>
+          <View className={`rounded-xl p-3 flex-1 ml-2 shadow-sm ${
+            isDarkMode ? 'bg-gray-800' : 'bg-white'
+          }`}>
+            <Text className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+              Total Due
+            </Text>
+            <Text className="text-2xl font-bold text-red-500">
+              ${typeof stats.totalDue === 'number' ? stats.totalDue.toFixed(2) : '0.00'}
+            </Text>
           </View>
         </View>
 
+        {/* Additional Stats Row */}
         <View className="flex-row px-4 mb-4">
           <View className={`rounded-xl p-3 flex-1 mr-2 shadow-sm ${
             isDarkMode ? 'bg-gray-800' : 'bg-white'
@@ -463,10 +507,7 @@ const CustomersScreen = () => {
               </Text>
             </View>
             <Text className={`text-xl font-bold mt-1 ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
-              ${averageDue}
-            </Text>
-            <Text className={`text-xs mt-1 ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}>
-              Per customer
+              ${typeof stats.averageDue === 'number' ? stats.averageDue.toFixed(2) : '0.00'}
             </Text>
           </View>
 
@@ -480,159 +521,9 @@ const CustomersScreen = () => {
               </Text>
             </View>
             <Text className={`text-xl font-bold mt-1 ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
-              {new Set(customers.map(c => c.city).filter(Boolean)).size}
-            </Text>
-            <Text className={`text-xs mt-1 ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}>
-              Unique locations
+              {stats.cities}
             </Text>
           </View>
-        </View>
-
-        {/* Filter Chips */}
-        {(activeFilters.dueStatus !== 'all' || activeFilters.city) && (
-          <View className="px-4 mb-3 flex-row flex-wrap">
-            {activeFilters.dueStatus !== 'all' && (
-              <View className={`flex-row items-center mr-2 mb-2 px-3 py-1.5 rounded-full ${
-                isDarkMode ? 'bg-gray-800' : 'bg-gray-100'
-              }`}>
-                <Text className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                  Due: {activeFilters.dueStatus}
-                </Text>
-                <TouchableOpacity 
-                  onPress={() => setActiveFilters({...activeFilters, dueStatus: 'all'})}
-                  className="ml-2"
-                >
-                  <Icon name="close" size={16} color={isDarkMode ? "#9CA3AF" : "#6b7280"} />
-                </TouchableOpacity>
-              </View>
-            )}
-            {activeFilters.city && (
-              <View className={`flex-row items-center mr-2 mb-2 px-3 py-1.5 rounded-full ${
-                isDarkMode ? 'bg-gray-800' : 'bg-gray-100'
-              }`}>
-                <Text className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                  City: {activeFilters.city}
-                </Text>
-                <TouchableOpacity 
-                  onPress={() => setActiveFilters({...activeFilters, city: ''})}
-                  className="ml-2"
-                >
-                  <Icon name="close" size={16} color={isDarkMode ? "#9CA3AF" : "#6b7280"} />
-                </TouchableOpacity>
-              </View>
-            )}
-          </View>
-        )}
-
-        {/* Sort Options */}
-        <View className="flex-row px-4 mb-4">
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            <View className="flex-row">
-              <TouchableOpacity
-                onPress={() => setSortBy('name')}
-                className={`flex-row items-center mr-2 px-4 py-2 rounded-full border ${
-                  sortBy === 'name'
-                    ? "bg-blue-500 border-blue-500"
-                    : isDarkMode
-                      ? 'bg-gray-800 border-gray-700'
-                      : 'bg-white border-gray-200'
-                }`}
-              >
-                <Icon
-                  name="sort-alphabetical"
-                  size={16}
-                  color={sortBy === 'name' ? "#ffffff" : isDarkMode ? "#9CA3AF" : "#4b5563"}
-                />
-                <Text
-                  className={`ml-2 text-sm ${
-                    sortBy === 'name'
-                      ? "text-white"
-                      : isDarkMode ? 'text-gray-300' : 'text-gray-700'
-                  }`}
-                >
-                  Name
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                onPress={() => setSortBy('due')}
-                className={`flex-row items-center mr-2 px-4 py-2 rounded-full border ${
-                  sortBy === 'due'
-                    ? "bg-blue-500 border-blue-500"
-                    : isDarkMode
-                      ? 'bg-gray-800 border-gray-700'
-                      : 'bg-white border-gray-200'
-                }`}
-              >
-                <Icon
-                  name="cash"
-                  size={16}
-                  color={sortBy === 'due' ? "#ffffff" : isDarkMode ? "#9CA3AF" : "#4b5563"}
-                />
-                <Text
-                  className={`ml-2 text-sm ${
-                    sortBy === 'due'
-                      ? "text-white"
-                      : isDarkMode ? 'text-gray-300' : 'text-gray-700'
-                  }`}
-                >
-                  Due Amount
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                onPress={() => setSortBy('date')}
-                className={`flex-row items-center mr-2 px-4 py-2 rounded-full border ${
-                  sortBy === 'date'
-                    ? "bg-blue-500 border-blue-500"
-                    : isDarkMode
-                      ? 'bg-gray-800 border-gray-700'
-                      : 'bg-white border-gray-200'
-                }`}
-              >
-                <Icon
-                  name="calendar"
-                  size={16}
-                  color={sortBy === 'date' ? "#ffffff" : isDarkMode ? "#9CA3AF" : "#4b5563"}
-                />
-                <Text
-                  className={`ml-2 text-sm ${
-                    sortBy === 'date'
-                      ? "text-white"
-                      : isDarkMode ? 'text-gray-300' : 'text-gray-700'
-                  }`}
-                >
-                  Date
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                onPress={() => setSortBy('city')}
-                className={`flex-row items-center px-4 py-2 rounded-full border ${
-                  sortBy === 'city'
-                    ? "bg-blue-500 border-blue-500"
-                    : isDarkMode
-                      ? 'bg-gray-800 border-gray-700'
-                      : 'bg-white border-gray-200'
-                }`}
-              >
-                <Icon
-                  name="map-marker"
-                  size={16}
-                  color={sortBy === 'city' ? "#ffffff" : isDarkMode ? "#9CA3AF" : "#4b5563"}
-                />
-                <Text
-                  className={`ml-2 text-sm ${
-                    sortBy === 'city'
-                      ? "text-white"
-                      : isDarkMode ? 'text-gray-300' : 'text-gray-700'
-                  }`}
-                >
-                  City
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </ScrollView>
         </View>
 
         {/* Customer List */}
@@ -641,11 +532,9 @@ const CustomersScreen = () => {
             customers={customers}
             viewMode={viewMode}
             searchQuery={searchQuery}
-            sortBy={sortBy}
+            sortBy={activeFilters.sortBy}
             filters={activeFilters}
-            onRefresh={onRefresh}
             onDelete={handleDeleteCustomer}
-            loading={loading}
           />
         </View>
       </ScrollView>
