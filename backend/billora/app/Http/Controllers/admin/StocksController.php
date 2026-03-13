@@ -54,14 +54,14 @@ class StocksController extends Controller
     }
     public function store(Request $request){
         $stocks =$request->validate([
-            'user_id'=>'required',
-            'product_id'=>'required',
-            'quantity'=>'required',
-            'selling_price'=>'required',
+            'user_id'           =>'required',
+            'product_id'        =>'required',
+            'quantity'          =>'required',
+            'selling_price'     =>'required',
             'product_package_id'=>'nullable',
-            'purchase_price'=>'nullable',
-            'unit_id'=>'nullable',
-            'created_by'=>'nullable'
+            'purchase_price'    =>'nullable',
+            'unit_id'           =>'nullable',
+            'created_by'        =>'nullable'
             
         ]);
         try{
@@ -93,11 +93,11 @@ class StocksController extends Controller
     public function update($id,Request $request){
         try{
             $data=$request->validate([
-                'user_id'=>'required',
-                'product_id'=>'required',
+                'user_id'       =>'required',
+                'product_id'    =>'required',
                 'purchase_price'=>'nullable',
-                'selling_price'=>'required',
-                'unit_id'=>'required',
+                'selling_price' =>'required',
+                'unit_id'       =>'required',
             ]);
             $stock = Stocks::findOrFail('id',$id);
 
@@ -136,7 +136,7 @@ class StocksController extends Controller
         public function addStock(Request $request,$id){
             $data=$request->validate([
                 'quantity'=>'required',
-                'user_id'=>'required',
+                'user_id' =>'required',
             ]);
             try{
             $stock = Stocks::where('id', $id)

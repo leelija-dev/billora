@@ -86,11 +86,11 @@ class InvoiceController extends Controller
         $customers = BillCustomer::all();
         $stores = Store::all();
         return response()->json([
-            'status' => true,
-            'message' => 'Products and Customers List',
-            'products' => $products,
+            'status'    => true,
+            'message'   => 'Products and Customers List',
+            'products'  => $products,
             'customers' => $customers,
-            'stores' => $stores
+            'stores'    => $stores
         ]);
     }
 
@@ -128,14 +128,14 @@ class InvoiceController extends Controller
 
             // Store invoice
             $invoice = Invoice::create([
-                'user_id' => $request->user_id,
-                'customer_id' => $request->customer_id,
-                'store_id' => $request->store_id,
-                'total_amount' => $totalAmount,
-                'total_items' => $totalItems,
-                'paid_amount' => $request->paid_amount,
-                'created_by' => $request->created_by,
-                'status' => 'completed'
+                'user_id'       => $request->user_id,
+                'customer_id'   => $request->customer_id,
+                'store_id'      => $request->store_id,
+                'total_amount'  => $totalAmount,
+                'total_items'   => $totalItems,
+                'paid_amount'   => $request->paid_amount,
+                'created_by'    => $request->created_by,
+                'status'        => 'completed'
             ]);
 
             // Store invoice items
@@ -149,18 +149,18 @@ class InvoiceController extends Controller
                 $totalPrice = ((($price * $qty) - $discount) + $gst);
 
                 InvoiceItems::create([
-                    'user_id' => $request->user_id,
-                    'invoice_id' => $invoice->id,
-                    'product_id' => $item['product_id'],
-                    'quantity' => $qty,
-                    'item_count' => $qty,
-                    'unit_id' => $item['unit_id'],
-                    'price' => $price,
-                    'gst' => $item['gst'] ?? 0,
-                    'discount' => $item['discount'] ?? 0,
-                    'total_price' => $totalPrice,
-                    'status' => 'completed',
-                    'created_by' => $request->created_by
+                    'user_id'       => $request->user_id,
+                    'invoice_id'    => $invoice->id,
+                    'product_id'    => $item['product_id'],
+                    'quantity'      => $qty,
+                    'item_count'    => $qty,
+                    'unit_id'       => $item['unit_id'],
+                    'price'         => $price,
+                    'gst'           => $item['gst'] ?? 0,
+                    'discount'      => $item['discount'] ?? 0,
+                    'total_price'   => $totalPrice,
+                    'status'        => 'completed',
+                    'created_by'    => $request->created_by
                 ]);
             }
             // payment history
@@ -192,8 +192,8 @@ class InvoiceController extends Controller
                 ]);
                 else{
                     return response()->json([
-                        'status' => false,
-                        'message' => 'Stock not available'
+                        'status'    => false,
+                        'message'   => 'Stock not available'
                     ]);
                 }
             }
@@ -201,7 +201,7 @@ class InvoiceController extends Controller
             DB::commit();
 
             return response()->json([
-                'status' => true,
+                'status'  => true,
                 'message' => 'Invoice Created Successfully',
                 'invoice_id' => $invoice->id
             ]);
@@ -210,7 +210,7 @@ class InvoiceController extends Controller
             DB::rollback();
 
             return response()->json([
-                'status' => false,
+                'status'  => false,
                 'message' => $e->getMessage()
             ]);
         }
@@ -221,13 +221,13 @@ class InvoiceController extends Controller
             $bill = Invoice::with('invoiceItems')->findOrFail($id);
             // $invoiceitems = InvoiceItems::where('invoice_id', $id)->get();
             return response()->json([
-                'status' => true,
-                'message' => 'Single Bill',
-                'data' => $bill
+                'status'    => true,
+                'message'   => 'Single Bill',
+                'data'      => $bill
             ]);
         } catch (\Exception $e) {
             return response()->json([
-                'status' => false,
+                'status'  => false,
                 'message' => $e->getMessage()
             ]);
         }
@@ -259,16 +259,16 @@ class InvoiceController extends Controller
             ->paginate(15);
 
         return response()->json([
-            'status' => true,
-            'message' => 'Bill History',
-            'data' => $billHistory
+            'status'    => true,
+            'message'   => 'Bill History',
+            'data'      => $billHistory
         ]);
 
     } catch (\Exception $e) {
 
         return response()->json([
-            'status' => false,
-            'message' => $e->getMessage()
+            'status'    => false,
+            'message'   => $e->getMessage()
         ]);
     }
 } 
@@ -282,11 +282,11 @@ class InvoiceController extends Controller
         $customers = BillCustomer::where('admin_id', $id)->get();
         $stores = Store::where('user_id', $id)->get();
         return response()->json([
-            'status' => true,
-            'message' => 'Products and Customers List from product table',
-            'products' => $products,
+            'status'    => true,
+            'message'   => 'Products and Customers List from product table',
+            'products'  => $products,
             'customers' => $customers,
-            'stores' => $stores
+            'stores'    => $stores
         ]);
         
     }
@@ -323,13 +323,13 @@ class InvoiceController extends Controller
 
             // Store invoice
             $invoice = Invoice::create([
-                'user_id' => $request->user_id,
-                'customer_id' => $request->customer_id,
-                'store_id' => $request->store_id,
-                'total_amount' => $totalAmount,
-                'total_items' => $totalItems,
-                'paid_amount' => $request->paid_amount,
-                'created_by' => $request->created_by,
+                'user_id'       => $request->user_id,
+                'customer_id'   => $request->customer_id,
+                'store_id'      => $request->store_id,
+                'total_amount'  => $totalAmount,
+                'total_items'   => $totalItems,
+                'paid_amount'   => $request->paid_amount,
+                'created_by'    => $request->created_by,
             ]);
 
             // Store invoice items
@@ -343,18 +343,18 @@ class InvoiceController extends Controller
                 $totalPrice = ((($price * $qty) - $discount) + $gst);
 
                 InvoiceItems::create([
-                    'user_id' => $request->user_id,
-                    'invoice_id' => $invoice->id,
-                    'product_id' => $item['product_id'],
-                    'quantity' => $qty,
-                    'item_count' => $qty,
-                    'unit_id' => $item['unit_id'],
-                    'price' => $price,
-                    'gst' => $item['gst'] ?? 0,
-                    'discount' => $item['discount'] ?? 0,
-                    'total_price' => $totalPrice,
-                    'status' => 'completed',
-                    'created_by' => $request->created_by
+                    'user_id'       => $request->user_id,
+                    'invoice_id'    => $invoice->id,
+                    'product_id'    => $item['product_id'],
+                    'quantity'      => $qty,
+                    'item_count'    => $qty,
+                    'unit_id'       => $item['unit_id'],
+                    'price'         => $price,
+                    'gst'           => $item['gst'] ?? 0,
+                    'discount'      => $item['discount'] ?? 0,
+                    'total_price'   => $totalPrice,
+                    'status'        => 'completed',
+                    'created_by'    => $request->created_by
                 ]);
             }
             // payment history
@@ -380,9 +380,9 @@ class InvoiceController extends Controller
             DB::commit();
 
             return response()->json([
-                'status' => true,
-                'message' => 'Invoice Created Successfully',
-                'invoice_id' => $invoice->id
+                'status'        => true,
+                'message'       => 'Invoice Created Successfully',
+                'invoice_id'    => $invoice->id
             ]);
         } catch (\Exception $e) {
 

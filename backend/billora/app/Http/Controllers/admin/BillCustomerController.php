@@ -20,21 +20,21 @@ class BillCustomerController extends Controller
         ->orWhere('due_amount', 'like', "%$search%")
         ->paginate(15);
         return response()->json([
-            'status' => true,
-            'message' => 'Bill Customer List',
-            'data' => $billCustomer
+            'status'    => true,
+            'message'   => 'Bill Customer List',
+            'data'      => $billCustomer
         ]);
     }
     public function store(Request $request)
     {
         $data = $request->validate([
-            'admin_id' => 'required',
-            'name' => 'required',
-            'email' => 'nullable',
-            'phone' => 'required',
-            'address' => 'required',
-            'city' => 'nullable',
-            'created_by' => 'required'
+            'admin_id'      => 'required',
+            'name'          => 'required',
+            'email'         => 'nullable',
+            'phone'         => 'required',
+            'address'       => 'required',
+            'city'          => 'nullable',
+            'created_by'    => 'required'
         ]);
         try {
             $billCustomer = BillCustomer::create($data);
@@ -45,8 +45,8 @@ class BillCustomerController extends Controller
             ]);
         } catch (\Exception $e) {
             return response()->json([
-                'status' => false,
-                'message' => $e->getMessage()
+                'status'    => false,
+                'message'   => $e->getMessage()
             ]);
         }
     }
@@ -66,10 +66,10 @@ class BillCustomerController extends Controller
             $data = $query->latest()->get();
 
         return response()->json([
-            'status' => true,
-            'message' => 'Single Bill Customer',
-            'data' => $billCustomer,
-            'bill_payment_history' => $data,
+            'status'                => true,
+            'message'               => 'Single Bill Customer',
+            'data'                  => $billCustomer,
+            'bill_payment_history'  => $data,
         ]);
         }catch(\Exception $e){
             return response()->json([
@@ -80,12 +80,12 @@ class BillCustomerController extends Controller
     }
     public function update(Request $request, $id){
         $data = $request->validate([
-            'user_id' => 'required',
-            'name' => 'required',
-            'email' => 'nullable',
-            'phone' => 'required',
-            'address' => 'required',
-            'city' => 'nullable',
+            'user_id'   => 'required',
+            'name'      => 'required',
+            'email'     => 'nullable',
+            'phone'     => 'required',
+            'address'   => 'required',
+            'city'      => 'nullable',
  
         ]);
         try {
@@ -95,14 +95,14 @@ class BillCustomerController extends Controller
         //     ->firstOrFail();
             $billCustomer->update($data);
             return response()->json([
-                'status' => true,
-                'message' => 'Bill Customer Updated Successfully',
-                'data' => $billCustomer
+                'status'    => true,
+                'message'   => 'Bill Customer Updated Successfully',
+                'data'      => $billCustomer
             ]);
         } catch (\Exception $e) {
             return response()->json([
-                'status' => false,
-                'message' => $e->getMessage()
+                'status'    => false,
+                'message'   => $e->getMessage()
             ]);
         }
     }
@@ -114,23 +114,23 @@ class BillCustomerController extends Controller
             $billCustomer = BillCustomer::where('id', $id)->where('admin_id', $data['user_id'])->firstOrFail();
             $billCustomer->delete();
             return response()->json([
-                'status' => true,
-                'message' => 'Bill Customer Deleted Successfully',
-                'data' => null
+                'status'    => true,
+                'message'   => 'Bill Customer Deleted Successfully',
+                'data'      => null
             ]);
         } catch (\Exception $e) {
             return response()->json([
-                'status' => false,
-                'message' => $e->getMessage()
+                'status'    => false,
+                'message'   => $e->getMessage()
             ]);
         }
     }
     public function trashed(){
         $trashedCustomers = BillCustomer::onlyTrashed()->paginate(15);
         return response()->json([
-            'status'=>true,
-            'message'=>'Bill Customer Trashed List',
-            'data'=>$trashedCustomers
+            'status'    => true,
+            'message'   => 'Bill Customer Trashed List',
+            'data'      => $trashedCustomers
         ]);
     }
     public function restore(Request $request,$id){
@@ -141,14 +141,14 @@ class BillCustomerController extends Controller
             $billCustomer = BillCustomer::withTrashed()->where('id', $id)->where('admin_id', $data['user_id'])->firstOrFail();
             $billCustomer->restore();
             return response()->json([
-                'status' => true,
-                'message' => 'Bill Customer Restored Successfully',
-                'data' => $billCustomer
+                'status'    => true,
+                'message'   => 'Bill Customer Restored Successfully',
+                'data'      => $billCustomer
             ]);
         } catch (\Exception $e) {
             return response()->json([
-                'status' => false,
-                'message' => $e->getMessage()
+                'status'    => false,
+                'message'   => $e->getMessage()
             ]);
         }
     }
@@ -157,14 +157,14 @@ class BillCustomerController extends Controller
             $billCustomer = BillCustomer::withTrashed()->findOrFail($id);
             $billCustomer->forceDelete();
             return response()->json([
-                'status' => true,
-                'message' => 'Bill Customer Deleted Permanently',
-                'data' => $billCustomer
+                'status'    => true,
+                'message'   => 'Bill Customer Deleted Permanently',
+                'data'      => $billCustomer
             ]);
         } catch (\Exception $e) {
             return response()->json([
-                'status' => false,
-                'message' => $e->getMessage()
+                'status'    => false,
+                'message'   => $e->getMessage()
             ]);
         }
     }
@@ -177,9 +177,9 @@ class BillCustomerController extends Controller
             'due_amount' => ($customer->due_amount - $data['due_payment'])
         ]);
         return response()->json([
-            'status' => true,
-            'message' => 'Bill Customer due amount updated successfully',
-            'data' => $customer
+            'status'    => true,
+            'message'   => 'Bill Customer due amount updated successfully',
+            'data'      => $customer
         ]);
     }
 }

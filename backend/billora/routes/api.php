@@ -139,5 +139,5 @@ Route::prefix('plans')->group(function (){
    Route::delete('/{id}/force', [PlanController::class, 'forceDelete']);
 });
 Route::prefix('dashboard')->group(function (){
-   Route::get('/overview', [DashboardController::class, 'index']);
+   Route::get('/overview/{id}', [DashboardController::class, 'index']);
 });

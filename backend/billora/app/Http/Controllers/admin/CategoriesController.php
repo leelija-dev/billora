@@ -26,10 +26,10 @@ class CategoriesController extends Controller
     public function store(Request $request)
     {
         $data = $request->validate([
-            'user_id' => 'required',
-            'name' => 'required',
-            'is_active' => 'required',
-            'created_by' => 'nullable',
+            'user_id'     => 'required',
+            'name'        => 'required',
+            'is_active'   => 'required',
+            'created_by'  => 'nullable',
             'description' => 'nullable'
         ]);
         $data['slug'] = Str::slug($data['name']);
@@ -53,10 +53,10 @@ class CategoriesController extends Controller
     {
         
         $data = $request->validate([
-            'user_id' => 'required',
-            'name' => 'required',
-            'is_active' => 'required',
-            'created_by' => 'nullable',
+            'user_id'     => 'required',
+            'name'        => 'required',
+            'is_active'   => 'required',
+            'created_by'  => 'nullable',
             'description' => 'nullable'
         ]);
         try{

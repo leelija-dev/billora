@@ -36,10 +36,10 @@ class UnitController extends Controller
     public function store(Request $request)
     {
         $unit = $request->validate([
-            'user_id' => 'required',
-            'code' => 'required',
-            'name' => 'required',
-            'created_by' => 'nullable'
+            'user_id'     => 'required',
+            'code'        => 'required',
+            'name'        => 'required',
+            'created_by'  => 'nullable'
         ]);
         try {
 
@@ -79,8 +79,8 @@ class UnitController extends Controller
     {
         $data = $request->validate([
             'user_id' => 'required',
-            'code' => 'required',
-            'name' => 'required'
+            'code'    => 'required',
+            'name'    => 'required'
         ]);
         try {
             $unit = Unit::findOrFail($id);

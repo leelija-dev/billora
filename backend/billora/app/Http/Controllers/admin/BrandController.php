@@ -34,11 +34,11 @@ class BrandController extends Controller
     public function store(Request $request)
     {
         $brand = $request->validate([
-            'user_id' => 'required',
-            'name' => 'required',
-            'created_by' => 'nullable',
-            'is_active' => 'nullable',
-            'description' => 'nullable',
+            'user_id'       => 'required',
+            'name'          => 'required',
+            'created_by'    => 'nullable',
+            'is_active'     => 'nullable',
+            'description'   => 'nullable',
 
         ]);
         try {
@@ -78,11 +78,11 @@ class BrandController extends Controller
         $brand = Brand::findOrFail($id);
         
         $validated = $request->validate([
-            'user_id' => 'required',
-            'name' => 'required',
-            'created_by' => 'nullable',
-            'is_active' => 'nullable|boolean',
-            'description' => 'nullable',
+            'user_id'       => 'required',
+            'name'          => 'required',
+            'created_by'    => 'nullable',
+            'is_active'     => 'nullable|boolean',
+            'description'   => 'nullable',
         ]);
 
         // Update slug when name changes

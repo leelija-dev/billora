@@ -12,21 +12,22 @@ use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 class DashboardController extends Controller
 {
-    public function index(){
+    public function index($id){
         
     try {
 
         // TOTAL STATS
-        $totalRevenue = Invoice::sum('total_amount');
-        $totalOrders = Invoice::count();
-        $totalCustomers = BillCustomer::count();
-        $totalProducts = Products::count();
+        $totalRevenue = Invoice::where('user_id',$id)->sum('total_amount');
+        $totalOrders = Invoice::where('user_id',$id)->count();
+        $totalCustomers = BillCustomer::where('admin_id',$id)->count();
+        $totalProducts = Products::where('user_id',$id)->count();
 
         // DAILY REVENUE (LAST 7 DAYS)
         $dailyRevenue = Invoice::select(
                 DB::raw("DATE(created_at) as date"),
                 DB::raw("SUM(total_amount) as revenue")
             )
+            ->where('user_id',$id)
             ->whereDate('created_at', '>=', Carbon::now()->subDays(6))
             ->groupBy('date')
             ->orderBy('date')
@@ -37,12 +38,13 @@ class DashboardController extends Controller
                     'revenue' => (float)$row->revenue
                 ];
             });
-        $totalDue = BillCustomer::where('due_amount', '>', 0)->sum('due_amount');
+        $totalDue = BillCustomer::where('admin_id',$id)->where('due_amount', '>', 0)->sum('due_amount');
         // MONTHLY REVENUE
         $monthlyRevenue = Invoice::select(
                 DB::raw("MONTH(created_at) as month"),
                 DB::raw("SUM(total_amount) as revenue")
             )
+            ->where('user_id',$id)
             ->groupBy('month')
             ->orderBy('month')
             ->get()
@@ -55,11 +57,11 @@ class DashboardController extends Controller
 
         // ORDER STATUS
         $orderStatus = [
-            'pending' => InvoiceItems::where('status', 'pending')->count(),
-            'processing' => InvoiceItems::where('status', 'processing')->count(),
+            'pending' => Invoice::where('user_id',$id)->where('status', 'pending')->count(),
+            'processing' => Invoice::where('user_id',$id)->where('status', 'processing')->count(),
             // 'shipped' => InvoiceItems::where('status', 'shipped')->count(),
             // 'delivered' => InvoiceItems::where('status', 'delivered')->count(),
-            'completed' => InvoiceItems::where('status', 'completed')->count(),
+            'completed' => Invoice::where('user_id',$id)->where('status', 'completed')->count(),
         ];
 
         // TOP PRODUCTS
@@ -68,6 +70,7 @@ class DashboardController extends Controller
                 DB::raw('SUM(quantity) as sales'),
                 DB::raw('SUM(total_price) as revenue')
             )
+            ->where('user_id',$id)
             ->with('product:id,name')
             ->groupBy('product_id')
             ->orderByDesc('sales')
@@ -85,6 +88,7 @@ class DashboardController extends Controller
 
         // RECENT ORDERS
         $recentOrders = Invoice::with('customer:id,name')
+            ->where('user_id',$id)  
             ->latest()
             ->limit(5)
             ->get()
@@ -106,22 +110,22 @@ class DashboardController extends Controller
 
         return response()->json([
             'stats' => [
-                'totalRevenue' => $totalRevenue,
-                'totalDue'=>$totalDue,
-                'totalOrders' => $totalOrders,
+                'totalRevenue'   => $totalRevenue,
+                'totalDue'       =>$totalDue,
+                'totalOrders'    => $totalOrders,
                 'totalCustomers' => $totalCustomers,
-                'totalProducts' => $totalProducts,
-                'revenueTrend' => 0,
-                'ordersTrend' => 0,
+                'totalProducts'  => $totalProducts,
+                'revenueTrend'   => 0,
+                'ordersTrend'    => 0,
                 'customersTrend' => 0,
-                'productsTrend' => 0
+                'productsTrend'  => 0
             ],
             'revenueData' => [
-                'daily' => $dailyRevenue,
+                'daily'   => $dailyRevenue,
                 'monthly' => $monthlyRevenue
             ],
-            'orderStatus' => $orderStatus,
-            'topProducts' => $topProducts,
+            'orderStatus'  => $orderStatus,
+            'topProducts'  => $topProducts,
             'recentOrders' => $recentOrders
         ]);
 

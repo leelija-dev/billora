@@ -47,16 +47,16 @@ class StoreController extends Controller
     public function store(Request $request)
     {
         $store = $request->validate([
-            'user_id' => 'required',
-            'name' => 'required',
-            'gst' => 'nullable',
-            'email' => 'required',
-            'logo' => 'nullable',
-            'mobile' => 'nullable',
-            'address' => 'required',
-            'city' => 'required',
-            'status' => 'required',
-            'created_by' => 'required'
+            'user_id'     => 'required',
+            'name'        => 'required',
+            'gst'         => 'nullable',
+            'email'       => 'required',
+            'logo'        => 'nullable',
+            'mobile'      => 'nullable',
+            'address'     => 'required',
+            'city'        => 'required',
+            'status'      => 'required',
+            'created_by'  => 'required'
         ]);
 
 
@@ -92,14 +92,14 @@ class StoreController extends Controller
     }
     public function update(Request $request,$id){
         $data = $request->validate([
-            'name' => 'required',
-            'gst' => 'nullable',
-            'email' => 'required',
-            'logo' => 'nullable',
-            'mobile' => 'nullable',
+            'name'    => 'required',
+            'gst'     => 'nullable',
+            'email'   => 'required',
+            'logo'    => 'nullable',
+            'mobile'  => 'nullable',
             'address' => 'required',
-            'city' => 'required',
-            'status' => 'required',
+            'city'    => 'required',
+            'status'  => 'required',
         ]);
         try{
         $store = Store::findOrFail($id);
