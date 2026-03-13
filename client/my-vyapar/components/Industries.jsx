@@ -158,17 +158,17 @@ const Industries = () => {
   const nextIndex = (currentIndex + 1) % leftCards.length;
 
   return (
-    <section className="relative w-full py-12 sm:py-16 md:py-20 lg:py-[100px] bg-gradient-to-b from-[#f8fafc] to-white font-['Inter',sans-serif] overflow-hidden">
+    <section className="relative w-full py-8 sm:py-12 md:py-16 lg:py-[100px] bg-gradient-to-b from-[#f8fafc] to-white font-['Inter',sans-serif] overflow-hidden">
       <style jsx>{`
         .panel {
           position: absolute;
           width: 100%;
-          height: 110px;
-          border-radius: 25px;
+          height: 90px;
+          border-radius: 20px;
           display: flex;
           align-items: center;
           justify-content: center;
-          font-size: 26px;
+          font-size: 20px;
           font-weight: 600;
           color: white;
           transition: all 0.45s cubic-bezier(0.4, 0, 0.2, 1);
@@ -177,7 +177,31 @@ const Industries = () => {
           left: 0;
           right: 0;
           margin: 0 auto;
-          max-width: 450px;
+          max-width: 90%;
+        }
+
+        @media (min-width: 640px) {
+          .panel {
+            height: 100px;
+            font-size: 22px;
+            max-width: 400px;
+          }
+        }
+
+        @media (min-width: 768px) {
+          .panel {
+            height: 110px;
+            font-size: 24px;
+            max-width: 420px;
+          }
+        }
+
+        @media (min-width: 1024px) {
+          .panel {
+            height: 110px;
+            font-size: 26px;
+            max-width: 450px;
+          }
         }
 
         .panel.prev {
@@ -188,18 +212,57 @@ const Industries = () => {
         }
 
         .panel.active {
-          top: 125px;
-          transform: scale(1.08);
+          top: 100px;
+          transform: scale(1.05);
           z-index: 3;
           box-shadow: 0 20px 35px rgba(59, 130, 246, 0.3);
           border: 3px solid #3B82F6;
         }
 
+        @media (min-width: 640px) {
+          .panel.active {
+            top: 115px;
+            transform: scale(1.06);
+          }
+        }
+
+        @media (min-width: 768px) {
+          .panel.active {
+            top: 120px;
+            transform: scale(1.07);
+          }
+        }
+
+        @media (min-width: 1024px) {
+          .panel.active {
+            top: 125px;
+            transform: scale(1.08);
+          }
+        }
+
         .panel.next {
-          top: 250px;
+          top: 200px;
           opacity: 0.45;
           transform: scale(0.95);
           z-index: 1;
+        }
+
+        @media (min-width: 640px) {
+          .panel.next {
+            top: 230px;
+          }
+        }
+
+        @media (min-width: 768px) {
+          .panel.next {
+            top: 240px;
+          }
+        }
+
+        @media (min-width: 1024px) {
+          .panel.next {
+            top: 250px;
+          }
         }
 
         .panel.hidden {
@@ -208,20 +271,36 @@ const Industries = () => {
         }
 
         .arrow-button {
-          width: 55px;
-          height: 55px;
+          width: 45px;
+          height: 45px;
           border-radius: 50%;
           background: linear-gradient(145deg, #3B82F6, #2563EB);
           color: white;
           display: flex;
           align-items: center;
           justify-content: center;
-          font-size: 22px;
+          font-size: 18px;
           cursor: pointer;
           box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
           transition: all 0.25s ease;
           border: 1px solid rgba(255,255,255,0.3);
           margin: 0 auto;
+        }
+
+        @media (min-width: 640px) {
+          .arrow-button {
+            width: 50px;
+            height: 50px;
+            font-size: 20px;
+          }
+        }
+
+        @media (min-width: 1024px) {
+          .arrow-button {
+            width: 55px;
+            height: 55px;
+            font-size: 22px;
+          }
         }
 
         .arrow-button:hover {
@@ -235,34 +314,52 @@ const Industries = () => {
 
         .cards-container {
           position: relative;
-          height: 360px;
+          height: 300px;
           width: 100%;
           max-width: 500px;
           margin: 0 auto;
         }
+
+        @media (min-width: 640px) {
+          .cards-container {
+            height: 340px;
+          }
+        }
+
+        @media (min-width: 768px) {
+          .cards-container {
+            height: 350px;
+          }
+        }
+
+        @media (min-width: 1024px) {
+          .cards-container {
+            height: 360px;
+          }
+        }
       `}</style>
 
-      <div className="text-center max-w-[1400px] mx-auto px-4 sm:px-6 md:px-8 lg:px-[60px] relative">
+      <div className="text-center max-w-[1400px] mx-auto px-3 sm:px-4 md:px-6 lg:px-[60px] relative">
 
         {/* SECTION TITLE COMPONENT */}
         <SectionTitle
           title="Supporting businesses from a wide range of industries"
           description="We understand your unique billing and accounting needs, Vyapar India billing software is specially designed for Indian SMBs."
         />
-        <p className="text-[#475569] text-xl max-w-[600px] mx-auto mt-6 animate-[fadeInUp_0.8s_ease-out_0.2s_both] max-md:text-lg max-sm:text-base">
+        <p className="text-[#475569] text-base sm:text-lg md:text-xl max-w-[600px] mx-auto mt-4 sm:mt-5 md:mt-6 animate-[fadeInUp_0.8s_ease-out_0.2s_both]">
           Get started with Billora in three simple steps
         </p>
 
-        <div className="flex flex-col lg:flex-row gap-8 sm:gap-10 md:gap-12 lg:gap-[60px] items-center justify-between mt-12 sm:mt-14 md:mt-16 lg:mt-20">
+        <div className="flex flex-col lg:flex-row gap-6 sm:gap-8 md:gap-10 lg:gap-[60px] items-center justify-between mt-8 sm:mt-10 md:mt-12 lg:mt-20">
           {/* LEFT PANEL - Panel Stack */}
           <div
-            className="flex-1 relative py-[20px] max-w-[500px] max-lg:max-w-full max-lg:w-full"
+            className="flex-1 relative py-4 sm:py-5 md:py-[20px] max-w-[500px] max-lg:max-w-full max-lg:w-full w-full px-2 sm:px-4"
             ref={sliderRef}
             onMouseEnter={handleMouseEnter}
             onMouseLeave={handleMouseLeave}
           >
             {/* UP ARROW */}
-            <div className="flex justify-center mb-4">
+            <div className="flex justify-center mb-3 sm:mb-4">
               <button 
                 onClick={handlePrev}
                 className="arrow-button"
@@ -292,7 +389,7 @@ const Industries = () => {
                     style={{ backgroundColor: card.color }}
                     onClick={() => handleCardClick(index)}
                   >
-                    <span className="text-white font-semibold">
+                    <span className="text-white font-semibold text-center px-2">
                       {card.text}
                     </span>
                   </div>
@@ -301,7 +398,7 @@ const Industries = () => {
             </div>
 
             {/* DOWN ARROW */}
-            <div className="flex justify-center mt-4">
+            <div className="flex justify-center mt-3 sm:mt-4">
               <button 
                 onClick={handleNext}
                 className="arrow-button"
@@ -311,12 +408,15 @@ const Industries = () => {
               </button>
             </div>
 
-            
+            {/* Panel count indicator - visible on all screens */}
+            <div className="text-center mt-4 sm:mt-5 text-xs sm:text-sm text-gray-500">
+              {currentIndex + 1} of {leftCards.length} industries
+            </div>
           </div>
 
           {/* RIGHT PANEL - Image with content */}
           <div
-            className="flex-1 h-[350px] sm:h-[400px] md:h-[450px] lg:h-[550px] rounded-[30px] sm:rounded-[40px] md:rounded-[45px] overflow-hidden relative transition-all duration-500 shadow-[0_20px_40px_rgba(0,0,0,0.15)] max-w-[650px] max-lg:max-w-full w-full"
+            className="flex-1 h-[250px] sm:h-[300px] md:h-[350px] lg:h-[450px] rounded-[20px] sm:rounded-[25px] md:rounded-[30px] lg:rounded-[40px] overflow-hidden relative transition-all duration-500 shadow-[0_20px_35px_rgba(0,0,0,0.2)] max-w-[600px] max-lg:max-w-full w-full mx-2 sm:mx-4"
             onMouseEnter={handleMouseEnter}
             onMouseLeave={handleMouseLeave}
             style={{
@@ -325,12 +425,12 @@ const Industries = () => {
               backgroundPosition: 'center'
             }}
           >
-            <div className="absolute top-0 left-0 right-0 bottom-0 bg-gradient-to-br from-black/70 via-black/40 to-black/20 flex items-end p-6 sm:p-8 md:p-10 lg:p-[50px]">
+            <div className="absolute top-0 left-0 right-0 bottom-0 bg-gradient-to-br from-black/70 via-black/40 to-black/20 flex items-end p-4 sm:p-5 md:p-6 lg:p-[40px]">
               <div className="text-white w-full">
-                <h3 className="text-2xl sm:text-3xl md:text-4xl lg:text-[42px] font-bold mb-3 sm:mb-4 md:mb-5 drop-shadow-lg">
+                <h3 className="text-xl sm:text-2xl md:text-3xl lg:text-[36px] font-bold mb-2 sm:mb-3 lg:mb-4 drop-shadow-lg">
                   {leftCards[currentIndex].text}
                 </h3>
-                <p className="text-sm sm:text-base md:text-lg mb-4 sm:mb-5 md:mb-6 leading-relaxed drop-shadow">
+                <p className="text-xs sm:text-sm md:text-base lg:text-lg mb-3 sm:mb-4 leading-relaxed drop-shadow max-w-[450px]">
                   {leftCards[currentIndex].text === 'Drive Innovation' && 'Transform your business with cutting-edge billing solutions'}
                   {leftCards[currentIndex].text === 'Empower Growth' && 'Scale your business with powerful accounting tools'}
                   {leftCards[currentIndex].text === 'GSTR Filing' && 'Simplify GST returns with automated filing'}
@@ -345,9 +445,9 @@ const Industries = () => {
                   {leftCards[currentIndex].text === 'Education Suite' && 'Simplify fee collection and academic administration'}
                   {leftCards[currentIndex].text === 'Real Estate Pro' && 'Manage properties, rentals, and commissions easily'}
                 </p>
-                <div className="flex flex-wrap gap-2 sm:gap-3">
-                  {tagCloud.slice(0, 6).map((tag, i) => (
-                    <span key={i} className="text-xs sm:text-sm md:text-[16px] px-3 sm:px-4 md:px-5 py-1.5 sm:py-2 md:py-2.5 bg-white/20 backdrop-blur-[8px] rounded-full border border-white/40 text-white font-medium transition-all duration-300 hover:bg-[#3b82f699] hover:-translate-y-1">
+                <div className="flex flex-wrap gap-1 sm:gap-2">
+                  {tagCloud.slice(0, 4).map((tag, i) => (
+                    <span key={i} className="text-[10px] sm:text-xs md:text-sm lg:text-[15px] px-2 sm:px-3 lg:px-4 py-1 sm:py-1.5 lg:py-2 bg-white/20 backdrop-blur-[8px] rounded-full border border-white/40 text-white font-medium transition-all duration-300 hover:bg-[#3b82f699] hover:-translate-y-1">
                       {tag}
                     </span>
                   ))}
@@ -357,8 +457,8 @@ const Industries = () => {
           </div>
         </div>
 
-        {/* MOBILE SECTION - Navigation Dots */}
-        <div className="lg:hidden mt-8 sm:mt-10">
+        {/* MOBILE SECTION - Navigation Dots (Visible on mobile only) */}
+        <div className="lg:hidden mt-6 sm:mt-8">
           <div className="flex justify-center gap-2 flex-wrap max-w-[300px] mx-auto">
             {leftCards.map((_, idx) => (
               <button
@@ -366,32 +466,17 @@ const Industries = () => {
                 onClick={() => handleDotClick(idx)}
                 className={`transition-all duration-300 ${
                   idx === currentIndex
-                    ? "w-8 sm:w-9 h-2 sm:h-2.5 bg-blue-600 rounded-full"
-                    : "w-2 sm:w-2.5 h-2 sm:h-2.5 bg-gray-300 rounded-full hover:bg-gray-400"
+                    ? "w-6 sm:w-7 h-1.5 sm:h-2 bg-blue-600 rounded-full"
+                    : "w-1.5 sm:w-2 h-1.5 sm:h-2 bg-gray-300 rounded-full hover:bg-gray-400"
                 }`}
                 aria-label={`View ${leftCards[idx].text}`}
               />
             ))}
           </div>
-          
-          Panel count for mobile
-          <div className="text-center text-sm text-gray-500 mt-4">
-            {currentIndex + 1} of {leftCards.length} industries
-          </div>
-
-          Mobile active panel name
-           <div className="text-center mt-4">
-            <h3 className="text-lg sm:text-xl font-bold text-blue-600">
-              {leftCards[currentIndex].text}
-            </h3>
-          </div> 
         </div>
       </div>
     </section>
   );
 };
 
-
 export default Industries;
-
-

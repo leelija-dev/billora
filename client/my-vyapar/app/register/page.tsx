@@ -17,14 +17,7 @@ const Register = () => {
       <Navbar />
       
       <div className="flex-1 flex justify-center items-center py-20 px-4 relative">
-        {/* Back to Home Button */}
-        <button
-          onClick={() => router.push("/")}
-          className="absolute top-24 left-6 flex items-center gap-2 px-4 py-2 bg-white rounded-lg shadow-md hover:shadow-lg transition-all duration-300 hover:scale-105 text-[#2d236b] font-medium z-10"
-        >
-          <FaHome className="text-[#5b5bd6]" size={20} />
-          <span>Back to Home</span>
-        </button>
+        
 
         <div className="w-[550px] bg-white py-10 px-[50px] rounded-[25px] shadow-[0_8px_25px_rgba(0,0,0,0.08)] max-md:w-[450px] max-md:px-8 max-sm:w-[90%] max-sm:px-5 max-sm:py-8">
           {/* Logo */}
