@@ -13,61 +13,49 @@ import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 import { useThemeStore } from "../../store/themeStore";
 import { useAuthStore } from "../../store/authStore";
 import { useProducts } from "../../hooks/useProducts";
+import { useCategories } from "../../hooks/useCategories";
 import Header from "../../components/common/Header";
 import ProductFilters from "../../components/products/ProductFilters";
 import ProductList from "../../components/products/ProductList";
-
-// Category chips data
-const categories = [
-  {
-    id: "all",
-    name: "All Products",
-    icon: "package-variant",
-    count: 156,
-    color: "#3b82f6",
-  },
-  {
-    id: "apparel",
-    name: "Apparel",
-    icon: "tshirt-crew",
-    count: 78,
-    color: "#ec4899",
-  },
-  {
-    id: "footwear",
-    name: "Footwear",
-    icon: "shoe-sneaker",
-    count: 45,
-    color: "#8b5cf6",
-  },
-  {
-    id: "accessories",
-    name: "Accessories",
-    icon: "watch",
-    count: 23,
-    color: "#f97316",
-  },
-  {
-    id: "outerwear",
-    name: "Outerwear",
-    icon: "jacket",
-    count: 10,
-    color: "#10b981",
-  },
-];
 
 const ProductsScreen = () => {
   const navigation = useNavigation();
   const { isDarkMode } = useThemeStore();
   const { user } = useAuthStore();
   const { products = [], loading, error, refreshProducts, searchProducts, getProductsByCategory } = useProducts() || {};
+  const { categories = [] } = useCategories() || {};
   const [showFilters, setShowFilters] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [viewMode, setViewMode] = useState("grid");
 
+  // Build categories list with "All Products" option
+  const allCategories = [
+    {
+      id: "all",
+      name: "All Products",
+      icon: "package-variant",
+      count: products?.length || 0,
+      color: "#3b82f6",
+    },
+    ...categories.map(cat => ({
+      id: cat.id,
+      name: cat.name,
+      icon: "tag",
+      count: products?.filter(p => p.category_id === cat.id)?.length || 0,
+      color: "#8b5cf6",
+    }))
+  ];
+
   // Safe product count with fallback
   const productCount = products?.length || 0;
+
+  // Calculate real stats
+  const stats = {
+    total: productCount,
+    lowStock: products?.filter(p => (p.stock || 0) <= (p.reorder_level || 10) && (p.stock || 0) > 0)?.length || 0,
+    outOfStock: products?.filter(p => (p.stock || 0) === 0)?.length || 0,
+  };
 
   const handleAddProduct = () => {
     navigation.navigate("AddProduct");
@@ -138,7 +126,7 @@ const ProductsScreen = () => {
       title: "Inventory",
       icon: "warehouse",
       screen: "Inventory",
-      badge: "Low Stock",
+      badge: stats.lowStock > 0 ? "Low Stock" : null,
     },
     {
       id: "settings",
@@ -240,7 +228,7 @@ const ProductsScreen = () => {
             showsHorizontalScrollIndicator={false}
             className="px-4"
           >
-            {categories.map((category) => (
+            {allCategories.map((category) => (
               <TouchableOpacity
                 key={category.id}
                 onPress={() => handleCategorySelect(category.id)}
@@ -310,7 +298,7 @@ const ProductsScreen = () => {
             <Text className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
               Low Stock
             </Text>
-            <Text className="text-2xl font-bold text-orange-500">12</Text>
+            <Text className="text-2xl font-bold text-orange-500">{stats.lowStock}</Text>
           </View>
           <View className={`rounded-xl p-3 flex-1 ml-2 shadow-sm ${
             isDarkMode ? 'bg-gray-800' : 'bg-white'
@@ -318,7 +306,7 @@ const ProductsScreen = () => {
             <Text className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
               Out of Stock
             </Text>
-            <Text className="text-2xl font-bold text-red-500">5</Text>
+            <Text className="text-2xl font-bold text-red-500">{stats.outOfStock}</Text>
           </View>
         </View>
 

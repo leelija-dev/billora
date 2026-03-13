@@ -66,8 +66,12 @@ const StockDetailScreen = () => {
 
   const handleShare = async () => {
     try {
+      const sellingPrice = parseFloat(stock?.selling_price) || 0;
+      const quantity = parseFloat(stock?.quantity) || 0;
+      const value = (quantity * sellingPrice).toFixed(2);
+      
       await Share.share({
-        message: `Stock Entry\nProduct: ${stock?.product?.name}\nQuantity: ${stock?.quantity} ${stock?.unit_code || ''}\nSelling Price: $${stock?.selling_price}\nValue: $${(stock?.quantity * stock?.selling_price).toFixed(2)}`,
+        message: `Stock Entry\nProduct: ${stock?.product?.name}\nQuantity: ${quantity} ${stock?.unit_code || ''}\nSelling Price: $${sellingPrice.toFixed(2)}\nValue: $${value}`,
         title: `Stock - ${stock?.product?.name}`,
       });
     } catch (error) {
@@ -302,7 +306,7 @@ const StockDetailScreen = () => {
                   Selling Price
                 </Text>
                 <Text className={`text-sm font-bold text-green-500`}>
-                  ${stock.selling_price?.toFixed(2)}
+                  ${parseFloat(stock.selling_price || 0).toFixed(2)}
                 </Text>
               </View>
 
@@ -317,7 +321,7 @@ const StockDetailScreen = () => {
                     ? isDarkMode ? 'text-white' : 'text-gray-800'
                     : 'text-gray-400'
                 }`}>
-                  {stock.purchase_price ? `$${stock.purchase_price.toFixed(2)}` : 'N/A'}
+                  {stock.purchase_price ? `$${parseFloat(stock.purchase_price).toFixed(2)}` : 'N/A'}
                 </Text>
               </View>
 
@@ -341,7 +345,7 @@ const StockDetailScreen = () => {
                   Total Value
                 </Text>
                 <Text className={`text-sm font-bold text-blue-500`}>
-                  ${(stock.quantity * stock.selling_price).toFixed(2)}
+                  ${(parseFloat(stock.quantity || 0) * parseFloat(stock.selling_price || 0)).toFixed(2)}
                 </Text>
               </View>
 

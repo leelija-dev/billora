@@ -441,7 +441,7 @@ const StocksScreen = () => {
               </Text>
             </View>
             <Text className={`text-xl font-bold mt-1 ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
-              ${totalValue.toFixed(2)}
+              ${parseFloat(totalValue || 0).toFixed(2)}
             </Text>
             <Text className={`text-xs mt-1 ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}>
               At selling price
