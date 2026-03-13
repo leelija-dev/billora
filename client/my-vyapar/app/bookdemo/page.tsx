@@ -332,13 +332,7 @@ const AppointmentPage = () => {
       
       <div className="py-4 sm:py-6 md:py-8 px-3 sm:px-4 md:px-6 lg:px-8">
         {/* Back to Home Button */}
-        <button
-          onClick={() => router.push("/")}
-          className="absolute top-24 left-4 z-50 flex items-center gap-2 px-4 py-2 bg-white rounded-lg shadow-md hover:shadow-lg transition-all duration-300 hover:scale-105 text-[#0F172A] font-semibold border border-gray-200"
-        >
-          <Home size={20} className="text-[#4461F2]" />
-          <span className="hidden sm:inline text-base">Home</span>
-        </button>
+        
 
         <style jsx>{`
           .ripple-hover {

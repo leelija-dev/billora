@@ -50,18 +50,7 @@ export default function PartnerPage() {
     <div className="min-h-screen bg-white">
       <Navbar />
       
-      {/* Back to Home Button - positioned below navbar */}
-      <div className="pt-20">
-        <div className="fixed top-24 left-4 z-50">
-          <Link 
-            href="/"
-            className="flex items-center gap-2 bg-white px-4 py-2 rounded-full shadow-lg hover:shadow-xl transition-all hover:-translate-y-0.5 border border-gray-200 group"
-          >
-            <span className="text-xl group-hover:-translate-x-1 transition-transform">←</span>
-            <span className="font-medium">Back to Home</span>
-          </Link>
-        </div>
-      </div>
+      
 
       {/* Hero */}
       <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white py-24 px-4">

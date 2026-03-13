@@ -5,11 +5,11 @@ import React, { useState, useEffect, useRef } from 'react';
 
 const Industries = () => {
   const [currentIndex, setCurrentIndex] = useState(2);
-  const [isPlaying, setIsPlaying] = useState(true);
-  const [isHovering, setIsHovering] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false); // Starts paused
+  const [isHovering, setIsHovering] = useState(false); // Track if hovering
   const sliderRef = useRef(null);
   const autoPlayRef = useRef(null);
-  const timeoutRef = useRef(null);
+  const timeoutRef = useRef(null); // For tracking setTimeout
 
   // 11 panels total (6 old + 5 new)
   const leftCards = [
@@ -17,15 +17,15 @@ const Industries = () => {
     { text: 'Drive Innovation', image: 'innovation', color: '#7fa1d0' },
     { text: 'Empower Growth', image: 'growth', color: '#6366f1' },
     { text: 'GSTR Filing', image: 'gstr', color: '#7bb2cc' },
-    { text: 'Unite Industries', image: 'unite', color: '#0ea5e9' },
-    { text: 'Expand Reach', image: 'expand', color: '#22c55e' },
-    { text: 'Boost Resilience', image: 'resilience', color: '#f97316' },
+    { text: 'Unite Industries', image: 'unite', color: '#edf3f6' },
+    { text: 'Expand Reach', image: 'expand', color: '#4b22c5' },
+    { text: 'Boost Resilience', image: 'resilience', color: '#3287ab' },
     
     // 5 New panels
-    { text: 'Retail Solutions', image: 'retail', color: '#ec4899' },
-    { text: 'Manufacturing Hub', image: 'manufacturing', color: '#8b5cf6' },
-    { text: 'Healthcare Plus', image: 'healthcare', color: '#10b981' },
-    { text: 'Education Suite', image: 'education', color: '#ef4444' },
+    { text: 'Retail Solutions', image: 'retail', color: '#8148ec' },
+    { text: 'Manufacturing Hub', image: 'manufacturing', color: '#5cb8f6' },
+    { text: 'Healthcare Plus', image: 'healthcare', color: '#1d3bd2' },
+    { text: 'Education Suite', image: 'education', color: '#9b9bdd' },
     { text: 'Real Estate Pro', image: 'realestate', color: '#3b82f6' }
   ];
 
@@ -136,6 +136,7 @@ const Industries = () => {
     clearAllTimers();
     setIsPlaying(false);
     
+    // Set timeout to resume playing after 5 seconds
     timeoutRef.current = setTimeout(() => {
       setIsPlaying(true);
     }, 5000);
@@ -364,7 +365,7 @@ const Industries = () => {
                 className="arrow-button"
                 aria-label="Previous panel"
               >
-                ▲
+                <span className="text-lg">▲</span>
               </button>
             </div>
 
@@ -403,7 +404,7 @@ const Industries = () => {
                 className="arrow-button"
                 aria-label="Next panel"
               >
-                ▼
+                <span className="text-lg">▼</span>
               </button>
             </div>
 
