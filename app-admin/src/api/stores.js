@@ -12,7 +12,22 @@ export const storesAPI = {
   getAll: async (userId, params = {}) => {
     try {
       const api = getStoresData();
-      return await api.get(`/store/${userId}`, { params });
+      const response = await api.get(`/store/${userId}`, { params });
+      console.log('Stores API Response:', response.data);
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || error.message;
+    }
+  },
+
+  // Search stores
+  search: async (userId, query, params = {}) => {
+    try {
+      const api = getStoresData();
+      const response = await api.get(`/store/${userId}`, {
+        params: { search: query, ...params }
+      });
+      return response.data;
     } catch (error) {
       throw error.response?.data || error.message;
     }
@@ -22,7 +37,8 @@ export const storesAPI = {
   getById: async (id) => {
     try {
       const api = getStoresData();
-      return await api.get(`/store/edit/${id}`);
+      const response = await api.post(`/store/edit/${id}`);
+      return response.data;
     } catch (error) {
       throw error.response?.data || error.message;
     }
@@ -32,20 +48,27 @@ export const storesAPI = {
   create: async (storeData) => {
     try {
       const api = getStoresData();
-      return await api.post('/store/store', {
-        user_id: storeData.userId,
+      
+      // Map frontend field names to API expected field names
+      const payload = {
+        user_id: storeData.userId || storeData.user_id,
         name: storeData.name,
-        gst: storeData.gst,
+        gst: storeData.gst || '',
         email: storeData.email,
-        logo: storeData.logo,
-        mobile: storeData.mobile,
+        logo: storeData.logo || null,
+        mobile: storeData.mobile || '',
         address: storeData.address,
         city: storeData.city,
-        status: storeData.status,
-        created_by: storeData.createdBy,
-      });
+        status: storeData.status ? 1 : 0,
+        created_by: storeData.createdBy || storeData.userId || storeData.user_id,
+      };
+      
+      console.log('Create Store API payload:', payload);
+      const response = await api.post('/store/store', payload);
+      return response.data;
     } catch (error) {
-      throw error.response?.data || error.message;
+      console.error('Create Store API error:', error.response?.data || error.message);
+      throw error;
     }
   },
 
@@ -53,18 +76,25 @@ export const storesAPI = {
   update: async (id, storeData) => {
     try {
       const api = getStoresData();
-      return await api.put(`/store/${id}`, {
+      
+      // Map frontend field names to API expected field names
+      const payload = {
         name: storeData.name,
-        gst: storeData.gst,
+        gst: storeData.gst || '',
         email: storeData.email,
-        logo: storeData.logo,
-        mobile: storeData.mobile,
+        logo: storeData.logo || null,
+        mobile: storeData.mobile || '',
         address: storeData.address,
         city: storeData.city,
-        status: storeData.status,
-      });
+        status: storeData.status ? 1 : 0,
+      };
+      
+      console.log('Update Store API payload:', payload);
+      const response = await api.put(`/store/${id}`, payload);
+      return response.data;
     } catch (error) {
-      throw error.response?.data || error.message;
+      console.error('Update Store API error:', error.response?.data || error.message);
+      throw error;
     }
   },
 
@@ -72,88 +102,8 @@ export const storesAPI = {
   delete: async (id) => {
     try {
       const api = getStoresData();
-      return await api.delete(`/store/${id}`);
-    } catch (error) {
-      throw error.response?.data || error.message;
-    }
-  },
-
-  // Upload store logo
-  uploadLogo: async (storeId, logoFile) => {
-    try {
-      const api = getStoresData();
-      const formData = new FormData();
-      formData.append('logo', {
-        uri: logoFile.uri,
-        type: logoFile.type || 'image/jpeg',
-        name: logoFile.name || 'store-logo.jpg',
-      });
-
-      return await api.post(`/store/${storeId}/logo`, formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
-    } catch (error) {
-      throw error.response?.data || error.message;
-    }
-  },
-
-  // Get store settings
-  getSettings: async (storeId) => {
-    try {
-      const api = getStoresData();
-      return await api.get(`/store/${storeId}/settings`);
-    } catch (error) {
-      throw error.response?.data || error.message;
-    }
-  },
-
-  // Update store settings
-  updateSettings: async (storeId, settings) => {
-    try {
-      const api = getStoresData();
-      return await api.put(`/store/${storeId}/settings`, settings);
-    } catch (error) {
-      throw error.response?.data || error.message;
-    }
-  },
-
-  // Get store statistics
-  getStats: async (storeId, filters = {}) => {
-    try {
-      const api = getStoresData();
-      return await api.get(`/store/${storeId}/stats`, { params: filters });
-    } catch (error) {
-      throw error.response?.data || error.message;
-    }
-  },
-
-  // Get store users
-  getUsers: async (storeId) => {
-    try {
-      const api = getStoresData();
-      return await api.get(`/store/${storeId}/users`);
-    } catch (error) {
-      throw error.response?.data || error.message;
-    }
-  },
-
-  // Add user to store
-  addUser: async (storeId, userData) => {
-    try {
-      const api = getStoresData();
-      return await api.post(`/store/${storeId}/users`, userData);
-    } catch (error) {
-      throw error.response?.data || error.message;
-    }
-  },
-
-  // Remove user from store
-  removeUser: async (storeId, userId) => {
-    try {
-      const api = getStoresData();
-      return await api.delete(`/store/${storeId}/users/${userId}`);
+      const response = await api.delete(`/store/${id}`);
+      return response.data;
     } catch (error) {
       throw error.response?.data || error.message;
     }
