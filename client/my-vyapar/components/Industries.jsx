@@ -4,11 +4,11 @@ import React, { useState, useEffect, useRef } from 'react';
 
 const Industries = () => {
   const [currentIndex, setCurrentIndex] = useState(2);
-  const [isPlaying, setIsPlaying] = useState(true);
-  const [isHovering, setIsHovering] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false); // Starts paused
+  const [isHovering, setIsHovering] = useState(false); // Track if hovering
   const sliderRef = useRef(null);
   const autoPlayRef = useRef(null);
-  const timeoutRef = useRef(null);
+  const timeoutRef = useRef(null); // For tracking setTimeout
 
   const leftCards = [
     { text: 'Drive Innovation', opacity: 0.4, image: 'innovation' },
@@ -29,6 +29,7 @@ const Industries = () => {
   ];
 
   useEffect(() => {
+    // Only auto-play if not hovering and isPlaying is true
     if (isPlaying && !isHovering) {
       autoPlayRef.current = setInterval(() => {
         setCurrentIndex(prev => (prev + 1) % leftCards.length);
@@ -42,18 +43,11 @@ const Industries = () => {
     };
   }, [isPlaying, isHovering, leftCards.length]);
 
-  // Fixed centering effect - runs whenever currentIndex changes
   useEffect(() => {
     if (sliderRef.current) {
-      const cardHeight = 120; // Smaller: 120px
-      const containerHeight = 400; // Smaller: 400px
-      
-      // Find the actual index in the infinite array that corresponds to the current card
-      // We want the card from the middle set (leftCards.length to leftCards.length*2)
-      const targetIndex = currentIndex + leftCards.length;
-      
-      // Calculate position to center this card
-      const scrollPosition = (targetIndex * cardHeight) - (containerHeight / 2) + (cardHeight / 2);
+      const cardHeight = 140;
+      const containerHeight = 500;
+      const scrollPosition = (currentIndex + leftCards.length) * cardHeight - (containerHeight / 2) + (cardHeight / 2);
 
       sliderRef.current.scrollTo({
         top: scrollPosition,
@@ -84,12 +78,14 @@ const Industries = () => {
   const handleCardClick = (index) => {
     setCurrentIndex(index);
     setIsPlaying(false);
-    setIsHovering(true);
+    setIsHovering(true); // Set hovering to true to prevent auto-scroll
     
+    // Clear any existing timeout
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
     }
     
+    // Set timeout to resume playing after 5 seconds
     timeoutRef.current = setTimeout(() => {
       setIsPlaying(true);
       setIsHovering(false);
@@ -194,66 +190,11 @@ const Industries = () => {
           background: white;
           z-index: 10;
           position: relative;
-          box-shadow: 
-            0 15px 30px rgba(59, 130, 246, 0.25),
-            0 5px 15px rgba(0, 0, 0, 0.15),
-            inset 0 -1px 3px rgba(0,0,0,0.1),
-            inset 0 1px 3px rgba(255,255,255,0.8);
-        }
-        
-        .industries__card {
-          box-shadow: 
-            0 8px 15px rgba(0, 0, 0, 0.1),
-            0 3px 6px rgba(0, 0, 0, 0.08),
-            inset 0 -1px 2px rgba(0,0,0,0.1),
-            inset 0 1px 2px rgba(255,255,255,0.8);
-          transition: all 0.3s ease;
-        }
-        
-        .industries__card:hover {
-          transform: translateX(5px) translateY(-1px);
-          box-shadow: 
-            0 15px 25px rgba(0, 0, 0, 0.15),
-            0 5px 10px rgba(0, 0, 0, 0.1),
-            inset 0 -1px 3px rgba(0,0,0,0.1),
-            inset 0 1px 3px rgba(255,255,255,0.8);
+          box-shadow: 0 15px 30px rgba(59, 130, 246, 0.2);
         }
         
         div::-webkit-scrollbar {
           display: none;
-        }
-
-        .nav-button {
-          width: 40px;
-          height: 40px;
-          background: linear-gradient(145deg, #3B82F6, #2563EB);
-          color: white;
-          border-radius: 50%;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          box-shadow: 
-            0 8px 15px rgba(37, 99, 235, 0.25),
-            0 3px 6px rgba(0, 0, 0, 0.15),
-            inset 0 -1px 3px rgba(0,0,0,0.2),
-            inset 0 1px 3px rgba(255,255,255,0.5);
-          transition: all 0.2s ease;
-          font-size: 20px;
-          border: 1px solid rgba(255,255,255,0.3);
-          cursor: pointer;
-        }
-
-        .nav-button:hover {
-          transform: scale(1.05);
-          box-shadow: 
-            0 12px 20px rgba(37, 99, 235, 0.3),
-            0 5px 10px rgba(0, 0, 0, 0.2),
-            inset 0 -1px 3px rgba(0,0,0,0.2),
-            inset 0 1px 3px rgba(255,255,255,0.6);
-        }
-
-        .nav-button:active {
-          transform: scale(0.95);
         }
       `}</style>
 
@@ -271,24 +212,24 @@ const Industries = () => {
         <div className="flex flex-col lg:flex-row gap-8 sm:gap-10 md:gap-12 lg:gap-[60px] items-center justify-between mt-12 sm:mt-14 md:mt-16 lg:mt-20">
           {/* LEFT PANEL - Hidden on mobile, visible on desktop */}
           <div
-            className="flex-1 relative py-[20px] max-w-[500px] max-lg:max-w-full max-lg:w-full hidden lg:block"
+            className="flex-1 relative py-[30px] max-w-[550px] max-lg:max-w-full max-lg:w-full hidden lg:block"
             onMouseEnter={handleMouseEnter}
             onMouseLeave={handleMouseLeave}
           >
-            {/* UP ARROW - Centered above */}
-            <div className="flex justify-center mb-3">
+            {/* UP/DOWN ARROW BUTTONS - Now positioned at bottom */}
+            <div className="flex justify-end gap-3 mb-3 px-[30px]">
               <button 
                 onClick={handleUpClick}
-                className="nav-button"
+                className="w-10 h-10 bg-blue-600 text-white rounded-full flex items-center justify-center hover:bg-blue-700 transition-all duration-300 shadow-md hover:shadow-lg hover:-translate-y-1"
                 aria-label="Previous card"
               >
-                ▲
+                <span className="text-lg">▲</span>
               </button>
             </div>
 
-            <div className="h-[400px] overflow-hidden rounded-[30px] bg-transparent py-[10px] relative">
+            <div className="h-[500px] overflow-hidden rounded-[30px] bg-transparent py-[15px] relative max-md:h-[400px]">
               <div
-                className="h-full overflow-y-auto scroll-smooth px-[25px]"
+                className="h-full overflow-y-auto scroll-smooth px-[30px]"
                 ref={sliderRef}
                 style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
                 onMouseEnter={handleMouseEnter}
@@ -312,13 +253,13 @@ const Industries = () => {
                   return (
                     <div
                       key={index}
-                      className={"w-full max-w-[450px] h-[120px] bg-white border border-[#E0E2E7] rounded-[20px] flex items-center pl-[30px] mx-auto mb-[20px] transition-all duration-300 cursor-pointer relative industries__card " + (isCenter ? 'industries__card--center' : '')}
+                      className={"w-full max-w-[450px] h-[130px] bg-white border border-[#E0E2E7] rounded-[20px] flex items-center pl-[35px] mx-auto mb-[25px] transition-all duration-300 cursor-pointer relative hover:translate-x-2 hover:shadow-md " + (isCenter ? 'industries__card--center' : 'shadow-sm')}
                       style={{
                         opacity: opacity,
                       }}
                       onClick={() => handleCardClick(originalIndex)}
                     >
-                      <span className={"text-2xl font-semibold text-[#1e293b] whitespace-nowrap transition-all duration-300 max-md:text-xl max-sm:text-lg " + (isCenter ? 'text-[#3B82F6] font-bold' : '')}>
+                      <span className={"text-3xl font-semibold text-[#1e293b] whitespace-nowrap transition-all duration-300 max-md:text-2xl max-sm:text-xl " + (isCenter ? 'text-[#3B82F6] font-bold' : '')}>
                         {card.text}
                       </span>
                     </div>
@@ -327,21 +268,21 @@ const Industries = () => {
               </div>
             </div>
             
-            {/* DOWN ARROW - Centered below */}
-            <div className="flex justify-center mt-3">
+            {/* DOWN ARROW - Now at the bottom of slider */}
+            <div className="flex justify-end gap-3 mt-3 px-[30px]">
               <button 
                 onClick={handleDownClick}
-                className="nav-button"
+                className="w-10 h-10 bg-blue-600 text-white rounded-full flex items-center justify-center hover:bg-blue-700 transition-all duration-300 shadow-md hover:shadow-lg hover:translate-y-1"
                 aria-label="Next card"
               >
-                ▼
+                <span className="text-lg">▼</span>
               </button>
             </div>
           </div>
 
           {/* RIGHT PANEL - Image with content */}
           <div
-            className="flex-1 h-[350px] sm:h-[380px] md:h-[400px] lg:h-[450px] rounded-[30px] sm:rounded-[35px] md:rounded-[40px] overflow-hidden relative transition-all duration-500 shadow-[0_20px_35px_rgba(0,0,0,0.2)] max-w-[600px] max-lg:max-w-full w-full"
+            className="flex-1 h-[350px] sm:h-[400px] md:h-[450px] lg:h-[550px] rounded-[30px] sm:rounded-[40px] md:rounded-[45px] overflow-hidden relative transition-all duration-500 shadow-[0_20px_40px_rgba(0,0,0,0.15)] max-w-[650px] max-lg:max-w-full w-full"
             onMouseEnter={handleMouseEnter}
             onMouseLeave={handleMouseLeave}
             style={{
@@ -350,12 +291,12 @@ const Industries = () => {
               backgroundPosition: 'center'
             }}
           >
-            <div className="absolute top-0 left-0 right-0 bottom-0 bg-gradient-to-br from-black/70 via-black/40 to-black/20 flex items-end p-6 sm:p-7 md:p-8 lg:p-[40px]">
+            <div className="absolute top-0 left-0 right-0 bottom-0 bg-gradient-to-br from-black/70 via-black/40 to-black/20 flex items-end p-6 sm:p-8 md:p-10 lg:p-[50px]">
               <div className="text-white w-full">
-                <h3 className="text-2xl sm:text-3xl md:text-4xl lg:text-[36px] font-bold mb-3 sm:mb-4 drop-shadow-lg">
+                <h3 className="text-2xl sm:text-3xl md:text-4xl lg:text-[42px] font-bold mb-3 sm:mb-4 md:mb-5 drop-shadow-lg">
                   {leftCards[currentIndex].text}
                 </h3>
-                <p className="text-sm sm:text-base md:text-lg mb-4 leading-relaxed drop-shadow max-w-[450px]">
+                <p className="text-sm sm:text-base md:text-lg mb-4 sm:mb-5 md:mb-6 leading-relaxed drop-shadow">
                   {leftCards[currentIndex].text === 'Drive Innovation' && 'Transform your business with cutting-edge billing solutions'}
                   {leftCards[currentIndex].text === 'Empower Growth' && 'Scale your business with powerful accounting tools'}
                   {leftCards[currentIndex].text === 'GSTR Filing' && 'Simplify GST returns with automated filing'}
@@ -363,9 +304,9 @@ const Industries = () => {
                   {leftCards[currentIndex].text === 'Expand Reach' && 'Grow your customer base with digital invoices'}
                   {leftCards[currentIndex].text === 'Boost Resilience' && 'Build a resilient business with smart financial management'}
                 </p>
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-2 sm:gap-3">
                   {tagCloud.slice(0, 6).map((tag, i) => (
-                    <span key={i} className="text-xs sm:text-sm md:text-[15px] px-3 sm:px-4 py-1.5 sm:py-2 bg-white/20 backdrop-blur-[8px] rounded-full border border-white/40 text-white font-medium transition-all duration-300 hover:bg-[#3b82f699] hover:-translate-y-1">
+                    <span key={i} className="text-xs sm:text-sm md:text-[16px] px-3 sm:px-4 md:px-5 py-1.5 sm:py-2 md:py-2.5 bg-white/20 backdrop-blur-[8px] rounded-full border border-white/40 text-white font-medium transition-all duration-300 hover:bg-[#3b82f699] hover:-translate-y-1">
                       {tag}
                     </span>
                   ))}
@@ -380,7 +321,7 @@ const Industries = () => {
 
           {/* Mobile Image Card */}
           <div
-            className="w-full h-[260px] rounded-[25px] overflow-hidden relative shadow-lg"
+            className="w-full h-[280px] rounded-[25px] overflow-hidden relative shadow-lg"
             style={{
               backgroundImage: getRightPanelImage(),
               backgroundSize: "cover",
@@ -389,11 +330,11 @@ const Industries = () => {
           >
             <div className="absolute inset-0 bg-gradient-to-br from-black/70 via-black/40 to-black/20 flex items-end p-5">
               <div className="text-white">
-                <h3 className="text-xl font-bold mb-2">
+                <h3 className="text-2xl font-bold mb-2">
                   {leftCards[currentIndex].text}
                 </h3>
 
-                <p className="text-sm leading-relaxed">
+                <p className="text-base leading-relaxed">
                   {leftCards[currentIndex].text === 'Drive Innovation' && 'Transform your business with cutting-edge billing solutions'}
                   {leftCards[currentIndex].text === 'Empower Growth' && 'Scale your business with powerful accounting tools'}
                   {leftCards[currentIndex].text === 'GSTR Filing' && 'Simplify GST returns with automated filing'}
@@ -407,20 +348,20 @@ const Industries = () => {
 
           {/* Current viewing text */}
           <div className="text-center">
-            <h3 className="text-lg sm:text-xl font-bold text-blue-600">
+            <h3 className="text-xl sm:text-2xl font-bold text-blue-600">
               {leftCards[currentIndex].text}
             </h3>
           </div>
 
           {/* Navigation dots */}
-          <div className="flex justify-center gap-3">
+          <div className="flex justify-center gap-3 sm:gap-4">
             {leftCards.map((_, idx) => (
               <button
                 key={idx}
                 onClick={() => handleDotClick(idx)}
                 className={idx === currentIndex
-                    ? "w-8 sm:w-9 h-2 sm:h-2.5 bg-blue-600 rounded-full"
-                    : "w-2 sm:w-2.5 h-2 sm:h-2.5 bg-gray-300 rounded-full hover:bg-gray-400"
+                    ? "w-8 sm:w-10 h-2.5 sm:h-3 bg-blue-600 rounded-full"
+                    : "w-2.5 sm:w-3 h-2.5 sm:h-3 bg-gray-300 rounded-full hover:bg-gray-400"
                   }
                 aria-label={`View ${leftCards[idx].text}`}
               />
@@ -433,4 +374,7 @@ const Industries = () => {
   );
 };
 
+
 export default Industries;
+
+
