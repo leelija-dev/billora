@@ -478,7 +478,7 @@ const AppointmentPage = () => {
                   </AnimatePresence>
                 </div>
               </div>
-
+ 
               {/* Month Navigation - Responsive */}
               <div className="flex items-center justify-between xs:justify-end gap-1 sm:gap-2">
                 {/* Month/Year Selector */}
