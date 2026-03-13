@@ -193,7 +193,7 @@ const Hero = () => {
 
           {/* THE "HANGING" WHITE CARD */}
           {/* -bottom-24 pushes it out of the black section for the hanging effect */}
-          {/* <div className="group absolute -bottom-24 left-1/2 -translate-x-1/2 w-[90%] bg-white rounded-[30px] p-6 md:p-10 border border-slate-200 shadow-[0_30px_60px_-15px_rgba(0,0,0,0.2)] z-50 transition-transform duration-500 hover:-translate-y-2">
+          <div className="group absolute -bottom-24 left-1/2 -translate-x-1/2 w-[90%] bg-white rounded-[30px] p-6 md:p-10 border border-slate-200 shadow-[0_30px_60px_-15px_rgba(0,0,0,0.2)] z-50 transition-transform duration-500 hover:-translate-y-2">
             <div className="flex flex-col md:flex-row items-center gap-8 md:gap-12">
               <div className="flex-1 text-center md:text-left">
                 <div className="flex items-center gap-2 mb-4 justify-center md:justify-start">
@@ -218,42 +218,6 @@ const Hero = () => {
               </div>
               <div className="flex-1 w-full">
                 <div className="w-full aspect-video bg-slate-100 rounded-2xl overflow-hidden border border-slate-200 shadow-inner">
-                  <Image
-                    src="/image/desktop.png"
-                    alt="Dashboard"
-                    width={500}
-                    height={300}
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-              </div>
-            </div>
-          </div> */}
-          <div className="group absolute -bottom-24 left-1/2 -translate-x-1/2 w-[90%] bg-white rounded-[30px] p-8 md:p-12 border border-slate-200 shadow-[0_30px_60px_-15px_rgba(0,0,0,0.2)] z-50 transition-transform duration-500 hover:-translate-y-2 min-h-[320px] md:min-h-[360px]">
-            <div className="flex flex-col md:flex-row items-center gap-8 md:gap-12 h-full">
-              <div className="flex-1 text-center md:text-left h-full flex flex-col justify-center">
-                <div className="flex items-center gap-2 mb-6 justify-center md:justify-start">
-                  <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold">
-                    B
-                  </div>
-                  <span className="font-bold text-slate-800">
-                    Billora Premium
-                  </span>
-                </div>
-                <h3 className="text-2xl md:text-3xl lg:text-4xl font-extrabold text-slate-900 mb-3">
-                  GST Billing Software
-                </h3>
-                <p className="text-slate-500 mb-8 text-base md:text-lg">
-                  Automate your invoicing and inventory in seconds.
-                </p>
-                <Link href="/start-free-trial">
-                  <button className="w-full md:w-auto px-8 py-4 bg-slate-900 text-white rounded-full text-base font-bold hover:bg-blue-600 transition-colors">
-                    Get Started Free
-                  </button>
-                </Link>
-              </div>
-              <div className="flex-1 w-full h-full flex items-center">
-                <div className="w-full aspect-video bg-slate-100 rounded-2xl overflow-hidden border border-slate-200 shadow-inner min-h-[200px] md:min-h-[240px]">
                   <Image
                     src="/image/desktop.png"
                     alt="Dashboard"
