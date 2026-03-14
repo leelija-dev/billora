@@ -1,25 +1,33 @@
 "use client";
-import SectionTitle from "../components/SectionTitle";
 import React, { useState, useEffect, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
+import SectionTitle from "../components/SectionTitle";
 
 const Industries = () => {
   const [currentIndex, setCurrentIndex] = useState(2);
   const [isPlaying, setIsPlaying] = useState(true);
   const [isHovering, setIsHovering] = useState(false);
-  const sliderRef = useRef(null);
+  const [mobileIndex, setMobileIndex] = useState(0);
+  const [isMobileAutoPlaying, setIsMobileAutoPlaying] = useState(true);
   const autoPlayRef = useRef(null);
+  const mobileAutoPlayRef = useRef(null);
   const timeoutRef = useRef(null);
+  const mobileContainerRef = useRef(null);
 
   const leftCards = [
-    { text: 'Drive Innovation', opacity: 0.4, image: 'innovation' },
-    { text: 'Empower Growth', opacity: 0.6, image: 'growth' },
-    { text: 'GSTR Filing', opacity: 1, image: 'gstr' },
-    { text: 'Unite Industries', opacity: 1, image: 'unite' },
-    { text: 'Expand Reach', opacity: 0.6, image: 'expand' },
-    { text: 'Boost Resilience', opacity: 0.4, image: 'resilience' }
+    { text: 'Drive Innovation', image: 'innovation', color: '#7fa1d0', desc: 'Transform your business with cutting-edge billing solutions' },
+    { text: 'Empower Growth', image: 'growth', color: '#6366f1', desc: 'Scale your business with powerful accounting tools' },
+    { text: 'GSTR Filing', image: 'gstr', color: '#7bb2cc', desc: 'Simplify GST returns with automated filing' },
+    { text: 'Unite Industries', image: 'unite', color: '#edf3f6', desc: 'Connect all your business operations seamlessly' },
+    { text: 'Expand Reach', image: 'expand', color: '#4b22c5', desc: 'Grow your customer base with digital invoices' },
+    { text: 'Boost Resilience', image: 'resilience', color: '#3287ab', desc: 'Build a resilient business with smart financial management' },
+    { text: 'Retail Solutions', image: 'retail', color: '#8148ec', desc: 'Complete POS and inventory management for retail stores' },
+    { text: 'Manufacturing Hub', image: 'manufacturing', color: '#5cb8f6', desc: 'Streamline production with smart manufacturing tools' },
+    { text: 'Healthcare Plus', image: 'healthcare', color: '#1d3bd2', desc: 'Secure billing and patient management solutions' },
+    { text: 'Education Suite', image: 'education', color: '#9b9bdd', desc: 'Simplify fee collection and academic administration' },
+    { text: 'Real Estate Pro', image: 'realestate', color: '#3b82f6', desc: 'Manage properties, rentals, and commissions easily' }
   ];
-
-  const infiniteCards = [...leftCards, ...leftCards, ...leftCards];
 
   const tagCloud = [
     'downtown', 'shop local', 'support', 'local economy', 'business',
@@ -28,405 +36,286 @@ const Industries = () => {
     'hospitality', 'healthcare', 'education', 'real estate', 'transport'
   ];
 
+  // Desktop auto-play logic
   useEffect(() => {
+    if (autoPlayRef.current) clearInterval(autoPlayRef.current);
+    
     if (isPlaying && !isHovering) {
       autoPlayRef.current = setInterval(() => {
         setCurrentIndex(prev => (prev + 1) % leftCards.length);
-      }, 3000);
+      }, 4000);
     }
-
-    return () => {
-      if (autoPlayRef.current) {
-        clearInterval(autoPlayRef.current);
-      }
-    };
+    return () => clearInterval(autoPlayRef.current);
   }, [isPlaying, isHovering, leftCards.length]);
 
-  // Fixed centering effect - runs whenever currentIndex changes
+  // Mobile auto-play logic
   useEffect(() => {
-    if (sliderRef.current) {
-      const cardHeight = 120; // Smaller: 120px
-      const containerHeight = 400; // Smaller: 400px
-      
-      // Find the actual index in the infinite array that corresponds to the current card
-      // We want the card from the middle set (leftCards.length to leftCards.length*2)
-      const targetIndex = currentIndex + leftCards.length;
-      
-      // Calculate position to center this card
-      const scrollPosition = (targetIndex * cardHeight) - (containerHeight / 2) + (cardHeight / 2);
-
-      sliderRef.current.scrollTo({
-        top: scrollPosition,
-        behavior: 'smooth'
-      });
+    if (mobileAutoPlayRef.current) clearInterval(mobileAutoPlayRef.current);
+    
+    if (isMobileAutoPlaying) {
+      mobileAutoPlayRef.current = setInterval(() => {
+        setMobileIndex(prev => (prev + 1) % leftCards.length);
+      }, 3000);
     }
-  }, [currentIndex, leftCards.length]);
+    return () => clearInterval(mobileAutoPlayRef.current);
+  }, [isMobileAutoPlaying, leftCards.length]);
 
-  const getRightPanelImage = () => {
-    switch (leftCards[currentIndex].image) {
-      case 'innovation':
-        return 'url("https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80")';
-      case 'growth':
-        return 'url("https://images.unsplash.com/photo-1460925895917-afdab827c52f?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80")';
-      case 'gstr':
-        return 'url("https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80")';
-      case 'unite':
-        return 'url("https://images.unsplash.com/photo-1522071820081-009f0129c71c?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80")';
-      case 'expand':
-        return 'url("https://images.unsplash.com/photo-1542744173-8e7e53415bb0?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80")';
-      case 'resilience':
-        return 'url("https://images.unsplash.com/photo-1552664730-d307ca884978?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80")';
-      default:
-        return 'url("https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80")';
-    }
-  };
-
-  const handleCardClick = (index) => {
+  const handleManualNav = (index) => {
     setCurrentIndex(index);
     setIsPlaying(false);
-    setIsHovering(true);
-    
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
-    }
-    
-    timeoutRef.current = setTimeout(() => {
-      setIsPlaying(true);
-      setIsHovering(false);
-    }, 5000);
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    timeoutRef.current = setTimeout(() => setIsPlaying(true), 5000);
   };
 
-  const handleDotClick = (index) => {
-    setCurrentIndex(index);
-    setIsPlaying(false);
-    setIsHovering(true);
-    
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
-    }
-    
-    timeoutRef.current = setTimeout(() => {
-      setIsPlaying(true);
-      setIsHovering(false);
-    }, 5000);
+  const handleMobilePrev = () => {
+    setIsMobileAutoPlaying(false);
+    setMobileIndex(prev => (prev === 0 ? leftCards.length - 1 : prev - 1));
   };
 
-  const handleMouseEnter = () => {
-    setIsPlaying(false);
-    setIsHovering(true);
-    if (autoPlayRef.current) {
-      clearInterval(autoPlayRef.current);
-    }
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
-    }
+  const handleMobileNext = () => {
+    setIsMobileAutoPlaying(false);
+    setMobileIndex(prev => (prev + 1) % leftCards.length);
   };
 
-  const handleMouseLeave = () => {
-    setIsHovering(false);
-    setIsPlaying(true);
+  const handleMobileDotClick = (index) => {
+    setIsMobileAutoPlaying(false);
+    setMobileIndex(index);
   };
 
-  useEffect(() => {
-    const handleScroll = () => {
-      setIsPlaying(false);
-      setIsHovering(true);
-      
-      if (autoPlayRef.current) {
-        clearInterval(autoPlayRef.current);
-      }
-      
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-      }
-      
-      timeoutRef.current = setTimeout(() => {
-        setIsPlaying(true);
-        setIsHovering(false);
-      }, 5000);
+  const handleMobileHover = () => {
+    setIsMobileAutoPlaying(false);
+  };
+
+  const handleMobileLeave = () => {
+    setIsMobileAutoPlaying(true);
+  };
+
+  const getImageUrl = (key) => {
+    const urls = {
+      innovation: "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&w=1200&q=80",
+      growth: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=1200&q=80",
+      gstr: "https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?auto=format&fit=crop&w=1200&q=80",
+      unite: "https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=1200&q=80",
+      expand: "https://images.unsplash.com/photo-1542744173-8e7e53415bb0?auto=format&fit=crop&w=1200&q=80",
+      resilience: "https://images.unsplash.com/photo-1552664730-d307ca884978?auto=format&fit=crop&w=1200&q=80",
+      retail: "https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&w=1200&q=80",
+      manufacturing: "https://images.unsplash.com/photo-1581091226033-d5c48150dbaa?auto=format&fit=crop&w=1200&q=80",
+      healthcare: "https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?auto=format&fit=crop&w=1200&q=80",
+      education: "https://images.unsplash.com/photo-1524995997946-a1c2e315a42f?auto=format&fit=crop&w=1200&q=80",
+      realestate: "https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&w=1200&q=80"
     };
-
-    window.addEventListener("scroll", handleScroll);
-
-    return () => {
-      window.removeEventListener("scroll", handleScroll);
-    };
-  }, []);
-
-  const handleUpClick = () => {
-    const prevIndex = (currentIndex - 1 + leftCards.length) % leftCards.length;
-    setCurrentIndex(prevIndex);
-    setIsPlaying(false);
-    setIsHovering(true);
-    
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
-    }
-    
-    timeoutRef.current = setTimeout(() => {
-      setIsPlaying(true);
-      setIsHovering(false);
-    }, 5000);
+    return urls[key];
   };
 
-  const handleDownClick = () => {
-    const nextIndex = (currentIndex + 1) % leftCards.length;
-    setCurrentIndex(nextIndex);
-    setIsPlaying(false);
-    setIsHovering(true);
-    
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
-    }
-    
-    timeoutRef.current = setTimeout(() => {
-      setIsPlaying(true);
-      setIsHovering(false);
-    }, 5000);
-  };
+  const prevIndex = (currentIndex - 1 + leftCards.length) % leftCards.length;
+  const nextIndex = (currentIndex + 1) % leftCards.length;
 
   return (
-    <section className="relative w-full py-12 sm:py-16 md:py-20 lg:py-[100px] bg-gradient-to-b from-[#f8fafc] to-white font-['Inter',sans-serif] overflow-hidden">
-      <style jsx>{`
-        .industries__card--center {
-          transform: scale(1.05);
-          border: 3px solid #3B82F6;
-          background: white;
-          z-index: 10;
-          position: relative;
-          box-shadow: 
-            0 15px 30px rgba(59, 130, 246, 0.25),
-            0 5px 15px rgba(0, 0, 0, 0.15),
-            inset 0 -1px 3px rgba(0,0,0,0.1),
-            inset 0 1px 3px rgba(255,255,255,0.8);
-        }
+    <section className="relative w-full py-16 lg:py-24 bg-[#f8fafc] overflow-hidden font-['Inter']">
+      <div className="max-w-7xl mx-auto px-6">
         
-        .industries__card {
-          box-shadow: 
-            0 8px 15px rgba(0, 0, 0, 0.1),
-            0 3px 6px rgba(0, 0, 0, 0.08),
-            inset 0 -1px 2px rgba(0,0,0,0.1),
-            inset 0 1px 2px rgba(255,255,255,0.8);
-          transition: all 0.3s ease;
-        }
-        
-        .industries__card:hover {
-          transform: translateX(5px) translateY(-1px);
-          box-shadow: 
-            0 15px 25px rgba(0, 0, 0, 0.15),
-            0 5px 10px rgba(0, 0, 0, 0.1),
-            inset 0 -1px 3px rgba(0,0,0,0.1),
-            inset 0 1px 3px rgba(255,255,255,0.8);
-        }
-        
-        div::-webkit-scrollbar {
-          display: none;
-        }
-
-        .nav-button {
-          width: 40px;
-          height: 40px;
-          background: linear-gradient(145deg, #3B82F6, #2563EB);
-          color: white;
-          border-radius: 50%;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          box-shadow: 
-            0 8px 15px rgba(37, 99, 235, 0.25),
-            0 3px 6px rgba(0, 0, 0, 0.15),
-            inset 0 -1px 3px rgba(0,0,0,0.2),
-            inset 0 1px 3px rgba(255,255,255,0.5);
-          transition: all 0.2s ease;
-          font-size: 20px;
-          border: 1px solid rgba(255,255,255,0.3);
-          cursor: pointer;
-        }
-
-        .nav-button:hover {
-          transform: scale(1.05);
-          box-shadow: 
-            0 12px 20px rgba(37, 99, 235, 0.3),
-            0 5px 10px rgba(0, 0, 0, 0.2),
-            inset 0 -1px 3px rgba(0,0,0,0.2),
-            inset 0 1px 3px rgba(255,255,255,0.6);
-        }
-
-        .nav-button:active {
-          transform: scale(0.95);
-        }
-      `}</style>
-
-      <div className="text-center max-w-[1400px] mx-auto px-4 sm:px-6 md:px-8 lg:px-[60px] relative">
-
-        {/* SECTION TITLE COMPONENT */}
         <SectionTitle
           title="Supporting businesses from a wide range of industries"
-          description="We understand your unique billing and accounting needs, Vyapar India billing software is specially designed for Indian SMBs."
+          description="We understand your unique billing and accounting needs, Billora software is specially designed for modern SMBs."
         />
-        <p className="text-[#475569] text-xl max-w-[600px] mx-auto mt-6 animate-[fadeInUp_0.8s_ease-out_0.2s_both] max-md:text-lg max-sm:text-base">
-          Get started with Billora in three simple steps
-        </p>
 
-        <div className="flex flex-col lg:flex-row gap-8 sm:gap-10 md:gap-12 lg:gap-[60px] items-center justify-between mt-12 sm:mt-14 md:mt-16 lg:mt-20">
-          {/* LEFT PANEL - Hidden on mobile, visible on desktop */}
-          <div
-            className="flex-1 relative py-[20px] max-w-[500px] max-lg:max-w-full max-lg:w-full hidden lg:block"
-            onMouseEnter={handleMouseEnter}
-            onMouseLeave={handleMouseLeave}
-          >
-            {/* UP ARROW - Centered above */}
-            <div className="flex justify-center mb-3">
+        {/* DESKTOP/TV VIEW - Visible on lg screens and above */}
+        <div className="hidden lg:block">
+          <div className="flex flex-col lg:flex-row gap-12 lg:gap-20 items-center justify-between mt-16">
+            
+            {/* LEFT SIDE: The Panel Stack */}
+            <div 
+              className="w-full lg:w-1/2 flex flex-col items-center"
+              onMouseEnter={() => setIsHovering(true)}
+              onMouseLeave={() => setIsHovering(false)}
+            >
               <button 
-                onClick={handleUpClick}
-                className="nav-button"
-                aria-label="Previous card"
+                onClick={() => handleManualNav(prevIndex)}
+                className="mb-8 w-12 h-12 rounded-full bg-white shadow-lg flex items-center justify-center text-blue-600 hover:bg-blue-600 hover:text-white transition-all z-10 border border-slate-100"
               >
                 ▲
               </button>
-            </div>
 
-            <div className="h-[400px] overflow-hidden rounded-[30px] bg-transparent py-[10px] relative">
-              <div
-                className="h-full overflow-y-auto scroll-smooth px-[25px]"
-                ref={sliderRef}
-                style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-                onMouseEnter={handleMouseEnter}
-                onMouseLeave={handleMouseLeave}
-              >
-                {infiniteCards.map((card, index) => {
-                  const originalIndex = index % leftCards.length;
-                  const isCenter = originalIndex === currentIndex &&
-                    index >= leftCards.length &&
-                    index < leftCards.length * 2;
+              <div className="relative h-[350px] w-full max-w-[450px]">
+                <AnimatePresence initial={false}>
+                  {leftCards.map((card, index) => {
+                    const isActive = index === currentIndex;
+                    const isPrev = index === prevIndex;
+                    const isNext = index === nextIndex;
 
-                  let opacity = card.opacity;
-                  if (isCenter) {
-                    opacity = 1;
-                  } else if (Math.abs(index - (currentIndex + leftCards.length)) <= 2) {
-                    opacity = 0.8;
-                  } else {
-                    opacity = 0.4;
-                  }
+                    if (!isActive && !isPrev && !isNext) return null;
 
-                  return (
-                    <div
-                      key={index}
-                      className={"w-full max-w-[450px] h-[120px] bg-white border border-[#E0E2E7] rounded-[20px] flex items-center pl-[30px] mx-auto mb-[20px] transition-all duration-300 cursor-pointer relative industries__card " + (isCenter ? 'industries__card--center' : '')}
-                      style={{
-                        opacity: opacity,
-                      }}
-                      onClick={() => handleCardClick(originalIndex)}
-                    >
-                      <span className={"text-2xl font-semibold text-[#1e293b] whitespace-nowrap transition-all duration-300 max-md:text-xl max-sm:text-lg " + (isCenter ? 'text-[#3B82F6] font-bold' : '')}>
-                        {card.text}
-                      </span>
-                    </div>
-                  );
-                })}
+                    return (
+                      <motion.div
+                        key={index}
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        animate={{
+                          opacity: isActive ? 1 : 0.4,
+                          y: isActive ? 120 : (isPrev ? 0 : 240),
+                          scale: isActive ? 1.05 : 0.9,
+                          zIndex: isActive ? 20 : 10,
+                        }}
+                        exit={{ opacity: 0, scale: 0.8 }}
+                        transition={{ type: "spring", stiffness: 260, damping: 20 }}
+                        onClick={() => handleManualNav(index)}
+                        className="absolute inset-x-0 mx-auto h-[100px] rounded-[24px] flex items-center justify-center cursor-pointer shadow-xl"
+                        style={{ backgroundColor: card.color }}
+                      >
+                        <span className="text-white text-xl md:text-2xl font-bold px-4 text-center">
+                          {card.text}
+                        </span>
+                        {isActive && (
+                          <motion.div 
+                            layoutId="activeBorder"
+                            className="absolute inset-0 rounded-[24px] border-4 border-blue-500/50"
+                          />
+                        )}
+                      </motion.div>
+                    );
+                  })}
+                </AnimatePresence>
               </div>
-            </div>
-            
-            {/* DOWN ARROW - Centered below */}
-            <div className="flex justify-center mt-3">
+
               <button 
-                onClick={handleDownClick}
-                className="nav-button"
-                aria-label="Next card"
+                onClick={() => handleManualNav(nextIndex)}
+                className="mt-8 w-12 h-12 rounded-full bg-white shadow-lg flex items-center justify-center text-blue-600 hover:bg-blue-600 hover:text-white transition-all z-10 border border-slate-100"
               >
                 ▼
               </button>
+              <p className="mt-4 text-slate-400 text-sm font-medium">{currentIndex + 1} of {leftCards.length} Industries</p>
             </div>
-          </div>
 
-          {/* RIGHT PANEL - Image with content */}
-          <div
-            className="flex-1 h-[350px] sm:h-[380px] md:h-[400px] lg:h-[450px] rounded-[30px] sm:rounded-[35px] md:rounded-[40px] overflow-hidden relative transition-all duration-500 shadow-[0_20px_35px_rgba(0,0,0,0.2)] max-w-[600px] max-lg:max-w-full w-full"
-            onMouseEnter={handleMouseEnter}
-            onMouseLeave={handleMouseLeave}
-            style={{
-              backgroundImage: getRightPanelImage(),
-              backgroundSize: 'cover',
-              backgroundPosition: 'center'
-            }}
-          >
-            <div className="absolute top-0 left-0 right-0 bottom-0 bg-gradient-to-br from-black/70 via-black/40 to-black/20 flex items-end p-6 sm:p-7 md:p-8 lg:p-[40px]">
-              <div className="text-white w-full">
-                <h3 className="text-2xl sm:text-3xl md:text-4xl lg:text-[36px] font-bold mb-3 sm:mb-4 drop-shadow-lg">
-                  {leftCards[currentIndex].text}
-                </h3>
-                <p className="text-sm sm:text-base md:text-lg mb-4 leading-relaxed drop-shadow max-w-[450px]">
-                  {leftCards[currentIndex].text === 'Drive Innovation' && 'Transform your business with cutting-edge billing solutions'}
-                  {leftCards[currentIndex].text === 'Empower Growth' && 'Scale your business with powerful accounting tools'}
-                  {leftCards[currentIndex].text === 'GSTR Filing' && 'Simplify GST returns with automated filing'}
-                  {leftCards[currentIndex].text === 'Unite Industries' && 'Connect all your business operations seamlessly'}
-                  {leftCards[currentIndex].text === 'Expand Reach' && 'Grow your customer base with digital invoices'}
-                  {leftCards[currentIndex].text === 'Boost Resilience' && 'Build a resilient business with smart financial management'}
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {tagCloud.slice(0, 6).map((tag, i) => (
-                    <span key={i} className="text-xs sm:text-sm md:text-[15px] px-3 sm:px-4 py-1.5 sm:py-2 bg-white/20 backdrop-blur-[8px] rounded-full border border-white/40 text-white font-medium transition-all duration-300 hover:bg-[#3b82f699] hover:-translate-y-1">
-                      {tag}
-                    </span>
-                  ))}
-                </div>
+            {/* RIGHT SIDE: The Animated Showcase */}
+            <div className="w-full lg:w-1/2">
+              <div className="relative h-[450px] lg:h-[550px] w-full rounded-[40px] shadow-[0_30px_60px_rgba(0,0,0,0.12)] overflow-hidden bg-slate-200">
+                <AnimatePresence mode="wait">
+                  <motion.div
+                    key={currentIndex}
+                    initial={{ x: -150, opacity: 0, scale: 0.9 }}
+                    animate={{ x: 0, opacity: 1, scale: 1 }}
+                    exit={{ x: 150, opacity: 0, scale: 1.1 }}
+                    transition={{ 
+                      x: { type: "spring", stiffness: 100, damping: 20 },
+                      opacity: { duration: 0.4 }
+                    }}
+                    className="absolute inset-0"
+                  >
+                    {/* Background Image */}
+                    <div 
+                      className="absolute inset-0 bg-cover bg-center transition-transform duration-[2000ms] hover:scale-110"
+                      style={{ backgroundImage: `url(${getImageUrl(leftCards[currentIndex].image)})` }}
+                    />
+                    
+                    {/* Content Overlay */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent flex flex-col justify-end p-8 lg:p-12">
+                      <motion.div
+                        initial={{ y: 30, opacity: 0 }}
+                        animate={{ y: 0, opacity: 1 }}
+                        transition={{ delay: 0.2 }}
+                      >
+                        <h3 className="text-white text-3xl lg:text-5xl font-bold mb-4 drop-shadow-md">
+                          {leftCards[currentIndex].text}
+                        </h3>
+                        <p className="text-slate-200 text-base lg:text-xl mb-6 max-w-lg leading-relaxed">
+                          {leftCards[currentIndex].desc}
+                        </p>
+                        
+                        {/* Tags */}
+                        <div className="flex flex-wrap gap-2">
+                          {tagCloud.slice(currentIndex, currentIndex + 4).map((tag, i) => (
+                            <span 
+                              key={i} 
+                              className="px-4 py-2 bg-white/10 backdrop-blur-md rounded-full text-white text-xs lg:text-sm border border-white/20"
+                            >
+                              {tag}
+                            </span>
+                          ))}
+                        </div>
+                      </motion.div>
+                    </div>
+                  </motion.div>
+                </AnimatePresence>
               </div>
             </div>
           </div>
         </div>
 
-        {/* MOBILE SECTION */}
-        <div className="lg:hidden mt-8 sm:mt-10 space-y-5 sm:space-y-6">
-
-          {/* Mobile Image Card */}
-          <div
-            className="w-full h-[260px] rounded-[25px] overflow-hidden relative shadow-lg"
-            style={{
-              backgroundImage: getRightPanelImage(),
-              backgroundSize: "cover",
-              backgroundPosition: "center"
-            }}
-          >
-            <div className="absolute inset-0 bg-gradient-to-br from-black/70 via-black/40 to-black/20 flex items-end p-5">
-              <div className="text-white">
-                <h3 className="text-xl font-bold mb-2">
-                  {leftCards[currentIndex].text}
-                </h3>
-
-                <p className="text-sm leading-relaxed">
-                  {leftCards[currentIndex].text === 'Drive Innovation' && 'Transform your business with cutting-edge billing solutions'}
-                  {leftCards[currentIndex].text === 'Empower Growth' && 'Scale your business with powerful accounting tools'}
-                  {leftCards[currentIndex].text === 'GSTR Filing' && 'Simplify GST returns with automated filing'}
-                  {leftCards[currentIndex].text === 'Unite Industries' && 'Connect all your business operations seamlessly'}
-                  {leftCards[currentIndex].text === 'Expand Reach' && 'Grow your customer base with digital invoices'}
-                  {leftCards[currentIndex].text === 'Boost Resilience' && 'Build a resilient business with smart financial management'}
-                </p>
+        {/* MOBILE/TABLET VIEW - Visible below lg screens */}
+        <div className="lg:hidden mt-8">
+          <div className="relative max-w-md mx-auto">
+            {/* Carousel Container with hover pause */}
+            <div 
+              className="overflow-hidden rounded-xl"
+              ref={mobileContainerRef}
+              onMouseEnter={handleMobileHover}
+              onMouseLeave={handleMobileLeave}
+            >
+              <div 
+                className="flex transition-transform duration-500 ease-out"
+                style={{ transform: `translateX(-${mobileIndex * 100}%)` }}
+              >
+                {leftCards.map((industry, index) => (
+                  <div key={index} className="w-full flex-shrink-0 px-2">
+                    <div className="bg-white rounded-xl p-4 shadow-md">
+                      {/* Image - wider than tall (16:9 aspect ratio) */}
+                      <div className="relative w-full aspect-[16/9] rounded-lg overflow-hidden">
+                        <img
+                          src={getImageUrl(industry.image)}
+                          alt={industry.text}
+                          className="w-full h-full object-cover"
+                          loading="lazy"
+                        />
+                      </div>
+                      
+                      {/* Name below image */}
+                      <h3 className="text-lg font-semibold text-center mt-3" 
+                          style={{ color: industry.color }}>
+                        {industry.text}
+                      </h3>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
-          </div>
 
-          {/* Current viewing text */}
-          <div className="text-center">
-            <h3 className="text-lg sm:text-xl font-bold text-blue-600">
-              {leftCards[currentIndex].text}
-            </h3>
-          </div>
+            {/* Navigation Buttons */}
+            <button
+              onClick={handleMobilePrev}
+              className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-2 w-10 h-10 bg-white rounded-full shadow-lg flex items-center justify-center hover:bg-gray-50 transition-all border border-gray-200"
+              aria-label="Previous"
+            >
+              <ChevronLeft className="w-5 h-5 text-gray-600" />
+            </button>
 
-          {/* Navigation dots */}
-          <div className="flex justify-center gap-3">
-            {leftCards.map((_, idx) => (
-              <button
-                key={idx}
-                onClick={() => handleDotClick(idx)}
-                className={idx === currentIndex
-                    ? "w-8 sm:w-9 h-2 sm:h-2.5 bg-blue-600 rounded-full"
-                    : "w-2 sm:w-2.5 h-2 sm:h-2.5 bg-gray-300 rounded-full hover:bg-gray-400"
-                  }
-                aria-label={`View ${leftCards[idx].text}`}
-              />
-            ))}
-          </div>
+            <button
+              onClick={handleMobileNext}
+              className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-2 w-10 h-10 bg-white rounded-full shadow-lg flex items-center justify-center hover:bg-gray-50 transition-all border border-gray-200"
+              aria-label="Next"
+            >
+              <ChevronRight className="w-5 h-5 text-gray-600" />
+            </button>
 
+            {/* Dot Indicators */}
+            <div className="flex justify-center gap-2 mt-6">
+              {leftCards.map((_, index) => (
+                <button
+                  key={index}
+                  onClick={() => handleMobileDotClick(index)}
+                  className={`transition-all duration-300 ${
+                    index === mobileIndex
+                      ? "w-6 h-2 bg-blue-600 rounded-full"
+                      : "w-2 h-2 bg-gray-300 rounded-full hover:bg-gray-400"
+                  }`}
+                  aria-label={`Go to slide ${index + 1}`}
+                />
+              ))}
+            </div>
+
+            {/* Current index indicator */}
+            <p className="text-center text-sm text-gray-500 mt-3">
+              {mobileIndex + 1} of {leftCards.length}
+            </p>
+          </div>
         </div>
       </div>
     </section>
