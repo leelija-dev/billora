@@ -15,7 +15,7 @@ class CustomerController extends Controller
     public function index() // check logged in user
     {
         // $customer = Customers::id()->get();
-        $customer = Auth::user()->id;
+        $customer = Auth::user();
         return response()->json([
             'status' => true,
             'message' => 'User List',

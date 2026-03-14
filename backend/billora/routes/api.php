@@ -26,6 +26,7 @@ Route::prefix('users')->group(function () {
 
    Route::post('/store', [CustomerController::class, 'store']);
    Route::post('/login', [CustomerController::class, 'login']);
+   // Route::get
    //    Route::post('/logout', [CustomerController::class, 'logout']);
    Route::middleware('auth:sanctum')->post('/logout', [CustomerController::class, 'logout']);
    //due RBAC
@@ -60,15 +61,14 @@ Route::prefix('stocks')->group(function () {
    Route::post('/add-stock/{id}', [StocksController::class, 'addStock']);
 });
 //units
-Route::prefix('units')->group(function () {
+Route::middleware('auth:sanctum')->prefix('units')->group(function () {
    Route::get('/', [UnitController::class, 'index']);
    Route::post('/store', [UnitController::class, 'store']);
    Route::get('/{id}', [UnitController::class, 'edit']);
    Route::put('/{id}', [UnitController::class, 'update']);
    Route::delete('/{id}', [UnitController::class, 'delete']);
 });
-//brands
-Route::prefix('brands')->group(function () {
+Route::middleware('auth:sanctum')->prefix('brands')->group(function () {
    Route::get('/', [BrandController::class, 'index']);
    Route::post('/store', [BrandController::class, 'store']);
    Route::get('/{id}', [BrandController::class, 'edit']);
@@ -140,4 +140,5 @@ Route::prefix('plans')->group(function (){
 });
 Route::prefix('dashboard')->group(function (){
    Route::get('/overview/{id}', [DashboardController::class, 'index']);
+   
 });

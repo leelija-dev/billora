@@ -6,41 +6,59 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Brand;
 use Illuminate\Support\Str;
-
+use Illuminate\Support\Facades\Auth;
 class BrandController extends Controller
 {
-    public function index(Request $request)
-    {
-        try {
-            $search = $request->search;
-
-            $brands = Brand::where('name', 'like', "%$search%")
-            ->orWhere('id', 'like', "%$search%")
-            ->orWhere('description', 'like', "%$search%")
-            ->orWhere('slug', 'like', "%$search%")
-            ->paginate(15);
-            return response()->json([
-                'status' => 'success',
-                'message' => 'Brand List',
-                'data' => $brands
-            ]);
-        } catch (\Exception $e) {
+  public function index(Request $request)
+{
+    try {
+        if (!Auth::check()) {
             return response()->json([
                 'status' => false,
-                'message' => $e->getMessage()
-            ]);
+                'message' => 'Authentication required. Please login first.'
+            ], 401);
         }
+
+        $user = Auth::user()->id;
+        
+        // SIMPLE TEST - No search, no complex queries
+        $brands = Brand::where('user_id', $user)->get();
+        
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Your Brand List',
+            'user_id' => $user,
+            'data' => $brands
+        ]);
+
+    } catch (\Exception $e) {
+        return response()->json([
+            'status' => false,
+            'message' => $e->getMessage(),
+            'line' => $e->getLine(),
+            'file' => $e->getFile()
+        ], 500);
     }
+}
     public function store(Request $request)
     {
+        if (!Auth::check()) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Authentication required. Please login first.'
+            ], 401);
+        }
+        $user=Auth::user()->id;
         $brand = $request->validate([
-            'user_id'       => 'required',
+            
             'name'          => 'required',
-            'created_by'    => 'nullable',
             'is_active'     => 'nullable',
             'description'   => 'nullable',
 
         ]);
+        $brand['user_id'] = $user;
+        $brand['created_by']  = $user;
+
         try {
             $brand['slug'] = Str::slug($brand['name']);
             $brand = Brand::create($brand);
@@ -58,8 +76,15 @@ class BrandController extends Controller
     }
     public function edit($id)
     {
+         if (!Auth::check()) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Authentication required. Please login first.'
+            ], 401);
+        }
+        $user =Auth::user()->id;
         try {
-            $brand = Brand::findOrFail($id);
+            $brand = Brand::where('id',$id)->where('user_id',$user)->get();
             return response()->json([
                 'status' => 'success',
                 'message' => 'Brand Details',
@@ -74,17 +99,22 @@ class BrandController extends Controller
     }
     public function update(Request $request, $id)
 {
+     if (!Auth::check()) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Authentication required. Please login first.'
+            ], 401);
+        }
     try {
-        $brand = Brand::findOrFail($id);
-        
+        $user = Auth::user()->id;
+        $brand = Brand::where('id',$id)->where('user_id',$user)->first();
         $validated = $request->validate([
-            'user_id'       => 'required',
             'name'          => 'required',
-            'created_by'    => 'nullable',
             'is_active'     => 'nullable|boolean',
             'description'   => 'nullable',
         ]);
-
+        $validated['user_id'] =  $user;
+        $validated['created_by']  =  $user;
         // Update slug when name changes
         $validated['slug'] = Str::slug($validated['name']);
         
@@ -112,7 +142,14 @@ class BrandController extends Controller
     public function delete($id)
     {
         try {
-            $brand = Brand::findOrFail($id);
+             if (!Auth::check()) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Authentication required. Please login first.'
+            ], 401);
+            }
+            $user =Auth::user()->id;
+            $brand = Brand::where('id',$id)->where('user_id',$user);
             $brand->delete();
             return response()->json([
                 'status' => 'success',
