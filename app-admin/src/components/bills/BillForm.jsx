@@ -414,36 +414,23 @@ const BillForm = ({ billId }) => {
           )}
         </View>
 
-        {/* Change Amount */}
-        {parseFloat(formData.paidAmount) > 0 && calculateGrandTotal() > 0 && (
+        {/* Payment Summary - Simplified */}
+        {calculateGrandTotal() > 0 && (
           <View className={`p-4 rounded-xl ${
-            parseFloat(formData.paidAmount) >= calculateGrandTotal()
-              ? isDarkMode ? 'bg-green-900/30' : 'bg-green-50'
-              : isDarkMode ? 'bg-yellow-900/30' : 'bg-yellow-50'
+            isDarkMode ? 'bg-gray-800' : 'bg-gray-50'
           }`}>
             <View className="flex-row justify-between">
               <Text className={`font-semibold ${
-                parseFloat(formData.paidAmount) >= calculateGrandTotal()
-                  ? isDarkMode ? 'text-green-300' : 'text-green-700'
-                  : isDarkMode ? 'text-yellow-300' : 'text-yellow-700'
+                isDarkMode ? 'text-gray-300' : 'text-gray-700'
               }`}>
-                Change Amount
+                Total Amount
               </Text>
               <Text className={`text-xl font-bold ${
-                parseFloat(formData.paidAmount) >= calculateGrandTotal()
-                  ? 'text-green-500'
-                  : 'text-yellow-500'
+                isDarkMode ? 'text-white' : 'text-gray-900'
               }`}>
-                ${calculateChange().toFixed(2)}
+                ${calculateGrandTotal().toFixed(2)}
               </Text>
             </View>
-            {parseFloat(formData.paidAmount) < calculateGrandTotal() && (
-              <Text className={`text-xs mt-1 ${
-                isDarkMode ? 'text-yellow-400' : 'text-yellow-600'
-              }`}>
-                Insufficient payment
-              </Text>
-            )}
           </View>
         )}
       </View>

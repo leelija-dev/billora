@@ -3,6 +3,9 @@ import { useNavigation } from '@react-navigation/native';
 import { billsAPI } from '../api/bills';
 import { productsAPI } from '../api/products';
 import { storesAPI } from '../api/stores';
+import { customersAPI } from '../api/customers';
+import { brandsAPI } from '../api/brands';
+import { categoriesAPI } from '../api/categories';
 import { useAuthStore } from '../store/authStore';
 
 export const useBillForm = (billId = null) => {
@@ -15,6 +18,8 @@ export const useBillForm = (billId = null) => {
   const [products, setProducts] = useState([]);
   const [customers, setCustomers] = useState([]);
   const [stores, setStores] = useState([]);
+  const [brands, setBrands] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [loadingData, setLoadingData] = useState(false);
   
   // Bill items
@@ -31,6 +36,57 @@ export const useBillForm = (billId = null) => {
     paymentMethod: 'cash',
   });
 
+  // Helper function to extract data from various API response structures
+  const extractDataFromResponse = (response) => {
+    if (!response) return [];
+    
+    // If response has data.data structure (Laravel pagination)
+    if (response.data?.data?.data) {
+      return response.data.data.data;
+    }
+    
+    // If response has data.data as array
+    if (response.data?.data && Array.isArray(response.data.data)) {
+      return response.data.data;
+    }
+    
+    // If response.data is array
+    if (response.data && Array.isArray(response.data)) {
+      return response.data;
+    }
+    
+    // If response itself is array
+    if (Array.isArray(response)) {
+      return response;
+    }
+    
+    // If response has data property that's an object with data array
+    if (response.data?.data && typeof response.data.data === 'object' && !Array.isArray(response.data.data)) {
+      const possibleData = response.data.data.data;
+      if (possibleData && Array.isArray(possibleData)) {
+        return possibleData;
+      }
+    }
+    
+    // If response.data is an object with data array (like from your store API)
+    if (response.data?.data && Array.isArray(response.data.data)) {
+      return response.data.data;
+    }
+    
+    // Handle the specific store API response structure you showed
+    if (response.data?.data?.data && Array.isArray(response.data.data.data)) {
+      return response.data.data.data;
+    }
+    
+    // If response has data that's an object (single item), wrap in array
+    if (response.data && typeof response.data === 'object' && !Array.isArray(response.data)) {
+      return [response.data];
+    }
+    
+    console.log('Unable to extract data from response:', response);
+    return [];
+  };
+
   // Fetch all required data
   const fetchFormData = async () => {
     try {
@@ -38,41 +94,40 @@ export const useBillForm = (billId = null) => {
       
       // Fetch products
       const productsResponse = await productsAPI.getAll();
-      let productsData = [];
-      if (productsResponse?.data?.data) {
-        productsData = productsResponse.data.data;
-      } else if (productsResponse?.data) {
-        productsData = productsResponse.data;
-      } else if (Array.isArray(productsResponse)) {
-        productsData = productsResponse;
-      }
+      console.log('Products API Response:', productsResponse);
+      const productsData = extractDataFromResponse(productsResponse);
+      console.log('Products data extracted:', productsData);
       setProducts(productsData);
       
       // Fetch customers
-      const customersResponse = await billsAPI.getCustomers();
-      let customersData = [];
-      if (customersResponse?.data?.data) {
-        customersData = customersResponse.data.data;
-      } else if (customersResponse?.data) {
-        customersData = customersResponse.data;
-      } else if (Array.isArray(customersResponse)) {
-        customersData = customersResponse;
-      }
+      const customersResponse = await customersAPI.getAll(user?.id || 1);
+      console.log('Customers API Response:', customersResponse);
+      const customersData = extractDataFromResponse(customersResponse);
+      console.log('Customers data extracted:', customersData);
       setCustomers(customersData);
       
       // Fetch stores
       if (user?.id) {
         const storesResponse = await storesAPI.getAll(user.id);
-        let storesData = [];
-        if (storesResponse?.data?.data) {
-          storesData = storesResponse.data.data;
-        } else if (storesResponse?.data) {
-          storesData = storesResponse.data;
-        } else if (Array.isArray(storesResponse)) {
-          storesData = storesResponse;
-        }
+        console.log('Stores API Response:', storesResponse);
+        const storesData = extractDataFromResponse(storesResponse);
+        console.log('Stores data extracted:', storesData);
         setStores(storesData);
       }
+      
+      // Fetch brands
+      const brandsResponse = await brandsAPI.getAll();
+      console.log('Brands API Response:', brandsResponse);
+      const brandsData = extractDataFromResponse(brandsResponse);
+      console.log('Brands data extracted:', brandsData);
+      setBrands(brandsData);
+      
+      // Fetch categories
+      const categoriesResponse = await categoriesAPI.getAll();
+      console.log('Categories API Response:', categoriesResponse);
+      const categoriesData = extractDataFromResponse(categoriesResponse);
+      console.log('Categories data extracted:', categoriesData);
+      setCategories(categoriesData);
       
     } catch (err) {
       console.error('Error fetching form data:', err);
@@ -108,7 +163,7 @@ export const useBillForm = (billId = null) => {
         });
         
         setItems(billData.items?.map(item => ({
-          id: item.id,
+          id: item.id || Date.now() + Math.random(),
           productId: item.product_id?.toString() || '',
           productName: item.product?.name || '',
           quantity: item.quantity?.toString() || '1',
@@ -147,7 +202,7 @@ export const useBillForm = (billId = null) => {
 
   const addItem = () => {
     const newItem = {
-      id: Date.now(),
+      id: Date.now() + Math.random(),
       productId: '',
       productName: '',
       quantity: '1',
@@ -157,6 +212,9 @@ export const useBillForm = (billId = null) => {
       totalPrice: 0,
       unitId: '',
       unitCode: '',
+      stockId: '',
+      brandName: '',
+      categoryName: '',
     };
     setItems([...items, newItem]);
   };
@@ -167,14 +225,22 @@ export const useBillForm = (billId = null) => {
     
     // If product is selected, fetch product details
     if (field === 'productId' && value) {
-      const selectedProduct = products.find(p => p.id.toString() === value);
+      const selectedProduct = products.find(p => p.id?.toString() === value);
+      console.log(selectedProduct);
       if (selectedProduct) {
-        updatedItems[index].productName = selectedProduct.name;
+        updatedItems[index].productName = selectedProduct.name || '';
         updatedItems[index].price = selectedProduct.selling_price?.toString() || '0';
         updatedItems[index].gst = selectedProduct.gst_percentage?.toString() || '0';
         updatedItems[index].discount = selectedProduct.discount_percentage?.toString() || '0';
         updatedItems[index].unitId = selectedProduct.unit_id?.toString() || '';
         updatedItems[index].unitCode = selectedProduct.unit_code || 'PC';
+        updatedItems[index].stockId = selectedProduct.stock_id?.toString() || '';
+        
+        // Get brand and category names
+        const brand = brands.find(b => b.id === selectedProduct.brand_id);
+        const category = categories.find(c => c.id === selectedProduct.category_id);
+        updatedItems[index].brandName = brand?.name || 'N/A';
+        updatedItems[index].categoryName = category?.name || 'N/A';
       }
     }
     
@@ -240,7 +306,10 @@ export const useBillForm = (billId = null) => {
       errors.storeId = 'Store is required';
     }
     
-    if (!formData.paidAmount || parseFloat(formData.paidAmount) < 0) {
+    // Only validate that paidAmount is a valid number, not that it's sufficient
+    if (formData.paidAmount === '' || formData.paidAmount === null || formData.paidAmount === undefined) {
+      errors.paidAmount = 'Paid amount is required';
+    } else if (isNaN(parseFloat(formData.paidAmount)) || parseFloat(formData.paidAmount) < 0) {
       errors.paidAmount = 'Valid paid amount is required';
     }
     
@@ -285,6 +354,7 @@ export const useBillForm = (billId = null) => {
         gst: parseFloat(item.gst) || 0,
         discount: parseFloat(item.discount) || 0,
         totalPrice: item.totalPrice,
+        stockId: item.stockId || null,
       }));
       
       // Prepare data for API
@@ -350,6 +420,8 @@ export const useBillForm = (billId = null) => {
     products,
     customers,
     stores,
+    brands,
+    categories,
     loading: loading || loadingData,
     error,
     validationErrors,
