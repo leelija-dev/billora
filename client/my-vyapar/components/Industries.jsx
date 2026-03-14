@@ -1,325 +1,225 @@
 "use client";
-import React, { useState, useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
-import SectionTitle from "../components/SectionTitle";
+import React, { useRef, useEffect, useState } from "react";
+import {
+  motion,
+  useScroll,
+  useTransform,
+  useSpring,
+} from "framer-motion";
+import Link from "next/link";
 
-const Industries = () => {
-  const [currentIndex, setCurrentIndex] = useState(2);
-  const [isPlaying, setIsPlaying] = useState(true);
-  const [isHovering, setIsHovering] = useState(false);
-  const [mobileIndex, setMobileIndex] = useState(0);
-  const [isMobileAutoPlaying, setIsMobileAutoPlaying] = useState(true);
-  const autoPlayRef = useRef(null);
-  const mobileAutoPlayRef = useRef(null);
-  const timeoutRef = useRef(null);
-  const mobileContainerRef = useRef(null);
+const INDUSTRY_DATA = [
+  {
+    id: 1,
+    tag: "Retail",
+    title: "Retail Revolution",
+    description: "Complete POS and inventory management for retail stores. Track sales, manage stock, and delight customers with faster billing.",
+    buttonText: "Explore Retail",
+    buttonLink: "/industries/retail",
+    icon: "🏪",
+    color: "#3b82f6",
+    lightColor: "#eff6ff",
+    image: "https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&w=800&q=80",
+  },
+  {
+    id: 2,
+    tag: "Manufacturing",
+    title: "Manufacturing Hub",
+    description: "Smart manufacturing tools that optimize production lines, track raw materials, reduce waste, and improve efficiency by 40%.",
+    buttonText: "Explore Manufacturing",
+    buttonLink: "/industries/manufacturing",
+    icon: "🏭",
+    color: "#8b5cf6",
+    lightColor: "#f5f3ff",
+    image: "https://images.unsplash.com/photo-1581091226033-d5c48150dbaa?auto=format&fit=crop&w=800&q=80",
+  },
+  {
+    id: 3,
+    tag: "Healthcare",
+    title: "Healthcare Plus",
+    description: "Secure billing and patient management solutions. HIPAA-compliant, easy-to-use, and reliable for clinics and hospitals.",
+    buttonText: "Explore Healthcare",
+    buttonLink: "/industries/healthcare",
+    icon: "🏥",
+    color: "#10b981",
+    lightColor: "#f0fdf4",
+    image: "https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?auto=format&fit=crop&w=800&q=80",
+  },
+  {
+    id: 4,
+    tag: "Education",
+    title: "Education Suite",
+    description: "Simplify fee collection, track student progress, manage academics, and communicate with parents effortlessly.",
+    buttonText: "Explore Education",
+    buttonLink: "/industries/education",
+    icon: "📚",
+    color: "#ef4444",
+    lightColor: "#fef2f2",
+    image: "https://images.unsplash.com/photo-1524995997946-a1c2e315a42f?auto=format&fit=crop&w=800&q=80",
+  },
+  {
+    id: 5,
+    tag: "Real Estate",
+    title: "Real Estate Pro",
+    description: "Manage properties, track rentals, handle commissions, and grow your real estate business with smart tools.",
+    buttonText: "Explore Real Estate",
+    buttonLink: "/industries/real-estate",
+    icon: "🏢",
+    color: "#f59e0b",
+    lightColor: "#fffbeb",
+    image: "https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&w=800&q=80",
+  },
+];
 
-  const leftCards = [
-    { text: 'Drive Innovation', image: 'innovation', color: '#7fa1d0', desc: 'Transform your business with cutting-edge billing solutions' },
-    { text: 'Empower Growth', image: 'growth', color: '#6366f1', desc: 'Scale your business with powerful accounting tools' },
-    { text: 'GSTR Filing', image: 'gstr', color: '#7bb2cc', desc: 'Simplify GST returns with automated filing' },
-    { text: 'Unite Industries', image: 'unite', color: '#edf3f6', desc: 'Connect all your business operations seamlessly' },
-    { text: 'Expand Reach', image: 'expand', color: '#4b22c5', desc: 'Grow your customer base with digital invoices' },
-    { text: 'Boost Resilience', image: 'resilience', color: '#3287ab', desc: 'Build a resilient business with smart financial management' },
-    { text: 'Retail Solutions', image: 'retail', color: '#8148ec', desc: 'Complete POS and inventory management for retail stores' },
-    { text: 'Manufacturing Hub', image: 'manufacturing', color: '#5cb8f6', desc: 'Streamline production with smart manufacturing tools' },
-    { text: 'Healthcare Plus', image: 'healthcare', color: '#1d3bd2', desc: 'Secure billing and patient management solutions' },
-    { text: 'Education Suite', image: 'education', color: '#9b9bdd', desc: 'Simplify fee collection and academic administration' },
-    { text: 'Real Estate Pro', image: 'realestate', color: '#3b82f6', desc: 'Manage properties, rentals, and commissions easily' }
-  ];
-
-  const tagCloud = [
-    'downtown', 'shop local', 'support', 'local economy', 'business',
-    'partnership', 'brick and mortar', 'service', 'mom and pop', 'buy local',
-    'small', 'main street', 'retail', 'wholesale', 'manufacturing',
-    'hospitality', 'healthcare', 'education', 'real estate', 'transport'
-  ];
-
-  // Desktop auto-play logic
+const IndustrySection = () => {
+  const containerRef = useRef(null);
+  const [windowHeight, setWindowHeight] = useState(0);
+  
   useEffect(() => {
-    if (autoPlayRef.current) clearInterval(autoPlayRef.current);
+    setWindowHeight(window.innerHeight);
     
-    if (isPlaying && !isHovering) {
-      autoPlayRef.current = setInterval(() => {
-        setCurrentIndex(prev => (prev + 1) % leftCards.length);
-      }, 4000);
-    }
-    return () => clearInterval(autoPlayRef.current);
-  }, [isPlaying, isHovering, leftCards.length]);
-
-  // Mobile auto-play logic
-  useEffect(() => {
-    if (mobileAutoPlayRef.current) clearInterval(mobileAutoPlayRef.current);
-    
-    if (isMobileAutoPlaying) {
-      mobileAutoPlayRef.current = setInterval(() => {
-        setMobileIndex(prev => (prev + 1) % leftCards.length);
-      }, 3000);
-    }
-    return () => clearInterval(mobileAutoPlayRef.current);
-  }, [isMobileAutoPlaying, leftCards.length]);
-
-  const handleManualNav = (index) => {
-    setCurrentIndex(index);
-    setIsPlaying(false);
-    if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    timeoutRef.current = setTimeout(() => setIsPlaying(true), 5000);
-  };
-
-  const handleMobilePrev = () => {
-    setIsMobileAutoPlaying(false);
-    setMobileIndex(prev => (prev === 0 ? leftCards.length - 1 : prev - 1));
-  };
-
-  const handleMobileNext = () => {
-    setIsMobileAutoPlaying(false);
-    setMobileIndex(prev => (prev + 1) % leftCards.length);
-  };
-
-  const handleMobileDotClick = (index) => {
-    setIsMobileAutoPlaying(false);
-    setMobileIndex(index);
-  };
-
-  const handleMobileHover = () => {
-    setIsMobileAutoPlaying(false);
-  };
-
-  const handleMobileLeave = () => {
-    setIsMobileAutoPlaying(true);
-  };
-
-  const getImageUrl = (key) => {
-    const urls = {
-      innovation: "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&w=1200&q=80",
-      growth: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=1200&q=80",
-      gstr: "https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?auto=format&fit=crop&w=1200&q=80",
-      unite: "https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=1200&q=80",
-      expand: "https://images.unsplash.com/photo-1542744173-8e7e53415bb0?auto=format&fit=crop&w=1200&q=80",
-      resilience: "https://images.unsplash.com/photo-1552664730-d307ca884978?auto=format&fit=crop&w=1200&q=80",
-      retail: "https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&w=1200&q=80",
-      manufacturing: "https://images.unsplash.com/photo-1581091226033-d5c48150dbaa?auto=format&fit=crop&w=1200&q=80",
-      healthcare: "https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?auto=format&fit=crop&w=1200&q=80",
-      education: "https://images.unsplash.com/photo-1524995997946-a1c2e315a42f?auto=format&fit=crop&w=1200&q=80",
-      realestate: "https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&w=1200&q=80"
+    const handleResize = () => {
+      setWindowHeight(window.innerHeight);
     };
-    return urls[key];
-  };
+    
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
-  const prevIndex = (currentIndex - 1 + leftCards.length) % leftCards.length;
-  const nextIndex = (currentIndex + 1) % leftCards.length;
+  const { scrollYProgress } = useScroll({
+    target: containerRef,
+    offset: ["start start", "end end"],
+  });
+
+  const smoothProgress = useSpring(scrollYProgress, {
+    stiffness: 70,
+    damping: 30,
+    restDelta: 0.001,
+  });
 
   return (
-    <section className="relative w-full py-16 lg:py-24 bg-[#f8fafc] overflow-hidden font-['Inter']">
-      <div className="max-w-7xl mx-auto px-6">
+    <section ref={containerRef} className="relative h-[500vh] bg-white">
+      <div className="sticky top-0 h-screen w-full flex flex-col items-center justify-center overflow-hidden px-4 sm:px-6 md:px-8 lg:px-10">
         
-        <SectionTitle
-          title="Supporting businesses from a wide range of industries"
-          description="We understand your unique billing and accounting needs, Billora software is specially designed for modern SMBs."
-        />
-
-        {/* DESKTOP/TV VIEW - Visible on lg screens and above */}
-        <div className="hidden lg:block">
-          <div className="flex flex-col lg:flex-row gap-12 lg:gap-20 items-center justify-between mt-16">
-            
-            {/* LEFT SIDE: The Panel Stack */}
-            <div 
-              className="w-full lg:w-1/2 flex flex-col items-center"
-              onMouseEnter={() => setIsHovering(true)}
-              onMouseLeave={() => setIsHovering(false)}
-            >
-              <button 
-                onClick={() => handleManualNav(prevIndex)}
-                className="mb-8 w-12 h-12 rounded-full bg-white shadow-lg flex items-center justify-center text-blue-600 hover:bg-blue-600 hover:text-white transition-all z-10 border border-slate-100"
-              >
-                ▲
-              </button>
-
-              <div className="relative h-[350px] w-full max-w-[450px]">
-                <AnimatePresence initial={false}>
-                  {leftCards.map((card, index) => {
-                    const isActive = index === currentIndex;
-                    const isPrev = index === prevIndex;
-                    const isNext = index === nextIndex;
-
-                    if (!isActive && !isPrev && !isNext) return null;
-
-                    return (
-                      <motion.div
-                        key={index}
-                        initial={{ opacity: 0, scale: 0.8 }}
-                        animate={{
-                          opacity: isActive ? 1 : 0.4,
-                          y: isActive ? 120 : (isPrev ? 0 : 240),
-                          scale: isActive ? 1.05 : 0.9,
-                          zIndex: isActive ? 20 : 10,
-                        }}
-                        exit={{ opacity: 0, scale: 0.8 }}
-                        transition={{ type: "spring", stiffness: 260, damping: 20 }}
-                        onClick={() => handleManualNav(index)}
-                        className="absolute inset-x-0 mx-auto h-[100px] rounded-[24px] flex items-center justify-center cursor-pointer shadow-xl"
-                        style={{ backgroundColor: card.color }}
-                      >
-                        <span className="text-white text-xl md:text-2xl font-bold px-4 text-center">
-                          {card.text}
-                        </span>
-                        {isActive && (
-                          <motion.div 
-                            layoutId="activeBorder"
-                            className="absolute inset-0 rounded-[24px] border-4 border-blue-500/50"
-                          />
-                        )}
-                      </motion.div>
-                    );
-                  })}
-                </AnimatePresence>
-              </div>
-
-              <button 
-                onClick={() => handleManualNav(nextIndex)}
-                className="mt-8 w-12 h-12 rounded-full bg-white shadow-lg flex items-center justify-center text-blue-600 hover:bg-blue-600 hover:text-white transition-all z-10 border border-slate-100"
-              >
-                ▼
-              </button>
-              <p className="mt-4 text-slate-400 text-sm font-medium">{currentIndex + 1} of {leftCards.length} Industries</p>
-            </div>
-
-            {/* RIGHT SIDE: The Animated Showcase */}
-            <div className="w-full lg:w-1/2">
-              <div className="relative h-[450px] lg:h-[550px] w-full rounded-[40px] shadow-[0_30px_60px_rgba(0,0,0,0.12)] overflow-hidden bg-slate-200">
-                <AnimatePresence mode="wait">
-                  <motion.div
-                    key={currentIndex}
-                    initial={{ x: -150, opacity: 0, scale: 0.9 }}
-                    animate={{ x: 0, opacity: 1, scale: 1 }}
-                    exit={{ x: 150, opacity: 0, scale: 1.1 }}
-                    transition={{ 
-                      x: { type: "spring", stiffness: 100, damping: 20 },
-                      opacity: { duration: 0.4 }
-                    }}
-                    className="absolute inset-0"
-                  >
-                    {/* Background Image */}
-                    <div 
-                      className="absolute inset-0 bg-cover bg-center transition-transform duration-[2000ms] hover:scale-110"
-                      style={{ backgroundImage: `url(${getImageUrl(leftCards[currentIndex].image)})` }}
-                    />
-                    
-                    {/* Content Overlay */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent flex flex-col justify-end p-8 lg:p-12">
-                      <motion.div
-                        initial={{ y: 30, opacity: 0 }}
-                        animate={{ y: 0, opacity: 1 }}
-                        transition={{ delay: 0.2 }}
-                      >
-                        <h3 className="text-white text-3xl lg:text-5xl font-bold mb-4 drop-shadow-md">
-                          {leftCards[currentIndex].text}
-                        </h3>
-                        <p className="text-slate-200 text-base lg:text-xl mb-6 max-w-lg leading-relaxed">
-                          {leftCards[currentIndex].desc}
-                        </p>
-                        
-                        {/* Tags */}
-                        <div className="flex flex-wrap gap-2">
-                          {tagCloud.slice(currentIndex, currentIndex + 4).map((tag, i) => (
-                            <span 
-                              key={i} 
-                              className="px-4 py-2 bg-white/10 backdrop-blur-md rounded-full text-white text-xs lg:text-sm border border-white/20"
-                            >
-                              {tag}
-                            </span>
-                          ))}
-                        </div>
-                      </motion.div>
-                    </div>
-                  </motion.div>
-                </AnimatePresence>
-              </div>
-            </div>
-          </div>
+        {/* Title Section - Responsive text sizes */}
+        <div className="text-center mb-6 sm:mb-8 md:mb-10 max-w-3xl px-4">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-slate-900 mb-2 sm:mb-3 md:mb-4 tracking-tight">
+            Supporting businesses from a wide range of industries
+          </h2>
+          <p className="text-sm sm:text-base text-slate-500">Scroll to explore our specialized solutions</p>
         </div>
 
-        {/* MOBILE/TABLET VIEW - Visible below lg screens */}
-        <div className="lg:hidden mt-8">
-          <div className="relative max-w-md mx-auto">
-            {/* Carousel Container with hover pause */}
-            <div 
-              className="overflow-hidden rounded-xl"
-              ref={mobileContainerRef}
-              onMouseEnter={handleMobileHover}
-              onMouseLeave={handleMobileLeave}
-            >
-              <div 
-                className="flex transition-transform duration-500 ease-out"
-                style={{ transform: `translateX(-${mobileIndex * 100}%)` }}
-              >
-                {leftCards.map((industry, index) => (
-                  <div key={index} className="w-full flex-shrink-0 px-2">
-                    <div className="bg-white rounded-xl p-4 shadow-md">
-                      {/* Image - wider than tall (16:9 aspect ratio) */}
-                      <div className="relative w-full aspect-[16/9] rounded-lg overflow-hidden">
-                        <img
-                          src={getImageUrl(industry.image)}
-                          alt={industry.text}
-                          className="w-full h-full object-cover"
-                          loading="lazy"
-                        />
-                      </div>
-                      
-                      {/* Name below image */}
-                      <h3 className="text-lg font-semibold text-center mt-3" 
-                          style={{ color: industry.color }}>
-                        {industry.text}
-                      </h3>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
+        {/* Cards Container - Responsive heights */}
+        <div className="relative w-full max-w-6xl h-[400px] sm:h-[450px] md:h-[500px] lg:h-[550px]">
+          {INDUSTRY_DATA.map((industry, index) => (
+            <IndustryCard 
+              key={industry.id} 
+              item={industry} 
+              index={index} 
+              total={INDUSTRY_DATA.length} 
+              progress={smoothProgress} 
+            />
+          ))}
+        </div>
 
-            {/* Navigation Buttons */}
-            <button
-              onClick={handleMobilePrev}
-              className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-2 w-10 h-10 bg-white rounded-full shadow-lg flex items-center justify-center hover:bg-gray-50 transition-all border border-gray-200"
-              aria-label="Previous"
-            >
-              <ChevronLeft className="w-5 h-5 text-gray-600" />
-            </button>
-
-            <button
-              onClick={handleMobileNext}
-              className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-2 w-10 h-10 bg-white rounded-full shadow-lg flex items-center justify-center hover:bg-gray-50 transition-all border border-gray-200"
-              aria-label="Next"
-            >
-              <ChevronRight className="w-5 h-5 text-gray-600" />
-            </button>
-
-            {/* Dot Indicators */}
-            <div className="flex justify-center gap-2 mt-6">
-              {leftCards.map((_, index) => (
-                <button
-                  key={index}
-                  onClick={() => handleMobileDotClick(index)}
-                  className={`transition-all duration-300 ${
-                    index === mobileIndex
-                      ? "w-6 h-2 bg-blue-600 rounded-full"
-                      : "w-2 h-2 bg-gray-300 rounded-full hover:bg-gray-400"
-                  }`}
-                  aria-label={`Go to slide ${index + 1}`}
-                />
-              ))}
-            </div>
-
-            {/* Current index indicator */}
-            <p className="text-center text-sm text-gray-500 mt-3">
-              {mobileIndex + 1} of {leftCards.length}
-            </p>
+        {/* Progress Bar - Responsive positioning and sizing */}
+        <div className="absolute bottom-8 sm:bottom-10 md:bottom-12 flex items-center gap-2 sm:gap-3 md:gap-4">
+          <span className="text-xs sm:text-sm font-bold text-slate-400">01</span>
+          <div className="flex gap-1 sm:gap-2">
+            {INDUSTRY_DATA.map((_, i) => (
+              <ProgressBarItem key={i} index={i} progress={smoothProgress} total={INDUSTRY_DATA.length} />
+            ))}
           </div>
+          <span className="text-xs sm:text-sm font-bold text-slate-400">05</span>
         </div>
       </div>
     </section>
   );
 };
 
-export default Industries;
+const IndustryCard = ({ item, index, total, progress }) => {
+  const step = 1 / total;
+  const start = index * step;
+  const end = (index + 1) * step;
+
+  // Responsive Y position - smaller offset for mobile
+  const y = useTransform(progress, [start - step, start, end], [300, 0, 0]);
+  
+  const scale = useTransform(progress, [start, end, end + step], [1, 1, 0.96]);
+  const opacity = useTransform(progress, [start - step * 0.5, start, end, end + step], [0, 1, 1, 0.8]);
+
+  return (
+    <motion.div
+      style={{ y, scale, opacity, zIndex: index + 10 }}
+      className="absolute inset-0 w-full h-full"
+    >
+      <div 
+        className="w-full h-full bg-white rounded-xl sm:rounded-2xl md:rounded-3xl lg:rounded-[2.5rem] shadow-[0_10px_30px_rgba(0,0,0,0.08)] md:shadow-[0_20px_50px_rgba(0,0,0,0.1)] border border-slate-100 flex flex-col md:flex-row overflow-hidden"
+        style={{ borderColor: `${item.color}20` }}
+      >
+        {/* Content Side - Responsive padding */}
+        <div className="flex-1 p-6 sm:p-8 md:p-10 lg:p-14 flex flex-col justify-center order-2 md:order-1">
+          
+          {/* Icon and Tag - Responsive sizing */}
+          <div className="flex items-center gap-3 sm:gap-4 mb-4 sm:mb-5 md:mb-6">
+            <span className="text-3xl sm:text-4xl md:text-5xl">{item.icon}</span>
+            <span 
+              className="px-3 sm:px-4 py-1 rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-widest"
+              style={{ backgroundColor: item.lightColor, color: item.color }}
+            >
+              {item.tag}
+            </span>
+          </div>
+
+          {/* Title - Responsive text */}
+          <h3 
+            className="text-2xl sm:text-3xl md:text-4xl font-black mb-3 sm:mb-4 md:mb-5 lg:mb-6 leading-tight"
+            style={{ color: item.color }}
+          >
+            {item.title}
+          </h3>
+
+          {/* Description - Responsive text */}
+          <p className="text-sm sm:text-base md:text-lg text-slate-600 mb-5 sm:mb-6 md:mb-7 lg:mb-8 leading-relaxed max-w-md">
+            {item.description}
+          </p>
+
+          {/* Button - Responsive sizing */}
+          <Link href={item.buttonLink}>
+            <button 
+              className="group px-5 sm:px-6 md:px-7 lg:px-8 py-2.5 sm:py-3 md:py-3.5 lg:py-4 rounded-lg sm:rounded-xl font-bold transition-all flex items-center gap-2 hover:shadow-lg text-sm sm:text-base"
+              style={{ backgroundColor: item.color, color: 'white' }}
+            >
+              {item.buttonText}
+              <span className="group-hover:translate-x-1 transition-transform">→</span>
+            </button>
+          </Link>
+        </div>
+
+        {/* Image Side - Hidden on mobile, visible on tablet and up */}
+        <div className="hidden md:block flex-1 relative order-1 md:order-2">
+          <img 
+            src={item.image} 
+            alt={item.title} 
+            className="absolute inset-0 w-full h-full object-cover"
+          />
+          <div className="absolute inset-0 bg-gradient-to-r from-white via-transparent to-transparent" />
+        </div>
+      </div>
+    </motion.div>
+  );
+};
+
+const ProgressBarItem = ({ index, progress, total }) => {
+  const step = 1 / total;
+  const width = useTransform(progress, [index * step, (index + 1) * step], ["0%", "100%"]);
+  const backgroundColor = useTransform(progress, [index * step, (index + 1) * step], ["#e2e8f0", "#3b82f6"]);
+  
+  return (
+    <div className="w-6 sm:w-8 md:w-10 lg:w-12 h-1 sm:h-1.5 bg-slate-100 rounded-full overflow-hidden">
+      <motion.div style={{ width, backgroundColor }} className="h-full" />
+    </div>
+  );
+};
+
+export default IndustrySection;
