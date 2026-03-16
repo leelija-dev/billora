@@ -198,7 +198,7 @@ const StocksScreen = () => {
           style: "destructive",
           onPress: async () => {
             console.log('Deleting stock:', stockId);
-            const result = await deleteStock(stockId);
+            const result = await deleteStock(stockId, user?.id);
             console.log('Delete result:', result);
             
             if (result?.success) {
@@ -364,6 +364,9 @@ const StocksScreen = () => {
             className="rounded-xl p-4 flex-1 mr-2"
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
+            style={{
+              borderRadius:8
+            }}
           >
             <Text className="text-white/80 text-xs">Total Products</Text>
             <Text className="text-white text-2xl font-bold">{totalStocks}</Text>

@@ -68,9 +68,12 @@ export const stocksAPI = {
   },
 
   // Delete stock
-  delete: async (id) => {
+  delete: async (id, userId) => {
     try {
-      const response = await apiClient.delete(`/stocks/${id}`);
+      const response = await apiClient.post(`/stocks/${id}`, {
+        _method: 'DELETE',
+        user_id: userId
+      });
       return response.data;
     } catch (error) {
       throw error.response?.data || error.message;
