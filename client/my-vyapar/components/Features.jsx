@@ -4,6 +4,7 @@ import SectionTitle from "../components/SectionTitle";
 import React, { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 
+
 const Features = () => {
   const features = [
     {
@@ -69,8 +70,7 @@ const Features = () => {
 
 
   return (
-    <section className="py-20 sm:py-24 md:py-[100px] bg-white font-sans overflow-hidden relative">
-
+    <Container>
       {/* Animated Circular Background */}
       <style>{`
         @keyframes float-circle-1 {
@@ -199,7 +199,7 @@ const Features = () => {
           })}
         </div>
       </div>
-    </section>
+    </Container>
   );
 };
 
