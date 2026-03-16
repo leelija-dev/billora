@@ -6,6 +6,7 @@ import { storesAPI } from '../api/stores';
 import { customersAPI } from '../api/customers';
 import { brandsAPI } from '../api/brands';
 import { categoriesAPI } from '../api/categories';
+import { stocksAPI } from '../api/stocks';
 import { useAuthStore } from '../store/authStore';
 
 export const useBillForm = (billId = null) => {
@@ -20,6 +21,7 @@ export const useBillForm = (billId = null) => {
   const [stores, setStores] = useState([]);
   const [brands, setBrands] = useState([]);
   const [categories, setCategories] = useState([]);
+  const [stocks, setStocks] = useState([]);
   const [loadingData, setLoadingData] = useState(false);
   
   // Bill items
@@ -83,7 +85,6 @@ export const useBillForm = (billId = null) => {
       return [response.data];
     }
     
-    console.log('Unable to extract data from response:', response);
     return [];
   };
 
@@ -94,40 +95,35 @@ export const useBillForm = (billId = null) => {
       
       // Fetch products
       const productsResponse = await productsAPI.getAll();
-      console.log('Products API Response:', productsResponse);
       const productsData = extractDataFromResponse(productsResponse);
-      console.log('Products data extracted:', productsData);
       setProducts(productsData);
       
       // Fetch customers
       const customersResponse = await customersAPI.getAll(user?.id || 1);
-      console.log('Customers API Response:', customersResponse);
       const customersData = extractDataFromResponse(customersResponse);
-      console.log('Customers data extracted:', customersData);
       setCustomers(customersData);
       
       // Fetch stores
       if (user?.id) {
         const storesResponse = await storesAPI.getAll(user.id);
-        console.log('Stores API Response:', storesResponse);
         const storesData = extractDataFromResponse(storesResponse);
-        console.log('Stores data extracted:', storesData);
         setStores(storesData);
       }
       
       // Fetch brands
       const brandsResponse = await brandsAPI.getAll();
-      console.log('Brands API Response:', brandsResponse);
       const brandsData = extractDataFromResponse(brandsResponse);
-      console.log('Brands data extracted:', brandsData);
       setBrands(brandsData);
       
       // Fetch categories
       const categoriesResponse = await categoriesAPI.getAll();
-      console.log('Categories API Response:', categoriesResponse);
       const categoriesData = extractDataFromResponse(categoriesResponse);
-      console.log('Categories data extracted:', categoriesData);
       setCategories(categoriesData);
+      
+      // Fetch stocks
+      const stocksResponse = await stocksAPI.getAll();
+      const stocksData = extractDataFromResponse(stocksResponse);
+      setStocks(stocksData);
       
     } catch (err) {
       console.error('Error fetching form data:', err);
@@ -173,6 +169,7 @@ export const useBillForm = (billId = null) => {
           totalPrice: item.total_price || 0,
           unitId: item.unit_id?.toString() || '',
           unitCode: item.unit_code || 'PC',
+          stockId: item.stock_id?.toString() || '',
         })) || []);
       }
     } catch (err) {
@@ -226,15 +223,23 @@ export const useBillForm = (billId = null) => {
     // If product is selected, fetch product details
     if (field === 'productId' && value) {
       const selectedProduct = products.find(p => p.id?.toString() === value);
-      console.log(selectedProduct);
+      
       if (selectedProduct) {
+        console.log("Selected product", selectedProduct);
         updatedItems[index].productName = selectedProduct.name || '';
         updatedItems[index].price = selectedProduct.selling_price?.toString() || '0';
         updatedItems[index].gst = selectedProduct.gst_percentage?.toString() || '0';
         updatedItems[index].discount = selectedProduct.discount_percentage?.toString() || '0';
         updatedItems[index].unitId = selectedProduct.unit_id?.toString() || '';
         updatedItems[index].unitCode = selectedProduct.unit_code || 'PC';
-        updatedItems[index].stockId = selectedProduct.stock_id?.toString() || '';
+        
+        // Find stock for this product to get stockId
+        console.log('Available stocks:', stocks);
+        console.log('Selected product ID:', selectedProduct.id);
+        const stockForProduct = stocks.find(s => s.product_id === selectedProduct.id);
+        console.log('Found stock for product:', stockForProduct);
+        updatedItems[index].stockId = stockForProduct?.id?.toString() || '';
+        console.log('Set stockId to:', updatedItems[index].stockId);
         
         // Get brand and category names
         const brand = brands.find(b => b.id === selectedProduct.brand_id);
@@ -290,123 +295,214 @@ export const useBillForm = (billId = null) => {
   };
 
   const calculateChange = () => {
-    const paid = parseFloat(formData.paidAmount) || 0;
-    const total = calculateGrandTotal();
-    return paid > total ? paid - total : 0;
-  };
+  const paid = parseFloat(formData.paidAmount) || 0;
+  const total = calculateGrandTotal();
+  return paid > total ? paid - total : 0;
+};
 
-  const validateForm = () => {
-    const errors = {};
-    
-    if (!formData.customerId) {
-      errors.customerId = 'Customer is required';
-    }
-    
-    if (!formData.storeId) {
-      errors.storeId = 'Store is required';
-    }
-    
-    // Only validate that paidAmount is a valid number, not that it's sufficient
-    if (formData.paidAmount === '' || formData.paidAmount === null || formData.paidAmount === undefined) {
-      errors.paidAmount = 'Paid amount is required';
-    } else if (isNaN(parseFloat(formData.paidAmount)) || parseFloat(formData.paidAmount) < 0) {
-      errors.paidAmount = 'Valid paid amount is required';
-    }
-    
-    if (items.length === 0) {
-      errors.items = 'At least one item is required';
-    } else {
-      items.forEach((item, index) => {
-        if (!item.productId) {
-          errors[`item_${index}_product`] = `Item ${index + 1}: Product is required`;
-        }
-        if (!item.quantity || parseFloat(item.quantity) <= 0) {
-          errors[`item_${index}_quantity`] = `Item ${index + 1}: Valid quantity is required`;
-        }
-      });
-    }
-    
-    return errors;
-  };
-
-  const createBill = async (billData) => {
-    try {
-      setLoading(true);
-      setError(null);
-      setValidationErrors({});
-      
-      const errors = validateForm();
-      if (Object.keys(errors).length > 0) {
-        setValidationErrors(errors);
-        setError('Please check the form for errors');
-        return { success: false, error: 'Validation failed', errors };
+const validateForm = () => {
+  const errors = {};
+  
+  if (!formData.customerId) {
+    errors.customerId = 'Customer is required';
+  }
+  
+  if (!formData.storeId) {
+    errors.storeId = 'Store is required';
+  }
+  
+  if (formData.paidAmount === '' || formData.paidAmount === null || formData.paidAmount === undefined) {
+    errors.paidAmount = 'Paid amount is required';
+  } else if (isNaN(parseFloat(formData.paidAmount)) || parseFloat(formData.paidAmount) < 0) {
+    errors.paidAmount = 'Valid paid amount is required';
+  }
+  
+  if (items.length === 0) {
+    errors.items = 'At least one item is required';
+  } else {
+    items.forEach((item, index) => {
+      if (!item.productId) {
+        errors[`item_${index}_product`] = `Item ${index + 1}: Product is required`;
       }
+      if (!item.quantity || parseFloat(item.quantity) <= 0) {
+        errors[`item_${index}_quantity`] = `Item ${index + 1}: Valid quantity is required`;
+      }
+    });
+  }
+  
+  return errors;
+};
+
+const createBill = async (billData) => {
+  // Prevent multiple submissions
+  if (loading) {
+    console.log('Bill creation already in progress, ignoring duplicate call');
+    return { success: false, error: 'Bill creation already in progress' };
+  }
+
+  try {
+    setLoading(true);
+    setError(null);
+    setValidationErrors({});
+    
+    const errors = validateForm();
+    if (Object.keys(errors).length > 0) {
+      setValidationErrors(errors);
+      setError('Please check the form for errors');
+      return { success: false, error: 'Validation failed', errors };
+    }
+    
+    // Get user_id from current user
+    const userId = user?.id || user?.user_id || '1';
+    
+    console.log('Form data before payload creation:', formData);
+    console.log('Customer ID:', formData.customerId);
+    console.log('Store ID:', formData.storeId);
+    
+    // Prepare items for API - including stock_id since backend requires it
+    const itemsPayload = items.map(item => ({
+      product_id: parseInt(item.productId),
+      quantity: parseInt(item.quantity),
+      item_count: parseInt(item.quantity),
+      unit_id: item.unitId ? parseInt(item.unitId) : null,
+      price: parseFloat(item.price),
+      gst: parseFloat(item.gst) || 0,
+      discount: parseFloat(item.discount) || 0,
+      total_price: parseFloat(item.totalPrice) || 0,
+      status: 'completed',
+      stock_id: item.stockId ? parseInt(item.stockId) : null, // Add stock_id here
+    }));
+    
+    
+    // Prepare data for API - using snake_case as expected by backend
+    const payload = {
+      user_id: parseInt(userId),
+      customer_id: formData.customerId ? parseInt(formData.customerId) : null,
+      store_id: formData.storeId ? parseInt(formData.storeId) : null,
+      paid_amount: parseFloat(formData.paidAmount) || 0,
+      created_by: parseInt(userId),
+      items: itemsPayload,
+    };
+    
+    console.log('Create Bill API payload:', payload);
+    
+    const response = await billsAPI.create(payload);
+    console.log('Create bill response:', response);
+    
+    if (response?.status === true || response?.data?.status === true) {
+      const createdBill = response?.data?.data || response?.data || response;
       
-      // Get user_id from current user
-      const userId = user?.id || user?.user_id || '1';
+      navigation.navigate('BillDetail', { billId: createdBill.id });
       
-      // Prepare items for API
-      const itemsPayload = items.map(item => ({
-        productId: parseInt(item.productId),
-        quantity: parseInt(item.quantity),
-        unitId: parseInt(item.unitId) || null,
-        price: parseFloat(item.price),
-        gst: parseFloat(item.gst) || 0,
-        discount: parseFloat(item.discount) || 0,
-        totalPrice: item.totalPrice,
-        stockId: item.stockId || null,
-      }));
-      
-      // Prepare data for API
-      const payload = {
-        customerId: parseInt(formData.customerId),
-        storeId: parseInt(formData.storeId),
-        paidAmount: parseFloat(formData.paidAmount),
-        userId: userId,
-        createdBy: userId,
-        items: itemsPayload,
+      return { 
+        success: true, 
+        data: createdBill 
       };
-      
-      console.log('Create bill payload:', payload);
-      const response = await billsAPI.create(payload);
-      console.log('Create bill response:', response);
-      
-      if (response?.status === true || response?.data?.status === true) {
-        const createdBill = response?.data?.data || response?.data || response;
-        
-        // Navigate to bill detail or print preview
-        navigation.navigate('BillDetail', { billId: createdBill.id });
-        
-        return { 
-          success: true, 
-          data: createdBill 
-        };
-      } else {
-        throw new Error(response?.message || 'Failed to create bill');
-      }
-    } catch (err) {
-      console.error('Create bill error:', err);
-      
-      if (err.response?.status === 422) {
-        const errors = err.response?.data?.errors || {};
-        setValidationErrors(errors);
-        setError('Please check the form for errors');
-        return { 
-          success: false, 
-          error: 'Validation failed',
-          errors: errors 
-        };
-      }
-      
-      setError(err.message || 'Failed to create bill');
-      return { success: false, error: err.message };
-    } finally {
-      setLoading(false);
+    } else {
+      throw new Error(response?.message || 'Failed to create bill');
     }
-  };
+  } catch (err) {
+    console.error('Create bill error:', err);
+    
+    if (err.response?.status === 422) {
+      const errors = err.response?.data?.errors || {};
+      setValidationErrors(errors);
+      setError('Please check the form for errors');
+      return { 
+        success: false, 
+        error: 'Validation failed',
+        errors: errors 
+      };
+    }
+    
+    setError(err.message || 'Failed to create bill');
+    return { success: false, error: err.message };
+  } finally {
+    setLoading(false);
+  }
+};
+
+const updateBill = async (billData) => {
+  try {
+    setLoading(true);
+    setError(null);
+    setValidationErrors({});
+    
+    const errors = validateForm();
+    if (Object.keys(errors).length > 0) {
+      setValidationErrors(errors);
+      setError('Please check the form for errors');
+      return { success: false, error: 'Validation failed', errors };
+    }
+    
+    // Get user_id from current user
+    const userId = user?.id || user?.user_id || '1';
+    
+    // Prepare items for API - including stock_id
+    const itemsPayload = items.map(item => ({
+      product_id: parseInt(item.productId),
+      quantity: parseInt(item.quantity),
+      item_count: parseInt(item.quantity),
+      unit_id: item.unitId ? parseInt(item.unitId) : null,
+      price: parseFloat(item.price),
+      gst: parseFloat(item.gst) || 0,
+      discount: parseFloat(item.discount) || 0,
+      total_price: parseFloat(item.totalPrice) || 0,
+      status: 'completed',
+      stock_id: item.stockId ? parseInt(item.stockId) : null,
+    }));
+    
+    // Prepare data for API
+    const payload = {
+      customer_id: parseInt(formData.customerId),
+      store_id: parseInt(formData.storeId),
+      paid_amount: parseFloat(formData.paidAmount) || 0,
+      items: itemsPayload,
+    };
+    
+    console.log('Update bill payload:', payload);
+    const response = await billsAPI.update(billId, payload);
+    console.log('Update bill response:', response);
+    
+    if (response?.status === true || response?.data?.status === true) {
+      const updatedBill = response?.data?.data || response?.data || response;
+      
+      navigation.navigate('BillDetail', { billId: updatedBill.id });
+      
+      return { 
+        success: true, 
+        data: updatedBill 
+      };
+    } else {
+      throw new Error(response?.message || 'Failed to update bill');
+    }
+  } catch (err) {
+    console.error('Update bill error:', err);
+    
+    if (err.response?.status === 422) {
+      const errors = err.response?.data?.errors || {};
+      setValidationErrors(errors);
+      setError('Please check the form for errors');
+      return { 
+        success: false, 
+        error: 'Validation failed',
+        errors: errors 
+      };
+    }
+    
+    setError(err.message || 'Failed to update bill');
+    return { success: false, error: err.message };
+  } finally {
+    setLoading(false);
+  }
+};
 
   const saveBill = async () => {
-    return await createBill(formData);
+    if (billId) {
+      return await updateBill(formData);
+    } else {
+      return await createBill(formData);
+    }
   };
 
   const clearError = () => {

@@ -58,38 +58,50 @@ export const billsAPI = {
   },
 
   // Create new bill
-  create: async (billData) => {
-    try {
-      const api = getBillsData();
-      
-      // Map frontend field names to API expected field names
-      const payload = {
-        user_id: billData.userId || billData.user_id,
-        customer_id: billData.customerId,
-        store_id: billData.storeId,
-        paid_amount: parseFloat(billData.paidAmount) || 0,
-        created_by: billData.createdBy || billData.userId || billData.user_id,
-        items: billData.items.map(item => ({
-          product_id: item.productId,
-          quantity: parseInt(item.quantity),
-          item_count: parseInt(item.quantity),
-          unit_id: item.unitId,
-          price: parseFloat(item.price),
-          gst: parseFloat(item.gst) || 0,
-          discount: parseFloat(item.discount) || 0,
-          total_price: parseFloat(item.totalPrice),
-          status: 'completed'
-        }))
-      };
-      
-      console.log('Create Bill API payload:', payload);
-      const response = await api.post('/invoice/store', payload);
+ // Create new bill
+create: async (billData) => {
+  try {
+    const api = getBillsData();
+    console.log("here is the bill data:", billData);
+    
+    // Check if data is already in snake_case (from your form) or needs mapping
+    // If billData already has customer_id, use it directly
+    if (billData.customer_id !== undefined) {
+      // Data is already in the correct format, send it directly
+      console.log('Using direct snake_case payload');
+      const response = await api.post('/invoice/store', billData);
       return response.data;
-    } catch (error) {
-      console.error('Create Bill API error:', error.response?.data || error.message);
-      throw error;
     }
-  },
+    
+    // Otherwise, map from camelCase to snake_case
+    const payload = {
+      user_id: billData.userId || billData.user_id,
+      customer_id: billData.customerId || billData.customer_id,
+      store_id: billData.storeId || billData.store_id,
+      paid_amount: parseFloat(billData.paidAmount || billData.paid_amount) || 0,
+      created_by: billData.createdBy || billData.created_by || billData.userId || billData.user_id,
+      items: (billData.items || []).map(item => ({
+        product_id: item.productId || item.product_id,
+        quantity: parseInt(item.quantity || item.quantity),
+        item_count: parseInt(item.quantity || item.item_count || item.quantity),
+        unit_id: item.unitId || item.unit_id,
+        price: parseFloat(item.price || item.price),
+        gst: parseFloat(item.gst || item.gst) || 0,
+        discount: parseFloat(item.discount || item.discount) || 0,
+        total_price: parseFloat(item.totalPrice || item.total_price),
+        stock_id: item.stockId || item.stock_id, // Add this if needed
+        status: item.status || 'completed'
+      }))
+    };
+    
+    console.log('Create Bill API mapped payload:', payload);
+    const response = await api.post('/invoice/store', payload);
+    return response.data;
+  } catch (error) {
+    console.error('Create Bill API error:', error.response?.data || error.message);
+    throw error;
+  }
+},
 
   // Update bill
   update: async (id, billData) => {
