@@ -7,6 +7,7 @@ import {
   useSpring,
 } from "framer-motion";
 import Link from "next/link";
+import Container from "../components/Container"; // Add this import
 
 const INDUSTRY_DATA = [
   { id: 1, tag: "Innovation", title: "Drive Innovation", description: "Transform your business with cutting-edge billing solutions designed for the modern era of digital commerce.", buttonText: "Learn More", buttonLink: "/solutions/innovation", icon: "🚀", color: "#7fa1d0", lightColor: "#f0f4f9", image: "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&w=1200&q=80" },
@@ -33,26 +34,29 @@ const IndustrySection = () => {
 
   return (
     <section ref={containerRef} className="relative h-[1100vh] bg-white mb-5">
-      <div className="sticky top-0 h-screen w-full flex flex-col items-center justify-center overflow-hidden px-4 sm:px-6 md:px-8 lg:px-10">
+      <div className="sticky top-0 h-screen w-full flex flex-col items-center justify-center overflow-hidden">
         
-        <div className="text-center mb-6 sm:mb-8 md:mb-10 max-w-3xl px-4">
-          <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-slate-900 mb-2 sm:mb-3 md:mb-4 tracking-tight">
-            Supporting businesses from a wide range of industries
-          </h2>
-          <p className="text-sm sm:text-base text-slate-500">Scroll to explore our specialized solutions</p>
-        </div>
+        {/* Content wrapped in Container */}
+        <Container>
+          <div className="text-center mb-6 sm:mb-8 md:mb-10 max-w-3xl mx-auto">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-slate-900 mb-2 sm:mb-3 md:mb-4 tracking-tight">
+              Supporting businesses from a wide range of industries
+            </h2>
+            <p className="text-sm sm:text-base text-slate-500">Scroll to explore our specialized solutions</p>
+          </div>
 
-        <div className="relative w-full max-w-6xl h-[450px] sm:h-[500px] md:h-[550px] lg:h-[600px]">
-          {INDUSTRY_DATA.map((industry, index) => (
-            <IndustryCard 
-              key={industry.id} 
-              item={industry} 
-              index={index} 
-              total={INDUSTRY_DATA.length} 
-              progress={smoothProgress} 
-            />
-          ))}
-        </div>
+          <div className="relative w-full max-w-6xl h-[450px] sm:h-[500px] md:h-[550px] lg:h-[600px] mx-auto">
+            {INDUSTRY_DATA.map((industry, index) => (
+              <IndustryCard 
+                key={industry.id} 
+                item={industry} 
+                index={index} 
+                total={INDUSTRY_DATA.length} 
+                progress={smoothProgress} 
+              />
+            ))}
+          </div>
+        </Container>
 
         <div className="absolute bottom-10 flex items-center gap-3">
           <span className="text-xs font-bold text-slate-400">01</span>
