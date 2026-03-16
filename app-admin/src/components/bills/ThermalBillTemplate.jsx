@@ -7,21 +7,63 @@ const ThermalBillTemplate = ({ bill }) => {
 
   if (!bill) return null;
 
+  // Helper function to safely parse numbers
+  const parseNumber = (value) => {
+    if (value === null || value === undefined) return 0;
+    if (typeof value === 'number') return value;
+    if (typeof value === 'string') return parseFloat(value) || 0;
+    return 0;
+  };
+
+  // Helper function to safely format currency
+  const formatCurrency = (value) => {
+    const num = parseNumber(value);
+    return num.toFixed(2);
+  };
+
+  // Calculate totals from invoice_items
+  const calculateSubtotal = () => {
+    if (!bill.invoice_items || !Array.isArray(bill.invoice_items)) return 0;
+    return bill.invoice_items.reduce((sum, item) => {
+      return sum + parseNumber(item.total_price);
+    }, 0);
+  };
+
+  const calculateTotalGST = () => {
+    if (!bill.invoice_items || !Array.isArray(bill.invoice_items)) return 0;
+    return bill.invoice_items.reduce((sum, item) => {
+      const itemPrice = parseNumber(item.price);
+      const itemGst = parseNumber(item.gst);
+      const quantity = parseNumber(item.quantity);
+      const subtotal = itemPrice * quantity;
+      return sum + (subtotal * itemGst / 100);
+    }, 0);
+  };
+
+  const calculateTotalDiscount = () => {
+    if (!bill.invoice_items || !Array.isArray(bill.invoice_items)) return 0;
+    return bill.invoice_items.reduce((sum, item) => {
+      const itemPrice = parseNumber(item.price);
+      const itemDiscount = parseNumber(item.discount);
+      const quantity = parseNumber(item.quantity);
+      const subtotal = itemPrice * quantity;
+      return sum + (subtotal * itemDiscount / 100);
+    }, 0);
+  };
+
   return (
     <View className={`p-4 ${isDarkMode ? 'bg-gray-900' : 'bg-white'}`} style={{ width: '100%' }}>
-      {/* Store Header */}
+      {/* Store Header - You might need to fetch store details separately or from context */}
       <View className="items-center mb-4">
         <Text className={`text-xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
-          {bill.store?.name || 'Your Store'}
+          Your Store Name
         </Text>
         <Text className={`text-xs text-center mt-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-          {bill.store?.address || '123 Business St'}
+          Store Address
         </Text>
-        {bill.store?.phone && (
-          <Text className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-            Tel: {bill.store.phone}
-          </Text>
-        )}
+        <Text className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+          Tel: Store Phone
+        </Text>
       </View>
 
       {/* Separator */}
@@ -36,7 +78,7 @@ const ThermalBillTemplate = ({ bill }) => {
             Invoice:
           </Text>
           <Text className={`text-xs font-semibold ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
-            {bill.invoice_no}
+            {bill.invoice_no || 'N/A'}
           </Text>
         </View>
         <View className="flex-row justify-between mt-1">
@@ -44,21 +86,16 @@ const ThermalBillTemplate = ({ bill }) => {
             Date:
           </Text>
           <Text className={`text-xs ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
-            {format(new Date(bill.created_at), 'dd/MM/yyyy HH:mm')}
+            {bill.created_at ? format(new Date(bill.created_at), 'dd/MM/yyyy HH:mm') : 'N/A'}
           </Text>
         </View>
       </View>
 
-      {/* Customer */}
+      {/* Customer - You might need to fetch customer details separately */}
       <View className="mb-3">
         <Text className={`text-xs font-semibold ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
-          Customer: {bill.customer?.name || 'Walk-in Customer'}
+          Customer ID: {bill.customer_id || 'Walk-in Customer'}
         </Text>
-        {bill.customer?.phone && (
-          <Text className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-            {bill.customer.phone}
-          </Text>
-        )}
       </View>
 
       {/* Separator */}
@@ -85,22 +122,29 @@ const ThermalBillTemplate = ({ bill }) => {
         </View>
 
         {/* Items List */}
-        {bill.items?.map((item, index) => (
+        {bill.invoice_items?.map((item, index) => {
+          // Safely convert item values to numbers
+          const itemPrice = parseNumber(item.price);
+          const itemTotal = parseNumber(item.total_price);
+          const quantity = parseNumber(item.quantity);
+          
+          return (
           <View key={item.id || index} className="flex-row py-1">
             <Text className={`flex-[3] text-xs ${isDarkMode ? 'text-white' : 'text-gray-800'}`} numberOfLines={1}>
-              {item.product?.name || `Product ${item.product_id}`}
+              Product #{item.product_id}
             </Text>
             <Text className={`flex-1 text-xs text-right ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
-              {item.quantity}
+              {quantity}
             </Text>
             <Text className={`flex-1 text-xs text-right ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
-              ${item.price?.toFixed(2)}
+              ${formatCurrency(itemPrice)}
             </Text>
             <Text className={`flex-1 text-xs font-semibold text-right text-green-500`}>
-              ${item.total_price?.toFixed(2)}
+              ${formatCurrency(itemTotal)}
             </Text>
           </View>
-        ))}
+          );
+        })}
       </View>
 
       {/* Separator */}
@@ -115,7 +159,7 @@ const ThermalBillTemplate = ({ bill }) => {
             Subtotal:
           </Text>
           <Text className={`text-xs font-semibold ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
-            ${bill.total_amount?.toFixed(2)}
+            ${formatCurrency(calculateSubtotal())}
           </Text>
         </View>
         <View className="flex-row justify-between mb-1">
@@ -123,10 +167,7 @@ const ThermalBillTemplate = ({ bill }) => {
             GST:
           </Text>
           <Text className={`text-xs ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
-            ${bill.items?.reduce((sum, item) => {
-              const subtotal = item.price * item.quantity;
-              return sum + (subtotal * (item.gst || 0) / 100);
-            }, 0).toFixed(2)}
+            ${formatCurrency(calculateTotalGST())}
           </Text>
         </View>
         <View className="flex-row justify-between mb-1">
@@ -134,10 +175,7 @@ const ThermalBillTemplate = ({ bill }) => {
             Discount:
           </Text>
           <Text className="text-xs text-green-500">
-            -${bill.items?.reduce((sum, item) => {
-              const subtotal = item.price * item.quantity;
-              return sum + (subtotal * (item.discount || 0) / 100);
-            }, 0).toFixed(2)}
+            -${formatCurrency(calculateTotalDiscount())}
           </Text>
         </View>
         <View className="flex-row justify-between mt-2">
@@ -145,7 +183,7 @@ const ThermalBillTemplate = ({ bill }) => {
             TOTAL:
           </Text>
           <Text className="text-base font-bold text-blue-500">
-            ${bill.total_amount?.toFixed(2)}
+            ${formatCurrency(bill.total_amount)}
           </Text>
         </View>
       </View>
@@ -157,16 +195,16 @@ const ThermalBillTemplate = ({ bill }) => {
             Paid:
           </Text>
           <Text className="text-xs font-semibold text-green-500">
-            ${bill.paid_amount?.toFixed(2)}
+            ${formatCurrency(bill.paid_amount)}
           </Text>
         </View>
-        {bill.change_amount > 0 && (
+        {parseNumber(bill.change_amount) > 0 && (
           <View className="flex-row justify-between mt-1">
             <Text className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
               Change:
             </Text>
             <Text className="text-xs font-semibold text-blue-500">
-              ${bill.change_amount?.toFixed(2)}
+              ${formatCurrency(bill.change_amount)}
             </Text>
           </View>
         )}

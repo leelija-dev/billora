@@ -114,7 +114,14 @@ const A4BillTemplate = ({ bill }) => {
         </View>
 
         {/* Table Items */}
-        {bill.items?.map((item, index) => (
+        {bill.items?.map((item, index) => {
+          // Safely convert item values to numbers
+          const itemPrice = typeof item.price === 'string' ? parseFloat(item.price) : (typeof item.price === 'number' ? item.price : 0);
+          const itemTotal = typeof item.total_price === 'string' ? parseFloat(item.total_price) : (typeof item.total_price === 'number' ? item.total_price : 0);
+          const itemGst = typeof item.gst === 'string' ? parseFloat(item.gst) : (typeof item.gst === 'number' ? item.gst : 0);
+          const itemDiscount = typeof item.discount === 'string' ? parseFloat(item.discount) : (typeof item.discount === 'number' ? item.discount : 0);
+          
+          return (
           <View key={item.id || index} className={`flex-row py-2 border-b ${
             isDarkMode ? 'border-gray-700' : 'border-gray-200'
           }`}>
@@ -128,19 +135,20 @@ const A4BillTemplate = ({ bill }) => {
               {item.quantity}
             </Text>
             <Text className={`flex-1 text-sm text-right ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
-              ${item.price?.toFixed(2)}
+              ${itemPrice.toFixed(2)}
             </Text>
             <Text className={`flex-1 text-sm text-right ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
-              {item.gst || 0}%
+              {itemGst || 0}%
             </Text>
             <Text className={`flex-1 text-sm text-right ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
-              {item.discount || 0}%
+              {itemDiscount || 0}%
             </Text>
             <Text className={`flex-1 text-sm font-semibold text-right text-green-500`}>
-              ${item.total_price?.toFixed(2)}
+              ${itemTotal.toFixed(2)}
             </Text>
           </View>
-        ))}
+          );
+        })}
       </View>
 
       {/* Summary */}
@@ -150,7 +158,7 @@ const A4BillTemplate = ({ bill }) => {
             Subtotal:
           </Text>
           <Text className={`font-semibold ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
-            ${bill.total_amount?.toFixed(2)}
+            ${parseFloat(bill.total_amount || 0).toFixed(2)}
           </Text>
         </View>
         <View className="flex-row justify-between mb-2">
@@ -159,8 +167,10 @@ const A4BillTemplate = ({ bill }) => {
           </Text>
           <Text className={`font-semibold ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
             ${bill.items?.reduce((sum, item) => {
-              const subtotal = item.price * item.quantity;
-              return sum + (subtotal * (item.gst || 0) / 100);
+              const itemPrice = typeof item.price === 'string' ? parseFloat(item.price) : (typeof item.price === 'number' ? item.price : 0);
+              const itemGst = typeof item.gst === 'string' ? parseFloat(item.gst) : (typeof item.gst === 'number' ? item.gst : 0);
+              const subtotal = itemPrice * parseFloat(item.quantity || 0);
+              return sum + (subtotal * itemGst / 100);
             }, 0).toFixed(2)}
           </Text>
         </View>
@@ -170,8 +180,10 @@ const A4BillTemplate = ({ bill }) => {
           </Text>
           <Text className="text-green-500">
             -${bill.items?.reduce((sum, item) => {
-              const subtotal = item.price * item.quantity;
-              return sum + (subtotal * (item.discount || 0) / 100);
+              const itemPrice = typeof item.price === 'string' ? parseFloat(item.price) : (typeof item.price === 'number' ? item.price : 0);
+              const itemDiscount = typeof item.discount === 'string' ? parseFloat(item.discount) : (typeof item.discount === 'number' ? item.discount : 0);
+              const subtotal = itemPrice * parseFloat(item.quantity || 0);
+              return sum + (subtotal * itemDiscount / 100);
             }, 0).toFixed(2)}
           </Text>
         </View>
@@ -182,7 +194,7 @@ const A4BillTemplate = ({ bill }) => {
             Grand Total:
           </Text>
           <Text className="text-xl font-bold text-blue-500">
-            ${bill.total_amount?.toFixed(2)}
+            ${parseFloat(bill.total_amount || 0).toFixed(2)}
           </Text>
         </View>
       </View>
@@ -197,7 +209,7 @@ const A4BillTemplate = ({ bill }) => {
             Amount Paid:
           </Text>
           <Text className="font-semibold text-green-500">
-            ${bill.paid_amount?.toFixed(2)}
+            ${parseFloat(bill.paid_amount || 0).toFixed(2)}
           </Text>
         </View>
         {bill.change_amount > 0 && (
@@ -206,7 +218,7 @@ const A4BillTemplate = ({ bill }) => {
               Change Returned:
             </Text>
             <Text className="font-semibold text-blue-500">
-              ${bill.change_amount?.toFixed(2)}
+              ${parseFloat(bill.change_amount || 0).toFixed(2)}
             </Text>
           </View>
         )}

@@ -65,18 +65,30 @@ const CustomerList = ({
     // Filter by due status
     if (filters.dueStatus !== 'all') {
       if (filters.dueStatus === 'hasDue') {
-        filtered = filtered.filter(c => (c.due_amount || 0) > 0);
+        filtered = filtered.filter(c => {
+          const dueAmount = typeof c.due_amount === 'string' ? parseFloat(c.due_amount) : (typeof c.due_amount === 'number' ? c.due_amount : 0);
+          return dueAmount > 0;
+        });
       } else if (filters.dueStatus === 'noDue') {
-        filtered = filtered.filter(c => !c.due_amount || c.due_amount === 0);
+        filtered = filtered.filter(c => {
+          const dueAmount = typeof c.due_amount === 'string' ? parseFloat(c.due_amount) : (typeof c.due_amount === 'number' ? c.due_amount : 0);
+          return !dueAmount || dueAmount === 0;
+        });
       }
     }
     
     // Filter by due amount range
     if (filters.minDue) {
-      filtered = filtered.filter(c => (c.due_amount || 0) >= parseFloat(filters.minDue));
+      filtered = filtered.filter(c => {
+        const dueAmount = typeof c.due_amount === 'string' ? parseFloat(c.due_amount) : (typeof c.due_amount === 'number' ? c.due_amount : 0);
+        return dueAmount >= parseFloat(filters.minDue);
+      });
     }
     if (filters.maxDue) {
-      filtered = filtered.filter(c => (c.due_amount || 0) <= parseFloat(filters.maxDue));
+      filtered = filtered.filter(c => {
+        const dueAmount = typeof c.due_amount === 'string' ? parseFloat(c.due_amount) : (typeof c.due_amount === 'number' ? c.due_amount : 0);
+        return dueAmount <= parseFloat(filters.maxDue);
+      });
     }
     
     // Filter by city
@@ -120,7 +132,9 @@ const CustomerList = ({
           comparison = (a.name || '').localeCompare(b.name || '');
           break;
         case 'due':
-          comparison = (a.due_amount || 0) - (b.due_amount || 0);
+          const aDueAmount = typeof a.due_amount === 'string' ? parseFloat(a.due_amount) : (typeof a.due_amount === 'number' ? a.due_amount : 0);
+          const bDueAmount = typeof b.due_amount === 'string' ? parseFloat(b.due_amount) : (typeof b.due_amount === 'number' ? b.due_amount : 0);
+          comparison = aDueAmount - bDueAmount;
           break;
         case 'date':
           comparison = new Date(b.created_at || 0) - new Date(a.created_at || 0);
@@ -146,8 +160,15 @@ const CustomerList = ({
       totalDue: 0,
     };
     
-    const withDue = customers.filter(c => (c.due_amount || 0) > 0).length;
-    const totalDue = customers.reduce((sum, c) => sum + (c.due_amount || 0), 0);
+    const withDue = customers.filter(c => {
+      const dueAmount = typeof c.due_amount === 'string' ? parseFloat(c.due_amount) : (typeof c.due_amount === 'number' ? c.due_amount : 0);
+      return dueAmount > 0;
+    }).length;
+    
+    const totalDue = customers.reduce((sum, c) => {
+      const dueAmount = typeof c.due_amount === 'string' ? parseFloat(c.due_amount) : (typeof c.due_amount === 'number' ? c.due_amount : 0);
+      return sum + dueAmount;
+    }, 0);
     
     return {
       total: customers.length,
@@ -316,13 +337,16 @@ const CustomerList = ({
             </Text>
           </View>
           
-          {item.due_amount > 0 && (
-            <View className="bg-yellow-500/20 px-2 py-1 rounded-full">
-              <Text className="text-xs text-yellow-500 font-medium">
-                Due: ${item.due_amount?.toFixed(2)}
-              </Text>
-            </View>
-          )}
+          {(() => {
+            const dueAmount = typeof item.due_amount === 'string' ? parseFloat(item.due_amount) : (typeof item.due_amount === 'number' ? item.due_amount : 0);
+            return dueAmount > 0 && (
+              <View className="bg-yellow-500/20 px-2 py-1 rounded-full">
+                <Text className="text-xs text-yellow-500 font-medium">
+                  Due: ${dueAmount.toFixed(2)}
+                </Text>
+              </View>
+            );
+          })()}
         </View>
       </View>
     </TouchableOpacity>
