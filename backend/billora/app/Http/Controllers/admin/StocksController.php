@@ -83,8 +83,8 @@ class StocksController extends Controller
             ]);
         }
         $user = Auth::user()->id;
-        $data['user_id'] = $user;
-        $data['created_by'] = $user;
+        $stocks['user_id'] = $user;
+        $stocks['created_by'] = $user;
         $stock = Stocks::create($stocks);
         $stocks = Stocks::where('user_id', $user)->get();
         return response()->json([
@@ -102,24 +102,44 @@ class StocksController extends Controller
 
     }   
     public function edit($id){
-        $stock=Stocks::findOrFail($id);
+        try{
+            if(!Auth::check()){
+                return response()->json([
+                   'status' => false,
+                   'message' => 'Authentication required. Please login first.' 
+                ]);
+            }
+        $user = Auth::user()->id;
+        $stock = Stocks::where('user_id', $user)->where('id', $id)->first();
         return response()->json([
             'status' => true,
-            'message' => 'edit stock',
+            'message' => 'edit/show stock',
             'data' => $stock
         ]);
+        }catch(\Exception $e){
+            return response()->json([
+                'status' => false,
+                'message' => $e->getMessage()
+            ]);
+        }
     }
 
     public function update($id,Request $request){
         try{
+            if(!Auth::check()){
+                return response()->json([
+                   'status' => false,
+                   'message' => 'Authentication required. Please login first.' 
+                ]);
+            }
+            $user = Auth::user()->id;
             $data=$request->validate([
-                'user_id'       =>'required',
                 'product_id'    =>'required',
                 'purchase_price'=>'nullable',
                 'selling_price' =>'required',
                 'unit_id'       =>'required',
             ]);
-            $stock = Stocks::findOrFail('id',$id);
+            $stock = Stocks::where('user_id', $user)->where('id', $id)->first();
 
             $stock->update($data);
 
@@ -137,6 +157,13 @@ class StocksController extends Controller
         }
         public function destroy($id,$user_id){
             try{
+                if(!Auth::check()){
+                    return response()->json([
+                       'status' => false,
+                       'message' => 'Authentication required. Please login first.' 
+                    ]);
+                }
+            $user = Auth::user()->id;
             $stock = Stocks::where('id', $id)
             ->where('user_id', $user_id)
             ->firstOrFail();
@@ -159,9 +186,16 @@ class StocksController extends Controller
                 'user_id' =>'required',
             ]);
             try{
+                if(!Auth::check()){
+                    return response()->json([
+                       'status' => false,
+                       'message' => 'Authentication required. Please login first.' 
+                    ]);
+                }
+                $user = Auth::user()->id;
             $stock = Stocks::where('id', $id)
             ->where('user_id', $data['user_id'])
-            ->firstOrFail();
+            ->first();
 
             $stock->update([
                 'quantity'=>((float)$stock->quantity + (float)$data['quantity']),
