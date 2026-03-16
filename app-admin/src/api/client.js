@@ -1,5 +1,6 @@
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { authStorage } from '../utils/storage';
 
 const API_URL = process.env.EXPO_PUBLIC_API_BASE_URL || 'http://localhost:8000/api';
 
@@ -32,9 +33,12 @@ apiClient.interceptors.request.use(
 apiClient.interceptors.request.use(
   async (config) => {
     try {
-      const token = await AsyncStorage.getItem('authToken');
+      const token = await authStorage.getAuthToken();
       if (token) {
         config.headers.Authorization = `Bearer ${token}`;
+        console.log('Token added to request headers');
+      } else {
+        console.log('No token found in storage');
       }
     } catch (error) {
       console.error('Error getting auth token:', error);
@@ -66,9 +70,8 @@ apiClient.interceptors.response.use(
     
     if (error.response?.status === 401) {
       try {
-        await AsyncStorage.removeItem('authToken');
-        await AsyncStorage.removeItem('userId');
-        await AsyncStorage.removeItem('user');
+        await authStorage.clearAuth();
+        console.log('Auth tokens cleared due to 401 error');
       } catch (storageError) {
         console.error('Error clearing storage:', storageError);
       }

@@ -1,18 +1,10 @@
 import { apiClient } from './client';
-import { mockCustomers } from './mock/customers';
-
-// Get customers data based on project mode
-const getCustomersData = () => {
-  const projectMode = process.env.EXPO_PUBLIC_PROJECT_MODE || 'mock';
-  return projectMode === 'mock' ? mockCustomers : apiClient;
-};
 
 export const customersAPI = {
   // Get all customers for a user
   getAll: async (userId, params = {}) => {
     try {
-      const api = getCustomersData();
-      const response = await api.get(`/customer/${userId}`, { params });
+      const response = await apiClient.get(`/customer/${userId}`, { params });
       console.log('Customers API Response:', response.data);
       return response.data;
     } catch (error) {
@@ -23,8 +15,7 @@ export const customersAPI = {
   // Search customers
   search: async (userId, query, params = {}) => {
     try {
-      const api = getCustomersData();
-      const response = await api.get(`/customer/${userId}`, {
+      const response = await apiClient.get(`/customer/${userId}`, {
         params: { search: query, ...params }
       });
       return response.data;
@@ -36,8 +27,7 @@ export const customersAPI = {
   // Get single customer
   getById: async (id) => {
     try {
-      const api = getCustomersData();
-      const response = await api.get(`/customer/show/${id}`);
+      const response = await apiClient.get(`/customer/show/${id}`);
       return response.data;
     } catch (error) {
       console.error('Get Customer API error:', error.response?.data || error.message);
@@ -48,8 +38,7 @@ export const customersAPI = {
   // Get customer payment history with date filter
   getPaymentHistory: async (id, startDate, endDate) => {
     try {
-      const api = getCustomersData();
-      const response = await api.get(`/customer/show/${id}`, {
+      const response = await apiClient.get(`/customer/show/${id}`, {
         params: { 
           start_date: startDate,
           end_date: endDate 
@@ -64,8 +53,6 @@ export const customersAPI = {
   // Create new customer
   create: async (customerData) => {
     try {
-      const api = getCustomersData();
-      
       // Map frontend field names to API expected field names
       const payload = {
         admin_id: customerData.adminId || customerData.admin_id,
@@ -78,7 +65,7 @@ export const customersAPI = {
       };
       
       console.log('Create Customer API payload:', payload);
-      const response = await api.post('/customer/store', payload);
+      const response = await apiClient.post('/customer/store', payload);
       return response.data;
     } catch (error) {
       console.error('Create Customer API error:', error.response?.data || error.message);
@@ -89,8 +76,6 @@ export const customersAPI = {
   // Update customer
   update: async (id, customerData) => {
     try {
-      const api = getCustomersData();
-      
       // Map frontend field names to API expected field names
       const payload = {
         user_id: customerData.userId || customerData.user_id || customerData.adminId || customerData.admin_id,
@@ -102,7 +87,7 @@ export const customersAPI = {
       };
       
       console.log('Update Customer API payload:', payload);
-      const response = await api.put(`/customer/${id}`, payload);
+      const response = await apiClient.put(`/customer/${id}`, payload);
       return response.data;
     } catch (error) {
       console.error('Update Customer API error:', error.response?.data || error.message);
@@ -113,8 +98,7 @@ export const customersAPI = {
   // Add due payment
   addDuePayment: async (id, paymentData) => {
     try {
-      const api = getCustomersData();
-      const response = await api.put(`/customer/due-payment/${id}`, {
+      const response = await apiClient.put(`/customer/due-payment/${id}`, {
         due_payment: paymentData.duePayment || paymentData.due_payment
       });
       return response.data;
@@ -127,8 +111,7 @@ export const customersAPI = {
   // Delete customer (soft delete)
   delete: async (id) => {
     try {
-      const api = getCustomersData();
-      const response = await api.delete(`/customer/${id}`);
+      const response = await apiClient.delete(`/customer/${id}`);
       return response.data;
     } catch (error) {
       throw error.response?.data || error.message;
@@ -138,8 +121,7 @@ export const customersAPI = {
   // Get trashed (soft deleted) customers
   getTrashed: async () => {
     try {
-      const api = getCustomersData();
-      const response = await api.get('/customer/trashed');
+      const response = await apiClient.get('/customer/trashed');
       return response.data;
     } catch (error) {
       throw error.response?.data || error.message;
@@ -149,8 +131,7 @@ export const customersAPI = {
   // Restore soft deleted customer
   restore: async (id) => {
     try {
-      const api = getCustomersData();
-      const response = await api.patch(`/customer/${id}`);
+      const response = await apiClient.patch(`/customer/${id}`);
       return response.data;
     } catch (error) {
       throw error.response?.data || error.message;
@@ -160,8 +141,7 @@ export const customersAPI = {
   // Permanently delete customer
   forceDelete: async (id) => {
     try {
-      const api = getCustomersData();
-      const response = await api.delete(`/customer/${id}/force`);
+      const response = await apiClient.delete(`/customer/${id}/force`);
       return response.data;
     } catch (error) {
       throw error.response?.data || error.message;

@@ -1,18 +1,10 @@
 import { apiClient } from './client';
-import { mockStores } from './mock/stores';
-
-// Get stores data based on project mode
-const getStoresData = () => {
-  const projectMode = process.env.EXPO_PUBLIC_PROJECT_MODE || 'mock';
-  return projectMode === 'mock' ? mockStores : apiClient;
-};
 
 export const storesAPI = {
   // Get all stores for a user
   getAll: async (userId, params = {}) => {
     try {
-      const api = getStoresData();
-      const response = await api.get(`/store/${userId}`, { params });
+      const response = await apiClient.get(`/store/${userId}`, { params });
       console.log('Stores API Response:', response.data);
       return response.data;
     } catch (error) {
@@ -23,7 +15,7 @@ export const storesAPI = {
   // Search stores
   search: async (userId, query, params = {}) => {
     try {
-      const api = getStoresData();
+      const api = apiClient;
       const response = await api.get(`/store/${userId}`, {
         params: { search: query, ...params }
       });
@@ -36,7 +28,7 @@ export const storesAPI = {
   // Get single store
   getById: async (id) => {
     try {
-      const api = getStoresData();
+      const api = apiClient;
       const response = await api.get(`/store/edit/${id}`);
       return response.data;
     } catch (error) {
@@ -48,7 +40,7 @@ export const storesAPI = {
   // Create new store
   create: async (storeData) => {
     try {
-      const api = getStoresData();
+      const api = apiClient;
       
       // Map frontend field names to API expected field names
       const payload = {
@@ -76,7 +68,7 @@ export const storesAPI = {
   // Update store
   update: async (id, storeData) => {
     try {
-      const api = getStoresData();
+      const api = apiClient;
       
       // Map frontend field names to API expected field names
       const payload = {
@@ -102,7 +94,7 @@ export const storesAPI = {
   // Delete store
   delete: async (id) => {
     try {
-      const api = getStoresData();
+      const api = apiClient;
       const response = await api.delete(`/store/${id}`);
       return response.data;
     } catch (error) {

@@ -1,18 +1,10 @@
 import { apiClient } from './client';
-import { mockUnits } from './mock/units';
-
-// Get units data based on project mode
-const getUnitsData = () => {
-  const projectMode = process.env.EXPO_PUBLIC_PROJECT_MODE || 'mock';
-  return projectMode === 'mock' ? mockUnits : apiClient;
-};
 
 export const unitsAPI = {
   // Get all units
   getAll: async (params = {}) => {
     try {
-      const api = getUnitsData();
-      const response = await api.get('/units', { params });
+      const response = await apiClient.get('/units', { params });
       console.log('API Response:', response.data);
       return response.data;
     } catch (error) {
@@ -23,7 +15,7 @@ export const unitsAPI = {
   // Get single unit
   getById: async (id) => {
     try {
-      const api = getUnitsData();
+      const api = apiClient;
       const response = await api.get(`/units/${id}`);
       return response.data;
     } catch (error) {
@@ -34,7 +26,7 @@ export const unitsAPI = {
   // Create new unit
   create: async (unitData) => {
     try {
-      const api = getUnitsData();
+      const api = apiClient;
       
       // Map frontend field names to API expected field names
       const payload = {
@@ -56,7 +48,7 @@ export const unitsAPI = {
   // Update unit
   update: async (id, unitData) => {
     try {
-      const api = getUnitsData();
+      const api = apiClient;
       
       // Map frontend field names to API expected field names
       const payload = {
@@ -81,7 +73,7 @@ export const unitsAPI = {
   // Delete unit
   delete: async (id) => {
     try {
-      const api = getUnitsData();
+      const api = apiClient;
       const response = await api.delete(`/units/${id}`);
       return response.data;
     } catch (error) {
@@ -92,7 +84,7 @@ export const unitsAPI = {
   // Search units (using the index endpoint with search parameter)
   search: async (query, filters = {}) => {
     try {
-      const api = getUnitsData();
+      const api = apiClient;
       const response = await api.get('/units', {
         params: { search: query, ...filters }
       });

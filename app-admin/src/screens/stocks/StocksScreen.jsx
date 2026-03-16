@@ -105,7 +105,7 @@ const StocksScreen = () => {
       const now = Date.now();
       const timeSinceLastRefresh = now - lastRefreshTime.current;
       
-      if (timeSinceLastRefresh > 5000 || stocks.length === 0) {
+      if (timeSinceLastRefresh > 5000) {
         console.log('Refreshing stocks on focus...');
         stableRefresh();
       } else {
