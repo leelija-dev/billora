@@ -90,7 +90,7 @@ export default function Start() {
   viewport={{ once: true }}
   className="
   absolute 
-  top-5 left-14
+  top-1 left-14
 
   md:left-1/2 md:-translate-x-1/2
   lg:left-1/2 lg:-translate-x-1/2
