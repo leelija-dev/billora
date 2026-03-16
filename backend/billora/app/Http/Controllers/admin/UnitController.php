@@ -36,7 +36,8 @@ class UnitController extends Controller
         return response()->json([
             'status' => true,
             'message' => 'Unit List',
-            'data' => $units
+            'data' => $units,
+            'user_id' => $user
         ]);
 
     } catch (\Exception $e) {
@@ -82,7 +83,14 @@ class UnitController extends Controller
     public function edit($id)
     {
         try {
-            $unit = Unit::findOrFail($id);
+             if (!Auth::check()) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Authentication required. Please login first.'
+            ], 401);
+            }
+            $user=Auth::user()->id;
+            $unit = Unit::where('id', $id)->where('user_id',$user)->get();
             return response()->json([
                 'status' => true,
                 'message' => 'Unit Details',

@@ -7,23 +7,28 @@ use Illuminate\Http\Request;
 use App\Models\Stocks;
 use App\Models\Products;
 use App\Models\Unit;
+use Illuminate\Support\Facades\Auth;
 class StocksController extends Controller
 {
 
-    public function index(Request $request)
+  public function index(Request $request)
 {
     try {
 
+        $user = Auth::user()->id; // authenticated user
         $search = $request->search;
 
         $stocks = Stocks::with('product')
+            ->where('user_id', $user)
             ->when($search, function ($query) use ($search) {
 
-                $query->where('id', 'like', "%$search%")
-                ->orWhere('selling_price', 'like', "%$search%")
-                ->orWhere('purchase_price', 'like', "%$search%")
-                ->orWhereHas('product', function ($q) use ($search) {
-                    $q->where('name', 'like', "%$search%");
+                $query->where(function ($q) use ($search) {
+                    $q->where('id', 'like', "%$search%")
+                      ->orWhere('selling_price', 'like', "%$search%")
+                      ->orWhere('purchase_price', 'like', "%$search%")
+                      ->orWhereHas('product', function ($q2) use ($search) {
+                          $q2->where('name', 'like', "%$search%");
+                      });
                 });
 
             })
@@ -44,29 +49,44 @@ class StocksController extends Controller
     }
 }
     public function create(){
-        $products = Products::all();
-        $units = Unit::all();
+        try{
+        $user = Auth::user()->id;
+        $products = Products::where('user_id', $user)->get();
+        $units = Unit::where('user_id', $user)->get();
         return response()->json([
             'status' => true,   
             'message' => 'Stock Create',
             'data' => ['products'=>$products,'units'=>$units]
         ]);
+        }catch(\Exception $e){
+            return response()->json([
+                'status' => false,
+                'message' => $e->getMessage()
+            ]);
+        }
     }
     public function store(Request $request){
         $stocks =$request->validate([
-            'user_id'           =>'required',
             'product_id'        =>'required',
             'quantity'          =>'required',
             'selling_price'     =>'required',
             'product_package_id'=>'nullable',
             'purchase_price'    =>'nullable',
             'unit_id'           =>'nullable',
-            'created_by'        =>'nullable'
             
         ]);
         try{
+        if(!Auth::check()){
+            return response()->json([
+                'status' => false,
+                'message' => 'Authentication required. Please login first.'
+            ]);
+        }
+        $user = Auth::user()->id;
+        $data['user_id'] = $user;
+        $data['created_by'] = $user;
         $stock = Stocks::create($stocks);
-        $stocks = Stocks::all();
+        $stocks = Stocks::where('user_id', $user)->get();
         return response()->json([
             'status' => true,
             'message' => 'Stock created successfully',

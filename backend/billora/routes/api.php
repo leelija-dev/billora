@@ -51,7 +51,7 @@ Route::prefix('products')->group(function () {
    Route::delete('/{id}/force', [ProductsController::class, 'forceDelete']); // delete product permanently
 });
 //stocks
-Route::prefix('stocks')->group(function () {
+Route::middleware('auth:sanctum')->prefix('stocks')->group(function () {
    Route::get('/', [StocksController::class, 'index']);
    Route::get('/create', [StocksController::class, 'create']);
    Route::post('/store', [StocksController::class, 'store']);
