@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { stocksAPI } from '../api/stocks';
+import { productsAPI } from '../api/products';
 
 export const useStocks = (params = {}) => {
   const [stocks, setStocks] = useState([]);
@@ -29,7 +30,39 @@ export const useStocks = (params = {}) => {
         stocksData = response;
       }
       
-      setStocks(stocksData);
+      // Fetch product details for each stock entry
+      const stocksWithProducts = await Promise.all(
+        stocksData.map(async (stock) => {
+          if (stock && stock.product_id) {
+            try {
+              const productResponse = await productsAPI.getById(stock.product_id);
+              console.log(`Product API Response for stock ${stock.id}:`, productResponse);
+              
+              let productData = null;
+              if (productResponse?.data?.data?.data) {
+                productData = productResponse.data.data.data;
+              } else if (productResponse?.data?.data) {
+                productData = productResponse.data.data;
+              } else if (productResponse?.data) {
+                productData = productResponse.data;
+              } else {
+                productData = productResponse;
+              }
+              
+              // Add product details to stock data
+              return { ...stock, product: productData };
+            } catch (productErr) {
+              console.error(`Error fetching product details for stock ${stock.id}:`, productErr);
+              // Return stock data even if product fetch fails
+              return stock;
+            }
+          } else {
+            return stock;
+          }
+        })
+      );
+      
+      setStocks(stocksWithProducts);
     } catch (err) {
       setError(err.message || 'Failed to fetch stocks');
     } finally {

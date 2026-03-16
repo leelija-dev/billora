@@ -1,39 +1,39 @@
-// components/customers/CustomerList.js
 import { useNavigation } from "@react-navigation/native";
-import { LinearGradient } from "expo-linear-gradient";
 import { useEffect, useMemo, useState } from "react";
 import {
+  ActivityIndicator,
   Animated,
   ScrollView,
   RefreshControl,
   Text,
   TouchableOpacity,
   View,
+  Modal,
+  TextInput,
+  Alert,
 } from "react-native";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 import { useThemeStore } from "../../store/themeStore";
 import CustomerCard from "./CustomerCard";
+import { LinearGradient } from "expo-linear-gradient";
 
 const CustomerList = ({
   viewMode = "grid",
   searchQuery = "",
-  filters = {},
+  sortBy = "name",
   customers = [],
-  onCustomerPress,
-  isDarkMode: propIsDarkMode,
+  loading = false,
+  onRefresh = () => {},
+  onDelete = () => {},
+  filters = {},
 }) => {
-  // Safely use navigation with fallback
-  let navigation;
-  try {
-    navigation = useNavigation();
-  } catch (error) {
-    console.log("Navigation not available in CustomerList");
-  }
-
-  const { isDarkMode: storeIsDarkMode } = useThemeStore();
-  const isDarkMode = propIsDarkMode !== undefined ? propIsDarkMode : storeIsDarkMode;
+  const navigation = useNavigation();
+  const { isDarkMode } = useThemeStore();
   const [refreshing, setRefreshing] = useState(false);
   const [fadeAnim] = useState(new Animated.Value(0));
+  const [dueModalVisible, setDueModalVisible] = useState(false);
+  const [selectedCustomer, setSelectedCustomer] = useState(null);
+  const [dueAmount, setDueAmount] = useState("");
 
   useEffect(() => {
     Animated.timing(fadeAnim, {
@@ -43,179 +43,313 @@ const CustomerList = ({
     }).start();
   }, []);
 
-  // Apply all filters to customers
+  // Filter and sort customers
   const filteredCustomers = useMemo(() => {
+    if (!Array.isArray(customers)) return [];
     let filtered = [...customers];
-
-    // Status filter
-    if (filters.status && filters.status !== "all") {
-      filtered = filtered.filter((c) => c.status === filters.status);
-    }
-
+    
     // Search filter
-    if (searchQuery && searchQuery.trim() !== "") {
-      const query = searchQuery.toLowerCase().trim();
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
       filtered = filtered.filter(
-        (customer) =>
-          customer.name.toLowerCase().includes(query) ||
-          (customer.email && customer.email.toLowerCase().includes(query)) ||
-          (customer.phone && customer.phone.toLowerCase().includes(query)) ||
-          (customer.company && customer.company.toLowerCase().includes(query)),
+        (c) =>
+          c.name?.toLowerCase().includes(query) ||
+          c.email?.toLowerCase().includes(query) ||
+          c.phone?.toLowerCase().includes(query) ||
+          c.address?.toLowerCase().includes(query) ||
+          c.city?.toLowerCase().includes(query) ||
+          c.id?.toString().includes(query)
       );
     }
-
-    // Date range filter
-    if (filters.dateRange && filters.dateRange !== "all") {
-      const now = new Date();
-      filtered = filtered.filter((customer) => {
-        const createdDate = new Date(customer.createdAt);
-        switch (filters.dateRange) {
-          case "today":
-            return createdDate.toDateString() === now.toDateString();
-          case "week": {
-            const weekAgo = new Date(now);
-            weekAgo.setDate(weekAgo.getDate() - 7);
-            return createdDate >= weekAgo;
-          }
-          case "month": {
-            const monthAgo = new Date(now);
-            monthAgo.setMonth(monthAgo.getMonth() - 1);
-            return createdDate >= monthAgo;
-          }
-          case "3months": {
-            const threeMonthsAgo = new Date(now);
-            threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
-            return createdDate >= threeMonthsAgo;
-          }
-          case "year": {
-            const yearAgo = new Date(now);
-            yearAgo.setFullYear(yearAgo.getFullYear() - 1);
-            return createdDate >= yearAgo;
-          }
-          default:
-            return true;
-        }
+    
+    // Filter by due status
+    if (filters.dueStatus !== 'all') {
+      if (filters.dueStatus === 'hasDue') {
+        filtered = filtered.filter(c => {
+          const dueAmount = typeof c.due_amount === 'string' ? parseFloat(c.due_amount) : (typeof c.due_amount === 'number' ? c.due_amount : 0);
+          return dueAmount > 0;
+        });
+      } else if (filters.dueStatus === 'noDue') {
+        filtered = filtered.filter(c => {
+          const dueAmount = typeof c.due_amount === 'string' ? parseFloat(c.due_amount) : (typeof c.due_amount === 'number' ? c.due_amount : 0);
+          return !dueAmount || dueAmount === 0;
+        });
+      }
+    }
+    
+    // Filter by due amount range
+    if (filters.minDue) {
+      filtered = filtered.filter(c => {
+        const dueAmount = typeof c.due_amount === 'string' ? parseFloat(c.due_amount) : (typeof c.due_amount === 'number' ? c.due_amount : 0);
+        return dueAmount >= parseFloat(filters.minDue);
       });
     }
-
-    // Minimum orders filter
-    if (
-      filters.minOrders &&
-      filters.minOrders !== "" &&
-      !isNaN(parseInt(filters.minOrders))
-    ) {
-      const minOrders = parseInt(filters.minOrders);
-      filtered = filtered.filter((c) => c.orderCount >= minOrders);
+    if (filters.maxDue) {
+      filtered = filtered.filter(c => {
+        const dueAmount = typeof c.due_amount === 'string' ? parseFloat(c.due_amount) : (typeof c.due_amount === 'number' ? c.due_amount : 0);
+        return dueAmount <= parseFloat(filters.maxDue);
+      });
     }
-
-    // Minimum spent filter
-    if (
-      filters.minSpent &&
-      filters.minSpent !== "" &&
-      !isNaN(parseFloat(filters.minSpent))
-    ) {
-      const minSpent = parseFloat(filters.minSpent);
-      filtered = filtered.filter((c) => c.totalSpent >= minSpent);
+    
+    // Filter by city
+    if (filters.city) {
+      filtered = filtered.filter(c => 
+        c.city?.toLowerCase().includes(filters.city.toLowerCase())
+      );
     }
-
-    // Contact preferences
-    if (filters.hasPhone !== undefined && filters.hasPhone) {
-      filtered = filtered.filter((c) => c.hasPhone === true);
+    
+    // Filter by date range
+    if (filters.dateRange && filters.dateRange !== 'all') {
+      const now = new Date();
+      const filterDate = new Date();
+      
+      switch (filters.dateRange) {
+        case 'today':
+          filterDate.setHours(0, 0, 0, 0);
+          filtered = filtered.filter(c => new Date(c.created_at) >= filterDate);
+          break;
+        case 'week':
+          filterDate.setDate(now.getDate() - 7);
+          filtered = filtered.filter(c => new Date(c.created_at) >= filterDate);
+          break;
+        case 'month':
+          filterDate.setMonth(now.getMonth() - 1);
+          filtered = filtered.filter(c => new Date(c.created_at) >= filterDate);
+          break;
+        case 'year':
+          filterDate.setFullYear(now.getFullYear() - 1);
+          filtered = filtered.filter(c => new Date(c.created_at) >= filterDate);
+          break;
+      }
     }
-
-    if (filters.hasEmail !== undefined && !filters.hasEmail) {
-      filtered = filtered.filter((c) => c.hasEmail === false);
-    }
-
-    // Sorting
-    if (filters.sortBy) {
-      switch (filters.sortBy) {
-        case "newest":
-          filtered.sort(
-            (a, b) => new Date(b.createdAt) - new Date(a.createdAt),
-          );
+    
+    // Sort
+    filtered.sort((a, b) => {
+      let comparison = 0;
+      
+      switch (sortBy) {
+        case 'name':
+          comparison = (a.name || '').localeCompare(b.name || '');
           break;
-        case "oldest":
-          filtered.sort(
-            (a, b) => new Date(a.createdAt) - new Date(b.createdAt),
-          );
+        case 'due':
+          const aDueAmount = typeof a.due_amount === 'string' ? parseFloat(a.due_amount) : (typeof a.due_amount === 'number' ? a.due_amount : 0);
+          const bDueAmount = typeof b.due_amount === 'string' ? parseFloat(b.due_amount) : (typeof b.due_amount === 'number' ? b.due_amount : 0);
+          comparison = aDueAmount - bDueAmount;
           break;
-        case "name-asc":
-          filtered.sort((a, b) => a.name.localeCompare(b.name));
+        case 'date':
+          comparison = new Date(b.created_at || 0) - new Date(a.created_at || 0);
           break;
-        case "name-desc":
-          filtered.sort((a, b) => b.name.localeCompare(a.name));
-          break;
-        case "orders-high":
-          filtered.sort((a, b) => b.orderCount - a.orderCount);
-          break;
-        case "spent-high":
-          filtered.sort((a, b) => b.totalSpent - a.totalSpent);
+        case 'city':
+          comparison = (a.city || '').localeCompare(b.city || '');
           break;
         default:
-          filtered.sort(
-            (a, b) => new Date(b.createdAt) - new Date(a.createdAt),
-          );
+          comparison = 0;
       }
-    } else {
-      // Default sort by newest
-      filtered.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-    }
-
+      
+      return filters.sortOrder === 'desc' ? -comparison : comparison;
+    });
+    
     return filtered;
-  }, [customers, searchQuery, filters]);
+  }, [customers, searchQuery, sortBy, filters]);
+
+  // Statistics
+  const stats = useMemo(() => {
+    if (!Array.isArray(customers)) return {
+      total: 0,
+      withDue: 0,
+      totalDue: 0,
+    };
+    
+    const withDue = customers.filter(c => {
+      const dueAmount = typeof c.due_amount === 'string' ? parseFloat(c.due_amount) : (typeof c.due_amount === 'number' ? c.due_amount : 0);
+      return dueAmount > 0;
+    }).length;
+    
+    const totalDue = customers.reduce((sum, c) => {
+      const dueAmount = typeof c.due_amount === 'string' ? parseFloat(c.due_amount) : (typeof c.due_amount === 'number' ? c.due_amount : 0);
+      return sum + dueAmount;
+    }, 0);
+    
+    return {
+      total: customers.length,
+      withDue,
+      totalDue,
+    };
+  }, [customers]);
 
   const handleCustomerPress = (customer) => {
-    if (onCustomerPress) {
-      onCustomerPress(customer);
-    } else if (navigation) {
-      navigation.navigate("CustomerDetail", { customerId: customer.id });
+    navigation.navigate("CustomerDetail", { customerId: customer.id });
+  };
+
+  const handleDuePayment = (customerId, customerName) => {
+    setSelectedCustomer({ id: customerId, name: customerName });
+    setDueModalVisible(true);
+  };
+
+  const handleSubmitDue = async () => {
+    if (!dueAmount || parseFloat(dueAmount) <= 0) {
+      Alert.alert("Error", "Please enter a valid amount");
+      return;
     }
+
+    // This would call the API to add due payment
+    // For now, we'll just close the modal
+    setDueModalVisible(false);
+    setDueAmount("");
+    setSelectedCustomer(null);
+    
+    // Show success message
+    Alert.alert("Success", "Due payment added successfully");
   };
 
-  const handleClearFilters = () => {
-    // This will trigger a refresh by resetting filters in parent
-    // The parent component should handle this
-  };
-
-  const handleAddCustomer = () => {
-    if (navigation) {
-      navigation.navigate("AddCustomer");
+  const handleDeleteCustomer = async (customerId) => {
+    if (onDelete) {
+      const result = await onDelete(customerId);
+      return result;
     }
+    return { success: false };
   };
 
-  const onRefresh = () => {
+  const onRefreshLocal = async () => {
     setRefreshing(true);
-    setTimeout(() => {
-      setRefreshing(false);
-    }, 1000);
+    if (onRefresh) {
+      await onRefresh();
+    }
+    setRefreshing(false);
   };
 
   const renderHeader = () => (
     <Animated.View style={{ opacity: fadeAnim, marginBottom: 16 }}>
       <View className="flex-row justify-between items-center">
-        <Text className={`text-sm ${
-          isDarkMode ? 'text-gray-400' : 'text-gray-600'
+        <View className={`flex-row items-center px-3 py-1.5 rounded-full ${
+          isDarkMode ? 'bg-gray-800' : 'bg-white'
         }`}>
-          {filteredCustomers.length}{" "}
-          {filteredCustomers.length === 1 ? "customer" : "customers"} found
-        </Text>
+          <Icon name="account-group" size={16} color={isDarkMode ? "#9CA3AF" : "#4b5563"} />
+          <Text className={`text-sm ml-1 font-medium ${
+            isDarkMode ? 'text-gray-300' : 'text-gray-600'
+          }`}>
+            {filteredCustomers.length} {filteredCustomers.length === 1 ? 'customer' : 'customers'}
+          </Text>
+        </View>
+        
+        <View className="flex-row">
+          {stats.withDue > 0 && (
+            <View className={`flex-row items-center px-2 py-1 rounded-full ${
+              isDarkMode ? 'bg-yellow-900/30' : 'bg-yellow-50'
+            }`}>
+              <Icon name="alert-circle" size={14} color="#f59e0b" />
+              <Text className={`text-xs ml-1 text-yellow-500`}>
+                ${stats.totalDue.toFixed(2)} due
+              </Text>
+            </View>
+          )}
+        </View>
       </View>
     </Animated.View>
   );
 
-  const renderItem = (item) => (
-    <View 
-      key={item.id}
-      className={viewMode === "grid" ? "w-[48%] mx-[1%]" : "w-full"}
-    >
-      <CustomerCard
-        customer={item}
-        viewMode={viewMode}
-        onPress={handleCustomerPress}
-        isDarkMode={isDarkMode}
+  const renderGridItem = (item) => (
+    <View key={item.id} className="w-[48%] mx-[1%] mb-3">
+      <CustomerCard 
+        customer={item} 
+        onDelete={handleDeleteCustomer}
+        onDuePayment={handleDuePayment}
       />
     </View>
+  );
+
+  const renderListItem = (item) => (
+    <TouchableOpacity
+      key={item.id}
+      onPress={() => handleCustomerPress(item)}
+      className={`flex-row rounded-xl mb-3 p-4 shadow-sm ${
+        isDarkMode ? 'bg-gray-800' : 'bg-white'
+      }`}
+    >
+      {/* Avatar */}
+      <View className="mr-3">
+        <LinearGradient
+          colors={["#3b82f6", "#2563eb"]}
+          className="w-12 h-12 rounded-xl items-center justify-center"
+        >
+          <Icon name="account" size={24} color="#ffffff" />
+        </LinearGradient>
+      </View>
+
+      <View className="flex-1">
+        <View className="flex-row justify-between items-start">
+          <View className="flex-1">
+            <Text
+              className={`text-base font-semibold ${
+                isDarkMode ? 'text-white' : 'text-gray-800'
+              }`}
+              numberOfLines={1}
+            >
+              {item.name}
+            </Text>
+            {item.email && (
+              <Text
+                className={`text-xs ${
+                  isDarkMode ? 'text-gray-400' : 'text-gray-500'
+                }`}
+                numberOfLines={1}
+              >
+                {item.email}
+              </Text>
+            )}
+          </View>
+          <Text className={`text-xs ${
+            isDarkMode ? 'text-gray-500' : 'text-gray-400'
+          }`}>
+            #{item.id}
+          </Text>
+        </View>
+
+        <View className="flex-row items-center mt-1">
+          <Icon name="phone" size={14} color="#9ca3af" />
+          <Text className={`text-xs ml-1 ${
+            isDarkMode ? 'text-gray-400' : 'text-gray-500'
+          }`}>
+            {item.phone}
+          </Text>
+        </View>
+
+        <View className="flex-row items-center mt-1">
+          <Icon name="map-marker" size={14} color="#9ca3af" />
+          <Text
+            className={`text-xs ml-1 flex-1 ${
+              isDarkMode ? 'text-gray-400' : 'text-gray-500'
+            }`}
+            numberOfLines={1}
+          >
+            {item.address}
+            {item.city && `, ${item.city}`}
+          </Text>
+        </View>
+
+        <View className="flex-row justify-between items-center mt-2">
+          <View className="flex-row items-center">
+            <Icon name="calendar" size={14} color="#9ca3af" />
+            <Text className={`text-xs ml-1 ${
+              isDarkMode ? 'text-gray-400' : 'text-gray-500'
+            }`}>
+              {new Date(item.created_at).toLocaleDateString()}
+            </Text>
+          </View>
+          
+          {(() => {
+            const dueAmount = typeof item.due_amount === 'string' ? parseFloat(item.due_amount) : (typeof item.due_amount === 'number' ? item.due_amount : 0);
+            return dueAmount > 0 && (
+              <View className="bg-yellow-500/20 px-2 py-1 rounded-full">
+                <Text className="text-xs text-yellow-500 font-medium">
+                  Due: ${dueAmount.toFixed(2)}
+                </Text>
+              </View>
+            );
+          })()}
+        </View>
+      </View>
+    </TouchableOpacity>
   );
 
   const renderGridItems = () => {
@@ -223,13 +357,24 @@ const CustomerList = ({
     for (let i = 0; i < filteredCustomers.length; i += 2) {
       const rowItems = filteredCustomers.slice(i, i + 2);
       rows.push(
-        <View key={`row-${i}`} className="flex-row justify-between mb-3">
-          {rowItems.map(item => renderItem(item))}
+        <View key={`row-${i}`} className="flex-row justify-between mb-2">
+          {rowItems.map(item => renderGridItem(item))}
         </View>
       );
     }
     return rows;
   };
+
+  if (loading && !refreshing && filteredCustomers.length === 0) {
+    return (
+      <View className="flex-1 items-center justify-center py-8">
+        <ActivityIndicator size="large" color="#3b82f6" />
+        <Text className={`mt-3 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+          Loading customers...
+        </Text>
+      </View>
+    );
+  }
 
   if (!filteredCustomers || filteredCustomers.length === 0) {
     return (
@@ -238,17 +383,21 @@ const CustomerList = ({
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
-            onRefresh={onRefresh}
-            colors={["#6366F1"]}
-            tintColor="#6366F1"
+            onRefresh={onRefreshLocal}
+            colors={["#3b82f6"]}
+            tintColor={isDarkMode ? "#ffffff" : "#3b82f6"}
           />
         }
       >
         <View className="px-4">
           {renderHeader()}
           <View className="items-center justify-center py-16">
-            <Icon name="account-group" size={80} color={isDarkMode ? "#4B5563" : "#d1d5db"} />
-            <Text className={`text-lg font-semibold mt-4 ${
+            <View className={`w-24 h-24 rounded-3xl items-center justify-center mb-4 ${
+              isDarkMode ? 'bg-gray-800' : 'bg-gray-100'
+            }`}>
+              <Icon name="account-group" size={48} color="#9ca3af" />
+            </View>
+            <Text className={`text-lg font-semibold ${
               isDarkMode ? 'text-gray-300' : 'text-gray-700'
             }`}>
               No Customers Found
@@ -256,33 +405,10 @@ const CustomerList = ({
             <Text className={`text-sm text-center mt-2 px-8 ${
               isDarkMode ? 'text-gray-500' : 'text-gray-400'
             }`}>
-              {searchQuery ||
-              Object.keys(filters).some(
-                (k) =>
-                  filters[k] &&
-                  filters[k] !== "all" &&
-                  filters[k] !== "" &&
-                  filters[k] !== false,
-              )
-                ? "Try adjusting your search or filters"
-                : "Add your first customer by tapping the + button"}
+              {searchQuery
+                ? `No results for "${searchQuery}"`
+                : "Tap the + button to add your first customer"}
             </Text>
-            {searchQuery || Object.keys(filters).some(k => filters[k] && filters[k] !== "all" && filters[k] !== "") ? (
-              <TouchableOpacity
-                onPress={handleClearFilters}
-                className="mt-4 bg-indigo-500 px-6 py-3 rounded-full"
-              >
-                <Text className="text-white font-semibold">Clear Filters</Text>
-              </TouchableOpacity>
-            ) : (
-              <TouchableOpacity
-                onPress={handleAddCustomer}
-                className="mt-4 bg-indigo-500 px-6 py-3 rounded-full flex-row items-center"
-              >
-                <Icon name="plus" size={18} color="white" />
-                <Text className="text-white font-semibold ml-2">Add Customer</Text>
-              </TouchableOpacity>
-            )}
           </View>
         </View>
       </ScrollView>
@@ -297,18 +423,88 @@ const CustomerList = ({
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
-            onRefresh={onRefresh}
-            colors={["#6366F1"]}
-            tintColor="#6366F1"
+            onRefresh={onRefreshLocal}
+            colors={["#3b82f6"]}
+            tintColor={isDarkMode ? "#ffffff" : "#3b82f6"}
           />
         }
       >
         <View className="pb-4">
-          {viewMode === "grid" 
-            ? renderGridItems() 
-            : filteredCustomers.map(item => renderItem(item))}
+          {viewMode === "grid"
+            ? renderGridItems()
+            : filteredCustomers.map(item => renderListItem(item))}
         </View>
       </ScrollView>
+
+      {/* Due Payment Modal */}
+      <Modal
+        visible={dueModalVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setDueModalVisible(false)}
+      >
+        <View className="flex-1 bg-black/50 justify-center">
+          <View className={`mx-4 rounded-2xl p-5 ${
+            isDarkMode ? 'bg-gray-800' : 'bg-white'
+          }`}>
+            <Text className={`text-xl font-semibold mb-4 ${
+              isDarkMode ? 'text-white' : 'text-gray-800'
+            }`}>
+              Add Due Payment
+            </Text>
+
+            <Text className={`text-sm mb-2 ${
+              isDarkMode ? 'text-gray-300' : 'text-gray-700'
+            }`}>
+              Customer: {selectedCustomer?.name}
+            </Text>
+
+            <View className={`flex-row items-center rounded-xl px-4 border mb-4 ${
+              isDarkMode ? 'bg-gray-700 border-gray-600' : 'bg-gray-100 border-gray-200'
+            }`}>
+              <Text className="text-gray-500 font-bold text-lg">$</Text>
+              <TextInput
+                value={dueAmount}
+                onChangeText={setDueAmount}
+                placeholder="0.00"
+                placeholderTextColor={isDarkMode ? '#6B7280' : '#9CA3AF'}
+                keyboardType="decimal-pad"
+                className={`flex-1 ml-2 py-3 ${
+                  isDarkMode ? 'text-white' : 'text-gray-800'
+                }`}
+              />
+            </View>
+
+            <View className="flex-row gap-3">
+              <TouchableOpacity
+                onPress={() => {
+                  setDueModalVisible(false);
+                  setDueAmount("");
+                  setSelectedCustomer(null);
+                }}
+                className={`flex-1 py-4 rounded-xl items-center border ${
+                  isDarkMode 
+                    ? 'border-gray-700 bg-gray-700' 
+                    : 'border-gray-200 bg-gray-100'
+                }`}
+              >
+                <Text className={`font-semibold ${
+                  isDarkMode ? 'text-gray-300' : 'text-gray-700'
+                }`}>
+                  Cancel
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                onPress={handleSubmitDue}
+                className="flex-1 bg-blue-500 py-4 rounded-xl items-center"
+              >
+                <Text className="text-white font-semibold">Add Due</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };

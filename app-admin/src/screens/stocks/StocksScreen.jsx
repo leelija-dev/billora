@@ -18,6 +18,7 @@ import { useStocks } from "../../hooks/useStocks";
 import Header from "../../components/common/Header";
 import StockFilters from "../../components/stocks/StockFilters";
 import StockList from "../../components/stocks/StockList";
+import { getNavigationItemsWithBadges } from "../../constants/navigationItems"; // Import the helper
 
 const StocksScreen = () => {
   const navigation = useNavigation();
@@ -217,58 +218,18 @@ const StocksScreen = () => {
     await stableRefresh();
   };
 
-  // Navigation items for sidebar
-  const navigationItems = useMemo(() => [
-    {
-      id: "dashboard",
-      title: "Dashboard",
-      icon: "view-dashboard",
-      screen: "Dashboard",
-      badge: null,
-    },
-    {
-      id: "products",
-      title: "Products",
-      icon: "package-variant",
-      screen: "Products",
-      badge: "0",
-    },
-    {
-      id: "categories",
-      title: "Categories",
-      icon: "shape",
-      screen: "Categories",
-      badge: "0",
-    },
-    {
-      id: "stocks",
-      title: "Stocks",
-      icon: "warehouse",
-      screen: "Stocks",
-      badge: totalStocks.toString(),
-    },
-    {
-      id: "orders",
-      title: "Orders",
-      icon: "clipboard-list",
-      screen: "Orders",
-      badge: "0",
-    },
-    {
-      id: "customers",
-      title: "Customers",
-      icon: "account-group",
-      screen: "Customers",
-      badge: null,
-    },
-    {
-      id: "settings",
-      title: "Settings",
-      icon: "cog",
-      screen: "Settings",
-      badge: null,
-    },
-  ], [totalStocks]);
+  // Navigation items for sidebar - Using centralized navigation items
+  const navigationItems = useMemo(() => {
+    // Create badges for this screen
+    const badges = {
+      stocks: totalStocks.toString(),
+      inventory: lowStockCount > 0 ? lowStockCount.toString() : null,
+      // You can add other dynamic badges here if needed
+    };
+    
+    // Get navigation items with badges
+    return getNavigationItemsWithBadges(badges);
+  }, [totalStocks, lowStockCount]);
 
   // Show loading state
   if (loading && stocks.length === 0 && !refreshing) {
