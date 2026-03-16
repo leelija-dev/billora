@@ -75,6 +75,7 @@ const Features = () => {
       <style>{`
         @keyframes float-circle-1 {
           0%, 100% { transform: translate(0px, 0px); opacity: 0.15; }
+          
           50% { transform: translate(30px, 30px); opacity: 0.25; }
         }
         @keyframes float-circle-2 {
