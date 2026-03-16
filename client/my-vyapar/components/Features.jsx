@@ -70,7 +70,7 @@ const Features = () => {
 
 
   return (
-    <Container>
+    
       {/* Animated Circular Background */}
       <style>{`
         @keyframes float-circle-1 {
@@ -199,7 +199,7 @@ const Features = () => {
           })}
         </div>
       </div>
-    </Container>
+    
   );
 };
 
