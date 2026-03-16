@@ -10,7 +10,13 @@ export const useProductForm = (productId = null) => {
       setLoading(true);
       setError(null);
       const response = await productsAPI.create(productData);
-      return { success: true, data: response.data || response };
+      
+      // Handle nested response structure
+      if (response?.data?.status === true || response?.status === true || response?.data?.status === 'success') {
+        return { success: true, data: response?.data?.data || response };
+      } else {
+        throw new Error(response?.message || response?.data?.message || 'Failed to create product');
+      }
     } catch (err) {
       setError(err.message || 'Failed to create product');
       return { success: false, error: err.message };
@@ -29,7 +35,13 @@ export const useProductForm = (productId = null) => {
       setLoading(true);
       setError(null);
       const response = await productsAPI.update(productId, productData);
-      return { success: true, data: response.data || response };
+      
+      // Handle nested response structure
+      if (response?.data?.status === true || response?.status === true || response?.data?.status === 'success') {
+        return { success: true, data: response?.data?.data || response };
+      } else {
+        throw new Error(response?.message || response?.data?.message || 'Failed to update product');
+      }
     } catch (err) {
       setError(err.message || 'Failed to update product');
       return { success: false, error: err.message };

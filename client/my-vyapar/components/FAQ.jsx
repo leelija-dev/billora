@@ -1,9 +1,10 @@
 "use client";
 
 import React, { useState } from "react";
+import Container from "../components/Container"; // Add this import
 
 const FAQ = () => {
-  const [activeIndex, setActiveIndex] = useState(0);
+  const [activeIndex, setActiveIndex] = useState(null);
 
   const faqs = [
     {
@@ -43,99 +44,102 @@ const FAQ = () => {
   };
 
   return (
-    <section className="px-4 sm:px-6 md:px-8 lg:px-[30px] xl:px-[100px] py-12 sm:py-16 md:py-20 lg:py-24 bg-[#eef3f9] font-sans">
-      <div className="flex flex-col lg:flex-row justify-between gap-8 sm:gap-10 md:gap-12 lg:gap-16 xl:gap-[50px]">
-        
-        {/* LEFT SIDE */}
-        <div className="flex-1 mb-6 sm:mb-8 md:mb-0">
-          <h4 className="text-[#1e88e5] mb-2 sm:mb-3 text-sm sm:text-base font-semibold uppercase tracking-wide">
-            Questions & Answers
-          </h4>
+    <section className="py-12 sm:py-16 md:py-20 lg:py-24 bg-[#eef3f9] font-sans">
+      <Container> {/* Added Container here - removes all outer padding */}
+        <div className="flex flex-col lg:flex-row justify-between gap-8 sm:gap-10 md:gap-12 lg:gap-16 xl:gap-[50px]">
 
-          <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-slate-900 mb-4 sm:mb-6 tracking-tight leading-tight">
-            Frequently asked
-            <br className="hidden sm:block" />
-            <span className="block sm:inline bg-[#f6c453] px-2 sm:px-3 py-0 sm:py-1 rounded-sm">
-              Questions
-            </span>
-          </h2>
+          {/* LEFT SIDE */}
+          <div className="flex-1 mb-6 sm:mb-8 md:mb-0">
+            <h4 className="text-[#1e88e5] mb-2 sm:mb-3 text-sm sm:text-base font-semibold uppercase tracking-wide">
+              Questions & Answers
+            </h4>
 
-          <div className="flex items-center mb-8 sm:mb-10">
-            <div className="w-16 sm:w-20 h-0.5 sm:h-1 bg-black mr-2 sm:mr-2.5"></div>
-          </div>
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-slate-900 mb-4 sm:mb-6 tracking-tight leading-tight">
+              Frequently asked
+              <br className="hidden sm:block" />
+              <span className="relative inline-block">
+                <span className="relative z-10 px-1">Questions</span>
+                <span className="absolute inset-0 bg-[#f6c453] -skew-y-1 transform rounded-sm -z-0"></span>
+              </span>
+            </h2>
 
-          <div className="message">
-            <p className="text-lg sm:text-xl md:text-2xl mb-2 sm:mb-3 text-slate-900 font-semibold">
-              Don't get Answer?
-            </p>
-            <a 
-              href="#contact" 
-              className="text-[#1e88e5] text-lg sm:text-xl md:text-2xl no-underline hover:underline transition-all hover:text-blue-700 inline-block font-medium"
-            >
-              Leave us a Message
-            </a>
-          </div>
-        </div>
+            <div className="flex items-center mb-8 sm:mb-10">
+              <div className="w-16 sm:w-20 h-0.5 sm:h-1 bg-black mr-2 sm:mr-2.5"></div>
+            </div>
 
-        {/* RIGHT SIDE - FAQ Cards */}
-        <div className="flex-1 w-full lg:max-w-[600px]">
-          {faqs.map((item, index) => (
-            <div
-              key={index}
-              className={`bg-white rounded-lg sm:rounded-xl p-4 sm:p-5 md:p-6 mb-3 sm:mb-4 md:mb-5 transition-all duration-300 ease-in border border-[#e0e0e0] hover:border-[#1e88e5] ${
-                activeIndex === index 
-                  ? "shadow-[0_8px_20px_rgba(30,136,229,0.15)] border-[#1e88e5]" 
-                  : "hover:shadow-[0_4px_12px_rgba(0,0,0,0.05)]"
-              }`}
-            >
-              <div
-                className="flex justify-between items-start sm:items-center cursor-pointer gap-3 sm:gap-4 group"
-                onClick={() => toggleFAQ(index)}
-                role="button"
-                tabIndex={0}
-                onKeyPress={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    toggleFAQ(index);
-                  }
-                }}
-                aria-expanded={activeIndex === index}
+            <div className="message">
+              <p className="text-lg sm:text-xl md:text-2xl mb-2 sm:mb-3 text-slate-900 font-semibold">
+                Don't get Answer?
+              </p>
+              <a
+                href="#contact"
+                className="text-[#1e88e5] text-lg sm:text-xl md:text-2xl no-underline hover:underline transition-all hover:text-blue-700 inline-block font-medium"
               >
-                <p className={`text-sm sm:text-base md:text-lg font-semibold text-slate-900 leading-relaxed transition-colors ${
-                  activeIndex === index ? "text-[#1e88e5]" : "group-hover:text-[#1e88e5]"
-                }`}>
-                  {item.question}
-                </p>
-                <span
-                  className={`text-xl sm:text-2xl md:text-3xl text-[#1e88e5] transition-transform duration-300 flex-shrink-0 font-light ${
-                    activeIndex === index ? "rotate-180" : ""
-                  }`}
-                >
-                  {activeIndex === index ? "−" : "+"}
-                </span>
-              </div>
+                Leave us a Message
+              </a>
+            </div>
+          </div>
 
+          {/* RIGHT SIDE - FAQ Cards */}
+          <div className="flex-1 w-full ">
+            {faqs.map((item, index) => (
               <div
-                className={`overflow-hidden transition-all duration-400 ease-in-out ${
-                  activeIndex === index 
-                    ? "max-h-[300px] sm:max-h-[350px] pt-3 sm:pt-4 md:pt-5" 
-                    : "max-h-0 pt-0"
+                key={index}
+                className={`bg-white rounded-lg sm:rounded-xl p-4 sm:p-5 md:p-6 mb-3 sm:mb-4 md:mb-5 transition-all duration-300 ease-in border border-[#e0e0e0] hover:border-[#1e88e5] ${
+                  activeIndex === index
+                    ? "shadow-[0_8px_20px_rgba(30,136,229,0.15)] border-[#1e88e5]"
+                    : "hover:shadow-[0_4px_12px_rgba(0,0,0,0.05)]"
                 }`}
               >
-                <div className="text-slate-600 text-xs sm:text-sm md:text-base leading-relaxed sm:leading-[1.7] border-t border-[#e0e0e0] pt-3 sm:pt-4">
-                  {item.answer}
+                <div
+                  className="flex justify-between items-start sm:items-center cursor-pointer gap-3 sm:gap-4 group"
+                  onClick={() => toggleFAQ(index)}
+                  role="button"
+                  tabIndex={0}
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      toggleFAQ(index);
+                    }
+                  }}
+                  aria-expanded={activeIndex === index}
+                >
+                  <p className={`text-sm sm:text-base md:text-lg font-semibold text-slate-900 leading-relaxed transition-colors ${
+                    activeIndex === index ? "text-[#1e88e5]" : "group-hover:text-[#1e88e5]"
+                  }`}>
+                    {item.question}
+                  </p>
+                  <span
+                    className={`text-xl sm:text-2xl md:text-3xl text-[#1e88e5] transition-transform duration-300 flex-shrink-0 font-light ${
+                      activeIndex === index ? "rotate-180" : ""
+                    }`}
+                  >
+                    {activeIndex === index ? "−" : "+"}
+                  </span>
+                </div>
+
+                <div
+                  className={`overflow-hidden transition-all duration-400 ease-in-out ${
+                    activeIndex === index
+                      ? "max-h-[300px] sm:max-h-[350px] pt-3 sm:pt-4 md:pt-5"
+                      : "max-h-0 pt-0"
+                  }`}
+                >
+                  <div className="text-slate-600 text-xs sm:text-sm md:text-base leading-relaxed sm:leading-[1.7] border-t border-[#e0e0e0] pt-3 sm:pt-4">
+                    {item.answer}
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            ))}
 
-          {/* CTA Button */}
-          <div className="mt-8 sm:mt-10 md:mt-12 text-center lg:text-left">
-            <button className="w-full sm:w-auto bg-[#1e88e5] text-white px-6 sm:px-8 py-2.5 sm:py-3 rounded-lg sm:rounded-xl font-semibold text-sm sm:text-base transition-all hover:bg-blue-700 hover:shadow-lg active:scale-95">
-              Ask a Question
-            </button>
+            {/* CTA Button */}
+            <div className="mt-8 sm:mt-10 md:mt-12 text-center lg:text-left">
+              <button className="w-full sm:w-auto bg-[#1e88e5] text-white px-6 sm:px-8 py-2.5 sm:py-3 rounded-lg sm:rounded-xl font-semibold text-sm sm:text-base transition-all hover:bg-blue-700 hover:shadow-lg active:scale-95">
+                Ask a Question
+              </button>
+            </div>
           </div>
         </div>
-      </div>
+      </Container>
     </section>
   );
 };

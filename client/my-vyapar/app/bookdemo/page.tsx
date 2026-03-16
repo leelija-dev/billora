@@ -1,305 +1,945 @@
+// bookdemo/page.tsx
 "use client";
-import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
-import {
-User,
-Phone,
-Building,
-MessageSquare,
-Globe
+
+import React, { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { 
+  Calendar, 
+  ChevronLeft, 
+  ChevronRight, 
+  User, 
+  Phone, 
+  Building, 
+  MessageSquare,
+  CheckCircle,
+  Clock,
+  CalendarDays,
+  RotateCw,
+  Globe,
+  ChevronDown,
+  Home,
+  AlertCircle
 } from "lucide-react";
-import Image from "next/image";
-
-export default function BookDemoPage() {
-
-const reviews = [
-{
-text:"The demo helped me understand how Billora streamlines payment collections.",
-name:"Arvind Kumar",
-role:"Electronics Distributor"
-},
-{
-text:"Billing became extremely simple for my shop after seeing the demo.",
-name:"Rahul Sharma",
-role:"Retail Shop Owner"
-},
-{
-text:"Now I track payments easily and accounting is much faster.",
-name:"Pooja Verma",
-role:"Wholesale Trader"
-}
-];
-
-const [currentReview,setCurrentReview]=useState(0);
-const [success,setSuccess]=useState(false);
-
-useEffect(()=>{
-const interval=setInterval(()=>{
-setCurrentReview((prev)=>(prev+1)%reviews.length)
-},4000)
-
-return()=>clearInterval(interval)
-},[])
-
-function handleSubmit(e){
-e.preventDefault();
-setSuccess(true);
-
-setTimeout(()=>{
-setSuccess(false)
-},3000)
-}
-
-return(
-
-<div className="relative min-h-screen overflow-hidden bg-gradient-to-br from-[#eef2ff] via-[#e0e7ff] to-[#dbeafe] px-6 py-24">
-{/* floating blobs */}
-
-<div className="absolute top-20 left-10 w-72 h-72 bg-purple-400 opacity-30 rounded-full blur-3xl animate-blob"></div>
-
-<div className="absolute bottom-20 right-10 w-72 h-72 bg-blue-400 opacity-30 rounded-full blur-3xl animate-blob animation-delay-2000"></div>
-
-<div className="absolute top-40 right-40 w-72 h-72 bg-pink-400 opacity-30 rounded-full blur-3xl animate-blob animation-delay-4000"></div>
-
-{/* Gradient blobs */}
-
-<div className="absolute w-96 h-96 bg-purple-300 rounded-full blur-[120px] opacity-40 top-10 left-10 animate-pulse"></div>
-<div className="absolute w-96 h-96 bg-blue-300 rounded-full blur-[120px] opacity-40 bottom-10 right-10 animate-pulse"></div>
-
-
-<div className="max-w-7xl mx-auto grid lg:grid-cols-2 gap-16 items-center">
-
-{/* LEFT SECTION */}
-
-<motion.div
-initial={{opacity:0,x:-50}}
-animate={{opacity:1,x:0}}
-transition={{duration:0.7}}
->
-
-<h1 className="text-5xl lg:text-6xl font-bold text-gray-900 leading-tight">
-
-Get your  
-<span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
- free demo
-</span>
-
-</h1>
-
-<p className="mt-6 text-lg text-gray-600 max-w-xl">
-See how Billora simplifies billing, inventory and payments
-for Indian businesses.
-</p>
-
-
-{/* benefits */}
-
-<ul className="mt-10 space-y-4 text-gray-700">
-
-<li className="flex gap-3 items-center">
-<span className="text-green-500 text-xl">✔</span>
-Learn GST billing in 15 minutes
-</li>
-
-<li className="flex gap-3 items-center">
-<span className="text-green-500 text-xl">✔</span>
-Manage inventory faster
-</li>
-
-<li className="flex gap-3 items-center">
-<span className="text-green-500 text-xl">✔</span>
-Track payments before due dates
-</li>
-
-</ul>
-
-
-{/* 3 step process */}
-
-<div className="mt-12 grid grid-cols-3 gap-4 text-center">
-
-<motion.div whileHover={{scale:1.1}} className="bg-white p-4 rounded-xl shadow">
-<div className="text-2xl"> 1️⃣</div>
-<p className="text-sm mt-2">Fill form</p>
-</motion.div>
-
-<motion.div whileHover={{scale:1.1}} className="bg-white p-4 rounded-xl shadow">
-<div className="text-2xl">2️⃣</div>
-<p className="text-sm mt-2">Expert call</p>
-</motion.div>
-
-<motion.div whileHover={{scale:1.1}} className="bg-white p-4 rounded-xl shadow">
-<div className="text-2xl">3️⃣</div>
-<p className="text-sm mt-2">Live demo</p>
-</motion.div>
-
-</div>
-
-
-{/* Review slider */}
-
-<motion.div
-key={currentReview}
-initial={{opacity:0,y:20}}
-animate={{opacity:1,y:0}}
-transition={{duration:0.5}}
-className="mt-12 bg-white/70 backdrop-blur-xl border border-white/40 rounded-xl p-6 shadow-lg max-w-md"
->
-
-<p className="italic text-gray-700">
-"{reviews[currentReview].text}"
-</p>
-
-<div className="mt-4">
-
-<p className="font-semibold">
-{reviews[currentReview].name}
-</p>
-
-<p className="text-sm text-gray-500">
-{reviews[currentReview].role}
-</p>
-
-</div>
-
-</motion.div>
-
-
-{/* Trust badges */}
-
-<div className="flex gap-4 mt-10 flex-wrap text-sm">
-
-<div className="bg-white px-4 py-2 rounded-full shadow hover:scale-105 transition">
-⭐ 4.7 Rating
-</div>
-
-<div className="bg-white px-4 py-2 rounded-full shadow hover:scale-105 transition">
-🏆 Trusted by 1Cr+
-</div>
-
-<div className="bg-white px-4 py-2 rounded-full shadow hover:scale-105 transition">
-🔒 100% Secure
-</div>
-
-</div>
-
-</motion.div>
-
-
-{/* RIGHT SIDE */}
-
-<motion.div
-initial={{opacity:0,x:50}}
-animate={{opacity:1,x:0}}
-transition={{duration:0.7}}
-className="relative"
->
-
-{/* Floating phone */}
-
-<motion.div
-animate={{y:[0,-15,0]}}
-transition={{repeat:Infinity,duration:4}}
-className="absolute -top-24 right-6 hidden lg:block"
->
-
-{/* <Image
-src="/image/phone1.png"
-alt="phone"
-width={220}
-height={420}
-/> */}
-
-</motion.div>
-
-
-{/* FORM */}
-
-<div className="bg-white/80 backdrop-blur-xl rounded-2xl p-10 shadow-2xl border border-white/40">
-
-<h2 className="text-2xl font-semibold mb-6">
-Schedule your demo
-</h2>
-
-<form onSubmit={handleSubmit} className="space-y-5">
-
-<div className="relative">
-<User className="absolute left-3 top-3 text-gray-400"/>
-<input
-type="text"
-placeholder="Your Name"
-className="w-full border pl-10 p-3 rounded-lg"
-/>
-</div>
-
-<div className="relative">
-<Phone className="absolute left-3 top-3 text-gray-400"/>
-<input
-type="text"
-placeholder="Mobile Number"
-className="w-full border pl-10 p-3 rounded-lg"
-/>
-</div>
-
-<div className="relative">
-<Building className="absolute left-3 top-3 text-gray-400"/>
-<input
-type="text"
-placeholder="Business Name"
-className="w-full border pl-10 p-3 rounded-lg"
-/>
-</div>
-
-<div className="relative">
-<MessageSquare className="absolute left-3 top-3 text-gray-400"/>
-<select className="w-full border pl-10 p-3 rounded-lg">
-<option>Select enquiry type</option>
-<option>Product demo</option>
-<option>Pricing enquiry</option>
-</select>
-</div>
-
-<div className="relative">
-<Globe className="absolute left-3 top-3 text-gray-400"/>
-<select className="w-full border pl-10 p-3 rounded-lg">
-<option>Select language</option>
-<option>Hindi</option>
-<option>English</option>
-<option>Bengali</option>
-<option>Tamil</option>
-<option>Telugu</option>
-</select>
-</div>
-
-<button
-type="submit"
-className="w-full py-4 rounded-full text-white font-semibold bg-gradient-to-r from-blue-600 to-purple-600 hover:scale-105 transition"
->
-Book My Demo
-</button>
-
-</form>
-
-</div>
-
-</motion.div>
-
-</div>
-
-
-{/* success popup */}
-
-{success && (
-
-<div className="fixed top-6 right-6 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg animate-bounce">
-
-Demo request submitted successfully 🚀
-
-</div>
-
-)}
-
-</div>
-
-)
-}
+import { useRouter } from "next/navigation";
+import Navbar from "@/components/Navbar";
+import Footer from "@/components/Footer";
+
+const AppointmentPage = () => {
+  const router = useRouter();
+  const [currentDate, setCurrentDate] = useState<Date>(new Date());
+  const [selectedDate, setSelectedDate] = useState<number | null>(null);
+  const [selectedTime, setSelectedTime] = useState<string | null>(null);
+  const [showForm, setShowForm] = useState<boolean>(false);
+  const [showMonthPicker, setShowMonthPicker] = useState<boolean>(false);
+  const [showTimeZonePicker, setShowTimeZonePicker] = useState<boolean>(false);
+  const [realTimeCurrentDate, setRealTimeCurrentDate] = useState<Date>(new Date());
+  const [selectedTimeZone, setSelectedTimeZone] = useState<string>("Asia/Kolkata");
+  const [formData, setFormData] = useState({
+    name: "",
+    mobile: "",
+    businessName: "",
+    enquiryType: "Product demo"
+  });
+  const [bookingSuccess, setBookingSuccess] = useState<boolean>(false);
+
+  // Time zones list
+  const timeZones = [
+    { name: "India Standard Time (IST)", value: "Asia/Kolkata", offset: "+5:30" },
+    { name: "Eastern Time (ET)", value: "America/New_York", offset: "-4:00" },
+    { name: "Pacific Time (PT)", value: "America/Los_Angeles", offset: "-7:00" },
+    { name: "Central Time (CT)", value: "America/Chicago", offset: "-5:00" },
+    { name: "Mountain Time (MT)", value: "America/Denver", offset: "-6:00" },
+    { name: "Greenwich Mean Time (GMT)", value: "Europe/London", offset: "+1:00" },
+    { name: "Central European Time (CET)", value: "Europe/Paris", offset: "+2:00" },
+    { name: "Eastern European Time (EET)", value: "Europe/Athens", offset: "+3:00" },
+    { name: "Gulf Standard Time (GST)", value: "Asia/Dubai", offset: "+4:00" },
+    { name: "Singapore Time (SGT)", value: "Asia/Singapore", offset: "+8:00" },
+    { name: "Australia Eastern Time (AET)", value: "Australia/Sydney", offset: "+10:00" },
+    { name: "New Zealand Time (NZT)", value: "Pacific/Auckland", offset: "+12:00" }
+  ];
+
+  // Update real-time current date every second
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setRealTimeCurrentDate(new Date());
+    }, 1000);
+    
+    return () => clearInterval(timer);
+  }, []);
+
+  // Mock booked dates
+  const bookedDates: number[] = [1, 2, 3, 10, 11, 16, 17, 20, 21, 24];
+  
+  // Mock available dates - requires 1 day advance booking
+  const getAvailableDates = (): number[] => {
+    const year = currentDate.getFullYear();
+    const month = currentDate.getMonth();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const today = new Date();
+    
+    // Create tomorrow's date (requires 1 day advance booking)
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    tomorrow.setHours(0, 0, 0, 0);
+    
+    const available: number[] = [];
+    
+    for (let day = 1; day <= daysInMonth; day++) {
+      const dateToCheck = new Date(year, month, day);
+      dateToCheck.setHours(0, 0, 0, 0);
+      
+      // Only allow dates from tomorrow onwards
+      if (dateToCheck >= tomorrow) {
+        if (!bookedDates.includes(day)) {
+          available.push(day);
+        }
+      }
+    }
+    
+    return available;
+  };
+
+  const availableDates = getAvailableDates();
+  
+  // Base time slots in IST
+  const baseTimeSlots: string[] = [
+    "9:00 AM", "10:00 AM", "11:00 AM", 
+    "2:00 PM", "3:00 PM", "4:00 PM", "5:00 PM"
+  ];
+
+  // Convert time to different time zone
+  const convertTimeToTimeZone = (timeStr: string, fromZone: string, toZone: string): string => {
+    const [time, period] = timeStr.split(' ');
+    let [hours, minutes] = time.split(':').map(Number);
+    
+    if (period === 'PM' && hours !== 12) hours += 12;
+    if (period === 'AM' && hours === 12) hours = 0;
+    
+    const getOffset = (zone: string): number => {
+      const offsets: { [key: string]: number } = {
+        'Asia/Kolkata': 330,
+        'America/New_York': -240,
+        'America/Los_Angeles': -420,
+        'America/Chicago': -300,
+        'America/Denver': -360,
+        'Europe/London': 60,
+        'Europe/Paris': 120,
+        'Europe/Athens': 180,
+        'Asia/Dubai': 240,
+        'Asia/Singapore': 480,
+        'Australia/Sydney': 600,
+        'Pacific/Auckland': 720
+      };
+      return offsets[zone] || 0;
+    };
+    
+    const fromOffset = getOffset(fromZone);
+    const toOffset = getOffset(toZone);
+    
+    const utcHours = hours - (fromOffset / 60);
+    let targetHours = utcHours + (toOffset / 60);
+    
+    if (targetHours < 0) targetHours += 24;
+    if (targetHours >= 24) targetHours -= 24;
+    
+    const targetPeriod = targetHours >= 12 ? 'PM' : 'AM';
+    let displayHours = targetHours % 12;
+    displayHours = displayHours === 0 ? 12 : displayHours;
+    
+    return `${displayHours}:${minutes.toString().padStart(2, '0')} ${targetPeriod}`;
+  };
+
+  const getTimeSlotsForZone = (): string[] => {
+    return baseTimeSlots.map(slot => 
+      convertTimeToTimeZone(slot, 'Asia/Kolkata', selectedTimeZone)
+    );
+  };
+
+  const timeSlots = getTimeSlotsForZone();
+
+  const getMonthData = (): (number | null)[] => {
+    const year = currentDate.getFullYear();
+    const month = currentDate.getMonth();
+    
+    const firstDay = new Date(year, month, 1).getDay();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    
+    const days: (number | null)[] = [];
+    const startingDay = firstDay === 0 ? 6 : firstDay - 1;
+    
+    for (let i = 0; i < startingDay; i++) {
+      days.push(null);
+    }
+    
+    for (let i = 1; i <= daysInMonth; i++) {
+      days.push(i);
+    }
+    
+    return days;
+  };
+
+  const monthNames: string[] = [
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December"
+  ];
+
+  const dayNames: string[] = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+
+  const handlePrevMonth = (): void => {
+    setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1));
+    setSelectedDate(null);
+    setSelectedTime(null);
+    setShowForm(false);
+  };
+
+  const handleNextMonth = (): void => {
+    setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1));
+    setSelectedDate(null);
+    setSelectedTime(null);
+    setShowForm(false);
+  };
+
+  const handleResetToCurrent = (): void => {
+    setCurrentDate(new Date());
+    setSelectedDate(null);
+    setSelectedTime(null);
+    setShowForm(false);
+    setShowMonthPicker(false);
+  };
+
+  const handleMonthSelect = (monthIndex: number): void => {
+    setCurrentDate(new Date(currentDate.getFullYear(), monthIndex, 1));
+    setShowMonthPicker(false);
+    setSelectedDate(null);
+    setSelectedTime(null);
+    setShowForm(false);
+  };
+
+  const handleYearChange = (increment: number): void => {
+    setCurrentDate(new Date(currentDate.getFullYear() + increment, currentDate.getMonth(), 1));
+  };
+
+  const handleDateSelect = (day: number | null): void => {
+    if (!day) return;
+    if (availableDates.includes(day)) {
+      setSelectedDate(day);
+      setSelectedTime(null);
+      setShowForm(false);
+    }
+  };
+
+  const handleTimeSelect = (time: string): void => {
+    setSelectedTime(time);
+  };
+
+  const handleProceedToForm = (): void => {
+    if (selectedDate && selectedTime) {
+      setShowForm(true);
+    }
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>): void => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>): void => {
+    e.preventDefault();
+    setBookingSuccess(true);
+    
+    setTimeout(() => {
+      setBookingSuccess(false);
+      setSelectedDate(null);
+      setSelectedTime(null);
+      setShowForm(false);
+      setFormData({
+        name: "",
+        mobile: "",
+        businessName: "",
+        enquiryType: "Product demo"
+      });
+    }, 3000);
+  };
+
+  const isAvailable = (day: number | null): boolean => {
+    return day ? availableDates.includes(day) : false;
+  };
+
+  const isBooked = (day: number | null): boolean => {
+    if (!day) return false;
+    
+    const dateToCheck = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    return dateToCheck >= today && bookedDates.includes(day);
+  };
+
+  const isPastDate = (day: number | null): boolean => {
+    if (!day) return false;
+    
+    const dateToCheck = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    // Consider today as past for booking (need 1 day advance)
+    return dateToCheck <= today;
+  };
+
+  const isCurrentDate = (day: number | null): boolean => {
+    if (!day) return false;
+    return day === realTimeCurrentDate.getDate() && 
+           currentDate.getMonth() === realTimeCurrentDate.getMonth() && 
+           currentDate.getFullYear() === realTimeCurrentDate.getFullYear();
+  };
+
+  const days = getMonthData();
+
+  const formattedCurrentDate = realTimeCurrentDate.toLocaleDateString('en-US', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  });
+
+  const formatTimeInZone = (date: Date, timeZone: string): string => {
+    return date.toLocaleTimeString('en-US', {
+      timeZone,
+      hour: 'numeric',
+      minute: 'numeric',
+      second: '2-digit',
+      hour12: true
+    });
+  };
+
+  const currentTimeZone = timeZones.find(tz => tz.value === selectedTimeZone) || timeZones[0];
+
+  // Calculate tomorrow's date for display
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const formattedTomorrow = tomorrow.toLocaleDateString('en-US', {
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric'
+  });
+
+  return (
+    <div className="min-h-screen bg-[#F0F7FF] relative">
+      <Navbar />
+      
+      <div className="py-4 sm:py-6 md:py-8 px-3 sm:px-4 md:px-6 lg:px-8">
+        {/* Back to Home Button */}
+        
+
+        <style jsx>{`
+          .ripple-hover {
+            position: relative;
+            overflow: hidden;
+            transition: background-color 0.3s, color 0.3s, border-color 0.3s;
+          }
+
+          .ripple-hover::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 10px;
+            height: 10px;
+            background: rgba(255, 255, 255, 0.5);
+            border-radius: 50%;
+            transform: translate(-50%, -50%) scale(0);
+            opacity: 0;
+            transition: transform 0.6s, opacity 0.6s;
+            pointer-events: none;
+            z-index: 0;
+          }
+
+          .ripple-hover:hover::before {
+            transform: translate(-50%, -50%) scale(10);
+            opacity: 1;
+          }
+
+          .ripple-hover span {
+            position: relative;
+            z-index: 1;
+          }
+        `}</style>
+        
+        <div className="max-w-7xl xl:max-w-screen-xl mx-auto">
+          
+          {/* Header with Real-time Date/Time */}
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-center mb-6 sm:mb-8"
+          >
+            <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-[#0F172A] mb-3">
+              Book Your Free Demo
+            </h1>
+            
+            {/* Real-time Current Date/Time Display */}
+            <motion.div 
+              initial={{ scale: 0.95 }}
+              animate={{ scale: 1 }}
+              transition={{ duration: 0.5 }}
+              className="inline-flex flex-wrap items-center justify-center gap-3 bg-white px-4 sm:px-5 py-2 sm:py-3 rounded-full shadow-md border border-[#4461F2] mb-4 max-w-[95%] sm:max-w-full mx-auto"
+            >
+              <div className="flex items-center gap-2">
+                <Calendar className="w-4 h-4 sm:w-5 sm:h-5 text-[#4461F2]" />
+                <span className="text-sm sm:text-base font-semibold text-[#0F172A]">
+                  {formattedCurrentDate}
+                </span>
+              </div>
+              <div className="w-px h-5 bg-gray-300"></div>
+              <div className="flex items-center gap-2">
+                <Clock className="w-4 h-4 sm:w-5 sm:h-5 text-[#9E5CF2]" />
+                <span className="text-sm sm:text-base font-mono font-semibold text-[#0F172A]">
+                  {formatTimeInZone(realTimeCurrentDate, selectedTimeZone)}
+                </span>
+              </div>
+              <motion.div
+                animate={{ scale: [1, 1.2, 1] }}
+                transition={{ duration: 1, repeat: Infinity }}
+                className="w-2 h-2 bg-[#4461F2] rounded-full"
+              />
+            </motion.div>
+            
+            {/* 1-Day Advance Booking Notice */}
+            <div className="flex items-center justify-center gap-2 text-amber-600 bg-amber-50 px-4 py-2 rounded-lg max-w-2xl mx-auto">
+              <AlertCircle size={18} />
+              <p className="text-sm sm:text-base font-medium">
+                Bookings require 1 day advance notice. Today's slots are unavailable.
+              </p>
+            </div>
+          </motion.div>
+
+          {/* Simple 3-Step Process - Redesigned */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="mb-8 sm:mb-10"
+          >
+            <h2 className="text-2xl sm:text-3xl font-bold text-[#0F172A] text-center mb-4">
+              Simple 3-Step Process
+            </h2>
+            
+            <div className="flex flex-col sm:flex-row justify-center items-center gap-4 sm:gap-6">
+              {/* Step 1 */}
+              <div className="flex items-center gap-3 bg-white rounded-xl p-4 shadow-md border border-gray-200 w-full sm:w-auto">
+                <div className="w-12 h-12 bg-[#4461F2] bg-opacity-10 rounded-full flex items-center justify-center">
+                  <span className="text-2xl">📅</span>
+                </div>
+                <div>
+                  <h3 className="font-bold text-[#0F172A] text-lg">Pick Date</h3>
+                  <p className="text-sm text-gray-600">Choose from available dates</p>
+                </div>
+              </div>
+
+              {/* Arrow for desktop */}
+              <div className="hidden sm:block text-2xl text-[#4461F2]">→</div>
+
+              {/* Step 2 */}
+              <div className="flex items-center gap-3 bg-white rounded-xl p-4 shadow-md border border-gray-200 w-full sm:w-auto">
+                <div className="w-12 h-12 bg-[#9E5CF2] bg-opacity-10 rounded-full flex items-center justify-center">
+                  <span className="text-2xl">⏰</span>
+                </div>
+                <div>
+                  <h3 className="font-bold text-[#0F172A] text-lg">Choose Time</h3>
+                  <p className="text-sm text-gray-600">Select your preferred slot</p>
+                </div>
+              </div>
+
+              {/* Arrow for desktop */}
+              <div className="hidden sm:block text-2xl text-[#9E5CF2]">→</div>
+
+              {/* Step 3 */}
+              <div className="flex items-center gap-3 bg-white rounded-xl p-4 shadow-md border border-gray-200 w-full sm:w-auto">
+                <div className="w-12 h-12 bg-gradient-to-r from-[#4461F2] to-[#9E5CF2] bg-opacity-10 rounded-full flex items-center justify-center">
+                  <span className="text-2xl">🚀</span>
+                </div>
+                <div>
+                  <h3 className="font-bold text-[#0F172A] text-lg">Get Demo</h3>
+                  <p className="text-sm text-gray-600">Live demo with our expert</p>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Main Container - 60/40 Split */}
+          <div className="flex flex-col lg:flex-row gap-6 items-stretch">
+            
+            {/* Left Side - Calendar (60%) */}
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.4 }}
+              className="lg:w-[60%] bg-white rounded-xl shadow-lg p-5 sm:p-6 border border-gray-200"
+            >
+              {/* Calendar Header */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-5">
+                <div className="flex items-center gap-3">
+                  <h2 className="text-xl sm:text-2xl font-bold text-[#0F172A] flex items-center gap-2">
+                    <CalendarDays size={24} className="text-[#4461F2]" />
+                    <span>Select Date</span>
+                  </h2>
+                  
+                  {/* Time Zone Selector */}
+                  <div className="relative">
+                    <button
+                      onClick={() => setShowTimeZonePicker(!showTimeZonePicker)}
+                      className="flex items-center gap-2 px-3 py-2 bg-[#F0F7FF] rounded-lg text-sm font-semibold text-[#0F172A] hover:bg-[#4461F2] hover:text-white transition-colors group"
+                    >
+                      <Globe size={16} className="group-hover:text-white" />
+                      <span className="hidden md:inline">{currentTimeZone.name}</span>
+                      <span className="md:hidden">{currentTimeZone.offset}</span>
+                      <ChevronDown size={14} className={`transition-transform ${showTimeZonePicker ? 'rotate-180' : ''}`} />
+                    </button>
+
+                    {/* Time Zone Picker Popup */}
+                    <AnimatePresence>
+                      {showTimeZonePicker && (
+                        <motion.div
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: 10 }}
+                          className="absolute top-full left-0 mt-2 bg-white rounded-lg shadow-xl border border-gray-200 p-3 z-20 min-w-[250px] max-h-64 overflow-y-auto"
+                        >
+                          {timeZones.map((tz) => (
+                            <button
+                              key={tz.value}
+                              onClick={() => {
+                                setSelectedTimeZone(tz.value);
+                                setShowTimeZonePicker(false);
+                              }}
+                              className={`
+                                w-full text-left px-3 py-2 rounded-md text-sm font-medium transition-colors
+                                ${selectedTimeZone === tz.value 
+                                  ? 'bg-[#4461F2] text-white' 
+                                  : 'hover:bg-[#F0F7FF] text-[#0F172A]'
+                                }
+                              `}
+                            >
+                              <div className="flex justify-between items-center">
+                                <span>{tz.name}</span>
+                                <span className="text-xs opacity-70">UTC{tz.offset}</span>
+                              </div>
+                            </button>
+                          ))}
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                </div>
+
+                {/* Month Navigation */}
+                <div className="flex items-center gap-2">
+                  {/* Month/Year Selector */}
+                  <div className="relative">
+                    <button
+                      onClick={() => setShowMonthPicker(!showMonthPicker)}
+                      className="px-4 py-2 bg-[#F0F7FF] rounded-lg text-base font-semibold text-[#0F172A] hover:bg-[#4461F2] hover:text-white transition-colors min-w-[140px]"
+                    >
+                      {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
+                    </button>
+                    
+                    {/* Month Picker Popup */}
+                    <AnimatePresence>
+                      {showMonthPicker && (
+                        <motion.div
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: 10 }}
+                          className="absolute top-full right-0 mt-2 bg-white rounded-lg shadow-xl border border-gray-200 p-4 z-20 min-w-[280px]"
+                        >
+                          <div className="flex items-center justify-between mb-4">
+                            <button
+                              onClick={() => handleYearChange(-1)}
+                              className="p-2 hover:bg-[#F0F7FF] rounded"
+                            >
+                              <ChevronLeft size={18} />
+                            </button>
+                            <span className="font-bold text-lg text-[#0F172A]">{currentDate.getFullYear()}</span>
+                            <button
+                              onClick={() => handleYearChange(1)}
+                              className="p-2 hover:bg-[#F0F7FF] rounded"
+                            >
+                              <ChevronRight size={18} />
+                            </button>
+                          </div>
+                          <div className="grid grid-cols-3 gap-2">
+                            {monthNames.map((month, index) => (
+                              <button
+                                key={month}
+                                onClick={() => handleMonthSelect(index)}
+                                className={`
+                                  p-3 text-sm font-semibold rounded-lg transition-colors
+                                  ${currentDate.getMonth() === index 
+                                    ? 'bg-[#4461F2] text-white' 
+                                    : 'hover:bg-[#F0F7FF] text-[#0F172A]'
+                                  }
+                                `}
+                              >
+                                {month.slice(0, 3)}
+                              </button>
+                            ))}
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+
+                  {/* Reset Button */}
+                  <button
+                    onClick={handleResetToCurrent}
+                    className="p-2 bg-[#F0F7FF] rounded-lg hover:bg-[#4461F2] hover:text-white transition-colors"
+                    title="Back to Current Month"
+                  >
+                    <RotateCw size={18} />
+                  </button>
+
+                  <button
+                    onClick={handlePrevMonth}
+                    className="p-2 hover:bg-[#F0F7FF] rounded-lg transition-colors text-[#0F172A]"
+                  >
+                    <ChevronLeft size={20} />
+                  </button>
+                  <button
+                    onClick={handleNextMonth}
+                    className="p-2 hover:bg-[#F0F7FF] rounded-lg transition-colors text-[#0F172A]"
+                  >
+                    <ChevronRight size={20} />
+                  </button>
+                </div>
+              </div>
+
+              {/* Day Names */}
+              <div className="grid grid-cols-7 gap-1 mb-3">
+                {dayNames.map((day: string) => (
+                  <div key={day} className="text-center text-sm font-bold text-gray-500 py-2">
+                    {day}
+                  </div>
+                ))}
+              </div>
+
+              {/* Calendar Days */}
+              <div className="grid grid-cols-7 gap-1">
+                {days.map((day: number | null, index: number) => {
+                  const available = isAvailable(day);
+                  const booked = isBooked(day);
+                  const past = isPastDate(day);
+                  const current = isCurrentDate(day);
+                  const isSelected = selectedDate === day;
+
+                  let bgColor = "bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed";
+                  
+                  if (available && !past) {
+                    bgColor = isSelected
+                      ? 'bg-[#4461F2] text-white shadow-lg scale-105 ring-2 ring-[#9E5CF2] cursor-pointer'
+                      : 'bg-white text-[#0F172A] border-2 border-[#4461F2] cursor-pointer hover:bg-[#4461F2] hover:text-white font-bold ripple-hover';
+                  } else if (booked || past) {
+                    bgColor = 'bg-gray-200 text-gray-500 border border-gray-300 cursor-not-allowed line-through opacity-70';
+                  }
+
+                  return (
+                    <button
+                      key={index}
+                      onClick={() => !past && !booked && handleDateSelect(day)}
+                      disabled={past || booked || !day}
+                      className={`
+                        relative aspect-square flex items-center justify-center rounded-lg text-base sm:text-lg font-bold
+                        transition-all duration-200
+                        ${!day ? 'invisible' : ''}
+                        ${bgColor}
+                      `}
+                    >
+                      <span className="relative z-10">{day}</span>
+                      
+                      {available && !isSelected && !past && (
+                        <span className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-2 h-2 bg-[#4461F2] rounded-full z-10" />
+                      )}
+                      
+                      {current && (
+                        <span className="absolute -top-1 -right-1 w-3 h-3 bg-[#9E5CF2] rounded-full border-2 border-white z-10" />
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Legend */}
+              <div className="flex flex-wrap gap-4 mt-5 pt-4 border-t border-gray-200">
+                {[
+                  { color: "bg-[#4461F2]", label: "Available" },
+                  { color: "bg-[#4461F2] ring-2 ring-[#9E5CF2]", label: "Selected" },
+                  { color: "bg-[#9E5CF2] w-3 h-3 rounded-full", label: "Today" },
+                  { color: "bg-gray-200 line-through", label: "Booked" },
+                  { color: "bg-gray-200 opacity-70", label: "Past" }
+                ].map((item, i) => (
+                  <div key={i} className="flex items-center gap-2">
+                    <div className={`w-4 h-4 ${item.color} rounded-sm`}></div>
+                    <span className="text-sm font-semibold text-gray-700">{item.label}</span>
+                  </div>
+                ))}
+              </div>
+
+              
+            </motion.div>
+
+            {/* Right Side - Working Panel (40%) */}
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.4 }}
+              className="lg:w-[40%] bg-white rounded-xl shadow-lg p-6 border border-gray-200 min-h-[500px]"
+            >
+              <AnimatePresence mode="wait">
+                {!selectedDate && (
+                  <motion.div
+                    key="welcome"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="h-full flex flex-col items-center justify-center text-center py-8"
+                  >
+                    <Calendar className="w-16 h-16 text-[#4461F2] mb-4 opacity-50" />
+                    <h3 className="text-xl sm:text-2xl font-bold text-[#0F172A] mb-3">
+                      Pick a Date
+                    </h3>
+                    <p className="text-base sm:text-lg text-gray-600 max-w-sm">
+                      Select an available date from the calendar to see time slots
+                    </p>
+                    <div className="mt-6 p-4 bg-amber-50 rounded-lg">
+                      <p className="text-sm font-medium text-amber-700">
+                        ⏰ Next available: {formattedTomorrow}
+                      </p>
+                    </div>
+                  </motion.div>
+                )}
+
+                {selectedDate && !selectedTime && (
+                  <motion.div
+                    key="time"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                  >
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-xl sm:text-2xl font-bold text-[#0F172A] flex items-center gap-2">
+                        <Clock size={24} className="text-[#4461F2]" />
+                        <span>Available Slots</span>
+                      </h3>
+                      <button
+                        onClick={() => {
+                          setSelectedDate(null);
+                          setSelectedTime(null);
+                        }}
+                        className="flex items-center gap-1 text-base font-semibold text-[#4461F2] hover:text-[#9E5CF2] transition-colors"
+                      >
+                        <ChevronLeft size={20} />
+                        <span>Back</span>
+                      </button>
+                    </div>
+                    
+                    <div className="mb-4 p-4 bg-[#F0F7FF] rounded-lg">
+                      <p className="text-lg sm:text-xl font-bold text-[#0F172A]">
+                        {selectedDate} {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
+                      </p>
+                      <p className="text-base font-semibold text-gray-600 mt-1">
+                        {currentTimeZone.name}
+                      </p>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      {timeSlots.map((time: string, index: number) => (
+                        <motion.button
+                          key={index}
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: index * 0.05 }}
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          onClick={() => handleTimeSelect(time)}
+                          className={`
+                            py-4 px-3 rounded-lg text-base font-bold transition-all
+                            ${selectedTime === time 
+                              ? 'bg-[#4461F2] text-white shadow-lg scale-105 ring-2 ring-[#9E5CF2]' 
+                              : 'bg-[#F0F7FF] text-[#0F172A] border-2 border-[#4461F2] hover:bg-[#4461F2] hover:text-white'
+                            }
+                          `}
+                        >
+                          {time}
+                        </motion.button>
+                      ))}
+                    </div>
+                  </motion.div>
+                )}
+
+                {selectedDate && selectedTime && !showForm && (
+                  <motion.div
+                    key="proceed"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="space-y-5"
+                  >
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-xl sm:text-2xl font-bold text-[#0F172A]">Selected Slot</h3>
+                      <button
+                        onClick={() => {
+                          setSelectedTime(null);
+                        }}
+                        className="flex items-center gap-1 text-base font-semibold text-[#4461F2] hover:text-[#9E5CF2] transition-colors"
+                      >
+                        <ChevronLeft size={20} />
+                        <span>Back</span>
+                      </button>
+                    </div>
+
+                    <div className="p-5 bg-[#F0F7FF] rounded-lg">
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-3 text-gray-700">
+                          <Calendar size={20} className="text-[#4461F2]" />
+                          <span className="text-lg font-bold">{selectedDate} {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}</span>
+                        </div>
+                        <div className="flex items-center gap-3 text-gray-700">
+                          <Clock size={20} className="text-[#4461F2]" />
+                          <span className="text-lg font-bold">{selectedTime}</span>
+                        </div>
+                        <div className="flex items-center gap-3 text-gray-600 pt-3 border-t border-gray-200">
+                          <Globe size={18} />
+                          <span className="text-base font-semibold">{currentTimeZone.name} ({currentTimeZone.offset})</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <motion.button
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      onClick={handleProceedToForm}
+                      className="w-full py-4 bg-[#4461F2] text-white rounded-lg text-lg font-bold hover:bg-[#9E5CF2] transition-colors"
+                    >
+                      Continue →
+                    </motion.button>
+                  </motion.div>
+                )}
+
+                {showForm && (
+                  <motion.div
+                    key="form"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                  >
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-xl sm:text-2xl font-bold text-[#0F172A] flex items-center gap-2">
+                        <User size={24} className="text-[#4461F2]" />
+                        <span>Your Details</span>
+                      </h3>
+                      <button
+                        onClick={() => {
+                          setShowForm(false);
+                        }}
+                        className="flex items-center gap-1 text-base font-semibold text-[#4461F2] hover:text-[#9E5CF2] transition-colors"
+                      >
+                        <ChevronLeft size={20} />
+                        <span>Back</span>
+                      </button>
+                    </div>
+
+                    <div className="mb-4 p-4 bg-[#F0F7FF] rounded-lg">
+                      <p className="text-lg font-bold text-gray-700">
+                        {selectedDate} {monthNames[currentDate.getMonth()]} at {selectedTime}
+                      </p>
+                      <p className="text-base font-semibold text-gray-600 mt-2">
+                        {currentTimeZone.name} ({currentTimeZone.offset})
+                      </p>
+                    </div>
+
+                    <form onSubmit={handleSubmit} className="space-y-4">
+                      <input
+                        type="text"
+                        name="name"
+                        value={formData.name}
+                        onChange={handleInputChange}
+                        placeholder="Your Name"
+                        required
+                        className="w-full border-2 border-gray-300 px-4 py-3 rounded-lg text-base font-semibold focus:outline-none focus:ring-2 focus:ring-[#4461F2] focus:border-transparent"
+                      />
+
+                      <input
+                        type="tel"
+                        name="mobile"
+                        value={formData.mobile}
+                        onChange={handleInputChange}
+                        placeholder="Mobile Number"
+                        required
+                        className="w-full border-2 border-gray-300 px-4 py-3 rounded-lg text-base font-semibold focus:outline-none focus:ring-2 focus:ring-[#4461F2] focus:border-transparent"
+                      />
+
+                      <input
+                        type="text"
+                        name="businessName"
+                        value={formData.businessName}
+                        onChange={handleInputChange}
+                        placeholder="Business Name"
+                        required
+                        className="w-full border-2 border-gray-300 px-4 py-3 rounded-lg text-base font-semibold focus:outline-none focus:ring-2 focus:ring-[#4461F2] focus:border-transparent"
+                      />
+
+                      <select
+                        name="enquiryType"
+                        value={formData.enquiryType}
+                        onChange={handleInputChange}
+                        className="w-full border-2 border-gray-300 px-4 py-3 rounded-lg text-base font-semibold focus:outline-none focus:ring-2 focus:ring-[#4461F2] focus:border-transparent"
+                      >
+                        <option className="text-base">Product demo</option>
+                        <option className="text-base">Pricing enquiry</option>
+                        <option className="text-base">Technical support</option>
+                        <option className="text-base">Partnership</option>
+                      </select>
+
+                      <motion.button
+                        type="submit"
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        className="w-full py-4 bg-[#4461F2] text-white rounded-lg text-lg font-bold hover:bg-[#9E5CF2] transition-colors mt-4"
+                      >
+                        Book Appointment
+                      </motion.button>
+                    </form>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </motion.div>
+          </div>
+
+          {/* Success Popup */}
+          <AnimatePresence>
+            {bookingSuccess && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 20 }}
+                className="fixed bottom-4 right-4 left-4 sm:left-auto bg-[#4461F2] text-white px-5 py-4 rounded-xl shadow-2xl flex items-center gap-3 max-w-md mx-auto sm:mx-0"
+              >
+                <CheckCircle size={24} />
+                <div>
+                  <p className="text-lg font-bold">Demo Booked Successfully!</p>
+                  <p className="text-sm opacity-90">We'll contact you shortly</p>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      </div>
+      
+      <Footer />
+    </div>
+  );
+};
+
+export default AppointmentPage;

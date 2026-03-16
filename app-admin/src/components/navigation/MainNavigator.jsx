@@ -1,4 +1,3 @@
-// components/navigation/MainNavigator.js
 import { Animated } from "react-native";
 import { useState, useEffect, useRef } from "react";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
@@ -8,20 +7,50 @@ import { BlurView } from "expo-blur";
 import { Text, TouchableOpacity, View, Dimensions } from "react-native";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 import { useThemeStore } from "../../store/themeStore";
+
+// Import all screens
 import AddCustomerScreen from "../../screens/customers/AddCustomerScreen";
 import CustomerDetailScreen from "../../screens/customers/CustomerDetailScreen";
 import CustomersScreen from "../../screens/customers/CustomersScreen";
 import DashboardScreen from "../../screens/dashboard/DashboardScreen";
-import InventoryScreen from "../../screens/inventory/InventoryScreen";
-import StockMovementScreen from "../../screens/inventory/StockMovementScreen";
-import CreateOrderScreen from "../../screens/orders/CreateOrderScreen";
-import OrderDetailScreen from "../../screens/orders/OrderDetailScreen";
-import OrdersScreen from "../../screens/orders/OrdersScreen";
+
 import AddProductScreen from "../../screens/products/AddProductScreen";
 import ProductDetailScreen from "../../screens/products/ProductDetailScreen";
 import ProductsScreen from "../../screens/products/ProductsScreen";
 import ProfileScreen from "../../screens/profile/ProfileScreen";
 import SettingsScreen from "../../screens/settings/SettingsScreen";
+
+// Import Category Screens
+import CategoriesScreen from "../../screens/categories/CategoriesScreen";
+import AddCategoryScreen from "../../screens/categories/AddCategoryScreen";
+import CategoryDetailScreen from "../../screens/categories/CategoryDetailScreen";
+
+// Import Brand Screens
+import BrandsScreen from "../../screens/brands/BrandsScreen";
+import AddBrandScreen from "../../screens/brands/AddBrandScreen";
+import BrandDetailScreen from "../../screens/brands/BrandDetailScreen";
+
+// Import Unit Screens
+import UnitsScreen from "../../screens/units/UnitsScreen";
+import AddUnitScreen from "../../screens/units/AddUnitScreen";
+import UnitDetailScreen from "../../screens/units/UnitDetailScreen";
+
+// Import Stock Screens
+import StocksScreen from "../../screens/stocks/StocksScreen";
+import AddStockScreen from "../../screens/stocks/AddStockScreen";
+import StockDetailScreen from "../../screens/stocks/StockDetailScreen";
+import AddStockQuantityScreen from "../../screens/stocks/AddStockQuantityScreen";
+
+// Import Store Screens
+import StoresScreen from "../../screens/stores/StoresScreen";
+import AddStoreScreen from "../../screens/stores/AddStoreScreen";
+import StoreDetailScreen from "../../screens/stores/StoreDetailScreen";
+
+// Import Bill Screens
+import BillsScreen from "../../screens/bills/BillsScreen";
+import CreateBillScreen from "../../screens/bills/CreateBillScreen";
+import BillDetailScreen from "../../screens/bills/BillDetailScreen";
+
 import { NAVIGATION_SCREENS } from "../../utils/constants";
 
 const { width } = Dimensions.get("window");
@@ -31,7 +60,7 @@ const Stack = createNativeStackNavigator();
 // Modern Header with Gradient (Dark Mode Aware)
 const StackHeader = ({ title, navigation, showBack = true }) => {
   const { isDarkMode } = useThemeStore();
-  
+
   return (
     <LinearGradient
       colors={isDarkMode ? ["#4f46e5", "#7c3aed"] : ["#6366F1", "#8B5CF6"]}
@@ -81,7 +110,7 @@ const StackHeader = ({ title, navigation, showBack = true }) => {
 // Products Stack with Dark Mode
 const ProductsStack = () => {
   const { isDarkMode } = useThemeStore();
-  
+
   return (
     <Stack.Navigator
       screenOptions={{
@@ -125,10 +154,10 @@ const ProductsStack = () => {
   );
 };
 
-// Orders Stack with Dark Mode
-const OrdersStack = () => {
+// Categories Stack with Dark Mode
+const CategoriesStack = () => {
   const { isDarkMode } = useThemeStore();
-  
+
   return (
     <Stack.Navigator
       screenOptions={{
@@ -138,12 +167,12 @@ const OrdersStack = () => {
       }}
     >
       <Stack.Screen
-        name={NAVIGATION_SCREENS.MAIN.ORDERS}
-        component={OrdersScreen}
+        name={NAVIGATION_SCREENS.MAIN.CATEGORIES}
+        component={CategoriesScreen}
         options={{
           header: ({ navigation }) => (
             <StackHeader
-              title="Orders"
+              title="Categories"
               navigation={navigation}
               showBack={false}
             />
@@ -151,20 +180,161 @@ const OrdersStack = () => {
         }}
       />
       <Stack.Screen
-        name={NAVIGATION_SCREENS.MAIN.ORDER_DETAIL}
-        component={OrderDetailScreen}
+        name={NAVIGATION_SCREENS.MAIN.CATEGORY_DETAIL}
+        component={CategoryDetailScreen}
         options={({ navigation }) => ({
           header: () => (
-            <StackHeader title="Order Details" navigation={navigation} />
+            <StackHeader title="Category Details" navigation={navigation} />
           ),
         })}
       />
       <Stack.Screen
-        name={NAVIGATION_SCREENS.MAIN.CREATE_ORDER}
-        component={CreateOrderScreen}
+        name={NAVIGATION_SCREENS.MAIN.ADD_CATEGORY}
+        component={AddCategoryScreen}
         options={({ navigation }) => ({
           header: () => (
-            <StackHeader title="Create Order" navigation={navigation} />
+            <StackHeader title="Add Category" navigation={navigation} />
+          ),
+        })}
+      />
+    </Stack.Navigator>
+  );
+};
+
+// Brands Stack with Dark Mode
+const BrandsStack = () => {
+  const { isDarkMode } = useThemeStore();
+
+  return (
+    <Stack.Navigator
+      screenOptions={{
+        headerShown: false,
+        animation: "slide_from_right",
+        contentStyle: { backgroundColor: isDarkMode ? "#111827" : "#F8FAFC" },
+      }}
+    >
+      <Stack.Screen
+        name={NAVIGATION_SCREENS.MAIN.BRANDS}
+        component={BrandsScreen}
+        options={{
+          header: ({ navigation }) => (
+            <StackHeader
+              title="Brands"
+              navigation={navigation}
+              showBack={false}
+            />
+          ),
+        }}
+      />
+      <Stack.Screen
+        name={NAVIGATION_SCREENS.MAIN.BRAND_DETAIL}
+        component={BrandDetailScreen}
+        options={({ navigation }) => ({
+          header: () => (
+            <StackHeader title="Brand Details" navigation={navigation} />
+          ),
+        })}
+      />
+      <Stack.Screen
+        name={NAVIGATION_SCREENS.MAIN.ADD_BRAND}
+        component={AddBrandScreen}
+        options={({ navigation }) => ({
+          header: () => (
+            <StackHeader title="Add Brand" navigation={navigation} />
+          ),
+        })}
+      />
+    </Stack.Navigator>
+  );
+};
+
+// Units Stack with Dark Mode
+const UnitsStack = () => {
+  const { isDarkMode } = useThemeStore();
+
+  return (
+    <Stack.Navigator
+      screenOptions={{
+        headerShown: false,
+        animation: "slide_from_right",
+        contentStyle: { backgroundColor: isDarkMode ? "#111827" : "#F8FAFC" },
+      }}
+    >
+      <Stack.Screen
+        name={NAVIGATION_SCREENS.MAIN.UNITS}
+        component={UnitsScreen}
+        options={{
+          header: ({ navigation }) => (
+            <StackHeader
+              title="Units"
+              navigation={navigation}
+              showBack={false}
+            />
+          ),
+        }}
+      />
+      <Stack.Screen
+        name={NAVIGATION_SCREENS.MAIN.UNIT_DETAIL}
+        component={UnitDetailScreen}
+        options={({ navigation }) => ({
+          header: () => (
+            <StackHeader title="Unit Details" navigation={navigation} />
+          ),
+        })}
+      />
+      <Stack.Screen
+        name={NAVIGATION_SCREENS.MAIN.ADD_UNIT}
+        component={AddUnitScreen}
+        options={({ navigation }) => ({
+          header: () => (
+            <StackHeader title="Add Unit" navigation={navigation} />
+          ),
+        })}
+      />
+    </Stack.Navigator>
+  );
+};
+
+// Stores Stack with Dark Mode
+const StoresStack = () => {
+  const { isDarkMode } = useThemeStore();
+
+  return (
+    <Stack.Navigator
+      screenOptions={{
+        headerShown: false,
+        animation: "slide_from_right",
+        contentStyle: { backgroundColor: isDarkMode ? "#111827" : "#F8FAFC" },
+      }}
+    >
+      <Stack.Screen
+        name={NAVIGATION_SCREENS.MAIN.STORES}
+        component={StoresScreen}
+        options={{
+          header: ({ navigation }) => (
+            <StackHeader
+              title="Stores"
+              navigation={navigation}
+              showBack={false}
+            />
+          ),
+        }}
+      />
+      <Stack.Screen
+        name={NAVIGATION_SCREENS.MAIN.STORE_DETAIL}
+        component={StoreDetailScreen}
+        options={({ navigation }) => ({
+          header: () => (
+            <StackHeader title="Store Details" navigation={navigation} />
+          ),
+        })}
+      />
+      <Stack.Screen
+        name={NAVIGATION_SCREENS.MAIN.ADD_STORE}
+        component={AddStoreScreen}
+        options={({ navigation }) => ({
+          header: () => (
+            <StackHeader title="Add Store" navigation={navigation} />
           ),
         })}
       />
@@ -175,7 +345,7 @@ const OrdersStack = () => {
 // Customers Stack with Dark Mode
 const CustomersStack = () => {
   const { isDarkMode } = useThemeStore();
-  
+
   return (
     <Stack.Navigator
       screenOptions={{
@@ -219,10 +389,10 @@ const CustomersStack = () => {
   );
 };
 
-// Inventory Stack with Dark Mode (hidden from tab bar)
-const InventoryStack = () => {
+// Stock Stack with Dark Mode
+const StocksStack = () => {
   const { isDarkMode } = useThemeStore();
-  
+
   return (
     <Stack.Navigator
       screenOptions={{
@@ -232,12 +402,12 @@ const InventoryStack = () => {
       }}
     >
       <Stack.Screen
-        name={NAVIGATION_SCREENS.MAIN.INVENTORY}
-        component={InventoryScreen}
+        name={NAVIGATION_SCREENS.MAIN.STOCKS}
+        component={StocksScreen}
         options={{
           header: ({ navigation }) => (
             <StackHeader
-              title="Inventory"
+              title="Stock Management"
               navigation={navigation}
               showBack={false}
             />
@@ -245,11 +415,29 @@ const InventoryStack = () => {
         }}
       />
       <Stack.Screen
-        name={NAVIGATION_SCREENS.MAIN.STOCK_MOVEMENT}
-        component={StockMovementScreen}
+        name={NAVIGATION_SCREENS.MAIN.STOCK_DETAIL}
+        component={StockDetailScreen}
         options={({ navigation }) => ({
           header: () => (
-            <StackHeader title="Stock Movement" navigation={navigation} />
+            <StackHeader title="Stock Details" navigation={navigation} />
+          ),
+        })}
+      />
+      <Stack.Screen
+        name={NAVIGATION_SCREENS.MAIN.ADD_STOCK}
+        component={AddStockScreen}
+        options={({ navigation }) => ({
+          header: () => (
+            <StackHeader title="Add Stock Entry" navigation={navigation} />
+          ),
+        })}
+      />
+      <Stack.Screen
+        name={NAVIGATION_SCREENS.MAIN.ADD_STOCK_QUANTITY}
+        component={AddStockQuantityScreen}
+        options={({ navigation }) => ({
+          header: () => (
+            <StackHeader title="Add Stock Quantity" navigation={navigation} />
           ),
         })}
       />
@@ -257,10 +445,57 @@ const InventoryStack = () => {
   );
 };
 
-// Settings Stack with Dark Mode (hidden from tab bar)
+// Bills Stack with Dark Mode
+const BillsStack = () => {
+  const { isDarkMode } = useThemeStore();
+
+  return (
+    <Stack.Navigator
+      screenOptions={{
+        headerShown: false,
+        animation: "slide_from_right",
+        contentStyle: { backgroundColor: isDarkMode ? "#111827" : "#F8FAFC" },
+      }}
+    >
+      <Stack.Screen
+        name={NAVIGATION_SCREENS.MAIN.BILLS}
+        component={BillsScreen}
+        options={{
+          header: ({ navigation }) => (
+            <StackHeader
+              title="Bills & Invoices"
+              navigation={navigation}
+              showBack={false}
+            />
+          ),
+        }}
+      />
+      <Stack.Screen
+        name={NAVIGATION_SCREENS.MAIN.BILL_DETAIL}
+        component={BillDetailScreen}
+        options={({ navigation }) => ({
+          header: () => (
+            <StackHeader title="Bill Details" navigation={navigation} />
+          ),
+        })}
+      />
+      <Stack.Screen
+        name={NAVIGATION_SCREENS.MAIN.CREATE_BILL}
+        component={CreateBillScreen}
+        options={({ navigation }) => ({
+          header: () => (
+            <StackHeader title="Create Bill" navigation={navigation} />
+          ),
+        })}
+      />
+    </Stack.Navigator>
+  );
+};
+
+// Settings Stack with Dark Mode
 const SettingsStack = () => {
   const { isDarkMode } = useThemeStore();
-  
+
   return (
     <Stack.Navigator
       screenOptions={{
@@ -301,7 +536,7 @@ const ModernTabBar = ({ state, descriptors, navigation }) => {
   const [sliderLeft, setSliderLeft] = useState(0);
   const animation = useRef(new Animated.Value(0)).current;
 
-  // Define only the tabs we want to show
+  // Define all tabs we want to show in bottom bar - Now with 10 tabs (added Bills)
   const tabs = [
     {
       name: "Home",
@@ -318,40 +553,34 @@ const ModernTabBar = ({ state, descriptors, navigation }) => {
       screen: "ProductsStack",
     },
     {
-      name: "Orders",
-      icon: "clipboard-list-outline",
-      iconActive: "clipboard-list",
-      label: "Orders",
-      screen: "OrdersStack",
-    },
-    {
-      name: "Clients",
-      icon: "account-group-outline",
-      iconActive: "account-group",
-      label: "Clients",
-      screen: "CustomersStack",
-    },
-    {
-      name: "Inventory",
+      name: "Stocks",
       icon: "warehouse",
       iconActive: "warehouse",
-      label: "Inventory",
-      screen: "InventoryStack",
+      label: "Stocks",
+      screen: "StocksStack",
     },
+    {
+      name: "Bills",
+      icon: "file-document-outline",
+      iconActive: "file-document",
+      label: "Bills",
+      screen: "BillsStack",
+    },
+    
   ];
 
   // Update slider position when active tab changes
   useEffect(() => {
     if (tabPositions[state.index]) {
       const { x, width } = tabPositions[state.index];
-      
+
       Animated.spring(animation, {
         toValue: x,
         useNativeDriver: false,
         tension: 300,
         friction: 25,
       }).start();
-      
+
       setSliderWidth(width);
     }
   }, [state.index, tabPositions]);
@@ -391,7 +620,7 @@ const ModernTabBar = ({ state, descriptors, navigation }) => {
           className="overflow-hidden"
           style={{
             borderWidth: 0,
-            backgroundColor: isDarkMode ? "rgba(31, 41, 55, 0.8)" : "#ff0dfbcf",
+            backgroundColor: isDarkMode ? "rgba(31, 41, 55, 0.8)" : "rgba(255, 255, 255, 0.8)",
             padding: 0,
             borderRadius: 30,
           }}
@@ -399,8 +628,8 @@ const ModernTabBar = ({ state, descriptors, navigation }) => {
           <View
             className="flex-row items-center"
             style={{
-              backgroundColor: isDarkMode 
-                ? "rgba(31, 41, 55, 0.7)" 
+              backgroundColor: isDarkMode
+                ? "rgba(31, 41, 55, 0.7)"
                 : "rgba(255, 255, 255, 0.7)",
               position: 'relative',
               height: 50,
@@ -439,9 +668,9 @@ const ModernTabBar = ({ state, descriptors, navigation }) => {
                   <Icon
                     name={isFocused ? tab.iconActive : tab.icon}
                     size={22}
-                    color={isFocused 
-                      ? "white" 
-                      : isDarkMode ? "#9CA3AF" : "#758A93"
+                    color={isFocused
+                      ? "white"
+                      : isDarkMode ? "#9CA3AF" : "#6B7280"
                     }
                   />
                 </TouchableOpacity>
@@ -455,7 +684,7 @@ const ModernTabBar = ({ state, descriptors, navigation }) => {
       <View
         style={{
           height: 20,
-          backgroundColor: isDarkMode ? "#111827" : "white",
+          backgroundColor: isDarkMode ? "#111827" : "#F8FAFC",
           width: "100%",
         }}
       />
@@ -466,7 +695,7 @@ const ModernTabBar = ({ state, descriptors, navigation }) => {
 // Main Navigator with modern design
 const MainNavigator = () => {
   const { isDarkMode } = useThemeStore();
-  
+
   return (
     <Tab.Navigator
       tabBar={(props) => <ModernTabBar {...props} />}
@@ -476,13 +705,32 @@ const MainNavigator = () => {
     >
       <Tab.Screen name="Dashboard" component={DashboardScreen} />
       <Tab.Screen name="ProductsStack" component={ProductsStack} />
-      <Tab.Screen name="OrdersStack" component={OrdersStack} />
-      <Tab.Screen name="CustomersStack" component={CustomersStack} />
+      <Tab.Screen name="StocksStack" component={StocksStack}  />
+      <Tab.Screen name="BillsStack" component={BillsStack} />
+      <Tab.Screen name="CategoriesStack" component={CategoriesStack} options={{
+          tabBarButton: () => null,
+          tabBarItemStyle: { display: "none" },
+        }} />
+      <Tab.Screen name="StoresStack" component={StoresStack}   options={{
+          tabBarButton: () => null,
+          tabBarItemStyle: { display: "none" },
+        }}/>
+      
+      <Tab.Screen name="BrandsStack" component={BrandsStack}  options={{
+          tabBarButton: () => null,
+          tabBarItemStyle: { display: "none" },
+        }} />
+      <Tab.Screen name="UnitsStack" component={UnitsStack}  options={{
+          tabBarButton: () => null,
+          tabBarItemStyle: { display: "none" },
+        }} />
+      
+      <Tab.Screen name="CustomersStack" component={CustomersStack} options={{
+          tabBarButton: () => null,
+          tabBarItemStyle: { display: "none" },
+        }} />
+
       {/* Hidden screens - accessible via navigation only */}
-      <Tab.Screen
-        name="InventoryStack"
-        component={InventoryStack}
-      />
       <Tab.Screen
         name="SettingsStack"
         component={SettingsStack}

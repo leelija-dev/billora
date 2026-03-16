@@ -17,7 +17,7 @@ import { useThemeStore } from "../../store/themeStore";
 const ProductCard = ({ product, onUpdateStock }) => {
   const navigation = useNavigation();
   const { isDarkMode } = useThemeStore();
-  const [isFavorite, setIsFavorite] = useState(product?.isFavorite || false);
+  const [isFavorite, setIsFavorite] = useState(product?.is_favorite || false);
   const [currentStock, setCurrentStock] = useState(product?.stock || 0);
   const [showActions, setShowActions] = useState(false);
   const scaleValue = useState(new Animated.Value(1))[0];
@@ -28,23 +28,23 @@ const ProductCard = ({ product, onUpdateStock }) => {
     id,
     name,
     sku,
-    price,
-    cost,
-    originalPrice,
+    selling_price,
+    purchase_price,
     image,
     category,
-    supplier,
-    rating,
-    reviews,
-    discount,
-    isNew,
-    lastUpdated,
-    location,
-    reorderLevel,
+    brand,
+    description,
+    is_active,
+    created_at,
+    updated_at,
+    stock = 0,
+    reorder_level = 10,
   } = product;
 
+  const price = selling_price || 0;
+  const cost = purchase_price || 0;
   const profitMargin = cost ? (((price - cost) / price) * 100).toFixed(1) : 0;
-  const isLowStock = currentStock <= reorderLevel;
+  const isLowStock = currentStock <= reorder_level;
   const isOutOfStock = currentStock <= 0;
 
   const handlePress = () => {
@@ -155,24 +155,15 @@ const ProductCard = ({ product, onUpdateStock }) => {
 
           {/* Badges */}
           <View className="absolute top-2 left-2 flex-col gap-1">
-            {discount > 0 && (
+            {product.discount_percentage && product.discount_percentage > 0 && (
               <LinearGradient
                 colors={["#ef4444", "#dc2626"]}
                 className="px-2 py-1 rounded-full"
                 style={{ borderRadius: 100 }}
               >
                 <Text className="text-white text-xs font-bold">
-                  -{discount}%
+                  -{product.discount_percentage}%
                 </Text>
-              </LinearGradient>
-            )}
-            {isNew && (
-              <LinearGradient
-                colors={["#3b82f6", "#2563eb"]}
-                className="px-2 py-1 rounded-full"
-                style={{ borderRadius: 100 }}
-              >
-                <Text className="text-white text-xs font-bold">NEW</Text>
               </LinearGradient>
             )}
           </View>
@@ -231,7 +222,7 @@ const ProductCard = ({ product, onUpdateStock }) => {
               isDarkMode ? 'bg-blue-900/30' : 'bg-blue-50'
             }`}>
               <Text className="text-blue-500 text-xs font-semibold">
-                {category || "General"}
+                {category?.name || "General"}
               </Text>
             </View>
           </View>
@@ -246,9 +237,9 @@ const ProductCard = ({ product, onUpdateStock }) => {
             {name}
           </Text>
 
-          {/* Supplier & Location */}
+          {/* Brand */}
           <View className="flex-row items-center mb-2">
-            {supplier && (
+            {brand?.name && (
               <>
                 <Icon name="factory" size={12} color="#9ca3af" />
                 <Text
@@ -257,20 +248,7 @@ const ProductCard = ({ product, onUpdateStock }) => {
                   }`}
                   numberOfLines={1}
                 >
-                  {supplier}
-                </Text>
-              </>
-            )}
-            {location && (
-              <>
-                <Icon name="map-marker" size={12} color="#9ca3af" />
-                <Text
-                  className={`text-xs ml-1 ${
-                    isDarkMode ? 'text-gray-500' : 'text-gray-500'
-                  }`}
-                  numberOfLines={1}
-                >
-                  {location}
+                  {brand.name}
                 </Text>
               </>
             )}
@@ -288,15 +266,8 @@ const ProductCard = ({ product, onUpdateStock }) => {
               </Text>
               <View className="flex-row items-baseline">
                 <Text className="text-lg font-bold text-green-600">
-                  ${price?.toFixed(2)}
+                  ${parseFloat(price).toFixed(2)}
                 </Text>
-                {originalPrice > 0 && (
-                  <Text className={`text-xs line-through ml-2 ${
-                    isDarkMode ? 'text-gray-600' : 'text-gray-400'
-                  }`}>
-                    ${originalPrice?.toFixed(2)}
-                  </Text>
-                )}
               </View>
             </View>
 
@@ -356,11 +327,11 @@ const ProductCard = ({ product, onUpdateStock }) => {
           </View>
 
           {/* Last Updated */}
-          {lastUpdated && (
+          {updated_at && (
             <Text className={`text-xs text-right mt-1 ${
               isDarkMode ? 'text-gray-700' : 'text-gray-300'
             }`}>
-              {new Date(lastUpdated).toLocaleDateString()}
+              {new Date(updated_at).toLocaleDateString()}
             </Text>
           )}
         </View>

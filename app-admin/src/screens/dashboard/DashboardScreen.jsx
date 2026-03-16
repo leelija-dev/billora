@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import {
   Alert,
   Dimensions,
@@ -15,9 +15,11 @@ import {
 import { LineChart } from "react-native-chart-kit";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 import { useThemeStore } from "../../store/themeStore";
+import { useAuthStore } from "../../store/authStore";
+import { useDashboard } from "../../hooks/useDashboard";
 import Header from "../../components/common/Header";
 import StatsCard from "../../components/dashboard/StatsCard";
-import { useAuthStore } from "../../store/authStore";
+import { getNavigationItemsWithBadges } from "../../constants/navigationItems"; // Import the helper
 
 const { width } = Dimensions.get("window");
 
@@ -139,61 +141,13 @@ const STATIC_DASHBOARD_DATA = {
   ],
 };
 
-// Navigation items for sidebar
-const navigationItems = [
-  {
-    id: "dashboard",
-    title: "Dashboard",
-    icon: "view-dashboard",
-    screen: "Dashboard",
-    badge: null,
-  },
-  {
-    id: "products",
-    title: "Products",
-    icon: "package-variant",
-    screen: "Products",
-    badge: "156",
-  },
-  {
-    id: "orders",
-    title: "Orders",
-    icon: "clipboard-list",
-    screen: "Orders",
-    badge: "12",
-  },
-  {
-    id: "customers",
-    title: "Customers",
-    icon: "account-group",
-    screen: "Customers",
-    badge: null,
-  },
-  {
-    id: "inventory",
-    title: "Inventory",
-    icon: "warehouse",
-    screen: "Inventory",
-    badge: "Low Stock",
-  },
-  {
-    id: "settings",
-    title: "Settings",
-    icon: "cog",
-    screen: "Settings",
-    badge: null,
-  },
-];
-
 const DashboardScreen = () => {
   const { width } = useWindowDimensions();
   const { isDarkMode } = useThemeStore();
   const { user } = useAuthStore();
   
-  // Since you want NO API CALLS, use static data directly
-  const [dashboardData] = useState(STATIC_DASHBOARD_DATA);
-  const [loading] = useState(false);
-  const [error] = useState(null);
+  // Use real API data instead of static data
+  const { dashboardData, loading, error, refreshData } = useDashboard();
   
   const cardWidth = Math.min(200, width * 0.8);
   const gap = 16;
@@ -203,12 +157,18 @@ const DashboardScreen = () => {
   const [notificationCount] = useState(5);
   const [refreshing, setRefreshing] = useState(false);
 
+  // If dashboardData is null or undefined, use static data as fallback
+  const data = dashboardData || STATIC_DASHBOARD_DATA;
+
+  // Safely access stats with default values
+  const stats = data?.stats || STATIC_DASHBOARD_DATA.stats;
+
   const formatCurrency = (amount) => {
-    return `$${amount.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, "$&,")}`;
+    return `$${(amount || 0).toFixed(2).replace(/\d(?=(\d{3})+\.)/g, "$&,")}`;
   };
 
   const formatNumber = (num) => {
-    return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+    return (num || 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
   };
 
   const getStatusColor = (status) => {
@@ -223,7 +183,31 @@ const DashboardScreen = () => {
   };
 
   const getChartData = () => {
-    if (!dashboardData) return { labels: [], datasets: [] };
+    if (!dashboardData) {
+      // Use static data for chart when no API data
+      switch (selectedPeriod) {
+        case "day":
+          return {
+            labels: STATIC_DASHBOARD_DATA.revenueData.daily.map((d) => d.date),
+            datasets: [{ data: STATIC_DASHBOARD_DATA.revenueData.daily.map((d) => d.revenue) }],
+          };
+        case "week":
+          return {
+            labels: STATIC_DASHBOARD_DATA.revenueData.weekly.map((w) => w.week),
+            datasets: [{ data: STATIC_DASHBOARD_DATA.revenueData.weekly.map((w) => w.revenue) }],
+          };
+        case "month":
+          return {
+            labels: STATIC_DASHBOARD_DATA.revenueData.monthly.map((m) => m.month),
+            datasets: [{ data: STATIC_DASHBOARD_DATA.revenueData.monthly.map((m) => m.revenue) }],
+          };
+        default:
+          return {
+            labels: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
+            datasets: [{ data: [4500, 6200, 5800, 7100, 8900, 10500, 8200] }],
+          };
+      }
+    }
     
     switch (selectedPeriod) {
       case "day":
@@ -298,10 +282,8 @@ const DashboardScreen = () => {
 
   const onRefresh = () => {
     setRefreshing(true);
-    // Simulate refresh
-    setTimeout(() => {
-      setRefreshing(false);
-    }, 1000);
+    refreshData();
+    setRefreshing(false);
   };
 
   const handleNavigate = (screen, params = {}) => {
@@ -331,6 +313,20 @@ const DashboardScreen = () => {
     ]);
   };
 
+  // Navigation items for sidebar - Using centralized navigation items with safe values
+  const navigationItems = useMemo(() => {
+    // Create badges for this screen based on actual data with safe defaults
+    const badges = {
+      products: stats.totalProducts?.toString() || "0",
+      customers: stats.totalCustomers?.toString() || "0",
+      orders: stats.totalOrders?.toString() || "0",
+      // You can add more badges as needed
+    };
+    
+    // Get navigation items with badges
+    return getNavigationItemsWithBadges(badges);
+  }, [stats.totalProducts, stats.totalCustomers, stats.totalOrders]);
+
   // Show loading state if needed
   if (loading) {
     return (
@@ -348,9 +344,6 @@ const DashboardScreen = () => {
       </View>
     );
   }
-
-  // If dashboardData is null for some reason, use a default empty object
-  const data = dashboardData || STATIC_DASHBOARD_DATA;
 
   return (
     <View className={`flex-1 ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'} pb-16`}>
@@ -416,32 +409,32 @@ const DashboardScreen = () => {
               <StatsCard
                 icon="💰"
                 title="Total Revenue"
-                value={formatCurrency(data.stats.totalRevenue)}
-                trend={data.stats.revenueTrend}
+                value={formatCurrency(stats.totalRevenue)}
+                trend={stats.revenueTrend}
                 gradient={["#6366F1", "#8B5CF6"]}
                 style={{ width: cardWidth }}
               />
               <StatsCard
                 icon="📋"
                 title="Total Orders"
-                value={formatNumber(data.stats.totalOrders)}
-                trend={data.stats.ordersTrend}
+                value={formatNumber(stats.totalOrders)}
+                trend={stats.ordersTrend}
                 gradient={["#F59E0B", "#D97706"]}
                 style={{ width: cardWidth }}
               />
               <StatsCard
                 icon="👥"
                 title="Customers"
-                value={formatNumber(data.stats.totalCustomers)}
-                trend={data.stats.customersTrend}
+                value={formatNumber(stats.totalCustomers)}
+                trend={stats.customersTrend}
                 gradient={["#10B981", "#059669"]}
                 style={{ width: cardWidth }}
               />
               <StatsCard
                 icon="📦"
                 title="Products"
-                value={formatNumber(data.stats.totalProducts)}
-                trend={data.stats.productsTrend}
+                value={formatNumber(stats.totalProducts)}
+                trend={stats.productsTrend}
                 gradient={["#EF4444", "#DC2626"]}
                 style={{ width: cardWidth }}
               />
@@ -461,7 +454,7 @@ const DashboardScreen = () => {
             </Text>
             <Text className={`text-xl font-bold mt-1 ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
               {formatCurrency(
-                data.stats.totalRevenue / data.stats.totalOrders,
+                stats.totalRevenue / (stats.totalOrders || 1),
               )}
             </Text>
           </View>
@@ -489,7 +482,7 @@ const DashboardScreen = () => {
                 Revenue Overview
               </Text>
               <Text className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                Total: {formatCurrency(data.stats.totalRevenue)}
+                Total: {formatCurrency(stats.totalRevenue)}
               </Text>
             </View>
             <View className={`flex-row p-1 rounded-2xl ${isDarkMode ? 'bg-gray-700' : 'bg-gray-100'}`}>
@@ -557,7 +550,7 @@ const DashboardScreen = () => {
           </View>
 
           <View className="flex-row justify-around">
-            {Object.entries(data.orderStatus).map(
+            {Object.entries(data.orderStatus || STATIC_DASHBOARD_DATA.orderStatus).map(
               ([status, count]) => {
                 const colors = getStatusColor(status);
                 const bgColor = isDarkMode ? colors.darkBg : colors.bg;
@@ -609,14 +602,14 @@ const DashboardScreen = () => {
             </TouchableOpacity>
           </View>
 
-          {data.topProducts.map((product, index) => (
+          {(data.topProducts || STATIC_DASHBOARD_DATA.topProducts).map((product, index) => (
             <TouchableOpacity
               key={product.id}
               onPress={() =>
                 handleNavigate("ProductDetail", { productId: product.id })
               }
               className={`flex-row items-center py-3 ${
-                index !== data.topProducts.length - 1
+                index !== (data.topProducts?.length || STATIC_DASHBOARD_DATA.topProducts.length) - 1
                   ? isDarkMode ? 'border-b border-gray-700' : 'border-b border-gray-100'
                   : ''
               }`}
@@ -663,7 +656,7 @@ const DashboardScreen = () => {
             </TouchableOpacity>
           </View>
 
-          {data.recentOrders.map((order, index) => {
+          {(data.recentOrders || STATIC_DASHBOARD_DATA.recentOrders).map((order, index) => {
             const colors = getStatusColor(order.status);
             const bgColor = isDarkMode ? colors.darkBg : colors.bg;
             const textColor = isDarkMode ? colors.darkText : colors.text;
@@ -675,7 +668,7 @@ const DashboardScreen = () => {
                   handleNavigate("OrderDetail", { orderId: order.id })
                 }
                 className={`flex-row items-center py-3 ${
-                  index !== data.recentOrders.length - 1
+                  index !== (data.recentOrders?.length || STATIC_DASHBOARD_DATA.recentOrders.length) - 1
                     ? isDarkMode ? 'border-b border-gray-700' : 'border-b border-gray-100'
                     : ''
                 }`}

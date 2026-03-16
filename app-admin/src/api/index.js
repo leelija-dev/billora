@@ -2,6 +2,8 @@
 import { authAPI } from './auth';
 import { productsAPI } from './products';
 import { brandsAPI } from './brands';
+import { categoriesAPI } from './categories';
+import { unitsAPI } from './units';
 import { stocksAPI } from './stocks';
 import { invoicesAPI } from './invoices';
 import { storesAPI } from './stores';
@@ -27,6 +29,8 @@ export {
   
   // Brands, Categories, Units
   brandsAPI,
+  categoriesAPI,
+  unitsAPI,
   
   // Stocks
   stocksAPI,

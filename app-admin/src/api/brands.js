@@ -12,7 +12,9 @@ export const brandsAPI = {
   getAll: async (params = {}) => {
     try {
       const api = getBrandsData();
-      return await api.get('/brands', { params });
+      const response = await api.get('/brands', { params });
+      console.log('Brands API Response:', response.data);
+      return response.data;
     } catch (error) {
       throw error.response?.data || error.message;
     }
@@ -22,7 +24,8 @@ export const brandsAPI = {
   getById: async (id) => {
     try {
       const api = getBrandsData();
-      return await api.get(`/brands/${id}`);
+      const response = await api.get(`/brands/${id}`);
+      return response.data;
     } catch (error) {
       throw error.response?.data || error.message;
     }
@@ -32,15 +35,22 @@ export const brandsAPI = {
   create: async (brandData) => {
     try {
       const api = getBrandsData();
-      return await api.post('/brands/store', {
-        user_id: brandData.userId,
+      
+      // Map frontend field names to API expected field names
+      const payload = {
+        user_id: brandData.userId || brandData.user_id,
         name: brandData.name,
-        created_by: brandData.createdBy,
         is_active: brandData.isActive ?? true,
-        description: brandData.description,
-      });
+        created_by: brandData.createdBy || brandData.userId || brandData.user_id,
+        description: brandData.description || '',
+      };
+      
+      console.log('Create brand API payload:', payload);
+      const response = await api.post('/brands/store', payload);
+      return response.data;
     } catch (error) {
-      throw error.response?.data || error.message;
+      console.error('Create brand API error:', error.response?.data || error.message);
+      throw error;
     }
   },
 
@@ -48,13 +58,25 @@ export const brandsAPI = {
   update: async (id, brandData) => {
     try {
       const api = getBrandsData();
-      return await api.put(`/brands/${id}`, {
+      
+      // Map frontend field names to API expected field names
+      const payload = {
         name: brandData.name,
-        is_active: brandData.isActive,
-        description: brandData.description,
-      });
+        is_active: brandData.isActive ?? brandData.is_active,
+        description: brandData.description || '',
+      };
+      
+      // Add user_id if provided (required for update)
+      if (brandData.user_id) {
+        payload.user_id = brandData.user_id;
+      }
+      
+      console.log('Update brand API payload:', payload);
+      const response = await api.put(`/brands/${id}`, payload);
+      return response.data;
     } catch (error) {
-      throw error.response?.data || error.message;
+      console.error('Update brand API error:', error.response?.data || error.message);
+      throw error;
     }
   },
 
@@ -62,125 +84,21 @@ export const brandsAPI = {
   delete: async (id) => {
     try {
       const api = getBrandsData();
-      return await api.delete(`/brands/${id}`);
+      const response = await api.delete(`/brands/${id}`);
+      return response.data;
     } catch (error) {
       throw error.response?.data || error.message;
     }
   },
 
-  // Get all categories
-  getCategories: async () => {
+  // Search brands (using the index endpoint with search parameter)
+  search: async (query, filters = {}) => {
     try {
       const api = getBrandsData();
-      return await api.get('/brands/categories/');
-    } catch (error) {
-      throw error.response?.data || error.message;
-    }
-  },
-
-  // Get single category
-  getCategoryById: async (id) => {
-    try {
-      const api = getBrandsData();
-      return await api.get(`/brands/categories/${id}`);
-    } catch (error) {
-      throw error.response?.data || error.message;
-    }
-  },
-
-  // Create category
-  createCategory: async (categoryData) => {
-    try {
-      const api = getBrandsData();
-      return await api.post('/brands/categories/store', {
-        user_id: categoryData.userId,
-        name: categoryData.name,
-        is_active: categoryData.isActive ?? true,
-        created_by: categoryData.createdBy,
-        description: categoryData.description,
+      const response = await api.get('/brands', {
+        params: { search: query, ...filters }
       });
-    } catch (error) {
-      throw error.response?.data || error.message;
-    }
-  },
-
-  // Update category
-  updateCategory: async (id, categoryData) => {
-    try {
-      const api = getBrandsData();
-      return await api.put(`/brands/categories/${id}`, {
-        name: categoryData.name,
-        is_active: categoryData.isActive,
-        description: categoryData.description,
-      });
-    } catch (error) {
-      throw error.response?.data || error.message;
-    }
-  },
-
-  // Delete category
-  deleteCategory: async (id) => {
-    try {
-      const api = getBrandsData();
-      return await api.delete(`/brands/categories/${id}`);
-    } catch (error) {
-      throw error.response?.data || error.message;
-    }
-  },
-
-  // Get all units
-  getUnits: async () => {
-    try {
-      const api = getBrandsData();
-      return await api.get('/brands/units/');
-    } catch (error) {
-      throw error.response?.data || error.message;
-    }
-  },
-
-  // Get single unit
-  getUnitById: async (id) => {
-    try {
-      const api = getBrandsData();
-      return await api.get(`/brands/units/${id}`);
-    } catch (error) {
-      throw error.response?.data || error.message;
-    }
-  },
-
-  // Create unit
-  createUnit: async (unitData) => {
-    try {
-      const api = getBrandsData();
-      return await api.post('/brands/units/store', {
-        user_id: unitData.userId,
-        code: unitData.code,
-        name: unitData.name,
-        created_by: unitData.createdBy,
-      });
-    } catch (error) {
-      throw error.response?.data || error.message;
-    }
-  },
-
-  // Update unit
-  updateUnit: async (id, unitData) => {
-    try {
-      const api = getBrandsData();
-      return await api.put(`/brands/units/${id}`, {
-        code: unitData.code,
-        name: unitData.name,
-      });
-    } catch (error) {
-      throw error.response?.data || error.message;
-    }
-  },
-
-  // Delete unit
-  deleteUnit: async (id) => {
-    try {
-      const api = getBrandsData();
-      return await api.delete(`/brands/units/${id}`);
+      return response.data;
     } catch (error) {
       throw error.response?.data || error.message;
     }
