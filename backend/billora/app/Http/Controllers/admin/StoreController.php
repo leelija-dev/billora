@@ -63,6 +63,7 @@ class StoreController extends Controller
                 'message' => 'Authentication required. Please login first.'
             ]);
         }
+        $user = Auth::user()->id;
         $store = $request->validate([
             'user_id'     => 'required',
             'name'        => 'required',
@@ -75,7 +76,12 @@ class StoreController extends Controller
             'status'      => 'required',
             'created_by'  => 'required'
         ]);
-
+        if ($store['user_id'] != $user) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Unauthorized, You are not allowed to perform this action',
+            ]);
+        }
 
         try {
             $store = Store::create($store);
@@ -123,6 +129,7 @@ class StoreController extends Controller
     } 
     public function update(Request $request, $id)
     {
+        $user = Auth::user()->id;
         $data = $request->validate([
             'name'    => 'required',
             'gst'     => 'nullable',
@@ -134,7 +141,8 @@ class StoreController extends Controller
             'status'  => 'required',
         ]);
         try {
-            $store = Store::findOrFail($id);
+
+            $store = Store::where('user_id', $user)->where('id', $id)->first();
             $store->update($data);
             return response()->json([
                 'status' => true,
@@ -151,7 +159,8 @@ class StoreController extends Controller
     public function delete($id)
     {
         try {
-            $store = Store::findOrFail($id);
+            $user = Auth::user()->id;
+            $store = Store::where('user_id', $user)->where('id', $id)->first();
             $store->delete();
             return response()->json([
                 'status' => true,

@@ -104,7 +104,7 @@ Route::middleware('auth:sanctum')->prefix('store')->group(function () {
 });
 
 //client or bill generation customer
-Route::prefix('customer')->group(function () {
+Route::middleware('auth:sanctum')->prefix('customer')->group(function () {
  
    Route::post('/store', [BillCustomerController::class, 'store']);
    Route::get('/{id}', [BillCustomerController::class, 'index']);
@@ -118,7 +118,7 @@ Route::prefix('customer')->group(function () {
 });
 
 // categories
-Route::prefix('categories')->group(function () {
+Route::middleware('auth:sanctum')->prefix('categories')->group(function () {
    Route::get('/', [CategoriesController::class, 'index']);
    // Route::get('/create', [CategoriesController::class, 'create']);
    Route::post('/store', [CategoriesController::class, 'store']);
