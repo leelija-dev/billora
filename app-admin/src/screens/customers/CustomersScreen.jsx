@@ -19,6 +19,7 @@ import Header from "../../components/common/Header";
 import CustomerFilters from "../../components/customers/CustomerFilters";
 import CustomerList from "../../components/customers/CustomerList";
 import TrashedCustomersModal from "../../components/customers/TrashedCustomersModal";
+import { getNavigationItemsWithBadges } from "../../constants/navigationItems"; // Import the helper
 
 const CustomersScreen = () => {
   const navigation = useNavigation();
@@ -253,51 +254,19 @@ const CustomersScreen = () => {
     }
   };
 
-  // Navigation items for sidebar
-  const navigationItems = [
-    {
-      id: "dashboard",
-      title: "Dashboard",
-      icon: "view-dashboard",
-      screen: "Dashboard",
-      badge: null,
-    },
-    {
-      id: "products",
-      title: "Products",
-      icon: "package-variant",
-      screen: "Products",
-      badge: null,
-    },
-    {
-      id: "customers",
-      title: "Customers",
-      icon: "account-group",
-      screen: "Customers",
-      badge: stats.total.toString(),
-    },
-    {
-      id: "bills",
-      title: "Bills",
-      icon: "file-document",
-      screen: "Bills",
-      badge: null,
-    },
-    {
-      id: "inventory",
-      title: "Inventory",
-      icon: "warehouse",
-      screen: "Inventory",
-      badge: null,
-    },
-    {
-      id: "settings",
-      title: "Settings",
-      icon: "cog",
-      screen: "Settings",
-      badge: null,
-    },
-  ];
+  // Navigation items for sidebar - Using centralized navigation items
+  const navigationItems = useMemo(() => {
+    // Create badges for this screen
+    const badges = {
+      customers: stats.total.toString(),
+      // You can add other dynamic badges here if needed
+      // products: "0",
+      // bills: "0",
+    };
+    
+    // Get navigation items with badges
+    return getNavigationItemsWithBadges(badges);
+  }, [stats.total]);
 
   // Show loading state
   if (loading && customers.length === 0) {

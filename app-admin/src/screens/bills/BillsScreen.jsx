@@ -20,6 +20,7 @@ import { useBills } from "../../hooks/useBills";
 import Header from "../../components/common/Header";
 import BillList from "../../components/bills/BillList";
 import { format } from 'date-fns';
+import { getNavigationItemsWithBadges } from "../../constants/navigationItems"; // Import the helper
 
 const BillsScreen = () => {
   const navigation = useNavigation();
@@ -145,58 +146,20 @@ const BillsScreen = () => {
     setRefreshing(false);
   };
 
-  // Navigation items for sidebar
-  const navigationItems = useMemo(() => [
-    {
-      id: "dashboard",
-      title: "Dashboard",
-      icon: "view-dashboard",
-      screen: "Dashboard",
-      badge: null,
-    },
-    {
-      id: "products",
-      title: "Products",
-      icon: "package-variant",
-      screen: "Products",
-      badge: null,
-    },
-    {
-      id: "bills",
-      title: "Bills",
-      icon: "file-document",
-      screen: "Bills",
-      badge: totalBills.toString(),
-    },
-    {
-      id: "orders",
-      title: "Orders",
-      icon: "clipboard-list",
-      screen: "Orders",
-      badge: "0",
-    },
-    {
-      id: "customers",
-      title: "Customers",
-      icon: "account-group",
-      screen: "Customers",
-      badge: null,
-    },
-    {
-      id: "stocks",
-      title: "Stocks",
-      icon: "warehouse",
-      screen: "Stocks",
-      badge: null,
-    },
-    {
-      id: "settings",
-      title: "Settings",
-      icon: "cog",
-      screen: "Settings",
-      badge: null,
-    },
-  ], [totalBills]);
+  // Navigation items for sidebar - Using centralized navigation items
+  const navigationItems = useMemo(() => {
+    // Create badges for this screen
+    const badges = {
+      bills: totalBills.toString(),
+      // You can add other dynamic badges here if needed
+      // products: "0",
+      // customers: "0",
+      // stocks: "0",
+    };
+    
+    // Get navigation items with badges
+    return getNavigationItemsWithBadges(badges);
+  }, [totalBills]);
 
   // Show loading state
   if (loading && bills.length === 0 && !refreshing) {

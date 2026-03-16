@@ -546,39 +546,11 @@ const ModernTabBar = ({ state, descriptors, navigation }) => {
       screen: "Dashboard",
     },
     {
-      name: "Stores",
-      icon: "store-outline",
-      iconActive: "store",
-      label: "Stores",
-      screen: "StoresStack",
-    },
-    {
       name: "Products",
       icon: "package-variant-closed",
       iconActive: "package-variant",
       label: "Products",
       screen: "ProductsStack",
-    },
-    {
-      name: "Categories",
-      icon: "shape-outline",
-      iconActive: "shape",
-      label: "Categories",
-      screen: "CategoriesStack",
-    },
-    {
-      name: "Brands",
-      icon: "trademark",
-      iconActive: "trademark",
-      label: "Brands",
-      screen: "BrandsStack",
-    },
-    {
-      name: "Units",
-      icon: "ruler",
-      iconActive: "ruler",
-      label: "Units",
-      screen: "UnitsStack",
     },
     {
       name: "Stocks",
@@ -594,13 +566,7 @@ const ModernTabBar = ({ state, descriptors, navigation }) => {
       label: "Bills",
       screen: "BillsStack",
     },
-    {
-      name: "Clients",
-      icon: "account-group-outline",
-      iconActive: "account-group",
-      label: "Clients",
-      screen: "CustomersStack",
-    },
+    
   ];
 
   // Update slider position when active tab changes
@@ -738,14 +704,31 @@ const MainNavigator = () => {
       }}
     >
       <Tab.Screen name="Dashboard" component={DashboardScreen} />
-      <Tab.Screen name="StoresStack" component={StoresStack} />
       <Tab.Screen name="ProductsStack" component={ProductsStack} />
-      <Tab.Screen name="CategoriesStack" component={CategoriesStack} />
-      <Tab.Screen name="BrandsStack" component={BrandsStack} />
-      <Tab.Screen name="UnitsStack" component={UnitsStack} />
-      <Tab.Screen name="StocksStack" component={StocksStack} />
+      <Tab.Screen name="StocksStack" component={StocksStack}  />
       <Tab.Screen name="BillsStack" component={BillsStack} />
-      <Tab.Screen name="CustomersStack" component={CustomersStack} />
+      <Tab.Screen name="CategoriesStack" component={CategoriesStack} options={{
+          tabBarButton: () => null,
+          tabBarItemStyle: { display: "none" },
+        }} />
+      <Tab.Screen name="StoresStack" component={StoresStack}   options={{
+          tabBarButton: () => null,
+          tabBarItemStyle: { display: "none" },
+        }}/>
+      
+      <Tab.Screen name="BrandsStack" component={BrandsStack}  options={{
+          tabBarButton: () => null,
+          tabBarItemStyle: { display: "none" },
+        }} />
+      <Tab.Screen name="UnitsStack" component={UnitsStack}  options={{
+          tabBarButton: () => null,
+          tabBarItemStyle: { display: "none" },
+        }} />
+      
+      <Tab.Screen name="CustomersStack" component={CustomersStack} options={{
+          tabBarButton: () => null,
+          tabBarItemStyle: { display: "none" },
+        }} />
 
       {/* Hidden screens - accessible via navigation only */}
       <Tab.Screen

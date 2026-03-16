@@ -18,6 +18,7 @@ import { useBrands } from "../../hooks/useBrands";
 import Header from "../../components/common/Header";
 import BrandFilters from "../../components/brands/BrandFilters";
 import BrandList from "../../components/brands/BrandList";
+import { getNavigationItemsWithBadges } from "../../constants/navigationItems"; // Import the helper
 
 const BrandsScreen = () => {
   const navigation = useNavigation();
@@ -214,65 +215,19 @@ const BrandsScreen = () => {
     await stableRefresh();
   };
 
-  // Navigation items for sidebar
-  const navigationItems = useMemo(() => [
-    {
-      id: "dashboard",
-      title: "Dashboard",
-      icon: "view-dashboard",
-      screen: "Dashboard",
-      badge: null,
-    },
-    {
-      id: "products",
-      title: "Products",
-      icon: "package-variant",
-      screen: "Products",
-      badge: "0",
-    },
-    {
-      id: "categories",
-      title: "Categories",
-      icon: "shape",
-      screen: "Categories",
-      badge: "0",
-    },
-    {
-      id: "brands",
-      title: "Brands",
-      icon: "trademark",
-      screen: "Brands",
-      badge: totalBrands.toString(),
-    },
-    {
-      id: "orders",
-      title: "Orders",
-      icon: "clipboard-list",
-      screen: "Orders",
-      badge: "0",
-    },
-    {
-      id: "customers",
-      title: "Customers",
-      icon: "account-group",
-      screen: "Customers",
-      badge: null,
-    },
-    {
-      id: "inventory",
-      title: "Inventory",
-      icon: "warehouse",
-      screen: "Inventory",
-      badge: null,
-    },
-    {
-      id: "settings",
-      title: "Settings",
-      icon: "cog",
-      screen: "Settings",
-      badge: null,
-    },
-  ], [totalBrands]);
+  // Navigation items for sidebar - Using centralized navigation items
+  const navigationItems = useMemo(() => {
+    // Create badges for this screen
+    const badges = {
+      brands: totalBrands.toString(),
+      // You can add other dynamic badges here if needed
+      // products: "0",
+      // customers: "0",
+    };
+    
+    // Get navigation items with badges
+    return getNavigationItemsWithBadges(badges);
+  }, [totalBrands]);
 
   // Show loading state
   if (loading && brands.length === 0 && !refreshing) {

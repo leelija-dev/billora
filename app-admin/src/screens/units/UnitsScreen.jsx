@@ -18,6 +18,7 @@ import { useUnits } from "../../hooks/useUnits";
 import Header from "../../components/common/Header";
 import UnitFilters from "../../components/units/UnitFilters";
 import UnitList from "../../components/units/UnitList";
+import { getNavigationItemsWithBadges } from "../../constants/navigationItems"; // Import the helper
 
 const UnitsScreen = () => {
   const navigation = useNavigation();
@@ -213,65 +214,17 @@ const UnitsScreen = () => {
     await stableRefresh();
   };
 
-  // Navigation items for sidebar
-  const navigationItems = useMemo(() => [
-    {
-      id: "dashboard",
-      title: "Dashboard",
-      icon: "view-dashboard",
-      screen: "Dashboard",
-      badge: null,
-    },
-    {
-      id: "products",
-      title: "Products",
-      icon: "package-variant",
-      screen: "Products",
-      badge: "0",
-    },
-    {
-      id: "categories",
-      title: "Categories",
-      icon: "shape",
-      screen: "Categories",
-      badge: "0",
-    },
-    {
-      id: "units",
-      title: "Units",
-      icon: "ruler",
-      screen: "Units",
-      badge: totalUnits.toString(),
-    },
-    {
-      id: "orders",
-      title: "Orders",
-      icon: "clipboard-list",
-      screen: "Orders",
-      badge: "0",
-    },
-    {
-      id: "customers",
-      title: "Customers",
-      icon: "account-group",
-      screen: "Customers",
-      badge: null,
-    },
-    {
-      id: "inventory",
-      title: "Inventory",
-      icon: "warehouse",
-      screen: "Inventory",
-      badge: null,
-    },
-    {
-      id: "settings",
-      title: "Settings",
-      icon: "cog",
-      screen: "Settings",
-      badge: null,
-    },
-  ], [totalUnits]);
+  // Navigation items for sidebar - Using centralized navigation items
+  const navigationItems = useMemo(() => {
+    // Create badges for this screen
+    const badges = {
+      units: totalUnits.toString(),
+      // You can add other dynamic badges here if needed
+    };
+    
+    // Get navigation items with badges
+    return getNavigationItemsWithBadges(badges);
+  }, [totalUnits]);
 
   // Show loading state
   if (loading && units.length === 0 && !refreshing) {
