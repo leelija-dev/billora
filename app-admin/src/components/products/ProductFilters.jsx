@@ -34,7 +34,7 @@ const ProductFilters = ({
   );
 
   const sortOptions = [
-    { label: "Name", value: "name", icon: "sort-alphabetical" },
+    { label: "Name", value: "name", icon: "sort-ascending" },
     { label: "Price", value: "price", icon: "currency-usd" },
     { label: "Stock", value: "stock", icon: "package" },
     { label: "Rating", value: "rating", icon: "star" },

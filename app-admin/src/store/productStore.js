@@ -23,6 +23,10 @@ export const useProductStore = create((set, get) => ({
     products: [...state.products, ...newProducts],
   })),
   
+  addProduct: (product) => set((state) => ({
+    products: [product, ...state.products],
+  })),
+  
   setCategories: (categories) => set({ categories }),
   
   setSelectedProduct: (product) => set({ selectedProduct: product }),

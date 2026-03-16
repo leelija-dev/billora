@@ -1,415 +1,297 @@
 "use client";
-import React from 'react';
-import Image from 'next/image';
+import React from "react";
+import Image from "next/image";
+import Link from "next/link";
+import Container from "../components/Container"; // Add this import
 
 const Hero = () => {
   return (
     <div className="overflow-x-hidden font-sans">
       {/* ===== ANIMATED HERO SECTION ===== */}
-      <section className="relative z-10 min-h-[90vh] flex items-center px-5 md:px-20 pb-32 pt-10 bg-gradient-to-br from-slate-50 via-indigo-50 to-sky-100 overflow-hidden">
-        
+      <section className="relative z-10 min-h-[100vh] flex items-center pb-32 pt-10 bg-gradient-to-br from-slate-50 via-indigo-50 to-sky-100 overflow-hidden">
         {/* Ultra Animated Background */}
         <style>{`
-          @keyframes float-blob-1 {
-            0%, 100% { transform: translate(0px, 0px) scale(1); }
-            25% { transform: translate(40px, -50px) scale(1.1); }
-            50% { transform: translate(-30px, 40px) scale(0.95); }
-            75% { transform: translate(50px, 30px) scale(1.05); }
+          @keyframes float-blob-1 { 
+            0%, 100% { transform: translate(0px, 0px) scale(1); } 
+            25% { transform: translate(40px, -50px) scale(1.1); } 
+            50% { transform: translate(-30px, 40px) scale(0.95); } 
+            75% { transform: translate(50px, 30px) scale(1.05); } 
           }
-          @keyframes float-blob-2 {
-            0%, 100% { transform: translate(0px, 0px) scale(1); }
-            25% { transform: translate(-40px, 50px) scale(0.95); }
-            50% { transform: translate(35px, -45px) scale(1.1); }
-            75% { transform: translate(-45px, -35px) scale(1.05); }
+          @keyframes float-blob-2 { 
+            0%, 100% { transform: translate(0px, 0px) scale(1); } 
+            25% { transform: translate(-40px, 50px) scale(0.95); } 
+            50% { transform: translate(35px, -45px) scale(1.1); } 
+            75% { transform: translate(-45px, -35px) scale(1.05); } 
           }
-          @keyframes float-blob-3 {
-            0%, 100% { transform: translate(0px, 0px) rotate(0deg); }
-            25% { transform: translate(50px, 25px) rotate(90deg); }
-            50% { transform: translate(-40px, -50px) rotate(180deg); }
-            75% { transform: translate(30px, -40px) rotate(270deg); }
+          @keyframes fadeInUp { 
+            from { opacity: 0; transform: translateY(30px); } 
+            to { opacity: 1; transform: translateY(0); } 
           }
-          @keyframes float-blob-4 {
-            0%, 100% { transform: translate(0px, 0px) scale(1); }
-            33% { transform: translate(-50px, -30px) scale(1.15); }
-            66% { transform: translate(45px, 45px) scale(0.9); }
+          @keyframes floatIcons { 
+            0%, 100% { transform: translateY(0px) rotate(0deg); } 
+            50% { transform: translateY(-25px) rotate(8deg); } 
           }
-          @keyframes glow-pulse {
-            0%, 100% { opacity: 0.25; filter: blur(40px); }
-            50% { opacity: 0.5; filter: blur(50px); }
-          }
-          @keyframes rotate-slow {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-          }
-          @keyframes shimmer {
-            0%, 100% { opacity: 0.1; }
-            50% { opacity: 0.3; }
-          }
-          @keyframes gradient-shift {
-            0%, 100% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
+          @keyframes custom-bounce { 
+            0%, 100% { transform: translateY(0); } 
+            50% { transform: translateY(-15px); } 
           }
           
-          .blob-float-1 { animation: float-blob-1 12s ease-in-out infinite; }
-          .blob-float-2 { animation: float-blob-2 14s ease-in-out infinite 1s; }
-          .blob-float-3 { animation: float-blob-3 16s ease-in-out infinite 2s; }
-          .blob-float-4 { animation: float-blob-4 18s ease-in-out infinite 1.5s; }
-          .glow-pulse { animation: glow-pulse 6s ease-in-out infinite; }
-          .rotate-slow { animation: rotate-slow 25s linear infinite; }
-          .shimmer-bg { animation: shimmer 4s ease-in-out infinite; }
-          .gradient-shift { animation: gradient-shift 8s ease infinite; background-size: 200% 200%; }
+          /* HEROIC SLIDE ANIMATIONS */
+          @keyframes heroicSlideLaptop {
+            0% { opacity: 0; transform: translateY(-200px) rotate(-5deg); }
+            60% { opacity: 1; transform: translateY(20px) rotate(2deg); }
+            80% { transform: translateY(-5px) rotate(0deg); }
+            100% { opacity: 1; transform: translateY(0) rotate(0deg); }
+          }
+          
+          @keyframes heroicSlidePhone {
+            0% { opacity: 0; transform: translateY(-250px) translateX(20px) rotate(10deg); }
+            60% { opacity: 1; transform: translateY(15px) translateX(-5px) rotate(-3deg); }
+            80% { transform: translateY(-5px) translateX(0) rotate(0deg); }
+            100% { opacity: 1; transform: translateY(0) translateX(0) rotate(0deg); }
+          }
+          
+          @keyframes heroicSlideBadge1 {
+            0% { opacity: 0; transform: translateY(-150px) translateX(50px); }
+            70% { opacity: 1; transform: translateY(10px) translateX(-5px); }
+            100% { opacity: 1; transform: translateY(0) translateX(0); }
+          }
+          
+          @keyframes heroicSlideBadge2 {
+            0% { opacity: 0; transform: translateY(-180px) translateX(-30px); }
+            70% { opacity: 1; transform: translateY(15px) translateX(5px); }
+            100% { opacity: 1; transform: translateY(0) translateX(0); }
+          }
+          
+          @keyframes heroicSlideBadge3 {
+            0% { opacity: 0; transform: translateY(-200px) translateX(40px); }
+            70% { opacity: 1; transform: translateY(5px) translateX(-5px); }
+            100% { opacity: 1; transform: translateY(0) translateX(0); }
+          }
+
+          .animate-fadeInUp { 
+            animation: fadeInUp 0.8s ease-out forwards; 
+          }
+          .animate-custom-bounce { 
+            animation: custom-bounce 3s ease-in-out infinite; 
+          }
+          .blob-float-1 { 
+            animation: float-blob-1 12s ease-in-out infinite; 
+          }
+          .blob-float-2 { 
+            animation: float-blob-2 14s ease-in-out infinite 1s; 
+          }
+          .float-icon { 
+            animation: floatIcons 8s ease-in-out infinite; 
+            font-size: 48px; 
+            position: absolute; 
+          }
+          .delay-1 { animation-delay: 0.5s; }
+          .delay-2 { animation-delay: 1s; }
+          .delay-3 { animation-delay: 1.5s; }
+          .delay-4 { animation-delay: 2s; }
+          .delay-5 { animation-delay: 2.5s; }
+          
+          /* Heroic Slide Classes */
+          .heroic-slide-laptop {
+            animation: heroicSlideLaptop 1.2s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+          }
+          .heroic-slide-phone {
+            animation: heroicSlidePhone 1.3s cubic-bezier(0.34, 1.56, 0.64, 1) 0.2s forwards;
+          }
+          .heroic-slide-badge1 {
+            animation: heroicSlideBadge1 1s cubic-bezier(0.34, 1.56, 0.64, 1) 0.4s forwards, custom-bounce 3s ease-in-out 1.4s infinite;
+          }
+          .heroic-slide-badge2 {
+            animation: heroicSlideBadge2 1.1s cubic-bezier(0.34, 1.56, 0.64, 1) 0.5s forwards, bounce 3s ease-in-out 1.6s infinite;
+          }
+          .heroic-slide-badge3 {
+            animation: heroicSlideBadge3 1.2s cubic-bezier(0.34, 1.56, 0.64, 1) 0.6s forwards, bounce 3s ease-in-out 1.8s infinite;
+          }
         `}</style>
 
-        {/* Fading GST Icons Container */}
         {/* Floating Business Icons Background */}
-<div className="absolute inset-0 pointer-events-none z-0">
-
-  {/* Invoice */}
-  <div className="absolute top-[12%] left-[8%] float-icon opacity-20">
-    📄
-  </div>
-
-  {/* Rupee */}
-  <div className="absolute top-[65%] left-[15%] float-icon delay-2 opacity-20">
-    ₹
-  </div>
-
-  {/* Chart */}
-  <div className="absolute top-[30%] right-[12%] float-icon delay-3 opacity-20">
-    📊
-  </div>
-
-  {/* Calculator */}
-  <div className="absolute bottom-[20%] right-[18%] float-icon delay-4 opacity-20">
-    🧮
-  </div>
-
-  {/* Bill */}
-  <div className="absolute top-[50%] left-[40%] float-icon delay-5 opacity-20">
-    🧾
-  </div>
-
-</div>
-    
+        <div className="absolute inset-0 pointer-events-none z-0">
+          <div className="absolute top-[12%] left-[8%] float-icon opacity-20">📄</div>
+          <div className="absolute top-[65%] left-[15%] float-icon delay-2 opacity-20">₹</div>
+          <div className="absolute top-[30%] right-[12%] float-icon delay-3 opacity-20">📊</div>
+          <div className="absolute bottom-[20%] right-[18%] float-icon delay-4 opacity-20">🧮</div>
+          <div className="absolute top-[50%] left-[40%] float-icon delay-5 opacity-20">🧾</div>
+        </div>
 
         {/* Gradient Overlay at bottom */}
-        <div className="absolute bottom-0 left-0 right-0 h-40 
-                        bg-gradient-to-t from-slate-50/80 to-transparent 
-                        pointer-events-none z-20"></div>
+        <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-slate-50/80 to-transparent pointer-events-none z-20"></div>
 
-        {/* Main Content */}
-        <div className="relative z-30 max-w-[1400px] mx-auto w-full flex flex-col lg:flex-row items-center gap-10 lg:gap-16">
-          
-          {/* Hero Content */}
-          <div className="flex-1 text-center lg:text-left">
-            <h1 className="text-4xl md:text-5xl lg:text-[52px] font-extrabold text-slate-900 leading-tight mb-8 tracking-tight animate-fadeInUp">
-              GST Billing Software for Small Businesses in India
-            </h1>
-            <p className="text-sm sm:text-base md:text-lg text-slate-600 leading-relaxed mb-6 sm:mb-10 max-w-[550px] mx-auto lg:mx-0 animate-fadeInUp" style={{animationDelay: "0.2s"}}>
-              Manage your business professionally with Billora, India's leading small business software for billing, inventory, and accounting. Join 1 Cr+ satisfied SMEs in India who trust Billora.
-            </p>
-           <div className="flex flex-col sm:flex-row gap-6">
+        {/* Main Content - Now wrapped in Container */}
+        <Container>
+          <div className="relative z-30 w-full flex flex-col lg:flex-row items-center gap-10 lg:gap-16">
+            {/* Hero Content */}
+            <div className="flex-1 text-center lg:text-left">
+              <h1 className="text-4xl md:text-5xl lg:text-[52px] font-extrabold text-slate-900 leading-tight mb-8 tracking-tight animate-fadeInUp">
+                GST Billing Software for Small Businesses in India
+              </h1>
+              <p
+                className="text-sm sm:text-base md:text-lg text-slate-600 leading-relaxed mb-6 sm:mb-10 max-w-[550px] mx-auto lg:mx-0 animate-fadeInUp"
+                style={{ animationDelay: "0.2s" }}
+              >
+                Manage your business professionally with Billora, India's leading
+                small business software for billing, inventory, and accounting.
+                Join <br /> 1 Cr+ satisfied SMEs in India who trust Billora.
+              </p>
+              <div className="flex flex-row gap-7 justify-center lg:justify-start flex-wrap animate-fadeInUp"
+                   style={{ animationDelay: "0.3s" }}>
+                <Link href="/start-free-trial">
+                  <button className="px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-500 text-white rounded-full text-sm font-semibold shadow-md transition-all hover:-translate-y-1 hover:shadow-lg">
+                    Start Free Trial
+                  </button>
+                </Link>
 
-<button className="px-10 py-4 bg-gradient-to-r from-blue-600 to-purple-500 text-white rounded-full text-sm font-semibold shadow-md transition-all hover:-translate-y-1">
-Start Free Trial
-</button>
+                <Link href="/bookdemo">
+                  <button className="px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-500 text-white rounded-full text-sm font-semibold shadow-md transition-all hover:-translate-y-1 hover:shadow-lg">
+                    Book free demo
+                  </button>
+                </Link>
+              </div>
+            </div>
 
-<button className="px-10 py-4 bg-gradient-to-r from-blue-600 to-purple-500 text-white rounded-full text-sm font-semibold shadow-md transition-all hover:-translate-y-1">
-Book free demo
-</button>
+            {/* Hero Images Container */}
+            <div className="flex-1 relative min-h-[350px] md:min-h-[500px] w-full max-w-[600px]">
+              {/* Laptop Mockup - Heroic Slide from Top */}
+              <div className="relative w-full aspect-[16/9] bg-slate-900 rounded-t-[20px] p-2 shadow-2xl z-10 heroic-slide-laptop">
+                <div className="w-full h-full bg-slate-800 rounded-xl overflow-hidden">
+                  <div className="h-8 bg-slate-700 flex items-center px-4 gap-2">
+                    <span className="w-3 h-3 rounded-full bg-red-500"></span>
+                    <span className="w-3 h-3 rounded-full bg-amber-500"></span>
+                    <span className="w-3 h-3 rounded-full bg-emerald-500"></span>
+                  </div>
 
-</div>
-</div>
-
-          {/* Hero Images Container */}
-          <div className="flex-1 relative min-h-[350px] md:min-h-[500px] w-full max-w-[600px]">
-            
-            {/* Laptop Mockup */}
-            <div className="relative w-full aspect-[16/9] bg-slate-900 rounded-t-[20px] p-2 shadow-2xl z-10 animate-fadeInUp" style={{animationDelay: "0.3s"}}>
-              <div className="w-full h-full bg-slate-800 rounded-xl overflow-hidden">
-                <div className="h-8 bg-slate-700 flex items-center px-4 gap-2">
-                  <span className="w-3 h-3 rounded-full bg-red-500"></span>
-                  <span className="w-3 h-3 rounded-full bg-amber-500"></span>
-                  <span className="w-3 h-3 rounded-full bg-emerald-500"></span>
+                  {/* Desktop Image */}
+                  <div className="relative w-full h-[250px] md:h-[350px] bg-slate-800 overflow-hidden">
+                    <Image
+                      src="/image/desktop.png"
+                      alt="Desktop Interface"
+                      fill
+                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                      className="object-cover w-full h-full"
+                      priority={true}
+                    />
+                  </div>
                 </div>
-                
-                {/* Desktop Image */}
-                <div className="relative w-full h-[250px] md:h-[350px] bg-slate-800 overflow-hidden">
+                <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 w-[150px] md:w-[200px] h-3 bg-slate-700 rounded-b-xl"></div>
+              </div>
+
+              {/* Phone Mockup - Heroic Slide from Top with rotation */}
+              <div className="absolute -left-4 md:-left-8 -bottom-5 w-[100px] md:w-[130px] h-[200px] md:h-[280px] bg-slate-800 rounded-[30px] p-1.5 shadow-xl z-20 hidden sm:block heroic-slide-phone">
+                <div className="w-full h-full bg-slate-900 rounded-[25px] overflow-hidden relative">
                   <Image
-                    src="/image/desktop.png"
-                    alt="Desktop Interface"
+                    src="/image/Mobile.png"
+                    alt="Mobile Interface"
                     fill
-                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                    className="object-cover w-full h-full"
+                    sizes="(max-width: 768px) 100vw, 130px"
+                    className="object-cover w-full h-full rounded-[20px]"
                     priority={true}
                   />
                 </div>
               </div>
-              <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 w-[150px] md:w-[200px] h-3 bg-slate-700 rounded-b-xl"></div>
-            </div>
 
-            {/* Phone Mockup */}
-            <div className="absolute -left-4 md:-left-8 -bottom-5 w-[100px] md:w-[130px] h-[200px] md:h-[280px] bg-slate-800 rounded-[30px] p-1.5 shadow-xl z-20 hidden sm:block animate-fadeInUp" style={{animationDelay: "0.45s"}}>
-              <div className=" w-full h-full bg-slate-900 rounded-[25px] overflow-hidden relative">
-                
-                {/* Mobile Image */}
-                <Image
-                  src="/image/mobail.png"
-                  alt="Mobail Interface"
-                  fill
-                  sizes="(max-width: 768px) 100vw, 130px"
-                  className="object-cover w-full h-full rounded-[20px]"
-                  priority={true}
-                />
+              {/* JUMPING THREE BADGES - Now with heroic slide then bounce */}
+              <div className="absolute top-[20%] -right-4 bg-white px-4 py-2 rounded-full font-semibold text-sm shadow-lg border border-blue-100 text-blue-600 z-30 hidden md:block heroic-slide-badge1">
+                ✨ Easy to Use
+              </div>
+              <div className="absolute bottom-[40%] right-4 bg-white px-4 py-2 rounded-full font-semibold text-sm shadow-lg border border-purple-100 text-purple-600 z-30 hidden md:block heroic-slide-badge2">
+                👥 Collaborative
+              </div>
+              <div className="absolute top-[40%] -left-4 bg-white px-4 py-2 rounded-full font-semibold text-sm shadow-lg border border-emerald-100 text-emerald-600 z-30 hidden md:block heroic-slide-badge3">
+                📊 Activity Stream
               </div>
             </div>
-
-            {/* Floating Badges with Animations */}
-            <div className="absolute top-[20%] -right-4 bg-white px-4 py-2 rounded-full font-semibold text-sm shadow-lg border border-blue-100 text-blue-600 z-30 hidden md:block animate-bounce">
-              ✨ Easy to Use
-            </div>
-            <div className="absolute bottom-[40%] right-4 bg-white px-4 py-2 rounded-full font-semibold text-sm shadow-lg border border-purple-100 text-purple-600 z-30 hidden md:block animate-bounce" style={{animationDelay: "0.5s"}}>
-              👥 Collaborative
-            </div>
-            <div className="absolute top-[40%] -left-4 bg-white px-4 py-2 rounded-full font-semibold text-sm shadow-lg border border-emerald-100 text-emerald-600 z-30 hidden md:block animate-bounce" style={{animationDelay: "1s"}}>
-              📊 Activity Stream
-            </div>
           </div>
-        </div>
+        </Container>
       </section>
 
-      {/* ===== SUPERB FEATURES SECTION ===== */}
-      <section className="relative -mt-12 max-w-[1100px] mx-auto z-10">
+      {/* ===== SUPERB FEATURES SECTION (BLACK CARD) ===== */}
+      <section className="relative -mt-24 w-full mx-auto z-40 px-4 md:px-0 mb-48 hidden md:block">
+        <div
+          className="relative bg-[#0f172a] rounded-[40px] pt-[100px] pb-[100px] px-[20px] md:px-[40px] max-w-[1000px] mx-auto shadow-[0_20px_50px_rgba(0,0,0,0.4)] border border-white/10 overflow-visible"
+          style={{
+            backgroundImage:
+              "radial-gradient(circle, rgba(255,255,255,0.1) 1px, transparent 1px)",
+            backgroundSize: "20px 20px",
+          }}
+        >
+          {/* Top Glow Line */}
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-3/4 h-1 bg-gradient-to-r from-transparent via-blue-500/50 to-transparent"></div>
 
-        {/* Dark Pocket Card with Ultra Animated Background */}
-        <div className="relative
-                        bg-[#0f172a] 
-                        rounded-[40px_40px_30px_30px]
-                        pt-[30px] pb-[5px] px-[40px] 
-                        max-w-[900px] mx-auto
-                        shadow-[0_20px_30px_rgba(0,0,0,0.3)]
-                        border border-white/10
-                        overflow-hidden">
-
-          {/* Ultra Animated Background Styles */}
-          <style>{`
-        @keyframes floatIcons {
-  0% {
-    transform: translateY(0px) rotate(0deg);
-  }
-  50% {
-    transform: translateY(-25px) rotate(8deg);
-  }
-  100% {
-    transform: translateY(0px) rotate(0deg);
-  }
-}
-
-.float-icon {
-  font-size: 48px;
-  animation: floatIcons 8s ease-in-out infinite;
-}
-
-.delay-2 {
-  animation-delay: 2s;
-}
-
-.delay-3 {
-  animation-delay: 3s;
-}
-
-.delay-4 {
-  animation-delay: 4s;
-}
-
-.delay-5 {
-  animation-delay: 5s;
-}
-          `}</style>
-
-          {/* Animated Blob Background Elements */}
-          <div className="absolute inset-0 overflow-hidden pointer-events-none">
-            
-            {/* Blob 1 - Blue */}
-            <div className="absolute -top-40 -left-40 w-80 h-80 
-                            bg-gradient-to-br from-blue-500/30 to-blue-600/20 
-                            rounded-full blur-3xl blob-float-dark-1 glow-pulse-dark"></div>
-            
-            {/* Blob 2 - Purple */}
-            <div className="absolute -bottom-32 -right-40 w-96 h-96 
-                            bg-gradient-to-br from-purple-500/30 to-purple-600/20 
-                            rounded-full blur-3xl blob-float-dark-2 glow-pulse-dark"></div>
-            
-            {/* Blob 3 - Cyan */}
-            <div className="absolute top-1/3 right-1/4 w-72 h-72 
-                            bg-gradient-to-br from-cyan-500/25 to-cyan-600/15 
-                            rounded-full blur-3xl blob-float-dark-3 glow-pulse-dark"></div>
-
-            {/* Additional Rotating Gradient Ring */}
-            <div className="absolute inset-0 opacity-10">
-              <div className="absolute inset-0 
-                              bg-gradient-to-r from-transparent via-blue-500/20 to-transparent 
-                              rotate-slow-dark"></div>
-            </div>
-
-            {/* Animated Grid Background */}
-            <div className="absolute inset-0 
-                            bg-[radial-gradient(circle_at_20%_50%,rgba(59,130,246,0.1),transparent_50%),radial-gradient(circle_at_80%_80%,rgba(168,85,247,0.1),transparent_50%)]
-                            opacity-40"></div>
-          </div>
-
-          {/* Blur Glow Top */}
-          <div className="absolute -top-5 left-[30px] right-[30px] h-[40px] 
-                          bg-[rgba(15,23,42,0.3)] blur-[15px] 
-                          rounded-full -z-10" />
-
-          {/* Title */}
-          <h2 className="text-[42px] font-bold text-white text-center mb-[30px] relative z-20">
+          {/* Heading */}
+          <h2 className="text-3xl md:text-[42px] font-bold text-white text-center mb-8 relative z-20 leading-tight animate-fadeInUp">
             We made it{" "}
-            <span className="relative bg-gradient-to-r from-blue-500 to-purple-500 
-                             bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
               superb
-              <span className="absolute left-0 -bottom-[5px] w-full h-[3px] 
-                               bg-gradient-to-r from-blue-500 to-purple-500 
-                               rounded-full opacity-30"></span>
             </span>{" "}
-            & usability
+            & usable
           </h2>
 
-          {/* Pills */}
-          <div className="flex justify-center gap-[20px] mb-[50px] flex-wrap relative z-20">
-            {["Easy to Use","Collaborative","Activity Stream"].map((pill)=>(
-              <span key={pill}
-                className="px-[32px] py-[14px]
-                           bg-white/10 backdrop-blur-sm
-                           border border-white/20
-                           rounded-full
-                           text-white font-semibold text-[16px]
-                           shadow-[0_5px_15px_rgba(0,0,0,0.2)]
-                           transition-all duration-300
-                           hover:bg-blue-500/30
-                           hover:-translate-y-[3px]
-                           hover:border-blue-500">
+          {/* Feature Pills */}
+          <div
+            className="flex justify-center gap-3 md:gap-5 mb-12 flex-wrap relative z-20 animate-fadeInUp"
+            style={{ animationDelay: "0.2s" }}
+          >
+            {["Easy to Use", "Collaborative", "Activity Stream"].map((pill) => (
+              <span
+                key={pill}
+                className="px-6 py-3 bg-white/5 backdrop-blur-md border border-white/10 rounded-full text-white/90 font-medium text-xs md:text-sm"
+              >
                 {pill}
               </span>
             ))}
           </div>
 
-          {/* Mini White Card */}
-          <div className="group relative top-[40px]
-                         min-h-[500px]
-                          bg-white
-                          rounded-[40px_40px_30px_30px]
-                         p-[16px]
-                          border border-white/80
-                          shadow-[0_-10px_30px_rgba(0,0,0,0.1),_0_20px_40px_rgba(0,0,0,0.15)]
-                          transition-transform duration-300
-                          hover:-translate-y-[5px]
-                          z-30">
+          {/* Hanging White Card */}
+          <div className="group absolute -bottom-24 left-1/2 -translate-x-1/2 w-[90%] bg-white rounded-[30px] p-6 md:p-10 border border-slate-200 shadow-[0_30px_60px_-15px_rgba(0,0,0,0.2)] z-50 transition-transform duration-500 hover:-translate-y-2">
+            <div className="flex flex-col md:flex-row items-center gap-8 md:gap-12">
 
-            {/* Mini Navbar */}
-            <div className="flex justify-between items-center
-                            mb-[30px] pb-[20px]
-                            border-b border-[#e2e8f0]">
-
-              <div className="flex items-center gap-2">
-                <div className="w-[35px] h-[35px]
-                                bg-gradient-to-br from-blue-500 to-purple-500
-                                text-white flex items-center justify-center
-                                rounded-[8px] font-bold text-[18px]">
-                  B
+              {/* Left Content */}
+              <div className="flex-1 text-center md:text-left">
+                <div className="flex items-center gap-2 mb-4 justify-center md:justify-start">
+                  <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold">
+                    B
+                  </div>
+                  <span className="font-bold text-slate-800">
+                    Billora Premium
+                  </span>
                 </div>
-                <span className="text-[#1e293b] font-bold text-[16px]">
-                  Billora
-                </span>
-              </div>
 
-              <div className="hidden md:flex gap-[25px]">
-                <span className="text-[#64748b] text-[14px] font-medium hover:text-blue-500 transition-colors">Features</span>
-                <span className="text-[#64748b] text-[14px] font-medium hover:text-blue-500 transition-colors">Pricing</span>
-                <span className="text-[#64748b] text-[14px] font-medium hover:text-blue-500 transition-colors">About</span>
-              </div>
-            </div>
-
-            {/* Mini Hero */}
-            <div className="flex items-center gap-[30px]">
-
-              <div className="flex-1">
-                <h3 className="text-[24px] font-extrabold text-[#0f172a] mb-[10px]">
+                <h3 className="text-2xl md:text-3xl font-extrabold text-slate-900 mb-2">
                   GST Billing Software
                 </h3>
 
-                <p className="text-[14px] text-[#475569] mb-[20px] leading-[1.5]">
-                  Manage your business professionally
+                <p className="text-slate-500 mb-6 text-sm">
+                  Automate your invoicing and inventory in seconds.
                 </p>
 
-                <button className="px-[22px] py-[8px]
-                                   bg-gradient-to-r from-blue-500 to-purple-500
-                                   text-white rounded-[30px]
-                                   text-[13px] font-semibold
-                                   shadow-[0_4px_10px_rgba(59,130,246,0.3)]">
-                  Download Now
-                </button>
+                <Link href="/start-free-trial">
+                  <button className="w-full md:w-auto px-8 py-3 bg-slate-900 text-white rounded-full text-sm font-bold hover:bg-blue-600 transition-colors">
+                    Get Started Free
+                  </button>
+                </Link>
               </div>
-
-              {/* Mini Mockup */}
-              <div className="flex-1 relative min-h-[120px]">
-
-                <div className="w-[200px] h-[100px]
-                                bg-[#1e293b]
-                                rounded-t-[12px]
-                                p-[5px]
-                                shadow-[0_10px_20px_rgba(0,0,0,0.1)]">
-
-                  <div className="w-full h-full bg-[#0f172a] rounded-[8px] overflow-hidden">
-
-                    <div className="h-[16px] bg-[#334155] flex items-center px-[8px] gap-[4px]">
-                      <div className="w-[6px] h-[6px] bg-red-500 rounded-full"></div>
-                      <div className="w-[6px] h-[6px] bg-amber-500 rounded-full"></div>
-                      <div className="w-[6px] h-[6px] bg-emerald-500 rounded-full"></div>
-                    </div>
-
-                    <div className="h-[40px] m-[8px]
-                                    bg-gradient-to-r from-blue-500 to-purple-500
-                                    opacity-30 rounded-[4px]"></div>
-                  </div>
+              <div className="flex-1 w-full">
+                <div className="w-full aspect-video bg-slate-100 rounded-2xl overflow-hidden border border-slate-200 shadow-inner">
+                  <Image
+                    src="/image/desktop.png"
+                    alt="Dashboard"
+                    width={500}
+                    height={300}
+                    className="w-full h-full object-cover"
+                  />
                 </div>
-
-                {/* Floating Labels */}
-                <div className="absolute -top-[10px] right-[20px]
-                                px-[10px] py-[4px]
-                                bg-white rounded-[20px]
-                                text-[10px] font-semibold text-[#1e293b]
-                                border border-[#e2e8f0]
-                                shadow-[0_3px_8px_rgba(0,0,0,0.1)]">
-                  Inventory
-                </div>
-
-                <div className="absolute bottom-[20px] right-0
-                                px-[10px] py-[4px]
-                                bg-white rounded-[20px]
-                                text-[10px] font-semibold text-[#1e293b]
-                                border border-[#e2e8f0]
-                                shadow-[0_3px_8px_rgba(0,0,0,0.1)]">
-                  GST Ready
-                </div>
-
               </div>
-
             </div>
           </div>
-
         </div>
-
-        {/* Dotted Background */}
-        <div className="absolute inset-0 -z-10 opacity-50 pointer-events-none
-                        bg-[radial-gradient(#cbd5e1_1.5px,transparent_1.5px)]
-                        bg-[size:25px_25px]">
-        </div>
-
       </section>
     </div>
   );
 };
 
-export default Hero;       
+export default Hero;

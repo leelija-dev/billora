@@ -1,7 +1,10 @@
+// trymobile/page.tsx
 "use client";
 
 import Link from "next/link";
 import Image from "next/image";
+import Navbar from "@/components/Navbar";
+import Footer from "@/components/Footer";
 
 export default function TryMobileAppPage() {
   const features = [
@@ -13,24 +16,13 @@ export default function TryMobileAppPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 relative overflow-hidden">
+      <Navbar />
 
       {/* Background Blur Effects */}
       <div className="absolute top-20 left-10 w-72 h-72 bg-blue-200 opacity-30 rounded-full blur-3xl"></div>
       <div className="absolute bottom-10 right-10 w-72 h-72 bg-purple-200 opacity-30 rounded-full blur-3xl"></div>
 
-      {/* Back to Home Button */}
-      <div className="fixed top-20 sm:top-24 left-4 z-50">
-        <Link
-          href="/"
-          className="flex items-center gap-2 bg-white px-3 sm:px-4 py-2 rounded-full shadow-lg hover:shadow-xl transition-all hover:-translate-y-0.5 border border-gray-200 group text-sm sm:text-base"
-        >
-          <span className="text-lg sm:text-xl group-hover:-translate-x-1 transition-transform">
-            ←
-          </span>
-          <span className="font-medium hidden sm:inline">Back to Home</span>
-          <span className="font-medium sm:hidden">Back</span>
-        </Link>
-      </div>
+      
 
       {/* Main Content */}
       <div className="py-8 sm:py-12 md:py-16 px-4 sm:px-6 lg:px-8 relative">
@@ -183,6 +175,8 @@ export default function TryMobileAppPage() {
           }
         }
       `}</style>
+
+      <Footer />
     </div>
   );
 }

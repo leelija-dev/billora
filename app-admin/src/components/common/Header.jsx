@@ -29,71 +29,15 @@ const Header = ({
   rightComponent,
   showBackButton = false,
   onBackPress,
-  // Remove the default backgroundColor prop - let theme control it
-  backgroundColor, // Remove default value
-  textColor, // Remove default value
+  backgroundColor,
+  textColor,
   style = "",
   titleStyle = "",
   showSidebar = true,
   userAvatar,
   userName = "Guest User",
   userEmail = "guest@example.com",
-  navigationItems = [
-     {
-    id: "dashboard",
-    title: "Dashboard",
-    icon: "view-dashboard-outline",
-    iconActive: "view-dashboard",
-    screen: "Dashboard", // This is a direct screen, not a stack
-    badge: null,
-    stack: null,
-  },
-  {
-    id: "products",
-    title: "Products",
-    icon: "package-variant-closed",
-    iconActive: "package-variant",
-    parent: "ProductsStack", // The parent stack navigator name
-    screen: "Products", // The actual screen name inside the stack
-    badge: "156",
-  },
-  {
-    id: "orders",
-    title: "Orders",
-    icon: "clipboard-list-outline",
-    iconActive: "clipboard-list",
-    parent: "OrdersStack",
-    screen: "Orders", // The actual screen name
-    badge: "12",
-  },
-  {
-    id: "customers",
-    title: "Customers",
-    icon: "account-group-outline",
-    iconActive: "account-group",
-    parent: "CustomersStack",
-    screen: "Customers", // The actual screen name
-    badge: "892",
-  },
-  {
-    id: "inventory",
-    title: "Inventory",
-    icon: "warehouse-outline",
-    iconActive: "warehouse-outline",
-    parent: "InventoryStack",
-    screen: "Inventory", // The actual screen name
-    badge: "Low Stock",
-  },
-  {
-    id: "settings",
-    title: "Settings",
-    icon: "cog-outline",
-    iconActive: "cog",
-    parent: "SettingsStack",
-    screen: "Settings", // The actual screen name
-    badge: null,
-  },
-  ],
+  navigationItems = [], // Now receiving from props (from navigationItems.js)
   onNavigate,
   activeScreen = "Dashboard",
   notificationCount = 3,
@@ -204,46 +148,56 @@ const Header = ({
     }
   };
 
- const handleNavigation = (item) => {
-  // console.log('Navigation clicked:', item); // Debug log
-  // console.log('Has onNavigate prop:', !!onNavigate); // Check if custom handler exists
-  
-  // Close sidebar immediately and navigate instantly
-  setSidebarVisible(false);
-  
-  if (onNavigate) {
-    // console.log('Using custom navigation handler');
-    onNavigate(item);
-  } else {
-    // Default navigation with fallback logic
-    const targetStack = item.parent || `${item.title}Stack`;
-    const targetScreen = item.screen || item.title;
+  const handleNavigation = (item) => {
+    console.log('Navigation clicked:', item);
     
-    if (item.parent || ['products', 'orders', 'customers', 'inventory', 'settings'].includes(item.id)) {
-      // console.log('Navigating to parent stack:', targetStack);
-      navigation.navigate(targetStack);
+    // Close sidebar immediately
+    setSidebarVisible(false);
+    
+    if (onNavigate) {
+      console.log('Using custom navigation handler');
+      onNavigate(item);
     } else {
-      // console.log('Navigating to root screen:', targetScreen);
-      navigation.navigate(targetScreen);
+      // Default navigation with improved logic
+      try {
+        if (item.parent) {
+          // If it's a stack navigator, navigate to the stack with the screen
+          console.log('Navigating to parent stack:', item.parent, 'screen:', item.screen);
+          
+          // Navigate to the stack and specify the screen
+          navigation.navigate(item.parent, {
+            screen: item.screen,
+          });
+        } else if (item.screen) {
+          // Direct screen navigation
+          console.log('Navigating to direct screen:', item.screen);
+          navigation.navigate(item.screen);
+        } else {
+          // Fallback - try to navigate by title
+          console.log('Navigating by title:', item.title);
+          navigation.navigate(item.title);
+        }
+      } catch (error) {
+        console.error('Navigation error:', error);
+      }
     }
-  }
-  
-  // Start closing animation after navigation
-  Animated.parallel([
-    Animated.timing(slideAnim, {
-      toValue: -DRAWER_WIDTH,
-      duration: 200,
-      useNativeDriver: true,
-      easing: Easing.in(Easing.cubic),
-    }),
-    Animated.timing(fadeAnim, {
-      toValue: 0,
-      duration: 150,
-      useNativeDriver: true,
-      easing: Easing.in(Easing.cubic),
-    }),
-  ]).start();
-};
+    
+    // Start closing animation after navigation
+    Animated.parallel([
+      Animated.timing(slideAnim, {
+        toValue: -DRAWER_WIDTH,
+        duration: 200,
+        useNativeDriver: true,
+        easing: Easing.in(Easing.cubic),
+      }),
+      Animated.timing(fadeAnim, {
+        toValue: 0,
+        duration: 150,
+        useNativeDriver: true,
+        easing: Easing.in(Easing.cubic),
+      }),
+    ]).start();
+  };
 
   const handleLogout = async () => {
     try {
@@ -451,7 +405,7 @@ const Header = ({
                         !notif.read ? 'bg-blue-50/50 dark:bg-purple-900/20' : 'bg-white dark:bg-gray-800'
                       }`}
                       onPress={() => {
-                        // console.log("Notification pressed:", notif.id);
+                        console.log("Notification pressed:", notif.id);
                         setNotificationVisible(false);
                       }}
                     >
@@ -484,7 +438,7 @@ const Header = ({
                   <TouchableOpacity
                     className="p-4 bg-gray-50 dark:bg-gray-900 rounded-b-2xl"
                     onPress={() => {
-                      // console.log("View all notifications");
+                      console.log("View all notifications");
                       setNotificationVisible(false);
                     }}
                   >
@@ -566,74 +520,83 @@ const Header = ({
                     </View>
                   </LinearGradient>
 
-                  {/* Navigation Items */}
-                  <ScrollView 
-                    className="flex-1" 
-                    showsVerticalScrollIndicator={false}
-                    contentContainerStyle={{ paddingVertical: 8 }}
-                  >
-                    {navigationItems.map((item) => {
-                      const isActive = 
-                        activeScreen === item.title || 
-                        activeScreen === item.screen ||
-                        activeScreen === item.parent ||
-                        (item.parent && activeScreen.includes(item.title)) ||
-                        (item.title === "Dashboard" && activeScreen === "Dashboard");
-                      
-                      // console.log('Item:', item.title, 'ActiveScreen:', activeScreen, 'IsActive:', isActive); // Debug log
+                  {/* Navigation Items - Now using props */}
+                  {navigationItems.length > 0 ? (
+                    <ScrollView 
+                      className="flex-1" 
+                      showsVerticalScrollIndicator={false}
+                      contentContainerStyle={{ paddingVertical: 8 }}
+                    >
+                      {navigationItems.map((item) => {
+                        const isActive = 
+                          activeScreen === item.title || 
+                          activeScreen === item.screen ||
+                          activeScreen === item.parent ||
+                          (item.parent && activeScreen.includes(item.title)) ||
+                          (item.title === "Dashboard" && activeScreen === "Dashboard") ||
+                          (item.title === "Settings" && activeScreen === "Settings") ||
+                          (item.title === "Profile" && activeScreen === "Profile");
 
-                      return (
-                        <TouchableOpacity
-                          key={item.id}
-                          onPress={() => handleNavigation(item)}
-                          className={`mx-3 my-1 px-4 py-3.5 rounded-xl ${
-                            isActive 
-                              ? isDarkMode ? 'bg-purple-900/30' : 'bg-purple-50'
-                              : ''
-                          }`}
-                        >
-                          <View className="flex-row items-center justify-between">
-                            <View className="flex-row items-center flex-1">
-                              <View className={`w-8 h-8 rounded-lg items-center justify-center ${
-                                isActive 
-                                  ? isDarkMode ? 'bg-purple-800' : 'bg-purple-100'
-                                  : isDarkMode ? 'bg-gray-700' : 'bg-gray-100'
-                              }`}>
-                                <Icon
-                                  name={isActive ? item.icon : item.icon}
-                                  size={20}
-                                  color={isActive ? "#667eea" : (isDarkMode ? "#9CA3AF" : "#666")}
-                                />
-                              </View>
-                              <Text
-                                className={`text-base ml-3 flex-1 ${
-                                  isActive
-                                    ? isDarkMode ? 'text-purple-400' : 'text-purple-600'
-                                    : isDarkMode ? 'text-gray-300' : 'text-gray-600'
-                                }`}
-                                numberOfLines={1}
-                              >
-                                {item.title}
-                              </Text>
-                            </View>
-                            {item.badge && (
-                              <View
-                                className={`px-2 py-1 rounded-full ml-2 ${
-                                  item.badge === "Low Stock"
-                                    ? "bg-orange-500"
-                                    : "bg-purple-600"
-                                }`}
-                              >
-                                <Text className="text-white text-[10px] font-bold">
-                                  {item.badge}
+                        return (
+                          <TouchableOpacity
+                            key={item.id}
+                            onPress={() => handleNavigation(item)}
+                            className={`mx-3 my-1 px-4 py-3.5 rounded-xl ${
+                              isActive 
+                                ? isDarkMode ? 'bg-purple-900/30' : 'bg-purple-50'
+                                : ''
+                            }`}
+                          >
+                            <View className="flex-row items-center justify-between">
+                              <View className="flex-row items-center flex-1">
+                                <View className={`w-8 h-8 rounded-lg items-center justify-center ${
+                                  isActive 
+                                    ? isDarkMode ? 'bg-purple-800' : 'bg-purple-100'
+                                    : isDarkMode ? 'bg-gray-700' : 'bg-gray-100'
+                                }`}>
+                                  <Icon
+                                    name={isActive ? item.iconActive || item.icon : item.icon}
+                                    size={20}
+                                    color={isActive ? "#667eea" : (isDarkMode ? "#9CA3AF" : "#666")}
+                                  />
+                                </View>
+                                <Text
+                                  className={`text-base ml-3 flex-1 ${
+                                    isActive
+                                      ? isDarkMode ? 'text-purple-400' : 'text-purple-600'
+                                      : isDarkMode ? 'text-gray-300' : 'text-gray-600'
+                                  }`}
+                                  numberOfLines={1}
+                                >
+                                  {item.title}
                                 </Text>
                               </View>
-                            )}
-                          </View>
-                        </TouchableOpacity>
-                      );
-                    })}
-                  </ScrollView>
+                              {item.badge && (
+                                <View
+                                  className={`px-2 py-1 rounded-full ml-2 ${
+                                    item.badge === "Low Stock" || item.badge?.includes("Low")
+                                      ? "bg-orange-500"
+                                      : "bg-purple-600"
+                                  }`}
+                                >
+                                  <Text className="text-white text-[10px] font-bold">
+                                    {item.badge}
+                                  </Text>
+                                </View>
+                              )}
+                            </View>
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </ScrollView>
+                  ) : (
+                    // Fallback if no navigation items provided
+                    <View className="flex-1 items-center justify-center">
+                      <Text className={isDarkMode ? 'text-gray-400' : 'text-gray-500'}>
+                        No navigation items
+                      </Text>
+                    </View>
+                  )}
 
                   {/* Footer */}
                   <View className={`border-t ${isDarkMode ? 'border-gray-700' : 'border-gray-200'} pt-4 pb-8 px-5`}>
