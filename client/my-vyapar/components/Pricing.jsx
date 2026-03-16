@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import SectionTitle from "../components/SectionTitle";
+import Container from "../components/Container"; // Add this import
 
 const Pricing = () => {
   const [billingCycle, setBillingCycle] = useState('monthly');
@@ -61,105 +62,104 @@ const Pricing = () => {
   ];
 
   return (
-    <div className="py-10 sm:py-[60px] px-4 sm:px-6 lg:px-[30px] bg-gradient-to-br from-[#f8fafc] to-[#f1f5f9] min-h-screen font-sans">
-      <div className="text-center mb-8 sm:mb-10">
-        <SectionTitle
-          title="Simple, Transparent Pricing"
-        />
-
-
-
-        <p className="text-[#475569] text-base sm:text-lg md:text-xl max-w-[600px] mx-auto mt-4 sm:mt-6 px-4">
-          Choose the perfect plan for your business
-        </p>
-      </div>
-
-      {/* Toggle */}
-      <div className="flex flex-row justify-center items-center gap-3 mb-8 sm:mb-[50px] bg-white p-1.5 rounded-[60px] max-w-[320px] mx-auto shadow-[0_5px_15px_rgba(0,0,0,0.05)]">
-        <button
-          className={`px-5 sm:px-[30px] py-2.5 sm:py-3 border-none rounded-[40px] text-sm sm:text-base font-semibold cursor-pointer transition-all duration-300 flex-1 whitespace-nowrap ${billingCycle === 'monthly' ? 'bg-[#3b82f6] text-white shadow-[0_5px_15px_rgba(59,130,246,0.3)]' : 'bg-transparent text-[#1e293b]'}`}
-          onClick={() => setBillingCycle('monthly')}
-        >
-          Monthly
-        </button>
-        <button
-          className={`px-5 sm:px-[30px] py-2.5 sm:py-3 border-none rounded-[40px] text-sm sm:text-base font-semibold cursor-pointer transition-all duration-300 flex-1 whitespace-nowrap ${billingCycle === 'yearly' ? 'bg-[#3b82f6] text-white shadow-[0_5px_15px_rgba(59,130,246,0.3)]' : 'bg-transparent text-[#1e293b]'}`}
-          onClick={() => setBillingCycle('yearly')}
-        >
-          Yearly <span className="bg-white/20 py-0.5 px-1.5 sm:py-1 sm:px-2 rounded-[20px] text-[10px] sm:text-xs font-medium ml-1 sm:ml-2">Save 20%</span>
-        </button>
-      </div>
-
-      <div className="max-w-[1100px] mx-auto px-0 sm:px-4">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8 mb-10 items-stretch">
-          {plans.map((plan, index) => (
-            <div
-              key={index}
-              ref={(el) => { cardRefs.current[index] = el; }}
-              className={`bg-white rounded-[30px] p-6 sm:p-8 shadow-[0_20px_40px_rgba(0,0,0,0.08)] relative transition-all duration-500 border border-[#e2e8f0] flex flex-col opacity-0 translate-y-5 card-visible hover:-translate-y-2 hover:shadow-[0_30px_60px_rgba(0,0,0,0.12)] 
-                ${index === 2 ? "sm:col-span-2 lg:col-span-1 sm:max-w-[450px] sm:mx-auto lg:max-w-full" : ""} 
-                ${plan.popular ? 'border-2 border-[#8b5cf6] scale-105 z-10' : ''}`}
-            >
-              {plan.popular && (
-                <div className="absolute top-[-12px] left-1/2 -translate-x-1/2 text-white px-5 py-1.5 rounded-[30px] text-xs sm:text-sm font-semibold whitespace-nowrap shadow-lg" style={{ background: plan.color }}>
-                  Most Popular
-                </div>
-              )}
-
-              <div className="text-center mb-6 pb-6 border-b border-[#e2e8f0]">
-                <h3 className="text-2xl font-bold text-[#1e293b] mb-4">{plan.name}</h3>
-                <div className="flex items-baseline justify-center gap-1 mb-4">
-                  <span className="text-xl font-semibold text-[#64748b]">₹</span>
-                  <span className="text-4xl sm:text-5xl font-extrabold" style={{ color: plan.color }}>
-                    {billingCycle === 'monthly' ? plan.price.monthly : plan.price.yearly}
-                  </span>
-                  <span className="text-lg text-[#64748b]">/{billingCycle === 'monthly' ? 'mo' : 'yr'}</span>
-                </div>
-                <p className="text-sm text-[#64748b] leading-relaxed px-2">{plan.description}</p>
-              </div>
-
-              <div className="flex-1 mb-8">
-                <h4 className="text-sm font-semibold text-[#1e293b] mb-4 uppercase tracking-wider">What's included:</h4>
-                <ul className="space-y-4">
-                  {plan.features.map((feature, idx) => (
-                    <li key={idx} className="flex items-start gap-3 text-[14px] text-[#475569]">
-                      <svg className="w-5 h-5 flex-shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none">
-                        <path d="M20 6L9 17L4 12" stroke={plan.color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-                      </svg>
-                      <span>{feature}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-
-              <div className="mt-auto">
-                <button
-                  className={`w-full py-4 rounded-[50px] text-base font-bold transition-all duration-300 shadow-lg hover:-translate-y-1 active:translate-y-0
-                    ${plan.popular ? 'bg-[#8b5cf6] text-white hover:bg-[#7c3aed] shadow-[#8b5cf6]/20' : 'bg-transparent border-2 hover:text-white relative overflow-hidden group'}`}
-                  style={{
-                    color: plan.popular ? 'white' : plan.color,
-                    borderColor: plan.color
-                  }}
-                >
-                  {!plan.popular && (
-                    <span className="absolute inset-0 bg-gradient-to-r from-[#6f86d6] to-[#4facfe] translate-y-full transition-transform duration-300 group-hover:translate-y-0 -z-10"></span>
-                  )}
-                  <span className="relative z-10">{plan.buttonText}</span>
-                </button>
-              </div>
-            </div>
-          ))}
+    <div className="py-10 sm:py-[60px] bg-gradient-to-br from-[#f8fafc] to-[#f1f5f9] min-h-screen font-sans">
+      <Container> {/* Added Container here - removes all outer padding */}
+        
+        <div className="text-center mb-8 sm:mb-10">
+          <SectionTitle title="Simple, Transparent Pricing" />
+          <p className="text-[#475569] text-base sm:text-lg md:text-xl max-w-[600px] mx-auto mt-4 sm:mt-6">
+            Choose the perfect plan for your business
+          </p>
         </div>
 
-        {/* GUARANTEE BOX - Pushed down with mt-12 sm:mt-16 */}
-        <div className="flex flex-row items-center justify-center gap-3 p-4 sm:p-5 bg-white rounded-[50px] max-w-[500px] mt-12 sm:mt-16 mx-auto shadow-[0_5px_20px_rgba(0,0,0,0.04)] border border-[#e2e8f0]">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="flex-shrink-0">
-            <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="#3b82f6" strokeWidth="2" />
-            <path d="M12 6V12L16 14" stroke="#3b82f6" strokeWidth="2" strokeLinecap="round" />
-          </svg>
-          <span className="text-sm md:text-base text-[#475569] font-medium">30-day money-back guarantee • No questions asked</span>
+        {/* Toggle */}
+        <div className="flex flex-row justify-center items-center gap-3 mb-8 sm:mb-[50px] bg-white p-1.5 rounded-[60px] max-w-[320px] mx-auto shadow-[0_5px_15px_rgba(0,0,0,0.05)]">
+          <button
+            className={`px-5 sm:px-[30px] py-2.5 sm:py-3 border-none rounded-[40px] text-sm sm:text-base font-semibold cursor-pointer transition-all duration-300 flex-1 whitespace-nowrap ${billingCycle === 'monthly' ? 'bg-[#3b82f6] text-white shadow-[0_5px_15px_rgba(59,130,246,0.3)]' : 'bg-transparent text-[#1e293b]'}`}
+            onClick={() => setBillingCycle('monthly')}
+          >
+            Monthly
+          </button>
+          <button
+            className={`px-5 sm:px-[30px] py-2.5 sm:py-3 border-none rounded-[40px] text-sm sm:text-base font-semibold cursor-pointer transition-all duration-300 flex-1 whitespace-nowrap ${billingCycle === 'yearly' ? 'bg-[#3b82f6] text-white shadow-[0_5px_15px_rgba(59,130,246,0.3)]' : 'bg-transparent text-[#1e293b]'}`}
+            onClick={() => setBillingCycle('yearly')}
+          >
+            Yearly <span className="bg-white/20 py-0.5 px-1.5 sm:py-1 sm:px-2 rounded-[20px] text-[10px] sm:text-xs font-medium ml-1 sm:ml-2">Save 20%</span>
+          </button>
         </div>
-      </div>
+
+        {/* Pricing Cards - removed outer max-w and px classes */}
+        <div className="w-full">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8 mb-10 items-stretch">
+            {plans.map((plan, index) => (
+              <div
+                key={index}
+                ref={(el) => { cardRefs.current[index] = el; }}
+                className={`bg-white rounded-[30px] p-6 sm:p-8 shadow-[0_20px_40px_rgba(0,0,0,0.08)] relative transition-all duration-500 border border-[#e2e8f0] flex flex-col opacity-0 translate-y-5 card-visible hover:-translate-y-2 hover:shadow-[0_30px_60px_rgba(0,0,0,0.12)] 
+                  ${index === 2 ? "sm:col-span-2 lg:col-span-1 sm:max-w-[450px] sm:mx-auto lg:max-w-full" : ""} 
+                  ${plan.popular ? 'border-2 border-[#8b5cf6] scale-105 z-10' : ''}`}
+              >
+                {plan.popular && (
+                  <div className="absolute top-[-12px] left-1/2 -translate-x-1/2 text-white px-5 py-1.5 rounded-[30px] text-xs sm:text-sm font-semibold whitespace-nowrap shadow-lg" style={{ background: plan.color }}>
+                    Most Popular
+                  </div>
+                )}
+
+                <div className="text-center mb-6 pb-6 border-b border-[#e2e8f0]">
+                  <h3 className="text-2xl font-bold text-[#1e293b] mb-4">{plan.name}</h3>
+                  <div className="flex items-baseline justify-center gap-1 mb-4">
+                    <span className="text-xl font-semibold text-[#64748b]">₹</span>
+                    <span className="text-4xl sm:text-5xl font-extrabold" style={{ color: plan.color }}>
+                      {billingCycle === 'monthly' ? plan.price.monthly : plan.price.yearly}
+                    </span>
+                    <span className="text-lg text-[#64748b]">/{billingCycle === 'monthly' ? 'mo' : 'yr'}</span>
+                  </div>
+                  <p className="text-sm text-[#64748b] leading-relaxed px-2">{plan.description}</p>
+                </div>
+
+                <div className="flex-1 mb-8">
+                  <h4 className="text-sm font-semibold text-[#1e293b] mb-4 uppercase tracking-wider">What's included:</h4>
+                  <ul className="space-y-4">
+                    {plan.features.map((feature, idx) => (
+                      <li key={idx} className="flex items-start gap-3 text-[14px] text-[#475569]">
+                        <svg className="w-5 h-5 flex-shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none">
+                          <path d="M20 6L9 17L4 12" stroke={plan.color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                        <span>{feature}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                <div className="mt-auto">
+                  <button
+                    className={`w-full py-4 rounded-[50px] text-base font-bold transition-all duration-300 shadow-lg hover:-translate-y-1 active:translate-y-0
+                      ${plan.popular ? 'bg-[#8b5cf6] text-white hover:bg-[#7c3aed] shadow-[#8b5cf6]/20' : 'bg-transparent border-2 hover:text-white relative overflow-hidden group'}`}
+                    style={{
+                      color: plan.popular ? 'white' : plan.color,
+                      borderColor: plan.color
+                    }}
+                  >
+                    {!plan.popular && (
+                      <span className="absolute inset-0 bg-gradient-to-r from-[#6f86d6] to-[#4facfe] translate-y-full transition-transform duration-300 group-hover:translate-y-0 -z-10"></span>
+                    )}
+                    <span className="relative z-10">{plan.buttonText}</span>
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* GUARANTEE BOX */}
+          <div className="flex flex-row items-center justify-center gap-3 p-4 sm:p-5 bg-white rounded-[50px] max-w-[500px] mt-12 sm:mt-16 mx-auto shadow-[0_5px_20px_rgba(0,0,0,0.04)] border border-[#e2e8f0]">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="flex-shrink-0">
+              <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="#3b82f6" strokeWidth="2" />
+              <path d="M12 6V12L16 14" stroke="#3b82f6" strokeWidth="2" strokeLinecap="round" />
+            </svg>
+            <span className="text-sm md:text-base text-[#475569] font-medium">30-day money-back guarantee • No questions asked</span>
+          </div>
+        </div>
+      </Container>
 
       <style jsx>{`
         .card-visible {

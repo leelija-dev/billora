@@ -2,12 +2,13 @@
 import React from "react";
 import Image from "next/image";
 import Link from "next/link";
+import Container from "../components/Container"; // Add this import
 
 const Hero = () => {
   return (
     <div className="overflow-x-hidden font-sans">
       {/* ===== ANIMATED HERO SECTION ===== */}
-      <section className="relative z-10 min-h-[100vh] flex items-center px-5 md:px-20 pb-32 pt-10 bg-gradient-to-br from-slate-50 via-indigo-50 to-sky-100 overflow-hidden">
+      <section className="relative z-10 min-h-[100vh] flex items-center pb-32 pt-10 bg-gradient-to-br from-slate-50 via-indigo-50 to-sky-100 overflow-hidden">
         {/* Ultra Animated Background */}
         <style>{`
           @keyframes float-blob-1 { 
@@ -121,93 +122,95 @@ const Hero = () => {
         {/* Gradient Overlay at bottom */}
         <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-slate-50/80 to-transparent pointer-events-none z-20"></div>
 
-        {/* Main Content */}
-        <div className="relative z-30 max-w-[1400px] mx-auto w-full flex flex-col lg:flex-row items-center gap-10 lg:gap-16">
-          {/* Hero Content */}
-          <div className="flex-1 text-center lg:text-left">
-            <h1 className="text-4xl md:text-5xl lg:text-[52px] font-extrabold text-slate-900 leading-tight mb-8 tracking-tight animate-fadeInUp">
-              GST Billing Software for Small Businesses in India
-            </h1>
-            <p
-              className="text-sm sm:text-base md:text-lg text-slate-600 leading-relaxed mb-6 sm:mb-10 max-w-[550px] mx-auto lg:mx-0 animate-fadeInUp"
-              style={{ animationDelay: "0.2s" }}
-            >
-              Manage your business professionally with Billora, India's leading
-              small business software for billing, inventory, and accounting.
-              Join <br /> 1 Cr+ satisfied SMEs in India who trust Billora.
-            </p>
-            <div className="flex flex-row gap-7 justify-center lg:justify-start flex-wrap animate-fadeInUp"
-                 style={{ animationDelay: "0.3s" }}>
-              <Link href="/start-free-trial">
-                <button className="px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-500 text-white rounded-full text-sm font-semibold shadow-md transition-all hover:-translate-y-1 hover:shadow-lg">
-                  Start Free Trial
-                </button>
-              </Link>
+        {/* Main Content - Now wrapped in Container */}
+        <Container>
+          <div className="relative z-30 w-full flex flex-col lg:flex-row items-center gap-10 lg:gap-16">
+            {/* Hero Content */}
+            <div className="flex-1 text-center lg:text-left">
+              <h1 className="text-4xl md:text-5xl lg:text-[52px] font-extrabold text-slate-900 leading-tight mb-8 tracking-tight animate-fadeInUp">
+                GST Billing Software for Small Businesses in India
+              </h1>
+              <p
+                className="text-sm sm:text-base md:text-lg text-slate-600 leading-relaxed mb-6 sm:mb-10 max-w-[550px] mx-auto lg:mx-0 animate-fadeInUp"
+                style={{ animationDelay: "0.2s" }}
+              >
+                Manage your business professionally with Billora, India's leading
+                small business software for billing, inventory, and accounting.
+                Join <br /> 1 Cr+ satisfied SMEs in India who trust Billora.
+              </p>
+              <div className="flex flex-row gap-7 justify-center lg:justify-start flex-wrap animate-fadeInUp"
+                   style={{ animationDelay: "0.3s" }}>
+                <Link href="/start-free-trial">
+                  <button className="px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-500 text-white rounded-full text-sm font-semibold shadow-md transition-all hover:-translate-y-1 hover:shadow-lg">
+                    Start Free Trial
+                  </button>
+                </Link>
 
-              <Link href="/bookdemo">
-                <button className="px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-500 text-white rounded-full text-sm font-semibold shadow-md transition-all hover:-translate-y-1 hover:shadow-lg">
-                  Book free demo
-                </button>
-              </Link>
+                <Link href="/bookdemo">
+                  <button className="px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-500 text-white rounded-full text-sm font-semibold shadow-md transition-all hover:-translate-y-1 hover:shadow-lg">
+                    Book free demo
+                  </button>
+                </Link>
+              </div>
             </div>
-          </div>
 
-          {/* Hero Images Container */}
-          <div className="flex-1 relative min-h-[350px] md:min-h-[500px] w-full max-w-[600px]">
-            {/* Laptop Mockup - Heroic Slide from Top */}
-            <div className="relative w-full aspect-[16/9] bg-slate-900 rounded-t-[20px] p-2 shadow-2xl z-10 heroic-slide-laptop">
-              <div className="w-full h-full bg-slate-800 rounded-xl overflow-hidden">
-                <div className="h-8 bg-slate-700 flex items-center px-4 gap-2">
-                  <span className="w-3 h-3 rounded-full bg-red-500"></span>
-                  <span className="w-3 h-3 rounded-full bg-amber-500"></span>
-                  <span className="w-3 h-3 rounded-full bg-emerald-500"></span>
+            {/* Hero Images Container */}
+            <div className="flex-1 relative min-h-[350px] md:min-h-[500px] w-full max-w-[600px]">
+              {/* Laptop Mockup - Heroic Slide from Top */}
+              <div className="relative w-full aspect-[16/9] bg-slate-900 rounded-t-[20px] p-2 shadow-2xl z-10 heroic-slide-laptop">
+                <div className="w-full h-full bg-slate-800 rounded-xl overflow-hidden">
+                  <div className="h-8 bg-slate-700 flex items-center px-4 gap-2">
+                    <span className="w-3 h-3 rounded-full bg-red-500"></span>
+                    <span className="w-3 h-3 rounded-full bg-amber-500"></span>
+                    <span className="w-3 h-3 rounded-full bg-emerald-500"></span>
+                  </div>
+
+                  {/* Desktop Image */}
+                  <div className="relative w-full h-[250px] md:h-[350px] bg-slate-800 overflow-hidden">
+                    <Image
+                      src="/image/desktop.png"
+                      alt="Desktop Interface"
+                      fill
+                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                      className="object-cover w-full h-full"
+                      priority={true}
+                    />
+                  </div>
                 </div>
+                <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 w-[150px] md:w-[200px] h-3 bg-slate-700 rounded-b-xl"></div>
+              </div>
 
-                {/* Desktop Image */}
-                <div className="relative w-full h-[250px] md:h-[350px] bg-slate-800 overflow-hidden">
+              {/* Phone Mockup - Heroic Slide from Top with rotation */}
+              <div className="absolute -left-4 md:-left-8 -bottom-5 w-[100px] md:w-[130px] h-[200px] md:h-[280px] bg-slate-800 rounded-[30px] p-1.5 shadow-xl z-20 hidden sm:block heroic-slide-phone">
+                <div className="w-full h-full bg-slate-900 rounded-[25px] overflow-hidden relative">
                   <Image
-                    src="/image/desktop.png"
-                    alt="Desktop Interface"
+                    src="/image/Mobile.png"
+                    alt="Mobile Interface"
                     fill
-                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                    className="object-cover w-full h-full"
+                    sizes="(max-width: 768px) 100vw, 130px"
+                    className="object-cover w-full h-full rounded-[20px]"
                     priority={true}
                   />
                 </div>
               </div>
-              <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 w-[150px] md:w-[200px] h-3 bg-slate-700 rounded-b-xl"></div>
-            </div>
 
-            {/* Phone Mockup - Heroic Slide from Top with rotation */}
-            <div className="absolute -left-4 md:-left-8 -bottom-5 w-[100px] md:w-[130px] h-[200px] md:h-[280px] bg-slate-800 rounded-[30px] p-1.5 shadow-xl z-20 hidden sm:block heroic-slide-phone">
-              <div className="w-full h-full bg-slate-900 rounded-[25px] overflow-hidden relative">
-                <Image
-                  src="/image/Mobile.png"
-                  alt="Mobile Interface"
-                  fill
-                  sizes="(max-width: 768px) 100vw, 130px"
-                  className="object-cover w-full h-full rounded-[20px]"
-                  priority={true}
-                />
+              {/* JUMPING THREE BADGES - Now with heroic slide then bounce */}
+              <div className="absolute top-[20%] -right-4 bg-white px-4 py-2 rounded-full font-semibold text-sm shadow-lg border border-blue-100 text-blue-600 z-30 hidden md:block heroic-slide-badge1">
+                ✨ Easy to Use
+              </div>
+              <div className="absolute bottom-[40%] right-4 bg-white px-4 py-2 rounded-full font-semibold text-sm shadow-lg border border-purple-100 text-purple-600 z-30 hidden md:block heroic-slide-badge2">
+                👥 Collaborative
+              </div>
+              <div className="absolute top-[40%] -left-4 bg-white px-4 py-2 rounded-full font-semibold text-sm shadow-lg border border-emerald-100 text-emerald-600 z-30 hidden md:block heroic-slide-badge3">
+                📊 Activity Stream
               </div>
             </div>
-
-            {/* JUMPING THREE BADGES - Now with heroic slide then bounce */}
-            <div className="absolute top-[20%] -right-4 bg-white px-4 py-2 rounded-full font-semibold text-sm shadow-lg border border-blue-100 text-blue-600 z-30 hidden md:block heroic-slide-badge1">
-              ✨ Easy to Use
-            </div>
-            <div className="absolute bottom-[40%] right-4 bg-white px-4 py-2 rounded-full font-semibold text-sm shadow-lg border border-purple-100 text-purple-600 z-30 hidden md:block heroic-slide-badge2">
-              👥 Collaborative
-            </div>
-            <div className="absolute top-[40%] -left-4 bg-white px-4 py-2 rounded-full font-semibold text-sm shadow-lg border border-emerald-100 text-emerald-600 z-30 hidden md:block heroic-slide-badge3">
-              📊 Activity Stream
-            </div>
           </div>
-        </div>
+        </Container>
       </section>
 
       {/* ===== SUPERB FEATURES SECTION (BLACK CARD) ===== */}
-      <section className="relative -mt-24 w-full mx-auto z-40 px-4 md:px-0 mb-48 hidden sm:block">
+      <section className="relative -mt-24 w-full mx-auto z-40 px-4 md:px-0 mb-48 hidden md:block">
         <div
           className="relative bg-[#0f172a] rounded-[40px] pt-[100px] pb-[100px] px-[20px] md:px-[40px] max-w-[1000px] mx-auto shadow-[0_20px_50px_rgba(0,0,0,0.4)] border border-white/10 overflow-visible"
           style={{
@@ -216,9 +219,10 @@ const Hero = () => {
             backgroundSize: "20px 20px",
           }}
         >
-          {/* Internal Glow for depth */}
+          {/* Top Glow Line */}
           <div className="absolute top-0 left-1/2 -translate-x-1/2 w-3/4 h-1 bg-gradient-to-r from-transparent via-blue-500/50 to-transparent"></div>
 
+          {/* Heading */}
           <h2 className="text-3xl md:text-[42px] font-bold text-white text-center mb-8 relative z-20 leading-tight animate-fadeInUp">
             We made it{" "}
             <span className="bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
@@ -227,8 +231,11 @@ const Hero = () => {
             & usable
           </h2>
 
-          <div className="flex justify-center gap-3 md:gap-5 mb-12 flex-wrap relative z-20 animate-fadeInUp"
-               style={{ animationDelay: "0.2s" }}>
+          {/* Feature Pills */}
+          <div
+            className="flex justify-center gap-3 md:gap-5 mb-12 flex-wrap relative z-20 animate-fadeInUp"
+            style={{ animationDelay: "0.2s" }}
+          >
             {["Easy to Use", "Collaborative", "Activity Stream"].map((pill) => (
               <span
                 key={pill}
@@ -239,9 +246,11 @@ const Hero = () => {
             ))}
           </div>
 
-          {/* THE "HANGING" WHITE CARD */}
+          {/* Hanging White Card */}
           <div className="group absolute -bottom-24 left-1/2 -translate-x-1/2 w-[90%] bg-white rounded-[30px] p-6 md:p-10 border border-slate-200 shadow-[0_30px_60px_-15px_rgba(0,0,0,0.2)] z-50 transition-transform duration-500 hover:-translate-y-2">
             <div className="flex flex-col md:flex-row items-center gap-8 md:gap-12">
+
+              {/* Left Content */}
               <div className="flex-1 text-center md:text-left">
                 <div className="flex items-center gap-2 mb-4 justify-center md:justify-start">
                   <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold">
@@ -251,12 +260,15 @@ const Hero = () => {
                     Billora Premium
                   </span>
                 </div>
+
                 <h3 className="text-2xl md:text-3xl font-extrabold text-slate-900 mb-2">
                   GST Billing Software
                 </h3>
+
                 <p className="text-slate-500 mb-6 text-sm">
                   Automate your invoicing and inventory in seconds.
                 </p>
+
                 <Link href="/start-free-trial">
                   <button className="w-full md:w-auto px-8 py-3 bg-slate-900 text-white rounded-full text-sm font-bold hover:bg-blue-600 transition-colors">
                     Get Started Free
