@@ -41,7 +41,7 @@ Route::prefix('users')->group(function () {
 // });
 
 //Products
-Route::prefix('products')->group(function () {
+Route::middleware('auth:sanctum')->prefix('products')->group(function () {
    Route::get('/', [ProductsController::class, 'index']); //all products
    Route::post('/store', [ProductsController::class, 'store']); //store product
    Route::get('/{id}', [ProductsController::class, 'show']); //single product
