@@ -4,10 +4,10 @@ import Features from "../components/Features";
 import Industries from "../components/Industries";
 import HowItWorks from "../components/HowItWorks"; 
 import Pricing from "../components/Pricing";
-import Testimonials from "../components/Testimonials"; 
-import Ratings from "../components/Ratings";
+import Testimonials from "../components/Testimonials";
+import Start from "../components/Start"; 
 import FAQ from "../components/FAQ";
-import Start from "../components/Start";
+import Ratings from "../components/Ratings";
 
 
 import Footer from "../components/Footer";
@@ -22,9 +22,10 @@ export default function Page() {
       <HowItWorks />
       <Pricing />
       <Testimonials />
-      <Ratings />
+       <Start />
+      
       <FAQ />
-      <Start />
+     <Ratings />
       <Footer/>
       </main>
 
