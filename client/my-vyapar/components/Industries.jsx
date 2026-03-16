@@ -91,19 +91,23 @@ const IndustrySection = () => {
     <section ref={containerRef} className="relative h-[800vh] bg-white">
       <div className="sticky top-0 h-screen w-full flex flex-col overflow-hidden">
 
+        {/* Header Section - Optimized for tablet */}
         <div className="h-[30vh] flex items-end justify-center pb-16 z-20">
           <Container>
             <div className="text-center px-4 sm:px-6">
-              <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-[42px] font-bold text-[#1a237e] mb-4 relative inline-block animate-[fadeInDown_0.8s_ease-out] after:content-[''] after:absolute after:bottom-[-8px] sm:after:bottom-[-12px] after:left-1/2 after:-translate-x-1/2 after:w-16 sm:after:w-[80px] md:after:w-[100px] after:h-0.5 sm:after:h-1 after:bg-gradient-to-r after:from-[#3b82f6] after:via-[#8b5cf6] after:to-[#10b981] after:rounded-[2px]">
+              <h2 className="text-2xl sm:text-3xl md:text-3xl lg:text-[42px] font-bold text-[#1a237e] mb-4 relative inline-block animate-[fadeInDown_0.8s_ease-out] after:content-[''] after:absolute after:bottom-[-8px] sm:after:bottom-[-12px] after:left-1/2 after:-translate-x-1/2 after:w-16 sm:after:w-[80px] md:after:w-[80px] lg:after:w-[100px] after:h-0.5 sm:after:h-1 after:bg-gradient-to-r after:from-[#3b82f6] after:via-[#8b5cf6] after:to-[#10b981] after:rounded-[2px]">
+                {/* Tablet: md:text-3xl (30px) instead of md:text-4xl (36px) */}
                 Supporting businesses from a wide range of industries
               </h2>
-              <p className="text-sm sm:text-base md:text-lg text-slate-500 mt-6">
+              <p className="text-base sm:text-base md:text-sm lg:text-lg text-slate-500 mt-6 px-4">
+                {/* Tablet: md:text-sm (14px) instead of md:text-lg (18px) */}
                 Scroll to explore our specialized solutions
               </p>
             </div>
           </Container>
         </div>
 
+        {/* Cards Container */}
         <div className="h-[55vh] flex items-center justify-center z-10">
           <div className="w-full max-w-[1400px] mx-auto px-4 sm:px-6 md:px-8 lg:px-10 relative h-full">
             {INDUSTRY_DATA.map((industry, index) => (
@@ -118,6 +122,7 @@ const IndustrySection = () => {
           </div>
         </div>
 
+        {/* Bottom Spacer */}
         <div className="h-[15vh]"></div>
 
         <style>{`
@@ -201,26 +206,38 @@ const IndustryCard = ({ item, index, total, progress }) => {
 };
 
 const CardContent = ({ item }) => (
-  <div className="w-full max-w-5xl bg-white flex flex-col md:flex-row mx-auto overflow-hidden" style={{ height: 'min(500px, 70vh)' }}>
+  <div className="w-full max-w-5xl bg-white flex flex-col md:flex-row mx-auto overflow-hidden" style={{ height: 'min(550px, 75vh)' }}>
 
-    <div className="flex-1 p-6 sm:p-8 md:p-10 flex flex-col justify-center order-2 md:order-1 overflow-y-auto">
+    {/* Content Side - Optimized for tablet */}
+    <div className="flex-1 p-6 sm:p-8 md:p-8 lg:p-10 flex flex-col justify-center order-2 md:order-1 overflow-y-auto">
       <div className="flex items-center gap-3 sm:gap-4 mb-4">
-        <span className="text-3xl sm:text-4xl">{item.icon}</span>
+        <span className="text-4xl sm:text-4xl md:text-4xl lg:text-5xl">{item.icon}</span>
+        {/* Tablet: md:text-4xl (36px) instead of md:text-5xl (48px) */}
         <span
-          className="px-3 sm:px-4 py-1 rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-wider"
+          className="px-3 sm:px-4 py-1.5 rounded-full text-xs sm:text-xs md:text-xs lg:text-sm font-bold uppercase tracking-wider"
           style={{ backgroundColor: item.lightColor, color: item.color }}
         >
+          {/* Tablet: md:text-xs (12px) instead of md:text-sm (14px) */}
           {item.tag}
         </span>
       </div>
-      <h3 className="text-2xl sm:text-3xl font-black mb-3 leading-tight break-words" style={{ color: item.color }}>
+      
+      <h3 className="text-2xl sm:text-3xl md:text-2xl lg:text-4xl font-black mb-3 leading-tight break-words" style={{ color: item.color }}>
+        {/* Tablet: md:text-2xl (24px) instead of md:text-4xl (36px) */}
         {item.title}
       </h3>
-      <p className="text-sm sm:text-base text-slate-600 mb-4 leading-relaxed break-words">
+      
+      <p className="text-base sm:text-base md:text-sm lg:text-lg text-slate-600 mb-4 leading-relaxed break-words">
+        {/* Tablet: md:text-sm (14px) instead of md:text-lg (18px) */}
         {item.description}
       </p>
+      
       <Link href={item.buttonLink}>
-        <button className="group inline-flex items-center gap-2 px-6 py-3 rounded-xl font-bold transition-all hover:opacity-90 text-white w-fit" style={{ backgroundColor: item.color }}>
+        <button 
+          className="group inline-flex items-center gap-2 px-6 py-3 rounded-xl font-bold transition-all hover:opacity-90 text-white w-fit text-base sm:text-base md:text-sm lg:text-base"
+          style={{ backgroundColor: item.color }}
+        >
+          {/* Tablet: md:text-sm (14px) */}
           <span>{item.buttonText}</span>
           <span className="group-hover:translate-x-1 transition-transform">→</span>
         </button>
@@ -228,11 +245,11 @@ const CardContent = ({ item }) => (
     </div>
 
     {/* Image Side - FOGGY BORDER ON ALL 4 SIDES */}
-    <div className="h-48 sm:h-56 md:h-auto md:flex-[1.2] relative order-1 md:order-2 flex items-center justify-center overflow-hidden">
+    <div className="h-56 sm:h-56 md:h-64 lg:h-auto md:flex-[1.2] relative order-1 md:order-2 flex items-center justify-center overflow-hidden">
+      {/* Tablet: md:h-64 for better proportion */}
       <div 
         className="relative w-full h-full"
         style={{
-          // Masking creates a soft "frame" by fading top, bottom, left, and right
           WebkitMaskImage: `
             linear-gradient(to bottom, transparent, black 15%, black 85%, transparent),
             linear-gradient(to right, transparent, black 15%, black 85%, transparent)

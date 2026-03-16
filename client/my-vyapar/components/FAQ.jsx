@@ -50,12 +50,13 @@ const FAQ = () => {
 
           {/* LEFT SIDE */}
           <div className="flex-1 mb-6 sm:mb-8 md:mb-0">
-            <h4 className="text-[#1e88e5] mb-2 sm:mb-3 text-base sm:text-base md:text-lg font-semibold uppercase tracking-wide">
-              {/* Changed from text-sm to text-base on mobile */}
+            <h4 className="text-[#1e88e5] mb-2 sm:mb-3 text-base sm:text-base md:text-sm lg:text-lg font-semibold uppercase tracking-wide">
+              {/* Tablet: md:text-sm (14px) instead of md:text-lg (18px) */}
               Questions & Answers
             </h4>
 
-            <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-slate-900 mb-4 sm:mb-6 tracking-tight leading-tight">
+            <h2 className="text-3xl sm:text-4xl md:text-4xl lg:text-5xl font-black text-slate-900 mb-4 sm:mb-6 tracking-tight leading-tight">
+              {/* Tablet: md:text-4xl (36px) instead of md:text-5xl (48px) */}
               Frequently asked
               <br className="hidden sm:block" />
               <span className="relative inline-block">
@@ -69,15 +70,15 @@ const FAQ = () => {
             </div>
 
             <div className="message">
-              <p className="text-xl sm:text-xl md:text-2xl mb-2 sm:mb-3 text-slate-900 font-semibold">
-                {/* Changed from text-lg to text-xl on mobile */}
+              <p className="text-xl sm:text-xl md:text-lg lg:text-2xl mb-2 sm:mb-3 text-slate-900 font-semibold">
+                {/* Tablet: md:text-lg (18px) instead of md:text-2xl (24px) */}
                 Don't get Answer?
               </p>
               <a
                 href="#contact"
-                className="text-[#1e88e5] text-xl sm:text-xl md:text-2xl no-underline hover:underline transition-all hover:text-blue-700 inline-block font-medium"
+                className="text-[#1e88e5] text-xl sm:text-xl md:text-lg lg:text-2xl no-underline hover:underline transition-all hover:text-blue-700 inline-block font-medium"
               >
-                {/* Changed from text-lg to text-xl on mobile */}
+                {/* Tablet: md:text-lg (18px) instead of md:text-2xl (24px) */}
                 Leave us a Message
               </a>
             </div>
@@ -106,15 +107,15 @@ const FAQ = () => {
                   }}
                   aria-expanded={activeIndex === index}
                 >
-                  <p className={`text-base sm:text-base md:text-lg font-semibold text-slate-900 leading-relaxed transition-colors ${
-                    /* Changed from text-sm to text-base on mobile */
+                  <p className={`text-base sm:text-base md:text-sm lg:text-lg font-semibold text-slate-900 leading-relaxed transition-colors ${
+                    /* Tablet: md:text-sm (14px) instead of md:text-lg (18px) */
                     activeIndex === index ? "text-[#1e88e5]" : "group-hover:text-[#1e88e5]"
                   }`}>
                     {item.question}
                   </p>
                   <span
-                    className={`text-2xl sm:text-2xl md:text-3xl text-[#1e88e5] transition-transform duration-300 flex-shrink-0 font-light ${
-                      /* Changed from text-xl to text-2xl on mobile */
+                    className={`text-2xl sm:text-2xl md:text-xl lg:text-3xl text-[#1e88e5] transition-transform duration-300 flex-shrink-0 font-light ${
+                      /* Tablet: md:text-xl (20px) instead of md:text-3xl (30px) */
                       activeIndex === index ? "rotate-180" : ""
                     }`}
                   >
@@ -129,8 +130,8 @@ const FAQ = () => {
                       : "max-h-0 pt-0"
                   }`}
                 >
-                  <div className="text-slate-600 text-sm sm:text-sm md:text-base leading-relaxed sm:leading-[1.7] border-t border-[#e0e0e0] pt-3 sm:pt-4">
-                    {/* Changed from text-xs to text-sm on mobile */}
+                  <div className="text-slate-600 text-sm sm:text-sm md:text-xs lg:text-base leading-relaxed sm:leading-[1.7] border-t border-[#e0e0e0] pt-3 sm:pt-4">
+                    {/* Tablet: md:text-xs (12px) instead of md:text-base (16px) */}
                     {item.answer}
                   </div>
                 </div>
@@ -139,8 +140,8 @@ const FAQ = () => {
 
             {/* CTA Button */}
             <div className="mt-8 sm:mt-10 md:mt-12 text-center lg:text-left">
-              <button className="w-full sm:w-auto bg-[#1e88e5] text-white px-6 sm:px-8 py-3 sm:py-3 rounded-lg sm:rounded-xl font-semibold text-base sm:text-base transition-all hover:bg-blue-700 hover:shadow-lg active:scale-95">
-                {/* Changed from text-sm to text-base on mobile, increased py for better touch target */}
+              <button className="w-full sm:w-auto bg-[#1e88e5] text-white px-6 sm:px-8 py-3 sm:py-3 rounded-lg sm:rounded-xl font-semibold text-base sm:text-base md:text-sm lg:text-base transition-all hover:bg-blue-700 hover:shadow-lg active:scale-95">
+                {/* Tablet: md:text-sm (14px) */}
                 Ask a Question
               </button>
             </div>

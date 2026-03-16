@@ -24,13 +24,13 @@ const Navbar = () => {
   };
 
   return (
-    <nav className="sticky top-0 bg-white shadow-md z-[1000] h-20 flex items-center px-5 lg:px-10">
+    <nav className="sticky top-0 bg-white shadow-md z-[1000] h-20 flex items-center px-4 sm:px-5 lg:px-10">
       <div className="max-w-[1400px] w-full mx-auto flex justify-between items-center h-full">
 
         {/* Logo */}
         <Link
           href="/"
-          className="flex items-center gap-2.5 transition-transform hover:scale-105"
+          className="flex items-center gap-2 transition-transform hover:scale-105"
           onClick={handleLogoClick}
         >
           <span className="bg-blue-600 text-white px-2.5 py-1 rounded text-2xl lg:text-3xl font-bold leading-none">
@@ -64,22 +64,10 @@ const Navbar = () => {
             }`}
         >
           <ul className="flex flex-col lg:flex-row list-none gap-0 lg:gap-5 m-0 p-0 items-start lg:items-center">
-            {[].map(
-              (item) => (
-                <li key={item} className="w-full lg:w-auto border-b lg:border-none border-slate-100">
-                  <button
-                    className="block py-4 lg:py-0 text-slate-500 font-medium text-sm transition-colors hover:text-blue-600 lg:border-b-2 lg:border-transparent lg:hover:border-blue-600 capitalize whitespace-nowrap w-full text-left"
-                    onClick={() => handleLinkClick(item)}
-                  >
-                    {item.replace(/-/g, " ")}
-                  </button>
-                </li>
-              )
-            )}
             <li className="w-full lg:w-auto border-b lg:border-none border-slate-100">
               <Link
                 href="/"
-                className="block py-4 lg:py-0 text-slate-500 font-medium text-sm transition-colors hover:text-blue-600 lg:border-b-2 lg:border-transparent lg:hover:border-blue-600 capitalize whitespace-nowrap w-full text-left"
+                className="block py-4 lg:py-0 text-slate-700 font-medium text-base lg:text-sm transition-colors hover:text-blue-600 lg:border-b-2 lg:border-transparent lg:hover:border-blue-600 capitalize w-full text-left px-2"
                 onClick={() => setIsMenuOpen(false)}
               >
                 Home
@@ -89,38 +77,27 @@ const Navbar = () => {
             <li className="w-full lg:w-auto border-b lg:border-none border-slate-100">
               <Link
                 href="/trymobile"
-                className="block py-4 lg:py-0 text-slate-500 font-medium text-sm transition-colors hover:text-blue-600 lg:border-b-2 lg:border-transparent lg:hover:border-blue-600 capitalize whitespace-nowrap w-full text-left"
+                className="block py-4 lg:py-0 text-slate-700 font-medium text-base lg:text-sm transition-colors hover:text-blue-600 lg:border-b-2 lg:border-transparent lg:hover:border-blue-600 capitalize w-full text-left px-2"
                 onClick={() => setIsMenuOpen(false)}
               >
                 Try Mobile App
               </Link>
             </li>
 
-             {/* <li className="w-full lg:w-auto border-b lg:border-none border-slate-100">
-              <Link
-                href="/desktop"
-                className="block py-4 lg:py-0 text-slate-500 font-medium text-sm transition-colors hover:text-blue-600 lg:border-b-2 lg:border-transparent lg:hover:border-blue-600 capitalize whitespace-nowrap w-full text-left"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                Desktop
-              </Link>
-            </li> */}
-
             <li className="w-full lg:w-auto border-b lg:border-none border-slate-100">
               <Link
                 href="/carrers"
-                className="block py-4 lg:py-0 text-slate-500 font-medium text-sm transition-colors hover:text-blue-600 lg:border-b-2 lg:border-transparent lg:hover:border-blue-600 capitalize whitespace-nowrap w-full text-left"
+                className="block py-4 lg:py-0 text-slate-700 font-medium text-base lg:text-sm transition-colors hover:text-blue-600 lg:border-b-2 lg:border-transparent lg:hover:border-blue-600 capitalize w-full text-left px-2"
                 onClick={() => setIsMenuOpen(false)}
               >
-                Carrers
+                Careers
               </Link>
             </li>
-
 
             <li className="w-full lg:w-auto border-b lg:border-none border-slate-100">
               <Link
                 href="/partner"
-                className="block py-4 lg:py-0 text-slate-500 font-medium text-sm transition-colors hover:text-blue-600 lg:border-b-2 lg:border-transparent lg:hover:border-blue-600 capitalize whitespace-nowrap w-full text-left"
+                className="block py-4 lg:py-0 text-slate-700 font-medium text-base lg:text-sm transition-colors hover:text-blue-600 lg:border-b-2 lg:border-transparent lg:hover:border-blue-600 capitalize w-full text-left px-2"
                 onClick={() => setIsMenuOpen(false)}
               >
                 Partner
@@ -130,7 +107,7 @@ const Navbar = () => {
             <li className="w-full lg:w-auto border-b lg:border-none border-slate-100">
               <Link
                 href="/solution"
-                className="block py-4 lg:py-0 text-slate-500 font-medium text-sm transition-colors hover:text-blue-600 lg:border-b-2 lg:border-transparent lg:hover:border-blue-600 capitalize whitespace-nowrap w-full text-left"
+                className="block py-4 lg:py-0 text-slate-700 font-medium text-base lg:text-sm transition-colors hover:text-blue-600 lg:border-b-2 lg:border-transparent lg:hover:border-blue-600 capitalize w-full text-left px-2"
                 onClick={() => setIsMenuOpen(false)}
               >
                 Solution
@@ -140,7 +117,7 @@ const Navbar = () => {
             <li className="w-full lg:w-auto border-b lg:border-none border-slate-100">
               <Link
                 href="/about"
-                className="block py-4 lg:py-0 text-slate-500 font-medium text-sm transition-colors hover:text-blue-600 lg:border-b-2 lg:border-transparent lg:hover:border-blue-600 capitalize whitespace-nowrap w-full text-left"
+                className="block py-4 lg:py-0 text-slate-700 font-medium text-base lg:text-sm transition-colors hover:text-blue-600 lg:border-b-2 lg:border-transparent lg:hover:border-blue-600 capitalize w-full text-left px-2"
                 onClick={() => setIsMenuOpen(false)}
               >
                 About Us
@@ -150,16 +127,17 @@ const Navbar = () => {
             <li className="w-full lg:w-auto border-b lg:border-none border-slate-100">
               <Link
                 href="/pricing"
-                className="block py-4 lg:py-0 text-slate-500 font-medium text-sm transition-colors hover:text-blue-600 lg:border-b-2 lg:border-transparent lg:hover:border-blue-600 capitalize whitespace-nowrap w-full text-left"
+                className="block py-4 lg:py-0 text-slate-700 font-medium text-base lg:text-sm transition-colors hover:text-blue-600 lg:border-b-2 lg:border-transparent lg:hover:border-blue-600 capitalize w-full text-left px-2"
                 onClick={() => setIsMenuOpen(false)}
               >
                 Pricing
               </Link>
             </li>
-             <li className="w-full lg:w-auto border-b lg:border-none border-slate-100">
+
+            <li className="w-full lg:w-auto border-b lg:border-none border-slate-100">
               <Link
                 href="/contact"
-                className="block py-4 lg:py-0 text-slate-500 font-medium text-sm transition-colors hover:text-blue-600 lg:border-b-2 lg:border-transparent lg:hover:border-blue-600 capitalize whitespace-nowrap w-full text-left"
+                className="block py-4 lg:py-0 text-slate-700 font-medium text-base lg:text-sm transition-colors hover:text-blue-600 lg:border-b-2 lg:border-transparent lg:hover:border-blue-600 capitalize w-full text-left px-2"
                 onClick={() => setIsMenuOpen(false)}
               >
                 Contact us
@@ -168,11 +146,10 @@ const Navbar = () => {
           </ul>
 
           {/* CTA Buttons */}
-          <div className="flex flex-col lg:flex-row items-center gap-4 mt-5 lg:mt-0">
-
+          <div className="flex flex-col lg:flex-row items-center gap-3 mt-5 lg:mt-0 px-2">
             <Link
               href="/bookdemo"
-              className="w-full lg:w-auto flex items-center justify-center gap-2 px-4 h-10 bg-gradient-to-br from-blue-500 to-purple-600 text-white rounded-full font-semibold text-sm transition-all hover:-translate-y-0.5 hover:shadow-[0_5px_15px_rgba(59,130,246,0.3)] whitespace-nowrap"
+              className="w-full lg:w-auto flex items-center justify-center gap-2 px-5 h-12 lg:h-10 bg-gradient-to-br from-blue-500 to-purple-600 text-white rounded-full font-semibold text-base lg:text-sm transition-all hover:-translate-y-0.5 hover:shadow-[0_5px_15px_rgba(59,130,246,0.3)] whitespace-nowrap"
               onClick={() => setIsMenuOpen(false)}
             >
               Book free demo
@@ -180,7 +157,7 @@ const Navbar = () => {
 
             <Link
               href="/login"
-              className="w-full lg:w-auto px-6 h-10 bg-blue-600 text-white rounded-full font-semibold text-sm transition-all hover:bg-blue-700 hover:-translate-y-0.5 flex items-center justify-center"
+              className="w-full lg:w-auto px-6 h-12 lg:h-10 bg-blue-600 text-white rounded-full font-semibold text-base lg:text-sm transition-all hover:bg-blue-700 hover:-translate-y-0.5 flex items-center justify-center"
               onClick={() => setIsMenuOpen(false)}
             >
               Login
