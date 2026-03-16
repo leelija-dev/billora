@@ -76,7 +76,7 @@ Route::middleware('auth:sanctum')->prefix('brands')->group(function () {
    Route::delete('/{id}', [BrandController::class, 'delete']);
 });
 //invoices & bill generate from stock table(stock management)
-Route::prefix('invoice')->group(function () {
+Route::middleware('auth:sanctum')->prefix('invoice')->group(function () {
    Route::get('/', [InvoiceController::class, 'index']); //for bill generate
    Route::post('/store', [InvoiceController::class, 'store']);
    Route::put('/{id}', [InvoiceController::class, 'update']);
@@ -95,7 +95,7 @@ Route::prefix('invoices')->group(function () {
 
 
 // store or shop
-Route::prefix('store')->group(function () {
+Route::middleware('auth:sanctum')->prefix('store')->group(function () {
    Route::get('/{id}', [StoreController::class, 'index']);
    Route::post('/store', [StoreController::class, 'store']);
    Route::get('/edit/{id}', [StoreController::class, 'edit']);

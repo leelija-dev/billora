@@ -10,6 +10,7 @@ class BillCustomerController extends Controller
 {
     public function index(Request $request, $id)
     {
+        
         $search = $request->search;
         $billCustomer = BillCustomer::where('admin_id', $id)
         ->where('name', 'like', "%$search%")
