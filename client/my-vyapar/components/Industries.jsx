@@ -13,7 +13,9 @@ const INDUSTRY_DATA = [
   { id: 2, tag: "Growth", title: "Empower Growth", description: "Scale your business with powerful accounting tools that provide deep insights into your financial health.", buttonText: "Scale Now", buttonLink: "/solutions/growth", icon: "📈", color: "#6366f1", lightColor: "#eef2ff", image: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=1200&q=80" },
   { id: 3, tag: "Compliance", title: "GSTR Filing", description: "Simplify GST returns with automated filing systems that ensure accuracy and save hours of manual work.", buttonText: "Start Filing", buttonLink: "/solutions/gstr", icon: "📑", color: "#7bb2cc", lightColor: "#f1f7f9", image: "https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?auto=format&fit=crop&w=1200&q=80" },
   { id: 4, tag: "Operations", title: "Unite Industries", description: "Connect all your business operations seamlessly in one unified platform, from inventory to final sale.", buttonText: "Connect All", buttonLink: "/solutions/unite", icon: "🔗", color: "#4b5563", lightColor: "#f3f4f6", image: "https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=1200&q=80" },
-  ];
+  { id: 5, tag: "Reach", title: "Expand Reach", description: "Grow your customer base with professional digital invoices and integrated payment gateways.", buttonText: "Grow Reach", buttonLink: "/solutions/expand", icon: "🌍", color: "#4b22c5", lightColor: "#eeebf9", image: "https://images.unsplash.com/photo-1542744173-8e7e53415bb0?auto=format&fit=crop&w=1200&q=80" },
+  
+];
 
 const IndustrySection = () => {
   const containerRef = useRef(null);
@@ -30,7 +32,6 @@ const IndustrySection = () => {
   });
 
   return (
-    /* Added mb-5 for 20px margin below the whole component */
     <section ref={containerRef} className="relative h-[1100vh] bg-white mb-5">
       <div className="sticky top-0 h-screen w-full flex flex-col items-center justify-center overflow-hidden px-4 sm:px-6 md:px-8 lg:px-10">
         
@@ -81,10 +82,8 @@ const IndustryCard = ({ item, index, total, progress }) => {
       style={{ y, scale, opacity, zIndex: index + 10 }}
       className="absolute inset-0 w-full h-full"
     >
-      <div 
-        className="w-full h-full bg-white rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.1)] border border-slate-100 flex flex-col md:flex-row overflow-hidden"
-        style={{ borderTop: `4px solid ${item.color}` }}
-      >
+      {/* Removed shadow-*, border, and borderTop */}
+      <div className="w-full h-full bg-white rounded-3xl flex flex-col md:flex-row overflow-hidden">
         <div className="flex-1 p-6 sm:p-10 md:p-12 lg:p-16 flex flex-col justify-center order-2 md:order-1">
           <div className="flex items-center gap-4 mb-4">
             <span className="text-4xl md:text-5xl">{item.icon}</span>
@@ -103,7 +102,7 @@ const IndustryCard = ({ item, index, total, progress }) => {
           </p>
           <Link href={item.buttonLink}>
             <button 
-              className="group px-6 md:px-8 py-3 md:py-4 rounded-xl font-bold transition-all flex items-center gap-2 hover:shadow-lg text-white"
+              className="group px-6 md:px-8 py-3 md:py-4 rounded-xl font-bold transition-all flex items-center gap-2 hover:opacity-90 text-white"
               style={{ backgroundColor: item.color }}
             >
               {item.buttonText}
