@@ -29,7 +29,20 @@
     "components/**/*.jsx",
     "app/**/*.jsx",
     ".next/types/**/*.ts",
+<<<<<<< HEAD
     ".next/dev/types/**/*.ts"
   ],
   "exclude": ["node_modules"]
 } 
+=======
+    ".next/dev/types/**/*.ts",
+    "**/*.mts",
+    "components/**/*.tsx",
+    "components/**/*.jsx"
+      ],
+  "exclude": ["node_modules"]
+}
+
+
+
+>>>>>>> 9bfd81b (my second git push)
