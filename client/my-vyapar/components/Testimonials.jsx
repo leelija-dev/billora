@@ -42,23 +42,23 @@ const Testimonials = () => {
 
   return (
     <section 
-      className="py-12 sm:py-16 md:py-16 lg:py-24 bg-[#f8fafc] overflow-hidden font-sans"
+      className="py-12 sm:py-16 md:py-14 lg:py-24 bg-[#f8fafc] overflow-hidden font-sans"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      <Container>
+      <Container size="default">
         <div className="w-full text-center px-4 sm:px-0">
-          {/* Header - Optimized for tablet */}
+          {/* Header */}
           <SectionTitle 
             title="They succeeded online, now it's your turn"
           />
-          <p className="text-slate-500 text-base sm:text-base md:text-sm lg:text-lg mb-8 sm:mb-12 md:mb-10 lg:mb-16">
-            {/* Tablet: md:text-sm (14px) instead of md:text-lg (18px) */}
+          <p className="text-slate-500 text-base sm:text-base md:text-sm lg:text-lg mb-8 sm:mb-12 md:mb-8 lg:mb-16">
+            {/* Tablet: md:text-sm (14px) */}
             Deep-dive into how we empower businesses.
           </p>
 
           {/* Testimonial Carousel */}
-          <div className="relative h-auto min-h-[450px] sm:min-h-[450px] md:min-h-[400px] lg:min-h-[500px] w-full flex items-center justify-center [perspective:1200px] [transform-style:preserve-3d]">
+          <div className="relative h-auto min-h-[450px] sm:min-h-[450px] md:min-h-[380px] lg:min-h-[500px] w-full flex items-center justify-center [perspective:1200px] [transform-style:preserve-3d]">
             {testimonials.map((item, index) => {
               let position = "hidden";
               if (index === currentIndex) position = "active";
@@ -81,29 +81,29 @@ const Testimonials = () => {
             })}
           </div>
 
-          {/* Controls - Optimized for tablet */}
-          <div className="flex flex-col items-center gap-6 sm:gap-8 md:gap-6 mt-8 sm:mt-10 md:mt-8 lg:mt-12">
+          {/* Controls */}
+          <div className="flex flex-col items-center gap-6 sm:gap-8 md:gap-5 lg:gap-8 mt-8 sm:mt-10 md:mt-6 lg:mt-12">
             
             {/* Navigation Buttons */}
-            <div className="flex gap-4 sm:gap-4 md:gap-3">
+            <div className="flex gap-4 sm:gap-4 md:gap-2 lg:gap-4">
               <button 
                 onClick={handlePrev}
-                className="group p-3 sm:p-3 md:p-2 lg:p-4 bg-white border border-slate-200 rounded-xl sm:rounded-2xl shadow-sm hover:bg-blue-600 transition-all duration-300 active:scale-95"
+                className="group p-3 sm:p-3 md:p-1.5 lg:p-4 bg-white border border-slate-200 rounded-xl sm:rounded-2xl shadow-sm hover:bg-blue-600 transition-all duration-300 active:scale-95"
                 aria-label="Previous testimonial"
               >
-                <span className="text-base sm:text-base md:text-sm lg:text-base text-slate-600 group-hover:text-white transition-colors">←</span>
+                <span className="text-base sm:text-base md:text-xs lg:text-base text-slate-600 group-hover:text-white transition-colors">←</span>
               </button> 
               <button   
                 onClick={handleNext}
-                className="group p-3 sm:p-3 md:p-2 lg:p-4 bg-white border border-slate-200 rounded-xl sm:rounded-2xl shadow-sm hover:bg-blue-600 transition-all duration-300 active:scale-95"
+                className="group p-3 sm:p-3 md:p-1.5 lg:p-4 bg-white border border-slate-200 rounded-xl sm:rounded-2xl shadow-sm hover:bg-blue-600 transition-all duration-300 active:scale-95"
                 aria-label="Next testimonial"
               >
-                <span className="text-base sm:text-base md:text-sm lg:text-base text-slate-600 group-hover:text-white transition-colors">→</span>
+                <span className="text-base sm:text-base md:text-xs lg:text-base text-slate-600 group-hover:text-white transition-colors">→</span>
               </button>
             </div>
             
             {/* Dot Indicators */}
-            <div className="flex gap-2 sm:gap-3 md:gap-2 justify-center flex-wrap">
+            <div className="flex gap-2 sm:gap-3 md:gap-1.5 lg:gap-3 justify-center flex-wrap">
               {testimonials.map((_, i) => (
                 <button
                   key={i}
@@ -114,8 +114,8 @@ const Testimonials = () => {
                       setTimeout(() => setIsAnimating(false), 600);
                     }
                   }}
-                  className={`h-2 sm:h-2 md:h-1.5 lg:h-2 rounded-full transition-all duration-500 outline-none focus:ring-2 focus:ring-blue-600 ${
-                    i === currentIndex ? "w-8 sm:w-12 md:w-6 lg:w-12 bg-blue-600" : "w-2 sm:w-3 md:w-1.5 lg:w-3 bg-slate-300 hover:bg-slate-400"
+                  className={`h-2 sm:h-2 md:h-1 lg:h-2 rounded-full transition-all duration-500 outline-none focus:ring-2 focus:ring-blue-600 ${
+                    i === currentIndex ? "w-8 sm:w-12 md:w-5 lg:w-12 bg-blue-600" : "w-2 sm:w-3 md:w-1 lg:w-3 bg-slate-300 hover:bg-slate-400"
                   }`}
                   aria-label={`Go to testimonial ${i + 1}`}
                   aria-current={i === currentIndex}
@@ -135,33 +135,33 @@ const Testimonials = () => {
 };
 
 const Card = ({ data, isActive }) => (
-  <div className={`bg-white rounded-2xl sm:rounded-3xl p-6 sm:p-8 md:p-6 lg:p-10 text-left border border-slate-100 shadow-[0_20px_50px_rgba(0,0,0,0.05)] transition-all ${!isActive && "pointer-events-none"}`}>
+  <div className={`bg-white rounded-2xl sm:rounded-3xl p-6 sm:p-8 md:p-5 lg:p-10 text-left border border-slate-100 shadow-[0_20px_50px_rgba(0,0,0,0.05)] transition-all ${!isActive && "pointer-events-none"}`}>
     
-    {/* Avatar & Info - Optimized for tablet */}
-    <div className="flex items-center gap-4 sm:gap-4 md:gap-3 lg:gap-4 mb-6 sm:mb-8 md:mb-5 lg:mb-8">
-      <div className="w-14 h-14 sm:w-14 sm:h-14 md:w-10 md:h-10 lg:w-16 lg:h-16 rounded-lg sm:rounded-2xl bg-blue-600 flex items-center justify-center text-3xl sm:text-3xl md:text-xl lg:text-3xl shadow-lg shadow-blue-200 flex-shrink-0">
+    {/* Avatar & Info */}
+    <div className="flex items-center gap-4 sm:gap-4 md:gap-2 lg:gap-4 mb-6 sm:mb-8 md:mb-4 lg:mb-8">
+      <div className="w-14 h-14 sm:w-14 sm:h-14 md:w-9 md:h-9 lg:w-16 lg:h-16 rounded-lg sm:rounded-2xl bg-blue-600 flex items-center justify-center text-3xl sm:text-3xl md:text-lg lg:text-3xl shadow-lg shadow-blue-200 flex-shrink-0">
         {data.avatar}
       </div>
       <div className="min-w-0">
-        <h4 className="font-bold text-xl sm:text-xl md:text-base lg:text-2xl text-slate-900 leading-tight truncate">{data.name}</h4>
-        <p className="text-blue-600 font-medium text-sm sm:text-sm md:text-xs lg:text-base truncate">{data.role} @ {data.company}</p>
+        <h4 className="font-bold text-xl sm:text-xl md:text-sm lg:text-2xl text-slate-900 leading-tight truncate">{data.name}</h4>
+        <p className="text-blue-600 font-medium text-sm sm:text-sm md:text-[10px] lg:text-base truncate">{data.role} @ {data.company}</p>
       </div>
     </div>
     
-    {/* Review Text - Optimized for tablet */}
+    {/* Review Text */}
     <div className="relative">
-      <span className="absolute -top-3 sm:-top-4 md:-top-2 lg:-top-4 -left-1 sm:-left-2 md:-left-1 lg:-left-2 text-5xl sm:text-5xl md:text-4xl lg:text-6xl text-slate-100 font-serif leading-none">"</span>
+      <span className="absolute -top-3 sm:-top-4 md:-top-2 lg:-top-4 -left-1 sm:-left-2 md:-left-1 lg:-left-2 text-5xl sm:text-5xl md:text-3xl lg:text-6xl text-slate-100 font-serif leading-none">"</span>
       <p className="relative z-10 text-slate-600 text-base sm:text-base md:text-sm lg:text-lg leading-relaxed italic pl-2">
         {data.review}
       </p>
     </div>
 
-    {/* Footer Info - Optimized for tablet */}
-    <div className="mt-6 sm:mt-8 md:mt-5 lg:mt-8 pt-6 sm:pt-8 md:pt-5 lg:pt-8 border-t border-slate-50 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4 md:gap-2 lg:gap-4">
-      <span className="flex items-center gap-1.5 sm:gap-2 md:gap-1 lg:gap-2 text-sm sm:text-sm md:text-xs lg:text-sm text-slate-400">
+    {/* Footer Info */}
+    <div className="mt-6 sm:mt-8 md:mt-4 lg:mt-8 pt-6 sm:pt-8 md:pt-4 lg:pt-8 border-t border-slate-50 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4 md:gap-1 lg:gap-4">
+      <span className="flex items-center gap-1.5 sm:gap-2 md:gap-1 lg:gap-2 text-sm sm:text-sm md:text-[9px] lg:text-sm text-slate-400">
         📍 <span className="truncate">{data.location}</span>
       </span>
-      <span className="bg-slate-50 px-3 sm:px-3 md:px-2 lg:px-3 py-1.5 rounded-full text-xs sm:text-xs md:text-[10px] lg:text-xs font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap">
+      <span className="bg-slate-50 px-3 sm:px-3 md:px-1.5 lg:px-3 py-1.5 rounded-full text-xs sm:text-xs md:text-[8px] lg:text-xs font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap">
         {data.yearsWithUs}
       </span>
     </div>

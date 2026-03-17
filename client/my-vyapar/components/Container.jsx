@@ -3,16 +3,13 @@ import React from 'react';
 
 const Container = ({ 
   children, 
-  className = '',
-  maxWidth = 'max-w-[1300px]',
-  padding = 'px-4 sm:px-6 md:px-8',
-  fluid = false
+  className = '' 
 }) => {
   return (
     <div className={`
       w-full mx-auto
-      ${!fluid ? maxWidth : 'max-w-full'}
-      ${padding}
+      max-w-[1400px]           /* Match navbar's max-w */
+      px-4 sm:px-5 lg:px-10    /* Match navbar's padding */
       ${className}
     `}>
       {children}
