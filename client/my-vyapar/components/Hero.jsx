@@ -62,6 +62,11 @@ const Hero = () => {
             from { opacity: 0; }
             to { opacity: 1; }
           }
+          @keyframes pulse-glow {
+            0% { box-shadow: 0 10px 30px -10px rgba(99, 102, 241, 0.3); }
+            50% { box-shadow: 0 10px 40px -5px rgba(99, 102, 241, 0.8); }
+            100% { box-shadow: 0 10px 30px -10px rgba(99, 102, 241, 0.3); }
+          }
 
           .liquid-btn-container {
             position: relative;
@@ -77,6 +82,10 @@ const Hero = () => {
             justify-content: center;
             transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
           }
+          .liquid-btn-container:hover {
+            transform: scale(1.05);
+            animation: pulse-glow 2s infinite;
+          }
           .liquid-btn-container::before {
             content: "";
             position: absolute;
@@ -84,6 +93,11 @@ const Hero = () => {
             height: 300%;
             background: conic-gradient(from 0deg, transparent 0%, #3b82f6 10%, #8b5cf6 20%, #10b981 30%, transparent 40%);
             animation: liquid-flow 3s linear infinite;
+            transition: opacity 0.3s ease;
+          }
+          .liquid-btn-container:hover::before {
+            opacity: 1.2;
+            filter: brightness(1.2);
           }
           .billora-btn {
             position: relative;
@@ -93,6 +107,11 @@ const Hero = () => {
             border-radius: 50px;
             background: linear-gradient(135deg, #6366f1, #a855f7);
             color: white; font-weight: 700; display: flex; align-items: center; justify-content: center;
+            transition: all 0.3s ease;
+          }
+          .liquid-btn-container:hover .billora-btn {
+            background: linear-gradient(135deg, #4f46e5, #9333ea);
+            letter-spacing: 1px;
           }
           
           .heroic-slide-pc { animation: heroicSlidePC 1.2s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
