@@ -133,6 +133,7 @@ export default function ProductsPage() {
             {/* RATING */}
             <div>
               <h3 className="font-semibold mb-2">Rating</h3>
+              
               {[5, 4, 3].map((r) => (
                 <button
                   key={r}
