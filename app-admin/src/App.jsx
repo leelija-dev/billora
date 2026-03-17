@@ -266,10 +266,10 @@ const AppContent = () => {
 
 export default function App() {
   return (
-    <SafeAreaProvider>
-      <ThemeProvider>
+    <ThemeProvider>
+      <SafeAreaProvider>
         <AppContent />
-      </ThemeProvider>
-    </SafeAreaProvider>
+      </SafeAreaProvider>
+    </ThemeProvider>
   );
 }
