@@ -81,35 +81,28 @@ const IndustrySection = () => {
     offset: ["start start", "end end"],
   });
 
+  // More responsive spring for smoother animation
   const smoothProgress = useSpring(scrollYProgress, {
-    stiffness: 70,
-    damping: 30,
+    stiffness: 100, // Increased from 70 for faster response
+    damping: 25,    // Adjusted for smoother movement
     restDelta: 0.001,
   });
 
   return (
     <section ref={containerRef} className="relative h-[800vh] bg-white">
       <div className="sticky top-0 h-screen w-full flex flex-col overflow-hidden">
-
-        {/* Header Section - Optimized for tablet */}
-        <div className="h-[30vh] flex items-end justify-center pb-16 z-20">
-          <Container>
-            <div className="text-center px-4 sm:px-6">
-              <h2 className="text-2xl sm:text-3xl md:text-3xl lg:text-[42px] font-bold text-[#1a237e] mb-4 relative inline-block animate-[fadeInDown_0.8s_ease-out] after:content-[''] after:absolute after:bottom-[-8px] sm:after:bottom-[-12px] after:left-1/2 after:-translate-x-1/2 after:w-16 sm:after:w-[80px] md:after:w-[80px] lg:after:w-[100px] after:h-0.5 sm:after:h-1 after:bg-gradient-to-r after:from-[#3b82f6] after:via-[#8b5cf6] after:to-[#10b981] after:rounded-[2px]">
-                {/* Tablet: md:text-3xl (30px) instead of md:text-4xl (36px) */}
+        <div className="h-[30vh] flex items-end justify-center pb-12 z-20">
+          <Container size="full">
+            <div className="text-center max-w-5xl mx-auto">
+              <h2 className="text-3xl md:text-[42px] font-[900] text-[#1a237e] mb-4 relative inline-block tracking-tight after:content-[''] after:absolute after:bottom-[-12px] after:left-1/2 after:-translate-x-1/2 after:w-[100px] after:h-1 after:bg-gradient-to-r after:from-[#3b82f6] after:via-[#8b5cf6] after:to-[#10b981] after:rounded-full">
                 Supporting businesses from a wide range of industries
               </h2>
-              <p className="text-base sm:text-base md:text-sm lg:text-lg text-slate-500 mt-6 px-4">
-                {/* Tablet: md:text-sm (14px) instead of md:text-lg (18px) */}
-                Scroll to explore our specialized solutions
-              </p>
             </div>
           </Container>
         </div>
 
-        {/* Cards Container */}
-        <div className="h-[55vh] flex items-center justify-center z-10">
-          <div className="w-full max-w-[1400px] mx-auto px-4 sm:px-6 md:px-8 lg:px-10 relative h-full">
+        <div className="h-[60vh] flex items-center justify-center z-10">
+          <div className="w-full max-w-[1440px] mx-auto px-4 md:px-10 relative h-full">
             {INDUSTRY_DATA.map((industry, index) => (
               <IndustryCard
                 key={industry.id}
@@ -122,42 +115,70 @@ const IndustrySection = () => {
           </div>
         </div>
 
-        {/* Bottom Spacer */}
-        <div className="h-[15vh]"></div>
-
-        <style>{`
-          @keyframes fadeInDown {
-            from { opacity: 0; transform: translateY(-30px); }
-            to { opacity: 1; transform: translateY(0); }
-          }
-        `}</style>
+        <div className="h-[10vh]"></div>
       </div>
     </section>
   );
 };
 
 const IndustryCard = ({ item, index, total, progress }) => {
-  const cardScrollSpace = 0.15;
+  // Adjusted scroll space - each card gets less space for faster transitions
+  const cardScrollSpace = 0.12; // Reduced from 0.15
   const start = index * cardScrollSpace;
   const end = (index + 1) * cardScrollSpace;
+  
+  // Cards start appearing earlier and transition faster
+  const appearStart = start;
+  const appearEnd = start + 0.06; // Faster appearance (was 0.12)
+  
+  // Cards start disappearing earlier
+  const disappearStart = end - 0.04; // Earlier disappearance (was end - 0.03)
+  const disappearEnd = end + 0.02; // Faster disappearance (was end + 0.07)
 
-  if (index < total - 1) {
-    const yIn = useTransform(progress, [start, end - 0.03], index === 0 ? [0, 0] : [200, 0]);
-    const scaleIn = useTransform(progress, [start, end - 0.03], index === 0 ? [1, 1] : [0.6, 1]);
-    const opacityIn = useTransform(progress, [start, end - 0.03], index === 0 ? [1, 1] : [0, 1]);
+  const isLast = index === total - 1;
 
-    const yHold = useTransform(progress, [end - 0.03, end + 0.02], [0, 0]);
-    const opacityHold = useTransform(progress, [end - 0.03, end + 0.02], [1, 1]);
+  // Animation Transforms - smoother curves
+  const yIn = useTransform(
+    progress, 
+    [appearStart, appearEnd], 
+    index === 0 ? [0, 0] : [150, 0] // Reduced from 200 for smoother entry
+  );
+  
+  const scaleIn = useTransform(
+    progress, 
+    [appearStart, appearEnd], 
+    index === 0 ? [1, 1] : [0.7, 1] // Less dramatic scale (was 0.6)
+  );
+  
+  const opacityIn = useTransform(
+    progress, 
+    [appearStart, appearEnd], 
+    index === 0 ? [1, 1] : [0, 1]
+  );
+  
+  const yOut = useTransform(
+    progress, 
+    [disappearStart, disappearEnd], 
+    [0, -80] // Less dramatic exit (was -100)
+  );
+  
+  const opacityOut = useTransform(
+    progress, 
+    [disappearStart, disappearEnd], 
+    [1, 0]
+  );
 
-    const yOut = useTransform(progress, [end + 0.02, end + 0.07], [0, -100]);
-    const opacityOut = useTransform(progress, [end + 0.02, end + 0.07], [1, 0]);
+  // For non-last cards
+  if (!isLast) {
+    const currentY = progress.get() > disappearStart ? yOut : yIn;
+    const currentOpacity = progress.get() > disappearStart ? opacityOut : opacityIn;
 
     return (
       <motion.div
         style={{
-          y: progress.get() < end - 0.03 ? yIn : (progress.get() < end + 0.02 ? yHold : yOut),
+          y: currentY,
           scale: scaleIn,
-          opacity: progress.get() < end - 0.03 ? opacityIn : (progress.get() < end + 0.02 ? opacityHold : opacityOut),
+          opacity: currentOpacity,
           zIndex: index + 10,
           position: 'absolute',
           inset: 0,
@@ -166,7 +187,8 @@ const IndustryCard = ({ item, index, total, progress }) => {
           height: '100%',
           display: 'flex',
           alignItems: 'center',
-          justifyContent: 'center'
+          justifyContent: 'center',
+          transition: 'all 0.2s ease-out' // Smooth transition
         }}
       >
         <CardContent item={item} />
@@ -174,21 +196,31 @@ const IndustryCard = ({ item, index, total, progress }) => {
     );
   }
 
+  // For last card - smoother exit
   const lastCardStart = index * cardScrollSpace;
-  const lastCardFullyVisible = 0.75;
-  const y = useTransform(progress, [lastCardStart, lastCardFullyVisible], [200, 0]);
-  const scale = useTransform(progress, [lastCardStart, lastCardFullyVisible], [0.6, 1]);
-  const opacity = useTransform(progress, [lastCardStart, lastCardFullyVisible], [0, 1]);
-  const holdY = useTransform(progress, [0.75, 0.95], [0, 0]);
-  const holdOpacity = useTransform(progress, [0.75, 0.95], [1, 1]);
-  const exitOpacity = useTransform(progress, [0.95, 1], [1, 0]);
+  const lastCardAppearEnd = lastCardStart + 0.06;
+  const lastCardHoldEnd = 0.88; // Hold until 88% (was 0.95)
+  const lastCardExitEnd = 0.96; // Exit faster (was 1.0)
+
+  const yLast = useTransform(progress, [lastCardStart, lastCardAppearEnd], [150, 0]);
+  const scaleLast = useTransform(progress, [lastCardStart, lastCardAppearEnd], [0.7, 1]);
+  const opacityLast = useTransform(progress, [lastCardStart, lastCardAppearEnd], [0, 1]);
+  
+  const holdY = useTransform(progress, [lastCardAppearEnd, lastCardHoldEnd], [0, 0]);
+  const holdOpacity = useTransform(progress, [lastCardAppearEnd, lastCardHoldEnd], [1, 1]);
+  
+  const exitOpacity = useTransform(progress, [lastCardHoldEnd, lastCardExitEnd], [1, 0]);
+
+  const currentY = progress.get() < lastCardAppearEnd ? yLast : holdY;
+  const currentOpacity = progress.get() < lastCardAppearEnd ? opacityLast : 
+                         progress.get() < lastCardHoldEnd ? holdOpacity : exitOpacity;
 
   return (
     <motion.div
       style={{
-        y: progress.get() < 0.75 ? y : holdY,
-        scale,
-        opacity: progress.get() < 0.75 ? opacity : (progress.get() < 0.95 ? holdOpacity : exitOpacity),
+        y: currentY,
+        scale: scaleLast,
+        opacity: currentOpacity,
         zIndex: index + 10,
         position: 'absolute',
         inset: 0,
@@ -197,7 +229,8 @@ const IndustryCard = ({ item, index, total, progress }) => {
         height: '100%',
         display: 'flex',
         alignItems: 'center',
-        justifyContent: 'center'
+        justifyContent: 'center',
+        transition: 'all 0.2s ease-out'
       }}
     >
       <CardContent item={item} />
@@ -206,57 +239,57 @@ const IndustryCard = ({ item, index, total, progress }) => {
 };
 
 const CardContent = ({ item }) => (
-  <div className="w-full max-w-5xl bg-white flex flex-col md:flex-row mx-auto overflow-hidden" style={{ height: 'min(550px, 75vh)' }}>
-
-    {/* Content Side - Optimized for tablet */}
-    <div className="flex-1 p-6 sm:p-8 md:p-8 lg:p-10 flex flex-col justify-center order-2 md:order-1 overflow-y-auto">
-      <div className="flex items-center gap-3 sm:gap-4 mb-4">
-        <span className="text-4xl sm:text-4xl md:text-4xl lg:text-5xl">{item.icon}</span>
-        {/* Tablet: md:text-4xl (36px) instead of md:text-5xl (48px) */}
+  <div 
+    className="w-full max-w-6xl bg-white flex flex-col md:flex-row mx-auto overflow-hidden rounded-[40px]" 
+    style={{ height: 'min(600px, 75vh)' }}
+  >
+    <div className="flex-1 p-10 lg:p-20 flex flex-col justify-center order-2 md:order-1 bg-white">
+      <div className="flex items-center gap-4 mb-8">
+        <span className="text-5xl">{item.icon}</span>
         <span
-          className="px-3 sm:px-4 py-1.5 rounded-full text-xs sm:text-xs md:text-xs lg:text-sm font-bold uppercase tracking-wider"
+          className="px-5 py-2 rounded-full text-xs font-[900] uppercase tracking-[0.2em]"
           style={{ backgroundColor: item.lightColor, color: item.color }}
         >
-          {/* Tablet: md:text-xs (12px) instead of md:text-sm (14px) */}
           {item.tag}
         </span>
       </div>
       
-      <h3 className="text-2xl sm:text-3xl md:text-2xl lg:text-4xl font-black mb-3 leading-tight break-words" style={{ color: item.color }}>
-        {/* Tablet: md:text-2xl (24px) instead of md:text-4xl (36px) */}
+      <h3 className="text-4xl lg:text-[64px] font-[900] text-[#0f172a] mb-8 leading-[1] tracking-[-0.04em]">
         {item.title}
       </h3>
       
-      <p className="text-base sm:text-base md:text-sm lg:text-lg text-slate-600 mb-4 leading-relaxed break-words">
-        {/* Tablet: md:text-sm (14px) instead of md:text-lg (18px) */}
+      <p className="text-lg lg:text-xl text-slate-500 mb-10 leading-relaxed max-w-[90%]">
         {item.description}
       </p>
       
       <Link href={item.buttonLink}>
         <button 
-          className="group inline-flex items-center gap-2 px-6 py-3 rounded-xl font-bold transition-all hover:opacity-90 text-white w-fit text-base sm:text-base md:text-sm lg:text-base"
-          style={{ backgroundColor: item.color }}
+          className="group inline-flex items-center gap-3 px-10 py-5 rounded-2xl font-[900] transition-all hover:scale-105 active:scale-95 text-white w-fit text-xl"
+          style={{ 
+            backgroundColor: item.color,
+            boxShadow: `0 20px 40px -10px ${item.color}66`
+          }}
         >
-          {/* Tablet: md:text-sm (14px) */}
           <span>{item.buttonText}</span>
-          <span className="group-hover:translate-x-1 transition-transform">→</span>
+          <span className="group-hover:translate-x-2 transition-transform">→</span>
         </button>
       </Link>
     </div>
 
-    {/* Image Side - FOGGY BORDER ON ALL 4 SIDES */}
-    <div className="h-56 sm:h-56 md:h-64 lg:h-auto md:flex-[1.2] relative order-1 md:order-2 flex items-center justify-center overflow-hidden">
-      {/* Tablet: md:h-64 for better proportion */}
+    {/* Image Side - With Faded White Border Effect */}
+    <div className="h-64 md:h-full md:flex-[1.2] relative order-1 md:order-2 overflow-hidden bg-slate-50">
+      
+      {/* Main image with mask for fade effect on all edges */}
       <div 
         className="relative w-full h-full"
         style={{
           WebkitMaskImage: `
-            linear-gradient(to bottom, transparent, black 15%, black 85%, transparent),
-            linear-gradient(to right, transparent, black 15%, black 85%, transparent)
+            linear-gradient(to bottom, transparent, black 10%, black 90%, transparent),
+            linear-gradient(to right, transparent, black 10%, black 90%, transparent)
           `,
           maskImage: `
-            linear-gradient(to bottom, transparent, black 15%, black 85%, transparent),
-            linear-gradient(to right, transparent, black 15%, black 85%, transparent)
+            linear-gradient(to bottom, transparent, black 10%, black 90%, transparent),
+            linear-gradient(to right, transparent, black 10%, black 90%, transparent)
           `,
           WebkitMaskComposite: 'source-in',
           maskComposite: 'intersect',
@@ -266,14 +299,21 @@ const CardContent = ({ item }) => (
           src={item.image}
           alt={item.title}
           className="w-full h-full object-cover"
-          style={{ border: 'none', display: 'block' }}
         />
       </div>
 
-      {/* Center "Cloud" layer for depth */}
+      {/* Soft white glow overlay for dreamy effect */}
+      <div className="absolute inset-0 pointer-events-none mix-blend-overlay"
+        style={{
+          background: 'radial-gradient(circle at 50% 50%, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0.4) 50%, rgba(255,255,255,0.2) 100%)',
+        }}
+      />
+
+      {/* Very subtle vignette for depth */}
       <div className="absolute inset-0 pointer-events-none"
         style={{
-          background: 'radial-gradient(circle at center, rgba(255,255,255,0) 20%, rgba(255,255,255,0.4) 100%)',
+          boxShadow: 'inset 0 0 50px rgba(255,255,255,0.3)',
+          borderRadius: 'inherit'
         }}
       />
     </div>

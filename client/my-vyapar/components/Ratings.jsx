@@ -36,7 +36,7 @@ const Ratings = () => {
   const averageRating = ((rating * (voteCount - 1) + rating) / voteCount).toFixed(2);
 
   return (
-    <section className="py-12 sm:py-16 md:py-14 lg:py-[60px] bg-gradient-to-br from-[#f8fafc] to-[#f1f5f9] font-['Inter',-apple-system,BlinkMacSystemFont,'Segoe_UI',sans-serif] text-center relative overflow-hidden">
+    <section className="py-12 sm:py-16 md:py-12 lg:py-[60px] bg-gradient-to-br from-[#f8fafc] to-[#f1f5f9] font-['Inter',-apple-system,BlinkMacSystemFont,'Segoe_UI',sans-serif] text-center relative overflow-hidden">
 
       {/* Animated Billing Instruments Background */}
       <style>{`
@@ -63,26 +63,26 @@ const Ratings = () => {
         }
       `}</style>
 
-      {/* Billing Instrument Elements - Responsive */}
-      <div className="absolute top-10 sm:top-20 left-5 sm:left-10 text-3xl sm:text-5xl md:text-5xl lg:text-6xl bill-float-1 opacity-15 sm:opacity-15">📄</div>
-      <div className="absolute top-32 sm:top-40 right-5 sm:right-20 text-2xl sm:text-4xl md:text-4xl lg:text-5xl bill-float-2 bill-sway opacity-12 sm:opacity-15">💰</div>
-      <div className="absolute bottom-24 sm:bottom-32 left-1/4 text-3xl sm:text-5xl md:text-6xl lg:text-7xl bill-float-3 opacity-12 sm:opacity-15">📊</div>
-      <div className="absolute top-1/2 right-1/4 text-2xl sm:text-4xl md:text-5xl lg:text-6xl bill-float-1 bill-sway opacity-12 sm:opacity-15">💳</div>
-      <div className="absolute bottom-16 sm:bottom-20 right-5 sm:right-10 text-2xl sm:text-4xl md:text-4xl lg:text-5xl bill-float-2 opacity-12 sm:opacity-15">📋</div>
-      <div className="absolute top-1/3 left-1/3 text-3xl sm:text-5xl md:text-5xl lg:text-6xl bill-pulse opacity-10 sm:opacity-12">🧾</div>
-      <div className="absolute bottom-1/3 right-1/3 text-2xl sm:text-4xl md:text-4xl lg:text-5xl bill-float-3 bill-sway opacity-10 sm:opacity-12">💹</div>
+      {/* Billing Instrument Elements */}
+      <div className="absolute top-10 sm:top-20 left-5 sm:left-10 text-3xl sm:text-5xl md:text-4xl lg:text-6xl bill-float-1 opacity-15 sm:opacity-15">📄</div>
+      <div className="absolute top-32 sm:top-40 right-5 sm:right-20 text-2xl sm:text-4xl md:text-3xl lg:text-5xl bill-float-2 bill-sway opacity-12 sm:opacity-15">💰</div>
+      <div className="absolute bottom-24 sm:bottom-32 left-1/4 text-3xl sm:text-5xl md:text-5xl lg:text-7xl bill-float-3 opacity-12 sm:opacity-15">📊</div>
+      <div className="absolute top-1/2 right-1/4 text-2xl sm:text-4xl md:text-4xl lg:text-6xl bill-float-1 bill-sway opacity-12 sm:opacity-15">💳</div>
+      <div className="absolute bottom-16 sm:bottom-20 right-5 sm:right-10 text-2xl sm:text-4xl md:text-3xl lg:text-5xl bill-float-2 opacity-12 sm:opacity-15">📋</div>
+      <div className="absolute top-1/3 left-1/3 text-3xl sm:text-5xl md:text-4xl lg:text-6xl bill-pulse opacity-10 sm:opacity-12">🧾</div>
+      <div className="absolute bottom-1/3 right-1/3 text-2xl sm:text-4xl md:text-3xl lg:text-5xl bill-float-3 bill-sway opacity-10 sm:opacity-12">💹</div>
 
       {/* Content Container */}
-      <Container>
+      <Container size="default">
         <div className="relative z-10 px-4 sm:px-0">
-          {/* Main Heading - Optimized for tablet */}
-          <h2 className="text-2xl sm:text-2xl md:text-xl lg:text-[28px] font-bold text-[#0f172a] mb-6 sm:mb-8 md:mb-5 lg:mb-[30px] leading-tight">
-            {/* Tablet: md:text-xl (20px) instead of md:text-[28px] */}
+          {/* Main Heading */}
+          <h2 className="text-2xl sm:text-2xl md:text-xl lg:text-[28px] font-bold text-[#0f172a] mb-6 sm:mb-8 md:mb-4 lg:mb-[30px] leading-tight">
+            {/* Tablet: md:text-xl (20px) */}
             How useful is Billora for <br className="hidden sm:block" /> Your Business?
           </h2>
 
-          {/* Stars Rating - Optimized for tablet */}
-          <div className="flex justify-center gap-3 sm:gap-3 md:gap-2 lg:gap-4 mb-6 sm:mb-8 md:mb-6">
+          {/* Stars Rating */}
+          <div className="flex justify-center gap-3 sm:gap-3 md:gap-1.5 lg:gap-4 mb-6 sm:mb-8 md:mb-5 lg:mb-8">
             {[1, 2, 3, 4, 5].map((starValue) => (
               <span
                 key={starValue}
@@ -101,8 +101,8 @@ const Ratings = () => {
             ))}
           </div>
 
-          {/* Stats - Optimized for tablet */}
-          <div className="flex flex-col sm:flex-row sm:justify-center gap-3 sm:gap-6 md:gap-4 lg:gap-[30px] mb-6 sm:mb-8 md:mb-6">
+          {/* Stats */}
+          <div className="flex flex-col sm:flex-row sm:justify-center gap-3 sm:gap-6 md:gap-3 lg:gap-[30px] mb-6 sm:mb-8 md:mb-5 lg:mb-8">
             <p className="text-[#334155] font-semibold text-base sm:text-base md:text-sm lg:text-base">
               Average rating <span className="font-bold">{averageRating}</span>/5
             </p>
@@ -111,16 +111,16 @@ const Ratings = () => {
             </p>
           </div>
 
-          {/* Thank You Message - Optimized for tablet */}
+          {/* Thank You Message */}
           {showThankYou && (
-            <p className="text-[#10b981] font-semibold py-3 sm:py-2.5 md:py-2 lg:py-2.5 px-4 bg-[#d1fae5] rounded-full max-w-xs sm:max-w-sm md:max-w-[250px] lg:max-w-sm mx-auto opacity-100 transition-opacity duration-300 text-sm sm:text-sm md:text-xs lg:text-base">
+            <p className="text-[#10b981] font-semibold py-3 sm:py-2.5 md:py-2 lg:py-2.5 px-4 bg-[#d1fae5] rounded-full max-w-xs sm:max-w-sm md:max-w-[220px] lg:max-w-sm mx-auto opacity-100 transition-opacity duration-300 text-sm sm:text-sm md:text-xs lg:text-base">
               Thank you for rating this post!
             </p>
           )}
 
-          {/* Vote Confirmation Message - Optimized for tablet */}
+          {/* Vote Confirmation Message */}
           {hasVoted && !showThankYou && (
-            <p className="text-[#3b82f6] font-medium py-3 sm:py-2.5 md:py-2 lg:py-2.5 px-4 bg-[#dbeafe] rounded-full max-w-xs sm:max-w-sm md:max-w-[250px] lg:max-w-sm mx-auto text-sm sm:text-sm md:text-xs lg:text-base">
+            <p className="text-[#3b82f6] font-medium py-3 sm:py-2.5 md:py-2 lg:py-2.5 px-4 bg-[#dbeafe] rounded-full max-w-xs sm:max-w-sm md:max-w-[220px] lg:max-w-sm mx-auto text-sm sm:text-sm md:text-xs lg:text-base">
               You rated this {rating} out of 5 stars
             </p>
           )}

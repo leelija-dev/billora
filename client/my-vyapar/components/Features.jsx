@@ -109,8 +109,8 @@ const Features = () => {
             <SectionTitle
               title="Features of GST Billing and Accounting Software"
             />
-            <p className="text-base sm:text-base md:text-base lg:text-lg text-[#666] px-4 sm:px-0">
-              {/* Tablet: md:text-base (16px) instead of md:text-lg (18px) */}
+            <p className="text-base sm:text-base md:text-sm lg:text-lg text-[#666] px-4 sm:px-0">
+              {/* Tablet: md:text-sm (14px) - smaller than mobile but balanced */}
               Everything you need to manage your business professionally
             </p>
           </div>
@@ -156,13 +156,13 @@ const Features = () => {
                           : 'opacity-0 -translate-x-20'
                       }`}
                   >
-                    <h3 className="text-2xl sm:text-2xl md:text-2xl lg:text-[28px] text-black mb-4 sm:mb-4 md:mb-5 font-semibold leading-snug transition-colors duration-300 hover:text-[#2f5fa5]">
-                      {/* Tablet: md:text-2xl (24px) instead of md:text-[28px] */}
+                    <h3 className="text-2xl sm:text-2xl md:text-xl lg:text-[28px] text-black mb-4 sm:mb-4 md:mb-5 font-semibold leading-snug transition-colors duration-300 hover:text-[#2f5fa5]">
+                      {/* Tablet: md:text-xl (20px) - smaller than mobile's 24px */}
                       {feature.title}
                     </h3>
                     
                     <p className="text-base sm:text-sm md:text-sm lg:text-base text-[#555] leading-relaxed sm:leading-[1.7] md:leading-[1.6] lg:leading-[1.8] m-0">
-                      {/* Tablet: md:text-sm (14px) instead of md:text-base (16px) */}
+                      {/* Tablet: md:text-sm (14px) */}
                       {feature.description}
                     </p>
 

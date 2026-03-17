@@ -45,18 +45,16 @@ const FAQ = () => {
 
   return (
     <section className="py-12 sm:py-16 md:py-20 lg:py-24 bg-[#eef3f9] font-sans">
-      <Container>
+      <Container size="default">
         <div className="flex flex-col lg:flex-row justify-between gap-8 sm:gap-10 md:gap-12 lg:gap-16 xl:gap-[50px]">
 
           {/* LEFT SIDE */}
           <div className="flex-1 mb-6 sm:mb-8 md:mb-0">
-            <h4 className="text-[#1e88e5] mb-2 sm:mb-3 text-base sm:text-base md:text-sm lg:text-lg font-semibold uppercase tracking-wide">
-              {/* Tablet: md:text-sm (14px) instead of md:text-lg (18px) */}
+            <h4 className="text-[#1e88e5] mb-2 sm:mb-3 text-p-sm sm:text-p-md font-semibold uppercase tracking-wide">
               Questions & Answers
             </h4>
 
-            <h2 className="text-3xl sm:text-4xl md:text-4xl lg:text-5xl font-black text-slate-900 mb-4 sm:mb-6 tracking-tight leading-tight">
-              {/* Tablet: md:text-4xl (36px) instead of md:text-5xl (48px) */}
+            <h2 className="text-h2-xs sm:text-h2-sm md:text-h2-md font-black text-slate-900 mb-4 sm:mb-6 tracking-tight leading-tight">
               Frequently asked
               <br className="hidden sm:block" />
               <span className="relative inline-block">
@@ -70,22 +68,20 @@ const FAQ = () => {
             </div>
 
             <div className="message">
-              <p className="text-xl sm:text-xl md:text-lg lg:text-2xl mb-2 sm:mb-3 text-slate-900 font-semibold">
-                {/* Tablet: md:text-lg (18px) instead of md:text-2xl (24px) */}
+              <p className="text-p-lg sm:text-p-xl mb-2 sm:mb-3 text-slate-900 font-semibold">
                 Don't get Answer?
               </p>
               <a
                 href="#contact"
-                className="text-[#1e88e5] text-xl sm:text-xl md:text-lg lg:text-2xl no-underline hover:underline transition-all hover:text-blue-700 inline-block font-medium"
+                className="text-[#1e88e5] text-p-lg sm:text-p-xl no-underline hover:underline transition-all hover:text-blue-700 inline-block font-medium"
               >
-                {/* Tablet: md:text-lg (18px) instead of md:text-2xl (24px) */}
                 Leave us a Message
               </a>
             </div>
           </div>
 
           {/* RIGHT SIDE - FAQ Cards */}
-          <div className="flex-1 w-full ">
+          <div className="flex-1 w-full">
             {faqs.map((item, index) => (
               <div
                 key={index}
@@ -107,15 +103,13 @@ const FAQ = () => {
                   }}
                   aria-expanded={activeIndex === index}
                 >
-                  <p className={`text-base sm:text-base md:text-sm lg:text-lg font-semibold text-slate-900 leading-relaxed transition-colors ${
-                    /* Tablet: md:text-sm (14px) instead of md:text-lg (18px) */
+                  <p className={`text-p-sm sm:text-p-md font-semibold text-slate-900 leading-relaxed transition-colors ${
                     activeIndex === index ? "text-[#1e88e5]" : "group-hover:text-[#1e88e5]"
                   }`}>
                     {item.question}
                   </p>
                   <span
-                    className={`text-2xl sm:text-2xl md:text-xl lg:text-3xl text-[#1e88e5] transition-transform duration-300 flex-shrink-0 font-light ${
-                      /* Tablet: md:text-xl (20px) instead of md:text-3xl (30px) */
+                    className={`text-text-xl sm:text-text-2xl text-[#1e88e5] transition-transform duration-300 flex-shrink-0 font-light ${
                       activeIndex === index ? "rotate-180" : ""
                     }`}
                   >
@@ -130,8 +124,7 @@ const FAQ = () => {
                       : "max-h-0 pt-0"
                   }`}
                 >
-                  <div className="text-slate-600 text-sm sm:text-sm md:text-xs lg:text-base leading-relaxed sm:leading-[1.7] border-t border-[#e0e0e0] pt-3 sm:pt-4">
-                    {/* Tablet: md:text-xs (12px) instead of md:text-base (16px) */}
+                  <div className="text-slate-600 text-p-sm sm:text-p-md leading-relaxed sm:leading-[1.7] border-t border-[#e0e0e0] pt-3 sm:pt-4">
                     {item.answer}
                   </div>
                 </div>
@@ -140,8 +133,7 @@ const FAQ = () => {
 
             {/* CTA Button */}
             <div className="mt-8 sm:mt-10 md:mt-12 text-center lg:text-left">
-              <button className="w-full sm:w-auto bg-[#1e88e5] text-white px-6 sm:px-8 py-3 sm:py-3 rounded-lg sm:rounded-xl font-semibold text-base sm:text-base md:text-sm lg:text-base transition-all hover:bg-blue-700 hover:shadow-lg active:scale-95">
-                {/* Tablet: md:text-sm (14px) */}
+              <button className="w-full sm:w-auto bg-[#1e88e5] text-white px-6 sm:px-8 py-3 sm:py-3 rounded-lg sm:rounded-xl font-semibold text-p-sm sm:text-p-md transition-all hover:bg-blue-700 hover:shadow-lg active:scale-95">
                 Ask a Question
               </button>
             </div>
