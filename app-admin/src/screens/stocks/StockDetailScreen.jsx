@@ -1,6 +1,6 @@
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Alert,
   ScrollView,
@@ -71,7 +71,7 @@ const StockDetailScreen = () => {
       const value = (quantity * sellingPrice).toFixed(2);
       
       await Share.share({
-        message: `Stock Entry\nProduct: ${stock?.product?.name}\nQuantity: ${quantity} ${stock?.unit_code || ''}\nSelling Price: $${sellingPrice.toFixed(2)}\nValue: $${value}`,
+        message: `Stock Entry\nProduct: ${stock?.product?.name}\nQuantity: ${quantity} ${stock?.unit_code || stock?.product?.unit_code || ''}\nSelling Price: $${sellingPrice.toFixed(2)}\nValue: $${value}`,
         title: `Stock - ${stock?.product?.name}`,
       });
     } catch (error) {
@@ -104,6 +104,93 @@ const StockDetailScreen = () => {
   };
 
   const status = getStockStatus();
+
+  // Helper function to safely get values from nested objects
+  const getBrandName = () => {
+    if (!stock?.product) return 'N/A';
+    
+    // Check if brand is an array with one item
+    if (stock.product.brand && Array.isArray(stock.product.brand) && stock.product.brand.length > 0) {
+      return stock.product.brand[0]?.name || 'N/A';
+    }
+    
+    // Check if brand is an object with name property
+    if (stock.product.brand && typeof stock.product.brand === 'object') {
+      return stock.product.brand.name || 'N/A';
+    }
+    
+    // Check if brand_name is directly available
+    if (stock.product.brand_name && stock.product.brand_name !== 'N/A') {
+      return stock.product.brand_name;
+    }
+    
+    return 'N/A';
+  };
+
+  const getUnitCode = () => {
+    // First check if unit is directly on stock
+    if (stock?.unit_code && stock.unit_code !== 'N/A') {
+      return stock.unit_code;
+    }
+    
+    // Then check product's unit
+    if (stock?.product) {
+      // Check if unit is an object with code property
+      if (stock.product.unit && Array.isArray(stock.product.unit) && stock.product.unit.length > 0) {
+        return stock.product.unit[0]?.code || 'N/A';
+      }
+      
+      // Check if unit_code is directly on product
+      if (stock.product.unit_code && stock.product.unit_code !== 'N/A') {
+        return stock.product.unit_code;
+      }
+      
+      // Check if unit_name is available
+      if (stock.product.unit_name && stock.product.unit_name !== 'N/A') {
+        return stock.product.unit_name;
+      }
+    }
+    
+    return 'N/A';
+  };
+
+  const getUnitName = () => {
+    // First check if unit is directly on stock
+    if (stock?.unit_name && stock.unit_name !== 'N/A') {
+      return stock.unit_name;
+    }
+    
+    // Then check product's unit
+    if (stock?.product) {
+      // Check if unit is an object with name property
+      if (stock.product.unit && Array.isArray(stock.product.unit) && stock.product.unit.length > 0) {
+        return stock.product.unit[0]?.name || 'N/A';
+      }
+      
+      // Check if unit_name is directly on product
+      if (stock.product.unit_name && stock.product.unit_name !== 'N/A') {
+        return stock.product.unit_name;
+      }
+    }
+    
+    return 'N/A';
+  };
+
+  const getCategoryName = () => {
+    if (!stock?.product) return 'N/A';
+    
+    // Check if category is an object with name property
+    if (stock.product.category && typeof stock.product.category === 'object') {
+      return stock.product.category.name || 'N/A';
+    }
+    
+    // Check if category_name is directly available
+    if (stock.product.category_name && stock.product.category_name !== 'N/A') {
+      return stock.product.category_name;
+    }
+    
+    return 'N/A';
+  };
 
   if (loading) {
     return (
@@ -237,12 +324,17 @@ const StockDetailScreen = () => {
                   {stock.quantity}
                 </Text>
                 <Text className="text-white/60 text-xs">
-                  {stock.unit_code || 'Units'}
+                  {getUnitCode()}
                 </Text>
               </View>
               <View className="flex-1 items-center">
                 <Text className="text-white/80 text-xs">Status</Text>
-                <View className={`px-3 py-1 rounded-full mt-1 bg-${status.color}-500`}>
+                <View className={`px-3 py-1 rounded-full mt-1 ${
+                  status.color === 'red' ? 'bg-red-500' :
+                  status.color === 'yellow' ? 'bg-yellow-500' :
+                  status.color === 'green' ? 'bg-green-500' :
+                  'bg-gray-500'
+                }`}>
                   <Text className="text-white text-xs font-medium">
                     {status.label}
                   </Text>
@@ -334,7 +426,7 @@ const StockDetailScreen = () => {
                 <Text className={`text-sm font-medium ${
                   isDarkMode ? 'text-white' : 'text-gray-800'
                 }`}>
-                  {stock.unit_code || 'N/A'}
+                  {getUnitName()} ({getUnitCode()})
                 </Text>
               </View>
 
@@ -361,8 +453,6 @@ const StockDetailScreen = () => {
                   #{stock.created_by || stock.user_id || 'N/A'}
                 </Text>
               </View>
-
-              
 
               <View className="w-1/2 mb-4">
                 <Text className={`text-xs ${
@@ -413,7 +503,7 @@ const StockDetailScreen = () => {
                   <Text className={`text-sm font-medium ${
                     isDarkMode ? 'text-white' : 'text-gray-800'
                   }`}>
-                    {stock.product.brand_name || 'N/A'}
+                    {getBrandName()}
                   </Text>
                 </View>
 
@@ -426,7 +516,20 @@ const StockDetailScreen = () => {
                   <Text className={`text-sm font-medium ${
                     isDarkMode ? 'text-white' : 'text-gray-800'
                   }`}>
-                    {stock.product.category_name || 'N/A'}
+                    {getCategoryName()}
+                  </Text>
+                </View>
+
+                <View className="w-1/2 mb-3">
+                  <Text className={`text-xs ${
+                    isDarkMode ? 'text-gray-400' : 'text-gray-500'
+                  }`}>
+                    Unit
+                  </Text>
+                  <Text className={`text-sm font-medium ${
+                    isDarkMode ? 'text-white' : 'text-gray-800'
+                  }`}>
+                    {getUnitName()} ({getUnitCode()})
                   </Text>
                 </View>
 
