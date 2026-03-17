@@ -161,14 +161,14 @@ const Features = () => {
                       {feature.title}
                     </h3>
                     
-                    <p className="text-base sm:text-sm md:text-sm lg:text-base text-[#555] leading-relaxed sm:leading-[1.7] md:leading-[1.6] lg:leading-[1.8] m-0">
+                    <p className="text-base sm:text-base md:text-base lg:text-base text-[#555] leading-relaxed sm:leading-[1.7] md:leading-[1.6] lg:leading-[1.8] m-0">
                       {/* Tablet: md:text-sm (14px) */}
                       {feature.description}
                     </p>
 
                     {/* Extra paragraph that appears when expanded */}
                     {expandedItems[index] && (
-                      <p className="text-base sm:text-sm md:text-sm lg:text-base text-[#555] leading-relaxed sm:leading-[1.7] md:leading-[1.6] lg:leading-[1.8] mt-4 sm:mt-4 pt-4 sm:pt-4 border-t border-[#2f5fa5]/20 animate-in slide-in-from-top duration-500">
+                      <p className="text-base sm:text-base md:text-base lg:text-base text-[#555] leading-relaxed sm:leading-[1.7] md:leading-[1.6] lg:leading-[1.8] mt-4 sm:mt-4 pt-4 sm:pt-4 border-t border-[#2f5fa5]/20 animate-in slide-in-from-top duration-500">
                         {/* Tablet: md:text-sm (14px) */}
                         {feature.extraDescription}
                       </p>
@@ -177,7 +177,7 @@ const Features = () => {
                     {/* Clickable read more/less link */}
                     <button
                       onClick={() => toggleReadMore(index)}
-                      className="inline-flex items-center gap-2 mt-4 sm:mt-4 md:mt-5 text-[#2f5fa5] font-medium text-base sm:text-sm md:text-sm lg:text-base group hover:cursor-pointer bg-transparent border-none p-0 transition-all duration-300 hover:gap-3 justify-center lg:justify-start"
+                      className="inline-flex items-center gap-2 mt-4 sm:mt-4 md:mt-5 text-[#2f5fa5] font-medium text-base sm:text-base md:text-base lg:text-base group hover:cursor-pointer bg-transparent border-none p-0 transition-all duration-300 hover:gap-3 justify-center lg:justify-start"
                     >
                       <span className="relative">
                         {expandedItems[index] ? 'Show less' : 'Read more'}

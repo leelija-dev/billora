@@ -66,7 +66,7 @@ const HowItWorks = () => {
                         {/* Tablet: md:text-2xl (24px) - balanced size */}
                         How It Works
                     </h2>
-                    <p className="text-[#475569] text-base sm:text-base md:text-sm lg:text-xl max-w-[600px] mx-auto mt-4 sm:mt-6 md:mt-4 animate-[fadeInUp_0.8s_ease-out_0.2s_both] leading-relaxed px-2">
+                    <p className="text-[#475569] text-base sm:text-base md:text-base lg:text-xl max-w-[600px] mx-auto mt-4 sm:mt-6 md:mt-4 animate-[fadeInUp_0.8s_ease-out_0.2s_both] leading-relaxed px-2">
                         {/* Tablet: md:text-sm (14px) */}
                         Get started with Billora in three simple steps
                     </p>
