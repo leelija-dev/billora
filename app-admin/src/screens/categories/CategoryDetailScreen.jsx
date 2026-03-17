@@ -73,7 +73,7 @@ const CategoryDetailScreen = () => {
   };
 
   const handleViewProduct = (product) => {
-    navigation.navigate("ProductDetail", { productId: product.id });
+    navigation.navigate("ProductsStack", { screen: "ProductDetail", params: { productId: product.id } });
   };
 
   // Format date safely
@@ -432,7 +432,7 @@ const CategoryDetailScreen = () => {
                   Products in this Category
                 </Text>
                 <TouchableOpacity
-                  onPress={() => navigation.navigate("Products", { categoryId: category.id })}
+                  onPress={() => navigation.navigate("ProductsStack", { screen: "Products", params: { categoryId: category.id } })}
                   className="bg-blue-500 px-4 py-2 rounded-xl"
                 >
                   <Text className="text-white font-medium">View All</Text>
@@ -503,7 +503,7 @@ const CategoryDetailScreen = () => {
                     No products in this category
                   </Text>
                   <TouchableOpacity
-                    onPress={() => navigation.navigate("AddProduct", { categoryId: category.id })}
+                    onPress={() => navigation.navigate("ProductsStack", { screen: "AddProduct", params: { categoryId: category.id } })}
                     className="mt-4 bg-blue-500 px-4 py-2 rounded-xl"
                   >
                     <Text className="text-white font-medium">Add Product</Text>

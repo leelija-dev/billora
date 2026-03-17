@@ -73,7 +73,7 @@ const BrandDetailScreen = () => {
   };
 
   const handleViewProduct = (product) => {
-    navigation.navigate("ProductDetail", { productId: product.id });
+    navigation.navigate("ProductsStack", { screen: "ProductDetail", params: { productId: product.id } });
   };
 
   // Format date safely
@@ -430,7 +430,7 @@ const BrandDetailScreen = () => {
                   Products from this Brand
                 </Text>
                 <TouchableOpacity
-                  onPress={() => navigation.navigate("Products", { brandId: brand.id })}
+                  onPress={() => navigation.navigate("ProductsStack", { screen: "Products", params: { brandId: brand.id } })}
                   className="bg-blue-500 px-4 py-2 rounded-xl"
                 >
                   <Text className="text-white font-medium">View All</Text>
@@ -501,7 +501,7 @@ const BrandDetailScreen = () => {
                     No products from this brand
                   </Text>
                   <TouchableOpacity
-                    onPress={() => navigation.navigate("AddProduct", { brandId: brand.id })}
+                    onPress={() => navigation.navigate("ProductsStack", { screen: "AddProduct", params: { brandId: brand.id } })}
                     className="mt-4 bg-blue-500 px-4 py-2 rounded-xl"
                   >
                     <Text className="text-white font-medium">Add Product</Text>
@@ -510,7 +510,6 @@ const BrandDetailScreen = () => {
               )}
             </View>
           )}
-
           {/* Action Buttons */}
           <View className="flex-row gap-3 mb-6">
             <TouchableOpacity
