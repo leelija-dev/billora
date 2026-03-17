@@ -88,8 +88,8 @@ const CategoriesScreen = () => {
       const now = Date.now();
       const timeSinceLastRefresh = now - lastRefreshTime.current;
       
-      // Only refresh if it's been more than 5 seconds or we have no categories
-      if (timeSinceLastRefresh > 5000 || categories.length === 0) {
+      // Only refresh if it's been more than 5 seconds
+      if (timeSinceLastRefresh > 5000) {
         console.log('Refreshing categories on focus...');
         stableRefresh();
       } else {

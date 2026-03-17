@@ -17,6 +17,7 @@ class Invoice extends Model
         'total_items',
         'paid_amount',
         'created_by',
+        'status',
 
     ];
         protected $casts = [
@@ -26,5 +27,9 @@ class Invoice extends Model
     public function invoiceItems()
     {
         return $this->hasMany(InvoiceItems::class);
+    }
+    public function customer()
+    {
+        return $this->belongsTo(BillCustomer::class, 'customer_id');
     }
 }

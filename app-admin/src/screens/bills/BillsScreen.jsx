@@ -269,6 +269,9 @@ const BillsScreen = () => {
             className="rounded-xl p-4 flex-1 mr-2"
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
+            style={{
+              borderRadius:8
+            }}
           >
             <Text className="text-white/80 text-xs">Total Bills</Text>
             <Text className="text-white text-2xl font-bold">{totalBills}</Text>

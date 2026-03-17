@@ -23,124 +23,6 @@ import { getNavigationItemsWithBadges } from "../../constants/navigationItems"; 
 
 const { width } = Dimensions.get("window");
 
-// Static dashboard data - NO API CALLS (use this as fallback)
-const STATIC_DASHBOARD_DATA = {
-  stats: {
-    totalRevenue: 125890,
-    totalOrders: 1256,
-    totalCustomers: 892,
-    totalProducts: 342,
-    revenueTrend: 12.5,
-    ordersTrend: 8.2,
-    customersTrend: 5.7,
-    productsTrend: 3.1,
-  },
-  revenueData: {
-    daily: [
-      { date: "Mon", revenue: 4500 },
-      { date: "Tue", revenue: 6200 },
-      { date: "Wed", revenue: 5800 },
-      { date: "Thu", revenue: 7100 },
-      { date: "Fri", revenue: 8900 },
-      { date: "Sat", revenue: 10500 },
-      { date: "Sun", revenue: 8200 },
-    ],
-    weekly: [
-      { week: "W1", revenue: 45200 },
-      { week: "W2", revenue: 48900 },
-      { week: "W3", revenue: 52300 },
-      { week: "W4", revenue: 57800 },
-    ],
-    monthly: [
-      { month: "Jan", revenue: 45200 },
-      { month: "Feb", revenue: 48900 },
-      { month: "Mar", revenue: 52300 },
-      { month: "Apr", revenue: 57800 },
-      { month: "May", revenue: 61200 },
-      { month: "Jun", revenue: 65800 },
-    ],
-  },
-  orderStatus: {
-    pending: 45,
-    processing: 78,
-    shipped: 123,
-    delivered: 890,
-    cancelled: 34,
-  },
-  topProducts: [
-    {
-      id: 1,
-      name: "Classic White T-Shirt",
-      sales: 245,
-      revenue: 7350,
-      trend: "+12%",
-    },
-    { id: 2, name: "Slim Fit Jeans", sales: 189, revenue: 15120, trend: "+8%" },
-    {
-      id: 3,
-      name: "Leather Sneakers",
-      sales: 156,
-      revenue: 14040,
-      trend: "+15%",
-    },
-    {
-      id: 4,
-      name: "Cashmere Sweater",
-      sales: 134,
-      revenue: 13400,
-      trend: "+5%",
-    },
-    { id: 5, name: "Sports Watch", sales: 98, revenue: 7840, trend: "+22%" },
-  ],
-  recentOrders: [
-    {
-      id: "ORD-001",
-      orderNumber: "ORD-001",
-      customer: { name: "John Smith" },
-      total: 299.99,
-      status: "delivered",
-      items: [{ quantity: 3 }],
-      createdAt: "2024-03-15T10:30:00Z",
-    },
-    {
-      id: "ORD-002",
-      orderNumber: "ORD-002",
-      customer: { name: "Emma Wilson" },
-      total: 189.5,
-      status: "processing",
-      items: [{ quantity: 2 }],
-      createdAt: "2024-03-14T14:20:00Z",
-    },
-    {
-      id: "ORD-003",
-      orderNumber: "ORD-003",
-      customer: { name: "Michael Brown" },
-      total: 79.99,
-      status: "pending",
-      items: [{ quantity: 1 }],
-      createdAt: "2024-03-14T09:15:00Z",
-    },
-    {
-      id: "ORD-004",
-      orderNumber: "ORD-004",
-      customer: { name: "Sarah Davis" },
-      total: 459.99,
-      status: "shipped",
-      items: [{ quantity: 4 }],
-      createdAt: "2024-03-13T16:45:00Z",
-    },
-    {
-      id: "ORD-005",
-      orderNumber: "ORD-005",
-      customer: { name: "David Lee" },
-      total: 129.99,
-      status: "delivered",
-      items: [{ quantity: 2 }],
-      createdAt: "2024-03-13T11:30:00Z",
-    },
-  ],
-};
-
 const DashboardScreen = () => {
   const { width } = useWindowDimensions();
   const { isDarkMode } = useThemeStore();
@@ -157,11 +39,35 @@ const DashboardScreen = () => {
   const [notificationCount] = useState(5);
   const [refreshing, setRefreshing] = useState(false);
 
-  // If dashboardData is null or undefined, use static data as fallback
-  const data = dashboardData || STATIC_DASHBOARD_DATA;
+  // Use real API data
+  const data = dashboardData;
 
-  // Safely access stats with default values
-  const stats = data?.stats || STATIC_DASHBOARD_DATA.stats;
+  // Safely access stats with default values and convert string numbers to actual numbers
+  const stats = {
+    totalRevenue: typeof data?.stats?.totalRevenue === 'string' ? parseFloat(data.stats.totalRevenue) : (data?.stats?.totalRevenue || 0),
+    totalDue: typeof data?.stats?.totalDue === 'string' ? parseFloat(data.stats.totalDue) : (data?.stats?.totalDue || 0),
+    totalOrders: typeof data?.stats?.totalOrders === 'string' ? parseInt(data.stats.totalOrders) : (data?.stats?.totalOrders || 0),
+    totalCustomers: typeof data?.stats?.totalCustomers === 'string' ? parseInt(data.stats.totalCustomers) : (data?.stats?.totalCustomers || 0),
+    totalProducts: typeof data?.stats?.totalProducts === 'string' ? parseInt(data.stats.totalProducts) : (data?.stats?.totalProducts || 0),
+    revenueTrend: typeof data?.stats?.revenueTrend === 'string' ? parseFloat(data.stats.revenueTrend) : (data?.stats?.revenueTrend || 0),
+    ordersTrend: typeof data?.stats?.ordersTrend === 'string' ? parseFloat(data.stats.ordersTrend) : (data?.stats?.ordersTrend || 0),
+    customersTrend: typeof data?.stats?.customersTrend === 'string' ? parseFloat(data.stats.customersTrend) : (data?.stats?.customersTrend || 0),
+    productsTrend: typeof data?.stats?.productsTrend === 'string' ? parseFloat(data.stats.productsTrend) : (data?.stats?.productsTrend || 0),
+  };
+
+  // Safely access and convert topProducts data
+  const topProducts = (data?.topProducts || []).map(product => ({
+    ...product,
+    sales: typeof product.sales === 'string' ? parseFloat(product.sales) : (product.sales || 0),
+    revenue: typeof product.revenue === 'string' ? parseFloat(product.revenue) : (product.revenue || 0),
+  }));
+
+  // Safely access and convert recentOrders data
+  const recentOrders = (data?.recentOrders || []).map(order => ({
+    ...order,
+    total: typeof order.total === 'string' ? parseFloat(order.total) : (order.total || 0),
+    items: order.items || [],
+  }));
 
   const formatCurrency = (amount) => {
     return `$${(amount || 0).toFixed(2).replace(/\d(?=(\d{3})+\.)/g, "$&,")}`;
@@ -183,70 +89,63 @@ const DashboardScreen = () => {
   };
 
   const getChartData = () => {
-    if (!dashboardData) {
-      // Use static data for chart when no API data
-      switch (selectedPeriod) {
-        case "day":
-          return {
-            labels: STATIC_DASHBOARD_DATA.revenueData.daily.map((d) => d.date),
-            datasets: [{ data: STATIC_DASHBOARD_DATA.revenueData.daily.map((d) => d.revenue) }],
-          };
-        case "week":
-          return {
-            labels: STATIC_DASHBOARD_DATA.revenueData.weekly.map((w) => w.week),
-            datasets: [{ data: STATIC_DASHBOARD_DATA.revenueData.weekly.map((w) => w.revenue) }],
-          };
-        case "month":
-          return {
-            labels: STATIC_DASHBOARD_DATA.revenueData.monthly.map((m) => m.month),
-            datasets: [{ data: STATIC_DASHBOARD_DATA.revenueData.monthly.map((m) => m.revenue) }],
-          };
-        default:
-          return {
-            labels: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
-            datasets: [{ data: [4500, 6200, 5800, 7100, 8900, 10500, 8200] }],
-          };
-      }
+    if (!data?.revenueData) {
+      return {
+        labels: [],
+        datasets: [{ data: [] }]
+      };
     }
-    
+
+    const safeMapData = (array, valueKey, labelKey) => {
+      if (!Array.isArray(array) || array.length === 0) {
+        return { labels: [], data: [] };
+      }
+      
+      const filtered = array.filter(item => 
+        item && 
+        typeof item[valueKey] === 'number' && 
+        !isNaN(item[valueKey]) &&
+        item[labelKey]
+      );
+      
+      return {
+        labels: filtered.map(item => item[labelKey]),
+        data: filtered.map(item => item[valueKey])
+      };
+    };
+
     switch (selectedPeriod) {
-      case "day":
+      case "day": {
+        const result = safeMapData(data.revenueData.daily, 'revenue', 'date');
         return {
-          labels: dashboardData.revenueData?.daily?.map((d) => d.date) || [],
+          labels: result.labels,
+          datasets: [{ data: result.data }]
+        };
+      }
+      case "week": {
+        const result = safeMapData(data.revenueData.weekly, 'revenue', 'week');
+        return {
+          labels: result.labels,
+          datasets: [{ data: result.data }]
+        };
+      }
+      case "month": {
+        const result = safeMapData(data.revenueData.monthly, 'revenue', 'month');
+        return {
+          labels: result.labels,
           datasets: [
             {
-              data: dashboardData.revenueData?.daily?.map((d) => d.revenue) || [],
+              data: result.data,
               color: (opacity = 1) => `rgba(99, 102, 241, ${opacity})`,
               strokeWidth: 2,
             },
           ],
         };
-      case "week":
-        return {
-          labels: dashboardData.revenueData?.weekly?.map((w) => w.week) || [],
-          datasets: [
-            {
-              data: dashboardData.revenueData?.weekly?.map((w) => w.revenue) || [],
-              color: (opacity = 1) => `rgba(99, 102, 241, ${opacity})`,
-              strokeWidth: 2,
-            },
-          ],
-        };
-      case "month":
-        return {
-          labels: dashboardData.revenueData?.monthly?.map((m) => m.month) || [],
-          datasets: [
-            {
-              data: dashboardData.revenueData?.monthly?.map((m) => m.revenue) || [],
-              color: (opacity = 1) => `rgba(99, 102, 241, ${opacity})`,
-              strokeWidth: 2,
-            },
-          ],
-        };
+      }
       default:
         return {
-          labels: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
-          datasets: [{ data: [4500, 6200, 5800, 7100, 8900, 10500, 8200] }],
+          labels: [],
+          datasets: [{ data: [] }],
         };
     }
   };
@@ -550,7 +449,7 @@ const DashboardScreen = () => {
           </View>
 
           <View className="flex-row justify-around">
-            {Object.entries(data.orderStatus || STATIC_DASHBOARD_DATA.orderStatus).map(
+            {Object.entries(data?.orderStatus || {}).map(
               ([status, count]) => {
                 const colors = getStatusColor(status);
                 const bgColor = isDarkMode ? colors.darkBg : colors.bg;
@@ -602,14 +501,14 @@ const DashboardScreen = () => {
             </TouchableOpacity>
           </View>
 
-          {(data.topProducts || STATIC_DASHBOARD_DATA.topProducts).map((product, index) => (
+          {topProducts.map((product, index) => (
             <TouchableOpacity
               key={product.id}
               onPress={() =>
                 handleNavigate("ProductDetail", { productId: product.id })
               }
               className={`flex-row items-center py-3 ${
-                index !== (data.topProducts?.length || STATIC_DASHBOARD_DATA.topProducts.length) - 1
+                index !== topProducts.length - 1
                   ? isDarkMode ? 'border-b border-gray-700' : 'border-b border-gray-100'
                   : ''
               }`}
@@ -656,7 +555,7 @@ const DashboardScreen = () => {
             </TouchableOpacity>
           </View>
 
-          {(data.recentOrders || STATIC_DASHBOARD_DATA.recentOrders).map((order, index) => {
+          {recentOrders.map((order, index) => {
             const colors = getStatusColor(order.status);
             const bgColor = isDarkMode ? colors.darkBg : colors.bg;
             const textColor = isDarkMode ? colors.darkText : colors.text;
@@ -668,7 +567,7 @@ const DashboardScreen = () => {
                   handleNavigate("OrderDetail", { orderId: order.id })
                 }
                 className={`flex-row items-center py-3 ${
-                  index !== (data.recentOrders?.length || STATIC_DASHBOARD_DATA.recentOrders.length) - 1
+                  index !== recentOrders.length - 1
                     ? isDarkMode ? 'border-b border-gray-700' : 'border-b border-gray-100'
                     : ''
                 }`}

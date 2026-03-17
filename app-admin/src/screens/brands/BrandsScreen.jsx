@@ -84,7 +84,7 @@ const BrandsScreen = () => {
       const now = Date.now();
       const timeSinceLastRefresh = now - lastRefreshTime.current;
 
-      if (timeSinceLastRefresh > 5000 || brands.length === 0) {
+      if (timeSinceLastRefresh > 5000) {
         console.log('Refreshing brands on focus...');
         stableRefresh();
       } else {
