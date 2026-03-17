@@ -1,65 +1,42 @@
 "use client";
-<<<<<<< HEAD
 import SectionTitle from "../components/SectionTitle";
 import Container from "../components/Container";
 
 import React, { useState, useEffect, useRef } from 'react';
-=======
-
-import React from 'react';
->>>>>>> 9bfd81b (my second git push)
 import Image from 'next/image';
 
 const Features = () => {
   const features = [
     {
       title: "Manage cashflow seamlessly",
-<<<<<<< HEAD
       description: "The billing software by Vyapar helps automate management. It is done to prevent mistakes in accounting. By investing in this billing software, you can manage your business cash flow effortlessly.",
       extraDescription: "With real-time tracking and automated reminders, you'll never miss a payment again. The dashboard provides clear insights into your accounts receivable and payable, helping you make informed financial decisions.",
       image: "/image/gst1.png",
-=======
-      description: "The billing software by Vyapar helps automate management. It is done to prevent mistakes in accounting. By investing in this billing software, you can manage your business cash flow effortlessly. This all-in-one software makes managing cash transactions possible. It comes with features like bank withdrawals and deposits tracking.",
-      image: "/images/feature1.jpg",
->>>>>>> 9bfd81b (my second git push)
-      reverse: false
+      reverse: false,
     },
     {
-      title: "Online/Offline GST billing",
-      description: "The Vyapar app helps you generate invoices for your customers without requiring you to stay online. You can rely on our business accounting software to validate your transactions and update your database when connecting it to the internet.",
-<<<<<<< HEAD
-      extraDescription: "Automatic GST calculations ensure compliance with the latest tax rates. The software generates GSTR-1, GSTR-3B reports instantly, saving hours of manual work during filing season.",
-      image: "/image/invoice.png",
-=======
-      image: "/images/feature2.jpg",
->>>>>>> 9bfd81b (my second git push)
-      reverse: true
-    },
-    {
-      title: "Provide multiple payment options",
+      title: "Choose the perfect convenience for customers",
       description: "Choose the perfect convenience for customers; the biggest comfort you can provide is allowing them to choose how they pay you. Using the Vyapar invoicing app, you can create invoices that include multiple payment options for your business.",
-<<<<<<< HEAD
       extraDescription: "Accept payments via UPI, credit/debit cards, net banking, and digital wallets. The system automatically marks invoices as paid when payment is received, reducing manual reconciliation work.",
       image: "/image/payments.png",
-=======
-      image: "/images/feature3.jpg",
->>>>>>> 9bfd81b (my second git push)
-      reverse: false
+      reverse: true,
     },
     {
       title: "Track your business status",
       description: "With free GST billing software and invoicing tools, you can manage your business using a mobile. Accounting in your business becomes quite simple and efficient with this free software. As all data is stored during invoicing.",
-<<<<<<< HEAD
       extraDescription: "Get real-time insights into your business performance with interactive charts and graphs. Monitor sales trends, top products, and customer behavior to make data-driven decisions.",
       image: "/image/trace.png",
-=======
-      image: "/images/feature4.jpg",
->>>>>>> 9bfd81b (my second git push)
-      reverse: true
-    }
+      reverse: false,
+    },
+    {
+      title: "Choose the perfect convenience for customers",
+      description: "Choose the perfect convenience for customers; the biggest comfort you can provide is allowing them to choose how they pay you. Using the Vyapar invoicing app, you can create invoices that include multiple payment options for your business.",
+      extraDescription: "Accept payments via UPI, credit/debit cards, net banking, and digital wallets. The system automatically marks invoices as paid when payment is received, reducing manual reconciliation work.",
+      image: "/image/payments.png",
+      reverse: true,
+    },
   ];
 
-<<<<<<< HEAD
   const [expandedItems, setExpandedItems] = useState({});
   const [visibleItems, setVisibleItems] = useState({});
   const sectionRefs = useRef([]);
@@ -225,51 +202,6 @@ const Features = () => {
           </div>
         </div>
       </Container>
-=======
-  return (
-    <section className="py-[100px] bg-[#f3f6fb] font-sans max-md:py-[60px] max-sm:py-10">
-      <div className="text-center mb-[60px] max-w-[800px] mx-auto px-5">
-        <h2 className="text-4xl text-[#2f5fa5] mb-4 font-bold max-md:text-3xl max-sm:text-2xl">
-          Features of GST Billing and Accounting Software
-        </h2>
-        <p className="text-[#666] text-lg max-md:text-base">
-          Everything you need to manage your business professionally
-        </p>
-      </div>
-
-      <div className="max-w-[1200px] mx-auto px-5">
-        {features.map((feature, index) => (
-          <div
-            key={index}
-            className={`flex items-center gap-[60px] mb-[100px] max-lg:flex-col max-lg:gap-10 max-lg:mb-20 ${
-              feature.reverse ? 'lg:flex-row-reverse' : ''
-            }`}
-          >
-            <div className="flex-1 flex justify-center items-center">
-              <div className="w-full max-w-[500px]">
-                <Image
-                  src={feature.image}
-                  alt={feature.title}
-                  width={500}
-                  height={300}
-                  className="w-full h-auto rounded-[20px] shadow-[0_10px_30px_rgba(0,0,0,0.1)] transition-transform duration-300 hover:scale-105"
-                  loading="lazy"
-                />
-              </div>
-            </div>
-
-            <div className="flex-1 p-5 max-lg:text-center max-lg:p-0">
-              <h3 className="text-[28px] text-black mb-5 font-semibold max-md:text-2xl max-sm:text-[22px]">
-                {feature.title}
-              </h3>
-              <p className="text-base text-[#555] leading-[1.8] m-0 max-sm:text-sm max-sm:leading-[1.6]">
-                {feature.description}
-              </p>
-            </div>
-          </div>
-        ))}
-      </div>
->>>>>>> 9bfd81b (my second git push)
     </section>
   );
 };
