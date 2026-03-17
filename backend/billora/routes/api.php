@@ -14,6 +14,8 @@ use App\Http\Controllers\admin\PlanController;
 use App\Http\Controllers\admin\CategoriesController;
 use App\Http\Controllers\admin\DashboardController;
 use App\Http\Controllers\admin\CartsController;
+use App\Http\Controllers\admin\ReportController;
+
 Route::get('/test', function () {
    return response()->json([
       'message' => 'Hello World',
@@ -150,4 +152,8 @@ Route::middleware('auth:sanctum')->prefix('carts')->group(function () {
 Route::prefix('dashboard')->group(function (){
    Route::get('/overview/{id}', [DashboardController::class, 'index']);
    
+});
+
+Route::middleware('auth:sanctum')->prefix('reports')->group(function () {
+   Route::get('/', [ReportController::class, 'index']);
 });
