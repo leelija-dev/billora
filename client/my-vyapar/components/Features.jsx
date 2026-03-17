@@ -106,9 +106,7 @@ const Features = () => {
       <Container>
         <div className="relative z-10">
           <div className="text-center mb-12 sm:mb-16 md:mb-[60px] max-w-[800px] mx-auto">
-            <SectionTitle
-              title="Features of GST Billing and Accounting Software"
-            />
+           <SectionTitle title="Powerful features to grow your business" />
             <p className="text-base sm:text-base md:text-sm lg:text-lg text-[#666] px-4 sm:px-0">
               {/* Tablet: md:text-sm (14px) - smaller than mobile but balanced */}
               Everything you need to manage your business professionally
