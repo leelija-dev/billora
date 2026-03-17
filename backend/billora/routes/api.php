@@ -13,7 +13,7 @@ use App\Models\Unit;
 use App\Http\Controllers\admin\PlanController;
 use App\Http\Controllers\admin\CategoriesController;
 use App\Http\Controllers\admin\DashboardController;
-
+use App\Http\Controllers\admin\CartsController;
 Route::get('/test', function () {
    return response()->json([
       'message' => 'Hello World',
@@ -138,6 +138,15 @@ Route::prefix('plans')->group(function (){
    Route::patch('/{id}', [PlanController::class, 'restore']);
    Route::delete('/{id}/force', [PlanController::class, 'forceDelete']);
 });
+//cart products
+Route::middleware('auth:sanctum')->prefix('carts')->group(function () {
+   Route::get('/', [CartsController::class, 'index']);
+   Route::post('/store', [CartsController::class, 'store']);
+   Route::put('/{id}', [CartsController::class, 'update']);
+   Route::delete('/{id}', [CartsController::class, 'destroy']);
+});
+
+
 Route::prefix('dashboard')->group(function (){
    Route::get('/overview/{id}', [DashboardController::class, 'index']);
    
