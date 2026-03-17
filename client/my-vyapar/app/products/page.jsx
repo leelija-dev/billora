@@ -3,271 +3,274 @@
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import Navbar from "@/components/Navbar";
+import Footer from "@/components/Footer";
 
 const products = [
-  {
-    title: "GST Billing Software",
-    yearly: "₹1999/year",
-    monthly: "₹199/month",
-    img: "/products/gst.png",
-    popular: true,
-    features: [
-      "Unlimited GST invoices",
-      "Customer management",
-      "GST reports",
-      "Export invoices"
-    ]
-  },
-  {
-    title: "POS Billing System",
-    yearly: "₹2999/year",
-    monthly: "₹299/month",
-    img: "/products/pos.png",
-    features: [
-      "Barcode billing",
-      "Thermal printer support",
-      "Daily sales report",
-      "Retail POS dashboard"
-    ]
-  },
-  {
-    title: "Inventory + GST",
-    yearly: "₹3499/year",
-    monthly: "₹349/month",
-    img: "/products/inventory.png",
-    features: [
-      "Stock management",
-      "Purchase tracking",
-      "Low stock alerts",
-      "Inventory analytics"
-    ]
-  }
+  { title: "Basket", price: 1999, rating: 5, img: "/image/basket.png", category: "Software" },
+  { title: "Headphones", price: 2999, rating: 4, img: "/image/headphones.png", category: "Software" },
+  { title: "Laptop", price: 50000, rating: 4, img: "/image/laptop2.png", category: "Software" },
+  { title: "Basmati Rice 5kg", price: 499, rating: 4, img: "/image/basmati.png", category: "Grocery" },
+  { title: "Cooking Oil 1L", price: 180, rating: 3, img: "/image/oil.png", category: "Grocery" },
+  { title: "iPhone 14", price: 69999, rating: 5, img: "/image/iphone.png", category: "Mobile" },
+  { title: "Samsung Galaxy S23", price: 74999, rating: 5, img: "/image/samsung.png", category: "Mobile" },
+  { title: "Shirts", price: 749, rating: 3, img: "/image/shirt.png", category: "Shirts" },
+  { title: "Dresses", price: 999, rating: 5, img: "/image/dress.png", category: "Pinterest dress" },
+  { title: "Dresses", price: 999, rating: 5, img: "/image/minidress.png", category: "Pinterest dress" },
+  { title: "Watches", price: 4999, rating: 5, img: "/image/watch.png", category: "Accessories" },
 ];
 
-export default function ProductsPage() {
+const categories = ["All", "Software", "Grocery", "Mobile", "Accessories", "Pinterest dress", "Shirts"];
 
-  const [yearly, setYearly] = useState(true);
+export default function ProductsPage() {
+  const [search, setSearch] = useState("");
+  const [category, setCategory] = useState("All");
+  const [sort, setSort] = useState("");
+  const [maxPrice, setMaxPrice] = useState(100000);
+  const [rating, setRating] = useState(0);
+  const [selectedProduct, setSelectedProduct] = useState(null);
+  const [showModal, setShowModal] = useState(false);
+
+  const openProduct = (product) => {
+    setSelectedProduct(product);
+    setShowModal(true);
+  };
+
+  const closeModal = () => {
+    setShowModal(false);
+  };
+
+  let filteredProducts = products.filter((p) => {
+    return (
+      p.title.toLowerCase().includes(search.toLowerCase()) &&
+      (category === "All" || p.category === category) &&
+      p.price <= maxPrice &&
+      p.rating >= rating
+    );
+  });
+
+  if (sort === "low") filteredProducts.sort((a, b) => a.price - b.price);
+  if (sort === "high") filteredProducts.sort((a, b) => b.price - a.price);
 
   return (
-    <div className="relative bg-slate-50 font-sans overflow-hidden">
+    <>
+      <Navbar />
 
-      {/* FLOATING BLOBS */}
-      <div className="absolute -top-40 -left-40 w-96 h-96 bg-blue-300 rounded-full blur-3xl opacity-30"></div>
-      <div className="absolute top-40 right-0 w-96 h-96 bg-indigo-300 rounded-full blur-3xl opacity-30"></div>
+      <div className="bg-slate-50 min-h-screen px-4 sm:px-6 md:px-12 lg:px-20 py-12">
 
-      {/* HERO */}
-      <section className="text-center py-24 px-6">
-        <h1 className="text-5xl font-bold text-gray-800">
-          GST Billing Products
+        {/* TITLE */}
+        <h1 className="text-3xl sm:text-4xl font-bold text-center mb-10">
+          Explore Products
         </h1>
 
-        <p className="text-gray-600 mt-4 max-w-xl mx-auto">
-          Powerful tools to manage billing, GST compliance and inventory for
-          modern businesses.
-        </p>
-
-        {/* Pricing Toggle */}
-        <div className="mt-8 flex justify-center gap-3">
-          <button
-            onClick={() => setYearly(false)}
-            className={`px-5 py-2 rounded-lg ${
-              !yearly ? "bg-blue-600 text-white" : "bg-gray-200"
-            }`}
-          >
-            Monthly
-          </button>
-
-          <button
-            onClick={() => setYearly(true)}
-            className={`px-5 py-2 rounded-lg ${
-              yearly ? "bg-blue-600 text-white" : "bg-gray-200"
-            }`}
-          >
-            Yearly
-          </button>
-        </div>
-      </section>
-
-      {/* PRODUCT CARDS */}
-      <section className="px-6 md:px-12 lg:px-20 pb-24">
-       <div className="grid gap-12 md:grid-cols-2 lg:grid-cols-3">
-
-  {products.map((product, index) => (
-
-    <div
-      key={index}
-      className="relative rounded-3xl overflow-hidden group shadow-xl hover:shadow-2xl transition hover:-translate-y-2"
-    >
-
-      {/* Gradient Top */}
-      <div className="h-2 bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500"></div>
-
-      <div className="bg-white p-7">
-
-        {/* Image */}
-        <div className="relative h-48 mb-6">
-          <Image
-            src={product.img}
-            alt={product.title}
-            fill
-            className="object-contain group-hover:scale-110 transition"
+        {/* SEARCH */}
+        <div className="max-w-xl mx-auto mb-10">
+          <input
+            type="text"
+            placeholder="Search products..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full px-4 py-3 border rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500"
           />
         </div>
 
-        {/* Title */}
-        <h2 className="text-xl font-bold text-gray-800 mb-2">
-          {product.title}
-        </h2>
+        {/* MAIN GRID */}
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
 
-        {/* Price */}
-        <p className="text-2xl font-bold text-purple-600 mb-5">
-          {yearly ? product.yearly : product.monthly}
-        </p>
+          {/* SIDEBAR */}
+          <div className="bg-white p-5 rounded-xl shadow space-y-6 lg:sticky lg:top-24 h-fit">
 
-        {/* Features */}
-        <ul className="space-y-2 text-gray-600 text-sm mb-6">
-          {product.features.map((f, i) => (
-            <li key={i} className="flex items-center">
-              <span className="w-2 h-2 bg-purple-500 rounded-full mr-3"></span>
-              {f}
-            </li>
-          ))}
-        </ul>
+            <h2 className="text-lg font-bold">Filters</h2>
 
-        {/* Buttons */}
-        <div className="flex gap-3">
+            {/* CATEGORY */}
+            <div>
+              <h3 className="font-semibold mb-2">Category</h3>
+              <div className="space-y-2">
+                {categories.map((cat, i) => (
+                  <button
+                    key={i}
+                    onClick={() => setCategory(cat)}
+                    className={`block w-full text-left px-3 py-2 rounded ${
+                      category === cat
+                        ? "bg-blue-600 text-white"
+                        : "bg-gray-100 hover:bg-gray-200"
+                    }`}
+                  >
+                    {cat}
+                  </button>
+                ))}
+              </div>
+            </div>
 
-          <Link
-            href="/contact"
-            className="flex-1 text-center bg-gradient-to-r from-purple-500 to-blue-500 text-white py-3 rounded-xl hover:opacity-90 transition"
-          >
-            Buy Now
-          </Link>
+            {/* PRICE */}
+            <div>
+              <h3 className="font-semibold mb-2">Max Price</h3>
+              <input
+                type="range"
+                min="0"
+                max="100000"
+                value={maxPrice}
+                onChange={(e) => setMaxPrice(Number(e.target.value))}
+                className="w-full"
+              />
+              <p className="text-sm mt-1">₹{maxPrice}</p>
+            </div>
 
-          <Link
-            href="/demo"
-            className="flex-1 text-center border border-purple-300 py-3 rounded-xl hover:bg-purple-50 transition"
-          >
-            Demo
-          </Link>
+            {/* SORT */}
+            <div>
+              <h3 className="font-semibold mb-2">Sort By</h3>
+              <select
+                onChange={(e) => setSort(e.target.value)}
+                className="w-full border rounded p-2"
+              >
+                <option value="">Default</option>
+                <option value="low">Price Low → High</option>
+                <option value="high">Price High → Low</option>
+              </select>
+            </div>
 
-                  </div>
+            {/* RATING */}
+            <div>
+              <h3 className="font-semibold mb-2">Rating</h3>
+              {[5, 4, 3].map((r) => (
+                <button
+                  key={r}
+                  onClick={() => setRating(r)}
+                  className="block w-full text-left px-3 py-2 bg-gray-100 rounded hover:bg-gray-200"
+                >
+                  {"⭐".repeat(r)} & up
+                </button>
+              ))}
+            </div>
+          </div>
 
+          {/* PRODUCTS */}
+          <div className="lg:col-span-3 grid gap-10 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+
+            {filteredProducts.map((product, index) => (
+             <div
+  key={index}
+  onClick={() => openProduct(product)}
+  className="bg-white rounded-2xl shadow-md hover:shadow-xl transition p-4 sm:p-6 cursor-pointer hover:-translate-y-1 relative group"
+>
+                <div className="relative h-40 mb-4">
+                  <Image
+                    src={product.img}
+                    alt={product.title}
+                    fill
+                    className="object-contain"
+                  />
                 </div>
+                 <div className="absolute top-3 right-3 text-gray-400 hover:text-red-500 text-xl">
+    ❤️
+  </div>
+             <div className="absolute top-3 left-3 bg-red-500 text-white text-xs px-2 py-1 rounded">
+    20% OFF
+  </div>
+  <p className="text-xs text-gray-500 mt-1 line-clamp-2">
+  High quality premium product for daily use.
+</p>
+                <p className="text-xs text-gray-500">{product.category}</p>
 
+                <h2 className="font-bold text-lg">{product.title}</h2>
+
+                <p className="text-yellow-500 text-sm">
+                  {"⭐".repeat(product.rating)}
+                </p>
+
+                <p className="text-xl font-bold text-idigo-600 mt-2">
+                  ₹{product.price}
+                </p>
+                <p className="text-xs text-green-600 mt-1">
+    Free Delivery
+  </p>
+
+                <Link
+                  href="/contact"
+               className="block text-center bg-blue-600 mt-3 text-white py-2 rounded-lg">
+                  Buy Now
+                </Link>
+   
               </div>
 
-          ))}
+            ))}
+
+          </div>
         </div>
-      </section>
+      </div>
 
-      {/* COMPARISON TABLE */}
-      <section className="bg-white py-20 px-6 md:px-12 lg:px-20">
+      {/* MODAL */}
+   {showModal && selectedProduct && (
+  <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-3 sm:p-4">
 
-        <h2 className="text-3xl font-bold text-center mb-12">
-          Product Comparison
-        </h2>
+    <div className="bg-white rounded-2xl w-full max-w-4xl 
+    p-4 sm:p-6 md:p-8 relative 
+    max-h-[90vh] overflow-y-auto">
 
-        <div className="overflow-x-auto">
+      {/* CLOSE */}
+     <button
+  onClick={closeModal}
+  className="absolute top-3 right-3 z-50 bg-white/80 backdrop-blur 
+  rounded-full w-10 h-10 flex items-center justify-center 
+  text-xl shadow-md active:scale-95"
+>
+  ✕
+</button>
 
-          <table className="w-full border text-left">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-5 sm:gap-6">
 
-            <thead className="bg-gray-100">
-              <tr>
-                <th className="p-4">Feature</th>
-                <th className="p-4">GST Billing</th>
-                <th className="p-4">POS</th>
-                <th className="p-4">Inventory</th>
-              </tr>
-            </thead>
-
-            <tbody>
-
-              <tr className="border-t">
-                <td className="p-4">GST Invoices</td>
-                <td className="p-4">✔</td>
-                <td className="p-4">✔</td>
-                <td className="p-4">✔</td>
-              </tr>
-
-              <tr className="border-t">
-                <td className="p-4">Barcode Billing</td>
-                <td className="p-4">—</td>
-                <td className="p-4">✔</td>
-                <td className="p-4">—</td>
-              </tr>
-
-              <tr className="border-t">
-                <td className="p-4">Inventory Tracking</td>
-                <td className="p-4">—</td>
-                <td className="p-4">—</td>
-                <td className="p-4">✔</td>
-              </tr>
-
-            </tbody>
-
-          </table>
-
+        {/* IMAGE */}
+        <div className="relative h-52 sm:h-64 md:h-80">
+          <Image
+            src={selectedProduct.img}
+            alt={selectedProduct.title}
+            fill
+            className="object-contain"
+          />
         </div>
 
-      </section>
+        {/* DETAILS */}
+        <div>
 
-      {/* TESTIMONIALS */}
-      <section className="bg-slate-50 py-20 px-6 md:px-12 lg:px-20 text-center">
+          <h2 className="text-xl sm:text-2xl md:text-3xl font-bold mb-2">
+            {selectedProduct.title}
+          </h2>
 
-        <h2 className="text-3xl font-bold mb-12">
-          What Our Customers Say
-        </h2>
+          <p className="text-gray-500 text-sm sm:text-base mb-1">
+            {selectedProduct.category}
+          </p>
 
-        <div className="grid md:grid-cols-3 gap-8">
+          <p className="text-yellow-500 text-sm sm:text-base mb-2">
+            {"⭐".repeat(selectedProduct.rating)}
+          </p>
 
-          <div className="bg-white p-6 rounded-xl shadow">
-            <p className="text-gray-600">
-              "Best GST billing software for our shop."
-            </p>
-            <p className="mt-4 font-semibold">
-              – Rahul Sharma
-            </p>
-          </div>
+          <p className="text-xl sm:text-2xl md:text-3xl font-bold text-black-600 mb-3">
+            ₹{selectedProduct.price}
+          </p>
 
-          <div className="bg-white p-6 rounded-xl shadow">
-            <p className="text-gray-600">
-              "Inventory tracking made our work very easy."
-            </p>
-            <p className="mt-4 font-semibold">
-              – Priya Verma
-            </p>
-          </div>
+          <p className="text-gray-600 text-sm sm:text-base mb-5">
+            Premium quality product, perfect for daily use with modern design.
+          </p>
 
-          <div className="bg-white p-6 rounded-xl shadow">
-            <p className="text-gray-600">
-              "POS billing works perfectly for retail stores."
-            </p>
-            <p className="mt-4 font-semibold">
-              – Amit Patel
-            </p>
+          {/* BUTTONS */}
+          <div className="flex flex-col sm:flex-row gap-3 w-full">
+
+            <button className="w-full bg-blue-600 text-white py-3 rounded-lg">
+              Add to Cart
+            </button>
+
+            <button className="w-full bg-purple-600 text-white py-3 rounded-lg">
+              Buy Now
+            </button>
+
           </div>
 
         </div>
-
-      </section>
-
-      {/* CTA */}
-      <section className="bg-gray-900 text-white text-center py-20">
-
-        <h2 className="text-4xl font-bold mb-6">
-          Start Your GST Billing Today
-        </h2>
-
-        <Link
-          href="/contact"
-          className="bg-blue-600 px-8 py-4 rounded-xl hover:bg-blue-700"
-        >
-          Get Free Demo
-        </Link>
-
-      </section>
-
+      </div>
     </div>
+  </div>
+)}
+      <Footer />
+    </>
   );
 }
