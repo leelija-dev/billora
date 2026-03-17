@@ -200,6 +200,9 @@ const CategoryDetailScreen = () => {
             className="rounded-2xl p-6 mt-4 mb-4"
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
+            style={{
+              borderRadius: 16
+            }}
           >
             <View className="items-center">
               <View className="w-20 h-20 bg-white/20 rounded-2xl items-center justify-center mb-4">
@@ -235,14 +238,14 @@ const CategoryDetailScreen = () => {
           </LinearGradient>
 
           {/* Tabs */}
-          <View className={`flex-row rounded-2xl p-1 mb-4 shadow-sm ${
+          <View className={`flex-row rounded-[50px]  mb-4 shadow-sm ${
             isDarkMode ? 'bg-gray-800' : 'bg-white'
           }`}>
             {["details", "products"].map((tab) => (
               <TouchableOpacity
                 key={tab}
                 onPress={() => setActiveTab(tab)}
-                className={`flex-1 py-3 rounded-xl ${
+                className={`flex-1 py-3 rounded-[50px] ${
                   activeTab === tab ? "bg-blue-500" : ""
                 }`}
               >
