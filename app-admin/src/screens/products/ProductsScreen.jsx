@@ -1,6 +1,6 @@
 // screens/products/ProductsScreen.js
-import { useNavigation } from "@react-navigation/native";
-import { useState, useEffect } from "react";
+import { useNavigation, useFocusEffect } from "@react-navigation/native";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import {
   ScrollView,
   StatusBar,
@@ -17,6 +17,7 @@ import { useCategories } from "../../hooks/useCategories";
 import Header from "../../components/common/Header";
 import ProductFilters from "../../components/products/ProductFilters";
 import ProductList from "../../components/products/ProductList";
+import { getNavigationItemsWithBadges } from "../../constants/navigationItems"; // Import the helper
 
 const ProductsScreen = () => {
   const navigation = useNavigation();
@@ -91,51 +92,94 @@ const ProductsScreen = () => {
     setViewMode(viewMode === "grid" ? "list" : "grid");
   };
 
-  // Navigation items for sidebar
-  const navigationItems = [
-    {
-      id: "dashboard",
-      title: "Dashboard",
-      icon: "view-dashboard",
-      screen: "Dashboard",
-      badge: null,
-    },
-    {
-      id: "products",
-      title: "Products",
-      icon: "package-variant",
-      screen: "Products",
-      badge: productCount.toString(),
-    },
-    {
-      id: "orders",
-      title: "Orders",
-      icon: "clipboard-list",
-      screen: "Orders",
-      badge: "12",
-    },
-    {
-      id: "customers",
-      title: "Customers",
-      icon: "account-group",
-      screen: "Customers",
-      badge: null,
-    },
-    {
-      id: "inventory",
-      title: "Inventory",
-      icon: "warehouse",
-      screen: "Inventory",
-      badge: stats.lowStock > 0 ? "Low Stock" : null,
-    },
-    {
-      id: "settings",
-      title: "Settings",
-      icon: "cog",
-      screen: "Settings",
-      badge: null,
-    },
-  ];
+  // Use refs to track state without causing re-renders
+  const lastRefreshTime = useRef(Date.now());
+  const isRefreshing = useRef(false);
+  const focusCount = useRef(0);
+  const isMounted = useRef(true);
+
+  // Stable refresh callback
+  const stableRefresh = useCallback(async () => {
+    if (isRefreshing.current || !isMounted.current) return;
+    
+    isRefreshing.current = true;
+    
+    try {
+      await refreshProducts();
+      lastRefreshTime.current = Date.now();
+    } finally {
+      if (isMounted.current) {
+        isRefreshing.current = false;
+      }
+    }
+  }, [refreshProducts]);
+
+  // Focus effect - refresh when screen comes into focus, but not too frequently
+  useFocusEffect(
+    useCallback(() => {
+      focusCount.current += 1;
+      console.log('Products screen focused - focus count:', focusCount.current);
+      
+      // Don't refresh if we're already refreshing
+      if (isRefreshing.current) {
+        console.log('Already refreshing, skipping...');
+        return;
+      }
+      
+      const now = Date.now();
+      const timeSinceLastRefresh = now - lastRefreshTime.current;
+      
+      // Only refresh if it's been more than 5 seconds
+      if (timeSinceLastRefresh > 5000) {
+        console.log('Refreshing products on focus...');
+        stableRefresh();
+      } else {
+        console.log('Skipping refresh - last refresh was', Math.round(timeSinceLastRefresh / 1000), 'seconds ago');
+      }
+
+      return () => {
+        console.log('Products screen unfocused');
+      };
+    }, [stableRefresh])
+  );
+
+  // Navigation listener - with proper cleanup
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('focus', () => {
+      const routes = navigation.getState()?.routes;
+      const previousRoute = routes?.[routes.length - 2]?.name;
+      
+      // Refresh when coming back from add/edit/detail screens
+      if (previousRoute === 'AddProduct' || previousRoute === 'ProductDetail') {
+        console.log(`Returning from ${previousRoute} - refreshing products`);
+        stableRefresh();
+      }
+    });
+
+    return unsubscribe;
+  }, [navigation, stableRefresh]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    isMounted.current = true;
+    
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
+
+  // Navigation items for sidebar - Using centralized navigation items
+  const navigationItems = useMemo(() => {
+    // Create badges for this screen
+    const badges = {
+      products: productCount.toString(),
+      inventory: stats.lowStock > 0 ? stats.lowStock.toString() : null,
+      // You can add other dynamic badges here if needed
+    };
+    
+    // Get navigation items with badges
+    return getNavigationItemsWithBadges(badges);
+  }, [productCount, stats.lowStock]);
 
   // Show loading state
   if (loading) {

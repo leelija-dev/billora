@@ -18,6 +18,7 @@ import { useCategories } from "../../hooks/useCategories";
 import Header from "../../components/common/Header";
 import CategoryFilters from "../../components/categories/CategoryFilters";
 import CategoryList from "../../components/categories/CategoryList";
+import { getNavigationItemsWithBadges } from "../../constants/navigationItems"; // Import the helper
 
 const CategoriesScreen = () => {
   const navigation = useNavigation();
@@ -87,8 +88,8 @@ const CategoriesScreen = () => {
       const now = Date.now();
       const timeSinceLastRefresh = now - lastRefreshTime.current;
       
-      // Only refresh if it's been more than 5 seconds or we have no categories
-      if (timeSinceLastRefresh > 5000 || categories.length === 0) {
+      // Only refresh if it's been more than 5 seconds
+      if (timeSinceLastRefresh > 5000) {
         console.log('Refreshing categories on focus...');
         stableRefresh();
       } else {
@@ -225,58 +226,19 @@ const CategoriesScreen = () => {
     await stableRefresh();
   };
 
-  // Navigation items for sidebar
-  const navigationItems = useMemo(() => [
-    {
-      id: "dashboard",
-      title: "Dashboard",
-      icon: "view-dashboard",
-      screen: "Dashboard",
-      badge: null,
-    },
-    {
-      id: "products",
-      title: "Products",
-      icon: "package-variant",
-      screen: "Products",
-      badge: "0",
-    },
-    {
-      id: "categories",
-      title: "Categories",
-      icon: "shape",
-      screen: "Categories",
-      badge: totalCategories.toString(),
-    },
-    {
-      id: "orders",
-      title: "Orders",
-      icon: "clipboard-list",
-      screen: "Orders",
-      badge: "0",
-    },
-    {
-      id: "customers",
-      title: "Customers",
-      icon: "account-group",
-      screen: "Customers",
-      badge: null,
-    },
-    {
-      id: "inventory",
-      title: "Inventory",
-      icon: "warehouse",
-      screen: "Inventory",
-      badge: null,
-    },
-    {
-      id: "settings",
-      title: "Settings",
-      icon: "cog",
-      screen: "Settings",
-      badge: null,
-    },
-  ], [totalCategories]);
+  // Navigation items for sidebar - Using centralized navigation items
+  const navigationItems = useMemo(() => {
+    // Create badges for this screen
+    const badges = {
+      categories: totalCategories.toString(),
+      // You can add other dynamic badges here if needed
+      // products: "0",
+      // customers: "0",
+    };
+    
+    // Get navigation items with badges
+    return getNavigationItemsWithBadges(badges);
+  }, [totalCategories]);
 
   // Show loading state
   if (loading && categories.length === 0 && !refreshing) {

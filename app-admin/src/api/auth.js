@@ -1,18 +1,10 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import apiClient from './client';
-import { mockAuth } from './mock/auth';
 
-// Get auth data based on project mode
-const getAuthData = () => {
-  const projectMode = process.env.EXPO_PUBLIC_PROJECT_MODE || 'mock';
-  return projectMode === 'mock' ? mockAuth : apiClient;
-};
 
 export const authAPI = {
   // Register new user
   register: async (userData) => {
     try {
-      const api = getAuthData();
       console.log('Register API call:', {
         endpoint: '/users/store',
         data: {
@@ -30,7 +22,7 @@ export const authAPI = {
           created_by: userData.created_by,
         }
       });
-      return await api.post('/users/store', {
+      return await apiClient.post('/users/store', {
         name: userData.name,
         email: userData.email,
         phone: userData.phone,
@@ -52,8 +44,7 @@ export const authAPI = {
   // Login user
   login: async (email, password) => {
     try {
-      const api = getAuthData();
-      return await api.post('/users/login', {
+      return await apiClient.post('/users/login', {
         email,
         password,
       });
@@ -65,8 +56,7 @@ export const authAPI = {
   // Logout user
   logout: async (userId) => {
     try {
-      const api = getAuthData();
-      return await api.post('/users/logout', {
+      return await apiClient.post('/users/logout', {
         user_id: userId,
       });
     } catch (error) {
@@ -77,8 +67,7 @@ export const authAPI = {
   // Get current user profile
   getProfile: async (userId) => {
     try {
-      const api = getAuthData();
-      return await api.get(`/users/${userId}`);
+      return await apiClient.get(`/users/${userId}`);
     } catch (error) {
       throw error.response?.data || error.message;
     }
@@ -87,8 +76,7 @@ export const authAPI = {
   // Update user profile
   updateProfile: async (userId, userData) => {
     try {
-      const api = getAuthData();
-      return await api.put(`/users/${userId}`, userData);
+      return await apiClient.put(`/users/${userId}`, userData);
     } catch (error) {
       throw error.response?.data || error.message;
     }
@@ -106,8 +94,7 @@ export const authAPI = {
 
   forgotPassword: async (email) => {
     try {
-      const api = getAuthData();
-      const response = await api.post('/auth/forgot-password', { email });
+      const response = await apiClient.post('/auth/forgot-password', { email });
       return response.data;
     } catch (error) {
       throw error.response?.data || error.message;
@@ -116,8 +103,7 @@ export const authAPI = {
 
   resetPassword: async (token, newPassword) => {
     try {
-      const api = getAuthData();
-      const response = await api.post('/auth/reset-password', {
+      const response = await apiClient.post('/auth/reset-password', {
         token,
         password: newPassword,
       });

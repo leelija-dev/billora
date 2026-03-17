@@ -17,6 +17,7 @@ const StockForm = ({ stockId }) => {
     handleChange, 
     saveStock,
     fetchProducts,
+    getBrandAndCategoryNames,
   } = useStockForm(stockId);
 
   useEffect(() => {
@@ -40,6 +41,7 @@ const StockForm = ({ stockId }) => {
   };
 
   const selectedProduct = products.find(p => p.id.toString() === formData.productId);
+  const { brandName, categoryName } = getBrandAndCategoryNames(formData.productId);
 
   return (
     <ScrollView className="flex-1 px-4" showsVerticalScrollIndicator={false}>
@@ -103,17 +105,23 @@ const StockForm = ({ stockId }) => {
               <Text className={`text-sm font-medium ${
                 isDarkMode ? 'text-white' : 'text-gray-800'
               }`}>
-                {selectedProduct.brand_name || 'N/A'}
+                
+              </Text>
+               <Text className={`text-sm font-medium ${
+                isDarkMode ? 'text-white' : 'text-gray-800'
+              }`}>
+                {brandName}
               </Text>
             </View>
             <View className="flex-1">
               <Text className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
                 Category
               </Text>
+             
               <Text className={`text-sm font-medium ${
                 isDarkMode ? 'text-white' : 'text-gray-800'
               }`}>
-                {selectedProduct.category_name || 'N/A'}
+                {categoryName}
               </Text>
             </View>
           </View>

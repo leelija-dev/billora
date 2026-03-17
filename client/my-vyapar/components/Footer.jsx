@@ -1,8 +1,8 @@
-
 "use client";
 
 import React from 'react';
 import Link from 'next/link';
+import Container from '../components/Container';
 
 const Footer = () => {
   const socialLinks = [
@@ -52,36 +52,44 @@ const Footer = () => {
   ];
 
   return (
-    <footer className="bg-[#0f172a] text-white py-16 px-6 max-lg:py-12 max-lg:px-5 max-md:py-10">
-      <div className="max-w-[1200px] mx-auto">
-        <div className="grid grid-cols-[1.5fr_2.5fr] gap-16 mb-12 max-lg:grid-cols-1 max-lg:gap-12">
+    <footer className="bg-[#0f172a] text-white py-12 sm:py-16 md:py-12 lg:py-20">
+      <Container size="default">
+        <div className="grid grid-cols-1 lg:grid-cols-[1.5fr_2.5fr] gap-10 lg:gap-16 md:gap-6 mb-10 lg:mb-12 md:mb-6">
+          
           {/* Brand Section */}
-          <div>
-            <span className="bg-blue-600 text-white px-2.5 py-1 rounded text-1xl lg:text-1xl font-bold leading-none">
-              B
-            </span>
-            <span className="text-slate-800 text-white  lg:text-1xl font-bold leading-none">
-              Billora
-            </span>
-            <p className="text-[#94a3b8] leading-[1.6] max-w-[300px] max-lg:max-w-full">
+          <div className="text-center lg:text-left">
+            <div className="flex items-center justify-center lg:justify-start gap-2 mb-4 md:mb-3">
+              <span className="bg-blue-600 text-white px-3 py-1.5 rounded text-xl md:text-base lg:text-xl font-bold leading-none">
+                {/* Tablet: md:text-base (16px) */}
+                B
+              </span>
+              <span className="text-white text-xl md:text-base lg:text-xl font-bold leading-none">
+                {/* Tablet: md:text-base (16px) */}
+                Billora
+              </span>
+            </div>
+            <p className="text-[#94a3b8] text-sm sm:text-base md:text-xs lg:text-base leading-relaxed max-w-[300px] mx-auto lg:mx-0">
+              {/* Tablet: md:text-xs (12px) - smaller for more content */}
               Modern GST billing software for Indian businesses. Simplify your invoicing and compliance.
             </p>
           </div>
 
           {/* Links Grid */}
-          <div className="grid grid-cols-4 gap-8 max-md:grid-cols-2 max-sm:grid-cols-1">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 sm:gap-8 md:gap-3 lg:gap-8">
             {footerSections.map((section, idx) => (
-              <div key={idx}>
-                <h4 className="text-base font-semibold text-white mb-5 uppercase tracking-[0.5px]">
+              <div key={idx} className="text-center sm:text-left">
+                <h4 className="text-sm sm:text-base md:text-xs lg:text-base font-semibold text-white mb-4 sm:mb-5 md:mb-2 lg:mb-5 uppercase tracking-wider">
+                  {/* Tablet: md:text-xs (12px) */}
                   {section.title}
                 </h4>
-                <ul className="space-y-3">
+                <ul className="space-y-2 sm:space-y-3 md:space-y-1 lg:space-y-3">
                   {section.links.map((link, linkIdx) => (
                     <li key={linkIdx}>
                       <Link
                         href={link.href}
-                        className="text-[#94a3b8] text-sm no-underline transition-colors duration-200 hover:text-white"
+                        className="text-[#94a3b8] text-xs sm:text-sm md:text-[10px] lg:text-sm no-underline transition-colors duration-200 hover:text-white block py-1 md:py-0.5 lg:py-1"
                       >
+                        {/* Tablet: md:text-[10px] (10px) - smallest for maximum content */}
                         {link.label}
                       </Link>
                     </li>
@@ -93,24 +101,26 @@ const Footer = () => {
         </div>
 
         {/* Bottom Section */}
-        <div className="pt-8 border-t border-[#1e293b] flex justify-between items-center flex-wrap gap-4 max-md:flex-col max-md:text-center">
-          <div className="text-[#94a3b8] text-sm">
-            &copy; 2024 GSTBilling. All rights reserved.
+        <div className="pt-6 sm:pt-8 md:pt-4 border-t border-[#1e293b] flex flex-col sm:flex-row justify-between items-center gap-4 sm:gap-6 md:gap-3">
+          <div className="text-[#94a3b8] text-xs sm:text-sm md:text-[10px] lg:text-sm order-2 sm:order-1">
+            {/* Tablet: md:text-[10px] (10px) */}
+            &copy; 2024 Billora. All rights reserved.
           </div>
-          <div className="flex gap-4">
+          <div className="flex gap-3 sm:gap-4 md:gap-1.5 lg:gap-4 order-1 sm:order-2">
             {socialLinks.map((social, index) => (
               <a
                 key={index}
                 href={social.url}
-                className="w-9 h-9 bg-[#1e293b] text-white rounded-full flex items-center justify-center no-underline transition-all duration-200 hover:bg-[#2563eb] hover:-translate-y-1"
+                className="w-10 h-10 sm:w-9 sm:h-9 md:w-6 md:h-6 lg:w-9 lg:h-9 bg-[#1e293b] text-white rounded-full flex items-center justify-center no-underline transition-all duration-200 hover:bg-[#2563eb] hover:-translate-y-1 text-base sm:text-sm md:text-[8px] lg:text-sm"
                 aria-label={social.name}
               >
+                {/* Tablet: md:text-[8px] (8px) - fits in smaller icons */}
                 {social.icon}
               </a>
             ))}
           </div>
         </div>
-      </div>
+      </Container>
     </footer>
   );
 };

@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { useNavigation } from '@react-navigation/native';
 import { stocksAPI } from '../api/stocks';
 import { productsAPI } from '../api/products';
+import { brandsAPI } from '../api/brands';
+import { categoriesAPI } from '../api/categories';
 import { useStockDetail } from './useStockDetail';
 import { useAuthStore } from '../store/authStore';
 
@@ -12,6 +14,8 @@ export const useStockForm = (stockId = null) => {
   const [validationErrors, setValidationErrors] = useState({});
   const [products, setProducts] = useState([]);
   const [units, setUnits] = useState([]);
+  const [brands, setBrands] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [loadingProducts, setLoadingProducts] = useState(false);
   
   // Get current user from auth store
@@ -75,9 +79,69 @@ export const useStockForm = (stockId = null) => {
     }
   };
 
+  // Fetch brands and categories
+  const fetchBrandsAndCategories = async () => {
+    try {
+      const brandsResponse = await brandsAPI.getAll();
+      console.log('Brands API Response:', brandsResponse);
+      let brandsData = [];
+      
+      // Handle nested array structure
+      if (brandsResponse?.data?.data?.data && Array.isArray(brandsResponse.data.data.data)) {
+        brandsData = brandsResponse.data.data.data;
+      } else if (brandsResponse?.data?.data && Array.isArray(brandsResponse.data.data)) {
+        brandsData = brandsResponse.data.data;
+      } else if (brandsResponse?.data?.data && Array.isArray(brandsResponse.data.data)) {
+        brandsData = brandsResponse.data.data;
+      } else if (brandsResponse?.data && Array.isArray(brandsResponse.data)) {
+        brandsData = brandsResponse.data;
+      } else if (Array.isArray(brandsResponse)) {
+        brandsData = brandsResponse;
+      }
+      
+      setBrands(brandsData);
+      
+      const categoriesResponse = await categoriesAPI.getAll();
+      console.log('Categories API Response:', categoriesResponse);
+      let categoriesData = [];
+      
+      // Handle nested array structure
+      if (categoriesResponse?.data?.data?.data && Array.isArray(categoriesResponse.data.data.data)) {
+        categoriesData = categoriesResponse.data.data.data;
+      } else if (categoriesResponse?.data?.data && Array.isArray(categoriesResponse.data.data)) {
+        categoriesData = categoriesResponse.data.data;
+      } else if (categoriesResponse?.data?.data && Array.isArray(categoriesResponse.data.data)) {
+        categoriesData = categoriesResponse.data.data;
+      } else if (categoriesResponse?.data && Array.isArray(categoriesResponse.data)) {
+        categoriesData = categoriesResponse.data;
+      } else if (Array.isArray(categoriesResponse)) {
+        categoriesData = categoriesResponse;
+      }
+      
+      setCategories(categoriesData);
+    } catch (err) {
+      console.error('Error fetching brands and categories:', err);
+    }
+  };
+
+  // Helper function to get brand and category names
+  const getBrandAndCategoryNames = (productId) => {
+    const product = products.find(p => p.id?.toString() === productId);
+    if (!product) return { brandName: 'N/A', categoryName: 'N/A' };
+    
+    const brand = brands.find(b => b.id === product.brand_id);
+    const category = categories.find(c => c.id === product.category_id);
+    
+    return {
+      brandName: brand?.name || 'N/A',
+      categoryName: category?.name || 'N/A'
+    };
+  };
+
   // Populate form when editing
   useEffect(() => {
     fetchProducts();
+    fetchBrandsAndCategories();
   }, []);
 
   useEffect(() => {
@@ -283,6 +347,7 @@ export const useStockForm = (stockId = null) => {
     setFormData,
     setError,
     clearError,
-    fetchProducts,
+    getBrandAndCategoryNames,
+    fetchProducts
   };
 };

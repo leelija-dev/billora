@@ -1,18 +1,11 @@
 import { apiClient } from './client';
-import { mockCategories } from './mock/categories';
 
-// Get categories data based on project mode
-const getCategoriesData = () => {
-  const projectMode = process.env.EXPO_PUBLIC_PROJECT_MODE || 'mock';
-  return projectMode === 'mock' ? mockCategories : apiClient;
-};
 
 export const categoriesAPI = {
   // Get all categories
   getAll: async (params = {}) => {
     try {
-      const api = getCategoriesData();
-      const response = await api.get('/categories', { params });
+      const response = await apiClient.get('/categories', { params });
       console.log('API Response:', response.data);
       return response.data;
     } catch (error) {
@@ -23,8 +16,7 @@ export const categoriesAPI = {
   // Get single category
   getById: async (id) => {
     try {
-      const api = getCategoriesData();
-      const response = await api.get(`/categories/${id}`);
+      const response = await apiClient.get(`/categories/${id}`);
       return response.data;
     } catch (error) {
       throw error.response?.data || error.message;
@@ -32,10 +24,8 @@ export const categoriesAPI = {
   },
 
   // Create new category
-   create: async (categoryData) => {
+  create: async (categoryData) => {
     try {
-      const api = getCategoriesData();
-      
       // Map frontend field names to API expected field names
       const payload = {
         user_id: categoryData.userId || categoryData.user_id,
@@ -46,7 +36,7 @@ export const categoriesAPI = {
       };
       
       console.log('Create API payload:', payload);
-      const response = await api.post('/categories/store', payload);
+      const response = await apiClient.post('/categories/store', payload);
       return response.data;
     } catch (error) {
       console.error('Create API error:', error.response?.data || error.message);
@@ -57,8 +47,6 @@ export const categoriesAPI = {
   // Update category
   update: async (id, categoryData) => {
     try {
-      const api = getCategoriesData();
-      
       // Map frontend field names to API expected field names
       const payload = {
         name: categoryData.name,
@@ -72,7 +60,7 @@ export const categoriesAPI = {
       }
       
       console.log('Update API payload:', payload);
-      const response = await api.put(`/categories/${id}`, payload);
+      const response = await apiClient.put(`/categories/${id}`, payload);
       return response.data;
     } catch (error) {
       console.error('Update API error:', error.response?.data || error.message);
@@ -84,8 +72,7 @@ export const categoriesAPI = {
   // Delete category
   delete: async (id) => {
     try {
-      const api = getCategoriesData();
-      const response = await api.delete(`/categories/${id}`);
+      const response = await apiClient.delete(`/categories/${id}`);
       return response.data;
     } catch (error) {
       throw error.response?.data || error.message;
@@ -95,8 +82,7 @@ export const categoriesAPI = {
   // Search categories (using the index endpoint with search parameter)
   search: async (query, filters = {}) => {
     try {
-      const api = getCategoriesData();
-      const response = await api.get('/categories', {
+      const response = await apiClient.get('/categories', {
         params: { search: query, ...filters }
       });
       return response.data;

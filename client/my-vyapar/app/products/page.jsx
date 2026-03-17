@@ -18,6 +18,7 @@ const products = [
   { title: "Dresses", price: 999, rating: 5, img: "/image/dress.png", category: "Pinterest dress" },
   { title: "Dresses", price: 999, rating: 5, img: "/image/minidress.png", category: "Pinterest dress" },
   { title: "Watches", price: 4999, rating: 5, img: "/image/watch.png", category: "Accessories" },
+   { title: "Green-tea", price: 499, rating: 4, img: "/image/grrentea.png", category: "Grocery" },
 ];
 
 const categories = ["All", "Software", "Grocery", "Mobile", "Accessories", "Pinterest dress", "Shirts"];

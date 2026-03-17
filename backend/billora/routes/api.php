@@ -10,7 +10,9 @@ use App\Http\Controllers\admin\BrandController;
 use App\Http\Controllers\admin\InvoiceController;
 use App\Http\Controllers\admin\StoreController;
 use App\Models\Unit;
+use App\Http\Controllers\admin\PlanController;
 use App\Http\Controllers\admin\CategoriesController;
+use App\Http\Controllers\admin\DashboardController;
 
 Route::get('/test', function () {
    return response()->json([
@@ -24,6 +26,7 @@ Route::prefix('users')->group(function () {
 
    Route::post('/store', [CustomerController::class, 'store']);
    Route::post('/login', [CustomerController::class, 'login']);
+   // Route::get
    //    Route::post('/logout', [CustomerController::class, 'logout']);
    Route::middleware('auth:sanctum')->post('/logout', [CustomerController::class, 'logout']);
    //due RBAC
@@ -38,7 +41,7 @@ Route::prefix('users')->group(function () {
 // });
 
 //Products
-Route::prefix('products')->group(function () {
+Route::middleware('auth:sanctum')->prefix('products')->group(function () {
    Route::get('/', [ProductsController::class, 'index']); //all products
    Route::post('/store', [ProductsController::class, 'store']); //store product
    Route::get('/{id}', [ProductsController::class, 'show']); //single product
@@ -48,7 +51,7 @@ Route::prefix('products')->group(function () {
    Route::delete('/{id}/force', [ProductsController::class, 'forceDelete']); // delete product permanently
 });
 //stocks
-Route::prefix('stocks')->group(function () {
+Route::middleware('auth:sanctum')->prefix('stocks')->group(function () {
    Route::get('/', [StocksController::class, 'index']);
    Route::get('/create', [StocksController::class, 'create']);
    Route::post('/store', [StocksController::class, 'store']);
@@ -58,28 +61,28 @@ Route::prefix('stocks')->group(function () {
    Route::post('/add-stock/{id}', [StocksController::class, 'addStock']);
 });
 //units
-Route::prefix('units')->group(function () {
+Route::middleware('auth:sanctum')->prefix('units')->group(function () {
    Route::get('/', [UnitController::class, 'index']);
    Route::post('/store', [UnitController::class, 'store']);
    Route::get('/{id}', [UnitController::class, 'edit']);
    Route::put('/{id}', [UnitController::class, 'update']);
    Route::delete('/{id}', [UnitController::class, 'delete']);
 });
-//brands
-Route::prefix('brands')->group(function () {
+Route::middleware('auth:sanctum')->prefix('brands')->group(function () {
    Route::get('/', [BrandController::class, 'index']);
    Route::post('/store', [BrandController::class, 'store']);
    Route::get('/{id}', [BrandController::class, 'edit']);
-   Route::put('/{id}', [BrandController::class, 'update']);
+   Route::post('/{id}', [BrandController::class, 'update']);
    Route::delete('/{id}', [BrandController::class, 'delete']);
 });
 //invoices & bill generate from stock table(stock management)
-Route::prefix('invoice')->group(function () {
+Route::middleware('auth:sanctum')->prefix('invoice')->group(function () {
    Route::get('/', [InvoiceController::class, 'index']); //for bill generate
    Route::post('/store', [InvoiceController::class, 'store']);
+   Route::put('/{id}', [InvoiceController::class, 'update']);
    Route::get('/bill-history', [InvoiceController::class, 'billHistory']);
    Route::get('/{id}', [InvoiceController::class, 'show']);
-   Route::put('/{id}', [InvoiceController::class, 'update']);
+   
    Route::delete('/{id}', [InvoiceController::class, 'destroy']);
    
 });
@@ -92,7 +95,7 @@ Route::prefix('invoices')->group(function () {
 
 
 // store or shop
-Route::prefix('store')->group(function () {
+Route::middleware('auth:sanctum')->prefix('store')->group(function () {
    Route::get('/{id}', [StoreController::class, 'index']);
    Route::post('/store', [StoreController::class, 'store']);
    Route::get('/edit/{id}', [StoreController::class, 'edit']);
@@ -122,4 +125,20 @@ Route::prefix('categories')->group(function () {
    Route::get('/{id}', [CategoriesController::class, 'edit']);
    Route::put('/{id}', [CategoriesController::class, 'update']);
    Route::delete('/{id}', [CategoriesController::class, 'delete']);
+});
+
+Route::prefix('plans')->group(function (){
+   Route::get('/', [PlanController::class, 'index']);
+   Route::post('/store',[PlanController::class, 'store']);
+   Route::get('/trashed', [PlanController::class, 'trashed']);
+
+   Route::get('/{id}', [PlanController::class, 'edit']);
+   Route::put('/{id}', [PlanController::class, 'update']);
+   Route::delete('/{id}', [PlanController::class, 'delete']);
+   Route::patch('/{id}', [PlanController::class, 'restore']);
+   Route::delete('/{id}/force', [PlanController::class, 'forceDelete']);
+});
+Route::prefix('dashboard')->group(function (){
+   Route::get('/overview/{id}', [DashboardController::class, 'index']);
+   
 });

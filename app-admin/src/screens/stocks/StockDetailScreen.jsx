@@ -362,20 +362,7 @@ const StockDetailScreen = () => {
                 </Text>
               </View>
 
-              <View className="w-1/2 mb-4">
-                <Text className={`text-xs ${
-                  isDarkMode ? 'text-gray-400' : 'text-gray-500'
-                }`}>
-                  Package ID
-                </Text>
-                <Text className={`text-sm font-medium ${
-                  stock.product_package_id 
-                    ? isDarkMode ? 'text-white' : 'text-gray-800'
-                    : 'text-gray-400'
-                }`}>
-                  {stock.product_package_id || 'N/A'}
-                </Text>
-              </View>
+              
 
               <View className="w-1/2 mb-4">
                 <Text className={`text-xs ${

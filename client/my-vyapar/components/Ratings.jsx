@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import Container from "../components/Container"; // Add this import
+import Container from "../components/Container";
 
 const Ratings = () => {
   const [rating, setRating] = useState(4);
@@ -36,7 +36,7 @@ const Ratings = () => {
   const averageRating = ((rating * (voteCount - 1) + rating) / voteCount).toFixed(2);
 
   return (
-    <section className="py-12 sm:py-16 md:py-20 lg:py-[60px] bg-gradient-to-br from-[#f8fafc] to-[#f1f5f9] font-['Inter',-apple-system,BlinkMacSystemFont,'Segoe_UI',sans-serif] text-center relative overflow-hidden">
+    <section className="py-12 sm:py-16 md:py-12 lg:py-[60px] bg-gradient-to-br from-[#f8fafc] to-[#f1f5f9] font-['Inter',-apple-system,BlinkMacSystemFont,'Segoe_UI',sans-serif] text-center relative overflow-hidden">
 
       {/* Animated Billing Instruments Background */}
       <style>{`
@@ -63,28 +63,30 @@ const Ratings = () => {
         }
       `}</style>
 
-      {/* Billing Instrument Elements - Responsive (these stay outside Container) */}
-      <div className="absolute top-10 sm:top-20 left-5 sm:left-10 text-3xl sm:text-5xl md:text-6xl bill-float-1 opacity-15 sm:opacity-15">📄</div>
-      <div className="absolute top-32 sm:top-40 right-5 sm:right-20 text-2xl sm:text-4xl md:text-5xl bill-float-2 bill-sway opacity-12 sm:opacity-15">💰</div>
-      <div className="absolute bottom-24 sm:bottom-32 left-1/4 text-3xl sm:text-5xl md:text-7xl bill-float-3 opacity-12 sm:opacity-15">📊</div>
-      <div className="absolute top-1/2 right-1/4 text-2xl sm:text-4xl md:text-6xl bill-float-1 bill-sway opacity-12 sm:opacity-15">💳</div>
-      <div className="absolute bottom-16 sm:bottom-20 right-5 sm:right-10 text-2xl sm:text-4xl md:text-5xl bill-float-2 opacity-12 sm:opacity-15">📋</div>
-      <div className="absolute top-1/3 left-1/3 text-3xl sm:text-5xl md:text-6xl bill-pulse opacity-10 sm:opacity-12">🧾</div>
-      <div className="absolute bottom-1/3 right-1/3 text-2xl sm:text-4xl md:text-5xl bill-float-3 bill-sway opacity-10 sm:opacity-12">💹</div>
+      {/* Billing Instrument Elements */}
+      <div className="absolute top-10 sm:top-20 left-5 sm:left-10 text-3xl sm:text-5xl md:text-4xl lg:text-6xl bill-float-1 opacity-15 sm:opacity-15">📄</div>
+      <div className="absolute top-32 sm:top-40 right-5 sm:right-20 text-2xl sm:text-4xl md:text-3xl lg:text-5xl bill-float-2 bill-sway opacity-12 sm:opacity-15">💰</div>
+      <div className="absolute bottom-24 sm:bottom-32 left-1/4 text-3xl sm:text-5xl md:text-5xl lg:text-7xl bill-float-3 opacity-12 sm:opacity-15">📊</div>
+      <div className="absolute top-1/2 right-1/4 text-2xl sm:text-4xl md:text-4xl lg:text-6xl bill-float-1 bill-sway opacity-12 sm:opacity-15">💳</div>
+      <div className="absolute bottom-16 sm:bottom-20 right-5 sm:right-10 text-2xl sm:text-4xl md:text-3xl lg:text-5xl bill-float-2 opacity-12 sm:opacity-15">📋</div>
+      <div className="absolute top-1/3 left-1/3 text-3xl sm:text-5xl md:text-4xl lg:text-6xl bill-pulse opacity-10 sm:opacity-12">🧾</div>
+      <div className="absolute bottom-1/3 right-1/3 text-2xl sm:text-4xl md:text-3xl lg:text-5xl bill-float-3 bill-sway opacity-10 sm:opacity-12">💹</div>
 
-      {/* Content Container - wrapped in Container */}
-      <Container>
-        <div className="relative z-10">
-          <h2 className="text-xl sm:text-2xl md:text-[28px] font-bold text-[#0f172a] mb-6 sm:mb-8 lg:mb-[30px] leading-tight">
-            How useful is Billora for<br className="sm:hidden" /> Your Business?
+      {/* Content Container */}
+      <Container size="default">
+        <div className="relative z-10 px-4 sm:px-0">
+          {/* Main Heading */}
+          <h2 className="text-2xl sm:text-2xl md:text-xl lg:text-[28px] font-bold text-[#0f172a] mb-6 sm:mb-8 md:mb-4 lg:mb-[30px] leading-tight">
+            {/* Tablet: md:text-xl (20px) */}
+            How useful is Billora for <br className="hidden sm:block" /> Your Business?
           </h2>
 
           {/* Stars Rating */}
-          <div className="flex justify-center gap-2 sm:gap-3 md:gap-4 mb-6 sm:mb-8">
+          <div className="flex justify-center gap-3 sm:gap-3 md:gap-1.5 lg:gap-4 mb-6 sm:mb-8 md:mb-5 lg:mb-8">
             {[1, 2, 3, 4, 5].map((starValue) => (
               <span
                 key={starValue}
-                className={`text-2xl sm:text-3xl md:text-4xl lg:text-[40px] inline-block transition-all duration-200 ${
+                className={`text-4xl sm:text-3xl md:text-2xl lg:text-[40px] inline-block transition-all duration-200 ${
                   (hoverRating || rating) >= starValue ? "text-[#fbbf24] [text-shadow:0_0_10px_rgba(251,191,36,0.3)]" : "text-[#cbd5e1]"
                 } ${hasVoted ? "cursor-not-allowed opacity-60" : "cursor-pointer hover:scale-110 hover:text-[#fbbf24]"}`}
                 onClick={() => handleRatingClick(starValue)}
@@ -100,25 +102,25 @@ const Ratings = () => {
           </div>
 
           {/* Stats */}
-          <div className="flex flex-col sm:flex-row sm:justify-center gap-4 sm:gap-6 md:gap-[30px] mb-6 sm:mb-8 text-sm sm:text-base">
-            <p className="text-[#334155] font-semibold">
-              Average rating {averageRating}/5
+          <div className="flex flex-col sm:flex-row sm:justify-center gap-3 sm:gap-6 md:gap-3 lg:gap-[30px] mb-6 sm:mb-8 md:mb-5 lg:mb-8">
+            <p className="text-[#334155] font-semibold text-base sm:text-base md:text-sm lg:text-base">
+              Average rating <span className="font-bold">{averageRating}</span>/5
             </p>
-            <p className="text-[#64748b] text-sm sm:text-base">
-              Vote count: {voteCount.toLocaleString()}
+            <p className="text-[#64748b] text-base sm:text-base md:text-sm lg:text-base">
+              {voteCount.toLocaleString()} votes
             </p>
           </div>
 
           {/* Thank You Message */}
           {showThankYou && (
-            <p className="text-[#10b981] font-semibold py-2 sm:py-2.5 px-4 bg-[#d1fae5] rounded-full max-w-xs sm:max-w-sm mx-auto opacity-100 transition-opacity duration-300 text-xs sm:text-sm md:text-base">
+            <p className="text-[#10b981] font-semibold py-3 sm:py-2.5 md:py-2 lg:py-2.5 px-4 bg-[#d1fae5] rounded-full max-w-xs sm:max-w-sm md:max-w-[220px] lg:max-w-sm mx-auto opacity-100 transition-opacity duration-300 text-sm sm:text-sm md:text-xs lg:text-base">
               Thank you for rating this post!
             </p>
           )}
 
           {/* Vote Confirmation Message */}
           {hasVoted && !showThankYou && (
-            <p className="text-[#3b82f6] font-medium py-2 sm:py-2.5 px-4 bg-[#dbeafe] rounded-full max-w-xs sm:max-w-sm mx-auto text-xs sm:text-sm md:text-base">
+            <p className="text-[#3b82f6] font-medium py-3 sm:py-2.5 md:py-2 lg:py-2.5 px-4 bg-[#dbeafe] rounded-full max-w-xs sm:max-w-sm md:max-w-[220px] lg:max-w-sm mx-auto text-sm sm:text-sm md:text-xs lg:text-base">
               You rated this {rating} out of 5 stars
             </p>
           )}

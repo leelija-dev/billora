@@ -1,6 +1,6 @@
 "use client";
 import SectionTitle from "../components/SectionTitle";
-import Container from "../components/Container"; // Add this import
+import Container from "../components/Container";
 
 import React, { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
@@ -96,20 +96,21 @@ const Features = () => {
         .circle-float-4 { animation: float-circle-4 9s ease-in-out infinite 1.5s; }
       `}</style>
 
-      {/* Animated Circle Elements - Darker Colors (Hidden on mobile for better performance) */}
+      {/* Animated Circle Elements */}
       <div className="hidden sm:block absolute top-20 left-10 w-48 sm:w-64 md:w-72 h-48 sm:h-64 md:h-72 bg-gradient-to-br from-blue-400 to-blue-200 rounded-full circle-float-1"></div>
       <div className="hidden md:block absolute top-1/3 right-20 w-64 md:w-80 h-64 md:h-80 bg-gradient-to-br from-purple-400 to-purple-200 rounded-full circle-float-2"></div>
       <div className="hidden sm:block absolute bottom-40 left-1/4 w-64 sm:w-80 md:w-96 h-64 sm:h-80 md:h-96 bg-gradient-to-br from-indigo-400 to-indigo-200 rounded-full circle-float-3"></div>
       <div className="hidden md:block absolute bottom-10 right-1/3 w-64 h-64 bg-gradient-to-br from-cyan-400 to-cyan-200 rounded-full circle-float-4"></div>
 
-      {/* Content - Now wrapped in Container */}
+      {/* Content */}
       <Container>
         <div className="relative z-10">
           <div className="text-center mb-12 sm:mb-16 md:mb-[60px] max-w-[800px] mx-auto">
             <SectionTitle
               title="Features of GST Billing and Accounting Software"
             />
-            <p className="text-sm sm:text-base md:text-lg text-[#666]">
+            <p className="text-base sm:text-base md:text-sm lg:text-lg text-[#666] px-4 sm:px-0">
+              {/* Tablet: md:text-sm (14px) - smaller than mobile but balanced */}
               Everything you need to manage your business professionally
             </p>
           </div>
@@ -122,12 +123,12 @@ const Features = () => {
                   key={index}
                   ref={(el) => (sectionRefs.current[index] = el)}
                   data-index={index}
-                  className={`flex flex-col lg:flex-row items-center gap-6 sm:gap-10 md:gap-[60px] mb-12 sm:mb-20 md:mb-[100px] transition-all duration-1000 ${feature.reverse ? 'lg:flex-row-reverse' : ''
+                  className={`flex flex-col lg:flex-row items-center gap-8 sm:gap-10 md:gap-12 lg:gap-[60px] mb-16 sm:mb-20 md:mb-[100px] transition-all duration-1000 ${feature.reverse ? 'lg:flex-row-reverse' : ''
                     }`}
                 >
                   {/* Image with left-right animation */}
                   <div
-                    className={`w-full lg:flex-1 flex justify-center items-center transition-all duration-1000 ${visibleItems[index]
+                    className={`w-full lg:flex-1 flex justify-center items-center transition-all duration-1000 px-4 sm:px-0 ${visibleItems[index]
                         ? 'opacity-100 translate-x-0'
                         : isEven
                           ? 'opacity-0 -translate-x-20'
@@ -148,23 +149,27 @@ const Features = () => {
 
                   {/* Content with opposite left-right animation */}
                   <div
-                    className={`w-full lg:flex-1 text-center lg:text-left transition-all duration-1000 delay-200 ${visibleItems[index]
+                    className={`w-full lg:flex-1 text-center lg:text-left transition-all duration-1000 delay-200 px-4 sm:px-2 md:px-5 ${visibleItems[index]
                         ? 'opacity-100 translate-x-0'
                         : isEven
                           ? 'opacity-0 translate-x-20'
                           : 'opacity-0 -translate-x-20'
                       }`}
                   >
-                    <h3 className="text-xl sm:text-2xl md:text-[28px] text-black mb-3 sm:mb-4 md:mb-5 font-semibold leading-snug transition-colors duration-300 hover:text-[#2f5fa5]">
+                    <h3 className="text-2xl sm:text-2xl md:text-xl lg:text-[28px] text-black mb-4 sm:mb-4 md:mb-5 font-semibold leading-snug transition-colors duration-300 hover:text-[#2f5fa5]">
+                      {/* Tablet: md:text-xl (20px) - smaller than mobile's 24px */}
                       {feature.title}
                     </h3>
-                    <p className="text-xs sm:text-sm md:text-base text-[#555] leading-relaxed sm:leading-[1.7] md:leading-[1.8] m-0">
+                    
+                    <p className="text-base sm:text-sm md:text-sm lg:text-base text-[#555] leading-relaxed sm:leading-[1.7] md:leading-[1.6] lg:leading-[1.8] m-0">
+                      {/* Tablet: md:text-sm (14px) */}
                       {feature.description}
                     </p>
 
                     {/* Extra paragraph that appears when expanded */}
                     {expandedItems[index] && (
-                      <p className="text-xs sm:text-sm md:text-base text-[#555] leading-relaxed sm:leading-[1.7] md:leading-[1.8] mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-[#2f5fa5]/20 animate-in slide-in-from-top duration-500">
+                      <p className="text-base sm:text-sm md:text-sm lg:text-base text-[#555] leading-relaxed sm:leading-[1.7] md:leading-[1.6] lg:leading-[1.8] mt-4 sm:mt-4 pt-4 sm:pt-4 border-t border-[#2f5fa5]/20 animate-in slide-in-from-top duration-500">
+                        {/* Tablet: md:text-sm (14px) */}
                         {feature.extraDescription}
                       </p>
                     )}
@@ -172,14 +177,14 @@ const Features = () => {
                     {/* Clickable read more/less link */}
                     <button
                       onClick={() => toggleReadMore(index)}
-                      className="inline-flex items-center gap-2 mt-3 sm:mt-4 md:mt-5 text-[#2f5fa5] font-medium text-xs sm:text-sm md:text-base group hover:cursor-pointer bg-transparent border-none p-0 transition-all duration-300 hover:gap-3 justify-center lg:justify-start"
+                      className="inline-flex items-center gap-2 mt-4 sm:mt-4 md:mt-5 text-[#2f5fa5] font-medium text-base sm:text-sm md:text-sm lg:text-base group hover:cursor-pointer bg-transparent border-none p-0 transition-all duration-300 hover:gap-3 justify-center lg:justify-start"
                     >
                       <span className="relative">
                         {expandedItems[index] ? 'Show less' : 'Read more'}
                         <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-[#2f5fa5] transition-all duration-300 group-hover:w-full"></span>
                       </span>
                       <svg
-                        className={`w-3 h-3 sm:w-4 sm:h-4 transition-all duration-300 ${expandedItems[index] ? 'rotate-180' : 'group-hover:translate-x-1'}`}
+                        className={`w-4 h-4 sm:w-4 sm:h-4 md:w-3.5 md:h-3.5 lg:w-4 lg:h-4 transition-all duration-300 ${expandedItems[index] ? 'rotate-180' : 'group-hover:translate-x-1'}`}
                         fill="none"
                         stroke="currentColor"
                         viewBox="0 0 24 24"

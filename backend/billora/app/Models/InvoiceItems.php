@@ -3,7 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-
+use App\Models\Products;
 class InvoiceItems extends Model
 {
     protected $table='invoice_items';
@@ -26,4 +26,8 @@ class InvoiceItems extends Model
         'price' => 'decimal:2',
         'total_price'=>'decimal:2'
     ];
+    public function product()
+{
+    return $this->belongsTo(Products::class, 'product_id');
+}
 }
