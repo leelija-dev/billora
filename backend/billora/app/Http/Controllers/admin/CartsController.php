@@ -16,21 +16,42 @@ use Illuminate\Support\Facades\DB;
 class CartsController extends Controller
 {
     public function index()
-    {
-        $user = Auth::user()->id;
-        $carts = Carts::where('user_id', $user)->get();
+{
+    try {
+        $user = Auth::user();
+        if (!$user) {
+            return response()->json([
+                'status' => false,
+                'message' => 'User not authenticated',
+            ], 401);
+        }
+        
+        $carts = Carts::where('user_id', $user->id)->get();
+        
         if ($carts->isEmpty()) {
             return response()->json([
-                'status' => true,
-                'message' => 'Cart data not found!',
-            ]);
+                'status' => false,
+                'message' => 'Cart is empty',
+                'data' => []
+            ], 200);
         }
+        
         return response()->json([
             'status' => true,
-            'message' => "Carts list",
-            'data' => $carts
+            'message' => 'Cart items retrieved successfully',
+            'data' => $carts,
+            'count' => $carts->count()
         ]);
+        
+    } catch (\Exception $e) {
+        return response()->json([
+            'status' => false,
+            'message' => 'Error retrieving cart data',
+            'error' => $e->getMessage()
+        ], 500);
     }
+}
+
    public function store(Request $request)
 {
     $data = $request->validate([
