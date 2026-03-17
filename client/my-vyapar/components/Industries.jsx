@@ -9,6 +9,7 @@ import {
 } from "framer-motion";
 import Link from "next/link";
 import Container from "../components/Container";
+import SectionTitle from "./SectionTitle";
 
 const INDUSTRY_DATA = [
   {
@@ -94,9 +95,7 @@ const IndustrySection = () => {
         <div className="h-[30vh] flex items-end justify-center pb-12 z-20">
           <Container size="full">
             <div className="text-center max-w-5xl mx-auto">
-              <h2 className="text-3xl md:text-[42px] font-[900] text-[#1a237e] mb-4 relative inline-block tracking-tight after:content-[''] after:absolute after:bottom-[-12px] after:left-1/2 after:-translate-x-1/2 after:w-[100px] after:h-1 after:bg-gradient-to-r after:from-[#3b82f6] after:via-[#8b5cf6] after:to-[#10b981] after:rounded-full">
-                Supporting businesses from a wide range of industries
-              </h2>
+              <SectionTitle title="Supporting Businesses  from a wide range of industries" />
             </div>
           </Container>
         </div>
