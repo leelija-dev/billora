@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import SectionTitle from "./SectionTitle";
 
 const FAQ = () => {
   const [activeIndex, setActiveIndex] = useState(null);
@@ -56,14 +57,15 @@ const FAQ = () => {
               Questions & Answers
             </h4>
 
-            <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-black text-slate-900 mb-4 sm:mb-6 tracking-tight leading-tight">
+            {/* <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-black text-slate-900 mb-4 sm:mb-6 tracking-tight leading-tight">
               Frequently asked
               <br className="hidden sm:block" />
               <span className="relative inline-block">
                 <span className="relative z-10 px-1">Questions</span>
                 <span className="absolute inset-0 bg-[#f6c453] -skew-y-1 transform rounded-sm -z-0"></span>
               </span>
-            </h2>
+            </h2> */}
+            <SectionTitle title="Frequently Asked Questions" />
 
             <div className="flex items-center mb-8 sm:mb-10">
               <div className="w-16 sm:w-20 h-0.5 sm:h-1 bg-black mr-2 sm:mr-2.5"></div>
