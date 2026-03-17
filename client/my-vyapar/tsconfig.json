@@ -29,7 +29,13 @@
     "components/**/*.jsx",
     "app/**/*.jsx",
     ".next/types/**/*.ts",
-    ".next/dev/types/**/*.ts"
-  ],
+    ".next/dev/types/**/*.ts",
+    "**/*.mts",
+    "components/**/*.tsx",
+    "components/**/*.jsx"
+      ],
   "exclude": ["node_modules"]
-} 
+}
+
+
+
