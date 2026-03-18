@@ -20,7 +20,7 @@ import Header from "../../components/common/Header";
 import ReportFilters from "../../components/reports/ReportFilters";
 import ReportList from "../../components/reports/ReportList";
 import ReportSummary from "../../components/reports/ReportSummary";
-import QuickDateFilters from "../../components/reports/QuickDateFilters"; // Import the new component
+import QuickDateFilters from "../../components/reports/QuickDateFilters";
 import { getNavigationItemsWithBadges } from "../../constants/navigationItems";
 import { formatDate } from "../../utils/dateFormatter";
 
@@ -48,6 +48,47 @@ const ReportsScreen = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [dateRangeText, setDateRangeText] = useState("Today");
   const [initialLoadComplete, setInitialLoadComplete] = useState(false);
+
+  // Function to update dateRangeText based on date selection
+  const updateDateRangeText = useCallback((start, end) => {
+    const today = new Date();
+    const startStr = formatDate(start, 'YYYY-MM-DD');
+    const endStr = formatDate(end, 'YYYY-MM-DD');
+    const todayStr = formatDate(today, 'YYYY-MM-DD');
+    
+    // Check if it's Today
+    if (startStr === todayStr && endStr === todayStr) {
+      setDateRangeText("Today");
+    } 
+    // Check if it's Last 7 Days
+    else {
+      const sevenDaysAgo = new Date(today);
+      sevenDaysAgo.setDate(today.getDate() - 7);
+      if (startStr === formatDate(sevenDaysAgo, 'YYYY-MM-DD') && endStr === todayStr) {
+        setDateRangeText("Last 7 Days");
+      }
+      // Check if it's Last 30 Days
+      else {
+        const thirtyDaysAgo = new Date(today);
+        thirtyDaysAgo.setDate(today.getDate() - 30);
+        if (startStr === formatDate(thirtyDaysAgo, 'YYYY-MM-DD') && endStr === todayStr) {
+          setDateRangeText("Last 30 Days");
+        }
+        // Check if it's This Month (last 30 days from today - this matches your implementation)
+        else {
+          const monthAgo = new Date(today);
+          monthAgo.setMonth(today.getMonth() - 1);
+          if (startStr === formatDate(monthAgo, 'YYYY-MM-DD') && endStr === todayStr) {
+            setDateRangeText("This Month");
+          }
+          // Default formatted range
+          else {
+            setDateRangeText(`${formatDate(start, 'MMM DD')} - ${formatDate(end, 'MMM DD')}`);
+          }
+        }
+      }
+    }
+  }, []);
 
   // Calculate filtered counts for report types
   const getTypeCount = useCallback((type) => {
@@ -101,20 +142,15 @@ const ReportsScreen = () => {
         end_date: formatDate(endDate, 'YYYY-MM-DD'),
       });
       
-      // Update date range text
-      if (formatDate(startDate, 'YYYY-MM-DD') === formatDate(new Date(), 'YYYY-MM-DD') &&
-          formatDate(endDate, 'YYYY-MM-DD') === formatDate(new Date(), 'YYYY-MM-DD')) {
-        setDateRangeText("Today");
-      } else {
-        setDateRangeText(`${formatDate(startDate, 'MMM DD')} - ${formatDate(endDate, 'MMM DD')}`);
-      }
+      // Update date range text using the new function
+      updateDateRangeText(startDate, endDate);
       
       setInitialLoadComplete(true);
     } catch (err) {
       console.error("Error fetching reports:", err);
       setInitialLoadComplete(true);
     }
-  }, [fetchReports, startDate, endDate]);
+  }, [fetchReports, startDate, endDate, updateDateRangeText]);
 
   // Initial fetch on mount
   useEffect(() => {
@@ -197,6 +233,7 @@ const ReportsScreen = () => {
     const today = new Date();
     setStartDate(today);
     setEndDate(today);
+    setDateRangeText("Today"); // Set immediately for better UX
     handleDateSearch();
   };
 
@@ -206,6 +243,7 @@ const ReportsScreen = () => {
     start.setDate(start.getDate() - 7);
     setStartDate(start);
     setEndDate(end);
+    setDateRangeText("Last 7 Days"); // Set immediately for better UX
     handleDateSearch();
   };
 
@@ -215,6 +253,7 @@ const ReportsScreen = () => {
     start.setDate(start.getDate() - 30);
     setStartDate(start);
     setEndDate(end);
+    setDateRangeText("Last 30 Days"); // Set immediately for better UX
     handleDateSearch();
   };
 
@@ -224,6 +263,7 @@ const ReportsScreen = () => {
     start.setMonth(start.getMonth() - 1);
     setStartDate(start);
     setEndDate(end);
+    setDateRangeText("This Month"); // Set immediately for better UX
     handleDateSearch();
   };
 
@@ -365,7 +405,7 @@ const ReportsScreen = () => {
         </View>
       </View>
 
-      {/* Quick Date Filters - Using the new component */}
+      {/* Quick Date Filters */}
       <QuickDateFilters
         dateRangeText={dateRangeText}
         isDarkMode={isDarkMode}

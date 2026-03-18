@@ -1,3 +1,4 @@
+// components/reports/QuickDateFilters.js
 import React from 'react';
 import { View, ScrollView, TouchableOpacity, Text } from 'react-native';
 
@@ -37,13 +38,13 @@ const QuickDateFilters = ({
         <TouchableOpacity
           onPress={onSelectLast7Days}
           className={`mr-2 px-4 py-1.5 rounded-full ${
-            dateRangeText.includes('7') ? 'bg-blue-500' : isDarkMode ? 'bg-gray-800' : 'bg-gray-200'
+            dateRangeText === "Last 7 Days" ? 'bg-blue-500' : isDarkMode ? 'bg-gray-800' : 'bg-gray-200'
           }`}
           disabled={loading}
           style={{ height: 32, justifyContent: 'center' }}
         >
           <Text className={`text-sm font-medium ${
-            dateRangeText.includes('7') 
+            dateRangeText === "Last 7 Days" 
               ? 'text-white' 
               : isDarkMode ? 'text-gray-300' : 'text-gray-700'
           }`}>
@@ -54,13 +55,13 @@ const QuickDateFilters = ({
         <TouchableOpacity
           onPress={onSelectLast30Days}
           className={`mr-2 px-4 py-1.5 rounded-full ${
-            dateRangeText.includes('30') ? 'bg-blue-500' : isDarkMode ? 'bg-gray-800' : 'bg-gray-200'
+            dateRangeText === "Last 30 Days" ? 'bg-blue-500' : isDarkMode ? 'bg-gray-800' : 'bg-gray-200'
           }`}
           disabled={loading}
           style={{ height: 32, justifyContent: 'center' }}
         >
           <Text className={`text-sm font-medium ${
-            dateRangeText.includes('30') 
+            dateRangeText === "Last 30 Days" 
               ? 'text-white' 
               : isDarkMode ? 'text-gray-300' : 'text-gray-700'
           }`}>
@@ -71,13 +72,13 @@ const QuickDateFilters = ({
         <TouchableOpacity
           onPress={onSelectThisMonth}
           className={`mr-2 px-4 py-1.5 rounded-full ${
-            dateRangeText.includes('month') ? 'bg-blue-500' : isDarkMode ? 'bg-gray-800' : 'bg-gray-200'
+            dateRangeText === "This Month" ? 'bg-blue-500' : isDarkMode ? 'bg-gray-800' : 'bg-gray-200'
           }`}
           disabled={loading}
           style={{ height: 32, justifyContent: 'center' }}
         >
           <Text className={`text-sm font-medium ${
-            dateRangeText.includes('month') 
+            dateRangeText === "This Month" 
               ? 'text-white' 
               : isDarkMode ? 'text-gray-300' : 'text-gray-700'
           }`}>
