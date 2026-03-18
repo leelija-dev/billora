@@ -13,7 +13,7 @@ export const useReports = (initialParams = {}) => {
     topProducts: [],
     lowStockItems: 0,
   });
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false); // Changed from true to false
   const [error, setError] = useState(null);
 
   const fetchReports = useCallback(async (params = {}) => {
@@ -29,6 +29,7 @@ export const useReports = (initialParams = {}) => {
         ...params
       };
 
+      console.log('Fetching reports with params:', queryParams);
       const response = await reportsAPI.getReports(queryParams);
       
       console.log('Raw API Response:', response);
@@ -46,7 +47,7 @@ export const useReports = (initialParams = {}) => {
         console.log('Sales Items:', salesItems);
         
         // Extract reports from salesItem_details
-        if (Array.isArray(salesItems)) {
+        if (Array.isArray(salesItems) && salesItems.length > 0) {
           reportsData = salesItems.map((item, index) => ({
             id: item.id || index + 1,
             title: `Sales Report - ${new Date(item.created_at).toLocaleDateString()}`,
@@ -113,7 +114,7 @@ export const useReports = (initialParams = {}) => {
       setError(err.message || 'Failed to fetch reports');
       console.error('Fetch reports error:', err);
     } finally {
-      setLoading(false);
+      setLoading(false); // Make sure loading is set to false even on error
     }
   }, []);
 

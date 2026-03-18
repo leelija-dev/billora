@@ -12,7 +12,6 @@ import {
 } from "react-native";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 import { useThemeStore } from "../../store/themeStore";
-import { useReports } from "../../hooks/useReports";
 import ReportCard from "./ReportCard";
 import { formatDate } from "../../utils/dateFormatter";
 
@@ -23,18 +22,14 @@ const ReportList = ({
   startDate,
   endDate,
   onRefresh,
+  loading = false,
+  reports = [], // Receive reports from parent
+  error = null, // Receive error from parent
 }) => {
   const navigation = useNavigation();
   const { isDarkMode } = useThemeStore();
   const [refreshing, setRefreshing] = useState(false);
   const [fadeAnim] = useState(new Animated.Value(0));
-  
-  const { 
-    reports = [], 
-    loading, 
-    error, 
-    fetchReports,
-  } = useReports() || {};
 
   useEffect(() => {
     Animated.timing(fadeAnim, {
@@ -46,6 +41,8 @@ const ReportList = ({
 
   // Filter reports based on props
   const filteredReports = useMemo(() => {
+    if (!reports || !Array.isArray(reports)) return [];
+    
     let filtered = [...reports];
 
     // Report type filter
@@ -72,11 +69,7 @@ const ReportList = ({
   const handleRefresh = async () => {
     setRefreshing(true);
     try {
-      await fetchReports({
-        start_date: formatDate(startDate, 'YYYY-MM-DD'),
-        end_date: formatDate(endDate, 'YYYY-MM-DD'),
-      });
-      onRefresh?.();
+      await onRefresh?.();
     } finally {
       setRefreshing(false);
     }
@@ -104,13 +97,13 @@ const ReportList = ({
   );
 
   const renderGridItem = (item) => (
-    <View key={item.id} className="w-[48%] mx-[1%] mb-3">
+    <View key={item.id?.toString()} className="w-[48%] mx-[1%] mb-3">
       <ReportCard report={item} viewMode="grid" />
     </View>
   );
 
   const renderListItem = (item) => (
-    <ReportCard key={item.id} report={item} viewMode="list" />
+    <ReportCard key={item.id?.toString()} report={item} viewMode="list" />
   );
 
   const renderGridItems = () => {
@@ -137,7 +130,7 @@ const ReportList = ({
     );
   }
 
-  if (error) {
+  if (error && !refreshing) {
     return (
       <View className="flex-1 justify-center items-center py-10">
         <Icon name="alert-circle" size={50} color="#ef4444" />
@@ -154,19 +147,19 @@ const ReportList = ({
 
   if (!filteredReports || filteredReports.length === 0) {
     return (
-      <ScrollView
-        className="flex-1"
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={handleRefresh}
-            colors={["#3b82f6"]}
-            tintColor="#3b82f6"
-          />
-        }
-      >
-        <View>
-          {renderHeader()}
+      <View className="flex-1">
+        {renderHeader()}
+        <ScrollView
+          className="flex-1"
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={handleRefresh}
+              colors={["#3b82f6"]}
+              tintColor="#3b82f6"
+            />
+          }
+        >
           <View className="items-center justify-center py-16">
             <Icon name="file-document-outline" size={80} color="#d1d5db" />
             <Text className={`text-lg font-semibold mt-4 ${
@@ -182,8 +175,8 @@ const ReportList = ({
                 : "No reports available for the selected date range"}
             </Text>
           </View>
-        </View>
-      </ScrollView>
+        </ScrollView>
+      </View>
     );
   }
 

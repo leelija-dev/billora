@@ -9,6 +9,7 @@ import {
   TouchableOpacity,
   View,
   RefreshControl,
+  ActivityIndicator,
 } from "react-native";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 import DateTimePicker from "@react-native-community/datetimepicker";
@@ -33,7 +34,6 @@ const ReportsScreen = () => {
     error, 
     fetchReports,
     refreshReports,
-    loading: reportsLoading
   } = useReports() || {};
   
   const [showFilters, setShowFilters] = useState(false);
@@ -46,45 +46,52 @@ const ReportsScreen = () => {
   const [viewMode, setViewMode] = useState("list");
   const [refreshing, setRefreshing] = useState(false);
   const [dateRangeText, setDateRangeText] = useState("Today");
+  const [initialLoadComplete, setInitialLoadComplete] = useState(false);
 
-  // Report types for filtering
-  const reportTypes = [
+  // Calculate filtered counts for report types
+  const getTypeCount = useCallback((type) => {
+    if (type === "all") return reports.length;
+    return reports.filter(r => r.type?.toLowerCase() === type.toLowerCase()).length;
+  }, [reports]);
+
+  // Report types for filtering with dynamic counts
+  const reportTypes = useMemo(() => [
     {
       id: "all",
       name: "All Reports",
       icon: "file-document-multiple",
-      count: reports?.length || 0,
+      count: getTypeCount("all"),
       color: "#3b82f6",
     },
     {
       id: "sales",
       name: "Sales",
       icon: "cash",
-      count: reports?.filter(r => r.type === "sales")?.length || 0,
+      count: getTypeCount("sales"),
       color: "#10b981",
     },
     {
       id: "purchases",
       name: "Purchases",
       icon: "cart",
-      count: reports?.filter(r => r.type === "purchases")?.length || 0,
+      count: getTypeCount("purchases"),
       color: "#f59e0b",
     },
     {
       id: "inventory",
       name: "Inventory",
       icon: "package",
-      count: reports?.filter(r => r.type === "inventory")?.length || 0,
+      count: getTypeCount("inventory"),
       color: "#8b5cf6",
     },
     {
       id: "profits",
       name: "Profits",
       icon: "chart-line",
-      count: reports?.filter(r => r.type === "profits")?.length || 0,
+      count: getTypeCount("profits"),
       color: "#ec4899",
     },
-  ];
+  ], [getTypeCount]);
 
   const handleFetchReports = useCallback(async () => {
     try {
@@ -100,8 +107,11 @@ const ReportsScreen = () => {
       } else {
         setDateRangeText(`${formatDate(startDate, 'MMM DD')} - ${formatDate(endDate, 'MMM DD')}`);
       }
+      
+      setInitialLoadComplete(true);
     } catch (err) {
       console.error("Error fetching reports:", err);
+      setInitialLoadComplete(true);
     }
   }, [fetchReports, startDate, endDate]);
 
@@ -170,7 +180,10 @@ const ReportsScreen = () => {
   const handleRefresh = async () => {
     setRefreshing(true);
     try {
-      await refreshReports();
+      await refreshReports({
+        start_date: formatDate(startDate, 'YYYY-MM-DD'),
+        end_date: formatDate(endDate, 'YYYY-MM-DD'),
+      });
     } catch (err) {
       console.error("Error refreshing reports:", err);
     } finally {
@@ -195,32 +208,39 @@ const ReportsScreen = () => {
   }, [reports.length, summary]);
 
   // Loading state
-  if (loading && !refreshing) {
+  if (loading && !initialLoadComplete && !refreshing) {
     return (
       <View className={`flex-1 ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'} items-center justify-center`}>
-        <Text className={isDarkMode ? 'text-white' : 'text-gray-900'}>Loading reports...</Text>
+        <ActivityIndicator size="large" color="#3b82f6" />
+        <Text className={`mt-4 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+          Loading reports...
+        </Text>
       </View>
     );
   }
 
   // Error state
-  if (error) {
+  if (error && !refreshing) {
     return (
-      <View className={`flex-1 ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'} items-center justify-center`}>
-        <Icon name="alert-circle" size={50} color="#ef4444" />
-        <Text className="text-red-500 mt-4">Error: {error}</Text>
+      <View className={`flex-1 ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'} items-center justify-center p-6`}>
+        <Icon name="alert-circle" size={60} color="#ef4444" />
+        <Text className="text-red-500 text-lg font-semibold mt-4">Error Loading Reports</Text>
+        <Text className={`text-center mt-2 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+          {error}
+        </Text>
         <TouchableOpacity
           onPress={handleFetchReports}
-          className="mt-4 bg-blue-500 px-6 py-3 rounded-xl"
+          className="mt-6 bg-blue-500 px-8 py-4 rounded-xl flex-row items-center"
         >
-          <Text className="text-white font-semibold">Retry</Text>
+          <Icon name="refresh" size={20} color="#ffffff" />
+          <Text className="text-white font-semibold ml-2">Retry</Text>
         </TouchableOpacity>
       </View>
     );
   }
 
   return (
-    <View className={`flex-1 ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'} pb-16`}>
+    <View className={`flex-1 ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
       <StatusBar barStyle={isDarkMode ? "light-content" : "dark-content"} backgroundColor={isDarkMode ? "#111827" : "#ffffff"} />
 
       <Header
@@ -298,8 +318,13 @@ const ReportsScreen = () => {
           <TouchableOpacity
             onPress={handleDateSearch}
             className="ml-2 bg-blue-500 px-4 py-2 rounded-xl"
+            disabled={loading}
           >
-            <Text className="text-white font-semibold">Apply</Text>
+            {loading ? (
+              <ActivityIndicator size="small" color="#ffffff" />
+            ) : (
+              <Text className="text-white font-semibold">Apply</Text>
+            )}
           </TouchableOpacity>
         </View>
       </View>
@@ -320,6 +345,7 @@ const ReportsScreen = () => {
           className={`mr-2 px-4 py-2 rounded-full ${
             dateRangeText === "Today" ? 'bg-blue-500' : isDarkMode ? 'bg-gray-800' : 'bg-gray-200'
           }`}
+          disabled={loading}
         >
           <Text className={dateRangeText === "Today" ? 'text-white' : isDarkMode ? 'text-gray-300' : 'text-gray-700'}>
             Today
@@ -338,6 +364,7 @@ const ReportsScreen = () => {
           className={`mr-2 px-4 py-2 rounded-full ${
             dateRangeText.includes('7') ? 'bg-blue-500' : isDarkMode ? 'bg-gray-800' : 'bg-gray-200'
           }`}
+          disabled={loading}
         >
           <Text className={dateRangeText.includes('7') ? 'text-white' : isDarkMode ? 'text-gray-300' : 'text-gray-700'}>
             Last 7 Days
@@ -356,6 +383,7 @@ const ReportsScreen = () => {
           className={`mr-2 px-4 py-2 rounded-full ${
             dateRangeText.includes('30') ? 'bg-blue-500' : isDarkMode ? 'bg-gray-800' : 'bg-gray-200'
           }`}
+          disabled={loading}
         >
           <Text className={dateRangeText.includes('30') ? 'text-white' : isDarkMode ? 'text-gray-300' : 'text-gray-700'}>
             Last 30 Days
@@ -374,6 +402,7 @@ const ReportsScreen = () => {
           className={`mr-2 px-4 py-2 rounded-full ${
             dateRangeText.includes('month') ? 'bg-blue-500' : isDarkMode ? 'bg-gray-800' : 'bg-gray-200'
           }`}
+          disabled={loading}
         >
           <Text className={dateRangeText.includes('month') ? 'text-white' : isDarkMode ? 'text-gray-300' : 'text-gray-700'}>
             This Month
@@ -413,6 +442,7 @@ const ReportsScreen = () => {
             tintColor="#3b82f6"
           />
         }
+        className="flex-1"
       >
         {/* Report Summary Cards */}
         <ReportSummary 
@@ -512,15 +542,18 @@ const ReportsScreen = () => {
         </View>
 
         {/* Report List */}
-        <View className="flex-1 px-4">
-          <ReportList
-            viewMode={viewMode}
-            searchQuery={searchQuery}
-            reportType={reportType}
-            startDate={startDate}
-            endDate={endDate}
-            onRefresh={handleRefresh}
-          />
+        <View className="flex-1 px-4 pb-20">
+           <ReportList
+    viewMode={viewMode}
+    searchQuery={searchQuery}
+    reportType={reportType}
+    startDate={startDate}
+    endDate={endDate}
+    onRefresh={handleRefresh}
+    loading={loading}
+    reports={reports} // Pass reports from parent
+    error={error} // Pass error from parent
+  />
         </View>
       </ScrollView>
 
