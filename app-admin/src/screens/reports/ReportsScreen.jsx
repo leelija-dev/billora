@@ -20,6 +20,7 @@ import Header from "../../components/common/Header";
 import ReportFilters from "../../components/reports/ReportFilters";
 import ReportList from "../../components/reports/ReportList";
 import ReportSummary from "../../components/reports/ReportSummary";
+import QuickDateFilters from "../../components/reports/QuickDateFilters"; // Import the new component
 import { getNavigationItemsWithBadges } from "../../constants/navigationItems";
 import { formatDate } from "../../utils/dateFormatter";
 
@@ -191,6 +192,41 @@ const ReportsScreen = () => {
     }
   };
 
+  // Quick date filter handlers
+  const handleTodayPress = () => {
+    const today = new Date();
+    setStartDate(today);
+    setEndDate(today);
+    handleDateSearch();
+  };
+
+  const handleLast7DaysPress = () => {
+    const end = new Date();
+    const start = new Date();
+    start.setDate(start.getDate() - 7);
+    setStartDate(start);
+    setEndDate(end);
+    handleDateSearch();
+  };
+
+  const handleLast30DaysPress = () => {
+    const end = new Date();
+    const start = new Date();
+    start.setDate(start.getDate() - 30);
+    setStartDate(start);
+    setEndDate(end);
+    handleDateSearch();
+  };
+
+  const handleThisMonthPress = () => {
+    const end = new Date();
+    const start = new Date();
+    start.setMonth(start.getMonth() - 1);
+    setStartDate(start);
+    setEndDate(end);
+    handleDateSearch();
+  };
+
   // Focus effect - refresh when screen comes into focus
   useFocusEffect(
     useCallback(() => {
@@ -329,86 +365,16 @@ const ReportsScreen = () => {
         </View>
       </View>
 
-      {/* Quick Date Filters */}
-      <ScrollView 
-        horizontal 
-        showsHorizontalScrollIndicator={false}
-        className="px-4 py-2"
-      >
-        <TouchableOpacity
-          onPress={() => {
-            const today = new Date();
-            setStartDate(today);
-            setEndDate(today);
-            handleDateSearch();
-          }}
-          className={`mr-2 px-4 py-2 rounded-full ${
-            dateRangeText === "Today" ? 'bg-blue-500' : isDarkMode ? 'bg-gray-800' : 'bg-gray-200'
-          }`}
-          disabled={loading}
-        >
-          <Text className={dateRangeText === "Today" ? 'text-white' : isDarkMode ? 'text-gray-300' : 'text-gray-700'}>
-            Today
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          onPress={() => {
-            const end = new Date();
-            const start = new Date();
-            start.setDate(start.getDate() - 7);
-            setStartDate(start);
-            setEndDate(end);
-            handleDateSearch();
-          }}
-          className={`mr-2 px-4 py-2 rounded-full ${
-            dateRangeText.includes('7') ? 'bg-blue-500' : isDarkMode ? 'bg-gray-800' : 'bg-gray-200'
-          }`}
-          disabled={loading}
-        >
-          <Text className={dateRangeText.includes('7') ? 'text-white' : isDarkMode ? 'text-gray-300' : 'text-gray-700'}>
-            Last 7 Days
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          onPress={() => {
-            const end = new Date();
-            const start = new Date();
-            start.setDate(start.getDate() - 30);
-            setStartDate(start);
-            setEndDate(end);
-            handleDateSearch();
-          }}
-          className={`mr-2 px-4 py-2 rounded-full ${
-            dateRangeText.includes('30') ? 'bg-blue-500' : isDarkMode ? 'bg-gray-800' : 'bg-gray-200'
-          }`}
-          disabled={loading}
-        >
-          <Text className={dateRangeText.includes('30') ? 'text-white' : isDarkMode ? 'text-gray-300' : 'text-gray-700'}>
-            Last 30 Days
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          onPress={() => {
-            const end = new Date();
-            const start = new Date();
-            start.setMonth(start.getMonth() - 1);
-            setStartDate(start);
-            setEndDate(end);
-            handleDateSearch();
-          }}
-          className={`mr-2 px-4 py-2 rounded-full ${
-            dateRangeText.includes('month') ? 'bg-blue-500' : isDarkMode ? 'bg-gray-800' : 'bg-gray-200'
-          }`}
-          disabled={loading}
-        >
-          <Text className={dateRangeText.includes('month') ? 'text-white' : isDarkMode ? 'text-gray-300' : 'text-gray-700'}>
-            This Month
-          </Text>
-        </TouchableOpacity>
-      </ScrollView>
+      {/* Quick Date Filters - Using the new component */}
+      <QuickDateFilters
+        dateRangeText={dateRangeText}
+        isDarkMode={isDarkMode}
+        loading={loading}
+        onSelectToday={handleTodayPress}
+        onSelectLast7Days={handleLast7DaysPress}
+        onSelectLast30Days={handleLast30DaysPress}
+        onSelectThisMonth={handleThisMonthPress}
+      />
 
       {/* Date Pickers */}
       {showStartDatePicker && (
@@ -543,17 +509,17 @@ const ReportsScreen = () => {
 
         {/* Report List */}
         <View className="flex-1 px-4 pb-20">
-           <ReportList
-    viewMode={viewMode}
-    searchQuery={searchQuery}
-    reportType={reportType}
-    startDate={startDate}
-    endDate={endDate}
-    onRefresh={handleRefresh}
-    loading={loading}
-    reports={reports} // Pass reports from parent
-    error={error} // Pass error from parent
-  />
+          <ReportList
+            viewMode={viewMode}
+            searchQuery={searchQuery}
+            reportType={reportType}
+            startDate={startDate}
+            endDate={endDate}
+            onRefresh={handleRefresh}
+            loading={loading}
+            reports={reports}
+            error={error}
+          />
         </View>
       </ScrollView>
 
