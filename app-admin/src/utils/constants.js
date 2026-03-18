@@ -163,6 +163,10 @@ export const NAVIGATION_SCREENS = {
     BILL_DETAIL: 'BillDetail',
     CREATE_BILL: 'CreateBill',
     
+    // Reports
+    REPORTS: 'Reports',
+    REPORT_DETAIL: 'ReportDetail',
+    
     // Customers
     CUSTOMERS: 'Customers',
     CUSTOMER_DETAIL: 'CustomerDetail',
