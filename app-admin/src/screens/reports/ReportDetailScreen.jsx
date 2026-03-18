@@ -307,38 +307,40 @@ const ReportDetailScreen = () => {
       </LinearGradient>
 
       {/* Tab Bar */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} className="px-4 py-3">
-        {tabs.map((tab) => (
-          <TouchableOpacity
-            key={tab.id}
-            onPress={() => setActiveTab(tab.id)}
-            className={`flex-row items-center mr-3 px-4 py-2 rounded-full ${
-              activeTab === tab.id
-                ? 'bg-blue-500'
-                : isDarkMode ? 'bg-gray-800' : 'bg-white'
-            }`}
-          >
-            <Icon
-              name={tab.icon}
-              size={18}
-              color={activeTab === tab.id ? "#ffffff" : isDarkMode ? "#9CA3AF" : "#4b5563"}
-            />
-            <Text
-              className={`ml-2 text-sm font-medium ${
+      <View className="px-4 py-2">
+        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+          {tabs.map((tab) => (
+            <TouchableOpacity
+              key={tab.id}
+              onPress={() => setActiveTab(tab.id)}
+              className={`flex-row items-center mr-2 px-3 py-1.5 rounded-full ${
                 activeTab === tab.id
-                  ? 'text-white'
-                  : isDarkMode ? 'text-gray-300' : 'text-gray-700'
+                  ? 'bg-blue-500'
+                  : isDarkMode ? 'bg-gray-800' : 'bg-white'
               }`}
             >
-              {tab.label}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
+              <Icon
+                name={tab.icon}
+                size={16}
+                color={activeTab === tab.id ? "#ffffff" : isDarkMode ? "#9CA3AF" : "#4b5563"}
+              />
+              <Text
+                className={`ml-1.5 text-xs font-medium ${
+                  activeTab === tab.id
+                    ? 'text-white'
+                    : isDarkMode ? 'text-gray-300' : 'text-gray-700'
+                }`}
+              >
+                {tab.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      </View>
 
       <ScrollView className="flex-1 px-4" showsVerticalScrollIndicator={false}>
         {activeTab === "overview" && (
-          <View className="py-4">
+          <View className="pt-4 pb-24">
             {/* Report Information */}
             <View className={`p-5 rounded-2xl mb-4 ${isDarkMode ? 'bg-gray-800' : 'bg-white'} shadow-sm`}>
               <Text className={`text-lg font-semibold mb-4 ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
@@ -522,7 +524,7 @@ const ReportDetailScreen = () => {
         )}
 
         {activeTab === "details" && (
-          <View className="py-4">
+          <View className="pt-4 pb-24">
             {/* Detailed Information */}
             <View className={`p-5 rounded-2xl ${isDarkMode ? 'bg-gray-800' : 'bg-white'} shadow-sm`}>
               <Text className={`text-lg font-semibold mb-4 ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
@@ -598,7 +600,7 @@ const ReportDetailScreen = () => {
         )}
 
         {activeTab === "charts" && (
-          <View className="py-4">
+          <View className="pt-4 pb-24">
             {/* Chart Placeholders */}
             <View className={`p-5 rounded-2xl mb-4 ${isDarkMode ? 'bg-gray-800' : 'bg-white'} shadow-sm`}>
               <Text className={`text-lg font-semibold mb-4 ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
@@ -627,7 +629,7 @@ const ReportDetailScreen = () => {
         )}
 
         {activeTab === "data" && (
-          <View className="py-4">
+          <View className="pt-4 pb-24">
             {/* Data Table */}
             <View className={`p-5 rounded-2xl ${isDarkMode ? 'bg-gray-800' : 'bg-white'} shadow-sm`}>
               <View className="flex-row justify-between items-center mb-4">
