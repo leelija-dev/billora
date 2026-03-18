@@ -291,7 +291,7 @@ export default function ProductsPage() {
     <div className="flex justify-between text-sm mt-2 text-gray-600">
       <span>₹0</span>
       <span className="font-semibold text-black">₹{maxPrice}</span>
-    </div> 
+    </div>
   </div>
 
   {/* SORT */}

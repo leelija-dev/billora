@@ -1,7 +1,7 @@
 // bookdemo/page.tsx
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   Calendar, 
@@ -17,21 +17,34 @@ import {
   RotateCw,
   Globe,
   ChevronDown,
-  Home,
   AlertCircle
 } from "lucide-react";
-import { useRouter } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 
+// Client-side only wrapper component to prevent hydration mismatch
+const ClientTimeOnly = ({ children }: { children: React.ReactNode }) => {
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
+  if (!isClient) {
+    return <span className="text-sm sm:text-base font-mono font-semibold text-[#0F172A]">--:--:-- --</span>;
+  }
+
+  return <>{children}</>;
+};
+
 const AppointmentPage = () => {
-  const router = useRouter();
   const [currentDate, setCurrentDate] = useState<Date>(new Date());
   const [selectedDate, setSelectedDate] = useState<number | null>(null);
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
   const [showForm, setShowForm] = useState<boolean>(false);
   const [showMonthPicker, setShowMonthPicker] = useState<boolean>(false);
   const [showTimeZonePicker, setShowTimeZonePicker] = useState<boolean>(false);
+  const [showEnquiryDropdown, setShowEnquiryDropdown] = useState<boolean>(false);
   const [realTimeCurrentDate, setRealTimeCurrentDate] = useState<Date>(new Date());
   const [selectedTimeZone, setSelectedTimeZone] = useState<string>("Asia/Kolkata");
   const [formData, setFormData] = useState({
@@ -41,6 +54,8 @@ const AppointmentPage = () => {
     enquiryType: "Product demo"
   });
   const [bookingSuccess, setBookingSuccess] = useState<boolean>(false);
+
+  const enquiryDropdownRef = useRef<HTMLDivElement>(null);
 
   // Time zones list
   const timeZones = [
@@ -57,6 +72,27 @@ const AppointmentPage = () => {
     { name: "Australia Eastern Time (AET)", value: "Australia/Sydney", offset: "+10:00" },
     { name: "New Zealand Time (NZT)", value: "Pacific/Auckland", offset: "+12:00" }
   ];
+
+  // Enquiry types for custom dropdown
+  const enquiryTypes = [
+    { value: "Product demo", icon: "🚀", color: "#4461F2" },
+    { value: "Pricing enquiry", icon: "💰", color: "#10B981" },
+    { value: "Technical support", icon: "🔧", color: "#F59E0B" },
+    { value: "Partnership", icon: "🤝", color: "#9E5CF2" },
+    { value: "Other", icon: "❓", color: "#6B7280" }
+  ];
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (enquiryDropdownRef.current && !enquiryDropdownRef.current.contains(event.target as Node)) {
+        setShowEnquiryDropdown(false);
+      }
+    };
+    
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   // Update real-time current date every second
   useEffect(() => {
@@ -238,12 +274,20 @@ const AppointmentPage = () => {
     }
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>): void => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
       [name]: value
     }));
+  };
+
+  const handleEnquirySelect = (type: string): void => {
+    setFormData(prev => ({
+      ...prev,
+      enquiryType: type
+    }));
+    setShowEnquiryDropdown(false);
   };
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>): void => {
@@ -316,6 +360,7 @@ const AppointmentPage = () => {
   };
 
   const currentTimeZone = timeZones.find(tz => tz.value === selectedTimeZone) || timeZones[0];
+  const selectedEnquiry = enquiryTypes.find(e => e.value === formData.enquiryType) || enquiryTypes[0];
 
   // Calculate tomorrow's date for display
   const tomorrow = new Date();
@@ -331,8 +376,6 @@ const AppointmentPage = () => {
       <Navbar />
       
       <div className="py-4 sm:py-6 md:py-8 px-3 sm:px-4 md:px-6 lg:px-8">
-        {/* Back to Home Button */}
-        
 
         <style jsx>{`
           .ripple-hover {
@@ -396,9 +439,12 @@ const AppointmentPage = () => {
               <div className="w-px h-5 bg-gray-300"></div>
               <div className="flex items-center gap-2">
                 <Clock className="w-4 h-4 sm:w-5 sm:h-5 text-[#9E5CF2]" />
-                <span className="text-sm sm:text-base font-mono font-semibold text-[#0F172A]">
-                  {formatTimeInZone(realTimeCurrentDate, selectedTimeZone)}
-                </span>
+                {/* Use ClientTimeOnly wrapper to prevent hydration mismatch */}
+                <ClientTimeOnly>
+                  <span className="text-sm sm:text-base font-mono font-semibold text-[#0F172A]">
+                    {formatTimeInZone(realTimeCurrentDate, selectedTimeZone)}
+                  </span>
+                </ClientTimeOnly>
               </div>
               <motion.div
                 animate={{ scale: [1, 1.2, 1] }}
@@ -890,17 +936,52 @@ const AppointmentPage = () => {
                         className="w-full border-2 border-gray-300 px-4 py-3 rounded-lg text-base font-semibold focus:outline-none focus:ring-2 focus:ring-[#4461F2] focus:border-transparent"
                       />
 
-                      <select
-                        name="enquiryType"
-                        value={formData.enquiryType}
-                        onChange={handleInputChange}
-                        className="w-full border-2 border-gray-300 px-4 py-3 rounded-lg text-base font-semibold focus:outline-none focus:ring-2 focus:ring-[#4461F2] focus:border-transparent"
-                      >
-                        <option className="text-base">Product demo</option>
-                        <option className="text-base">Pricing enquiry</option>
-                        <option className="text-base">Technical support</option>
-                        <option className="text-base">Partnership</option>
-                      </select>
+                      {/* Custom Enquiry Type Dropdown */}
+                      <div className="relative" ref={enquiryDropdownRef}>
+                        <button
+                          type="button"
+                          onClick={() => setShowEnquiryDropdown(!showEnquiryDropdown)}
+                          className="w-full border-2 border-gray-300 px-4 py-3 rounded-lg text-base font-semibold focus:outline-none focus:ring-2 focus:ring-[#4461F2] focus:border-transparent flex items-center justify-between bg-white"
+                        >
+                          <div className="flex items-center gap-2">
+                            <span className="text-xl">{selectedEnquiry.icon}</span>
+                            <span>{selectedEnquiry.value}</span>
+                          </div>
+                          <ChevronDown size={20} className={`transition-transform ${showEnquiryDropdown ? 'rotate-180' : ''}`} />
+                        </button>
+
+                        <AnimatePresence>
+                          {showEnquiryDropdown && (
+                            <motion.div
+                              initial={{ opacity: 0, y: -10 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              exit={{ opacity: 0, y: -10 }}
+                              className="absolute top-full left-0 right-0 mt-1 bg-white rounded-lg shadow-xl border border-gray-200 overflow-hidden z-30"
+                            >
+                              {enquiryTypes.map((type) => (
+                                <button
+                                  key={type.value}
+                                  type="button"
+                                  onClick={() => handleEnquirySelect(type.value)}
+                                  className={`
+                                    w-full px-4 py-3 text-left flex items-center gap-3 transition-colors
+                                    ${formData.enquiryType === type.value 
+                                      ? 'bg-[#F0F7FF] border-l-4 border-[#4461F2]' 
+                                      : 'hover:bg-gray-50'
+                                    }
+                                  `}
+                                >
+                                  <span className="text-xl">{type.icon}</span>
+                                  <span className="text-base font-semibold flex-1">{type.value}</span>
+                                  {formData.enquiryType === type.value && (
+                                    <CheckCircle size={18} className="text-[#4461F2]" />
+                                  )}
+                                </button>
+                              ))}
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+                      </div>
 
                       <motion.button
                         type="submit"
