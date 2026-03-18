@@ -217,110 +217,122 @@ export default function ProductsPage() {
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
 
           {/* Sidebar Filters */}
-          <div className="bg-white p-5 rounded-xl shadow space-y-6 lg:sticky lg:top-24 h-fit">
-            <h2 className="text-lg font-bold">Filters</h2>
+         <div className="bg-white/90 backdrop-blur-md p-6 rounded-2xl shadow-lg space-y-6 lg:sticky lg:top-24 h-fit border">
 
-            {/* Category */}
-            <div>
-              <h3 className="font-semibold mb-2">Category</h3>
-              <div className="space-y-2 max-h-60 overflow-y-auto">
-                {categories.map((cat, i) => (
-                  <button
-                    key={i}
-                    onClick={() => setCategory(cat)}
-                    className={`block w-full text-left px-3 py-2 rounded ${
-                      category === cat
-                        ? "bg-blue-600 text-white"
-                        : "bg-gray-100 hover:bg-gray-200"
-                    }`}
-                  >
-                    {cat} ({ALL_PRODUCTS.filter(p => cat === "All" || p.category === cat).length})
-                  </button>
-                ))}
-              </div>
-            </div>
+  {/* HEADER */}
+  <div className="flex items-center justify-between">
+    <h2 className="text-xl font-bold flex items-center gap-2">
+      🧰 Filters
+    </h2>
+    <button
+      onClick={() => {
+        setCategory("All");
+        setRating(0);
+        setMaxPrice(100000);
+        setSort("");
+      }}
+      className="text-sm text-blue-600 hover:underline"
+    >
+      Reset
+    </button>
+  </div>
 
-            {/* Price Range */}
-            <div>
-              <h3 className="font-semibold mb-2">Max Price: ₹{maxPrice}</h3>
-              <input
-                type="range"
-                min="0"
-                max="75000"
-                step="1000"
-                value={maxPrice}
-                onChange={(e) => setMaxPrice(Number(e.target.value))}
-                className="w-full"
-              />
-            </div>
+  {/* CATEGORY */}
+  <div>
+    <h3 className="font-semibold mb-3 flex items-center gap-2 text-gray-700">
+      📦 Category
+    </h3>
 
-            {/* In Stock Only */}
-            <div className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                id="inStock"
-                checked={inStockOnly}
-                onChange={(e) => setInStockOnly(e.target.checked)}
-                className="w-4 h-4"
-              />
-              <label htmlFor="inStock" className="text-sm font-medium">
-                In Stock Only
-              </label>
-            </div>
+    <div className="space-y-2 max-h-60 overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-gray-300">
 
-            {/* Sort */}
-            <div>
-              <h3 className="font-semibold mb-2">Sort By</h3>
-              <select
-                onChange={(e) => setSort(e.target.value)}
-                className="w-full border rounded p-2"
-              >
-                <option value="">Default</option>
-                <option value="low">Price Low → High</option>
-                <option value="high">Price High → Low</option>
-                <option value="rating">Highest Rated</option>
-              </select>
-            </div>
+      {categories.map((cat, i) => {
+        const count = ALL_PRODUCTS.filter(
+          (p) => cat === "All" || p.category === cat
+        ).length;
 
-            {/* Rating Filter */}
-            <div>
-              <h3 className="font-semibold mb-2">Minimum Rating</h3>
-              {[5, 4, 3].map((r) => (
-                <button
-                  key={r}
-                  onClick={() => setRating(r)}
-                  className={`block w-full text-left px-3 py-2 rounded mb-1 ${
-                    rating === r ? "bg-blue-600 text-white" : "bg-gray-100 hover:bg-gray-200"
-                  }`}
-                >
-                  {"⭐".repeat(r)} & up
-                </button>
-              ))}
-              {rating > 0 && (
-                <button
-                  onClick={() => setRating(0)}
-                  className="text-sm text-blue-600 mt-2"
-                >
-                  Clear rating
-                </button>
-              )}
-            </div>
+        return (
+          <button
+            key={i}
+            onClick={() => setCategory(cat)}
+            className={`flex justify-between items-center w-full px-3 py-2 rounded-lg transition-all duration-200 ${
+              category === cat
+                ? "bg-blue-600 text-white shadow-md scale-[1.02]"
+                : "bg-gray-100 hover:bg-blue-50 hover:translate-x-1"
+            }`}
+          >
+            <span>{cat}</span>
+            <span className={`text-xs px-2 py-1 rounded-full ${
+              category === cat ? "bg-white text-blue-600" : "bg-gray-200"
+            }`}>
+              {count}
+            </span>
+          </button>
+        );
+      })}
 
-            {/* Reset Filters */}
-            <button
-              onClick={() => {
-                setSearch("");
-                setCategory("All");
-                setMaxPrice(75000);
-                setRating(0);
-                setSort("");
-                setInStockOnly(false);
-              }}
-              className="w-full px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition"
-            >
-              Reset All Filters
-            </button>
-          </div>
+    </div>
+  </div>
+
+  {/* PRICE */}
+  <div>
+    <h3 className="font-semibold mb-3 flex items-center gap-2 text-gray-700">
+      💰 Price Range
+    </h3>
+
+    <input
+      type="range"
+      min="0"
+      max="100000"
+      value={maxPrice}
+      onChange={(e) => setMaxPrice(Number(e.target.value))}
+      className="w-full accent-blue-600"
+    />
+
+    <div className="flex justify-between text-sm mt-2 text-gray-600">
+      <span>₹0</span>
+      <span className="font-semibold text-black">₹{maxPrice}</span>
+    </div> 
+  </div>
+
+  {/* SORT */}
+  <div>
+    <h3 className="font-semibold mb-3 flex items-center gap-2 text-gray-700">
+      🔃 Sort
+    </h3>
+
+    <select
+      onChange={(e) => setSort(e.target.value)}
+      className="w-full border rounded-lg p-2 focus:ring-2 focus:ring-blue-500 outline-none"
+    >
+      <option value="">Default</option>
+      <option value="low">Price Low → High</option>
+      <option value="high">Price High → Low</option>
+    </select>
+  </div>
+
+  {/* RATING */}
+  <div>
+    <h3 className="font-semibold mb-3 flex items-center gap-2 text-gray-700">
+      ⭐ Rating
+    </h3>
+
+    <div className="space-y-2">
+      {[5, 4, 3].map((r) => (
+        <button
+          key={r}
+          onClick={() => setRating(r)}
+          className={`w-full text-left px-3 py-2 rounded-lg flex justify-between items-center transition ${
+            rating === r
+              ? "bg-yellow-400 text-black font-semibold"
+              : "bg-gray-100 hover:bg-yellow-100"
+          }`}
+        >
+          <span>{"⭐".repeat(r)} & up</span>
+        </button>
+      ))}
+    </div>
+  </div>
+</div>
 
           {/* Products Grid */}
           <div className="lg:col-span-3">
@@ -386,14 +398,14 @@ export default function ProductsPage() {
                         ₹{product.price}
                       </p>
                       <p className="text-xs text-green-600 mt-1">Free Delivery</p>
-
-                      <Link
-                        href="/contact"
-                        className="block text-center bg-blue-600 mt-3 text-white py-2 rounded-lg hover:bg-blue-700 transition"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        Buy Now
-                      </Link>
+                  <div className="flex flex-col sm:flex-row gap-3 w-full">
+                  <button className="flex-1 bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition">
+                    Add to Cart
+                  </button>
+                  <button className="flex-1 bg-purple-600 text-white py-3 rounded-lg hover:bg-purple-700 transition">
+                    Buy Now
+                  </button>
+                </div>
                     </div>
                   ))}
                 </div>
