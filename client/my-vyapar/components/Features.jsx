@@ -12,29 +12,29 @@ const Features = () => {
       description: "The billing software by Vyapar helps automate management. It is done to prevent mistakes in accounting. By investing in this billing software, you can manage your business cash flow effortlessly.",
       extraDescription: "With real-time tracking and automated reminders, you'll never miss a payment again. The dashboard provides clear insights into your accounts receivable and payable, helping you make informed financial decisions.",
       image: "/image/gst1.png",
-      reverse: false
+      reverse: false,
     },
     {
-      title: "Online/Offline GST billing",
-      description: "The Vyapar app helps you generate invoices for your customers without requiring you to stay online. You can rely on our business accounting software to validate your transactions and update your database when connecting it to the internet.",
-      extraDescription: "Automatic GST calculations ensure compliance with the latest tax rates. The software generates GSTR-1, GSTR-3B reports instantly, saving hours of manual work during filing season.",
-      image: "/image/invoice.png",
-      reverse: true
-    },
-    {
-      title: "Provide multiple payment options",
+      title: "Choose the perfect convenience for customers",
       description: "Choose the perfect convenience for customers; the biggest comfort you can provide is allowing them to choose how they pay you. Using the Vyapar invoicing app, you can create invoices that include multiple payment options for your business.",
       extraDescription: "Accept payments via UPI, credit/debit cards, net banking, and digital wallets. The system automatically marks invoices as paid when payment is received, reducing manual reconciliation work.",
       image: "/image/payments.png",
-      reverse: false
+      reverse: true,
     },
     {
       title: "Track your business status",
       description: "With free GST billing software and invoicing tools, you can manage your business using a mobile. Accounting in your business becomes quite simple and efficient with this free software. As all data is stored during invoicing.",
       extraDescription: "Get real-time insights into your business performance with interactive charts and graphs. Monitor sales trends, top products, and customer behavior to make data-driven decisions.",
       image: "/image/trace.png",
-      reverse: true
-    }
+      reverse: false,
+    },
+    {
+      title: "Choose the perfect convenience for customers",
+      description: "Choose the perfect convenience for customers; the biggest comfort you can provide is allowing them to choose how they pay you. Using the Vyapar invoicing app, you can create invoices that include multiple payment options for your business.",
+      extraDescription: "Accept payments via UPI, credit/debit cards, net banking, and digital wallets. The system automatically marks invoices as paid when payment is received, reducing manual reconciliation work.",
+      image: "/image/payments.png",
+      reverse: true,
+    },
   ];
 
   const [expandedItems, setExpandedItems] = useState({});
@@ -106,9 +106,7 @@ const Features = () => {
       <Container>
         <div className="relative z-10">
           <div className="text-center mb-12 sm:mb-16 md:mb-[60px] max-w-[800px] mx-auto">
-            <SectionTitle
-              title="Features of GST Billing and Accounting Software"
-            />
+           <SectionTitle title="Powerful features to grow your business" />
             <p className="text-base sm:text-base md:text-sm lg:text-lg text-[#666] px-4 sm:px-0">
               {/* Tablet: md:text-sm (14px) - smaller than mobile but balanced */}
               Everything you need to manage your business professionally
@@ -161,14 +159,14 @@ const Features = () => {
                       {feature.title}
                     </h3>
                     
-                    <p className="text-base sm:text-sm md:text-sm lg:text-base text-[#555] leading-relaxed sm:leading-[1.7] md:leading-[1.6] lg:leading-[1.8] m-0">
+                    <p className="text-base sm:text-base md:text-base lg:text-base text-[#555] leading-relaxed sm:leading-[1.7] md:leading-[1.6] lg:leading-[1.8] m-0">
                       {/* Tablet: md:text-sm (14px) */}
                       {feature.description}
                     </p>
 
                     {/* Extra paragraph that appears when expanded */}
                     {expandedItems[index] && (
-                      <p className="text-base sm:text-sm md:text-sm lg:text-base text-[#555] leading-relaxed sm:leading-[1.7] md:leading-[1.6] lg:leading-[1.8] mt-4 sm:mt-4 pt-4 sm:pt-4 border-t border-[#2f5fa5]/20 animate-in slide-in-from-top duration-500">
+                      <p className="text-base sm:text-base md:text-base lg:text-base text-[#555] leading-relaxed sm:leading-[1.7] md:leading-[1.6] lg:leading-[1.8] mt-4 sm:mt-4 pt-4 sm:pt-4 border-t border-[#2f5fa5]/20 animate-in slide-in-from-top duration-500">
                         {/* Tablet: md:text-sm (14px) */}
                         {feature.extraDescription}
                       </p>
@@ -177,7 +175,7 @@ const Features = () => {
                     {/* Clickable read more/less link */}
                     <button
                       onClick={() => toggleReadMore(index)}
-                      className="inline-flex items-center gap-2 mt-4 sm:mt-4 md:mt-5 text-[#2f5fa5] font-medium text-base sm:text-sm md:text-sm lg:text-base group hover:cursor-pointer bg-transparent border-none p-0 transition-all duration-300 hover:gap-3 justify-center lg:justify-start"
+                      className="inline-flex items-center gap-2 mt-4 sm:mt-4 md:mt-5 text-[#2f5fa5] font-medium text-base sm:text-base md:text-base lg:text-base group hover:cursor-pointer bg-transparent border-none p-0 transition-all duration-300 hover:gap-3 justify-center lg:justify-start"
                     >
                       <span className="relative">
                         {expandedItems[index] ? 'Show less' : 'Read more'}

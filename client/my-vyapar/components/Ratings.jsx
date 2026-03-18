@@ -16,7 +16,6 @@ const Ratings = () => {
       setVoteCount(voteCount + 1);
       setHasVoted(true);
       setShowThankYou(true);
-
       setTimeout(() => {
         setShowThankYou(false);
       }, 3000);

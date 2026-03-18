@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef } from 'react';
 import Container from "../components/Container";
+import SectionTitle from './SectionTitle';
 
 const HowItWorks = () => {
     const stepRefs = useRef([]);
@@ -62,11 +63,8 @@ const HowItWorks = () => {
                 
                 {/* Header Section */}
                 <div className="text-center mb-8 sm:mb-10 md:mb-8 lg:mb-[60px] px-4 sm:px-0">
-                    <h2 className="text-2xl sm:text-3xl md:text-2xl lg:text-[42px] font-bold text-[#1a237e] mb-4 relative inline-block animate-[fadeInDown_0.8s_ease-out] after:content-[''] after:absolute after:bottom-[-8px] sm:after:bottom-[-12px] md:after:bottom-[-8px] lg:after:bottom-[-12px] after:left-1/2 after:-translate-x-1/2 after:w-16 sm:after:w-[80px] md:after:w-[60px] lg:after:w-[100px] after:h-0.5 sm:after:h-1 md:after:h-0.5 lg:after:h-1 after:bg-gradient-to-r after:from-[#3b82f6] after:via-[#8b5cf6] after:to-[#10b981] after:rounded-[2px]">
-                        {/* Tablet: md:text-2xl (24px) - balanced size */}
-                        How It Works
-                    </h2>
-                    <p className="text-[#475569] text-base sm:text-base md:text-sm lg:text-xl max-w-[600px] mx-auto mt-4 sm:mt-6 md:mt-4 animate-[fadeInUp_0.8s_ease-out_0.2s_both] leading-relaxed px-2">
+                    <SectionTitle title="How It Works" />
+                    <p className="text-[#475569] text-base sm:text-base md:text-base lg:text-xl max-w-[600px] mx-auto mt-4 sm:mt-6 md:mt-4 animate-[fadeInUp_0.8s_ease-out_0.2s_both] leading-relaxed px-2">
                         {/* Tablet: md:text-sm (14px) */}
                         Get started with Billora in three simple steps
                     </p>

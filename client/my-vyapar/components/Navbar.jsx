@@ -1,77 +1,193 @@
 "use client";
 import React, { useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const router = useRouter();
+
+  const handleLogoClick = () => {
+    if (typeof window !== "undefined") {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+    setIsMenuOpen(false);
+  };
+
+  const handleLinkClick = (section) => {
+    if (typeof window !== "undefined") {
+      document.getElementById(section)?.scrollIntoView({
+        behavior: "smooth",
+      });
+    }
+    setIsMenuOpen(false);
+  };
 
   return (
-    <nav className="sticky top-0 bg-white shadow-md z-[1000] h-20 flex items-center">
-      
-      {/* ✅ Fixed Container (same width everywhere) */}
-      <div className="w-full max-w-[1400px] mx-auto px-4 flex justify-between items-center">
-        
+    <nav className="sticky top-0 bg-white shadow-md z-[1000] h-20 flex items-center px-5 lg:px-10">
+      <div className="max-w-[1400px] w-full mx-auto flex justify-between items-center h-full">
+
         {/* Logo */}
         <Link
           href="/"
-          className="flex items-center gap-2 hover:scale-105 transition"
+          className="flex items-center gap-2.5 transition-transform hover:scale-105"
+          onClick={handleLogoClick}
         >
-          <span className="bg-blue-600 text-white px-2.5 py-1 rounded text-2xl font-bold">
+          <span className="bg-blue-600 text-white px-2.5 py-1 rounded text-2xl lg:text-3xl font-bold leading-none">
             B
           </span>
-          <span className="text-slate-800 text-2xl font-bold">
+          <span className="text-slate-800 text-2xl lg:text-3xl font-bold leading-none">
             Billora
           </span>
         </Link>
 
-        {/* Mobile Button */}
+        {/* Mobile Toggle Button */}
         <button
-          className="md:hidden flex flex-col gap-1.5"
+          className="flex lg:hidden flex-col gap-1.5 p-2 z-[1001] focus:outline-none focus:ring-2 focus:ring-blue-600 rounded"
           onClick={() => setIsMenuOpen(!isMenuOpen)}
+          aria-label="Toggle menu"
+          aria-expanded={isMenuOpen}
         >
-          <span className={`w-6 h-0.5 bg-black ${isMenuOpen && "rotate-45 translate-y-2"}`} />
-          <span className={`w-6 h-0.5 bg-black ${isMenuOpen && "opacity-0"}`} />
-          <span className={`w-6 h-0.5 bg-black ${isMenuOpen && "-rotate-45 -translate-y-2"}`} />
+          <span className={`w-6 h-0.5 bg-slate-800 transition-all ${isMenuOpen ? "rotate-45 translate-y-2" : ""}`} />
+          <span className={`w-6 h-0.5 bg-slate-800 transition-all ${isMenuOpen ? "opacity-0" : ""}`} />
+          <span className={`w-6 h-0.5 bg-slate-800 transition-all ${isMenuOpen ? "-rotate-45 -translate-y-2" : ""}`} />
         </button>
 
-        {/* Menu */}
+        {/* Navigation Menu */}
         <div
-          className={`absolute md:static top-20 left-0 w-full md:w-auto bg-white md:bg-transparent 
-          transition-all duration-300 ${
-            isMenuOpen ? "block" : "hidden md:flex"
-          }`}
+          className={`fixed lg:static top-20 left-0 right-0 bg-white lg:bg-transparent
+          flex flex-col lg:flex-row items-stretch lg:items-center gap-5 lg:gap-8
+          px-5 py-5 lg:p-0 transition-all duration-300 shadow-lg lg:shadow-none
+          ${isMenuOpen
+              ? "max-h-[600px] opacity-100 visible"
+              : "max-h-0 opacity-0 invisible lg:max-h-none lg:opacity-100 lg:visible"
+            }`}
         >
-          <ul className="flex flex-col md:flex-row gap-6 md:items-center p-5 md:p-0">
-            
-            <li><Link href="/">Home</Link></li>
-            <li><Link href="/trymobile">Try Mobile</Link></li>
-            <li><Link href="/carrers">Careers</Link></li>
-            <li><Link href="/partner">Partner</Link></li>
-            <li><Link href="/solution">Solution</Link></li>
-            <li><Link href="/about">About</Link></li>
-            <li><Link href="/pricing">Pricing</Link></li>
-            <li><Link href="/contact">Contact</Link></li>
-
-            {/* Buttons */}
-            <div className="flex flex-col md:flex-row gap-3 mt-4 md:mt-0">
+          <ul className="flex flex-col lg:flex-row list-none gap-0 lg:gap-5 m-0 p-0 items-start lg:items-center">
+            {[].map(
+              (item) => (
+                <li key={item} className="w-full lg:w-auto border-b lg:border-none border-slate-100">
+                  <button
+                    className="block py-4 lg:py-0 text-slate-500 font-medium text-sm transition-colors hover:text-blue-600 lg:border-b-2 lg:border-transparent lg:hover:border-blue-600 capitalize whitespace-nowrap w-full text-left"
+                    onClick={() => handleLinkClick(item)}
+                  >
+                    {item.replace(/-/g, " ")}
+                  </button>
+                </li>
+              )
+            )}
+            <li className="w-full lg:w-auto border-b lg:border-none border-slate-100">
               <Link
-                href="/bookdemo"
-                className="px-5 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-full text-sm"
+                href="/"
+                className="block py-4 lg:py-0 text-slate-500 font-medium text-sm transition-colors hover:text-blue-600 lg:border-b-2 lg:border-transparent lg:hover:border-blue-600 capitalize whitespace-nowrap w-full text-left"
+                onClick={() => setIsMenuOpen(false)}
               >
-                Book Demo
+                Home
               </Link>
+            </li>
 
+             <li className="w-full lg:w-auto border-b lg:border-none border-slate-100">
               <Link
-                href="/login"
-                className="px-5 py-2 bg-blue-600 text-white rounded-full text-sm"
+                href="/trymobile"
+                className="block py-4 lg:py-0 text-slate-500 font-medium text-sm transition-colors hover:text-blue-600 lg:border-b-2 lg:border-transparent lg:hover:border-blue-600 capitalize whitespace-nowrap w-full text-left"
+                onClick={() => setIsMenuOpen(false)}
               >
-                Login
+                Try Mobile App
               </Link>
-            </div>
+            </li>
 
+             {/* <li className="w-full lg:w-auto border-b lg:border-none border-slate-100">
+              <Link
+                href="/desktop"
+                className="block py-4 lg:py-0 text-slate-500 font-medium text-sm transition-colors hover:text-blue-600 lg:border-b-2 lg:border-transparent lg:hover:border-blue-600 capitalize whitespace-nowrap w-full text-left"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                Desktop
+              </Link>
+            </li> */}
+
+            <li className="w-full lg:w-auto border-b lg:border-none border-slate-100">
+              <Link
+                href="/carrers"
+                className="block py-4 lg:py-0 text-slate-500 font-medium text-sm transition-colors hover:text-blue-600 lg:border-b-2 lg:border-transparent lg:hover:border-blue-600 capitalize whitespace-nowrap w-full text-left"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                Carrers
+              </Link>
+            </li>
+
+
+            <li className="w-full lg:w-auto border-b lg:border-none border-slate-100">
+              <Link
+                href="/partner"
+                className="block py-4 lg:py-0 text-slate-500 font-medium text-sm transition-colors hover:text-blue-600 lg:border-b-2 lg:border-transparent lg:hover:border-blue-600 capitalize whitespace-nowrap w-full text-left"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                Partner
+              </Link>
+            </li>
+
+            <li className="w-full lg:w-auto border-b lg:border-none border-slate-100">
+              <Link
+                href="/solution"
+                className="block py-4 lg:py-0 text-slate-500 font-medium text-sm transition-colors hover:text-blue-600 lg:border-b-2 lg:border-transparent lg:hover:border-blue-600 capitalize whitespace-nowrap w-full text-left"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                Solution
+              </Link>
+            </li>
+
+            <li className="w-full lg:w-auto border-b lg:border-none border-slate-100">
+              <Link
+                href="/about"
+                className="block py-4 lg:py-0 text-slate-500 font-medium text-sm transition-colors hover:text-blue-600 lg:border-b-2 lg:border-transparent lg:hover:border-blue-600 capitalize whitespace-nowrap w-full text-left"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                About Us
+              </Link>
+            </li>
+
+            <li className="w-full lg:w-auto border-b lg:border-none border-slate-100">
+              <Link
+                href="/pricing"
+                className="block py-4 lg:py-0 text-slate-500 font-medium text-sm transition-colors hover:text-blue-600 lg:border-b-2 lg:border-transparent lg:hover:border-blue-600 capitalize whitespace-nowrap w-full text-left"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                Pricing
+              </Link>
+            </li>
+          
+           <li className="w-full lg:w-auto border-b lg:border-none border-slate-100">
+              <Link
+                href="/contact"
+                className="block py-4 lg:py-0 text-slate-500 font-medium text-sm transition-colors hover:text-blue-600 lg:border-b-2 lg:border-transparent lg:hover:border-blue-600 capitalize whitespace-nowrap w-full text-left"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                Contact Us
+              </Link>
+            </li>
           </ul>
-        </div>
 
+          {/* CTA Buttons */}
+          <div className="flex flex-col lg:flex-row items-center gap-4 mt-5 lg:mt-0">
+            
+            <Link
+              href="/bookdemo"
+              className="w-full lg:w-auto flex items-center justify-center gap-2 px-4 h-10 bg-gradient-to-br from-blue-500 to-purple-600 text-white rounded-full font-semibold text-sm transition-all hover:-translate-y-0.5 hover:shadow-[0_5px_15px_rgba(59,130,246,0.3)] whitespace-nowrap"
+              onClick={() => setIsMenuOpen(false)}
+            >
+              Book free demo
+            </Link>
+
+            <Link
+              href="/login"
+              className="w-full lg:w-auto px-6 h-10 bg-blue-600 text-white rounded-full font-semibold text-sm transition-all hover:bg-blue-700 hover:-translate-y-0.5 flex items-center justify-center"
+              onClick={() => setIsMenuOpen(false)}
+            >
+              Login
+            </Link>
+          </div>
+        </div>
       </div>
     </nav>
   );

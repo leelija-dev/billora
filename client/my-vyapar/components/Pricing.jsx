@@ -168,7 +168,6 @@ const Pricing = () => {
           </div>
         </div>
       </Container>
-
       <style jsx>{`
         .card-visible {
           opacity: 1 !important;
