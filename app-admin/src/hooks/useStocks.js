@@ -165,11 +165,11 @@ export const useStocks = (params = {}) => {
     }
   };
 
-  const deleteStock = async (id) => {
+  const deleteStock = async (id, userId) => {
     try {
       setLoading(true);
       setError(null);
-      await stocksAPI.delete(id);
+      await stocksAPI.delete(id, userId);
       
       // Refresh stocks after deletion
       await fetchStocks();

@@ -343,6 +343,7 @@ const ProductDetailScreen = () => {
               <LinearGradient
                 colors={["#3b82f6", "#2563eb"]}
                 className="rounded-2xl p-4 mb-4"
+                style={{borderRadius:13}}
               >
                 <Text className="text-white/80 text-sm mb-1">
                   Selling Price

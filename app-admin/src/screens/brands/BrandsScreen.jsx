@@ -84,7 +84,7 @@ const BrandsScreen = () => {
       const now = Date.now();
       const timeSinceLastRefresh = now - lastRefreshTime.current;
 
-      if (timeSinceLastRefresh > 5000 || brands.length === 0) {
+      if (timeSinceLastRefresh > 5000) {
         console.log('Refreshing brands on focus...');
         stableRefresh();
       } else {
@@ -356,6 +356,7 @@ const BrandsScreen = () => {
             className="rounded-xl p-4 flex-1 mr-2"
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
+            style={{ borderRadius: 12 }}
           >
             <Text className="text-white/80 text-xs">Total Brands</Text>
             <Text className="text-white text-2xl font-bold">{totalBrands}</Text>

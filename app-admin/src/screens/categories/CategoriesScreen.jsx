@@ -88,8 +88,8 @@ const CategoriesScreen = () => {
       const now = Date.now();
       const timeSinceLastRefresh = now - lastRefreshTime.current;
       
-      // Only refresh if it's been more than 5 seconds or we have no categories
-      if (timeSinceLastRefresh > 5000 || categories.length === 0) {
+      // Only refresh if it's been more than 5 seconds
+      if (timeSinceLastRefresh > 5000) {
         console.log('Refreshing categories on focus...');
         stableRefresh();
       } else {
@@ -373,6 +373,9 @@ const CategoriesScreen = () => {
             className="rounded-xl p-4 flex-1 mr-2"
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
+            style={{
+              borderRadius:9
+            }}
           >
             <Text className="text-white/80 text-xs">Total Categories</Text>
             <Text className="text-white text-2xl font-bold">{totalCategories}</Text>

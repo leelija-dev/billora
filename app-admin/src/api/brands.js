@@ -1,18 +1,10 @@
 import { apiClient } from './client';
-import { mockBrands } from './mock/brands';
-
-// Get brands data based on project mode
-const getBrandsData = () => {
-  const projectMode = process.env.EXPO_PUBLIC_PROJECT_MODE || 'mock';
-  return projectMode === 'mock' ? mockBrands : apiClient;
-};
 
 export const brandsAPI = {
   // Get all brands
   getAll: async (params = {}) => {
     try {
-      const api = getBrandsData();
-      const response = await api.get('/brands', { params });
+      const response = await apiClient.get('/brands', { params });
       console.log('Brands API Response:', response.data);
       return response.data;
     } catch (error) {
@@ -23,8 +15,7 @@ export const brandsAPI = {
   // Get single brand
   getById: async (id) => {
     try {
-      const api = getBrandsData();
-      const response = await api.get(`/brands/${id}`);
+      const response = await apiClient.get(`/brands/${id}`);
       return response.data;
     } catch (error) {
       throw error.response?.data || error.message;
@@ -34,8 +25,6 @@ export const brandsAPI = {
   // Create new brand
   create: async (brandData) => {
     try {
-      const api = getBrandsData();
-      
       // Map frontend field names to API expected field names
       const payload = {
         user_id: brandData.userId || brandData.user_id,
@@ -46,7 +35,7 @@ export const brandsAPI = {
       };
       
       console.log('Create brand API payload:', payload);
-      const response = await api.post('/brands/store', payload);
+      const response = await apiClient.post('/brands/store', payload);
       return response.data;
     } catch (error) {
       console.error('Create brand API error:', error.response?.data || error.message);
@@ -57,8 +46,6 @@ export const brandsAPI = {
   // Update brand
   update: async (id, brandData) => {
     try {
-      const api = getBrandsData();
-      
       // Map frontend field names to API expected field names
       const payload = {
         name: brandData.name,
@@ -72,7 +59,7 @@ export const brandsAPI = {
       }
       
       console.log('Update brand API payload:', payload);
-      const response = await api.put(`/brands/${id}`, payload);
+      const response = await apiClient.put(`/brands/${id}`, payload);
       return response.data;
     } catch (error) {
       console.error('Update brand API error:', error.response?.data || error.message);
@@ -83,8 +70,7 @@ export const brandsAPI = {
   // Delete brand
   delete: async (id) => {
     try {
-      const api = getBrandsData();
-      const response = await api.delete(`/brands/${id}`);
+      const response = await apiClient.delete(`/brands/${id}`);
       return response.data;
     } catch (error) {
       throw error.response?.data || error.message;
@@ -94,8 +80,7 @@ export const brandsAPI = {
   // Search brands (using the index endpoint with search parameter)
   search: async (query, filters = {}) => {
     try {
-      const api = getBrandsData();
-      const response = await api.get('/brands', {
+      const response = await apiClient.get('/brands', {
         params: { search: query, ...filters }
       });
       return response.data;

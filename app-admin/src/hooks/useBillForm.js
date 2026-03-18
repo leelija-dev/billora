@@ -185,7 +185,7 @@ export const useBillForm = (billId = null) => {
   }, []);
 
   useEffect(() => {
-    if (billId) {
+    if (billId && billId !== 'undefined' && billId !== undefined) {
       fetchBillData();
     }
   }, [billId]);

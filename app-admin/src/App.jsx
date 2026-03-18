@@ -3,7 +3,7 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { LinearGradient } from "expo-linear-gradient";
 import { StatusBar } from "expo-status-bar";
 import { useEffect, useRef, useState } from "react";
-import { Animated, Easing, Image, Text, View } from "react-native";
+import { Animated, Easing, Image, Text, View, Platform } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { ThemeProvider, useTheme } from "./components/ThemeProvider";
 import { useAuthStore } from "./store/authStore";
@@ -204,6 +204,7 @@ const AppContent = () => {
   const { isAuthenticated, isLoading: authLoading } = useAuthStore();
   const [appReady, setAppReady] = useState(false);
   const fadeAnim = useRef(new Animated.Value(0)).current;
+  const theme = useTheme();
 
   useEffect(() => {
     initializeApp();
@@ -233,9 +234,30 @@ const AppContent = () => {
   }
 
   return (
-    <NavigationContainer>
+    <NavigationContainer
+      theme={{
+        colors: {
+          background: theme?.colors?.background || (theme?.isDark ? '#111827' : '#F8FAFC')
+        },
+        fonts: {
+          regular: {
+            fontFamily: Platform.select({
+              ios: 'Arial',
+              android: 'Roboto',
+              default: 'Arial'
+            })
+          }
+        }
+      }}
+    >
       <ThemedStatusBar />
-      <Animated.View style={{ flex: 1, opacity: fadeAnim }}>
+      <Animated.View 
+        style={{ 
+          flex: 1, 
+          opacity: fadeAnim,
+          backgroundColor: theme?.colors?.background || (theme?.isDark ? '#111827' : '#F8FAFC')
+        }}
+      >
         {isAuthenticated ? <MainNavigator /> : <AuthStack />}
       </Animated.View>
     </NavigationContainer>
@@ -244,10 +266,10 @@ const AppContent = () => {
 
 export default function App() {
   return (
-    <SafeAreaProvider>
-      <ThemeProvider>
+    <ThemeProvider>
+      <SafeAreaProvider>
         <AppContent />
-      </ThemeProvider>
-    </SafeAreaProvider>
+      </SafeAreaProvider>
+    </ThemeProvider>
   );
 }

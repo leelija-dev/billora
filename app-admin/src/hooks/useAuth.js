@@ -32,10 +32,25 @@ export const useAuth = () => {
       setIsLoading(true);
       const response = await authAPI.login(credentials.email, credentials.password);
       
+      console.log('Login response:', response);
+      console.log('Login response data:', response.data);
+      
+      // Check different possible response structures
       const { user: userData, token } = response.data;
       
+      console.log('Extracted user:', userData);
+      console.log('Extracted token:', token);
+      
+      if (!token) {
+        console.error('No token found in login response');
+        throw new Error('No token received from server');
+      }
+      
       await authStorage.setAuthToken(token);
+      console.log('Token stored successfully');
+      
       await authStorage.setUser(userData);
+      console.log('User stored successfully');
       
       setUser(userData);
       setIsAuthenticated(true);

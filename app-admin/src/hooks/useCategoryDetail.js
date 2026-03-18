@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { categoriesAPI } from '../api';
+import { productsAPI } from '../api/products';
 
 export const useCategoryDetail = (categoryId) => {
   const [category, setCategory] = useState(null);
@@ -133,14 +134,50 @@ export const useCategoryDetail = (categoryId) => {
     return await updateCategory(updatedData);
   };
 
+  const fetchProductsByCategory = async () => {
+    console.log('fetchProductsByCategory called with categoryId:', categoryId);
+    if (!categoryId) {
+      console.log('No categoryId, returning early');
+      return;
+    }
+
+    try {
+      console.log('Calling productsAPI.getAll with category_id:', categoryId);
+      const response = await productsAPI.getAll({ category_id: categoryId });
+      console.log('Products by Category Response:', response);
+      
+      let productsData = [];
+      
+      // Handle paginated response structure
+      if (response?.data?.data?.data) {
+        productsData = response.data.data.data;
+      } else if (response?.data?.data) {
+        productsData = response.data.data;
+      } else if (response?.data) {
+        productsData = response.data;
+      } else {
+        productsData = response;
+      }
+      
+      console.log('Setting products:', Array.isArray(productsData) ? productsData : []);
+      setProducts(Array.isArray(productsData) ? productsData : []);
+      
+    } catch (err) {
+      console.error('Error fetching products by category:', err);
+      setProducts([]);
+    }
+  };
+
   const refreshCategory = () => {
     fetchCategory();
+    fetchProductsByCategory();
   };
 
   const clearError = () => setError(null);
 
   useEffect(() => {
     fetchCategory();
+    fetchProductsByCategory();
   }, [categoryId]);
 
   return {

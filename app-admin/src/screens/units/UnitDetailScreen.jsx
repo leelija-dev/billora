@@ -3,6 +3,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useEffect, useState } from "react";
 import {
   Alert,
+  Image,
   ScrollView,
   Share,
   Text,
@@ -27,6 +28,7 @@ const UnitDetailScreen = () => {
     error, 
     updateUnit, 
     deleteUnit,
+    products = []
   } = useUnitDetail(unitId);
   const [activeTab, setActiveTab] = useState("details");
 
@@ -68,6 +70,10 @@ const UnitDetailScreen = () => {
     } catch (error) {
       console.error("Share error:", error);
     }
+  };
+
+  const handleViewProduct = (product) => {
+    navigation.navigate("ProductsStack", { screen: "ProductDetail", params: { productId: product.id } });
   };
 
   // Format date safely
@@ -214,7 +220,7 @@ const UnitDetailScreen = () => {
           <View className={`flex-row rounded-2xl p-1 mb-4 shadow-sm ${
             isDarkMode ? 'bg-gray-800' : 'bg-white'
           }`}>
-            {["details", "usage"].map((tab) => (
+            {["details", "products"].map((tab) => (
               <TouchableOpacity
                 key={tab}
                 onPress={() => setActiveTab(tab)}
@@ -343,30 +349,95 @@ const UnitDetailScreen = () => {
             </>
           )}
 
-          {activeTab === "usage" && (
+          {activeTab === "products" && (
             <View className={`rounded-2xl p-4 mb-4 shadow-sm ${
               isDarkMode ? 'bg-gray-800' : 'bg-white'
             }`}>
-              <Text className={`text-lg font-semibold mb-4 ${
-                isDarkMode ? 'text-white' : 'text-gray-800'
-              }`}>
-                Usage Information
-              </Text>
-
-              <View className="items-center justify-center py-8">
-                <Icon name="package-variant" size={48} color="#9ca3af" />
-                <Text className={`text-center mt-2 ${
-                  isDarkMode ? 'text-gray-400' : 'text-gray-500'
+              <View className="flex-row justify-between items-center mb-4">
+                <Text className={`text-lg font-semibold ${
+                  isDarkMode ? 'text-white' : 'text-gray-800'
                 }`}>
-                  This unit is used in product measurements
+                  Products using this Unit
                 </Text>
                 <TouchableOpacity
-                  onPress={() => navigation.navigate("Products", { unitId: unit.id })}
-                  className="mt-4 bg-blue-500 px-4 py-2 rounded-xl"
+                  onPress={() => navigation.navigate("ProductsStack", { screen: "Products", params: { unitId: unit.id } })}
+                  className="bg-blue-500 px-4 py-2 rounded-xl"
                 >
-                  <Text className="text-white font-medium">View Products</Text>
+                  <Text className="text-white font-medium">View All</Text>
                 </TouchableOpacity>
               </View>
+
+              {products && products.length > 0 ? (
+                products.slice(0, 5).map((product, index) => (
+                  <TouchableOpacity
+                    key={product.id}
+                    onPress={() => handleViewProduct(product)}
+                    className={`flex-row items-center p-3 ${
+                      index < products.length - 1 ? 'border-b' : ''
+                    } ${isDarkMode ? 'border-gray-700' : 'border-gray-100'}`}
+                  >
+                    <View className={`w-12 h-12 rounded-lg overflow-hidden ${
+                      isDarkMode ? 'bg-gray-700' : 'bg-gray-200'
+                    }`}>
+                      {product.image ? (
+                        <Image
+                          source={{ uri: product.image }}
+                          className="w-full h-full"
+                          resizeMode="cover"
+                        />
+                      ) : (
+                        <View className="w-full h-full items-center justify-center">
+                          <Icon name="package-variant" size={20} color="#9ca3af" />
+                        </View>
+                      )}
+                    </View>
+
+                    <View className="flex-1 ml-3">
+                      <Text className={`font-semibold ${
+                        isDarkMode ? 'text-white' : 'text-gray-800'
+                      }`}>
+                        {product.name}
+                      </Text>
+                      <View className="flex-row items-center mt-1">
+                        <Text className={`text-xs ${
+                          isDarkMode ? 'text-gray-400' : 'text-gray-500'
+                        }`}>
+                          ID: #{product.id}
+                        </Text>
+                        {product.price && (
+                          <>
+                            <Text className={`text-xs mx-2 ${
+                              isDarkMode ? 'text-gray-700' : 'text-gray-300'
+                            }`}>
+                              •
+                            </Text>
+                            <Text className={`text-xs font-semibold ${
+                              isDarkMode ? 'text-green-400' : 'text-green-600'
+                            }`}>
+                              ${product.price}
+                            </Text>
+                          </>
+                        )}
+                      </View>
+                    </View>
+                  </TouchableOpacity>
+                ))
+              ) : (
+                <View className="items-center justify-center py-8">
+                  <Icon name="package-variant" size={48} color="#9ca3af" />
+                  <Text className={`text-center mt-2 ${
+                    isDarkMode ? 'text-gray-400' : 'text-gray-500'
+                  }`}>
+                    No products using this unit
+                  </Text>
+                  <TouchableOpacity
+                    onPress={() => navigation.navigate("ProductsStack", { screen: "AddProduct", params: { unitId: unit.id } })}
+                    className="mt-4 bg-blue-500 px-4 py-2 rounded-xl"
+                  >
+                    <Text className="text-white font-medium">Add Product</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
             </View>
           )}
 

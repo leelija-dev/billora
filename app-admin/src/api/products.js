@@ -1,18 +1,11 @@
 import { apiClient } from './client';
-import { mockProducts } from './mock/products';
 
-// Get products data based on project mode
-const getProductsData = () => {
-  const projectMode = process.env.EXPO_PUBLIC_PROJECT_MODE || 'mock';
-  return projectMode === 'mock' ? mockProducts : apiClient;
-};
 
 export const productsAPI = {
   // Get all products
   getAll: async (params = {}) => {
     try {
-      const api = getProductsData();
-      return await api.get('/products', { params });
+      return await apiClient.get('/products', { params });
     } catch (error) {
       throw error.response?.data || error.message;
     }
@@ -21,7 +14,7 @@ export const productsAPI = {
   // Get single product
   getById: async (id) => {
     try {
-      const api = getProductsData();
+      const api = apiClient;
       return await api.get(`/products/${id}`);
     } catch (error) {
       throw error.response?.data || error.message;
@@ -31,7 +24,7 @@ export const productsAPI = {
   // Create new product
   create: async (productData) => {
     try {
-      const api = getProductsData();
+      const api = apiClient;
       return await api.post('/products/store', {
         user_id: productData.user_id,
         sku: productData.sku,
@@ -56,7 +49,7 @@ export const productsAPI = {
   // Update product
   update: async (id, productData) => {
     try {
-      const api = getProductsData();
+      const api = apiClient;
       return await api.put(`/products/${id}`, {
         user_id: productData.user_id,
         sku: productData.sku,
@@ -81,7 +74,7 @@ export const productsAPI = {
   // Delete product
   delete: async (id) => {
     try {
-      const api = getProductsData();
+      const api = apiClient;
       return await api.delete(`/products/${id}`);
     } catch (error) {
       throw error.response?.data || error.message;
@@ -91,7 +84,7 @@ export const productsAPI = {
   // Restore product (soft delete undo)
   restore: async (id) => {
     try {
-      const api = getProductsData();
+      const api = apiClient;
       return await api.patch(`/products/${id}`);
     } catch (error) {
       throw error.response?.data || error.message;
@@ -101,7 +94,7 @@ export const productsAPI = {
   // Permanently delete product
   forceDelete: async (id) => {
     try {
-      const api = getProductsData();
+      const api = apiClient;
       return await api.delete(`/products/${id}/force`);
     } catch (error) {
       throw error.response?.data || error.message;
@@ -111,7 +104,7 @@ export const productsAPI = {
   // Search products
   search: async (query, filters = {}) => {
     try {
-      const api = getProductsData();
+      const api = apiClient;
       return await api.get('/products', {
         params: { search: query, ...filters }
       });
@@ -123,7 +116,7 @@ export const productsAPI = {
   // Get products by category
   getByCategory: async (categoryId) => {
     try {
-      const api = getProductsData();
+      const api = apiClient;
       return await api.get(`/products/category/${categoryId}`);
     } catch (error) {
       throw error.response?.data || error.message;
@@ -133,7 +126,7 @@ export const productsAPI = {
   // Get products by brand
   getByBrand: async (brandId) => {
     try {
-      const api = getProductsData();
+      const api = apiClient;
       return await api.get(`/products/brand/${brandId}`);
     } catch (error) {
       throw error.response?.data || error.message;
@@ -143,7 +136,7 @@ export const productsAPI = {
   // Legacy methods for backward compatibility
   getProducts: async (params = {}) => {
     try {
-      const api = getProductsData();
+      const api = apiClient;
       return await api.get('/products', { params });
     } catch (error) {
       throw error.response?.data || error.message;
@@ -152,7 +145,7 @@ export const productsAPI = {
 
   getProduct: async (id) => {
     try {
-      const api = getProductsData();
+      const api = apiClient;
       return await api.get(`/products/${id}`);
     } catch (error) {
       throw error.response?.data || error.message;
@@ -177,7 +170,7 @@ export const productsAPI = {
 
   getProductCategories: async () => {
     try {
-      const api = getProductsData();
+      const api = apiClient;
       return await api.get('/products/categories');
     } catch (error) {
       throw error.response?.data || error.message;
@@ -186,7 +179,7 @@ export const productsAPI = {
 
   updateStock: async (id, stockData) => {
     try {
-      const api = getProductsData();
+      const api = apiClient;
       return await api.patch(`/products/${id}/stock`, stockData);
     } catch (error) {
       throw error.response?.data || error.message;

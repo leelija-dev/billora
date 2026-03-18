@@ -1,18 +1,11 @@
 import { apiClient } from './client';
-import { mockInvoices } from './mock/invoices';
 
-// Get invoices data based on project mode
-const getInvoicesData = () => {
-  const projectMode = process.env.EXPO_PUBLIC_PROJECT_MODE || 'mock';
-  return projectMode === 'mock' ? mockInvoices : apiClient;
-};
 
 export const invoicesAPI = {
   // Get all invoices/bill history
   getAll: async (params = {}) => {
     try {
-      const api = getInvoicesData();
-      return await api.get('/invoice/bill-history', { params });
+      return await apiClient.get('/invoice/bill-history', { params });
     } catch (error) {
       throw error.response?.data || error.message;
     }
@@ -21,7 +14,7 @@ export const invoicesAPI = {
   // Get single invoice
   getById: async (id) => {
     try {
-      const api = getInvoicesData();
+      const api = apiClient;
       return await api.get(`/invoice/${id}`);
     } catch (error) {
       throw error.response?.data || error.message;
@@ -31,7 +24,7 @@ export const invoicesAPI = {
   // Create new invoice/bill
   create: async (invoiceData) => {
     try {
-      const api = getInvoicesData();
+      const api = apiClient;
       return await api.post('/invoice/store', {
         user_id: invoiceData.userId,
         customer_id: invoiceData.customerId,
@@ -58,7 +51,7 @@ export const invoicesAPI = {
   // Update invoice
   update: async (id, invoiceData) => {
     try {
-      const api = getInvoicesData();
+      const api = apiClient;
       return await api.put(`/invoice/${id}`, {
         customer_id: invoiceData.customerId,
         store_id: invoiceData.storeId,
@@ -83,7 +76,7 @@ export const invoicesAPI = {
   // Delete invoice
   delete: async (id) => {
     try {
-      const api = getInvoicesData();
+      const api = apiClient;
       return await api.delete(`/invoice/${id}`);
     } catch (error) {
       throw error.response?.data || error.message;
@@ -93,7 +86,7 @@ export const invoicesAPI = {
   // Get invoice by customer
   getByCustomer: async (customerId, params = {}) => {
     try {
-      const api = getInvoicesData();
+      const api = apiClient;
       return await api.get(`/invoice/customer/${customerId}`, { params });
     } catch (error) {
       throw error.response?.data || error.message;
@@ -103,7 +96,7 @@ export const invoicesAPI = {
   // Get invoice by store
   getByStore: async (storeId, params = {}) => {
     try {
-      const api = getInvoicesData();
+      const api = apiClient;
       return await api.get(`/invoice/store/${storeId}`, { params });
     } catch (error) {
       throw error.response?.data || error.message;
@@ -113,7 +106,7 @@ export const invoicesAPI = {
   // Get invoice statistics
   getStats: async (filters = {}) => {
     try {
-      const api = getInvoicesData();
+      const api = apiClient;
       return await api.get('/invoice/stats', { params: filters });
     } catch (error) {
       throw error.response?.data || error.message;
@@ -123,7 +116,7 @@ export const invoicesAPI = {
   // Generate invoice PDF
   generatePDF: async (id) => {
     try {
-      const api = getInvoicesData();
+      const api = apiClient;
       return await api.get(`/invoice/${id}/pdf`);
     } catch (error) {
       throw error.response?.data || error.message;
@@ -133,7 +126,7 @@ export const invoicesAPI = {
   // Send invoice via email
   sendEmail: async (id, emailData) => {
     try {
-      const api = getInvoicesData();
+      const api = apiClient;
       return await api.post(`/invoice/${id}/send-email`, emailData);
     } catch (error) {
       throw error.response?.data || error.message;
@@ -143,7 +136,7 @@ export const invoicesAPI = {
   // Get invoice payments
   getPayments: async (invoiceId) => {
     try {
-      const api = getInvoicesData();
+      const api = apiClient;
       return await api.get(`/invoice/${invoiceId}/payments`);
     } catch (error) {
       throw error.response?.data || error.message;
@@ -153,7 +146,7 @@ export const invoicesAPI = {
   // Add payment to invoice
   addPayment: async (invoiceId, paymentData) => {
     try {
-      const api = getInvoicesData();
+      const api = apiClient;
       return await api.post(`/invoice/${invoiceId}/payment`, {
         amount: paymentData.amount,
         payment_method: paymentData.paymentMethod,

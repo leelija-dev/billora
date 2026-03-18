@@ -73,7 +73,7 @@ const CategoryDetailScreen = () => {
   };
 
   const handleViewProduct = (product) => {
-    navigation.navigate("ProductDetail", { productId: product.id });
+    navigation.navigate("ProductsStack", { screen: "ProductDetail", params: { productId: product.id } });
   };
 
   // Format date safely
@@ -200,6 +200,9 @@ const CategoryDetailScreen = () => {
             className="rounded-2xl p-6 mt-4 mb-4"
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
+            style={{
+              borderRadius: 16
+            }}
           >
             <View className="items-center">
               <View className="w-20 h-20 bg-white/20 rounded-2xl items-center justify-center mb-4">
@@ -235,14 +238,14 @@ const CategoryDetailScreen = () => {
           </LinearGradient>
 
           {/* Tabs */}
-          <View className={`flex-row rounded-2xl p-1 mb-4 shadow-sm ${
+          <View className={`flex-row rounded-[50px]  mb-4 shadow-sm ${
             isDarkMode ? 'bg-gray-800' : 'bg-white'
           }`}>
             {["details", "products"].map((tab) => (
               <TouchableOpacity
                 key={tab}
                 onPress={() => setActiveTab(tab)}
-                className={`flex-1 py-3 rounded-xl ${
+                className={`flex-1 py-3 rounded-[50px] ${
                   activeTab === tab ? "bg-blue-500" : ""
                 }`}
               >
@@ -429,7 +432,7 @@ const CategoryDetailScreen = () => {
                   Products in this Category
                 </Text>
                 <TouchableOpacity
-                  onPress={() => navigation.navigate("Products", { categoryId: category.id })}
+                  onPress={() => navigation.navigate("ProductsStack", { screen: "Products", params: { categoryId: category.id } })}
                   className="bg-blue-500 px-4 py-2 rounded-xl"
                 >
                   <Text className="text-white font-medium">View All</Text>
@@ -500,7 +503,7 @@ const CategoryDetailScreen = () => {
                     No products in this category
                   </Text>
                   <TouchableOpacity
-                    onPress={() => navigation.navigate("AddProduct", { categoryId: category.id })}
+                    onPress={() => navigation.navigate("ProductsStack", { screen: "AddProduct", params: { categoryId: category.id } })}
                     className="mt-4 bg-blue-500 px-4 py-2 rounded-xl"
                   >
                     <Text className="text-white font-medium">Add Product</Text>

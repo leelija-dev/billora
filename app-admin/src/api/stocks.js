@@ -1,18 +1,10 @@
 import { apiClient } from './client';
-import { mockStocks } from './mock/stocks';
-
-// Get stocks data based on project mode
-const getStocksData = () => {
-  const projectMode = process.env.EXPO_PUBLIC_PROJECT_MODE || 'mock';
-  return projectMode === 'mock' ? mockStocks : apiClient;
-};
 
 export const stocksAPI = {
   // Get all stocks
   getAll: async (params = {}) => {
     try {
-      const api = getStocksData();
-      const response = await api.get('/stocks/', { params });
+      const response = await apiClient.get('/stocks/', { params });
       console.log('Stocks API Response:', response.data);
       return response.data;
     } catch (error) {
@@ -23,8 +15,7 @@ export const stocksAPI = {
   // Get single stock
   getById: async (id) => {
     try {
-      const api = getStocksData();
-      const response = await api.get(`/stocks/${id}`);
+      const response = await apiClient.get(`/stocks/${id}`);
       return response.data;
     } catch (error) {
       throw error.response?.data || error.message;
@@ -34,8 +25,6 @@ export const stocksAPI = {
   // Create new stock
   create: async (stockData) => {
     try {
-      const api = getStocksData();
-      
       // Map frontend field names to API expected field names
       const payload = {
         user_id: stockData.userId || stockData.user_id,
@@ -49,7 +38,7 @@ export const stocksAPI = {
       };
       
       console.log('Create Stock API payload:', payload);
-      const response = await api.post('/stocks/store', payload);
+      const response = await apiClient.post('/stocks/store', payload);
       return response.data;
     } catch (error) {
       console.error('Create Stock API error:', error.response?.data || error.message);
@@ -60,8 +49,6 @@ export const stocksAPI = {
   // Update stock
   update: async (id, stockData) => {
     try {
-      const api = getStocksData();
-      
       // Map frontend field names to API expected field names
       const payload = {
         quantity: parseInt(stockData.quantity) || 0,
@@ -72,7 +59,7 @@ export const stocksAPI = {
       };
       
       console.log('Update Stock API payload:', payload);
-      const response = await api.put(`/stocks/${id}`, payload);
+      const response = await apiClient.put(`/stocks/${id}`, payload);
       return response.data;
     } catch (error) {
       console.error('Update Stock API error:', error.response?.data || error.message);
@@ -81,10 +68,12 @@ export const stocksAPI = {
   },
 
   // Delete stock
-  delete: async (id) => {
+  delete: async (id, userId) => {
     try {
-      const api = getStocksData();
-      const response = await api.delete(`/stocks/${id}`);
+      const response = await apiClient.post(`/stocks/${id}`, {
+        _method: 'DELETE',
+        user_id: userId
+      });
       return response.data;
     } catch (error) {
       throw error.response?.data || error.message;
@@ -94,8 +83,7 @@ export const stocksAPI = {
   // Add stock (increment quantity)
   addStock: async (id, stockData) => {
     try {
-      const api = getStocksData();
-      const response = await api.post(`/stocks/add-stock/${id}`, {
+      const response = await apiClient.post(`/stocks/add-stock/${id}`, {
         quantity: parseInt(stockData.quantity) || 0,
         user_id: stockData.userId || stockData.user_id,
       });
@@ -109,8 +97,7 @@ export const stocksAPI = {
   // Search stocks
   search: async (query, filters = {}) => {
     try {
-      const api = getStocksData();
-      const response = await api.get('/stocks/', {
+      const response = await apiClient.get('/stocks/', {
         params: { search: query, ...filters }
       });
       return response.data;
@@ -122,8 +109,7 @@ export const stocksAPI = {
   // Get stocks by product
   getByProduct: async (productId) => {
     try {
-      const api = getStocksData();
-      const response = await api.get(`/stocks/product/${productId}`);
+      const response = await apiClient.get(`/stocks/product/${productId}`);
       return response.data;
     } catch (error) {
       throw error.response?.data || error.message;

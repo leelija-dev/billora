@@ -83,24 +83,7 @@ export const NAVIGATION_ITEMS = [
     screen: NAVIGATION_SCREENS.MAIN.CUSTOMERS,
     badge: null,
   },
-  {
-    id: "orders",
-    title: "Orders",
-    icon: "clipboard-list",
-    iconActive: "clipboard-list",
-    parent: "OrdersStack",
-    screen: NAVIGATION_SCREENS.MAIN.ORDERS,
-    badge: null,
-  },
-  {
-    id: "inventory",
-    title: "Inventory",
-    icon: "clipboard-list-outline",
-    iconActive: "clipboard-list",
-    parent: "InventoryStack",
-    screen: NAVIGATION_SCREENS.MAIN.INVENTORY,
-    badge: null,
-  },
+  
   {
     id: "settings",
     title: "Settings",
