@@ -10,6 +10,8 @@ import {
   View,
   RefreshControl,
   ActivityIndicator,
+  Modal,
+  Alert,
 } from "react-native";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 import DateTimePicker from "@react-native-community/datetimepicker";
@@ -21,8 +23,13 @@ import ReportFilters from "../../components/reports/ReportFilters";
 import ReportList from "../../components/reports/ReportList";
 import ReportSummary from "../../components/reports/ReportSummary";
 import QuickDateFilters from "../../components/reports/QuickDateFilters";
+import ReportPrintPreview from "../../components/reports/ReportPrintPreview";
 import { getNavigationItemsWithBadges } from "../../constants/navigationItems";
 import { formatDate } from "../../utils/dateFormatter";
+import * as Print from 'expo-print';
+import * as Sharing from 'expo-sharing';
+import { generateReportHTML } from "../../utils/reportPrintHelper";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 const ReportsScreen = () => {
   const navigation = useNavigation();
@@ -48,6 +55,12 @@ const ReportsScreen = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [dateRangeText, setDateRangeText] = useState("Today");
   const [initialLoadComplete, setInitialLoadComplete] = useState(false);
+  
+  // Print related states
+  const [showPrintPreview, setShowPrintPreview] = useState(false);
+  const [isPrinting, setIsPrinting] = useState(false);
+  const [printFormat, setPrintFormat] = useState('a4'); // Default to A4
+  const [printData, setPrintData] = useState(null);
 
   // Function to update dateRangeText based on date selection
   const updateDateRangeText = useCallback((start, end) => {
@@ -95,6 +108,56 @@ const ReportsScreen = () => {
     if (type === "all") return reports.length;
     return reports.filter(r => r.type?.toLowerCase() === type.toLowerCase()).length;
   }, [reports]);
+
+  // Filter reports based on type and search query
+  const filteredReports = useMemo(() => {
+    let filtered = reports;
+    
+    // Filter by type
+    if (reportType !== "all") {
+      filtered = filtered.filter(r => r.type?.toLowerCase() === reportType.toLowerCase());
+    }
+    
+    // Filter by search query
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(r => 
+        r.name?.toLowerCase().includes(query) ||
+        r.id?.toString().includes(query) ||
+        r.type?.toLowerCase().includes(query)
+      );
+    }
+    
+    return filtered;
+  }, [reports, reportType, searchQuery]);
+
+  // Prepare print data
+  const preparePrintData = useCallback(() => {
+    return {
+      reports: filteredReports,
+      summary: summary,
+      dateRange: dateRangeText,
+      startDate: startDate,
+      endDate: endDate,
+      reportType: reportType,
+      searchQuery: searchQuery,
+      generatedAt: new Date(),
+      storeInfo: {
+        name: "Your Store Name",
+        address: "Store Address",
+        phone: "Store Phone",
+        email: "store@email.com",
+        gst: "GSTIN123456"
+      },
+      totals: {
+        totalReports: filteredReports.length,
+        totalSales: summary.totalSales || 0,
+        totalPurchases: summary.totalPurchases || 0,
+        totalProfit: summary.totalProfit || 0,
+        totalItems: summary.totalItems || 0
+      }
+    };
+  }, [filteredReports, summary, dateRangeText, startDate, endDate, reportType, searchQuery]);
 
   // Report types for filtering with dynamic counts
   const reportTypes = useMemo(() => [
@@ -209,9 +272,94 @@ const ReportsScreen = () => {
     console.log("Export reports");
   };
 
+  // Updated print handler
   const handlePrint = () => {
-    // Implement print functionality
-    console.log("Print reports");
+    if (filteredReports.length === 0) {
+      Alert.alert('No Data', 'There are no reports to print for the selected criteria.');
+      return;
+    }
+    
+    const data = preparePrintData();
+    setPrintData(data);
+    setShowPrintPreview(true);
+  };
+
+  // Execute print function
+  const executePrint = async () => {
+    try {
+      if (!printData) {
+        Alert.alert('Error', 'No report data available for printing');
+        return;
+      }
+
+      setIsPrinting(true);
+
+      // Generate HTML for A4 report
+      const html = generateReportHTML(printData, 'a4');
+      
+      // Print report
+      await Print.printAsync({
+        html,
+        name: `Reports_${formatDate(new Date(), 'YYYYMMDD_HHmmss')}`,
+        orientation: 'portrait',
+        margins: {
+          top: 20,
+          bottom: 20,
+          left: 20,
+          right: 20,
+        },
+      });
+
+      setShowPrintPreview(false);
+      Alert.alert('Success', 'Report sent to printer successfully');
+    } catch (error) {
+      console.error('Print error:', error);
+      Alert.alert('Error', 'Failed to print report. Please check your printer connection.');
+    } finally {
+      setIsPrinting(false);
+    }
+  };
+
+  // Share as PDF function
+  const shareAsPDF = async () => {
+    try {
+      if (!printData) {
+        Alert.alert('Error', 'No report data available for sharing');
+        return;
+      }
+
+      setIsPrinting(true);
+
+      // Generate HTML for report
+      const html = generateReportHTML(printData, 'a4');
+      
+      // Create PDF file
+      const { uri } = await Print.printToFileAsync({
+        html,
+        name: `Reports_${formatDate(new Date(), 'YYYYMMDD_HHmmss')}`,
+        orientation: 'portrait',
+        margins: {
+          top: 20,
+          bottom: 20,
+          left: 20,
+          right: 20,
+        },
+      });
+
+      // Share PDF
+      await Sharing.shareAsync(uri, {
+        mimeType: 'application/pdf',
+        dialogTitle: `Share Reports ${dateRangeText}`,
+        UTI: 'com.adobe.pdf',
+      });
+
+      setShowPrintPreview(false);
+    } catch (error) {
+      console.error('Share PDF error:', error);
+      Alert.alert('Error', 'Failed to create PDF for sharing');
+    } finally {
+      setIsPrinting(false);
+    }
   };
 
   const handleRefresh = async () => {
@@ -233,7 +381,7 @@ const ReportsScreen = () => {
     const today = new Date();
     setStartDate(today);
     setEndDate(today);
-    setDateRangeText("Today"); // Set immediately for better UX
+    setDateRangeText("Today");
     handleDateSearch();
   };
 
@@ -243,7 +391,7 @@ const ReportsScreen = () => {
     start.setDate(start.getDate() - 7);
     setStartDate(start);
     setEndDate(end);
-    setDateRangeText("Last 7 Days"); // Set immediately for better UX
+    setDateRangeText("Last 7 Days");
     handleDateSearch();
   };
 
@@ -253,7 +401,7 @@ const ReportsScreen = () => {
     start.setDate(start.getDate() - 30);
     setStartDate(start);
     setEndDate(end);
-    setDateRangeText("Last 30 Days"); // Set immediately for better UX
+    setDateRangeText("Last 30 Days");
     handleDateSearch();
   };
 
@@ -263,7 +411,7 @@ const ReportsScreen = () => {
     start.setMonth(start.getMonth() - 1);
     setStartDate(start);
     setEndDate(end);
-    setDateRangeText("This Month"); // Set immediately for better UX
+    setDateRangeText("This Month");
     handleDateSearch();
   };
 
@@ -277,11 +425,11 @@ const ReportsScreen = () => {
   // Navigation items for sidebar
   const navigationItems = useMemo(() => {
     const badges = {
-      reports: reports.length.toString(),
+      reports: filteredReports.length.toString(),
       sales: summary.totalSales ? `$${summary.totalSales}` : null,
     };
     return getNavigationItemsWithBadges(badges);
-  }, [reports.length, summary]);
+  }, [filteredReports.length, summary]);
 
   // Loading state
   if (loading && !initialLoadComplete && !refreshing) {
@@ -576,6 +724,73 @@ const ReportsScreen = () => {
         }}
         summary={summary}
       />
+
+      {/* Print Preview Modal */}
+      <Modal
+        visible={showPrintPreview}
+        animationType="slide"
+        onRequestClose={() => setShowPrintPreview(false)}
+      >
+        <View className={`flex-1 ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
+          <SafeAreaView className="flex-1">
+            <View className={`px-4 py-3 flex-row items-center border-b ${
+              isDarkMode ? 'border-gray-800' : 'border-gray-200'
+            }`}>
+              <TouchableOpacity
+                onPress={() => setShowPrintPreview(false)}
+                className="mr-4"
+              >
+                <Icon name="close" size={24} color={isDarkMode ? '#FFFFFF' : '#1F2937'} />
+              </TouchableOpacity>
+              <Text className={`text-xl font-semibold flex-1 ${
+                isDarkMode ? 'text-white' : 'text-gray-800'
+              }`}>
+                Print Preview - A4
+              </Text>
+              <View className="flex-row gap-2">
+                <TouchableOpacity
+                  onPress={shareAsPDF}
+                  disabled={isPrinting}
+                  className="bg-green-500 px-4 py-2 rounded-xl flex-row items-center"
+                >
+                  {isPrinting ? (
+                    <ActivityIndicator size="small" color="#ffffff" />
+                  ) : (
+                    <>
+                      <Icon name="share" size={16} color="#ffffff" />
+                      <Text className="text-white font-semibold ml-1">Share PDF</Text>
+                    </>
+                  )}
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={executePrint}
+                  disabled={isPrinting}
+                  className="bg-blue-500 px-4 py-2 rounded-xl flex-row items-center"
+                >
+                  {isPrinting ? (
+                    <ActivityIndicator size="small" color="#ffffff" />
+                  ) : (
+                    <>
+                      <Icon name="printer" size={16} color="#ffffff" />
+                      <Text className="text-white font-semibold ml-1">Print</Text>
+                    </>
+                  )}
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            <ScrollView className="flex-1">
+              {printData && (
+                <ReportPrintPreview 
+                  data={printData}
+                  isDarkMode={isDarkMode}
+                  format="a4"
+                />
+              )}
+            </ScrollView>
+          </SafeAreaView>
+        </View>
+      </Modal>
     </View>
   );
 };
