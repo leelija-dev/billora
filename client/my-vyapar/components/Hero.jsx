@@ -10,11 +10,11 @@ const Hero = () => {
   useEffect(() => {
     // Start sequence when component mounts
     const timer1 = setTimeout(() => {
-      setScreenState(1); // Show Billora text after 100ms (during slide)
+      setScreenState(1); // Show Billora text after 100ms (during flight)
     }, 100);
 
     const timer2 = setTimeout(() => {
-      setScreenState(2); // Show actual images after 1300ms (after slide completes)
+      setScreenState(2); // Show actual images after 1300ms (after flight completes)
     }, 1300);
 
     return () => {
@@ -37,18 +37,30 @@ const Hero = () => {
             0%, 100% { transform: translateY(0); } 
             50% { transform: translateY(-15px); } 
           }
-          @keyframes heroicSlidePC {
-            0% { opacity: 0; transform: translateY(-100px); }
-            30% { opacity: 0.3; transform: translateY(-70px); }
-            70% { opacity: 0.7; transform: translateY(-20px); }
-            100% { opacity: 1; transform: translateY(0); }
+          
+          /* Simple flight in animations */
+          @keyframes flightInPC {
+            0% { 
+              opacity: 0; 
+              transform: translateY(-150px);
+            }
+            100% { 
+              opacity: 1; 
+              transform: translateY(0);
+            }
           }
-          @keyframes heroicSlidePhone {
-            0% { opacity: 0; transform: translateY(100px); }
-            30% { opacity: 0.3; transform: translateY(70px); }
-            70% { opacity: 0.7; transform: translateY(20px); }
-            100% { opacity: 1; transform: translateY(0); }
+          
+          @keyframes flightInPhone {
+            0% { 
+              opacity: 0; 
+              transform: translateY(-200px) translateX(50px);
+            }
+            100% { 
+              opacity: 1; 
+              transform: translateY(0) translateX(0);
+            }
           }
+
           @keyframes liquid-flow {
             from { transform: rotate(0deg); }
             to { transform: rotate(360deg); }
@@ -149,8 +161,14 @@ const Hero = () => {
             }
           }
           
-          .heroic-slide-pc { animation: heroicSlidePC 1.2s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
-          .heroic-slide-phone { animation: heroicSlidePhone 1.3s cubic-bezier(0.34, 1.56, 0.64, 1) 0.1s forwards; }
+          /* Simple flight animations */
+          .flight-pc { 
+            animation: flightInPC 0.8s ease-out forwards; 
+          }
+          .flight-phone { 
+            animation: flightInPhone 0.9s ease-out 0.1s forwards; 
+          }
+          
           .heroic-slide-badge1 { 
             animation: fadeInUp 1s ease-out 0.4s forwards, custom-bounce 3s ease-in-out 1.4s infinite; 
             opacity: 0; 
@@ -194,8 +212,8 @@ const Hero = () => {
             {/* --- IMAGE CONTAINER WITH SYNCED LOADING SEQUENCE --- */}
             <div className="flex-1 relative min-h-[400px] w-full max-w-[650px] mt-12 lg:mt-0 flex flex-col items-center">
               
-              {/* PC Monitor Model - Slides in from top */}
-              <div className="relative w-full z-10 heroic-slide-pc">
+              {/* PC Monitor Model - Flies in from top */}
+              <div className="relative w-full z-10 flight-pc">
                 {/* Monitor Screen */}
                 <div className="relative aspect-[16/10] bg-slate-900 rounded-[20px] p-2.5 shadow-2xl border border-slate-700/50">
                   <div className="w-full h-full bg-slate-800 rounded-xl overflow-hidden relative shadow-inner">
@@ -208,12 +226,12 @@ const Hero = () => {
                     
                     {/* Screen Content with Loading States */}
                     <div className="absolute inset-0 top-7 flex items-center justify-center bg-slate-800">
-                      {/* State 0: Blank Black - During initial slide */}
+                      {/* State 0: Blank Black - During initial flight */}
                       {screenState === 0 && (
                         <div className="w-full h-full bg-black"></div>
                       )}
                       
-                      {/* State 1: Blue B Logo Reveal - Appears during slide */}
+                      {/* State 1: Blue B Logo Reveal - Appears during flight */}
                       {screenState === 1 && (
                         <div className="w-full h-full bg-black flex items-center justify-center">
                           <div className="text-reveal">
@@ -224,7 +242,7 @@ const Hero = () => {
                         </div>
                       )}
                       
-                      {/* State 2: Actual Image - After slide completes */}
+                      {/* State 2: Actual Image - After flight completes */}
                       {screenState === 2 && (
                         <div className="w-full h-full fade-in">
                           <Image 
@@ -245,8 +263,8 @@ const Hero = () => {
                 <div className="relative w-40 h-3 bg-slate-800 rounded-t-xl mx-auto shadow-2xl border-t border-slate-600"></div>
               </div>
 
-              {/* Floating Mobile Image - Slides in from bottom */}
-              <div className="absolute left-0 bottom-4 w-[125px] h-[250px] bg-slate-800 rounded-[35px] p-2 shadow-2xl z-30 hidden sm:block heroic-slide-phone border border-slate-700">
+              {/* Floating Mobile Image - Flies in from top with slight diagonal */}
+              <div className="absolute left-0 bottom-4 w-[125px] h-[250px] bg-slate-800 rounded-[35px] p-2 shadow-2xl z-30 hidden sm:block flight-phone border border-slate-700">
                 <div className="w-full h-full bg-slate-900 rounded-[30px] overflow-hidden relative border-2 border-slate-800">
                   {/* Screen Content with Loading States */}
                   <div className="absolute inset-0 flex items-center justify-center bg-slate-900">
