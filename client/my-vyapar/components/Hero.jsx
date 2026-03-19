@@ -1,207 +1,259 @@
 "use client";
-import React from "react";
+import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import Container from "../components/Container"; // Add this import
+import Container from "../components/Container";
 
 const Hero = () => {
+  const [screenState, setScreenState] = useState(0); // 0: blank black, 1: show Billora, 2: show images
+
+  useEffect(() => {
+    // Start sequence when component mounts
+    const timer1 = setTimeout(() => {
+      setScreenState(1); // Show Billora text after 100ms (during slide)
+    }, 100);
+
+    const timer2 = setTimeout(() => {
+      setScreenState(2); // Show actual images after 1300ms (after slide completes)
+    }, 1300);
+
+    return () => {
+      clearTimeout(timer1);
+      clearTimeout(timer2);
+    };
+  }, []);
+
   return (
     <div className="overflow-x-hidden font-sans">
       {/* ===== ANIMATED HERO SECTION ===== */}
       <section className="relative z-10 min-h-[100vh] flex items-center pb-32 pt-10 bg-gradient-to-br from-slate-50 via-indigo-50 to-sky-100 overflow-hidden">
-        {/* Ultra Animated Background */}
+        
         <style>{`
-          @keyframes float-blob-1 { 
-            0%, 100% { transform: translate(0px, 0px) scale(1); } 
-            25% { transform: translate(40px, -50px) scale(1.1); } 
-            50% { transform: translate(-30px, 40px) scale(0.95); } 
-            75% { transform: translate(50px, 30px) scale(1.05); } 
-          }
-          @keyframes float-blob-2 { 
-            0%, 100% { transform: translate(0px, 0px) scale(1); } 
-            25% { transform: translate(-40px, 50px) scale(0.95); } 
-            50% { transform: translate(35px, -45px) scale(1.1); } 
-            75% { transform: translate(-45px, -35px) scale(1.05); } 
-          }
           @keyframes fadeInUp { 
             from { opacity: 0; transform: translateY(30px); } 
             to { opacity: 1; transform: translateY(0); } 
-          }
-          @keyframes floatIcons { 
-            0%, 100% { transform: translateY(0px) rotate(0deg); } 
-            50% { transform: translateY(-25px) rotate(8deg); } 
           }
           @keyframes custom-bounce { 
             0%, 100% { transform: translateY(0); } 
             50% { transform: translateY(-15px); } 
           }
-          
-          /* HEROIC SLIDE ANIMATIONS */
-          @keyframes heroicSlideLaptop {
-            0% { opacity: 0; transform: translateY(-200px) rotate(-5deg); }
-            60% { opacity: 1; transform: translateY(20px) rotate(2deg); }
-            80% { transform: translateY(-5px) rotate(0deg); }
-            100% { opacity: 1; transform: translateY(0) rotate(0deg); }
+          @keyframes heroicSlidePC {
+            0% { opacity: 0; transform: translateY(-100px); }
+            30% { opacity: 0.3; transform: translateY(-70px); }
+            70% { opacity: 0.7; transform: translateY(-20px); }
+            100% { opacity: 1; transform: translateY(0); }
           }
-          
           @keyframes heroicSlidePhone {
-            0% { opacity: 0; transform: translateY(-250px) translateX(20px) rotate(10deg); }
-            60% { opacity: 1; transform: translateY(15px) translateX(-5px) rotate(-3deg); }
-            80% { transform: translateY(-5px) translateX(0) rotate(0deg); }
-            100% { opacity: 1; transform: translateY(0) translateX(0) rotate(0deg); }
+            0% { opacity: 0; transform: translateY(100px); }
+            30% { opacity: 0.3; transform: translateY(70px); }
+            70% { opacity: 0.7; transform: translateY(20px); }
+            100% { opacity: 1; transform: translateY(0); }
           }
-          
-          @keyframes heroicSlideBadge1 {
-            0% { opacity: 0; transform: translateY(-150px) translateX(50px); }
-            70% { opacity: 1; transform: translateY(10px) translateX(-5px); }
-            100% { opacity: 1; transform: translateY(0) translateX(0); }
+          @keyframes liquid-flow {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
           }
-          
-          @keyframes heroicSlideBadge2 {
-            0% { opacity: 0; transform: translateY(-180px) translateX(-30px); }
-            70% { opacity: 1; transform: translateY(15px) translateX(5px); }
-            100% { opacity: 1; transform: translateY(0) translateX(0); }
+          @keyframes textReveal {
+            0% { opacity: 0; transform: scale(0.9); }
+            50% { opacity: 1; transform: scale(1.2); }
+            100% { opacity: 1; transform: scale(1); }
           }
-          
-          @keyframes heroicSlideBadge3 {
-            0% { opacity: 0; transform: translateY(-200px) translateX(40px); }
-            70% { opacity: 1; transform: translateY(5px) translateX(-5px); }
-            100% { opacity: 1; transform: translateY(0) translateX(0); }
+          @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+          }
+          @keyframes pulse-glow {
+            0% { box-shadow: 0 10px 30px -10px rgba(99, 102, 241, 0.3); }
+            50% { box-shadow: 0 10px 40px -5px rgba(99, 102, 241, 0.8); }
+            100% { box-shadow: 0 10px 30px -10px rgba(99, 102, 241, 0.3); }
           }
 
-          .animate-fadeInUp { 
-            animation: fadeInUp 0.8s ease-out forwards; 
+          .liquid-btn-container {
+            position: relative;
+            width: 260px;
+            height: 64px;
+            border-radius: 50px;
+            background: #fff;
+            box-shadow: 0 10px 30px -10px rgba(99, 102, 241, 0.3);
+            padding: 3px;
+            overflow: hidden;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
           }
-          .animate-custom-bounce { 
-            animation: custom-bounce 3s ease-in-out infinite; 
+          .liquid-btn-container:hover {
+            transform: scale(1.05);
+            animation: pulse-glow 2s infinite;
           }
-          .blob-float-1 { 
-            animation: float-blob-1 12s ease-in-out infinite; 
+          .liquid-btn-container::before {
+            content: "";
+            position: absolute;
+            width: 140%;
+            height: 300%;
+            background: conic-gradient(from 0deg, transparent 0%, #3b82f6 10%, #8b5cf6 20%, #10b981 30%, transparent 40%);
+            animation: liquid-flow 3s linear infinite;
+            transition: opacity 0.3s ease;
           }
-          .blob-float-2 { 
-            animation: float-blob-2 14s ease-in-out infinite 1s; 
+          .liquid-btn-container:hover::before {
+            opacity: 1.2;
+            filter: brightness(1.2);
           }
-          .float-icon { 
-            animation: floatIcons 8s ease-in-out infinite; 
-            font-size: 48px; 
-            position: absolute; 
+          .billora-btn {
+            position: relative;
+            z-index: 2;
+            width: 100%;
+            height: 100%;
+            border-radius: 50px;
+            background: linear-gradient(135deg, #6366f1, #a855f7);
+            color: white; font-weight: 700; display: flex; align-items: center; justify-content: center;
+            transition: all 0.3s ease;
           }
-          .delay-1 { animation-delay: 0.5s; }
-          .delay-2 { animation-delay: 1s; }
-          .delay-3 { animation-delay: 1.5s; }
-          .delay-4 { animation-delay: 2s; }
-          .delay-5 { animation-delay: 2.5s; }
+          .liquid-btn-container:hover .billora-btn {
+            background: linear-gradient(135deg, #4f46e5, #9333ea);
+            letter-spacing: 1px;
+          }
           
-          /* Heroic Slide Classes */
-          .heroic-slide-laptop {
-            animation: heroicSlideLaptop 1.2s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+          .heroic-slide-pc { animation: heroicSlidePC 1.2s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
+          .heroic-slide-phone { animation: heroicSlidePhone 1.3s cubic-bezier(0.34, 1.56, 0.64, 1) 0.1s forwards; }
+          .heroic-slide-badge1 { 
+            animation: fadeInUp 1s ease-out 0.4s forwards, custom-bounce 3s ease-in-out 1.4s infinite; 
+            opacity: 0; 
           }
-          .heroic-slide-phone {
-            animation: heroicSlidePhone 1.3s cubic-bezier(0.34, 1.56, 0.64, 1) 0.2s forwards;
+          .heroic-slide-badge2 { 
+            animation: fadeInUp 1s ease-out 0.6s forwards, custom-bounce 3.2s ease-in-out 1.6s infinite; 
+            opacity: 0; 
           }
-          .heroic-slide-badge1 {
-            animation: heroicSlideBadge1 1s cubic-bezier(0.34, 1.56, 0.64, 1) 0.4s forwards, custom-bounce 3s ease-in-out 1.4s infinite;
+          .heroic-slide-badge3 { 
+            animation: fadeInUp 1s ease-out 0.8s forwards, custom-bounce 2.8s ease-in-out 1.8s infinite; 
+            opacity: 0; 
           }
-          .heroic-slide-badge2 {
-            animation: heroicSlideBadge2 1.1s cubic-bezier(0.34, 1.56, 0.64, 1) 0.5s forwards, bounce 3s ease-in-out 1.6s infinite;
-          }
-          .heroic-slide-badge3 {
-            animation: heroicSlideBadge3 1.2s cubic-bezier(0.34, 1.56, 0.64, 1) 0.6s forwards, bounce 3s ease-in-out 1.8s infinite;
-          }
+          .animate-fadeInUp { animation: fadeInUp 0.8s ease-out forwards; }
+          .text-reveal { animation: textReveal 0.6s ease-out forwards; }
+          .fade-in { animation: fadeIn 0.5s ease-out forwards; }
         `}</style>
 
-        {/* Floating Business Icons Background */}
-        <div className="absolute inset-0 pointer-events-none z-0">
-          <div className="absolute top-[12%] left-[8%] float-icon opacity-20">📄</div>
-          <div className="absolute top-[65%] left-[15%] float-icon delay-2 opacity-20">₹</div>
-          <div className="absolute top-[30%] right-[12%] float-icon delay-3 opacity-20">📊</div>
-          <div className="absolute bottom-[20%] right-[18%] float-icon delay-4 opacity-20">🧮</div>
-          <div className="absolute top-[50%] left-[40%] float-icon delay-5 opacity-20">🧾</div>
-        </div>
-
-        {/* Gradient Overlay at bottom */}
-        <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-slate-50/80 to-transparent pointer-events-none z-20"></div>
-
-        {/* Main Content - Now wrapped in Container */}
-        <Container>
+        <Container size="default">
           <div className="relative z-30 w-full flex flex-col lg:flex-row items-center gap-10 lg:gap-16">
-            {/* Hero Content */}
-            <div className="flex-1 text-center lg:text-left">
-              <h1 className="text-4xl md:text-5xl lg:text-[52px] font-extrabold text-slate-900 leading-tight mb-8 tracking-tight animate-fadeInUp">
-                GST Billing Software for Small Businesses in India
+            
+            {/* --- TEXT CONTENT --- */}
+            <div className="flex-1 text-center lg:text-left px-4 sm:px-0">
+              <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-[56px] font-black text-[#0f172a] leading-[1.15] mb-6 tracking-tight animate-fadeInUp max-w-[750px]">
+                GST Billing Software for <span className="text-indigo-600">Small Businesses in India</span>
               </h1>
-              <p
-                className="text-sm sm:text-base md:text-lg text-slate-600 leading-relaxed mb-6 sm:mb-10 max-w-[550px] mx-auto lg:mx-0 animate-fadeInUp"
-                style={{ animationDelay: "0.2s" }}
-              >
+              <p className="text-base sm:text-lg lg:text-xl text-slate-600 leading-relaxed mb-10 max-w-[650px] mx-auto lg:mx-0 animate-fadeInUp">
                 Manage your business professionally with Billora, India's leading
                 small business software for billing, inventory, and accounting.
-                Join <br /> 1 Cr+ satisfied SMEs in India who trust Billora.
               </p>
-              <div className="flex flex-row gap-7 justify-center lg:justify-start flex-wrap animate-fadeInUp"
-                   style={{ animationDelay: "0.3s" }}>
-                <Link href="/start-free-trial">
-                  <button className="px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-500 text-white rounded-full text-sm font-semibold shadow-md transition-all hover:-translate-y-1 hover:shadow-lg">
-                    Start Free Trial
-                  </button>
+              
+              <div className="flex flex-col sm:flex-row gap-6 justify-center lg:justify-start items-center animate-fadeInUp">
+                <Link href="/start-free-trial" className="liquid-btn-container">
+                  <button className="billora-btn">Start Free Trial →</button>
                 </Link>
-
-                <Link href="/bookdemo">
-                  <button className="px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-500 text-white rounded-full text-sm font-semibold shadow-md transition-all hover:-translate-y-1 hover:shadow-lg">
-                    Book free demo
-                  </button>
+                <Link href="/bookdemo" className="liquid-btn-container">
+                  <button className="billora-btn">Book Free Demo →</button>
                 </Link>
               </div>
             </div>
 
-            {/* Hero Images Container */}
-            <div className="flex-1 relative min-h-[350px] md:min-h-[500px] w-full max-w-[600px]">
-              {/* Laptop Mockup - Heroic Slide from Top */}
-              <div className="relative w-full aspect-[16/9] bg-slate-900 rounded-t-[20px] p-2 shadow-2xl z-10 heroic-slide-laptop">
-                <div className="w-full h-full bg-slate-800 rounded-xl overflow-hidden">
-                  <div className="h-8 bg-slate-700 flex items-center px-4 gap-2">
-                    <span className="w-3 h-3 rounded-full bg-red-500"></span>
-                    <span className="w-3 h-3 rounded-full bg-amber-500"></span>
-                    <span className="w-3 h-3 rounded-full bg-emerald-500"></span>
-                  </div>
-
-                  {/* Desktop Image */}
-                  <div className="relative w-full h-[250px] md:h-[350px] bg-slate-800 overflow-hidden">
-                    <Image
-                      src="/image/desktop.png"
-                      alt="Desktop Interface"
-                      fill
-                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                      className="object-cover w-full h-full"
-                      priority={true}
-                    />
+            {/* --- IMAGE CONTAINER WITH SYNCED LOADING SEQUENCE --- */}
+            <div className="flex-1 relative min-h-[400px] w-full max-w-[650px] mt-12 lg:mt-0 flex flex-col items-center">
+              
+              {/* PC Monitor Model - Slides in from top */}
+              <div className="relative w-full z-10 heroic-slide-pc">
+                {/* Monitor Screen */}
+                <div className="relative aspect-[16/10] bg-slate-900 rounded-[20px] p-2.5 shadow-2xl border border-slate-700/50">
+                  <div className="w-full h-full bg-slate-800 rounded-xl overflow-hidden relative shadow-inner">
+                    {/* Top bar with dots - always visible */}
+                    <div className="h-7 bg-slate-700/50 flex items-center px-4 gap-2 border-b border-slate-600/30">
+                      <span className="w-2 h-2 rounded-full bg-red-500/60"></span>
+                      <span className="w-2 h-2 rounded-full bg-amber-500/60"></span>
+                      <span className="w-2 h-2 rounded-full bg-emerald-500/60"></span>
+                    </div>
+                    
+                    {/* Screen Content with Loading States */}
+                    <div className="absolute inset-0 top-7 flex items-center justify-center bg-slate-800">
+                      {/* State 0: Blank Black - During initial slide */}
+                      {screenState === 0 && (
+                        <div className="w-full h-full bg-black"></div>
+                      )}
+                      
+                      {/* State 1: Blue B Logo Reveal - Appears during slide */}
+                      {screenState === 1 && (
+                        <div className="w-full h-full bg-black flex items-center justify-center">
+                          <div className="text-reveal">
+                            <span className="bg-blue-600 text-white px-6 py-3 rounded-lg text-5xl font-bold shadow-xl inline-block">
+                              B
+                            </span>
+                          </div>
+                        </div>
+                      )}
+                      
+                      {/* State 2: Actual Image - After slide completes */}
+                      {screenState === 2 && (
+                        <div className="w-full h-full fade-in">
+                          <Image 
+                            src="/image/desktop.png" 
+                            alt="PC Dashboard" 
+                            fill 
+                            className="object-cover" 
+                            priority 
+                          />
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
-                <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 w-[150px] md:w-[200px] h-3 bg-slate-700 rounded-b-xl"></div>
+                
+                {/* PC Stand */}
+                <div className="relative w-16 h-8 bg-gradient-to-b from-slate-700 to-slate-800 mx-auto -mt-1 shadow-lg"></div>
+                <div className="relative w-40 h-3 bg-slate-800 rounded-t-xl mx-auto shadow-2xl border-t border-slate-600"></div>
               </div>
 
-              {/* Phone Mockup - Heroic Slide from Top with rotation */}
-              <div className="absolute -left-4 md:-left-8 -bottom-5 w-[100px] md:w-[130px] h-[200px] md:h-[280px] bg-slate-800 rounded-[30px] p-1.5 shadow-xl z-20 hidden sm:block heroic-slide-phone">
-                <div className="w-full h-full bg-slate-900 rounded-[25px] overflow-hidden relative">
-                  <Image
-                    src="/image/Mobile.png"
-                    alt="Mobile Interface"
-                    fill
-                    sizes="(max-width: 768px) 100vw, 130px"
-                    className="object-cover w-full h-full rounded-[20px]"
-                    priority={true}
-                  />
+              {/* Floating Mobile Image - Slides in from bottom */}
+              <div className="absolute left-0 bottom-4 w-[125px] h-[250px] bg-slate-800 rounded-[35px] p-2 shadow-2xl z-30 hidden sm:block heroic-slide-phone border border-slate-700">
+                <div className="w-full h-full bg-slate-900 rounded-[30px] overflow-hidden relative border-2 border-slate-800">
+                  {/* Screen Content with Loading States */}
+                  <div className="absolute inset-0 flex items-center justify-center bg-slate-900">
+                    {/* State 0: Blank Black */}
+                    {screenState === 0 && (
+                      <div className="w-full h-full bg-black"></div>
+                    )}
+                    
+                    {/* State 1: Blue B Logo Reveal */}
+                    {screenState === 1 && (
+                      <div className="w-full h-full bg-black flex items-center justify-center">
+                        <div className="text-reveal">
+                          <span className="bg-blue-600 text-white w-10 h-10 rounded-lg text-2xl font-bold flex items-center justify-center shadow-lg">
+                            B
+                          </span>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* State 2: Actual Image */}
+                    {screenState === 2 && (
+                      <div className="w-full h-full fade-in">
+                        <Image 
+                          src="/image/Mobile.png" 
+                          alt="Mobile App" 
+                          fill 
+                          className="object-cover" 
+                        />
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
 
-              {/* JUMPING THREE BADGES - Now with heroic slide then bounce */}
-              <div className="absolute top-[20%] -right-4 bg-white px-4 py-2 rounded-full font-semibold text-sm shadow-lg border border-blue-100 text-blue-600 z-30 hidden md:block heroic-slide-badge1">
+              {/* Badges */}
+              <div className="absolute top-[10%] -right-4 bg-white px-5 py-2.5 rounded-full font-bold text-sm shadow-xl border border-blue-100 text-blue-600 z-40 hidden md:block heroic-slide-badge1">
                 ✨ Easy to Use
               </div>
-              <div className="absolute bottom-[40%] right-4 bg-white px-4 py-2 rounded-full font-semibold text-sm shadow-lg border border-purple-100 text-purple-600 z-30 hidden md:block heroic-slide-badge2">
+              <div className="absolute bottom-[35%] -right-8 bg-white px-5 py-2.5 rounded-full font-bold text-sm shadow-xl border border-purple-100 text-purple-600 z-40 hidden md:block heroic-slide-badge2">
                 👥 Collaborative
               </div>
-              <div className="absolute top-[40%] -left-4 bg-white px-4 py-2 rounded-full font-semibold text-sm shadow-lg border border-emerald-100 text-emerald-600 z-30 hidden md:block heroic-slide-badge3">
+              <div className="absolute top-[40%] -left-12 bg-white px-5 py-2.5 rounded-full font-bold text-sm shadow-xl border border-emerald-100 text-emerald-600 z-40 hidden md:block heroic-slide-badge3">
                 📊 Activity Stream
               </div>
             </div>
@@ -209,81 +261,46 @@ const Hero = () => {
         </Container>
       </section>
 
-      {/* ===== SUPERB FEATURES SECTION (BLACK CARD) ===== */}
+      {/* --- SUPERB FEATURES SECTION --- */}
       <section className="relative -mt-24 w-full mx-auto z-40 px-4 md:px-0 mb-48 hidden md:block">
-        <div
-          className="relative bg-[#0f172a] rounded-[40px] pt-[100px] pb-[100px] px-[20px] md:px-[40px] max-w-[1000px] mx-auto shadow-[0_20px_50px_rgba(0,0,0,0.4)] border border-white/10 overflow-visible"
-          style={{
-            backgroundImage:
-              "radial-gradient(circle, rgba(255,255,255,0.1) 1px, transparent 1px)",
-            backgroundSize: "20px 20px",
-          }}
-        >
-          {/* Top Glow Line */}
+        <div className="relative bg-[#0f172a] rounded-[40px] pt-[100px] pb-[100px] max-w-[1100px] mx-auto shadow-2xl border border-white/10 overflow-visible"
+             style={{ 
+               backgroundImage: "radial-gradient(circle, rgba(255,255,255,0.05) 1px, transparent 1px)", 
+               backgroundSize: "24px 24px" 
+             }}>
+          
           <div className="absolute top-0 left-1/2 -translate-x-1/2 w-3/4 h-1 bg-gradient-to-r from-transparent via-blue-500/50 to-transparent"></div>
 
-          {/* Heading */}
-          <h2 className="text-3xl md:text-[42px] font-bold text-white text-center mb-8 relative z-20 leading-tight animate-fadeInUp">
-            We made it{" "}
-            <span className="bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
-              superb
-            </span>{" "}
-            & usable
+          <h2 className="text-3xl md:text-[42px] font-bold text-white text-center mb-8 relative z-20 leading-tight">
+            We made it <span className="bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">superb</span> & usable
           </h2>
 
-          {/* Feature Pills */}
-          <div
-            className="flex justify-center gap-3 md:gap-5 mb-12 flex-wrap relative z-20 animate-fadeInUp"
-            style={{ animationDelay: "0.2s" }}
-          >
+          <div className="flex justify-center gap-3 md:gap-5 mb-12 flex-wrap relative z-20 px-4">
             {["Easy to Use", "Collaborative", "Activity Stream"].map((pill) => (
-              <span
-                key={pill}
-                className="px-6 py-3 bg-white/5 backdrop-blur-md border border-white/10 rounded-full text-white/90 font-medium text-xs md:text-sm"
-              >
+              <span key={pill} className="px-6 py-3 bg-white/5 backdrop-blur-md border border-white/10 rounded-full text-white/90 font-medium text-sm">
                 {pill}
               </span>
             ))}
           </div>
 
-          {/* Hanging White Card */}
-          <div className="group absolute -bottom-24 left-1/2 -translate-x-1/2 w-[90%] bg-white rounded-[30px] p-6 md:p-10 border border-slate-200 shadow-[0_30px_60px_-15px_rgba(0,0,0,0.2)] z-50 transition-transform duration-500 hover:-translate-y-2">
+          <div className="group absolute -bottom-24 left-1/2 -translate-x-1/2 w-[90%] bg-white rounded-[30px] p-6 md:p-10 border border-slate-200 shadow-2xl z-50 transition-transform duration-500 hover:-translate-y-2">
             <div className="flex flex-col md:flex-row items-center gap-8 md:gap-12">
-
-              {/* Left Content */}
               <div className="flex-1 text-center md:text-left">
                 <div className="flex items-center gap-2 mb-4 justify-center md:justify-start">
-                  <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold">
-                    B
-                  </div>
-                  <span className="font-bold text-slate-800">
-                    Billora Premium
-                  </span>
+                  <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold">B</div>
+                  <span className="font-bold text-slate-800 text-lg">Billora Premium</span>
                 </div>
-
-                <h3 className="text-2xl md:text-3xl font-extrabold text-slate-900 mb-2">
-                  GST Billing Software
-                </h3>
-
-                <p className="text-slate-500 mb-6 text-sm">
-                  Automate your invoicing and inventory in seconds.
-                </p>
-
+                <h3 className="text-2xl md:text-3xl font-extrabold text-slate-900 mb-2">GST Billing Software</h3>
+                <p className="text-slate-500 mb-6 text-base">Automate your invoicing and inventory in seconds.</p>
                 <Link href="/start-free-trial">
-                  <button className="w-full md:w-auto px-8 py-3 bg-slate-900 text-white rounded-full text-sm font-bold hover:bg-blue-600 transition-colors">
+                  <button className="w-full md:w-auto px-8 py-3 bg-slate-900 text-white rounded-full text-base font-bold hover:bg-blue-600 transition-colors">
                     Get Started Free
                   </button>
                 </Link>
               </div>
               <div className="flex-1 w-full">
                 <div className="w-full aspect-video bg-slate-100 rounded-2xl overflow-hidden border border-slate-200 shadow-inner">
-                  <Image
-                    src="/image/desktop.png"
-                    alt="Dashboard"
-                    width={500}
-                    height={300}
-                    className="w-full h-full object-cover"
-                  />
+                  <Image src="/image/desktop.png" alt="Dashboard" width={500} height={300} className="w-full h-full object-cover" />
                 </div>
               </div>
             </div>

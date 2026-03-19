@@ -20,6 +20,10 @@ import ProductsScreen from "../../screens/products/ProductsScreen";
 import ProfileScreen from "../../screens/profile/ProfileScreen";
 import SettingsScreen from "../../screens/settings/SettingsScreen";
 
+// Import Report Screens
+import ReportsScreen from "../../screens/reports/ReportsScreen";
+import ReportDetailScreen from "../../screens/reports/ReportDetailScreen";
+
 // Import Category Screens
 import CategoriesScreen from "../../screens/categories/CategoriesScreen";
 import AddCategoryScreen from "../../screens/categories/AddCategoryScreen";
@@ -492,6 +496,44 @@ const BillsStack = () => {
   );
 };
 
+// Reports Stack with Dark Mode
+const ReportsStack = () => {
+  const { isDarkMode } = useThemeStore();
+
+  return (
+    <Stack.Navigator
+      screenOptions={{
+        headerShown: false,
+        animation: "slide_from_right",
+        contentStyle: { backgroundColor: isDarkMode ? "#111827" : "#F8FAFC" },
+      }}
+    >
+      <Stack.Screen
+        name={NAVIGATION_SCREENS.MAIN.REPORTS}
+        component={ReportsScreen}
+        options={{
+          header: ({ navigation }) => (
+            <StackHeader
+              title="Reports & Analytics"
+              navigation={navigation}
+              showBack={false}
+            />
+          ),
+        }}
+      />
+      <Stack.Screen
+        name={NAVIGATION_SCREENS.MAIN.REPORT_DETAIL}
+        component={ReportDetailScreen}
+        options={({ navigation }) => ({
+          header: () => (
+            <StackHeader title="Report Details" navigation={navigation} />
+          ),
+        })}
+      />
+    </Stack.Navigator>
+  );
+};
+
 // Settings Stack with Dark Mode
 const SettingsStack = () => {
   const { isDarkMode } = useThemeStore();
@@ -536,7 +578,7 @@ const ModernTabBar = ({ state, descriptors, navigation }) => {
   const [sliderLeft, setSliderLeft] = useState(0);
   const animation = useRef(new Animated.Value(0)).current;
 
-  // Define all tabs we want to show in bottom bar - Now with 10 tabs (added Bills)
+  // Define all tabs we want to show in bottom bar - Now with Reports added
   const tabs = [
     {
       name: "Home",
@@ -566,7 +608,13 @@ const ModernTabBar = ({ state, descriptors, navigation }) => {
       label: "Bills",
       screen: "BillsStack",
     },
-    
+    {
+      name: "Reports",
+      icon: "chart-bar",
+      iconActive: "chart-bar",
+      label: "Reports",
+      screen: "ReportsStack",
+    },
   ];
 
   // Update slider position when active tab changes
@@ -705,32 +753,51 @@ const MainNavigator = () => {
     >
       <Tab.Screen name="Dashboard" component={DashboardScreen} />
       <Tab.Screen name="ProductsStack" component={ProductsStack} />
-      <Tab.Screen name="StocksStack" component={StocksStack}  />
+      <Tab.Screen name="StocksStack" component={StocksStack} />
       <Tab.Screen name="BillsStack" component={BillsStack} />
-      <Tab.Screen name="CategoriesStack" component={CategoriesStack} options={{
-          tabBarButton: () => null,
-          tabBarItemStyle: { display: "none" },
-        }} />
-      <Tab.Screen name="StoresStack" component={StoresStack}   options={{
-          tabBarButton: () => null,
-          tabBarItemStyle: { display: "none" },
-        }}/>
+      <Tab.Screen name="ReportsStack" component={ReportsStack} />
       
-      <Tab.Screen name="BrandsStack" component={BrandsStack}  options={{
-          tabBarButton: () => null,
-          tabBarItemStyle: { display: "none" },
-        }} />
-      <Tab.Screen name="UnitsStack" component={UnitsStack}  options={{
-          tabBarButton: () => null,
-          tabBarItemStyle: { display: "none" },
-        }} />
-      
-      <Tab.Screen name="CustomersStack" component={CustomersStack} options={{
-          tabBarButton: () => null,
-          tabBarItemStyle: { display: "none" },
-        }} />
-
       {/* Hidden screens - accessible via navigation only */}
+      <Tab.Screen 
+        name="CategoriesStack" 
+        component={CategoriesStack} 
+        options={{
+          tabBarButton: () => null,
+          tabBarItemStyle: { display: "none" },
+        }} 
+      />
+      <Tab.Screen 
+        name="StoresStack" 
+        component={StoresStack} 
+        options={{
+          tabBarButton: () => null,
+          tabBarItemStyle: { display: "none" },
+        }}
+      />
+      <Tab.Screen 
+        name="BrandsStack" 
+        component={BrandsStack} 
+        options={{
+          tabBarButton: () => null,
+          tabBarItemStyle: { display: "none" },
+        }} 
+      />
+      <Tab.Screen 
+        name="UnitsStack" 
+        component={UnitsStack} 
+        options={{
+          tabBarButton: () => null,
+          tabBarItemStyle: { display: "none" },
+        }} 
+      />
+      <Tab.Screen 
+        name="CustomersStack" 
+        component={CustomersStack} 
+        options={{
+          tabBarButton: () => null,
+          tabBarItemStyle: { display: "none" },
+        }} 
+      />
       <Tab.Screen
         name="SettingsStack"
         component={SettingsStack}

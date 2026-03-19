@@ -4,11 +4,13 @@ import { productsAPI } from '../api/products';
 import { brandsAPI } from '../api/brands';
 import { categoriesAPI } from '../api/categories';
 import { unitsAPI } from '../api/units';
+import { useAuthStore } from '../store/authStore';
 
 export const useStockDetail = (stockId) => {
   const [stock, setStock] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const { user } = useAuthStore();
 
   const fetchStock = async () => {
     if (!stockId) {
@@ -265,7 +267,7 @@ export const useStockDetail = (stockId) => {
     try {
       setLoading(true);
       setError(null);
-      const response = await stocksAPI.delete(stockId);
+      const response = await stocksAPI.delete(stockId, user?.id);
       console.log('Delete Response:', response);
       
       if (response?.status === true || response?.data?.status === true) {

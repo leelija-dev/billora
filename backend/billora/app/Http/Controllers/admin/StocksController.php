@@ -155,8 +155,12 @@ class StocksController extends Controller
             ]);
         }        
         }
-        public function destroy($id,$user_id){
+        public function destroy(Request $request, $id){
             try{
+                $data=$request->validate([
+                    'user_id'=>'required'
+                ]);
+                $user_id = $data['user_id'];
                 if(!Auth::check()){
                     return response()->json([
                        'status' => false,

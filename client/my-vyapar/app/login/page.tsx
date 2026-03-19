@@ -16,7 +16,7 @@ const login = () => {
         onClick={() => router.push("/")}
         className="absolute top-6 left-6 flex items-center gap-2 px-4 py-2 bg-white rounded-lg shadow-md hover:shadow-lg transition-all duration-300 hover:scale-105 text-[#2d236b] font-medium z-10"
       >
-        <FaHome className="text-[#5b5bd6]" size={20} />
+        {(FaHome as any)({ className: "text-[#5b5bd6]", size: 20 })}
         <span>Back to Home</span>
       </button>
 
@@ -36,7 +36,7 @@ const login = () => {
         {/* Social Buttons */}
         <div className="flex gap-5 mb-6">
           <button className="flex-1 py-3 rounded-[30px] border border-[#ddd] bg-white cursor-pointer hover:shadow-md transition-shadow">
-            <FcGoogle size={25} className="mx-auto" />
+            {(FcGoogle as any)({ size: 25, className: "mx-auto" })}
           </button>
         </div>
 

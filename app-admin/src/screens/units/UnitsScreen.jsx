@@ -84,8 +84,8 @@ const UnitsScreen = () => {
       const now = Date.now();
       const timeSinceLastRefresh = now - lastRefreshTime.current;
       
-      // Only refresh if it's been more than 5 seconds or we have no units
-      if (timeSinceLastRefresh > 5000 || units.length === 0) {
+      // Only refresh if it's been more than 5 seconds
+      if (timeSinceLastRefresh > 5000) {
         console.log('Refreshing units on focus...');
         stableRefresh();
       } else {
