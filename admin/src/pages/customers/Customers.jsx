@@ -20,7 +20,6 @@ import {
   FiUserMinus,
   FiX,
   FiStar,
-  FiMessageCircle,
   FiArrowLeft,
 } from 'react-icons/fi'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -46,8 +45,16 @@ const Customers = () => {
     createCustomer,
     updateCustomer,
     deleteCustomer,
+    restoreCustomer,
+    forceDeleteCustomer,
+    processDuePayment,
+    getCustomerPaymentHistory,
+    fetchTrashedCustomers,
     setFilters,
   } = useCustomerStore()
+
+  // Ensure customers is an array
+  const safeCustomers = Array.isArray(customers) ? customers : []
 
   const [formMode, setFormMode] = useState(null) // 'add', 'edit', or null
   const [selectedCustomer, setSelectedCustomer] = useState(null)
@@ -58,10 +65,18 @@ const Customers = () => {
   const [selectedCustomers, setSelectedCustomers] = useState([])
   const [viewMode, setViewMode] = useState('table')
   const [formSubmitting, setFormSubmitting] = useState(false)
+  const [initialLoading, setInitialLoading] = useState(true)
 
   useEffect(() => {
-    fetchCustomers()
-  }, [])
+    const fetchData = async () => {
+      try {
+        await fetchCustomers()
+      } finally {
+        setInitialLoading(false)
+      }
+    }
+    fetchData()
+  }, [fetchCustomers])
 
   useEffect(() => {
     const debounceTimer = setTimeout(() => {
@@ -70,6 +85,16 @@ const Customers = () => {
 
     return () => clearTimeout(debounceTimer)
   }, [searchTerm, setFilters])
+
+  // Calculate stats with safeCustomers
+  const stats = {
+    total: safeCustomers.length,
+    active: safeCustomers.filter(c => c?.status === 'active').length,
+    inactive: safeCustomers.filter(c => c?.status === 'inactive').length,
+    blocked: safeCustomers.filter(c => c?.status === 'blocked').length,
+    totalSpent: safeCustomers.reduce((sum, c) => sum + (parseFloat(c?.due_amount) || 0), 0),
+    totalOrders: safeCustomers.reduce((sum, c) => sum + (c?.total_orders || 0), 0),
+  }
 
   const handleAddClick = () => {
     setFormMode('add')
@@ -166,10 +191,10 @@ const Customers = () => {
   }
 
   const selectAllCustomers = () => {
-    if (selectedCustomers.length === customers.length) {
+    if (selectedCustomers.length === safeCustomers.length) {
       setSelectedCustomers([])
     } else {
-      setSelectedCustomers(customers.map(c => c.id))
+      setSelectedCustomers(safeCustomers.map(c => c?.id).filter(Boolean))
     }
   }
 
@@ -185,23 +210,13 @@ const Customers = () => {
     }
   }
 
-  // Calculate stats
-  const stats = {
-    total: customers?.length || 0,
-    active: customers?.filter(c => c.status === 'active').length || 0,
-    inactive: customers?.filter(c => c.status === 'inactive').length || 0,
-    blocked: customers?.filter(c => c.status === 'blocked').length || 0,
-    totalSpent: customers?.reduce((sum, c) => sum + (c.totalSpent || 0), 0) || 0,
-    totalOrders: customers?.reduce((sum, c) => sum + (c.totalOrders || 0), 0) || 0,
-  }
-
   const columns = [
     {
       header: (
         <div className="flex items-center">
           <input
             type="checkbox"
-            checked={selectedCustomers.length === customers.length && customers.length > 0}
+            checked={selectedCustomers.length === safeCustomers.length && safeCustomers.length > 0}
             onChange={selectAllCustomers}
             className="w-4 h-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
           />
@@ -211,8 +226,8 @@ const Customers = () => {
       cell: (_, row) => (
         <input
           type="checkbox"
-          checked={selectedCustomers.includes(row.id)}
-          onChange={() => toggleCustomerSelection(row.id)}
+          checked={selectedCustomers.includes(row?.id)}
+          onChange={() => toggleCustomerSelection(row?.id)}
           className="w-4 h-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
         />
       ),
@@ -230,8 +245,8 @@ const Customers = () => {
               {value?.charAt(0) || 'U'}
             </div>
             <div className={`absolute -bottom-1 -right-1 w-3 h-3 rounded-full border-2 border-white dark:border-gray-800 ${
-              row.status === 'active' ? 'bg-green-500' :
-              row.status === 'blocked' ? 'bg-red-500' :
+              row?.status === 'active' ? 'bg-green-500' :
+              row?.status === 'blocked' ? 'bg-red-500' :
               'bg-yellow-500'
             }`} />
           </motion.div>
@@ -239,7 +254,7 @@ const Customers = () => {
             <p className="font-medium text-gray-900 dark:text-white">{value}</p>
             <p className="text-sm text-gray-500 dark:text-gray-400 flex items-center">
               <FiMail className="w-3 h-3 mr-1" />
-              {row.email}
+              {row?.email}
             </p>
           </div>
         </div>
@@ -258,7 +273,7 @@ const Customers = () => {
           ) : (
             <p className="text-sm text-gray-400">No phone</p>
           )}
-          {row.company && (
+          {row?.company && (
             <p className="text-xs text-gray-500 dark:text-gray-400">{row.company}</p>
           )}
         </div>
@@ -271,70 +286,37 @@ const Customers = () => {
         <div className="flex items-start space-x-1">
           <FiMapPin className="w-3 h-3 mt-0.5 text-gray-400" />
           <span className="text-sm text-gray-600 dark:text-gray-300">
-            {row.city || 'N/A'}, {row.country || 'N/A'}
+            {row?.city || 'N/A'}, {row?.country || 'N/A'}
           </span>
         </div>
       ),
     },
     {
-      header: 'Orders',
-      accessor: 'totalOrders',
-      cell: (value) => (
-        <div className="flex items-center">
-          <FiShoppingBag className="w-3 h-3 mr-1 text-gray-400" />
-          <span className="text-sm font-medium text-gray-900 dark:text-white">
-            {value ?? 0}
-          </span>
-        </div>
-      ),
-    },
-    {
-      header: 'Total Spent',
-      accessor: 'totalSpent',
+      header: 'Due Amount',
+      accessor: 'due_amount',
       cell: (value) => (
         <div className="flex items-center">
           <FiDollarSign className="w-3 h-3 mr-1 text-gray-400" />
           <span className="text-sm font-semibold text-gray-900 dark:text-white">
-            ${(value || 0).toFixed(2)}
+            ${parseFloat(value || 0).toFixed(2)}
           </span>
         </div>
       ),
     },
     {
       header: 'Customer Since',
-      accessor: 'createdAt',
+      accessor: 'created_at',
       cell: (value) => (
         <div className="flex items-center">
           <FiCalendar className="w-3 h-3 mr-1 text-gray-400" />
           <span className="text-sm text-gray-600 dark:text-gray-300">
-            {new Date(value).toLocaleDateString('en-US', { 
+            {value ? new Date(value).toLocaleDateString('en-US', { 
               month: 'short', 
               year: 'numeric' 
-            })}
+            }) : 'N/A'}
           </span>
         </div>
       ),
-    },
-    {
-      header: 'Status',
-      accessor: 'status',
-      cell: (value) => {
-        const statusConfig = {
-          active: { variant: 'success', icon: FiUserCheck },
-          inactive: { variant: 'warning', icon: FiUserMinus },
-          blocked: { variant: 'danger', icon: FiUserX },
-        }
-        const config = statusConfig[value] || statusConfig.inactive
-        const Icon = config.icon
-        
-        return (
-          <StatusBadge
-            status={value}
-            variant={config.variant}
-            icon={Icon}
-          />
-        )
-      },
     },
     {
       header: 'Actions',
@@ -374,13 +356,13 @@ const Customers = () => {
             <div className="absolute right-0 mt-1 w-48 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10">
               <div className="p-1">
                 <button 
-                  onClick={() => window.location.href = `mailto:${row.email}`}
+                  onClick={() => window.location.href = `mailto:${row?.email}`}
                   className="w-full px-3 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg flex items-center space-x-2"
                 >
                   <FiMail className="w-4 h-4" />
                   <span>Send Email</span>
                 </button>
-                {row.phone && (
+                {row?.phone && (
                   <button 
                     onClick={() => window.location.href = `tel:${row.phone}`}
                     className="w-full px-3 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg flex items-center space-x-2"
@@ -389,27 +371,6 @@ const Customers = () => {
                     <span>Call Customer</span>
                   </button>
                 )}
-                <button 
-                  onClick={() => {
-                    // Handle add to VIP
-                  }}
-                  className="w-full px-3 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg flex items-center space-x-2"
-                >
-                  <FiStar className="w-4 h-4" />
-                  <span>Add to VIP</span>
-                </button>
-                <div className="border-t border-gray-200 dark:border-gray-700 my-1" />
-                <button 
-                  onClick={() => {
-                    if (row.status !== 'blocked') {
-                      handleBulkStatusUpdate('blocked')
-                    }
-                  }}
-                  className="w-full px-3 py-2 text-left text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg flex items-center space-x-2"
-                >
-                  <FiUserX className="w-4 h-4" />
-                  <span>Block Customer</span>
-                </button>
               </div>
             </div>
           </div>
@@ -487,22 +448,6 @@ const Customers = () => {
             </motion.div>
           ) : (
             <>
-              {/* View Toggle */}
-              <div className="flex items-center bg-gray-100 dark:bg-gray-800 rounded-xl p-1">
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => setViewMode('table')}
-                  className={`p-2 rounded-lg transition-colors ${
-                    viewMode === 'table' 
-                      ? 'bg-white dark:bg-gray-700 shadow-sm text-primary-600' 
-                      : 'text-gray-600 dark:text-gray-400'
-                  }`}
-                >
-                  <FiUsers className="w-4 h-4" />
-                </motion.button>
-              </div>
-
               {/* Refresh Button */}
               <motion.button
                 whileHover={{ scale: 1.05 }}
@@ -595,14 +540,14 @@ const Customers = () => {
               delay={0.3}
             />
             <StatCard
-              title="Total Orders"
-              value={stats.totalOrders}
-              icon={FiShoppingBag}
-              color="from-purple-500 to-pink-500"
+              title="Blocked"
+              value={stats.blocked}
+              icon={FiUserX}
+              color="from-red-500 to-pink-500"
               delay={0.4}
             />
             <StatCard
-              title="Total Spent"
+              title="Total Due"
               value={`$${stats.totalSpent.toFixed(2)}`}
               icon={FiDollarSign}
               color="from-indigo-500 to-purple-500"
@@ -635,21 +580,6 @@ const Customers = () => {
                 </button>
               </div>
               <div className="flex items-center space-x-2">
-                <Select
-                  value=""
-                  onChange={(e) => {
-                    if (e.target.value) {
-                      handleBulkStatusUpdate(e.target.value)
-                    }
-                  }}
-                  options={[
-                    { value: '', label: 'Bulk Actions' },
-                    { value: 'active', label: 'Mark as Active' },
-                    { value: 'inactive', label: 'Mark as Inactive' },
-                    { value: 'blocked', label: 'Mark as Blocked' },
-                  ]}
-                  className="w-40"
-                />
                 <Button
                   variant="outline"
                   size="sm"
@@ -679,7 +609,7 @@ const Customers = () => {
                 <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
                 <Input
                   type="text"
-                  placeholder="Search customers by name, email, phone, or company..."
+                  placeholder="Search customers by name, email, phone, or address..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-10"
@@ -748,7 +678,7 @@ const Customers = () => {
         )}
       </AnimatePresence>
 
-      {/* Customers Table/Grid - Hide when form is shown */}
+      {/* Customers Table - Hide when form is shown */}
       <AnimatePresence mode="wait">
         {!formMode && (
           <motion.div
@@ -758,7 +688,16 @@ const Customers = () => {
             exit={{ opacity: 0 }}
             transition={{ delay: 0.7 }}
           >
-            {customers?.length === 0 && !loading ? (
+            {initialLoading || loading ? (
+              <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-12">
+                <div className="flex flex-col items-center justify-center">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mb-4"></div>
+                  <p className="text-gray-600 dark:text-gray-400">
+                    {initialLoading ? 'Loading customer data...' : 'Updating customer data...'}
+                  </p>
+                </div>
+              </div>
+            ) : safeCustomers.length === 0 ? (
               <EmptyState
                 icon={FiUsers}
                 title="No customers found"
@@ -772,14 +711,16 @@ const Customers = () => {
             ) : (
               <>
                 <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg overflow-hidden">
-                  <Table columns={columns} data={customers} loading={loading} />
+                  <Table columns={columns} data={safeCustomers} loading={loading} />
                 </div>
-                <Pagination
-                  currentPage={currentPage}
-                  totalItems={totalCustomers}
-                  pageSize={pageSize}
-                  onPageChange={handlePageChange}
-                />
+                {totalCustomers > pageSize && (
+                  <Pagination
+                    currentPage={currentPage}
+                    totalItems={totalCustomers}
+                    pageSize={pageSize}
+                    onPageChange={handlePageChange}
+                  />
+                )}
               </>
             )}
           </motion.div>

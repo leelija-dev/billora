@@ -32,10 +32,13 @@ export const customerAPI = {
   create: async (customerData) => {
     try {
       console.log('👥 Creating customer with data:', {
+        admin_id: customerData.admin_id,
         name: customerData.name,
         email: customerData.email,
         phone: customerData.phone,
-        admin_id: customerData.admin_id
+        address: customerData.address,
+        city: customerData.city,
+        created_by: customerData.created_by
       });
       const response = await apiClient.post('/customer/store', customerData);
       console.log('👥 Customer created successfully:', response.data);
@@ -62,7 +65,7 @@ export const customerAPI = {
   // Delete customer (soft delete)
   delete: async (id) => {
     try {
-      console.log(`👥 Deleting customer with ID: ${id}`);
+      console.log(`👥 Soft deleting customer with ID: ${id}`);
       const response = await apiClient.delete(`/customer/${id}`);
       console.log('👥 Customer deleted successfully');
       return response;
@@ -72,7 +75,7 @@ export const customerAPI = {
     }
   },
 
-  // Get trashed customers
+  // Get all deleted customers (soft deleted)
   getTrashed: async () => {
     try {
       console.log('👥 Fetching trashed customers');
@@ -124,7 +127,7 @@ export const customerAPI = {
     }
   },
 
-  // Get customer payment history
+  // Get customer payment history with date filters
   getPaymentHistory: async (id, startDate = '', endDate = '') => {
     try {
       const params = {};

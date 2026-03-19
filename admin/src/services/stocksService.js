@@ -19,7 +19,10 @@ export const stocksAPI = {
 
   // Update stock
   update: (id, stockData) => {
-    return apiClient.put(`/stocks/${id}`, stockData)
+    console.log('🔄 Stocks API - Updating stock:', id, stockData)
+    const response = apiClient.put(`/stocks/${id}`, stockData)
+    console.log('🔄 Stocks API - Update request sent')
+    return response
   },
 
   // Delete stock
@@ -28,7 +31,7 @@ export const stocksAPI = {
   },
 
   // Add stock / update stock
-  addStock: (id, quantity) => {
-    return apiClient.post(`/stocks/add-stock/${id}`, { quantity })
+  addStock: (id, userId, quantity) => {
+    return apiClient.post(`/stocks/add-stock/${id}`, { user_id: userId, quantity })
   },
 }

@@ -72,15 +72,15 @@ const Dashboard = () => {
       // Process the response data according to your API structure
       const data = response.data
       const normalizedStats = {
-        revenue: data?.revenue ?? 0,
-        orders: data?.orders ?? 0,
-        products: data?.products ?? 0,
-        customers: data?.customers ?? 0,
-        lowStock: data?.lowStock ?? 0,
-        revenueChange: data?.revenueChange ?? null,
-        ordersChange: data?.ordersChange ?? null,
-        productsChange: data?.productsChange ?? null,
-        customersChange: data?.customersChange ?? null,
+        revenue: data?.stats?.totalRevenue ?? 0,
+        orders: data?.stats?.totalOrders ?? 0,
+        products: data?.stats?.totalProducts ?? 0,
+        customers: data?.stats?.totalCustomers ?? 0,
+        lowStock: data?.stats?.lowStock ?? 0,
+        revenueChange: data?.stats?.revenueTrend ?? null,
+        ordersChange: data?.stats?.ordersTrend ?? null,
+        productsChange: data?.stats?.productsTrend ?? null,
+        customersChange: data?.stats?.customersTrend ?? null,
       }
 
       setStats(normalizedStats)
