@@ -19,13 +19,34 @@ export const useProductStore = create((set, get) => ({
     try {
       const response = await productsAPI.getAll(search)
       
+      console.log(' Product Store - Raw API Response:', response)
+      
+      // Handle your API's response structure
+      const apiData = response.data
+      const products = apiData.data?.data || [] // Your API nests products in data.data.data
+      const total = apiData.data?.total || products.length
+      
+      console.log(' Product Store - Processed Data:', {
+        apiData,
+        products,
+        total,
+        productsLength: products.length
+      })
+      
       set({
-        products: response.data,
-        totalProducts: response.data.length,
+        products: products,
+        totalProducts: total,
         currentPage: page,
         loading: false,
       })
+      
+      console.log(' Product Store - State Updated:', {
+        productsCount: products.length,
+        totalProducts: total,
+        loading: false
+      })
     } catch (error) {
+      console.error(' Product Store - Error:', error)
       toast.error('Failed to fetch products')
       set({ loading: false })
     }
@@ -35,8 +56,11 @@ export const useProductStore = create((set, get) => ({
     set({ loading: true })
     try {
       const response = await productsAPI.create(productData)
+      const apiData = response.data
+      const product = apiData.data || apiData // Handle both nested and flat responses
+      
       set((state) => ({
-        products: [response.data, ...state.products],
+        products: [product, ...state.products],
         totalProducts: state.totalProducts + 1,
         loading: false,
       }))

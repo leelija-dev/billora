@@ -88,20 +88,26 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Select
           label="Brand"
-          options={brands?.map(brand => ({
-            value: brand.id,
-            label: brand.name,
-          })) || []}
+          options={[
+            { value: '', label: 'Select Brand' },
+            ...(brands?.map(brand => ({
+              value: brand.id,
+              label: brand.name,
+            })) || [])
+          ]}
           error={errors.brand_id?.message}
-          {...register('brand_id')}
+          {...register('brand_id', { required: 'Brand is required' })}
         />
 
         <Select
           label="Category"
-          options={categories?.map(category => ({
-            value: category.id,
-            label: category.name,
-          })) || []}
+          options={[
+            { value: '', label: 'Select Category' },
+            ...(categories?.map(category => ({
+              value: category.id,
+              label: category.name,
+            })) || [])
+          ]}
           error={errors.category_id?.message}
           {...register('category_id', { required: 'Category is required' })}
         />
@@ -122,10 +128,13 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
 
         <Select
           label="Unit"
-          options={units?.map(unit => ({
-            value: unit.id,
-            label: `${unit.name} (${unit.code})`,
-          })) || []}
+          options={[
+            { value: '', label: 'Select Unit' },
+            ...(units?.map(unit => ({
+              value: unit.id,
+              label: `${unit.name} (${unit.code})`,
+            })) || [])
+          ]}
           error={errors.unit_id?.message}
           {...register('unit_id', { required: 'Unit is required' })}
         />

@@ -43,7 +43,7 @@ const Products = () => {
     fetchProducts,
     deleteProduct,
     setFilters,
-    addProduct,
+    createProduct,
     updateProduct,
   } = useProductStore()
 
@@ -91,7 +91,7 @@ const Products = () => {
       if (showEditForm && selectedProduct) {
         await updateProduct(selectedProduct.id, productData)
       } else {
-        await addProduct(productData)
+        await createProduct(productData)
       }
       // Refresh the product list
       await fetchProducts()
@@ -205,19 +205,19 @@ const Products = () => {
     },
     {
       header: 'Category',
-      accessor: 'category',
+      accessor: 'category_id',
       cell: (value) => (
         <span className="px-3 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg text-sm">
-          {value}
+          Category {value}
         </span>
       ),
     },
     {
       header: 'Price',
-      accessor: 'price',
+      accessor: 'selling_price',
       cell: (value) => (
         <span className="font-semibold text-gray-900 dark:text-white">
-          ${value.toFixed(2)}
+          ${value ? parseFloat(value).toFixed(2) : '0.00'}
         </span>
       ),
     },
@@ -254,7 +254,7 @@ const Products = () => {
     },
     {
       header: 'Status',
-      accessor: 'isActive',
+      accessor: 'is_active',
       cell: (value) => (
         <StatusBadge
           status={value ? 'active' : 'inactive'}
@@ -695,11 +695,11 @@ const Products = () => {
                           
                           <div className="flex items-center justify-between mb-3">
                             <span className="text-lg font-bold text-gray-900 dark:text-white">
-                              ${product.price.toFixed(2)}
+                              ${product.selling_price ? parseFloat(product.selling_price).toFixed(2) : '0.00'}
                             </span>
                             <StatusBadge
-                              status={product.isActive ? 'active' : 'inactive'}
-                              variant={product.isActive ? 'success' : 'default'}
+                              status={product.is_active ? 'active' : 'inactive'}
+                              variant={product.is_active ? 'success' : 'default'}
                               size="sm"
                             />
                           </div>

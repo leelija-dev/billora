@@ -92,7 +92,11 @@ export const useBrands = () => {
     setError(null)
     try {
       const response = await brandsAPI.getAll(search)
-      setBrands(response.data)
+      console.log('🏷️ Brands API Response:', response.data)
+      // Brands API returns data.data (not data.data.data like products)
+      const brands = response.data?.data || response.data?.data?.data || response.data || []
+      console.log('🏷️ Processed brands:', brands)
+      setBrands(brands)
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to fetch brands')
     } finally {
@@ -136,7 +140,11 @@ export const useCategories = () => {
     setError(null)
     try {
       const response = await categoriesAPI.getAll(search)
-      setCategories(response.data)
+      console.log('📁 Categories API Response:', response.data)
+      // Categories API returns data.data.data (nested like products)
+      const categories = response.data?.data?.data || response.data?.data || response.data || []
+      console.log('📁 Processed categories:', categories)
+      setCategories(categories)
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to fetch categories')
     } finally {
@@ -163,7 +171,11 @@ export const useUnits = () => {
     setError(null)
     try {
       const response = await unitsAPI.getAll(search)
-      setUnits(response.data)
+      console.log('📏 Units API Response:', response.data)
+      // Units API returns data.data.data (nested like products)
+      const units = response.data?.data?.data || response.data?.data || response.data || []
+      console.log('📏 Processed units:', units)
+      setUnits(units)
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to fetch units')
     } finally {
