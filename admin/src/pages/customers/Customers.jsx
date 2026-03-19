@@ -329,9 +329,6 @@ const Customers = () => {
           ) : (
             <p className="text-sm text-gray-400">No phone</p>
           )}
-          {row?.company && (
-            <p className="text-xs text-gray-500 dark:text-gray-400">{row.company}</p>
-          )}
         </div>
       ),
     },
@@ -345,7 +342,7 @@ const Customers = () => {
         >
           <FiMapPin className="w-3 h-3 mt-0.5 text-gray-400" />
           <span className="text-sm text-gray-600 dark:text-gray-300">
-            {row?.city || 'N/A'}, {row?.country || 'N/A'}
+            {row?.city || 'N/A'}
           </span>
         </motion.div>
       ),
