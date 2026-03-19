@@ -19,13 +19,7 @@ const RegisterPage = () => {
       <div className="flex-1 flex justify-center items-center py-20 px-4 relative">
         
         <div className="w-[550px] bg-white py-10 px-[50px] rounded-[25px] shadow-[0_8px_25px_rgba(0,0,0,0.08)] max-md:w-[450px] max-md:px-8 max-sm:w-[90%] max-sm:px-5 max-sm:py-8">
-          {/* Logo */}
-          <div className="flex items-center gap-2.5">
-            <div className="w-[35px] h-[35px] bg-[#5b5bd6] text-white flex justify-center items-center rounded-md font-bold">
-              B
-            </div>
-            <h2 className="text-[#2d236b] text-xl font-bold">Billora</h2>
-          </div>
+          
 
           <h1 className="text-center text-[#2d236b] text-4xl font-bold mb-6 max-sm:text-3xl">
             Register
