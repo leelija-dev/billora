@@ -1,6 +1,7 @@
 import { create } from 'zustand'
-import api from '../services/api'
+import { customerAPI } from '../services'
 import toast from 'react-hot-toast'
+import { useAuthStore } from './authStore'
 
 export const useCustomerStore = create((set, get) => ({
   customers: [],
@@ -13,21 +14,19 @@ export const useCustomerStore = create((set, get) => ({
     status: '',
   },
 
-  fetchCustomers: async (page = 1) => {
+  fetchCustomers: async (page = 1, search = '') => {
     set({ loading: true })
     try {
-      const { filters, pageSize } = get()
-      const response = await api.get('/customers/', {
-        params: {
-          page,
-          page_size: pageSize,
-          ...filters,
-        },
-      })
+      const { user } = useAuthStore.getState()
+      if (!user?.id) {
+        throw new Error('User not authenticated')
+      }
+      
+      const response = await customerAPI.getAll(user.id, search)
       
       set({
-        customers: response.data.results,
-        totalCustomers: response.data.count,
+        customers: response.data,
+        totalCustomers: response.data.length,
         currentPage: page,
         loading: false,
       })
@@ -40,7 +39,14 @@ export const useCustomerStore = create((set, get) => ({
   createCustomer: async (customerData) => {
     set({ loading: true })
     try {
-      const response = await api.post('/customers/', customerData)
+      const { user } = useAuthStore.getState()
+      const dataWithAdmin = {
+        ...customerData,
+        admin_id: user.id,
+        created_by: user.id,
+      }
+      
+      const response = await customerAPI.create(dataWithAdmin)
       set((state) => ({
         customers: [response.data, ...state.customers],
         totalCustomers: state.totalCustomers + 1,
@@ -58,7 +64,13 @@ export const useCustomerStore = create((set, get) => ({
   updateCustomer: async (id, customerData) => {
     set({ loading: true })
     try {
-      const response = await api.put(`/customers/${id}/`, customerData)
+      const { user } = useAuthStore.getState()
+      const dataWithUser = {
+        ...customerData,
+        user_id: user.id,
+      }
+      
+      const response = await customerAPI.update(id, dataWithUser)
       set((state) => ({
         customers: state.customers.map((c) => 
           c.id === id ? response.data : c
@@ -77,7 +89,7 @@ export const useCustomerStore = create((set, get) => ({
   deleteCustomer: async (id) => {
     set({ loading: true })
     try {
-      await api.delete(`/customers/${id}/`)
+      await customerAPI.delete(id)
       set((state) => ({
         customers: state.customers.filter((c) => c.id !== id),
         totalCustomers: state.totalCustomers - 1,
@@ -94,6 +106,6 @@ export const useCustomerStore = create((set, get) => ({
 
   setFilters: (filters) => {
     set({ filters: { ...get().filters, ...filters } })
-    get().fetchCustomers(1)
+    get().fetchCustomers(1, filters.search)
   },
 }))

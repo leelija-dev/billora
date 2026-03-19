@@ -1,125 +1,181 @@
 // components/features/Products/ProductForm.js
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
+import { useForm } from 'react-hook-form'
 import { motion } from 'framer-motion'
+import { useBrands, useCategories, useUnits } from '../../../hooks/useAPI'
+import { useAuthStore } from '../../../store/authStore'
 import Input from '../../common/Input/Input'
 import Button from '../../common/Button/Button'
 import Select from '../../common/Select/Select'
+import toast from 'react-hot-toast'
 
-const ProductForm = ({ initialData, onSubmit, onCancel, isSubmitting }) => {
-  const [formData, setFormData] = useState({
-    name: initialData?.name || '',
-    sku: initialData?.sku || '',
-    category: initialData?.category || '',
-    price: initialData?.price || '',
-    stock: initialData?.stock || '',
-    maxStock: initialData?.maxStock || '',
-    lowStockThreshold: initialData?.lowStockThreshold || 5,
-    isActive: initialData?.isActive ?? true,
-    description: initialData?.description || '',
-    image: initialData?.image || '',
-  })
+const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
+  const { user } = useAuthStore()
+  const { brands, fetchBrands } = useBrands()
+  const { categories, fetchCategories } = useCategories()
+  const { units, fetchUnits } = useUnits()
 
-  const handleChange = (e) => {
-    const { name, value, type, checked } = e.target
-    setFormData(prev => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : value
-    }))
-  }
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+    setValue,
+    reset,
+  } = useForm()
 
-  const handleSubmit = (e) => {
-    e.preventDefault()
-    onSubmit(formData)
+  useEffect(() => {
+    // Fetch dropdown data
+    fetchBrands()
+    fetchCategories()
+    fetchUnits()
+  }, [])
+
+  useEffect(() => {
+    if (product) {
+      // Set form values for editing
+      reset({
+        name: product.name,
+        sku: product.sku,
+        brand_id: product.brand_id,
+        category_id: product.category_id,
+        unit_amount: product.unit_amount,
+        unit_id: product.unit_id,
+        selling_price: product.selling_price,
+        purchase_price: product.purchase_price,
+        gst_percentage: product.gst_percentage,
+        discount_percentage: product.discount_percentage,
+        description: product.description,
+        is_active: product.is_active,
+      })
+    }
+  }, [product, reset])
+
+  const onFormSubmit = (data) => {
+    const productData = {
+      ...data,
+      user_id: user.id, // Hidden field - current user ID
+      created_by: user.id,
+    }
+    onSubmit(productData)
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -20 }}
+      className="space-y-6"
+    >
+      {/* Hidden user_id field */}
+      <input type="hidden" {...register('user_id')} value={user.id} />
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Input
           label="Product Name"
-          name="name"
-          value={formData.name}
-          onChange={handleChange}
-          required
           placeholder="Enter product name"
+          error={errors.name?.message}
+          {...register('name', { required: 'Product name is required' })}
         />
-        
+
         <Input
-          label="SKU"
-          name="sku"
-          value={formData.sku}
-          onChange={handleChange}
-          required
-          placeholder="Enter SKU"
+          label="Product Code (SKU)"
+          placeholder="Enter product code"
+          error={errors.sku?.message}
+          {...register('sku', { required: 'Product code is required' })}
+        />
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <Select
+          label="Brand"
+          options={brands?.map(brand => ({
+            value: brand.id,
+            label: brand.name,
+          })) || []}
+          error={errors.brand_id?.message}
+          {...register('brand_id')}
         />
 
         <Select
           label="Category"
-          name="category"
-          value={formData.category}
-          onChange={handleChange}
-          required
-          options={[
-            { value: 'electronics', label: 'Electronics' },
-            { value: 'clothing', label: 'Clothing' },
-            { value: 'books', label: 'Books' },
-            { value: 'home', label: 'Home & Garden' },
-            { value: 'sports', label: 'Sports' },
-            { value: 'toys', label: 'Toys' },
-          ]}
+          options={categories?.map(category => ({
+            value: category.id,
+            label: category.name,
+          })) || []}
+          error={errors.category_id?.message}
+          {...register('category_id', { required: 'Category is required' })}
         />
+      </div>
 
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Input
-          label="Price"
-          name="price"
+          label="Unit Amount"
           type="number"
           step="0.01"
-          min="0"
-          value={formData.price}
-          onChange={handleChange}
-          required
-          placeholder="0.00"
+          placeholder="Enter unit amount"
+          error={errors.unit_amount?.message}
+          {...register('unit_amount', { 
+            required: 'Unit amount is required',
+            valueAsNumber: true 
+          })}
         />
 
+        <Select
+          label="Unit"
+          options={units?.map(unit => ({
+            value: unit.id,
+            label: `${unit.name} (${unit.code})`,
+          })) || []}
+          error={errors.unit_id?.message}
+          {...register('unit_id', { required: 'Unit is required' })}
+        />
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Input
-          label="Current Stock"
-          name="stock"
+          label="Selling Price"
           type="number"
-          min="0"
-          value={formData.stock}
-          onChange={handleChange}
-          required
-          placeholder="0"
+          step="0.01"
+          placeholder="Enter selling price"
+          error={errors.selling_price?.message}
+          {...register('selling_price', { 
+            valueAsNumber: true 
+          })}
         />
 
         <Input
-          label="Maximum Stock"
-          name="maxStock"
+          label="Purchase Price"
           type="number"
-          min="0"
-          value={formData.maxStock}
-          onChange={handleChange}
-          required
-          placeholder="100"
+          step="0.01"
+          placeholder="Enter purchase price"
+          error={errors.purchase_price?.message}
+          {...register('purchase_price', { 
+            valueAsNumber: true 
+          })}
         />
+      </div>
 
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Input
-          label="Low Stock Threshold"
-          name="lowStockThreshold"
+          label="GST Percentage"
           type="number"
-          min="1"
-          value={formData.lowStockThreshold}
-          onChange={handleChange}
-          required
-          placeholder="5"
+          step="0.01"
+          placeholder="Enter GST percentage"
+          error={errors.gst_percentage?.message}
+          {...register('gst_percentage', { 
+            valueAsNumber: true 
+          })}
         />
 
         <Input
-          label="Image URL"
-          name="image"
-          value={formData.image}
-          onChange={handleChange}
-          placeholder="https://example.com/image.jpg"
+          label="Discount Percentage"
+          type="number"
+          step="0.01"
+          placeholder="Enter discount percentage"
+          error={errors.discount_percentage?.message}
+          {...register('discount_percentage', { 
+            valueAsNumber: true 
+          })}
         />
       </div>
 
@@ -128,44 +184,45 @@ const ProductForm = ({ initialData, onSubmit, onCancel, isSubmitting }) => {
           Description
         </label>
         <textarea
-          name="description"
-          value={formData.description}
-          onChange={handleChange}
-          rows={4}
-          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+          rows={3}
+          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
           placeholder="Enter product description"
+          {...register('description')}
         />
       </div>
 
-      <div className="flex items-center">
-        <input
-          type="checkbox"
-          name="isActive"
-          checked={formData.isActive}
-          onChange={handleChange}
-          className="w-4 h-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
-        />
-        <label className="ml-2 text-sm text-gray-700 dark:text-gray-300">
-          Active (product is available for sale)
+      <div>
+        <label className="flex items-center">
+          <input
+            type="checkbox"
+            className="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
+            {...register('is_active')}
+          />
+          <span className="ml-2 text-sm text-gray-600 dark:text-gray-400">
+            Active
+          </span>
         </label>
       </div>
 
-      <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+      <div className="flex justify-end space-x-4">
         <Button
           type="button"
           variant="outline"
           onClick={onCancel}
+          disabled={isSubmitting}
         >
           Cancel
         </Button>
         <Button
-          type="submit"
-          disabled={isSubmitting}
+          type="button"
+          variant="primary"
+          onClick={handleSubmit(onFormSubmit)}
+          isLoading={isSubmitting}
         >
-          {isSubmitting ? 'Saving...' : initialData ? 'Update Product' : 'Add Product'}
+          {product ? 'Update Product' : 'Create Product'}
         </Button>
       </div>
-    </form>
+    </motion.div>
   )
 }
 

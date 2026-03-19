@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import api from '../services/api'
+import { stocksAPI } from '../services'
 import toast from 'react-hot-toast'
 
 export const useInventoryStore = create((set, get) => ({

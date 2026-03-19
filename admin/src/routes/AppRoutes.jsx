@@ -17,12 +17,18 @@ import Invoices from '../pages/invoices/Invoices'
 import Billing from '../pages/billing/Billing'
 import Settings from '../pages/settings/Settings'
 
+// Test Page
+import APITest from '../components/test/APITest'
+
 const AppRoutes = () => {
   return (
     <Routes>
       {/* Public Routes */}
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
+      
+      {/* Test Route */}
+      <Route path="/test-api" element={<APITest />} />
       
       {/* Protected Routes */}
       <Route element={<ProtectedRoute />}>

@@ -1,0 +1,143 @@
+import { apiClient } from './apiClient';
+
+export const customerAPI = {
+  // Get all customers by admin ID
+  getAll: async (adminId, search = '') => {
+    try {
+      const params = search ? { search } : {};
+      console.log('👥 Fetching customers for admin:', adminId, 'with params:', params);
+      const response = await apiClient.get(`/customer/${adminId}`, { params });
+      console.log('👥 Customers fetched successfully:', response.data);
+      return response;
+    } catch (error) {
+      console.error('❌ Failed to fetch customers:', error);
+      throw error.response?.data || error.message;
+    }
+  },
+
+  // Get single customer
+  getById: async (id) => {
+    try {
+      console.log(`👥 Fetching customer with ID: ${id}`);
+      const response = await apiClient.get(`/customer/show/${id}`);
+      console.log('👥 Customer fetched successfully:', response.data);
+      return response;
+    } catch (error) {
+      console.error(`❌ Failed to fetch customer ${id}:`, error);
+      throw error.response?.data || error.message;
+    }
+  },
+
+  // Create customer
+  create: async (customerData) => {
+    try {
+      console.log('👥 Creating customer with data:', {
+        name: customerData.name,
+        email: customerData.email,
+        phone: customerData.phone,
+        admin_id: customerData.admin_id
+      });
+      const response = await apiClient.post('/customer/store', customerData);
+      console.log('👥 Customer created successfully:', response.data);
+      return response;
+    } catch (error) {
+      console.error('❌ Failed to create customer:', error);
+      throw error.response?.data || error.message;
+    }
+  },
+
+  // Update customer
+  update: async (id, customerData) => {
+    try {
+      console.log(`👥 Updating customer ${id} with data:`, customerData);
+      const response = await apiClient.put(`/customer/${id}`, customerData);
+      console.log('👥 Customer updated successfully:', response.data);
+      return response;
+    } catch (error) {
+      console.error(`❌ Failed to update customer ${id}:`, error);
+      throw error.response?.data || error.message;
+    }
+  },
+
+  // Delete customer (soft delete)
+  delete: async (id) => {
+    try {
+      console.log(`👥 Deleting customer with ID: ${id}`);
+      const response = await apiClient.delete(`/customer/${id}`);
+      console.log('👥 Customer deleted successfully');
+      return response;
+    } catch (error) {
+      console.error(`❌ Failed to delete customer ${id}:`, error);
+      throw error.response?.data || error.message;
+    }
+  },
+
+  // Get trashed customers
+  getTrashed: async () => {
+    try {
+      console.log('👥 Fetching trashed customers');
+      const response = await apiClient.get('/customer/trashed');
+      console.log('👥 Trashed customers fetched:', response.data);
+      return response;
+    } catch (error) {
+      console.error('❌ Failed to fetch trashed customers:', error);
+      throw error.response?.data || error.message;
+    }
+  },
+
+  // Restore customer
+  restore: async (id) => {
+    try {
+      console.log(`👥 Restoring customer with ID: ${id}`);
+      const response = await apiClient.patch(`/customer/${id}`);
+      console.log('👥 Customer restored successfully');
+      return response;
+    } catch (error) {
+      console.error(`❌ Failed to restore customer ${id}:`, error);
+      throw error.response?.data || error.message;
+    }
+  },
+
+  // Permanently delete customer
+  forceDelete: async (id) => {
+    try {
+      console.log(`👥 Permanently deleting customer with ID: ${id}`);
+      const response = await apiClient.delete(`/customer/${id}/force`);
+      console.log('👥 Customer permanently deleted');
+      return response;
+    } catch (error) {
+      console.error(`❌ Failed to permanently delete customer ${id}:`, error);
+      throw error.response?.data || error.message;
+    }
+  },
+
+  // Customer due payment
+  duePayment: async (id, amount) => {
+    try {
+      console.log(`💳 Processing due payment for customer ${id}, amount: ${amount}`);
+      const response = await apiClient.put(`/customer/due-payment/${id}`, { due_payment: amount });
+      console.log('💳 Due payment processed successfully');
+      return response;
+    } catch (error) {
+      console.error(`❌ Failed to process due payment for customer ${id}:`, error);
+      throw error.response?.data || error.message;
+    }
+  },
+
+  // Get customer payment history
+  getPaymentHistory: async (id, startDate = '', endDate = '') => {
+    try {
+      const params = {};
+      if (startDate) params.start_date = startDate;
+      if (endDate) params.end_date = endDate;
+      
+      console.log(`💳 Fetching payment history for customer ${id} with params:`, params);
+      const response = await apiClient.get(`/customer/show/${id}`, { params });
+      console.log('💳 Payment history fetched:', response.data);
+      return response;
+    } catch (error) {
+      console.error(`❌ Failed to fetch payment history for customer ${id}:`, error);
+      throw error.response?.data || error.message;
+    }
+  },
+}

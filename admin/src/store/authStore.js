@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import { authAPI } from '../services/api'
+import { authService } from '../services/authService'
 import toast from 'react-hot-toast'
 
 export const useAuthStore = create(
@@ -25,7 +25,7 @@ export const useAuthStore = create(
         set({ isLoading: true })
         try {
           console.log('Login attempt with:', credentials)
-          const response = await authAPI.login(credentials)
+          const response = await authService.login(credentials)
           console.log('Login response:', response)
           
           const { access, refresh, user, company } = response.data
@@ -50,10 +50,10 @@ export const useAuthStore = create(
         }
       },
 
-      register: async (companyData) => {
+      register: async (userData) => {
         set({ isLoading: true })
         try {
-          const response = await authAPI.register(companyData)
+          const response = await authService.register(userData)
           toast.success(response.data.message || 'Registration successful! Please login.')
           set({ isLoading: false })
           return { success: true }
@@ -64,7 +64,17 @@ export const useAuthStore = create(
         }
       },
 
-      logout: () => {
+      logout: async () => {
+        const { user } = get()
+        
+        try {
+          if (user?.id) {
+            await authService.logout(user.id)
+          }
+        } catch (error) {
+          console.error('Logout API error:', error)
+        }
+        
         set({
           user: null,
           company: null,
@@ -80,7 +90,7 @@ export const useAuthStore = create(
         if (!tokens?.refresh) return false
 
         try {
-          const response = await authAPI.refresh(tokens.refresh)
+          const response = await authService.refreshToken(tokens.refresh)
           set({
             tokens: {
               ...tokens,
@@ -104,7 +114,7 @@ export const useAuthStore = create(
     }),
     {
       name: 'auth-storage',
-      getStorage: () => localStorage,
+      storage: localStorage,
     }
   )
 )
