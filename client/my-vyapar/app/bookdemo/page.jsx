@@ -1,4 +1,4 @@
-// bookdemo/page.tsx
+// bookdemo/page.jsx
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
@@ -23,7 +23,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 
 // Client-side only wrapper component to prevent hydration mismatch
-const ClientTimeOnly = ({ children }: { children: React.ReactNode }) => {
+const ClientTimeOnly = ({ children }) => {
   const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
@@ -38,24 +38,24 @@ const ClientTimeOnly = ({ children }: { children: React.ReactNode }) => {
 };
 
 const AppointmentPage = () => {
-  const [currentDate, setCurrentDate] = useState<Date>(new Date());
-  const [selectedDate, setSelectedDate] = useState<number | null>(null);
-  const [selectedTime, setSelectedTime] = useState<string | null>(null);
-  const [showForm, setShowForm] = useState<boolean>(false);
-  const [showMonthPicker, setShowMonthPicker] = useState<boolean>(false);
-  const [showTimeZonePicker, setShowTimeZonePicker] = useState<boolean>(false);
-  const [showEnquiryDropdown, setShowEnquiryDropdown] = useState<boolean>(false);
-  const [realTimeCurrentDate, setRealTimeCurrentDate] = useState<Date>(new Date());
-  const [selectedTimeZone, setSelectedTimeZone] = useState<string>("Asia/Kolkata");
+  const [currentDate, setCurrentDate] = useState(new Date());
+  const [selectedDate, setSelectedDate] = useState(null);
+  const [selectedTime, setSelectedTime] = useState(null);
+  const [showForm, setShowForm] = useState(false);
+  const [showMonthPicker, setShowMonthPicker] = useState(false);
+  const [showTimeZonePicker, setShowTimeZonePicker] = useState(false);
+  const [showEnquiryDropdown, setShowEnquiryDropdown] = useState(false);
+  const [realTimeCurrentDate, setRealTimeCurrentDate] = useState(new Date());
+  const [selectedTimeZone, setSelectedTimeZone] = useState("Asia/Kolkata");
   const [formData, setFormData] = useState({
     name: "",
     mobile: "",
     businessName: "",
     enquiryType: "Product demo"
   });
-  const [bookingSuccess, setBookingSuccess] = useState<boolean>(false);
+  const [bookingSuccess, setBookingSuccess] = useState(false);
 
-  const enquiryDropdownRef = useRef<HTMLDivElement>(null);
+  const enquiryDropdownRef = useRef(null);
 
   // Time zones list
   const timeZones = [
@@ -84,8 +84,8 @@ const AppointmentPage = () => {
 
   // Close dropdown when clicking outside
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (enquiryDropdownRef.current && !enquiryDropdownRef.current.contains(event.target as Node)) {
+    const handleClickOutside = (event) => {
+      if (enquiryDropdownRef.current && !enquiryDropdownRef.current.contains(event.target)) {
         setShowEnquiryDropdown(false);
       }
     };
@@ -104,10 +104,10 @@ const AppointmentPage = () => {
   }, []);
 
   // Mock booked dates
-  const bookedDates: number[] = [1, 2, 3, 10, 11, 16, 17, 20, 21, 24];
+  const bookedDates = [1, 2, 3, 10, 11, 16, 17, 20, 21, 24];
   
   // Mock available dates - requires 1 day advance booking
-  const getAvailableDates = (): number[] => {
+  const getAvailableDates = () => {
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth();
     const daysInMonth = new Date(year, month + 1, 0).getDate();
@@ -118,7 +118,7 @@ const AppointmentPage = () => {
     tomorrow.setDate(tomorrow.getDate() + 1);
     tomorrow.setHours(0, 0, 0, 0);
     
-    const available: number[] = [];
+    const available = [];
     
     for (let day = 1; day <= daysInMonth; day++) {
       const dateToCheck = new Date(year, month, day);
@@ -138,21 +138,21 @@ const AppointmentPage = () => {
   const availableDates = getAvailableDates();
   
   // Base time slots in IST
-  const baseTimeSlots: string[] = [
+  const baseTimeSlots = [
     "9:00 AM", "10:00 AM", "11:00 AM", 
     "2:00 PM", "3:00 PM", "4:00 PM", "5:00 PM"
   ];
 
   // Convert time to different time zone
-  const convertTimeToTimeZone = (timeStr: string, fromZone: string, toZone: string): string => {
+  const convertTimeToTimeZone = (timeStr, fromZone, toZone) => {
     const [time, period] = timeStr.split(' ');
     let [hours, minutes] = time.split(':').map(Number);
     
     if (period === 'PM' && hours !== 12) hours += 12;
     if (period === 'AM' && hours === 12) hours = 0;
     
-    const getOffset = (zone: string): number => {
-      const offsets: { [key: string]: number } = {
+    const getOffset = (zone) => {
+      const offsets = {
         'Asia/Kolkata': 330,
         'America/New_York': -240,
         'America/Los_Angeles': -420,
@@ -185,7 +185,7 @@ const AppointmentPage = () => {
     return `${displayHours}:${minutes.toString().padStart(2, '0')} ${targetPeriod}`;
   };
 
-  const getTimeSlotsForZone = (): string[] => {
+  const getTimeSlotsForZone = () => {
     return baseTimeSlots.map(slot => 
       convertTimeToTimeZone(slot, 'Asia/Kolkata', selectedTimeZone)
     );
@@ -193,14 +193,14 @@ const AppointmentPage = () => {
 
   const timeSlots = getTimeSlotsForZone();
 
-  const getMonthData = (): (number | null)[] => {
+  const getMonthData = () => {
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth();
     
     const firstDay = new Date(year, month, 1).getDay();
     const daysInMonth = new Date(year, month + 1, 0).getDate();
     
-    const days: (number | null)[] = [];
+    const days = [];
     const startingDay = firstDay === 0 ? 6 : firstDay - 1;
     
     for (let i = 0; i < startingDay; i++) {
@@ -214,28 +214,28 @@ const AppointmentPage = () => {
     return days;
   };
 
-  const monthNames: string[] = [
+  const monthNames = [
     "January", "February", "March", "April", "May", "June",
     "July", "August", "September", "October", "November", "December"
   ];
 
-  const dayNames: string[] = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+  const dayNames = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
-  const handlePrevMonth = (): void => {
+  const handlePrevMonth = () => {
     setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1));
     setSelectedDate(null);
     setSelectedTime(null);
     setShowForm(false);
   };
 
-  const handleNextMonth = (): void => {
+  const handleNextMonth = () => {
     setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1));
     setSelectedDate(null);
     setSelectedTime(null);
     setShowForm(false);
   };
 
-  const handleResetToCurrent = (): void => {
+  const handleResetToCurrent = () => {
     setCurrentDate(new Date());
     setSelectedDate(null);
     setSelectedTime(null);
@@ -243,7 +243,7 @@ const AppointmentPage = () => {
     setShowMonthPicker(false);
   };
 
-  const handleMonthSelect = (monthIndex: number): void => {
+  const handleMonthSelect = (monthIndex) => {
     setCurrentDate(new Date(currentDate.getFullYear(), monthIndex, 1));
     setShowMonthPicker(false);
     setSelectedDate(null);
@@ -251,11 +251,11 @@ const AppointmentPage = () => {
     setShowForm(false);
   };
 
-  const handleYearChange = (increment: number): void => {
+  const handleYearChange = (increment) => {
     setCurrentDate(new Date(currentDate.getFullYear() + increment, currentDate.getMonth(), 1));
   };
 
-  const handleDateSelect = (day: number | null): void => {
+  const handleDateSelect = (day) => {
     if (!day) return;
     if (availableDates.includes(day)) {
       setSelectedDate(day);
@@ -264,17 +264,17 @@ const AppointmentPage = () => {
     }
   };
 
-  const handleTimeSelect = (time: string): void => {
+  const handleTimeSelect = (time) => {
     setSelectedTime(time);
   };
 
-  const handleProceedToForm = (): void => {
+  const handleProceedToForm = () => {
     if (selectedDate && selectedTime) {
       setShowForm(true);
     }
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
+  const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
@@ -282,7 +282,7 @@ const AppointmentPage = () => {
     }));
   };
 
-  const handleEnquirySelect = (type: string): void => {
+  const handleEnquirySelect = (type) => {
     setFormData(prev => ({
       ...prev,
       enquiryType: type
@@ -290,7 +290,7 @@ const AppointmentPage = () => {
     setShowEnquiryDropdown(false);
   };
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>): void => {
+  const handleSubmit = (e) => {
     e.preventDefault();
     setBookingSuccess(true);
     
@@ -308,11 +308,11 @@ const AppointmentPage = () => {
     }, 3000);
   };
 
-  const isAvailable = (day: number | null): boolean => {
+  const isAvailable = (day) => {
     return day ? availableDates.includes(day) : false;
   };
 
-  const isBooked = (day: number | null): boolean => {
+  const isBooked = (day) => {
     if (!day) return false;
     
     const dateToCheck = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
@@ -322,7 +322,7 @@ const AppointmentPage = () => {
     return dateToCheck >= today && bookedDates.includes(day);
   };
 
-  const isPastDate = (day: number | null): boolean => {
+  const isPastDate = (day) => {
     if (!day) return false;
     
     const dateToCheck = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
@@ -333,7 +333,7 @@ const AppointmentPage = () => {
     return dateToCheck <= today;
   };
 
-  const isCurrentDate = (day: number | null): boolean => {
+  const isCurrentDate = (day) => {
     if (!day) return false;
     return day === realTimeCurrentDate.getDate() && 
            currentDate.getMonth() === realTimeCurrentDate.getMonth() && 
@@ -349,7 +349,7 @@ const AppointmentPage = () => {
     day: 'numeric'
   });
 
-  const formatTimeInZone = (date: Date, timeZone: string): string => {
+  const formatTimeInZone = (date, timeZone) => {
     return date.toLocaleTimeString('en-US', {
       timeZone,
       hour: 'numeric',
@@ -664,7 +664,7 @@ const AppointmentPage = () => {
 
               {/* Day Names */}
               <div className="grid grid-cols-7 gap-1 mb-3">
-                {dayNames.map((day: string) => (
+                {dayNames.map((day) => (
                   <div key={day} className="text-center text-sm font-bold text-gray-500 py-2">
                     {day}
                   </div>
@@ -673,7 +673,7 @@ const AppointmentPage = () => {
 
               {/* Calendar Days */}
               <div className="grid grid-cols-7 gap-1">
-                {days.map((day: number | null, index: number) => {
+                {days.map((day, index) => {
                   const available = isAvailable(day);
                   const booked = isBooked(day);
                   const past = isPastDate(day);
@@ -800,7 +800,7 @@ const AppointmentPage = () => {
                     </div>
 
                     <div className="grid grid-cols-2 gap-3">
-                      {timeSlots.map((time: string, index: number) => (
+                      {timeSlots.map((time, index) => (
                         <motion.button
                           key={index}
                           initial={{ opacity: 0, y: 10 }}

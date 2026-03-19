@@ -1,11 +1,11 @@
-// about/page.tsx
+// about/page.jsx
 "use client";
 
 import { Users, Target, ShieldCheck, Sparkles } from "lucide-react";
 import Link from "next/link";
-import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
-import Container from "@/components/Container"; // Add Container import
+import Navbar from "../../components/Navbar";
+import Footer from "../../components/Footer";
+import Container from "../../components/Container";
 
 export default function AboutPage() {
   return (
