@@ -24,11 +24,15 @@ import ReportList from "../../components/reports/ReportList";
 import ReportSummary from "../../components/reports/ReportSummary";
 import QuickDateFilters from "../../components/reports/QuickDateFilters";
 import ReportPrintPreview from "../../components/reports/ReportPrintPreview";
+import ExportDropdown from "../../components/common/ExportDropdown";
 import { getNavigationItemsWithBadges } from "../../constants/navigationItems";
 import { formatDate } from "../../utils/dateFormatter";
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
+import * as FileSystem from 'expo-file-system';
 import { generateReportHTML } from "../../utils/reportPrintHelper";
+import { generateExcelReport } from "../../utils/excelExportHelper";
+import { generateWordReport } from "../../utils/wordExportHelper";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 const ReportsScreen = () => {
@@ -59,8 +63,12 @@ const ReportsScreen = () => {
   // Print related states
   const [showPrintPreview, setShowPrintPreview] = useState(false);
   const [isPrinting, setIsPrinting] = useState(false);
-  const [printFormat, setPrintFormat] = useState('a4'); // Default to A4
+  const [printFormat, setPrintFormat] = useState('a4');
   const [printData, setPrintData] = useState(null);
+  
+  // Export states
+  const [isExporting, setIsExporting] = useState(false);
+  const [showExportDropdown, setShowExportDropdown] = useState(false);
 
   // Function to update dateRangeText based on date selection
   const updateDateRangeText = useCallback((start, end) => {
@@ -69,33 +77,24 @@ const ReportsScreen = () => {
     const endStr = formatDate(end, 'YYYY-MM-DD');
     const todayStr = formatDate(today, 'YYYY-MM-DD');
     
-    // Check if it's Today
     if (startStr === todayStr && endStr === todayStr) {
       setDateRangeText("Today");
-    } 
-    // Check if it's Last 7 Days
-    else {
+    } else {
       const sevenDaysAgo = new Date(today);
       sevenDaysAgo.setDate(today.getDate() - 7);
       if (startStr === formatDate(sevenDaysAgo, 'YYYY-MM-DD') && endStr === todayStr) {
         setDateRangeText("Last 7 Days");
-      }
-      // Check if it's Last 30 Days
-      else {
+      } else {
         const thirtyDaysAgo = new Date(today);
         thirtyDaysAgo.setDate(today.getDate() - 30);
         if (startStr === formatDate(thirtyDaysAgo, 'YYYY-MM-DD') && endStr === todayStr) {
           setDateRangeText("Last 30 Days");
-        }
-        // Check if it's This Month (last 30 days from today - this matches your implementation)
-        else {
+        } else {
           const monthAgo = new Date(today);
           monthAgo.setMonth(today.getMonth() - 1);
           if (startStr === formatDate(monthAgo, 'YYYY-MM-DD') && endStr === todayStr) {
             setDateRangeText("This Month");
-          }
-          // Default formatted range
-          else {
+          } else {
             setDateRangeText(`${formatDate(start, 'MMM DD')} - ${formatDate(end, 'MMM DD')}`);
           }
         }
@@ -113,12 +112,10 @@ const ReportsScreen = () => {
   const filteredReports = useMemo(() => {
     let filtered = reports;
     
-    // Filter by type
     if (reportType !== "all") {
       filtered = filtered.filter(r => r.type?.toLowerCase() === reportType.toLowerCase());
     }
     
-    // Filter by search query
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter(r => 
@@ -131,8 +128,8 @@ const ReportsScreen = () => {
     return filtered;
   }, [reports, reportType, searchQuery]);
 
-  // Prepare print data
-  const preparePrintData = useCallback(() => {
+  // Prepare print/export data
+  const prepareExportData = useCallback(() => {
     return {
       reports: filteredReports,
       summary: summary,
@@ -147,17 +144,23 @@ const ReportsScreen = () => {
         address: "Store Address",
         phone: "Store Phone",
         email: "store@email.com",
-        gst: "GSTIN123456"
+        gst: "GSTIN123456",
+        website: "www.yourstore.com"
       },
       totals: {
         totalReports: filteredReports.length,
         totalSales: summary.totalSales || 0,
         totalPurchases: summary.totalPurchases || 0,
         totalProfit: summary.totalProfit || 0,
-        totalItems: summary.totalItems || 0
+        totalItems: summary.totalItems || 0,
+        averageOrderValue: summary.totalSales ? (summary.totalSales / filteredReports.length).toFixed(2) : 0
+      },
+      user: {
+        name: user?.name || "User",
+        email: user?.email || "user@email.com"
       }
     };
-  }, [filteredReports, summary, dateRangeText, startDate, endDate, reportType, searchQuery]);
+  }, [filteredReports, summary, dateRangeText, startDate, endDate, reportType, searchQuery, user]);
 
   // Report types for filtering with dynamic counts
   const reportTypes = useMemo(() => [
@@ -205,9 +208,7 @@ const ReportsScreen = () => {
         end_date: formatDate(endDate, 'YYYY-MM-DD'),
       });
       
-      // Update date range text using the new function
       updateDateRangeText(startDate, endDate);
-      
       setInitialLoadComplete(true);
     } catch (err) {
       console.error("Error fetching reports:", err);
@@ -215,10 +216,9 @@ const ReportsScreen = () => {
     }
   }, [fetchReports, startDate, endDate, updateDateRangeText]);
 
-  // Initial fetch on mount
   useEffect(() => {
     handleFetchReports();
-  }, []); // Empty dependency array - only run once on mount
+  }, []);
 
   const handleFilterPress = () => {
     setShowFilters(true);
@@ -267,24 +267,130 @@ const ReportsScreen = () => {
     setViewMode(viewMode === "grid" ? "list" : "grid");
   };
 
-  const handleExport = () => {
-    // Implement export functionality
-    console.log("Export reports");
+  // Export functions
+  const handleExportPDF = async () => {
+    if (filteredReports.length === 0) {
+      Alert.alert('No Data', 'There are no reports to export for the selected criteria.');
+      return;
+    }
+
+    try {
+      setIsExporting(true);
+      const data = prepareExportData();
+      const html = generateReportHTML(data, 'a4');
+      
+      const { uri } = await Print.printToFileAsync({
+        html,
+        name: `Reports_${formatDate(new Date(), 'YYYYMMDD_HHmmss')}`,
+        orientation: 'portrait',
+        margins: {
+          top: 20,
+          bottom: 20,
+          left: 20,
+          right: 20,
+        },
+        base64: false,
+      });
+
+      await Sharing.shareAsync(uri, {
+        mimeType: 'application/pdf',
+        dialogTitle: `Export Reports as PDF`,
+        UTI: 'com.adobe.pdf',
+      });
+
+      setShowExportDropdown(false);
+    } catch (error) {
+      console.error('PDF Export error:', error);
+      Alert.alert('Error', 'Failed to export as PDF');
+    } finally {
+      setIsExporting(false);
+    }
   };
 
-  // Updated print handler
+  const handleExportExcel = async () => {
+    if (filteredReports.length === 0) {
+      Alert.alert('No Data', 'There are no reports to export for the selected criteria.');
+      return;
+    }
+
+    try {
+      setIsExporting(true);
+      const data = prepareExportData();
+      
+      // Generate Excel file
+      const excelData = generateExcelReport(data);
+      const fileName = `Reports_${formatDate(new Date(), 'YYYYMMDD_HHmmss')}.xlsx`;
+      const filePath = `${FileSystem.documentDirectory}${fileName}`;
+      
+      // Write file
+      await FileSystem.writeAsStringAsync(filePath, excelData, {
+        encoding: FileSystem.EncodingType.Base64,
+      });
+
+      // Share file
+      await Sharing.shareAsync(filePath, {
+        mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        dialogTitle: `Export Reports as Excel`,
+        UTI: 'com.microsoft.excel.xlsx',
+      });
+
+      setShowExportDropdown(false);
+    } catch (error) {
+      console.error('Excel Export error:', error);
+      Alert.alert('Error', 'Failed to export as Excel');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const handleExportWord = async () => {
+    if (filteredReports.length === 0) {
+      Alert.alert('No Data', 'There are no reports to export for the selected criteria.');
+      return;
+    }
+
+    try {
+      setIsExporting(true);
+      const data = prepareExportData();
+      
+      // Generate Word document
+      const wordData = generateWordReport(data);
+      const fileName = `Reports_${formatDate(new Date(), 'YYYYMMDD_HHmmss')}.docx`;
+      const filePath = `${FileSystem.documentDirectory}${fileName}`;
+      
+      // Write file
+      await FileSystem.writeAsStringAsync(filePath, wordData, {
+        encoding: FileSystem.EncodingType.Base64,
+      });
+
+      // Share file
+      await Sharing.shareAsync(filePath, {
+        mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        dialogTitle: `Export Reports as Word Document`,
+        UTI: 'com.microsoft.word.docx',
+      });
+
+      setShowExportDropdown(false);
+    } catch (error) {
+      console.error('Word Export error:', error);
+      Alert.alert('Error', 'Failed to export as Word document');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  // Print handler
   const handlePrint = () => {
     if (filteredReports.length === 0) {
       Alert.alert('No Data', 'There are no reports to print for the selected criteria.');
       return;
     }
     
-    const data = preparePrintData();
+    const data = prepareExportData();
     setPrintData(data);
     setShowPrintPreview(true);
   };
 
-  // Execute print function
   const executePrint = async () => {
     try {
       if (!printData) {
@@ -293,11 +399,8 @@ const ReportsScreen = () => {
       }
 
       setIsPrinting(true);
-
-      // Generate HTML for A4 report
       const html = generateReportHTML(printData, 'a4');
       
-      // Print report
       await Print.printAsync({
         html,
         name: `Reports_${formatDate(new Date(), 'YYYYMMDD_HHmmss')}`,
@@ -315,48 +418,6 @@ const ReportsScreen = () => {
     } catch (error) {
       console.error('Print error:', error);
       Alert.alert('Error', 'Failed to print report. Please check your printer connection.');
-    } finally {
-      setIsPrinting(false);
-    }
-  };
-
-  // Share as PDF function
-  const shareAsPDF = async () => {
-    try {
-      if (!printData) {
-        Alert.alert('Error', 'No report data available for sharing');
-        return;
-      }
-
-      setIsPrinting(true);
-
-      // Generate HTML for report
-      const html = generateReportHTML(printData, 'a4');
-      
-      // Create PDF file
-      const { uri } = await Print.printToFileAsync({
-        html,
-        name: `Reports_${formatDate(new Date(), 'YYYYMMDD_HHmmss')}`,
-        orientation: 'portrait',
-        margins: {
-          top: 20,
-          bottom: 20,
-          left: 20,
-          right: 20,
-        },
-      });
-
-      // Share PDF
-      await Sharing.shareAsync(uri, {
-        mimeType: 'application/pdf',
-        dialogTitle: `Share Reports ${dateRangeText}`,
-        UTI: 'com.adobe.pdf',
-      });
-
-      setShowPrintPreview(false);
-    } catch (error) {
-      console.error('Share PDF error:', error);
-      Alert.alert('Error', 'Failed to create PDF for sharing');
     } finally {
       setIsPrinting(false);
     }
@@ -415,14 +476,12 @@ const ReportsScreen = () => {
     handleDateSearch();
   };
 
-  // Focus effect - refresh when screen comes into focus
   useFocusEffect(
     useCallback(() => {
       handleFetchReports();
     }, [handleFetchReports])
   );
 
-  // Navigation items for sidebar
   const navigationItems = useMemo(() => {
     const badges = {
       reports: filteredReports.length.toString(),
@@ -431,7 +490,6 @@ const ReportsScreen = () => {
     return getNavigationItemsWithBadges(badges);
   }, [filteredReports.length, summary]);
 
-  // Loading state
   if (loading && !initialLoadComplete && !refreshing) {
     return (
       <View className={`flex-1 ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'} items-center justify-center`}>
@@ -443,7 +501,6 @@ const ReportsScreen = () => {
     );
   }
 
-  // Error state
   if (error && !refreshing) {
     return (
       <View className={`flex-1 ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'} items-center justify-center p-6`}>
@@ -487,17 +544,22 @@ const ReportsScreen = () => {
                 color={isDarkMode ? "#9CA3AF" : "#4b5563"}
               />
             </TouchableOpacity>
-            <TouchableOpacity
-              onPress={handleExport}
-              className={`w-10 h-10 rounded-full items-center justify-center mr-2 ${
-                isDarkMode ? 'bg-gray-800' : 'bg-gray-100'
-              }`}
-            >
-              <Icon name="export" size={22} color={isDarkMode ? "#9CA3AF" : "#4b5563"} />
-            </TouchableOpacity>
+            
+            {/* Export Dropdown */}
+            <ExportDropdown
+              visible={showExportDropdown}
+              onToggle={() => setShowExportDropdown(!showExportDropdown)}
+              onExportPDF={handleExportPDF}
+              onExportExcel={handleExportExcel}
+              onExportWord={handleExportWord}
+              isExporting={isExporting}
+              isDarkMode={isDarkMode}
+            />
+            
+            {/* Print Button */}
             <TouchableOpacity
               onPress={handlePrint}
-              className={`w-10 h-10 rounded-full items-center justify-center ${
+              className={`w-10 h-10 rounded-full items-center justify-center ml-2 ${
                 isDarkMode ? 'bg-gray-800' : 'bg-gray-100'
               }`}
             >
@@ -598,14 +660,12 @@ const ReportsScreen = () => {
         }
         className="flex-1"
       >
-        {/* Report Summary Cards */}
         <ReportSummary 
           summary={summary} 
           isDarkMode={isDarkMode}
           dateRange={dateRangeText}
         />
 
-        {/* Report Types Scroll */}
         <View className="py-2">
           <ScrollView
             horizontal
@@ -664,7 +724,6 @@ const ReportsScreen = () => {
           </ScrollView>
         </View>
 
-        {/* Search Bar */}
         <View className="px-4 pt-2 pb-4">
           <View className={`flex-row items-center rounded-2xl px-4 h-12 shadow-sm ${
             isDarkMode ? 'bg-gray-800' : 'bg-white'
@@ -695,7 +754,6 @@ const ReportsScreen = () => {
           </View>
         </View>
 
-        {/* Report List */}
         <View className="flex-1 px-4 pb-20">
           <ReportList
             viewMode={viewMode}
@@ -711,7 +769,6 @@ const ReportsScreen = () => {
         </View>
       </ScrollView>
 
-      {/* Filters Modal */}
       <ReportFilters 
         visible={showFilters} 
         onClose={handleFiltersClose}
@@ -748,20 +805,6 @@ const ReportsScreen = () => {
                 Print Preview - A4
               </Text>
               <View className="flex-row gap-2">
-                <TouchableOpacity
-                  onPress={shareAsPDF}
-                  disabled={isPrinting}
-                  className="bg-green-500 px-4 py-2 rounded-xl flex-row items-center"
-                >
-                  {isPrinting ? (
-                    <ActivityIndicator size="small" color="#ffffff" />
-                  ) : (
-                    <>
-                      <Icon name="share" size={16} color="#ffffff" />
-                      <Text className="text-white font-semibold ml-1">Share PDF</Text>
-                    </>
-                  )}
-                </TouchableOpacity>
                 <TouchableOpacity
                   onPress={executePrint}
                   disabled={isPrinting}

@@ -1,6 +1,6 @@
 // screens/reports/ReportDetailScreen.js
 import { useNavigation, useRoute } from "@react-navigation/native";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import {
   ScrollView,
   StatusBar,
@@ -10,12 +10,21 @@ import {
   ActivityIndicator,
   Share,
   Alert,
+  Modal,
+  Platform,
 } from "react-native";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 import { LinearGradient } from "expo-linear-gradient";
+import * as Print from 'expo-print';
 import { useThemeStore } from "../../store/themeStore";
 import { useReports } from "../../hooks/useReports";
 import { formatDate } from "../../utils/dateFormatter";
+import * as Sharing from 'expo-sharing';
+import * as FileSystem from 'expo-file-system/legacy';
+import * as XLSX from 'xlsx';
+import { captureRef } from 'react-native-view-shot';
+import * as MediaLibrary from 'expo-media-library';
+import { WebView } from 'react-native-webview';
 
 const ReportDetailScreen = () => {
   const navigation = useNavigation();
@@ -26,7 +35,13 @@ const ReportDetailScreen = () => {
   const [report, setReport] = useState(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("overview");
-  const [hasFetched, setHasFetched] = useState(false); // Prevent infinite loops
+  const [hasFetched, setHasFetched] = useState(false);
+  const [exportModalVisible, setExportModalVisible] = useState(false);
+  const [printModalVisible, setPrintModalVisible] = useState(false);
+  const [printPreviewVisible, setPrintPreviewVisible] = useState(false);
+  const [printHTML, setPrintHTML] = useState('');
+  const [exportDropdownVisible, setExportDropdownVisible] = useState(false);
+  const reportViewRef = useRef();
 
   useEffect(() => {
     if (!hasFetched) {
@@ -41,9 +56,8 @@ const ReportDetailScreen = () => {
       console.log('Loading report data for reportId:', reportId, 'reportType:', reportType);
       console.log('Available reports:', reports);
       
-      // First check if we have reports already loaded
       if (reports && reports.length > 0) {
-        const foundReport = reports.find(r => r.id == reportId); // Use == for string/number comparison
+        const foundReport = reports.find(r => r.id == reportId);
         console.log('Found report:', foundReport);
         if (foundReport) {
           setReport(foundReport);
@@ -52,14 +66,11 @@ const ReportDetailScreen = () => {
         }
       }
 
-      // If no reports available, fetch them with a wider date range and get the response directly
       console.log('No reports available, fetching reports data with wider date range...');
-      // Fetch reports for the last 30 days to find the actual report
       const endDate = new Date();
       const startDate = new Date();
       startDate.setDate(startDate.getDate() - 30);
       
-      // Import the API directly to get the response
       const { reportsAPI } = await import('../../api/reports');
       const response = await reportsAPI.getReports({
         start_date: startDate.toISOString().split('T')[0],
@@ -69,13 +80,11 @@ const ReportDetailScreen = () => {
       
       console.log('Direct API Response:', response);
       
-      // Process the response directly like the useReports hook does
       let reportsData = [];
       if (response?.data && response?.salesItem_details) {
         const apiData = response.data;
         const salesItems = response.salesItem_details;
         
-        // Extract reports from salesItem_details
         if (Array.isArray(salesItems) && salesItems.length > 0) {
           reportsData = salesItems.map((item, index) => ({
             id: item.id || index + 1,
@@ -86,6 +95,11 @@ const ReportDetailScreen = () => {
             date: item.created_at,
             description: `Sales report for order #${item.id}`,
             status: item.status || 'completed',
+            invoice_items: item.invoice_items || [],
+            customer_id: item.customer_id,
+            store_id: item.store_id,
+            paid_amount: parseFloat(item.paid_amount) || 0,
+            user_id: item.user_id,
             details: [
               { label: 'Order ID', value: `#${item.id}` },
               { label: 'Customer', value: `Customer ${item.customer_id}` },
@@ -99,7 +113,6 @@ const ReportDetailScreen = () => {
       
       console.log('Directly processed reports:', reportsData);
       
-      // Try to find the report from the directly processed data
       if (reportsData && reportsData.length > 0) {
         const foundReport = reportsData.find(r => r.id == reportId);
         console.log('Found report from direct API:', foundReport);
@@ -112,7 +125,6 @@ const ReportDetailScreen = () => {
         }
       }
 
-      // If still not found, create a summary report as fallback
       console.log('Report not found after direct API call, creating summary report');
       createSummaryReport();
     } catch (error) {
@@ -124,7 +136,6 @@ const ReportDetailScreen = () => {
   };
 
   const createSummaryReport = () => {
-    // Create a summary report based on the report type and summary data
     const summaryReport = {
       id: reportId || 'summary',
       type: reportType || 'summary',
@@ -134,7 +145,6 @@ const ReportDetailScreen = () => {
       count: summary?.totalOrders || 0,
       status: 'completed',
       description: `Overall ${reportType || 'summary'} report for the selected period`,
-      // Add summary data as details
       totalSales: summary?.totalSales || 0,
       totalOrders: summary?.totalOrders || 0,
       totalDue: summary?.totalDue || 0,
@@ -147,7 +157,6 @@ const ReportDetailScreen = () => {
         { label: 'Total Due', value: formatCurrency(summary?.totalDue || 0) },
         { label: 'Low Stock Items', value: (summary?.lowStockItems || 0).toString() },
       ],
-      // Sample data for charts and tables
       data: [
         { name: 'Product A', quantity: 10, amount: 500 },
         { name: 'Product B', quantity: 8, amount: 400 },
@@ -168,20 +177,532 @@ const ReportDetailScreen = () => {
     }
   };
 
-  const handleExport = (format) => {
-    Alert.alert(
-      "Export Report",
-      `Export as ${format.toUpperCase()}?`,
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Export",
-          onPress: () => {
-            Alert.alert("Success", `Report exported as ${format}`);
-          },
-        },
-      ]
-    );
+  // Generate HTML for Print
+  const generatePrintHTML = () => {
+    const typeIcon = getTypeIcon();
+    const currentDate = new Date().toLocaleString();
+    
+    return `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>${report?.title || 'Report'}</title>
+          <style>
+            @page {
+              size: A4;
+              margin: 2cm;
+            }
+            body {
+              font-family: 'Helvetica', 'Arial', sans-serif;
+              line-height: 1.6;
+              color: #333;
+              background: #fff;
+              padding: 20px;
+            }
+            .report-container {
+              max-width: 210mm;
+              margin: 0 auto;
+              background: white;
+              padding: 30px;
+              border-radius: 15px;
+              box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            }
+            .header {
+              text-align: center;
+              margin-bottom: 30px;
+              padding-bottom: 20px;
+              border-bottom: 3px solid #3b82f6;
+            }
+            .header h1 {
+              color: #1e293b;
+              font-size: 28px;
+              margin-bottom: 10px;
+              font-weight: 700;
+            }
+            .header .subtitle {
+              color: #64748b;
+              font-size: 14px;
+            }
+            .company-info {
+              text-align: center;
+              margin-bottom: 30px;
+              color: #475569;
+            }
+            .report-badge {
+              display: inline-block;
+              padding: 8px 20px;
+              background: ${typeIcon.bg === 'bg-green-500' ? '#10b981' : 
+                           typeIcon.bg === 'bg-orange-500' ? '#f59e0b' :
+                           typeIcon.bg === 'bg-purple-500' ? '#8b5cf6' :
+                           typeIcon.bg === 'bg-blue-500' ? '#3b82f6' : '#6b7280'};
+              color: white;
+              border-radius: 30px;
+              font-size: 14px;
+              font-weight: 600;
+              margin-bottom: 20px;
+            }
+            .info-grid {
+              display: grid;
+              grid-template-columns: repeat(2, 1fr);
+              gap: 20px;
+              margin-bottom: 30px;
+            }
+            .info-card {
+              background: #f8fafc;
+              padding: 20px;
+              border-radius: 12px;
+              border-left: 5px solid #3b82f6;
+            }
+            .info-card h3 {
+              color: #64748b;
+              font-size: 14px;
+              margin-bottom: 10px;
+              text-transform: uppercase;
+              letter-spacing: 1px;
+            }
+            .info-card .value {
+              color: #0f172a;
+              font-size: 24px;
+              font-weight: 700;
+            }
+            .info-card .label {
+              color: #475569;
+              font-size: 12px;
+              margin-top: 5px;
+            }
+            .metrics-section {
+              margin-bottom: 30px;
+            }
+            .metrics-title {
+              color: #1e293b;
+              font-size: 18px;
+              font-weight: 600;
+              margin-bottom: 15px;
+              padding-bottom: 10px;
+              border-bottom: 2px solid #e2e8f0;
+            }
+            .metrics-grid {
+              display: grid;
+              grid-template-columns: repeat(3, 1fr);
+              gap: 15px;
+            }
+            .metric-item {
+              background: #f1f5f9;
+              padding: 15px;
+              border-radius: 10px;
+              text-align: center;
+            }
+            .metric-item .metric-label {
+              color: #64748b;
+              font-size: 13px;
+              margin-bottom: 5px;
+            }
+            .metric-item .metric-value {
+              color: #0f172a;
+              font-size: 20px;
+              font-weight: 700;
+            }
+            .details-section {
+              margin-bottom: 30px;
+            }
+            .details-table {
+              width: 100%;
+              border-collapse: collapse;
+            }
+            .details-table tr {
+              border-bottom: 1px solid #e2e8f0;
+            }
+            .details-table td {
+              padding: 12px 0;
+            }
+            .details-table .label {
+              color: #64748b;
+              font-weight: 500;
+            }
+            .details-table .value {
+              color: #0f172a;
+              font-weight: 600;
+              text-align: right;
+            }
+            .data-table {
+              width: 100%;
+              border-collapse: collapse;
+              margin-top: 20px;
+            }
+            .data-table th {
+              background: #3b82f6;
+              color: white;
+              padding: 12px;
+              text-align: left;
+              font-weight: 600;
+              font-size: 14px;
+            }
+            .data-table td {
+              padding: 10px 12px;
+              border-bottom: 1px solid #e2e8f0;
+            }
+            .data-table tr:nth-child(even) {
+              background: #f8fafc;
+            }
+            .data-table .total-row {
+              background: #e2e8f0;
+              font-weight: 700;
+            }
+            .footer {
+              margin-top: 40px;
+              text-align: center;
+              padding-top: 20px;
+              border-top: 2px dashed #cbd5e1;
+              color: #94a3b8;
+              font-size: 12px;
+            }
+            .status-badge {
+              display: inline-block;
+              padding: 4px 12px;
+              border-radius: 30px;
+              font-size: 12px;
+              font-weight: 600;
+            }
+            .status-completed {
+              background: #d1fae5;
+              color: #059669;
+            }
+            .status-pending {
+              background: #fed7aa;
+              color: #c2410c;
+            }
+            .print-button {
+              background: #3b82f6;
+              color: white;
+              border: none;
+              padding: 12px 30px;
+              border-radius: 8px;
+              font-size: 16px;
+              cursor: pointer;
+              margin: 20px 0;
+            }
+            @media print {
+              .no-print {
+                display: none;
+              }
+              body {
+                padding: 0;
+                background: white;
+              }
+              .report-container {
+                box-shadow: none;
+                padding: 0;
+              }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="report-container">
+            <div class="header">
+              <div class="report-badge">${report?.type?.toUpperCase() || 'REPORT'}</div>
+              <h1>${report?.title || 'Business Report'}</h1>
+              <div class="subtitle">Generated on: ${currentDate}</div>
+            </div>
+            
+            <div class="company-info">
+              <strong>Your Company Name</strong><br>
+              123 Business Street, City, State 12345<br>
+              Phone: (555) 123-4567 | Email: info@company.com
+            </div>
+
+            <div class="info-grid">
+              <div class="info-card">
+                <h3>Report ID</h3>
+                <div class="value">#${report?.id}</div>
+                <div class="label">Unique Identifier</div>
+              </div>
+              <div class="info-card">
+                <h3>Date</h3>
+                <div class="value">${formatDate(report?.date, 'MMM DD, YYYY')}</div>
+                <div class="label">${formatDate(report?.date, 'HH:mm')}</div>
+              </div>
+            </div>
+
+            <div class="metrics-section">
+              <h2 class="metrics-title">Key Metrics</h2>
+              <div class="metrics-grid">
+                <div class="metric-item">
+                  <div class="metric-label">Total Amount</div>
+                  <div class="metric-value" style="color: #3b82f6">${formatCurrency(report?.amount)}</div>
+                </div>
+                <div class="metric-item">
+                  <div class="metric-label">Total Items</div>
+                  <div class="metric-value">${report?.count || 0}</div>
+                </div>
+                <div class="metric-item">
+                  <div class="metric-label">Average Value</div>
+                  <div class="metric-value">${formatCurrency(report?.count ? report?.amount / report?.count : 0)}</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="details-section">
+              <h2 class="metrics-title">Report Details</h2>
+              <table class="details-table">
+                ${report?.details?.map(detail => `
+                  <tr>
+                    <td class="label">${detail.label}</td>
+                    <td class="value">${detail.value}</td>
+                  </tr>
+                `).join('')}
+                <tr>
+                  <td class="label">Status</td>
+                  <td class="value">
+                    <span class="status-badge ${report?.status === 'completed' ? 'status-completed' : 'status-pending'}">
+                      ${report?.status || 'Completed'}
+                    </span>
+                  </td>
+                </tr>
+              </table>
+            </div>
+
+            ${report?.description ? `
+              <div class="metrics-section">
+                <h2 class="metrics-title">Description</h2>
+                <p style="color: #475569; line-height: 1.8;">${report?.description}</p>
+              </div>
+            ` : ''}
+
+            ${report?.data && report?.data.length > 0 ? `
+              <div class="metrics-section">
+                <h2 class="metrics-title">Data Details</h2>
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>Item</th>
+                      <th>Quantity</th>
+                      <th>Amount</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${report?.data.map(item => `
+                      <tr>
+                        <td>${item.name}</td>
+                        <td>${item.quantity}</td>
+                        <td>${formatCurrency(item.amount)}</td>
+                      </tr>
+                    `).join('')}
+                    <tr class="total-row">
+                      <td><strong>Total</strong></td>
+                      <td><strong>${report?.data.reduce((sum, item) => sum + (item.quantity || 0), 0)}</strong></td>
+                      <td><strong>${formatCurrency(report?.data.reduce((sum, item) => sum + (item.amount || 0), 0))}</strong></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            ` : ''}
+
+            <div class="footer">
+              <p>This is a system-generated report. For any queries, please contact support.</p>
+              <p>© ${new Date().getFullYear()} Your Company Name. All rights reserved.</p>
+            </div>
+          </div>
+        </body>
+      </html>
+    `;
+  };
+
+  // Handle Print
+  const handlePrint = async () => {
+    try {
+      const html = generatePrintHTML();
+      setPrintHTML(html);
+      setPrintModalVisible(false);
+      setPrintPreviewVisible(true);
+    } catch (error) {
+      Alert.alert("Error", "Failed to generate print preview");
+      console.error(error);
+    }
+  };
+
+  // Handle Direct Print
+  const handleDirectPrint = async () => {
+    try {
+      const html = generatePrintHTML();
+      await Print.printAsync({
+        html,
+        orientation: Print.Orientation.portrait,
+      });
+    } catch (error) {
+      Alert.alert("Error", "Failed to print");
+      console.error(error);
+    }
+  };
+
+  // Export as PDF
+  const handleExportPDF = async () => {
+    setExportDropdownVisible(false);
+    try {
+      const html = generatePrintHTML();
+      const { uri } = await Print.printToFileAsync({
+        html,
+        base64: false,
+      });
+      
+      const fileName = `Report_${report?.id || 'summary'}_${new Date().getTime()}.pdf`;
+      const newUri = FileSystem.documentDirectory + fileName;
+      
+      await FileSystem.copyAsync({
+        from: uri,
+        to: newUri,
+      });
+      
+      if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(newUri, {
+          mimeType: 'application/pdf',
+          dialogTitle: 'Export PDF',
+          UTI: 'com.adobe.pdf',
+        });
+      } else {
+        // Request permissions to save to media library
+        const { status } = await MediaLibrary.requestPermissionsAsync();
+        if (status === 'granted') {
+          const asset = await MediaLibrary.createAssetAsync(newUri);
+          await MediaLibrary.createAlbumAsync('Reports', asset, false);
+          Alert.alert("Success", "PDF saved to gallery");
+        } else {
+          Alert.alert("Success", `PDF saved to: ${newUri}`);
+        }
+      }
+    } catch (error) {
+      Alert.alert("Error", "Failed to export PDF");
+      console.error(error);
+    }
+  };
+
+  // Export as Excel
+  const handleExportExcel = async () => {
+    setExportDropdownVisible(false);
+    try {
+      // Prepare data for Excel
+      const excelData = [];
+      
+      // Header
+      excelData.push(['Report Export', report?.title || 'Report']);
+      excelData.push(['Generated On', new Date().toLocaleString()]);
+      excelData.push([]);
+      
+      // Report Info
+      excelData.push(['REPORT INFORMATION']);
+      excelData.push(['Report ID', report?.id]);
+      excelData.push(['Type', report?.type]);
+      excelData.push(['Date', formatDate(report?.date, 'MMMM DD, YYYY')]);
+      excelData.push(['Status', report?.status || 'Completed']);
+      excelData.push([]);
+      
+      // Key Metrics
+      excelData.push(['KEY METRICS']);
+      excelData.push(['Total Amount', formatCurrency(report?.amount)]);
+      excelData.push(['Total Items', report?.count || 0]);
+      excelData.push(['Average Value', formatCurrency(report?.count ? report?.amount / report?.count : 0)]);
+      excelData.push([]);
+      
+      // Details
+      if (report?.details && report?.details.length > 0) {
+        excelData.push(['DETAILS']);
+        report?.details.forEach(detail => {
+          excelData.push([detail.label, detail.value]);
+        });
+        excelData.push([]);
+      }
+      
+      // Data Table
+      if (report?.data && report?.data.length > 0) {
+        excelData.push(['DATA TABLE']);
+        excelData.push(['Item', 'Quantity', 'Amount']);
+        report?.data.forEach(item => {
+          excelData.push([item.name, item.quantity, formatCurrency(item.amount)]);
+        });
+        excelData.push([]);
+        
+        // Totals
+        const totalQty = report?.data.reduce((sum, item) => sum + (item.quantity || 0), 0);
+        const totalAmt = report?.data.reduce((sum, item) => sum + (item.amount || 0), 0);
+        excelData.push(['TOTAL', totalQty, formatCurrency(totalAmt)]);
+      }
+      
+      // Create worksheet
+      const ws = XLSX.utils.aoa_to_sheet(excelData);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Report");
+      
+      // Generate file
+      const wbout = XLSX.write(wb, { type: 'base64', bookType: 'xlsx' });
+      const fileName = `Report_${report?.id || 'summary'}_${new Date().getTime()}.xlsx`;
+      const fileUri = FileSystem.documentDirectory + fileName;
+      
+      await FileSystem.writeAsStringAsync(fileUri, wbout, {
+        encoding: FileSystem.EncodingType.Base64,
+      });
+      
+      if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(fileUri, {
+          mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+          dialogTitle: 'Export Excel',
+          UTI: 'com.microsoft.excel.xlsx',
+        });
+      } else {
+        // Request permissions to save to media library
+        const { status } = await MediaLibrary.requestPermissionsAsync();
+        if (status === 'granted') {
+          const asset = await MediaLibrary.createAssetAsync(fileUri);
+          await MediaLibrary.createAlbumAsync('Reports', asset, false);
+          Alert.alert("Success", "Excel file saved to gallery");
+        } else {
+          Alert.alert("Success", `Excel file saved to: ${fileUri}`);
+        }
+      }
+    } catch (error) {
+      Alert.alert("Error", "Failed to export Excel");
+      console.error(error);
+    }
+  };
+
+  // Export as DOC (using HTML format)
+  const handleExportDoc = async () => {
+    setExportDropdownVisible(false);
+    try {
+      const html = generatePrintHTML();
+      const fileName = `Report_${report?.id || 'summary'}_${new Date().getTime()}.doc`;
+      const fileUri = FileSystem.documentDirectory + fileName;
+      
+      await FileSystem.writeAsStringAsync(fileUri, html, {
+        encoding: FileSystem.EncodingType.UTF8,
+      });
+      
+      if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(fileUri, {
+          mimeType: 'application/msword',
+          dialogTitle: 'Export Document',
+          UTI: 'com.microsoft.word.doc',
+        });
+      } else {
+        // Request permissions to save to media library
+        const { status } = await MediaLibrary.requestPermissionsAsync();
+        if (status === 'granted') {
+          const asset = await MediaLibrary.createAssetAsync(fileUri);
+          await MediaLibrary.createAlbumAsync('Reports', asset, false);
+          Alert.alert("Success", "Document saved to gallery");
+        } else {
+          Alert.alert("Success", `Document saved to: ${fileUri}`);
+        }
+      }
+    } catch (error) {
+      Alert.alert("Error", "Failed to export document");
+      console.error(error);
+    }
+  };
+
+  // Toggle export dropdown
+  const toggleExportDropdown = () => {
+    setExportDropdownVisible(!exportDropdownVisible);
   };
 
   const formatCurrency = (value) => {
@@ -266,20 +787,91 @@ const ReportDetailScreen = () => {
           
           <View className="flex-row">
             <TouchableOpacity
-              onPress={handleShare}
+              onPress={() => setPrintModalVisible(true)}
               className={`w-10 h-10 rounded-2xl items-center justify-center mr-2 ${
                 isDarkMode ? 'bg-gray-800' : 'bg-gray-200'
               }`}
             >
-              <Icon name="share-variant" size={20} color={isDarkMode ? "#9CA3AF" : "#4b5563"} />
+              <Icon name="printer" size={20} color={isDarkMode ? "#9CA3AF" : "#4b5563"} />
             </TouchableOpacity>
+            
+            {/* Export Button with Dropdown */}
+            <View className="relative">
+              <TouchableOpacity
+                onPress={toggleExportDropdown}
+                className={`w-10 h-10 rounded-2xl items-center justify-center mr-2 ${
+                  isDarkMode ? 'bg-gray-800' : 'bg-gray-200'
+                }`}
+              >
+                <Icon name="export" size={20} color={isDarkMode ? "#9CA3AF" : "#4b5563"} />
+              </TouchableOpacity>
+              
+              {/* Export Dropdown Menu */}
+              {exportDropdownVisible && (
+                <>
+                  {/* Backdrop to close dropdown when tapping outside */}
+                  <TouchableOpacity
+                    style={{
+                      position: 'absolute',
+                      top: -100,
+                      left: -100,
+                      right: -100,
+                      bottom: -100,
+                      backgroundColor: 'transparent',
+                    }}
+                    onPress={() => setExportDropdownVisible(false)}
+                    activeOpacity={1}
+                  />
+                  
+                  {/* Dropdown Menu */}
+                  <View className={`absolute right-0 top-12 rounded-xl overflow-hidden shadow-lg z-50 ${
+                    isDarkMode ? 'bg-gray-800' : 'bg-white'
+                  }`} style={{ minWidth: 150 }}>
+                    <TouchableOpacity
+                      onPress={handleExportPDF}
+                      className={`flex-row items-center px-4 py-3 border-b ${
+                        isDarkMode ? 'border-gray-700' : 'border-gray-200'
+                      }`}
+                    >
+                      <Icon name="file-pdf-box" size={20} color="#ef4444" />
+                      <Text className={`ml-3 font-medium ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
+                        PDF
+                      </Text>
+                    </TouchableOpacity>
+                    
+                    <TouchableOpacity
+                      onPress={handleExportExcel}
+                      className={`flex-row items-center px-4 py-3 border-b ${
+                        isDarkMode ? 'border-gray-700' : 'border-gray-200'
+                      }`}
+                    >
+                      <Icon name="microsoft-excel" size={20} color="#10b981" />
+                      <Text className={`ml-3 font-medium ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
+                        Excel
+                      </Text>
+                    </TouchableOpacity>
+                    
+                    <TouchableOpacity
+                      onPress={handleExportDoc}
+                      className="flex-row items-center px-4 py-3"
+                    >
+                      <Icon name="file-word" size={20} color="#3b82f6" />
+                      <Text className={`ml-3 font-medium ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
+                        Word (DOC)
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                </>
+              )}
+            </View>
+            
             <TouchableOpacity
-              onPress={() => handleExport('pdf')}
+              onPress={handleShare}
               className={`w-10 h-10 rounded-2xl items-center justify-center ${
                 isDarkMode ? 'bg-gray-800' : 'bg-gray-200'
               }`}
             >
-              <Icon name="file-pdf-box" size={20} color="#ef4444" />
+              <Icon name="share-variant" size={20} color={isDarkMode ? "#9CA3AF" : "#4b5563"} />
             </TouchableOpacity>
           </View>
         </View>
@@ -338,7 +930,11 @@ const ReportDetailScreen = () => {
         </ScrollView>
       </View>
 
-      <ScrollView className="flex-1 px-4" showsVerticalScrollIndicator={false}>
+      <ScrollView 
+        ref={reportViewRef}
+        className="flex-1 px-4" 
+        showsVerticalScrollIndicator={false}
+      >
         {activeTab === "overview" && (
           <View className="pt-4 pb-24">
             {/* Report Information */}
@@ -419,6 +1015,7 @@ const ReportDetailScreen = () => {
                 </Text>
               </View>
             )}
+
             {/* Key Metrics */}
             <View className={`p-5 rounded-2xl mb-4 ${isDarkMode ? 'bg-gray-800' : 'bg-white'} shadow-sm`}>
               <Text className={`text-lg font-semibold mb-4 ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
@@ -466,18 +1063,6 @@ const ReportDetailScreen = () => {
                 </View>
               </View>
             </View>
-
-            {/* Description */}
-            {report.description && (
-              <View className={`p-5 rounded-2xl mb-4 ${isDarkMode ? 'bg-gray-800' : 'bg-white'} shadow-sm`}>
-                <Text className={`text-lg font-semibold mb-2 ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
-                  Description
-                </Text>
-                <Text className={`text-base leading-6 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-                  {report.description}
-                </Text>
-              </View>
-            )}
 
             {/* Summary Cards */}
             <View className={`p-5 rounded-2xl ${isDarkMode ? 'bg-gray-800' : 'bg-white'} shadow-sm`}>
@@ -637,7 +1222,7 @@ const ReportDetailScreen = () => {
                   Raw Data
                 </Text>
                 <TouchableOpacity
-                  onPress={() => handleExport('excel')}
+                  onPress={handleExportExcel}
                   className="flex-row items-center bg-green-500 px-3 py-2 rounded-lg"
                 >
                   <Icon name="microsoft-excel" size={16} color="#ffffff" />
@@ -700,6 +1285,125 @@ const ReportDetailScreen = () => {
           </View>
         )}
       </ScrollView>
+
+      {/* Print Options Modal */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={printModalVisible}
+        onRequestClose={() => setPrintModalVisible(false)}
+      >
+        <View className="flex-1 justify-end bg-black/50">
+          <View className={`rounded-t-3xl p-6 ${isDarkMode ? 'bg-gray-800' : 'bg-white'}`}>
+            <View className="items-center mb-4">
+              <View className="w-12 h-1 rounded-full bg-gray-300 mb-4" />
+              <Text className={`text-xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
+                Print Options
+              </Text>
+            </View>
+
+            <TouchableOpacity
+              onPress={handlePrint}
+              className={`flex-row items-center p-4 rounded-xl mb-3 ${
+                isDarkMode ? 'bg-gray-700' : 'bg-gray-100'
+              }`}
+            >
+              <View className="w-10 h-10 rounded-full bg-blue-500 items-center justify-center mr-3">
+                <Icon name="eye" size={20} color="#ffffff" />
+              </View>
+              <View className="flex-1">
+                <Text className={`text-base font-semibold ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
+                  Preview & Print
+                </Text>
+                <Text className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                  Preview before printing
+                </Text>
+              </View>
+              <Icon name="chevron-right" size={20} color="#9ca3af" />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={handleDirectPrint}
+              className={`flex-row items-center p-4 rounded-xl mb-3 ${
+                isDarkMode ? 'bg-gray-700' : 'bg-gray-100'
+              }`}
+            >
+              <View className="w-10 h-10 rounded-full bg-green-500 items-center justify-center mr-3">
+                <Icon name="printer" size={20} color="#ffffff" />
+              </View>
+              <View className="flex-1">
+                <Text className={`text-base font-semibold ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
+                  Direct Print
+                </Text>
+                <Text className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                  Print immediately
+                </Text>
+              </View>
+              <Icon name="chevron-right" size={20} color="#9ca3af" />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={handleExportPDF}
+              className={`flex-row items-center p-4 rounded-xl mb-3 ${
+                isDarkMode ? 'bg-gray-700' : 'bg-gray-100'
+              }`}
+            >
+              <View className="w-10 h-10 rounded-full bg-red-500 items-center justify-center mr-3">
+                <Icon name="file-pdf-box" size={20} color="#ffffff" />
+              </View>
+              <View className="flex-1">
+                <Text className={`text-base font-semibold ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
+                  Save as PDF
+                </Text>
+                <Text className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                  Export as PDF file
+                </Text>
+              </View>
+              <Icon name="chevron-right" size={20} color="#9ca3af" />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={() => setPrintModalVisible(false)}
+              className="p-4 rounded-xl bg-red-500 mt-2"
+            >
+              <Text className="text-white text-center font-semibold">Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Print Preview Modal */}
+      <Modal
+        animationType="slide"
+        visible={printPreviewVisible}
+        onRequestClose={() => setPrintPreviewVisible(false)}
+      >
+        <View className={`flex-1 ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
+          <View className={`flex-row justify-between items-center p-4 border-b ${
+            isDarkMode ? 'border-gray-700 bg-gray-800' : 'border-gray-200 bg-white'
+          }`}>
+            <TouchableOpacity
+              onPress={() => setPrintPreviewVisible(false)}
+              className="p-2"
+            >
+              <Icon name="close" size={24} color={isDarkMode ? "#9CA3AF" : "#4b5563"} />
+            </TouchableOpacity>
+            <Text className={`text-lg font-semibold ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
+              Print Preview
+            </Text>
+            <TouchableOpacity
+              onPress={handleDirectPrint}
+              className="p-2 bg-blue-500 rounded-lg px-4"
+            >
+              <Text className="text-white font-semibold">Print</Text>
+            </TouchableOpacity>
+          </View>
+          
+          <View style={{ flex: 1 }}>
+            <PrintHTMLView html={printHTML} />
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
@@ -733,6 +1437,25 @@ const DetailRow = ({ label, value, isDarkMode, capitalize, highlight, status }) 
         {value}
       </Text>
     </View>
+  );
+};
+
+// Helper component to render HTML for print preview
+const PrintHTMLView = ({ html }) => {
+  return (
+    <WebView
+      originWhitelist={['*']}
+      source={{ html }}
+      style={{ flex: 1 }}
+      javaScriptEnabled={true}
+      domStorageEnabled={true}
+      startInLoadingState={true}
+      renderLoading={() => (
+        <View className="flex-1 items-center justify-center">
+          <ActivityIndicator size="large" color="#3b82f6" />
+        </View>
+      )}
+    />
   );
 };
 
