@@ -223,32 +223,30 @@ const AppointmentPage = () => {
 
   const handlePrevMonth = () => {
     setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1));
-    setSelectedDate(null);
-    setSelectedTime(null);
-    setShowForm(false);
+    // Note: We don't reset selections when changing month
   };
 
   const handleNextMonth = () => {
     setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1));
-    setSelectedDate(null);
-    setSelectedTime(null);
-    setShowForm(false);
+    // Note: We don't reset selections when changing month
   };
 
   const handleResetToCurrent = () => {
+    // ONLY reset the calendar view to current month/year
+    // Does NOT affect selected date, time, form, or any other state
     setCurrentDate(new Date());
-    setSelectedDate(null);
-    setSelectedTime(null);
-    setShowForm(false);
     setShowMonthPicker(false);
+    // Keep all other state intact:
+    // - selectedDate remains the same
+    // - selectedTime remains the same
+    // - showForm remains the same
+    // - formData remains the same
   };
 
   const handleMonthSelect = (monthIndex) => {
     setCurrentDate(new Date(currentDate.getFullYear(), monthIndex, 1));
     setShowMonthPicker(false);
-    setSelectedDate(null);
-    setSelectedTime(null);
-    setShowForm(false);
+    // Note: We don't reset selections when changing month via picker
   };
 
   const handleYearChange = (increment) => {
@@ -518,31 +516,31 @@ const AppointmentPage = () => {
           {/* Main Container - 60/40 Split */}
           <div className="flex flex-col lg:flex-row gap-6 items-stretch">
             
-            {/* Left Side - Calendar (60%) */}
+            {/* Left Side - Calendar (60%) - Made smaller */}
             <motion.div
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.4 }}
-              className="lg:w-[60%] bg-white rounded-xl shadow-lg p-5 sm:p-6 border border-gray-200"
+              className="lg:w-[60%] bg-white rounded-xl shadow-lg p-4 sm:p-5 border border-gray-200"
             >
-              {/* Calendar Header */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-5">
-                <div className="flex items-center gap-3">
-                  <h2 className="text-xl sm:text-2xl font-bold text-[#0F172A] flex items-center gap-2">
-                    <CalendarDays size={24} className="text-[#4461F2]" />
+              {/* Calendar Header - More compact */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+                <div className="flex items-center gap-2">
+                  <h2 className="text-lg sm:text-xl font-bold text-[#0F172A] flex items-center gap-1">
+                    <CalendarDays size={20} className="text-[#4461F2]" />
                     <span>Select Date</span>
                   </h2>
                   
-                  {/* Time Zone Selector */}
+                  {/* Time Zone Selector - Smaller */}
                   <div className="relative">
                     <button
                       onClick={() => setShowTimeZonePicker(!showTimeZonePicker)}
-                      className="flex items-center gap-2 px-3 py-2 bg-[#F0F7FF] rounded-lg text-sm font-semibold text-[#0F172A] hover:bg-[#4461F2] hover:text-white transition-colors group"
+                      className="flex items-center gap-1 px-2 py-1.5 bg-[#F0F7FF] rounded-lg text-xs sm:text-sm font-semibold text-[#0F172A] hover:bg-[#4461F2] hover:text-white transition-colors group"
                     >
-                      <Globe size={16} className="group-hover:text-white" />
+                      <Globe size={14} className="group-hover:text-white" />
                       <span className="hidden md:inline">{currentTimeZone.name}</span>
                       <span className="md:hidden">{currentTimeZone.offset}</span>
-                      <ChevronDown size={14} className={`transition-transform ${showTimeZonePicker ? 'rotate-180' : ''}`} />
+                      <ChevronDown size={12} className={`transition-transform ${showTimeZonePicker ? 'rotate-180' : ''}`} />
                     </button>
 
                     {/* Time Zone Picker Popup */}
@@ -552,7 +550,7 @@ const AppointmentPage = () => {
                           initial={{ opacity: 0, y: 10 }}
                           animate={{ opacity: 1, y: 0 }}
                           exit={{ opacity: 0, y: 10 }}
-                          className="absolute top-full left-0 mt-2 bg-white rounded-lg shadow-xl border border-gray-200 p-3 z-20 min-w-[250px] max-h-64 overflow-y-auto"
+                          className="absolute top-full left-0 mt-2 bg-white rounded-lg shadow-xl border border-gray-200 p-2 z-20 min-w-[220px] max-h-60 overflow-y-auto"
                         >
                           {timeZones.map((tz) => (
                             <button
@@ -562,7 +560,7 @@ const AppointmentPage = () => {
                                 setShowTimeZonePicker(false);
                               }}
                               className={`
-                                w-full text-left px-3 py-2 rounded-md text-sm font-medium transition-colors
+                                w-full text-left px-2 py-1.5 rounded-md text-xs font-medium transition-colors
                                 ${selectedTimeZone === tz.value 
                                   ? 'bg-[#4461F2] text-white' 
                                   : 'hover:bg-[#F0F7FF] text-[#0F172A]'
@@ -581,13 +579,13 @@ const AppointmentPage = () => {
                   </div>
                 </div>
 
-                {/* Month Navigation */}
-                <div className="flex items-center gap-2">
+                {/* Month Navigation - More compact */}
+                <div className="flex items-center gap-1">
                   {/* Month/Year Selector */}
                   <div className="relative">
                     <button
                       onClick={() => setShowMonthPicker(!showMonthPicker)}
-                      className="px-4 py-2 bg-[#F0F7FF] rounded-lg text-base font-semibold text-[#0F172A] hover:bg-[#4461F2] hover:text-white transition-colors min-w-[140px]"
+                      className="px-3 py-1.5 bg-[#F0F7FF] rounded-lg text-sm font-semibold text-[#0F172A] hover:bg-[#4461F2] hover:text-white transition-colors min-w-[120px]"
                     >
                       {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
                     </button>
@@ -599,30 +597,30 @@ const AppointmentPage = () => {
                           initial={{ opacity: 0, y: 10 }}
                           animate={{ opacity: 1, y: 0 }}
                           exit={{ opacity: 0, y: 10 }}
-                          className="absolute top-full right-0 mt-2 bg-white rounded-lg shadow-xl border border-gray-200 p-4 z-20 min-w-[280px]"
+                          className="absolute top-full right-0 mt-2 bg-white rounded-lg shadow-xl border border-gray-200 p-3 z-20 min-w-[240px]"
                         >
-                          <div className="flex items-center justify-between mb-4">
+                          <div className="flex items-center justify-between mb-3">
                             <button
                               onClick={() => handleYearChange(-1)}
-                              className="p-2 hover:bg-[#F0F7FF] rounded"
+                              className="p-1 hover:bg-[#F0F7FF] rounded"
                             >
-                              <ChevronLeft size={18} />
+                              <ChevronLeft size={16} />
                             </button>
-                            <span className="font-bold text-lg text-[#0F172A]">{currentDate.getFullYear()}</span>
+                            <span className="font-bold text-base text-[#0F172A]">{currentDate.getFullYear()}</span>
                             <button
                               onClick={() => handleYearChange(1)}
-                              className="p-2 hover:bg-[#F0F7FF] rounded"
+                              className="p-1 hover:bg-[#F0F7FF] rounded"
                             >
-                              <ChevronRight size={18} />
+                              <ChevronRight size={16} />
                             </button>
                           </div>
-                          <div className="grid grid-cols-3 gap-2">
+                          <div className="grid grid-cols-3 gap-1">
                             {monthNames.map((month, index) => (
                               <button
                                 key={month}
                                 onClick={() => handleMonthSelect(index)}
                                 className={`
-                                  p-3 text-sm font-semibold rounded-lg transition-colors
+                                  p-2 text-xs font-semibold rounded-lg transition-colors
                                   ${currentDate.getMonth() === index 
                                     ? 'bg-[#4461F2] text-white' 
                                     : 'hover:bg-[#F0F7FF] text-[#0F172A]'
@@ -638,40 +636,40 @@ const AppointmentPage = () => {
                     </AnimatePresence>
                   </div>
 
-                  {/* Reset Button */}
+                  {/* Reset Button - Now only resets calendar view, not selections */}
                   <button
                     onClick={handleResetToCurrent}
-                    className="p-2 bg-[#F0F7FF] rounded-lg hover:bg-[#4461F2] hover:text-white transition-colors"
-                    title="Back to Current Month"
+                    className="p-1.5 bg-[#F0F7FF] rounded-lg hover:bg-[#4461F2] hover:text-white transition-colors"
+                    title="Reset calendar to current month"
                   >
-                    <RotateCw size={18} />
+                    <RotateCw size={16} />
                   </button>
 
                   <button
                     onClick={handlePrevMonth}
-                    className="p-2 hover:bg-[#F0F7FF] rounded-lg transition-colors text-[#0F172A]"
+                    className="p-1.5 hover:bg-[#F0F7FF] rounded-lg transition-colors text-[#0F172A]"
                   >
-                    <ChevronLeft size={20} />
+                    <ChevronLeft size={18} />
                   </button>
                   <button
                     onClick={handleNextMonth}
-                    className="p-2 hover:bg-[#F0F7FF] rounded-lg transition-colors text-[#0F172A]"
+                    className="p-1.5 hover:bg-[#F0F7FF] rounded-lg transition-colors text-[#0F172A]"
                   >
-                    <ChevronRight size={20} />
+                    <ChevronRight size={18} />
                   </button>
                 </div>
               </div>
 
-              {/* Day Names */}
-              <div className="grid grid-cols-7 gap-1 mb-3">
+              {/* Day Names - Smaller */}
+              <div className="grid grid-cols-7 gap-1 mb-2">
                 {dayNames.map((day) => (
-                  <div key={day} className="text-center text-sm font-bold text-gray-500 py-2">
+                  <div key={day} className="text-center text-xs font-bold text-gray-500 py-1">
                     {day}
                   </div>
                 ))}
               </div>
 
-              {/* Calendar Days */}
+              {/* Calendar Days - Smaller squares */}
               <div className="grid grid-cols-7 gap-1">
                 {days.map((day, index) => {
                   const available = isAvailable(day);
@@ -696,7 +694,7 @@ const AppointmentPage = () => {
                       onClick={() => !past && !booked && handleDateSelect(day)}
                       disabled={past || booked || !day}
                       className={`
-                        relative aspect-square flex items-center justify-center rounded-lg text-base sm:text-lg font-bold
+                        relative aspect-square flex items-center justify-center rounded-lg text-sm sm:text-base font-bold
                         transition-all duration-200
                         ${!day ? 'invisible' : ''}
                         ${bgColor}
@@ -705,19 +703,19 @@ const AppointmentPage = () => {
                       <span className="relative z-10">{day}</span>
                       
                       {available && !isSelected && !past && (
-                        <span className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-2 h-2 bg-[#4461F2] rounded-full z-10" />
+                        <span className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-1.5 h-1.5 bg-[#4461F2] rounded-full z-10" />
                       )}
                       
                       {current && (
-                        <span className="absolute -top-1 -right-1 w-3 h-3 bg-[#9E5CF2] rounded-full border-2 border-white z-10" />
+                        <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-[#9E5CF2] rounded-full border-2 border-white z-10" />
                       )}
                     </button>
                   );
                 })}
               </div>
 
-              {/* Legend */}
-              <div className="flex flex-wrap gap-4 mt-5 pt-4 border-t border-gray-200">
+              {/* Legend - More compact */}
+              <div className="flex flex-wrap gap-3 mt-4 pt-3 border-t border-gray-200">
                 {[
                   { color: "bg-[#4461F2]", label: "Available" },
                   { color: "bg-[#4461F2] ring-2 ring-[#9E5CF2]", label: "Selected" },
@@ -725,14 +723,12 @@ const AppointmentPage = () => {
                   { color: "bg-gray-200 line-through", label: "Booked" },
                   { color: "bg-gray-200 opacity-70", label: "Past" }
                 ].map((item, i) => (
-                  <div key={i} className="flex items-center gap-2">
-                    <div className={`w-4 h-4 ${item.color} rounded-sm`}></div>
-                    <span className="text-sm font-semibold text-gray-700">{item.label}</span>
+                  <div key={i} className="flex items-center gap-1">
+                    <div className={`w-3 h-3 ${item.color} rounded-sm`}></div>
+                    <span className="text-xs font-semibold text-gray-700">{item.label}</span>
                   </div>
                 ))}
               </div>
-
-              
             </motion.div>
 
             {/* Right Side - Working Panel (40%) */}
@@ -740,7 +736,7 @@ const AppointmentPage = () => {
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.4 }}
-              className="lg:w-[40%] bg-white rounded-xl shadow-lg p-6 border border-gray-200 min-h-[500px]"
+              className="lg:w-[40%] bg-white rounded-xl shadow-lg p-5 border border-gray-200 min-h-[500px]"
             >
               <AnimatePresence mode="wait">
                 {!selectedDate && (
@@ -749,17 +745,17 @@ const AppointmentPage = () => {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
-                    className="h-full flex flex-col items-center justify-center text-center py-8"
+                    className="h-full flex flex-col items-center justify-center text-center py-6"
                   >
-                    <Calendar className="w-16 h-16 text-[#4461F2] mb-4 opacity-50" />
-                    <h3 className="text-xl sm:text-2xl font-bold text-[#0F172A] mb-3">
+                    <Calendar className="w-14 h-14 text-[#4461F2] mb-3 opacity-50" />
+                    <h3 className="text-xl font-bold text-[#0F172A] mb-2">
                       Pick a Date
                     </h3>
-                    <p className="text-base sm:text-lg text-gray-600 max-w-sm">
+                    <p className="text-sm text-gray-600 max-w-sm">
                       Select an available date from the calendar to see time slots
                     </p>
-                    <div className="mt-6 p-4 bg-amber-50 rounded-lg">
-                      <p className="text-sm font-medium text-amber-700">
+                    <div className="mt-4 p-3 bg-amber-50 rounded-lg">
+                      <p className="text-xs font-medium text-amber-700">
                         ⏰ Next available: {formattedTomorrow}
                       </p>
                     </div>
@@ -773,9 +769,9 @@ const AppointmentPage = () => {
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
                   >
-                    <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-xl sm:text-2xl font-bold text-[#0F172A] flex items-center gap-2">
-                        <Clock size={24} className="text-[#4461F2]" />
+                    <div className="flex items-center justify-between mb-3">
+                      <h3 className="text-lg sm:text-xl font-bold text-[#0F172A] flex items-center gap-1">
+                        <Clock size={20} className="text-[#4461F2]" />
                         <span>Available Slots</span>
                       </h3>
                       <button
@@ -783,23 +779,23 @@ const AppointmentPage = () => {
                           setSelectedDate(null);
                           setSelectedTime(null);
                         }}
-                        className="flex items-center gap-1 text-base font-semibold text-[#4461F2] hover:text-[#9E5CF2] transition-colors"
+                        className="flex items-center gap-1 text-sm font-semibold text-[#4461F2] hover:text-[#9E5CF2] transition-colors"
                       >
-                        <ChevronLeft size={20} />
+                        <ChevronLeft size={18} />
                         <span>Back</span>
                       </button>
                     </div>
                     
-                    <div className="mb-4 p-4 bg-[#F0F7FF] rounded-lg">
-                      <p className="text-lg sm:text-xl font-bold text-[#0F172A]">
+                    <div className="mb-3 p-3 bg-[#F0F7FF] rounded-lg">
+                      <p className="text-base font-bold text-[#0F172A]">
                         {selectedDate} {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
                       </p>
-                      <p className="text-base font-semibold text-gray-600 mt-1">
+                      <p className="text-xs font-semibold text-gray-600 mt-1">
                         {currentTimeZone.name}
                       </p>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-2 gap-2">
                       {timeSlots.map((time, index) => (
                         <motion.button
                           key={index}
@@ -810,7 +806,7 @@ const AppointmentPage = () => {
                           whileTap={{ scale: 0.95 }}
                           onClick={() => handleTimeSelect(time)}
                           className={`
-                            py-4 px-3 rounded-lg text-base font-bold transition-all
+                            py-3 px-2 rounded-lg text-sm font-bold transition-all
                             ${selectedTime === time 
                               ? 'bg-[#4461F2] text-white shadow-lg scale-105 ring-2 ring-[#9E5CF2]' 
                               : 'bg-[#F0F7FF] text-[#0F172A] border-2 border-[#4461F2] hover:bg-[#4461F2] hover:text-white'
@@ -830,34 +826,34 @@ const AppointmentPage = () => {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
-                    className="space-y-5"
+                    className="space-y-4"
                   >
                     <div className="flex items-center justify-between">
-                      <h3 className="text-xl sm:text-2xl font-bold text-[#0F172A]">Selected Slot</h3>
+                      <h3 className="text-lg sm:text-xl font-bold text-[#0F172A]">Selected Slot</h3>
                       <button
                         onClick={() => {
                           setSelectedTime(null);
                         }}
-                        className="flex items-center gap-1 text-base font-semibold text-[#4461F2] hover:text-[#9E5CF2] transition-colors"
+                        className="flex items-center gap-1 text-sm font-semibold text-[#4461F2] hover:text-[#9E5CF2] transition-colors"
                       >
-                        <ChevronLeft size={20} />
+                        <ChevronLeft size={18} />
                         <span>Back</span>
                       </button>
                     </div>
 
-                    <div className="p-5 bg-[#F0F7FF] rounded-lg">
-                      <div className="space-y-3">
-                        <div className="flex items-center gap-3 text-gray-700">
-                          <Calendar size={20} className="text-[#4461F2]" />
-                          <span className="text-lg font-bold">{selectedDate} {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}</span>
+                    <div className="p-4 bg-[#F0F7FF] rounded-lg">
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2 text-gray-700">
+                          <Calendar size={18} className="text-[#4461F2]" />
+                          <span className="text-base font-bold">{selectedDate} {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}</span>
                         </div>
-                        <div className="flex items-center gap-3 text-gray-700">
-                          <Clock size={20} className="text-[#4461F2]" />
-                          <span className="text-lg font-bold">{selectedTime}</span>
+                        <div className="flex items-center gap-2 text-gray-700">
+                          <Clock size={18} className="text-[#4461F2]" />
+                          <span className="text-base font-bold">{selectedTime}</span>
                         </div>
-                        <div className="flex items-center gap-3 text-gray-600 pt-3 border-t border-gray-200">
-                          <Globe size={18} />
-                          <span className="text-base font-semibold">{currentTimeZone.name} ({currentTimeZone.offset})</span>
+                        <div className="flex items-center gap-2 text-gray-600 pt-2 border-t border-gray-200">
+                          <Globe size={16} />
+                          <span className="text-xs font-semibold">{currentTimeZone.name} ({currentTimeZone.offset})</span>
                         </div>
                       </div>
                     </div>
@@ -866,7 +862,7 @@ const AppointmentPage = () => {
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
                       onClick={handleProceedToForm}
-                      className="w-full py-4 bg-[#4461F2] text-white rounded-lg text-lg font-bold hover:bg-[#9E5CF2] transition-colors"
+                      className="w-full py-3 bg-[#4461F2] text-white rounded-lg text-base font-bold hover:bg-[#9E5CF2] transition-colors"
                     >
                       Continue →
                     </motion.button>
@@ -880,32 +876,32 @@ const AppointmentPage = () => {
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
                   >
-                    <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-xl sm:text-2xl font-bold text-[#0F172A] flex items-center gap-2">
-                        <User size={24} className="text-[#4461F2]" />
+                    <div className="flex items-center justify-between mb-3">
+                      <h3 className="text-lg sm:text-xl font-bold text-[#0F172A] flex items-center gap-1">
+                        <User size={20} className="text-[#4461F2]" />
                         <span>Your Details</span>
                       </h3>
                       <button
                         onClick={() => {
                           setShowForm(false);
                         }}
-                        className="flex items-center gap-1 text-base font-semibold text-[#4461F2] hover:text-[#9E5CF2] transition-colors"
+                        className="flex items-center gap-1 text-sm font-semibold text-[#4461F2] hover:text-[#9E5CF2] transition-colors"
                       >
-                        <ChevronLeft size={20} />
+                        <ChevronLeft size={18} />
                         <span>Back</span>
                       </button>
                     </div>
 
-                    <div className="mb-4 p-4 bg-[#F0F7FF] rounded-lg">
-                      <p className="text-lg font-bold text-gray-700">
+                    <div className="mb-3 p-3 bg-[#F0F7FF] rounded-lg">
+                      <p className="text-sm font-bold text-gray-700">
                         {selectedDate} {monthNames[currentDate.getMonth()]} at {selectedTime}
                       </p>
-                      <p className="text-base font-semibold text-gray-600 mt-2">
+                      <p className="text-xs font-semibold text-gray-600 mt-1">
                         {currentTimeZone.name} ({currentTimeZone.offset})
                       </p>
                     </div>
 
-                    <form onSubmit={handleSubmit} className="space-y-4">
+                    <form onSubmit={handleSubmit} className="space-y-3">
                       <input
                         type="text"
                         name="name"
@@ -913,7 +909,7 @@ const AppointmentPage = () => {
                         onChange={handleInputChange}
                         placeholder="Your Name"
                         required
-                        className="w-full border-2 border-gray-300 px-4 py-3 rounded-lg text-base font-semibold focus:outline-none focus:ring-2 focus:ring-[#4461F2] focus:border-transparent"
+                        className="w-full border-2 border-gray-300 px-3 py-2 rounded-lg text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-[#4461F2] focus:border-transparent"
                       />
 
                       <input
@@ -923,7 +919,7 @@ const AppointmentPage = () => {
                         onChange={handleInputChange}
                         placeholder="Mobile Number"
                         required
-                        className="w-full border-2 border-gray-300 px-4 py-3 rounded-lg text-base font-semibold focus:outline-none focus:ring-2 focus:ring-[#4461F2] focus:border-transparent"
+                        className="w-full border-2 border-gray-300 px-3 py-2 rounded-lg text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-[#4461F2] focus:border-transparent"
                       />
 
                       <input
@@ -933,7 +929,7 @@ const AppointmentPage = () => {
                         onChange={handleInputChange}
                         placeholder="Business Name"
                         required
-                        className="w-full border-2 border-gray-300 px-4 py-3 rounded-lg text-base font-semibold focus:outline-none focus:ring-2 focus:ring-[#4461F2] focus:border-transparent"
+                        className="w-full border-2 border-gray-300 px-3 py-2 rounded-lg text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-[#4461F2] focus:border-transparent"
                       />
 
                       {/* Custom Enquiry Type Dropdown */}
@@ -941,13 +937,13 @@ const AppointmentPage = () => {
                         <button
                           type="button"
                           onClick={() => setShowEnquiryDropdown(!showEnquiryDropdown)}
-                          className="w-full border-2 border-gray-300 px-4 py-3 rounded-lg text-base font-semibold focus:outline-none focus:ring-2 focus:ring-[#4461F2] focus:border-transparent flex items-center justify-between bg-white"
+                          className="w-full border-2 border-gray-300 px-3 py-2 rounded-lg text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-[#4461F2] focus:border-transparent flex items-center justify-between bg-white"
                         >
                           <div className="flex items-center gap-2">
-                            <span className="text-xl">{selectedEnquiry.icon}</span>
+                            <span className="text-lg">{selectedEnquiry.icon}</span>
                             <span>{selectedEnquiry.value}</span>
                           </div>
-                          <ChevronDown size={20} className={`transition-transform ${showEnquiryDropdown ? 'rotate-180' : ''}`} />
+                          <ChevronDown size={18} className={`transition-transform ${showEnquiryDropdown ? 'rotate-180' : ''}`} />
                         </button>
 
                         <AnimatePresence>
@@ -964,17 +960,17 @@ const AppointmentPage = () => {
                                   type="button"
                                   onClick={() => handleEnquirySelect(type.value)}
                                   className={`
-                                    w-full px-4 py-3 text-left flex items-center gap-3 transition-colors
+                                    w-full px-3 py-2 text-left flex items-center gap-2 transition-colors
                                     ${formData.enquiryType === type.value 
                                       ? 'bg-[#F0F7FF] border-l-4 border-[#4461F2]' 
                                       : 'hover:bg-gray-50'
                                     }
                                   `}
                                 >
-                                  <span className="text-xl">{type.icon}</span>
-                                  <span className="text-base font-semibold flex-1">{type.value}</span>
+                                  <span className="text-lg">{type.icon}</span>
+                                  <span className="text-sm font-semibold flex-1">{type.value}</span>
                                   {formData.enquiryType === type.value && (
-                                    <CheckCircle size={18} className="text-[#4461F2]" />
+                                    <CheckCircle size={16} className="text-[#4461F2]" />
                                   )}
                                 </button>
                               ))}
@@ -987,7 +983,7 @@ const AppointmentPage = () => {
                         type="submit"
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
-                        className="w-full py-4 bg-[#4461F2] text-white rounded-lg text-lg font-bold hover:bg-[#9E5CF2] transition-colors mt-4"
+                        className="w-full py-3 bg-[#4461F2] text-white rounded-lg text-base font-bold hover:bg-[#9E5CF2] transition-colors mt-3"
                       >
                         Book Appointment
                       </motion.button>

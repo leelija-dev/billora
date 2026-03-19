@@ -1,12 +1,13 @@
-// login/page.jsx
 "use client";
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { FaEye, FaEyeSlash, FaHome } from "react-icons/fa";
 import { FcGoogle } from "react-icons/fc";
+import Navbar from "@/components/Navbar";
+import Footer from "@/components/Footer";
 
-const LoginPage = () => {
+const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const router = useRouter();
 
@@ -95,4 +96,4 @@ const LoginPage = () => {
   );
 };
 
-export default LoginPage;
+export default Login;
