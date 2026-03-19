@@ -1,4 +1,4 @@
-// register/page.tsx
+// register/page.jsx
 "use client";
 
 import React, { useState } from "react";
@@ -8,7 +8,7 @@ import { useRouter } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 
-const Register = () => {
+const RegisterPage = () => {
   const [showPassword, setShowPassword] = useState(false);
   const router = useRouter();
 
@@ -18,7 +18,6 @@ const Register = () => {
       
       <div className="flex-1 flex justify-center items-center py-20 px-4 relative">
         
-
         <div className="w-[550px] bg-white py-10 px-[50px] rounded-[25px] shadow-[0_8px_25px_rgba(0,0,0,0.08)] max-md:w-[450px] max-md:px-8 max-sm:w-[90%] max-sm:px-5 max-sm:py-8">
           {/* Logo */}
           <div className="flex items-center gap-2.5">
@@ -101,4 +100,4 @@ const Register = () => {
   );
 };
 
-export default Register;
+export default RegisterPage;

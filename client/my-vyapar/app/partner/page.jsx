@@ -1,15 +1,10 @@
-// partner/page.tsx
+// partner/page.jsx
 "use client";
 
 import { Handshake, TrendingUp, ShieldCheck, Users, Globe } from "lucide-react";
 import Link from "next/link";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-
-// export const metadata = {
-//   title: 'Partner with Vyapar | Grow Your Business Together',
-//   description: 'Join Vyapar partner network. Choose from Channel Partner, Technology Partner, Implementation Partner, or Referral Partner programs.',
-// };
 
 export default function PartnerPage() {
   const partnerTypes = [
@@ -50,8 +45,6 @@ export default function PartnerPage() {
     <div className="min-h-screen bg-white">
       <Navbar />
       
-      
-
       {/* Hero */}
       <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white py-24 px-4">
         <div className="max-w-7xl mx-auto text-center">
