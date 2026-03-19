@@ -69,8 +69,6 @@ const FAQ = () => {
             
             </SectionTitle>
 
-                {/* <sectionTitle title="FREQUENTLY ASKED QUESTIONS" /> */}
-
                 <div className="flex items-center mb-8 sm:mb-10">
                   <div className="w-12 sm:w-16 h-0.5 bg-black mr-2 sm:mr-2.5"></div>
                 </div>
@@ -88,7 +86,7 @@ const FAQ = () => {
                 </div>
                 </div>
 
-                {/* RIGHT SIDE - FIXED: SMALLER TEXT */}
+                {/* RIGHT SIDE - FIXED: SMALLER TEXT */} 
           <div className="flex-1 w-full">
             {faqs.map((item, index) => (
               <div

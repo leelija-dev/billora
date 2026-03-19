@@ -1,4 +1,4 @@
-// solution/page.tsx
+// solution/page.jsx
 "use client";
 
 import {
@@ -12,12 +12,6 @@ import {
 import Link from "next/link";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-
-
-// export const metadata = {
-//   title: 'Solution - Vyapar | Billing Solutions for Every Business',
-//   description: 'Find the perfect billing solution for your business - from small shops to large enterprises.',
-// };
 
 export default function SolutionPage() {
   const solutions = [
@@ -54,8 +48,6 @@ export default function SolutionPage() {
     <div className="min-h-screen bg-white">
       <Navbar />
       
-      
-
       {/* Main Content */}
       <div className="py-16 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">

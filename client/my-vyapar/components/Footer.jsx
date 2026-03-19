@@ -104,7 +104,7 @@ const Footer = () => {
         <div className="pt-6 sm:pt-8 md:pt-4 border-t border-[#1e293b] flex flex-col sm:flex-row justify-between items-center gap-4 sm:gap-6 md:gap-3">
           <div className="text-[#94a3b8] text-xs sm:text-sm md:text-[10px] lg:text-sm order-2 sm:order-1">
             {/* Tablet: md:text-[10px] (10px) */}
-            &copy; 2024 Billora. All rights reserved.
+            &copy; 2026 Billora. All rights reserved.
           </div>
           <div className="flex gap-3 sm:gap-4 md:gap-1.5 lg:gap-4 order-1 sm:order-2">
             {socialLinks.map((social, index) => (

@@ -1,10 +1,10 @@
-// trymobile/page.tsx
+// trymobile/page.jsx
 "use client";
 
 import Link from "next/link";
 import Image from "next/image";
-import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
+import Navbar from "../../components/Navbar";
+import Footer from "../../components/Footer";
 
 export default function TryMobileAppPage() {
   const features = [
@@ -21,8 +21,6 @@ export default function TryMobileAppPage() {
       {/* Background Blur Effects */}
       <div className="absolute top-20 left-10 w-72 h-72 bg-blue-200 opacity-30 rounded-full blur-3xl"></div>
       <div className="absolute bottom-10 right-10 w-72 h-72 bg-purple-200 opacity-30 rounded-full blur-3xl"></div>
-
-      
 
       {/* Main Content */}
       <div className="py-8 sm:py-12 md:py-16 px-4 sm:px-6 lg:px-8 relative">

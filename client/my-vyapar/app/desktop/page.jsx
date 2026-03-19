@@ -1,10 +1,7 @@
+// desktop/page.jsx
+"use client";
 
 import Link from 'next/link';
-
-export const metadata = {
-  title: 'Desktop App - Vyapar | Powerful Billing Software for PC',
-  description: 'Download Vyapar desktop app for Windows, Mac, and Linux. Powerful billing software for your computer.',
-};
 
 export default function DesktopPage() {
   const features = [

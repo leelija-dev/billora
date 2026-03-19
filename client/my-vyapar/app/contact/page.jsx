@@ -5,9 +5,7 @@ import Footer from "@/components/Footer" ;
 import React, { useState } from "react";
 import Link from "next/link";
 
-
 export default function Contact() {
-
   const [formData, setFormData] = useState({
     name: "",
     phone: "",
@@ -16,14 +14,14 @@ export default function Contact() {
     message: ""
   });
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleChange = (e) => {
     setFormData({
       ...formData,
       [e.target.name]: e.target.value
     });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
 
     console.log("Form Submitted:", formData);
@@ -39,13 +37,9 @@ export default function Contact() {
     });
   };
 
-
   return (
     <div className="w-full bg-gray-50 min-h-screen">
       <Navbar />
-
-     
-      
 
       {/* Top Banner - Updated to Billora theme */}
       <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white py-4 mt-0">
@@ -67,7 +61,6 @@ export default function Contact() {
 
         {/* LEFT SIDE - CONTACT FORM */}
         <div>
-
           <p className="text-sm text-gray-400 mb-3">
             Home › Contact Us
           </p>
@@ -87,7 +80,6 @@ export default function Contact() {
           </p>
 
           <form className="space-y-4" onSubmit={handleSubmit}>
-
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
               <input
@@ -154,19 +146,16 @@ export default function Contact() {
             >
               Submit
             </button>
-
           </form>
         </div>
 
         {/* RIGHT SIDE - CONTACT INFO */}
         <div>
-
           <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-8">
             Get In Touch
           </h2>
 
           <div className="space-y-6 text-gray-700">
-
             <div className="flex items-start gap-4">
               <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
                 <span className="text-xl">📞</span>
@@ -215,7 +204,6 @@ export default function Contact() {
                 </div>
               </div>
             </div>
-
           </div>
 
           {/* Social Icons - Updated to Billora theme */}
@@ -244,7 +232,6 @@ export default function Contact() {
               Trusted by 1 Cr+ Indian businesses
             </p>
           </div>
-
         </div>
       </div>
 

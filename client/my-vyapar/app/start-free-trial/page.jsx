@@ -1,3 +1,4 @@
+// start-free-trial/page.jsx
 "use client";
 
 import Link from "next/link";
@@ -11,7 +12,7 @@ export default function StartFreeTrial() {
   const [email, setEmail] = useState("");
   const [isVisible, setIsVisible] = useState(true);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
     console.log(email);
 
@@ -28,7 +29,7 @@ export default function StartFreeTrial() {
     }, 300);
   };
 
-  const handleSocialLogin = (provider: string) => {
+  const handleSocialLogin = (provider) => {
     console.log("Login with:", provider);
 
     if (provider === "google") {
@@ -192,7 +193,7 @@ export default function StartFreeTrial() {
                         {item.emoji ? (
                           <span className="text-xl">{item.icon}</span>
                         ) : (
-                          <img src={item.icon} className="w-5 h-5" />
+                          <img src={item.icon} className="w-5 h-5" alt={item.name} />
                         )}
                       </button>
                     ))}
