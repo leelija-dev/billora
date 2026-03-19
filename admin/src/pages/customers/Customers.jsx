@@ -46,18 +46,14 @@ const Customers = () => {
     createCustomer,
     updateCustomer,
     deleteCustomer,
-    restoreCustomer,
-    forceDeleteCustomer,
-    processDuePayment,
-    getCustomerPaymentHistory,
-    fetchTrashedCustomers,
     setFilters,
   } = useCustomerStore()
 
   // Ensure customers is an array
   const safeCustomers = Array.isArray(customers) ? customers : []
 
-  const [formMode, setFormMode] = useState(null) // 'add', 'edit', or null
+  const [showAddForm, setShowAddForm] = useState(false)
+  const [showEditForm, setShowEditForm] = useState(false)
   const [selectedCustomer, setSelectedCustomer] = useState(null)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [searchTerm, setSearchTerm] = useState(filters.search || '')
@@ -99,18 +95,38 @@ const Customers = () => {
   }
 
   const handleAddClick = () => {
-    setFormMode('add')
-    setSelectedCustomer(null)
+    setShowAddForm(true)
   }
 
   const handleEditClick = (customer) => {
     setSelectedCustomer(customer)
-    setFormMode('edit')
+    setShowEditForm(true)
   }
 
   const handleCancelForm = () => {
-    setFormMode(null)
+    setShowAddForm(false)
+    setShowEditForm(false)
     setSelectedCustomer(null)
+  }
+
+  const handleSubmitCustomer = async (customerData) => {
+    setFormSubmitting(true)
+    try {
+      if (showEditForm && selectedCustomer) {
+        await updateCustomer(selectedCustomer.id, customerData)
+      } else {
+        await createCustomer(customerData)
+      }
+      // Refresh the customer list
+      await fetchCustomers()
+      // Hide the form
+      handleCancelForm()
+    } catch (error) {
+      console.error('Error saving customer:', error)
+      // Handle error (show toast notification, etc.)
+    } finally {
+      setFormSubmitting(false)
+    }
   }
 
   const handleDelete = async (id) => {
@@ -134,38 +150,6 @@ const Customers = () => {
       fetchCustomers(currentPage)
     } catch (error) {
       console.error('Failed to delete customers:', error)
-    }
-  }
-
-  const handleAddSubmit = async (data) => {
-    setFormSubmitting(true)
-    try {
-      const result = await createCustomer(data)
-      if (result?.success) {
-        setFormMode(null)
-        await fetchCustomers(currentPage)
-      }
-    } catch (error) {
-      console.error('Failed to create customer:', error)
-    } finally {
-      setFormSubmitting(false)
-    }
-  }
-
-  const handleEditSubmit = async (data) => {
-    if (!selectedCustomer?.id) return
-    setFormSubmitting(true)
-    try {
-      const result = await updateCustomer(selectedCustomer.id, data)
-      if (result?.success) {
-        setFormMode(null)
-        setSelectedCustomer(null)
-        await fetchCustomers(currentPage)
-      }
-    } catch (error) {
-      console.error('Failed to update customer:', error)
-    } finally {
-      setFormSubmitting(false)
     }
   }
 
@@ -200,18 +184,6 @@ const Customers = () => {
       setSelectedCustomers([])
     } else {
       setSelectedCustomers(safeCustomers.map(c => c?.id).filter(Boolean))
-    }
-  }
-
-  const handleBulkStatusUpdate = async (newStatus) => {
-    try {
-      for (const id of selectedCustomers) {
-        await updateCustomer(id, { status: newStatus })
-      }
-      setSelectedCustomers([])
-      fetchCustomers(currentPage)
-    } catch (error) {
-      console.error('Failed to update customer statuses:', error)
     }
   }
 
@@ -338,7 +310,7 @@ const Customers = () => {
       cell: (value, row) => (
         <motion.div 
           whileHover={{ x: 2 }}
-            className="flex items-start space-x-1"
+          className="flex items-start space-x-1"
         >
           <FiMapPin className="w-3 h-3 mt-0.5 text-gray-400" />
           <span className="text-sm text-gray-600 dark:text-gray-300">
@@ -414,6 +386,7 @@ const Customers = () => {
             
             <motion.div 
               initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 0, scale: 0.9 }}
               whileHover={{ opacity: 1, scale: 1 }}
               className="absolute right-0 mt-1 w-48 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10"
             >
@@ -459,45 +432,22 @@ const Customers = () => {
         className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
       >
         <div>
-          <motion.h1 
-            initial={{ x: -20 }}
-            animate={{ x: 0 }}
-            transition={{ delay: 0.1 }}
-            className="text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-gray-300 bg-clip-text text-transparent"
-          >
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-gray-300 bg-clip-text text-transparent">
             Customers
-          </motion.h1>
-          <motion.p 
-            initial={{ x: -20 }}
-            animate={{ x: 0 }}
-            transition={{ delay: 0.2 }}
-            className="text-gray-600 dark:text-gray-400 mt-2 flex items-center"
-          >
+          </h1>
+          <p className="text-gray-600 dark:text-gray-400 mt-2 flex items-center">
             <FiUsers className="w-4 h-4 mr-2" />
-            {formMode ? (
-              <span>{formMode === 'add' ? 'Add New Customer' : 'Edit Customer'}</span>
+            {showAddForm || showEditForm ? (
+              <span>{showEditForm ? 'Edit Customer' : 'Add New Customer'}</span>
             ) : (
               <span>Manage your customer relationships and view insights</span>
             )}
-          </motion.p>
+          </p>
         </div>
         
         <div className="flex items-center space-x-3">
-          {formMode ? (
-            <motion.div
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              transition={{ type: "spring", stiffness: 200 }}
-            >
-              <Button
-                variant="outline"
-                onClick={handleCancelForm}
-                icon={FiArrowLeft}
-              >
-                Back to Customers
-              </Button>
-            </motion.div>
-          ) : (
+          {/* Only show these buttons when not in form mode */}
+          {!showAddForm && !showEditForm && (
             <>
               {/* Refresh Button */}
               <motion.button
@@ -519,53 +469,65 @@ const Customers = () => {
               >
                 <FiDownload className="w-5 h-5 text-gray-600 dark:text-gray-300" />
               </motion.button>
-
-              {/* Add Customer Button */}
-              <motion.div
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                transition={{ type: "spring", stiffness: 300 }}
-              >
-                <Button
-                  onClick={handleAddClick}
-                  icon={FiPlus}
-                  className="shadow-lg shadow-primary-500/30"
-                >
-                  Add Customer
-                </Button>
-              </motion.div>
             </>
+          )}
+
+          {/* Add Customer Button or Back Button */}
+          {!showAddForm && !showEditForm ? (
+            <motion.div
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              transition={{ type: "spring", stiffness: 300 }}
+            >
+              <Button
+                onClick={handleAddClick}
+                icon={FiPlus}
+                className="shadow-lg shadow-primary-500/30"
+              >
+                Add Customer
+              </Button>
+            </motion.div>
+          ) : (
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 20 }}
+              transition={{ type: "spring", stiffness: 200 }}
+            >
+              <Button
+                variant="outline"
+                onClick={handleCancelForm}
+                icon={FiArrowLeft}
+              >
+                Back to Customers
+              </Button>
+            </motion.div>
           )}
         </div>
       </motion.div>
 
-      {/* Customer Form */}
-      <AnimatePresence mode="wait">
-        {formMode && (
+      {/* Conditional rendering: Show form or table/search */}
+      {showAddForm || showEditForm ? (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: 20 }}
+          className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6"
+        >
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">
+            {showEditForm ? 'Edit Customer' : 'Add New Customer'}
+          </h2>
+          <CustomerForm
+            initialData={selectedCustomer}
+            onSubmit={handleSubmitCustomer}
+            onCancel={handleCancelForm}
+            isSubmitting={formSubmitting}
+          />
+        </motion.div>
+      ) : (
+        <>
+          {/* Stats Cards */}
           <motion.div
-            key="form"
-            initial={{ opacity: 0, y: 20, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -20, scale: 0.95 }}
-            transition={{ duration: 0.3, type: "spring", stiffness: 200 }}
-            className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6"
-          >
-            <CustomerForm
-              initialData={selectedCustomer}
-              mode={formMode}
-              onSubmit={formMode === 'add' ? handleAddSubmit : handleEditSubmit}
-              onCancel={handleCancelForm}
-              isSubmitting={formSubmitting}
-            />
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Stats Cards - Hide when form is shown */}
-      <AnimatePresence mode="wait">
-        {!formMode && (
-          <motion.div
-            key="stats"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -630,14 +592,9 @@ const Customers = () => {
               </>
             )}
           </motion.div>
-        )}
-      </AnimatePresence>
 
-      {/* Filters - Hide when form is shown */}
-      <AnimatePresence mode="wait">
-        {!formMode && (
+          {/* Filters Section */}
           <motion.div
-            key="filters"
             initial={{ y: 20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -737,14 +694,56 @@ const Customers = () => {
               </>
             )}
           </motion.div>
-        )}
-      </AnimatePresence>
 
-      {/* Customers Table - Hide when form is shown */}
-      <AnimatePresence mode="wait">
-        {!formMode && (
+          {/* Bulk Actions Bar */}
+          <AnimatePresence>
+            {selectedCustomers.length > 0 && (
+              <motion.div
+                initial={{ opacity: 0, y: -20, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -20, scale: 0.95 }}
+                transition={{ type: "spring", stiffness: 200 }}
+                className="bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-800 rounded-xl p-4"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <motion.span 
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      className="text-sm font-medium text-primary-700 dark:text-primary-300"
+                    >
+                      {selectedCustomers.length} customers selected
+                    </motion.span>
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => setSelectedCustomers([])}
+                      className="text-xs text-primary-600 hover:text-primary-700 dark:text-primary-400"
+                    >
+                      Clear selection
+                    </motion.button>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <motion.div
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                    >
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setShowDeleteConfirm(true)}
+                      >
+                        Delete Selected
+                      </Button>
+                    </motion.div>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Customers Table */}
           <motion.div
-            key="table"
             initial={{ y: 20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -752,7 +751,7 @@ const Customers = () => {
           >
             {initialLoading || pageLoading ? (
               // Loading skeleton for table
-              <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-8">
+              <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-12">
                 <div className="flex flex-col items-center justify-center">
                   <motion.div 
                     animate={{ rotate: 360 }}
@@ -803,66 +802,17 @@ const Customers = () => {
               </>
             )}
           </motion.div>
-        )}
-      </AnimatePresence>
 
-      {/* Bulk Actions Bar - Hide when form is shown */}
-      <AnimatePresence>
-        {!formMode && selectedCustomers.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: -20, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -20, scale: 0.95 }}
-            transition={{ type: "spring", stiffness: 200 }}
-            className="bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-800 rounded-xl p-4"
-          >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-3">
-                <motion.span 
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  className="text-sm font-medium text-primary-700 dark:text-primary-300"
-                >
-                  {selectedCustomers.length} customers selected
-                </motion.span>
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => setSelectedCustomers([])}
-                  className="text-xs text-primary-600 hover:text-primary-700 dark:text-primary-400"
-                >
-                  Clear selection
-                </motion.button>
-              </div>
-              <div className="flex items-center space-x-2">
-                <motion.div
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                >
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setShowDeleteConfirm(true)}
-                  >
-                    Delete Selected
-                  </Button>
-                </motion.div>
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Delete Confirmation Modal */}
-      <AnimatePresence>
-        {showDeleteConfirm && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
-            onClick={() => setShowDeleteConfirm(false)}
-          >
+          {/* Delete Confirmation Modal */}
+          <AnimatePresence>
+            {showDeleteConfirm && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+                onClick={() => setShowDeleteConfirm(false)}
+              >
             <motion.div
               initial={{ scale: 0.9, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
@@ -940,6 +890,8 @@ const Customers = () => {
           </motion.div>
         )}
       </AnimatePresence>
+        </>
+      )}
     </motion.div>
   )
 }
