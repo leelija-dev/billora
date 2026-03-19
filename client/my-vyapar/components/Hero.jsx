@@ -246,7 +246,7 @@ const Hero = () => {
               </div>
 
               {/* Floating Mobile Image - Slides in from bottom */}
-              <div className="absolute left-0 bottom-4 w-[125px] h-[250px] bg-slate-800 rounded-[35px] p-2 shadow-2xl z-30 hidden sm:block heroic-slide-phone border border-slate-700">
+              <div className="absolute left-0 -bottom-9 w-[125px] h-[250px] bg-slate-800 rounded-[35px] p-2 shadow-2xl z-30 hidden sm:block heroic-slide-phone border border-slate-700">
                 <div className="w-full h-full bg-slate-900 rounded-[30px] overflow-hidden relative border-2 border-slate-800">
                   {/* Screen Content with Loading States */}
                   <div className="absolute inset-0 flex items-center justify-center bg-slate-900">
