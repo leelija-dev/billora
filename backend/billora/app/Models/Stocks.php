@@ -18,7 +18,7 @@ class Stocks extends Model
         'created_by' 
     ];
     public function product(){
-        return $this->belongsTo(Products::class);
+        return $this->belongsTo(Products::class , 'product_id');
     }
     public function unit(){
         return $this->belongsTo(Unit::class);

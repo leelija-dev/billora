@@ -15,7 +15,7 @@ class CustomerController extends Controller
     public function index() // check logged in user
     {
         // $customer = Customers::id()->get();
-        $customer = Auth::user()->id;
+        $customer = Auth::user();
         return response()->json([
             'status' => true,
             'message' => 'User List',
@@ -25,18 +25,18 @@ class CustomerController extends Controller
     public function store(Request $request)
     {
         $data = $request->validate([
-            'name' => 'required|string',
-            'email' => 'required|email',
-            'phone' => 'required',
-            'password' => 'required',
-            'company_name' => 'nullable',
-            'gst_number' => 'nullable',
-            'address' => 'nullable',
-            'city' => 'required',
-            'state' => 'required',
-            'country' => 'required',
-            'pincode' => 'required',
-            'created_by' => 'nullable'
+            'name'          => 'required|string',
+            'email'         => 'required|email',
+            'phone'         => 'required',
+            'password'      => 'required',
+            'company_name'  => 'nullable',
+            'gst_number'    => 'nullable',
+            'address'       => 'nullable',
+            'city'          => 'required',
+            'state'         => 'required',
+            'country'       => 'required',
+            'pincode'       => 'required',
+            'created_by'    => 'nullable'
 
         ]);
         $data['password'] = Hash::make($data['password']);

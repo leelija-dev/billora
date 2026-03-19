@@ -9,9 +9,14 @@ use Illuminate\Support\Str;
 
 class CategoriesController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $categories = Categories::paginate(15);
+        $search = $request->search;
+        $categories = Categories::where('id', 'like', "%$search%")
+        ->orWhere('name', 'like', "%$search%")
+        ->orWhere('description', 'like', "%$search%")
+        ->orWhere('slug', 'like', "%$search%")
+        ->paginate(15);
         return response()->json([
             'status' => true,
             'message' => 'Category List',
@@ -21,10 +26,10 @@ class CategoriesController extends Controller
     public function store(Request $request)
     {
         $data = $request->validate([
-            'user_id' => 'required',
-            'name' => 'required',
-            'is_active' => 'required',
-            'created_by' => 'nullable',
+            'user_id'     => 'required',
+            'name'        => 'required',
+            'is_active'   => 'required',
+            'created_by'  => 'nullable',
             'description' => 'nullable'
         ]);
         $data['slug'] = Str::slug($data['name']);
@@ -48,10 +53,10 @@ class CategoriesController extends Controller
     {
         
         $data = $request->validate([
-            'user_id' => 'required',
-            'name' => 'required',
-            'is_active' => 'required',
-            'created_by' => 'nullable',
+            'user_id'     => 'required',
+            'name'        => 'required',
+            'is_active'   => 'required',
+            'created_by'  => 'nullable',
             'description' => 'nullable'
         ]);
         try{

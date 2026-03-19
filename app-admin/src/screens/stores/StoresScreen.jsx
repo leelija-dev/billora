@@ -18,6 +18,7 @@ import { useStores } from "../../hooks/useStores";
 import Header from "../../components/common/Header";
 import StoreFilters from "../../components/stores/StoreFilters";
 import StoreList from "../../components/stores/StoreList";
+import { getNavigationItemsWithBadges } from "../../constants/navigationItems"; // Import the helper
 
 const StoresScreen = () => {
   const navigation = useNavigation();
@@ -153,67 +154,17 @@ const StoresScreen = () => {
     );
   };
 
-  
-
-  // Navigation items for sidebar
-  const navigationItems = useMemo(() => [
-    {
-      id: "dashboard",
-      title: "Dashboard",
-      icon: "view-dashboard",
-      screen: "Dashboard",
-      badge: null,
-    },
-    {
-      id: "stores",
-      title: "Stores",
-      icon: "store",
-      screen: "Stores",
-      badge: totalStores.toString(),
-    },
-    {
-      id: "products",
-      title: "Products",
-      icon: "package-variant",
-      screen: "Products",
-      badge: "0",
-    },
-    {
-      id: "categories",
-      title: "Categories",
-      icon: "shape",
-      screen: "Categories",
-      badge: "0",
-    },
-    {
-      id: "orders",
-      title: "Orders",
-      icon: "clipboard-list",
-      screen: "Orders",
-      badge: "0",
-    },
-    {
-      id: "customers",
-      title: "Customers",
-      icon: "account-group",
-      screen: "Customers",
-      badge: null,
-    },
-    {
-      id: "inventory",
-      title: "Inventory",
-      icon: "warehouse",
-      screen: "Inventory",
-      badge: null,
-    },
-    {
-      id: "settings",
-      title: "Settings",
-      icon: "cog",
-      screen: "Settings",
-      badge: null,
-    },
-  ], [totalStores]);
+  // Navigation items for sidebar - Using centralized navigation items
+  const navigationItems = useMemo(() => {
+    // Create badges for this screen
+    const badges = {
+      stores: totalStores.toString(),
+      // You can add other dynamic badges here if needed
+    };
+    
+    // Get navigation items with badges
+    return getNavigationItemsWithBadges(badges);
+  }, [totalStores]);
 
   // Show loading state
   if (loading && stores.length === 0 && !refreshing) {

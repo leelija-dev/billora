@@ -1,18 +1,24 @@
 import { apiClient } from './client';
-import { mockCustomers } from './mock/customers';
-
-// Get customers data based on project mode
-const getCustomersData = () => {
-  const projectMode = process.env.EXPO_PUBLIC_PROJECT_MODE || 'mock';
-  return projectMode === 'mock' ? mockCustomers : apiClient;
-};
 
 export const customersAPI = {
-  // Get all customers for an admin user
-  getAll: async (adminId, params = {}) => {
+  // Get all customers for a user
+  getAll: async (userId, params = {}) => {
     try {
-      const api = getCustomersData();
-      return await api.get(`/customer/${adminId}`, { params });
+      const response = await apiClient.get(`/customer/${userId}`, { params });
+      console.log('Customers API Response:', response.data);
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || error.message;
+    }
+  },
+
+  // Search customers
+  search: async (userId, query, params = {}) => {
+    try {
+      const response = await apiClient.get(`/customer/${userId}`, {
+        params: { search: query, ...params }
+      });
+      return response.data;
     } catch (error) {
       throw error.response?.data || error.message;
     }
@@ -21,8 +27,24 @@ export const customersAPI = {
   // Get single customer
   getById: async (id) => {
     try {
-      const api = getCustomersData();
-      return await api.get(`/customer/${id}`);
+      const response = await apiClient.get(`/customer/show/${id}`);
+      return response.data;
+    } catch (error) {
+      console.error('Get Customer API error:', error.response?.data || error.message);
+      throw error;
+    }
+  },
+
+  // Get customer payment history with date filter
+  getPaymentHistory: async (id, startDate, endDate) => {
+    try {
+      const response = await apiClient.get(`/customer/show/${id}`, {
+        params: { 
+          start_date: startDate,
+          end_date: endDate 
+        }
+      });
+      return response.data;
     } catch (error) {
       throw error.response?.data || error.message;
     }
@@ -31,203 +53,98 @@ export const customersAPI = {
   // Create new customer
   create: async (customerData) => {
     try {
-      const api = getCustomersData();
-      return await api.post('/customer/store', {
-        admin_id: customerData.adminId,
+      // Map frontend field names to API expected field names
+      const payload = {
+        admin_id: customerData.adminId || customerData.admin_id,
         name: customerData.name,
-        email: customerData.email,
+        email: customerData.email || '',
         phone: customerData.phone,
         address: customerData.address,
-        city: customerData.city,
-        created_by: customerData.createdBy,
-      });
+        city: customerData.city || '',
+        created_by: customerData.createdBy || customerData.adminId || customerData.admin_id,
+      };
+      
+      console.log('Create Customer API payload:', payload);
+      const response = await apiClient.post('/customer/store', payload);
+      return response.data;
     } catch (error) {
-      throw error.response?.data || error.message;
+      console.error('Create Customer API error:', error.response?.data || error.message);
+      throw error;
     }
   },
 
   // Update customer
   update: async (id, customerData) => {
     try {
-      const api = getCustomersData();
-      return await api.put(`/customer/${id}`, {
+      // Map frontend field names to API expected field names
+      const payload = {
+        user_id: customerData.userId || customerData.user_id || customerData.adminId || customerData.admin_id,
         name: customerData.name,
-        email: customerData.email,
+        email: customerData.email || '',
         phone: customerData.phone,
         address: customerData.address,
-        city: customerData.city,
-      });
+        city: customerData.city || '',
+      };
+      
+      console.log('Update Customer API payload:', payload);
+      const response = await apiClient.put(`/customer/${id}`, payload);
+      return response.data;
     } catch (error) {
-      throw error.response?.data || error.message;
+      console.error('Update Customer API error:', error.response?.data || error.message);
+      throw error;
     }
   },
 
-  // Delete customer
+  // Add due payment
+  addDuePayment: async (id, paymentData) => {
+    try {
+      const response = await apiClient.put(`/customer/due-payment/${id}`, {
+        due_payment: paymentData.duePayment || paymentData.due_payment
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Due Payment API error:', error.response?.data || error.message);
+      throw error;
+    }
+  },
+
+  // Delete customer (soft delete)
   delete: async (id) => {
     try {
-      const api = getCustomersData();
-      return await api.delete(`/customer/${id}`);
+      const response = await apiClient.delete(`/customer/${id}`);
+      return response.data;
     } catch (error) {
       throw error.response?.data || error.message;
     }
   },
 
-  // Search customers
-  search: async (adminId, query, filters = {}) => {
+  // Get trashed (soft deleted) customers
+  getTrashed: async () => {
     try {
-      const api = getCustomersData();
-      return await api.get(`/customer/${adminId}/search`, {
-        params: { q: query, ...filters }
-      });
+      const response = await apiClient.get('/customer/trashed');
+      return response.data;
     } catch (error) {
       throw error.response?.data || error.message;
     }
   },
 
-  // Get customer orders
-  getOrders: async (customerId, params = {}) => {
+  // Restore soft deleted customer
+  restore: async (id) => {
     try {
-      const api = getCustomersData();
-      return await api.get(`/customer/${customerId}/orders`, { params });
+      const response = await apiClient.patch(`/customer/${id}`);
+      return response.data;
     } catch (error) {
       throw error.response?.data || error.message;
     }
   },
 
-  // Get customer invoices
-  getInvoices: async (customerId, params = {}) => {
+  // Permanently delete customer
+  forceDelete: async (id) => {
     try {
-      const api = getCustomersData();
-      return await api.get(`/customer/${customerId}/invoices`, { params });
+      const response = await apiClient.delete(`/customer/${id}/force`);
+      return response.data;
     } catch (error) {
       throw error.response?.data || error.message;
     }
-  },
-
-  // Get customer statistics
-  getStats: async (customerId) => {
-    try {
-      const api = getCustomersData();
-      return await api.get(`/customer/${customerId}/stats`);
-    } catch (error) {
-      throw error.response?.data || error.message;
-    }
-  },
-
-  // Get customer outstanding balance
-  getOutstandingBalance: async (customerId) => {
-    try {
-      const api = getCustomersData();
-      return await api.get(`/customer/${customerId}/balance`);
-    } catch (error) {
-      throw error.response?.data || error.message;
-    }
-  },
-
-  // Add payment to customer account
-  addPayment: async (customerId, paymentData) => {
-    try {
-      const api = getCustomersData();
-      return await api.post(`/customer/${customerId}/payment`, {
-        amount: paymentData.amount,
-        payment_method: paymentData.paymentMethod,
-        payment_date: paymentData.paymentDate,
-        notes: paymentData.notes,
-      });
-    } catch (error) {
-      throw error.response?.data || error.message;
-    }
-  },
-
-  // Get customer payment history
-  getPaymentHistory: async (customerId, params = {}) => {
-    try {
-      const api = getCustomersData();
-      return await api.get(`/customer/${customerId}/payments`, { params });
-    } catch (error) {
-      throw error.response?.data || error.message;
-    }
-  },
-
-  // Update customer status
-  updateStatus: async (customerId, status) => {
-    try {
-      const api = getCustomersData();
-      return await api.patch(`/customer/${customerId}/status`, {
-        status,
-      });
-    } catch (error) {
-      throw error.response?.data || error.message;
-    }
-  },
-
-  // Bulk import customers
-  bulkImport: async (adminId, customersData) => {
-    try {
-      const api = getCustomersData();
-      return await api.post(`/customer/${adminId}/bulk-import`, {
-        customers: customersData,
-      });
-    } catch (error) {
-      throw error.response?.data || error.message;
-    }
-  },
-
-  // Export customers
-  export: async (adminId, format = 'csv', filters = {}) => {
-    try {
-      const api = getCustomersData();
-      return await api.get(`/customer/${adminId}/export`, {
-        params: { format, ...filters },
-        responseType: 'blob',
-      });
-    } catch (error) {
-      throw error.response?.data || error.message;
-    }
-  },
-
-  // Legacy methods for backward compatibility
-  getCustomers: async (params = {}) => {
-    try {
-      const api = getCustomersData();
-      return await api.get('/customers', { params });
-    } catch (error) {
-      throw error.response?.data || error.message;
-    }
-  },
-
-  getCustomer: async (id) => {
-    return await customersAPI.getById(id);
-  },
-
-  createCustomer: async (customerData) => {
-    return await customersAPI.create(customerData);
-  },
-
-  updateCustomer: async (id, customerData) => {
-    return await customersAPI.update(id, customerData);
-  },
-
-  deleteCustomer: async (id) => {
-    return await customersAPI.delete(id);
-  },
-
-  searchCustomers: async (query, filters = {}) => {
-    try {
-      const api = getCustomersData();
-      return await api.get('/customers/search', {
-        params: { q: query, ...filters },
-      });
-    } catch (error) {
-      throw error.response?.data || error.message;
-    }
-  },
-
-  getCustomerOrders: async (id, params = {}) => {
-    return await customersAPI.getOrders(id, params);
-  },
-
-  getCustomerStats: async (id) => {
-    return await customersAPI.getStats(id);
   },
 };

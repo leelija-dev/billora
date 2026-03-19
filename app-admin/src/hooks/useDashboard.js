@@ -15,7 +15,7 @@ export const useDashboard = () => {
       setLoading(true);
       setError(null);
       
-      const response = await dashboardAPI.getOverview();
+      const response = await dashboardAPI.getOverview(user.id);
       setDashboardData(response.data);
     } catch (err) {
       setError(err.message || 'Failed to fetch dashboard data');

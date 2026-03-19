@@ -159,10 +159,9 @@ export const NAVIGATION_SCREENS = {
     UNIT_DETAIL: 'UnitDetail',
     ADD_UNIT: 'AddUnit',
     
-    // Billing
-    BILL_GENERATION: 'BillGeneration',
-    BILL_HISTORY: 'BillHistory',
+    BILLS: 'Bills',
     BILL_DETAIL: 'BillDetail',
+    CREATE_BILL: 'CreateBill',
     
     // Customers
     CUSTOMERS: 'Customers',
@@ -177,6 +176,7 @@ export const NAVIGATION_SCREENS = {
     // Inventory
     INVENTORY: 'Inventory',
     STOCK_MOVEMENT: 'StockMovement',
+    
     
     // Settings
     SETTINGS: 'Settings',

@@ -13,9 +13,6 @@ import AddCustomerScreen from "../../screens/customers/AddCustomerScreen";
 import CustomerDetailScreen from "../../screens/customers/CustomerDetailScreen";
 import CustomersScreen from "../../screens/customers/CustomersScreen";
 import DashboardScreen from "../../screens/dashboard/DashboardScreen";
-import BillGenerationScreen from "../../screens/billing/BillGenerationScreen";
-import BillHistoryScreen from "../../screens/billing/BillHistoryScreen";
-import BillDetailScreen from "../../screens/billing/BillDetailScreen";
 
 import AddProductScreen from "../../screens/products/AddProductScreen";
 import ProductDetailScreen from "../../screens/products/ProductDetailScreen";
@@ -38,7 +35,7 @@ import UnitsScreen from "../../screens/units/UnitsScreen";
 import AddUnitScreen from "../../screens/units/AddUnitScreen";
 import UnitDetailScreen from "../../screens/units/UnitDetailScreen";
 
-// Import Stock Screens (replacing Inventory)
+// Import Stock Screens
 import StocksScreen from "../../screens/stocks/StocksScreen";
 import AddStockScreen from "../../screens/stocks/AddStockScreen";
 import StockDetailScreen from "../../screens/stocks/StockDetailScreen";
@@ -48,6 +45,11 @@ import AddStockQuantityScreen from "../../screens/stocks/AddStockQuantityScreen"
 import StoresScreen from "../../screens/stores/StoresScreen";
 import AddStoreScreen from "../../screens/stores/AddStoreScreen";
 import StoreDetailScreen from "../../screens/stores/StoreDetailScreen";
+
+// Import Bill Screens
+import BillsScreen from "../../screens/bills/BillsScreen";
+import CreateBillScreen from "../../screens/bills/CreateBillScreen";
+import BillDetailScreen from "../../screens/bills/BillDetailScreen";
 
 import { NAVIGATION_SCREENS } from "../../utils/constants";
 
@@ -340,53 +342,6 @@ const StoresStack = () => {
   );
 };
 
-// Billing Stack with Dark Mode
-const BillingStack = () => {
-  const { isDarkMode } = useThemeStore();
-
-  return (
-    <Stack.Navigator
-      screenOptions={{
-        headerShown: false,
-        animation: "slide_from_right",
-        contentStyle: { backgroundColor: isDarkMode ? "#111827" : "#F8FAFC" },
-      }}
-    >
-      <Stack.Screen
-        name={NAVIGATION_SCREENS.MAIN.BILL_HISTORY}
-        component={BillHistoryScreen}
-        options={{
-          header: ({ navigation }) => (
-            <StackHeader
-              title="Bill History"
-              navigation={navigation}
-              showBack={false}
-            />
-          ),
-        }}
-      />
-      <Stack.Screen
-        name={NAVIGATION_SCREENS.MAIN.BILL_DETAIL}
-        component={BillDetailScreen}
-        options={({ navigation }) => ({
-          header: () => (
-            <StackHeader title="Bill Details" navigation={navigation} />
-          ),
-        })}
-      />
-      <Stack.Screen
-        name={NAVIGATION_SCREENS.MAIN.BILL_GENERATION}
-        component={BillGenerationScreen}
-        options={({ navigation }) => ({
-          header: () => (
-            <StackHeader title="Generate Bill" navigation={navigation} />
-          ),
-        })}
-      />
-    </Stack.Navigator>
-  );
-};
-
 // Customers Stack with Dark Mode
 const CustomersStack = () => {
   const { isDarkMode } = useThemeStore();
@@ -434,7 +389,7 @@ const CustomersStack = () => {
   );
 };
 
-// Stock Stack with Dark Mode (Replacing InventoryStack)
+// Stock Stack with Dark Mode
 const StocksStack = () => {
   const { isDarkMode } = useThemeStore();
 
@@ -490,6 +445,53 @@ const StocksStack = () => {
   );
 };
 
+// Bills Stack with Dark Mode
+const BillsStack = () => {
+  const { isDarkMode } = useThemeStore();
+
+  return (
+    <Stack.Navigator
+      screenOptions={{
+        headerShown: false,
+        animation: "slide_from_right",
+        contentStyle: { backgroundColor: isDarkMode ? "#111827" : "#F8FAFC" },
+      }}
+    >
+      <Stack.Screen
+        name={NAVIGATION_SCREENS.MAIN.BILLS}
+        component={BillsScreen}
+        options={{
+          header: ({ navigation }) => (
+            <StackHeader
+              title="Bills & Invoices"
+              navigation={navigation}
+              showBack={false}
+            />
+          ),
+        }}
+      />
+      <Stack.Screen
+        name={NAVIGATION_SCREENS.MAIN.BILL_DETAIL}
+        component={BillDetailScreen}
+        options={({ navigation }) => ({
+          header: () => (
+            <StackHeader title="Bill Details" navigation={navigation} />
+          ),
+        })}
+      />
+      <Stack.Screen
+        name={NAVIGATION_SCREENS.MAIN.CREATE_BILL}
+        component={CreateBillScreen}
+        options={({ navigation }) => ({
+          header: () => (
+            <StackHeader title="Create Bill" navigation={navigation} />
+          ),
+        })}
+      />
+    </Stack.Navigator>
+  );
+};
+
 // Settings Stack with Dark Mode
 const SettingsStack = () => {
   const { isDarkMode } = useThemeStore();
@@ -534,7 +536,7 @@ const ModernTabBar = ({ state, descriptors, navigation }) => {
   const [sliderLeft, setSliderLeft] = useState(0);
   const animation = useRef(new Animated.Value(0)).current;
 
-  // Define all tabs we want to show in bottom bar - Now with 9 tabs (added Stores)
+  // Define all tabs we want to show in bottom bar - Now with 10 tabs (added Bills)
   const tabs = [
     {
       name: "Home",
@@ -544,39 +546,11 @@ const ModernTabBar = ({ state, descriptors, navigation }) => {
       screen: "Dashboard",
     },
     {
-      name: "Stores",
-      icon: "store-outline",
-      iconActive: "store",
-      label: "Stores",
-      screen: "StoresStack",
-    },
-    {
       name: "Products",
       icon: "package-variant-closed",
       iconActive: "package-variant",
       label: "Products",
       screen: "ProductsStack",
-    },
-    {
-      name: "Categories",
-      icon: "shape-outline",
-      iconActive: "shape",
-      label: "Categories",
-      screen: "CategoriesStack",
-    },
-    {
-      name: "Brands",
-      icon: "trademark",
-      iconActive: "trademark",
-      label: "Brands",
-      screen: "BrandsStack",
-    },
-    {
-      name: "Units",
-      icon: "ruler",
-      iconActive: "ruler",
-      label: "Units",
-      screen: "UnitsStack",
     },
     {
       name: "Stocks",
@@ -586,19 +560,13 @@ const ModernTabBar = ({ state, descriptors, navigation }) => {
       screen: "StocksStack",
     },
     {
-      name: "Billing",
-      icon: "receipt-text-outline",
-      iconActive: "receipt-text",
-      label: "Billing",
-      screen: "BillingStack",
+      name: "Bills",
+      icon: "file-document-outline",
+      iconActive: "file-document",
+      label: "Bills",
+      screen: "BillsStack",
     },
-    {
-      name: "Clients",
-      icon: "account-group-outline",
-      iconActive: "account-group",
-      label: "Clients",
-      screen: "CustomersStack",
-    },
+    
   ];
 
   // Update slider position when active tab changes
@@ -736,14 +704,31 @@ const MainNavigator = () => {
       }}
     >
       <Tab.Screen name="Dashboard" component={DashboardScreen} />
-      <Tab.Screen name="StoresStack" component={StoresStack} />
       <Tab.Screen name="ProductsStack" component={ProductsStack} />
-      <Tab.Screen name="CategoriesStack" component={CategoriesStack} />
-      <Tab.Screen name="BrandsStack" component={BrandsStack} />
-      <Tab.Screen name="UnitsStack" component={UnitsStack} />
-      <Tab.Screen name="StocksStack" component={StocksStack} />
-      <Tab.Screen name="BillingStack" component={BillingStack} />
-      <Tab.Screen name="CustomersStack" component={CustomersStack} />
+      <Tab.Screen name="StocksStack" component={StocksStack}  />
+      <Tab.Screen name="BillsStack" component={BillsStack} />
+      <Tab.Screen name="CategoriesStack" component={CategoriesStack} options={{
+          tabBarButton: () => null,
+          tabBarItemStyle: { display: "none" },
+        }} />
+      <Tab.Screen name="StoresStack" component={StoresStack}   options={{
+          tabBarButton: () => null,
+          tabBarItemStyle: { display: "none" },
+        }}/>
+      
+      <Tab.Screen name="BrandsStack" component={BrandsStack}  options={{
+          tabBarButton: () => null,
+          tabBarItemStyle: { display: "none" },
+        }} />
+      <Tab.Screen name="UnitsStack" component={UnitsStack}  options={{
+          tabBarButton: () => null,
+          tabBarItemStyle: { display: "none" },
+        }} />
+      
+      <Tab.Screen name="CustomersStack" component={CustomersStack} options={{
+          tabBarButton: () => null,
+          tabBarItemStyle: { display: "none" },
+        }} />
 
       {/* Hidden screens - accessible via navigation only */}
       <Tab.Screen

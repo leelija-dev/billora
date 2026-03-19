@@ -1,414 +1,386 @@
-// Mock customers data and functions
-let mockCustomersList = [
+// Mock customers data for development
+export const mockCustomersData = [
   {
     id: 1,
     admin_id: 1,
     name: 'John Doe',
     email: 'john.doe@example.com',
-    phone: '+1234567890',
-    address: '123 Main Street, Apt 4B',
+    phone: '9876543210',
+    address: '123 Main Street, Downtown',
     city: 'New York',
-    status: 'active',
+    due_amount: 1500.00,
+    total_purchases: 12500.00,
+    total_paid: 11000.00,
     created_by: 1,
-    created_at: new Date(Date.now() - 2592000000).toISOString(),
-    updated_at: new Date(Date.now() - 86400000).toISOString(),
+    created_at: '2024-01-15T10:30:00Z',
+    updated_at: '2024-01-15T10:30:00Z',
+    deleted_at: null,
   },
   {
     id: 2,
     admin_id: 1,
     name: 'Jane Smith',
     email: 'jane.smith@example.com',
-    phone: '+0987654321',
+    phone: '9876543211',
     address: '456 Oak Avenue',
     city: 'Los Angeles',
-    status: 'active',
+    due_amount: 750.50,
+    total_purchases: 8750.50,
+    total_paid: 8000.00,
     created_by: 1,
-    created_at: new Date(Date.now() - 1728000000).toISOString(),
-    updated_at: new Date(Date.now() - 172800000).toISOString(),
+    created_at: '2024-01-16T11:45:00Z',
+    updated_at: '2024-01-16T11:45:00Z',
+    deleted_at: null,
   },
   {
     id: 3,
     admin_id: 1,
-    name: 'Robert Johnson',
-    email: 'robert.j@example.com',
-    phone: '+1122334455',
+    name: 'Raj Kumar',
+    email: 'raj.kumar@example.com',
+    phone: '9876543212',
     address: '789 Pine Road',
-    city: 'Chicago',
-    status: 'inactive',
+    city: 'Mumbai',
+    due_amount: 0.00,
+    total_purchases: 5000.00,
+    total_paid: 5000.00,
     created_by: 1,
-    created_at: new Date(Date.now() - 864000000).toISOString(),
-    updated_at: new Date(Date.now() - 432000000).toISOString(),
+    created_at: '2024-01-17T09:20:00Z',
+    updated_at: '2024-01-17T09:20:00Z',
+    deleted_at: null,
+  },
+  {
+    id: 4,
+    admin_id: 2,
+    name: 'Sarah Johnson',
+    email: 'sarah.j@example.com',
+    phone: '9876543213',
+    address: '321 Elm Street',
+    city: 'Chicago',
+    due_amount: 2500.00,
+    total_purchases: 15000.00,
+    total_paid: 12500.00,
+    created_by: 2,
+    created_at: '2024-01-18T14:30:00Z',
+    updated_at: '2024-01-18T14:30:00Z',
+    deleted_at: null,
+  },
+  {
+    id: 5,
+    admin_id: 1,
+    name: 'Mike Wilson',
+    email: 'mike.w@example.com',
+    phone: '9876543214',
+    address: '654 Maple Drive',
+    city: 'Houston',
+    due_amount: 3200.75,
+    total_purchases: 18200.75,
+    total_paid: 15000.00,
+    created_by: 1,
+    created_at: '2024-01-19T16:15:00Z',
+    updated_at: '2024-01-19T16:15:00Z',
+    deleted_at: null,
+  },
+  {
+    id: 6,
+    admin_id: 1,
+    name: 'Lisa Chen',
+    email: 'lisa.chen@example.com',
+    phone: '9876543215',
+    address: '987 Cedar Lane',
+    city: 'San Francisco',
+    due_amount: 0.00,
+    total_purchases: 8900.00,
+    total_paid: 8900.00,
+    created_by: 1,
+    created_at: '2024-01-20T10:45:00Z',
+    updated_at: '2024-01-20T10:45:00Z',
+    deleted_at: null,
+  },
+  // Soft deleted customer
+  {
+    id: 7,
+    admin_id: 1,
+    name: 'Deleted Customer',
+    email: 'deleted@example.com',
+    phone: '9876543216',
+    address: '123 Deleted Street',
+    city: 'Nowhere',
+    due_amount: 500.00,
+    total_purchases: 2500.00,
+    total_paid: 2000.00,
+    created_by: 1,
+    created_at: '2024-01-21T12:00:00Z',
+    updated_at: '2024-01-21T12:00:00Z',
+    deleted_at: '2024-02-01T10:00:00Z',
   },
 ];
 
-let mockCustomerPayments = [
+// Mock payment history
+export const mockPaymentHistory = [
   {
     id: 1,
     customer_id: 1,
     amount: 500.00,
-    payment_method: 'cash',
-    payment_date: new Date(Date.now() - 86400000).toISOString(),
-    notes: 'Advance payment for order',
-    created_at: new Date(Date.now() - 86400000).toISOString(),
+    type: 'payment',
+    date: '2024-02-15T10:30:00Z',
+    description: 'Partial payment',
   },
   {
     id: 2,
-    customer_id: 2,
-    amount: 200.00,
-    payment_method: 'card',
-    payment_date: new Date(Date.now() - 172800000).toISOString(),
-    notes: 'Partial payment',
-    created_at: new Date(Date.now() - 172800000).toISOString(),
+    customer_id: 1,
+    amount: 1000.00,
+    type: 'payment',
+    date: '2024-02-01T14:20:00Z',
+    description: 'Payment received',
+  },
+  {
+    id: 3,
+    customer_id: 1,
+    amount: 1500.00,
+    type: 'purchase',
+    date: '2024-01-15T11:45:00Z',
+    description: 'Invoice #INV-001',
   },
 ];
 
-const mockCustomers = {
-  get: async (endpoint, params = {}) => {
-    await new Promise(resolve => setTimeout(resolve, 300));
-
-    if (endpoint.startsWith('/customer/') && !isNaN(endpoint.split('/')[2]) && !endpoint.includes('/search') && !endpoint.includes('/export') && !endpoint.includes('/bulk-import') && !endpoint.includes('/orders') && !endpoint.includes('/invoices') && !endpoint.includes('/stats') && !endpoint.includes('/balance') && !endpoint.includes('/payments') && !endpoint.includes('/status')) {
-      const adminId = parseInt(endpoint.split('/')[2]);
-      let filteredCustomers = mockCustomersList.filter(c => c.admin_id === adminId);
+export const mockCustomers = {
+  get: async (url, config = {}) => {
+    console.log('Mock Customers API call:', url, config);
+    
+    // Simulate network delay
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    // Handle /customer/{userId} pattern
+    if (url.match(/^\/customer\/\d+$/)) {
+      const userId = parseInt(url.split('/').pop());
+      let filteredCustomers = mockCustomersData.filter(c => c.admin_id === userId && !c.deleted_at);
       
-      // Apply filters
-      if (params.status) {
-        filteredCustomers = filteredCustomers.filter(c => c.status === params.status);
-      }
-      if (params.search) {
+      // Handle search
+      if (config.params?.search) {
+        const searchTerm = config.params.search.toLowerCase();
         filteredCustomers = filteredCustomers.filter(c => 
-          c.name.toLowerCase().includes(params.search.toLowerCase()) ||
-          c.email.toLowerCase().includes(params.search.toLowerCase()) ||
-          c.phone.includes(params.search)
+          c.name?.toLowerCase().includes(searchTerm) ||
+          c.email?.toLowerCase().includes(searchTerm) ||
+          c.phone?.toLowerCase().includes(searchTerm) ||
+          c.address?.toLowerCase().includes(searchTerm) ||
+          c.city?.toLowerCase().includes(searchTerm) ||
+          c.due_amount?.toString().includes(searchTerm)
         );
       }
-
-      return {
-        data: {
-          success: true,
-          customers: filteredCustomers,
-        }
-      };
-    }
-
-    if (endpoint.startsWith('/customer/') && !isNaN(endpoint.split('/')[2]) && endpoint.includes('/search')) {
-      const adminId = parseInt(endpoint.split('/')[2]);
-      const query = params.q || '';
       
-      const searchResults = mockCustomersList.filter(c => 
-        c.admin_id === adminId && (
-          c.name.toLowerCase().includes(query.toLowerCase()) ||
-          c.email.toLowerCase().includes(query.toLowerCase()) ||
-          c.phone.includes(query)
-        )
-      );
-
       return {
         data: {
-          success: true,
-          customers: searchResults,
+          data: filteredCustomers,
+          message: 'Customers retrieved successfully',
+          status: true
         }
       };
     }
-
-    if (endpoint.startsWith('/customer/') && !isNaN(endpoint.split('/')[2]) && endpoint.includes('/orders')) {
-      const customerId = parseInt(endpoint.split('/')[2]);
+    
+    // Handle /customer/show/{id} pattern
+    if (url.match(/^\/customer\/show\/\d+$/)) {
+      const id = parseInt(url.split('/').pop());
+      const customer = mockCustomersData.find(c => c.id === id);
       
-      // Mock orders for customer
-      const mockOrders = [
-        {
-          id: 1,
-          customer_id: customerId,
-          order_number: 'ORD-001',
-          total_amount: 359.96,
-          status: 'completed',
-          created_at: new Date(Date.now() - 86400000).toISOString(),
-        },
-      ];
-
-      return {
-        data: {
-          success: true,
-          orders: mockOrders,
+      if (customer) {
+        // Filter payment history by date if provided
+        let paymentHistory = [...mockPaymentHistory].filter(p => p.customer_id === id);
+        
+        if (config.params?.start_date && config.params?.end_date) {
+          const startDate = new Date(config.params.start_date);
+          const endDate = new Date(config.params.end_date);
+          paymentHistory = paymentHistory.filter(p => {
+            const pDate = new Date(p.date);
+            return pDate >= startDate && pDate <= endDate;
+          });
         }
-      };
-    }
-
-    if (endpoint.startsWith('/customer/') && !isNaN(endpoint.split('/')[2]) && endpoint.includes('/invoices')) {
-      const customerId = parseInt(endpoint.split('/')[2]);
-      
-      // Mock invoices for customer
-      const mockInvoices = [
-        {
-          id: 1,
-          customer_id: customerId,
-          invoice_number: 'INV-001',
-          total_amount: 359.96,
-          paid_amount: 359.96,
-          due_amount: 0,
-          status: 'paid',
-          created_at: new Date(Date.now() - 86400000).toISOString(),
-        },
-      ];
-
-      return {
-        data: {
-          success: true,
-          invoices: mockInvoices,
-        }
-      };
-    }
-
-    if (endpoint.startsWith('/customer/') && !isNaN(endpoint.split('/')[2]) && endpoint.includes('/stats')) {
-      const customerId = parseInt(endpoint.split('/')[2]);
-      
-      // Mock stats for customer
-      const totalOrders = 5;
-      const totalInvoices = 5;
-      const totalSpent = 2540.75;
-      const outstandingBalance = 150.00;
-
-      return {
-        data: {
-          success: true,
-          stats: {
-            totalOrders,
-            totalInvoices,
-            totalSpent,
-            outstandingBalance,
-          }
-        }
-      };
-    }
-
-    if (endpoint.startsWith('/customer/') && !isNaN(endpoint.split('/')[2]) && endpoint.includes('/balance')) {
-      const customerId = parseInt(endpoint.split('/')[2]);
-      
-      // Mock outstanding balance
-      const balance = customerId === 1 ? 150.00 : 0.00;
-
-      return {
-        data: {
-          success: true,
-          balance: balance,
-        }
-      };
-    }
-
-    if (endpoint.startsWith('/customer/') && !isNaN(endpoint.split('/')[2]) && endpoint.includes('/payments')) {
-      const customerId = parseInt(endpoint.split('/')[2]);
-      const payments = mockCustomerPayments.filter(p => p.customer_id === customerId);
-
-      return {
-        data: {
-          success: true,
-          payments: payments,
-        }
-      };
-    }
-
-    if (endpoint.startsWith('/customer/') && !isNaN(endpoint.split('/')[2]) && !endpoint.includes('/search') && !endpoint.includes('/export') && !endpoint.includes('/bulk-import') && !endpoint.includes('/orders') && !endpoint.includes('/invoices') && !endpoint.includes('/stats') && !endpoint.includes('/balance') && !endpoint.includes('/payments') && !endpoint.includes('/status')) {
-      const id = parseInt(endpoint.split('/')[2]);
-      const customer = mockCustomersList.find(c => c.id === id);
-      
-      if (!customer) {
-        throw {
-          response: {
-            data: { message: 'Customer not found' }
+        
+        return {
+          data: {
+            data: {
+              ...customer,
+              payment_history: paymentHistory
+            },
+            message: 'Customer retrieved successfully',
+            status: true
           }
         };
       }
-
+    }
+    
+    // Handle /customer/trashed
+    if (url === '/customer/trashed') {
+      const trashedCustomers = mockCustomersData.filter(c => c.deleted_at);
       return {
         data: {
-          success: true,
-          customer: customer,
+          data: trashedCustomers,
+          message: 'Trashed customers retrieved successfully',
+          status: true
         }
       };
     }
-
-    throw {
-      response: {
-        data: { message: 'Endpoint not found' }
-      }
-    };
+    
+    return { data: { data: null, message: 'Not found', status: false } };
   },
-
-  post: async (endpoint, data) => {
-    await new Promise(resolve => setTimeout(resolve, 400));
-
-    if (endpoint === '/customer/store') {
+  
+  post: async (url, data) => {
+    console.log('Mock POST:', url, data);
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    if (url === '/customer/store') {
       const newCustomer = {
-        id: mockCustomersList.length + 1,
-        ...data,
-        status: 'active',
+        id: mockCustomersData.length + 1,
+        admin_id: data.admin_id,
+        name: data.name,
+        email: data.email || '',
+        phone: data.phone,
+        address: data.address,
+        city: data.city || '',
+        due_amount: 0,
+        total_purchases: 0,
+        total_paid: 0,
+        created_by: data.created_by,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
+        deleted_at: null,
       };
-
-      mockCustomersList.push(newCustomer);
-
-      return {
-        data: {
-          success: true,
-          message: 'Customer created successfully',
-          customer: newCustomer,
-        }
-      };
-    }
-
-    if (endpoint.includes('/payment')) {
-      const customerId = parseInt(endpoint.split('/')[2]);
-      const newPayment = {
-        id: mockCustomerPayments.length + 1,
-        customer_id: customerId,
-        ...data,
-        created_at: new Date().toISOString(),
-      };
-
-      mockCustomerPayments.push(newPayment);
-
-      return {
-        data: {
-          success: true,
-          message: 'Payment added successfully',
-          payment: newPayment,
-        }
-      };
-    }
-
-    if (endpoint.includes('/bulk-import')) {
-      const adminId = parseInt(endpoint.split('/')[2]);
-      const { customers } = data;
       
-      const newCustomers = customers.map((customer, index) => ({
-        id: mockCustomersList.length + index + 1,
-        admin_id: adminId,
-        ...customer,
-        status: 'active',
-        created_at: new Date().toISOString(),
+      mockCustomersData.push(newCustomer);
+      
+      return {
+        data: {
+          data: newCustomer,
+          message: 'Customer created successfully',
+          status: true
+        }
+      };
+    }
+    
+    return { data: { data: null, message: 'Not found', status: false } };
+  },
+  
+  put: async (url, data) => {
+    console.log('Mock PUT:', url, data);
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    // Handle due payment
+    if (url.includes('/due-payment/')) {
+      const id = parseInt(url.split('/').pop());
+      const index = mockCustomersData.findIndex(c => c.id === id);
+      
+      if (index !== -1) {
+        mockCustomersData[index].due_amount += parseFloat(data.due_payment) || 0;
+        mockCustomersData[index].updated_at = new Date().toISOString();
+        
+        // Add to payment history
+        mockPaymentHistory.push({
+          id: mockPaymentHistory.length + 1,
+          customer_id: id,
+          amount: parseFloat(data.due_payment),
+          type: 'due_added',
+          date: new Date().toISOString(),
+          description: 'Due payment added',
+        });
+        
+        return {
+          data: {
+            data: mockCustomersData[index],
+            message: 'Due payment added successfully',
+            status: true
+          }
+        };
+      }
+    }
+    
+    // Handle regular update
+    const id = parseInt(url.split('/').pop());
+    const index = mockCustomersData.findIndex(c => c.id === id);
+    
+    if (index !== -1) {
+      mockCustomersData[index] = {
+        ...mockCustomersData[index],
+        name: data.name,
+        email: data.email || '',
+        phone: data.phone,
+        address: data.address,
+        city: data.city || '',
         updated_at: new Date().toISOString(),
-      }));
-
-      mockCustomersList.push(...newCustomers);
-
+      };
+      
       return {
         data: {
-          success: true,
-          message: `${newCustomers.length} customers imported successfully`,
-          customers: newCustomers,
-        }
-      };
-    }
-
-    throw {
-      response: {
-        data: { message: 'Endpoint not found' }
-      }
-    };
-  },
-
-  put: async (endpoint, data) => {
-    await new Promise(resolve => setTimeout(resolve, 400));
-
-    if (endpoint.startsWith('/customer/') && !endpoint.includes('/status')) {
-      const id = parseInt(endpoint.split('/')[2]);
-      const customerIndex = mockCustomersList.findIndex(c => c.id === id);
-
-      if (customerIndex === -1) {
-        throw {
-          response: {
-            data: { message: 'Customer not found' }
-          }
-        };
-      }
-
-      mockCustomersList[customerIndex] = { 
-        ...mockCustomersList[customerIndex], 
-        ...data, 
-        updated_at: new Date().toISOString() 
-      };
-
-      return {
-        data: {
-          success: true,
+          data: mockCustomersData[index],
           message: 'Customer updated successfully',
-          customer: mockCustomersList[customerIndex],
+          status: true
         }
       };
     }
-
-    throw {
-      response: {
-        data: { message: 'Endpoint not found' }
-      }
-    };
+    
+    throw { response: { data: { message: 'Customer not found', status: false } } };
   },
-
-  patch: async (endpoint, data) => {
-    await new Promise(resolve => setTimeout(resolve, 300));
-
-    if (endpoint.includes('/status')) {
-      const customerId = parseInt(endpoint.split('/')[2]);
-      const customerIndex = mockCustomersList.findIndex(c => c.id === customerId);
-
-      if (customerIndex === -1) {
-        throw {
-          response: {
-            data: { message: 'Customer not found' }
-          }
-        };
-      }
-
-      mockCustomersList[customerIndex].status = data.status;
-      mockCustomersList[customerIndex].updated_at = new Date().toISOString();
-
+  
+  patch: async (url) => {
+    console.log('Mock PATCH:', url);
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    // Handle restore
+    const id = parseInt(url.split('/').pop());
+    const index = mockCustomersData.findIndex(c => c.id === id);
+    
+    if (index !== -1) {
+      mockCustomersData[index].deleted_at = null;
+      mockCustomersData[index].updated_at = new Date().toISOString();
+      
       return {
         data: {
-          success: true,
-          message: 'Customer status updated successfully',
-          customer: mockCustomersList[customerIndex],
+          data: mockCustomersData[index],
+          message: 'Customer restored successfully',
+          status: true
         }
       };
     }
-
-    throw {
-      response: {
-        data: { message: 'Endpoint not found' }
-      }
-    };
+    
+    throw { response: { data: { message: 'Customer not found', status: false } } };
   },
-
-  delete: async (endpoint) => {
-    await new Promise(resolve => setTimeout(resolve, 300));
-
-    if (endpoint.startsWith('/customer/')) {
-      const id = parseInt(endpoint.split('/')[2]);
-      const customerIndex = mockCustomersList.findIndex(c => c.id === id);
-
-      if (customerIndex === -1) {
-        throw {
-          response: {
-            data: { message: 'Customer not found' }
+  
+  delete: async (url) => {
+    console.log('Mock DELETE:', url);
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    // Handle force delete
+    if (url.includes('/force')) {
+      const id = parseInt(url.split('/').slice(-2)[0]);
+      const index = mockCustomersData.findIndex(c => c.id === id);
+      
+      if (index !== -1) {
+        mockCustomersData.splice(index, 1);
+        
+        return {
+          data: {
+            data: null,
+            message: 'Customer permanently deleted',
+            status: true
           }
         };
       }
-
-      mockCustomersList.splice(customerIndex, 1);
-
+    }
+    
+    // Handle soft delete
+    const id = parseInt(url.split('/').pop());
+    const index = mockCustomersData.findIndex(c => c.id === id);
+    
+    if (index !== -1) {
+      mockCustomersData[index].deleted_at = new Date().toISOString();
+      
       return {
         data: {
-          success: true,
+          data: null,
           message: 'Customer deleted successfully',
+          status: true
         }
       };
     }
-
-    throw {
-      response: {
-        data: { message: 'Endpoint not found' }
-      }
-    };
-  },
+    
+    throw { response: { data: { message: 'Customer not found', status: false } } };
+  }
 };
-
-export { mockCustomers };

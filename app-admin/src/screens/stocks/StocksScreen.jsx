@@ -18,6 +18,7 @@ import { useStocks } from "../../hooks/useStocks";
 import Header from "../../components/common/Header";
 import StockFilters from "../../components/stocks/StockFilters";
 import StockList from "../../components/stocks/StockList";
+import { getNavigationItemsWithBadges } from "../../constants/navigationItems"; // Import the helper
 
 const StocksScreen = () => {
   const navigation = useNavigation();
@@ -104,7 +105,7 @@ const StocksScreen = () => {
       const now = Date.now();
       const timeSinceLastRefresh = now - lastRefreshTime.current;
       
-      if (timeSinceLastRefresh > 5000 || stocks.length === 0) {
+      if (timeSinceLastRefresh > 5000) {
         console.log('Refreshing stocks on focus...');
         stableRefresh();
       } else {
@@ -197,7 +198,7 @@ const StocksScreen = () => {
           style: "destructive",
           onPress: async () => {
             console.log('Deleting stock:', stockId);
-            const result = await deleteStock(stockId);
+            const result = await deleteStock(stockId, user?.id);
             console.log('Delete result:', result);
             
             if (result?.success) {
@@ -217,58 +218,18 @@ const StocksScreen = () => {
     await stableRefresh();
   };
 
-  // Navigation items for sidebar
-  const navigationItems = useMemo(() => [
-    {
-      id: "dashboard",
-      title: "Dashboard",
-      icon: "view-dashboard",
-      screen: "Dashboard",
-      badge: null,
-    },
-    {
-      id: "products",
-      title: "Products",
-      icon: "package-variant",
-      screen: "Products",
-      badge: "0",
-    },
-    {
-      id: "categories",
-      title: "Categories",
-      icon: "shape",
-      screen: "Categories",
-      badge: "0",
-    },
-    {
-      id: "stocks",
-      title: "Stocks",
-      icon: "warehouse",
-      screen: "Stocks",
-      badge: totalStocks.toString(),
-    },
-    {
-      id: "orders",
-      title: "Orders",
-      icon: "clipboard-list",
-      screen: "Orders",
-      badge: "0",
-    },
-    {
-      id: "customers",
-      title: "Customers",
-      icon: "account-group",
-      screen: "Customers",
-      badge: null,
-    },
-    {
-      id: "settings",
-      title: "Settings",
-      icon: "cog",
-      screen: "Settings",
-      badge: null,
-    },
-  ], [totalStocks]);
+  // Navigation items for sidebar - Using centralized navigation items
+  const navigationItems = useMemo(() => {
+    // Create badges for this screen
+    const badges = {
+      stocks: totalStocks.toString(),
+      inventory: lowStockCount > 0 ? lowStockCount.toString() : null,
+      // You can add other dynamic badges here if needed
+    };
+    
+    // Get navigation items with badges
+    return getNavigationItemsWithBadges(badges);
+  }, [totalStocks, lowStockCount]);
 
   // Show loading state
   if (loading && stocks.length === 0 && !refreshing) {
@@ -403,6 +364,9 @@ const StocksScreen = () => {
             className="rounded-xl p-4 flex-1 mr-2"
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
+            style={{
+              borderRadius:8
+            }}
           >
             <Text className="text-white/80 text-xs">Total Products</Text>
             <Text className="text-white text-2xl font-bold">{totalStocks}</Text>
