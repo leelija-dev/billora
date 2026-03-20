@@ -58,41 +58,38 @@ const HowItWorks = () => {
     ];
 
     return (
-        <div className="py-12 sm:py-16 md:py-14 lg:py-[60px] bg-gradient-to-br from-[#f8fafc] to-[#f1f5f9] min-h-screen font-sans overflow-x-hidden">
+        <div className="py-12 sm:py-16 md:py-20 lg:py-[60px] bg-gradient-to-br from-[#f8fafc] to-[#f1f5f9] min-h-screen font-sans overflow-x-hidden">
             <Container size="default">
                 
                 {/* Header Section */}
-                <div className="text-center mb-8 sm:mb-10 md:mb-8 lg:mb-[60px] px-4 sm:px-0">
+                <div className="text-center mb-8 sm:mb-10 md:mb-12 lg:mb-[60px] px-4 sm:px-0">
                     <SectionTitle title="How It Works" />
-                    <p className="text-[#475569] text-base sm:text-base md:text-base lg:text-xl max-w-[600px] mx-auto mt-4 sm:mt-6 md:mt-4 animate-[fadeInUp_0.8s_ease-out_0.2s_both] leading-relaxed px-2">
-                        {/* Tablet: md:text-sm (14px) */}
+                    <p className="text-[#475569] text-base sm:text-base md:text-lg lg:text-xl max-w-[600px] mx-auto mt-4 sm:mt-6 md:mt-8 lg:mt-4 animate-[fadeInUp_0.8s_ease-out_0.2s_both] leading-relaxed px-2">
                         Get started with Billora in three simple steps
                     </p>
                 </div>
 
                 {/* Top CTA Card */}
-                <div className="max-w-[900px] mx-auto mb-8 sm:mb-10 md:mb-8 lg:mb-16 animate-[fadeInUp_0.8s_ease-out_0.3s_both] px-4 sm:px-0">
-                    <div className="bg-gradient-to-br from-white to-[#f8fafc] rounded-lg sm:rounded-xl md:rounded-lg lg:rounded-[20px] p-6 sm:p-6 md:p-5 lg:p-[25px_35px] shadow-[0_15px_30px_rgba(0,0,0,0.05)] flex flex-col sm:flex-row items-center justify-between gap-4 sm:gap-4 md:gap-3 lg:gap-6 border border-[#3b82f61A] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_20px_35px_rgba(59,130,246,0.12)] hover:border-[#3b82f633]">
-                        <div className="flex-1 text-center sm:text-left w-full sm:w-auto">
-                            <h2 className="text-xl sm:text-xl md:text-lg lg:text-[22px] font-bold text-[#1e293b] mb-3 sm:mb-2.5 md:mb-2 lg:mb-3 tracking-[-0.3px]">
-                                {/* Tablet: md:text-lg (18px) */}
+                <div className="max-w-[900px] mx-auto mb-8 sm:mb-10 md:mb-12 lg:mb-16 animate-[fadeInUp_0.8s_ease-out_0.3s_both] px-4 sm:px-0">
+                    <div className="bg-gradient-to-br from-white to-[#f8fafc] rounded-lg sm:rounded-xl md:rounded-2xl lg:rounded-[20px] p-6 sm:p-6 md:p-8 lg:p-[25px_35px] shadow-[0_15px_30px_rgba(0,0,0,0.05)] flex flex-col sm:flex-row md:flex-row items-center justify-between gap-4 sm:gap-4 md:gap-6 lg:gap-6 border border-[#3b82f61A] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_20px_35px_rgba(59,130,246,0.12)] hover:border-[#3b82f633]">
+                        <div className="flex-1 text-center sm:text-left md:text-left w-full sm:w-auto">
+                            <h2 className="text-xl sm:text-xl md:text-2xl lg:text-[22px] font-bold text-[#1e293b] mb-3 sm:mb-2.5 md:mb-3 lg:mb-3 tracking-[-0.3px]">
                                 Start Your Journey Today
                             </h2>
-                            <p className="text-[#64748b] text-sm sm:text-sm md:text-xs lg:text-[15px] flex flex-col sm:flex-row items-center justify-center sm:justify-start gap-1 sm:gap-1.5">
-                                <span className="text-sm sm:text-sm md:text-xs opacity-70">✨</span>
+                            <p className="text-[#64748b] text-sm sm:text-sm md:text-base lg:text-[15px] flex flex-col sm:flex-row md:flex-row items-center justify-center sm:justify-start md:justify-start gap-1 sm:gap-1.5 md:gap-2">
+                                <span className="text-sm sm:text-sm md:text-base opacity-70">✨</span>
                                 <span>No credit card required • Free forever plan</span>
                             </p>
                         </div>
-                        <button className="w-full sm:w-auto px-6 sm:px-8 md:px-5 lg:px-10 py-3 sm:py-2.5 md:py-2 lg:py-3 bg-gradient-to-r from-[#3b82f6] to-[#2563eb] text-white border-none rounded-full text-sm sm:text-sm md:text-xs lg:text-[15px] font-semibold cursor-pointer transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] shadow-[0_8px_20px_rgba(59,130,246,0.25)] whitespace-nowrap relative overflow-hidden tracking-[0.3px] hover:-translate-y-1 hover:scale-105 hover:shadow-[0_15px_25px_rgba(59,130,246,0.35)] hover:bg-gradient-to-r hover:from-[#2563eb] hover:to-[#1d4ed8] active:translate-y-0 active:scale-98 before:content-[''] before:absolute before:top-0 before:left-[-100%] before:w-full before:h-full before:bg-gradient-to-r before:from-transparent before:via-white/20 before:to-transparent before:transition-all before:duration-500 hover:before:left-full">
-                            {/* Tablet: md:text-xs (12px) */}
+                        <button className="w-full sm:w-auto md:w-auto px-6 sm:px-8 md:px-8 lg:px-10 py-3 sm:py-2.5 md:py-3 lg:py-3 bg-gradient-to-r from-[#3b82f6] to-[#2563eb] text-white border-none rounded-full text-sm sm:text-sm md:text-base lg:text-[15px] font-semibold cursor-pointer transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] shadow-[0_8px_20px_rgba(59,130,246,0.25)] whitespace-nowrap relative overflow-hidden tracking-[0.3px] hover:-translate-y-1 hover:scale-105 hover:shadow-[0_15px_25px_rgba(59,130,246,0.35)] hover:bg-gradient-to-r hover:from-[#2563eb] hover:to-[#1d4ed8] active:translate-y-0 active:scale-98 before:content-[''] before:absolute before:top-0 before:left-[-100%] before:w-full before:h-full before:bg-gradient-to-r before:from-transparent before:via-white/20 before:to-transparent before:transition-all before:duration-500 hover:before:left-full">
                             Get Started Free
                         </button>
                     </div>
                 </div>
-
+ 
                 {/* Steps Section */}
                 <div className="w-full relative px-4 sm:px-0">
-                    <div className="relative flex flex-col lg:flex-row justify-between items-stretch gap-8 sm:gap-6 md:gap-4 lg:gap-[30px] py-6 sm:py-8 md:py-6 lg:py-[60px]">
+                    <div className="relative flex flex-col lg:flex-row justify-between items-stretch gap-8 sm:gap-6 md:gap-8 lg:gap-[30px] py-6 sm:py-8 md:py-10 lg:py-[60px]">
 
                         {/* Desktop Horizontal Line */}
                         <div className="hidden lg:block absolute bottom-[200px] left-0 right-0 h-1 bg-gray-200 z-[1] rounded overflow-hidden">
@@ -113,48 +110,43 @@ const HowItWorks = () => {
                                 style={{ transitionDelay: `${0.1 + index * 0.2}s` }}
                             >
                                 <div
-                                    className="bg-white rounded-lg sm:rounded-xl md:rounded-lg lg:rounded-[30px] p-6 sm:p-6 md:p-4 lg:p-[45px_30px_35px] shadow-[0_10px_25px_rgba(0,0,0,0.06)] md:shadow-[0_10px_20px_rgba(0,0,0,0.06)] lg:shadow-[0_20px_40px_rgba(0,0,0,0.08)] relative transition-all duration-400 ease-[cubic-bezier(0.34,1.56,0.64,1)] border border-black/5 h-full w-full flex flex-col items-center text-center hover:-translate-y-2 hover:scale-105 hover:shadow-[0_30px_60px_rgba(59,130,246,0.15)] group"
+                                    className="bg-white rounded-lg sm:rounded-xl md:rounded-2xl lg:rounded-[30px] p-6 sm:p-6 md:p-8 lg:p-[45px_30px_35px] shadow-[0_10px_25px_rgba(0,0,0,0.06)] md:shadow-[0_15px_30px_rgba(0,0,0,0.08)] lg:shadow-[0_20px_40px_rgba(0,0,0,0.08)] relative transition-all duration-400 ease-[cubic-bezier(0.34,1.56,0.64,1)] border border-black/5 h-full w-full flex flex-col items-center text-center hover:-translate-y-2 hover:scale-105 hover:shadow-[0_30px_60px_rgba(59,130,246,0.15)] group"
                                     style={{ '--step-color': step.color }}
                                 >
                                     {/* Circle Number Badge */}
                                     <div
-                                        className="absolute -top-5 sm:-top-6 md:-top-4 lg:-top-5 left-1/2 lg:left-6 transform lg:transform-none -translate-x-1/2 lg:translate-x-0 w-10 h-10 sm:w-12 sm:h-12 md:w-8 md:h-8 lg:w-[50px] lg:h-[50px] rounded-full flex items-center justify-center text-white font-bold text-base sm:text-lg md:text-xs lg:text-xl shadow-[0_8px_16px_rgba(0,0,0,0.1)] md:shadow-[0_4px_8px_rgba(0,0,0,0.1)] lg:shadow-[0_10px_20px_rgba(0,0,0,0.1)] border-3 border-white z-[3] animate-[pulse_2s_infinite] flex-shrink-0"
+                                        className="absolute -top-5 sm:-top-6 md:-top-7 lg:-top-5 left-1/2 lg:left-6 transform lg:transform-none -translate-x-1/2 lg:translate-x-0 w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 lg:w-[50px] lg:h-[50px] rounded-full flex items-center justify-center text-white font-bold text-base sm:text-lg md:text-xl lg:text-xl shadow-[0_8px_16px_rgba(0,0,0,0.1)] md:shadow-[0_10px_20px_rgba(0,0,0,0.15)] lg:shadow-[0_10px_20px_rgba(0,0,0,0.1)] border-3 border-white z-[3] animate-[pulse_2s_infinite] flex-shrink-0"
                                         style={{ background: step.color }}
                                     >
-                                        {/* Tablet: md:text-xs (12px) */}
                                         <span>{step.number}</span>
                                     </div>
 
-                                    {/* Icon Circle */}
+                                    {/* Icon Circle */} 
                                     <div
-                                        className="w-16 h-16 sm:w-16 sm:h-16 md:w-12 md:h-12 lg:w-[90px] lg:h-[90px] rounded-full flex items-center justify-center mb-4 sm:mb-4 md:mb-2 lg:mb-6 text-3xl sm:text-3xl md:text-xl lg:text-5xl transition-all duration-300 group-hover:scale-110 group-hover:rotate-5 mt-4 sm:mt-4 md:mt-3 lg:mt-6"
+                                        className="w-16 h-16 sm:w-16 sm:h-16 md:w-20 md:h-20 lg:w-[90px] lg:h-[90px] rounded-full flex items-center justify-center mb-4 sm:mb-4 md:mb-6 lg:mb-6 text-3xl sm:text-3xl md:text-4xl lg:text-5xl transition-all duration-300 group-hover:scale-110 group-hover:rotate-5 mt-4 sm:mt-4 md:mt-6 lg:mt-6"
                                         style={{ background: `${step.color}15` }}
                                     >
-                                        {/* Tablet: md:text-xl (20px) */}
                                         <span>{step.icon}</span>
                                     </div>
 
                                     {/* Title */}
-                                    <h3 className="text-xl sm:text-lg md:text-base lg:text-2xl font-bold text-[#1e293b] mb-3 sm:mb-3 md:mb-2 lg:mb-5 relative inline-block after:content-[''] after:absolute after:bottom-[-6px] sm:after:bottom-[-8px] md:after:bottom-[-4px] lg:after:bottom-[-8px] after:left-1/2 after:-translate-x-1/2 after:w-6 sm:after:w-8 md:after:w-5 lg:after:w-10 after:h-[2px] sm:after:h-[3px] md:after:h-[2px] lg:after:h-[3px] after:bg-[var(--step-color)] after:opacity-50 after:transition-all after:duration-300 group-hover:after:w-12 md:group-hover:after:w-8 lg:group-hover:after:w-[60px]">
-                                        {/* Tablet: md:text-base (16px) */}
+                                    <h3 className="text-xl sm:text-lg md:text-2xl lg:text-2xl font-bold text-[#1e293b] mb-3 sm:mb-3 md:mb-4 lg:mb-5 relative inline-block after:content-[''] after:absolute after:bottom-[-6px] sm:after:bottom-[-8px] md:after:bottom-[-8px] lg:after:bottom-[-8px] after:left-1/2 after:-translate-x-1/2 after:w-6 sm:after:w-8 md:after:w-10 lg:after:w-10 after:h-[2px] sm:after:h-[3px] md:after:h-[3px] lg:after:h-[3px] after:bg-[var(--step-color)] after:opacity-50 after:transition-all after:duration-300 group-hover:after:w-12 md:group-hover:after:w-16 lg:group-hover:after:w-[60px]">
                                         {step.title}
                                     </h3>
 
                                     {/* Description */}
-                                    <p className="text-sm sm:text-sm md:text-xs lg:text-[15px] text-[#475569] leading-relaxed sm:leading-[1.5] md:leading-[1.4] lg:leading-[1.7] mb-4 sm:mb-4 md:mb-2 lg:mb-6 flex-grow px-2">
-                                        {/* Tablet: md:text-xs (12px) */}
+                                    <p className="text-sm sm:text-sm md:text-base lg:text-[15px] text-[#475569] leading-relaxed sm:leading-[1.5] md:leading-[1.6] lg:leading-[1.7] mb-4 sm:mb-4 md:mb-6 lg:mb-6 flex-grow px-2">
                                         {step.description}
                                     </p>
 
                                     {/* Button */}
                                     <button
-                                        className="px-6 sm:px-6 md:px-3 lg:px-[30px] py-3 sm:py-2 md:py-1 lg:py-3 border-none rounded-full text-white font-semibold text-sm sm:text-sm md:text-[10px] lg:text-[15px] cursor-pointer transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] w-full max-w-[160px] sm:max-w-[160px] md:max-w-[100px] lg:max-w-[180px] mt-2 sm:mt-3 md:mt-1 lg:mt-6 relative overflow-hidden hover:-translate-y-1 hover:scale-105 hover:shadow-[0_10px_25px_rgba(0,0,0,0.2)] active:translate-y-0 active:scale-95 before:content-[''] before:absolute before:top-0 before:left-[-100%] before:w-full before:h-full before:bg-gradient-to-r before:from-transparent before:via-white/20 before:to-transparent before:transition-all before:duration-500 hover:before:left-full"
+                                        className="px-6 sm:px-6 md:px-8 lg:px-[30px] py-3 sm:py-2 md:py-3 lg:py-3 border-none rounded-full text-white font-semibold text-sm sm:text-sm md:text-base lg:text-[15px] cursor-pointer transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] w-full max-w-[160px] sm:max-w-[160px] md:max-w-[180px] lg:max-w-[180px] mt-2 sm:mt-3 md:mt-4 lg:mt-6 relative overflow-hidden hover:-translate-y-1 hover:scale-105 hover:shadow-[0_10px_25px_rgba(0,0,0,0.2)] active:translate-y-0 active:scale-95 before:content-[''] before:absolute before:top-0 before:left-[-100%] before:w-full before:h-full before:bg-gradient-to-r before:from-transparent before:via-white/20 before:to-transparent before:transition-all before:duration-500 hover:before:left-full"
                                         style={{
                                             background: step.color,
                                             boxShadow: `0 5px 15px ${step.color}40`
                                         }}
                                     >
-                                        {/* Tablet: md:text-[10px] (10px) */}
                                         {step.buttonText}
                                     </button>
                                 </div>

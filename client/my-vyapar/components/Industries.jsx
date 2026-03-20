@@ -29,7 +29,7 @@ const INDUSTRY_DATA = [
     tag: "Growth",
     title: "Empower Growth",
     description: "Scale your business with powerful accounting tools that provide deep insights into your financial health.",
-    buttonText: "Scale Now",
+    buttonText: "Learn More",
     buttonLink: "/solutions/growth",
     icon: "📈",
     color: "#6366f1",
@@ -41,7 +41,7 @@ const INDUSTRY_DATA = [
     tag: "Compliance",
     title: "GSTR Filing",
     description: "Simplify GST returns with automated filing systems that ensure accuracy and save hours of manual work.",
-    buttonText: "Start Filing",
+    buttonText: "Learn More",
     buttonLink: "/solutions/gstr",
     icon: "📑",
     color: "#7bb2cc",
@@ -53,7 +53,7 @@ const INDUSTRY_DATA = [
     tag: "Operations",
     title: "Unite Industries",
     description: "Connect all your business operations seamlessly in one unified platform, from inventory to final sale.",
-    buttonText: "Connect All",
+    buttonText: "Learn More",
     buttonLink: "/solutions/unite",
     icon: "🔗",
     color: "#4b5563",
@@ -65,7 +65,7 @@ const INDUSTRY_DATA = [
     tag: "Reach",
     title: "Expand Reach",
     description: "Grow your customer base with professional digital invoices and integrated payment gateways.",
-    buttonText: "Grow Reach",
+    buttonText: "Learn More",
     buttonLink: "/solutions/expand",
     icon: "🌍",
     color: "#4b22c5",
@@ -267,7 +267,7 @@ const CardContent = ({ item }) => (
         </span>
       </div>
 
-      <h3 className="text-4xl lg:text-[64px] font-[900] text-[#0f172a] mb-6 leading-[1.1] tracking-[-0.04em]">
+      <h3 className="text-2xl sm:text-2xl md:text-xl lg:text-[30px] font-[900] text-[#0f172a] mb-6 leading-[1.1] tracking-[-0.04em]">
         {item.title}
       </h3>
 

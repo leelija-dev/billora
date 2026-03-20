@@ -162,6 +162,6 @@ fontSize: {
                 },
             });
         },
-        // REMOVED: require("tailwind-clip-path"),
+        
     ],
 };

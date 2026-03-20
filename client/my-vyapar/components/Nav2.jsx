@@ -91,10 +91,16 @@ const Nav2 = () => {
           >
             Contact Us
           </Link>
+           <Link
+            href="/order"
+            className="text-slate-500 font-medium text-sm transition-colors hover:text-blue-600 border-b-2 border-transparent hover:border-blue-600 pb-1"
+          >
+            Orders
+          </Link>
 
           {/* CTA Buttons */}
           {/* Cart Button - Desktop */}
-          <button
+          {/* <button
             onClick={goToCart}
             className="hidden lg:flex items-center gap-2 px-3 py-2 hover:bg-gray-100 rounded-lg transition-colors relative group"
           >
@@ -107,7 +113,7 @@ const Nav2 = () => {
                 {cartCount}
               </span>
             )}
-          </button>
+          </button> */}
 
           <Link
             href="/login"
@@ -194,16 +200,23 @@ const Nav2 = () => {
           >
             Contact Us
           </Link>
+            <Link
+            href="/order"
+            className="block py-3 text-slate-500 font-medium text-sm border-b border-slate-100 hover:text-blue-600"
+            onClick={() => setIsMenuOpen(false)}
+          >
+            orders
+          </Link>
 
           {/* Mobile CTA Buttons */}
           <div className="flex flex-col gap-3 mt-4">
-            <Link
+            {/* <Link
               href="/bookdemo"
               className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-br from-blue-500 to-purple-600 text-white rounded-full font-semibold text-sm transition-all hover:-translate-y-0.5"
               onClick={() => setIsMenuOpen(false)}
             >
               Book free demo
-            </Link>
+            </Link> */}
             <Link
               href="/login"
               className="w-full px-6 py-3 bg-blue-600 text-white rounded-full font-semibold text-sm transition-all hover:bg-blue-700 flex items-center justify-center"
