@@ -1,3 +1,10 @@
+// JUST USED A DUMMY API ''FOR CHECKING THE PRICE PAGE LAYOUT ALOS ADDED IN THE COMPONENT PRICING PAGE AS WELL
+// JUST USED A DUMMY API ''FOR CHECKING THE PRICE PAGE LAYOUT ALOS ADDED IN THE COMPONENT PRICING PAGE AS WELL
+// JUST USED A DUMMY API ''FOR CHECKING THE PRICE PAGE LAYOUT ALOS ADDED IN THE COMPONENT PRICING PAGE AS WELL
+// JUST USED A DUMMY API ''FOR CHECKING THE PRICE PAGE LAYOUT ALOS ADDED IN THE COMPONENT PRICING PAGE AS WELL
+// JUST USED A DUMMY API ''FOR CHECKING THE PRICE PAGE LAYOUT ALOS ADDED IN THE COMPONENT PRICING PAGE AS WELL
+// JUST USED A DUMMY API ''FOR CHECKING THE PRICE PAGE LAYOUT ALOS ADDED IN THE COMPONENT PRICING PAGE AS WELL
+// JUST USED A DUMMY API ''FOR CHECKING THE PRICE PAGE LAYOUT ALOS ADDED IN THE COMPONENT PRICING PAGE AS WELL
 "use client";
 
 import React, { useEffect, useRef, useState } from 'react';
@@ -6,7 +13,156 @@ import Container from "../components/Container";
 
 const Pricing = () => {
   const [billingCycle, setBillingCycle] = useState('monthly');
+  const [plans, setPlans] = useState([]);
+  const [loading, setLoading] = useState(true);
   const cardRefs = useRef([]);
+
+  useEffect(() => {
+    const fetchPricingData = async () => {
+      try {
+        // Fetch from dummy API
+        const response = await fetch('https://fakestoreapi.com/products');
+        const products = await response.json();
+        
+        // Sort products by price to create tiered plans
+        const sortedProducts = [...products].sort((a, b) => a.price - b.price);
+        
+        // Calculate price ranges for 3 tiers
+        const minPrice = sortedProducts[0].price;
+        const maxPrice = sortedProducts[sortedProducts.length - 1].price;
+        const range = maxPrice - minPrice;
+        const tierSize = range / 3;
+        
+        // Group products into 3 tiers
+        const basicTier = sortedProducts.filter(p => p.price <= minPrice + tierSize);
+        const proTier = sortedProducts.filter(p => p.price > minPrice + tierSize && p.price <= minPrice + (tierSize * 2));
+        const enterpriseTier = sortedProducts.filter(p => p.price > minPrice + (tierSize * 2));
+        
+        // Calculate average price for each tier
+        const avgBasicPrice = basicTier.reduce((sum, p) => sum + p.price, 0) / basicTier.length;
+        const avgProPrice = proTier.reduce((sum, p) => sum + p.price, 0) / proTier.length;
+        const avgEnterprisePrice = enterpriseTier.reduce((sum, p) => sum + p.price, 0) / enterpriseTier.length;
+        
+        // Get unique categories for each tier
+        const basicCategories = [...new Set(basicTier.map(p => p.category))];
+        const proCategories = [...new Set(proTier.map(p => p.category))];
+        const enterpriseCategories = [...new Set(enterpriseTier.map(p => p.category))];
+        
+        // Get sample products for features
+        const basicSample = basicTier[0];
+        const proSample = proTier[Math.floor(proTier.length / 2)];
+        const enterpriseSample = enterpriseTier[enterpriseTier.length - 1];
+        
+        // Create exactly 3 plans matching your design
+        const transformedPlans = [
+          {
+            name: 'Basic',
+            price: {
+              monthly: Math.round(avgBasicPrice).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ","),
+              yearly: Math.round(avgBasicPrice * 10).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")
+            },
+            description: `Perfect for ${basicCategories[0]?.split('-').join(' ') || 'small'} businesses`,
+            features: [
+              `Access to ${basicTier.length} premium products`,
+              `Categories: ${basicCategories.slice(0, 2).join(', ')}`,
+              `Featured: ${basicSample?.title.substring(0, 25)}...`,
+              `Avg rating: ${(basicTier.reduce((sum, p) => sum + p.rating.rate, 0) / basicTier.length).toFixed(1)} ★`,
+              `Email support`,
+              `Basic inventory tracking`
+            ],
+            color: '#000000',
+            buttonText: 'Start Basic',
+            popular: false,
+            productCount: basicTier.length
+          },
+          {
+            name: 'Pro',
+            price: {
+              monthly: Math.round(avgProPrice).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ","),
+              yearly: Math.round(avgProPrice * 10).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")
+            },
+            description: `Ideal for ${proCategories[0]?.split('-').join(' ') || 'growing'} businesses`,
+            features: [
+              `Access to ${proTier.length} premium products`,
+              `Categories: ${proCategories.slice(0, 3).join(', ')}`,
+              `Featured: ${proSample?.title.substring(0, 25)}...`,
+              `Avg rating: ${(proTier.reduce((sum, p) => sum + p.rating.rate, 0) / proTier.length).toFixed(1)} ★`,
+              `Priority support`,
+              `Advanced analytics`,
+              `API access`,
+              `Custom reports`
+            ],
+            color: '#8b5cf6',
+            buttonText: 'Start Pro',
+            popular: true,
+            productCount: proTier.length
+          },
+          {
+            name: 'Enterprise',
+            price: {
+              monthly: Math.round(avgEnterprisePrice).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ","),
+              yearly: Math.round(avgEnterprisePrice * 10).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")
+            },
+            description: `For ${enterpriseCategories[0]?.split('-').join(' ') || 'enterprise'} organizations`,
+            features: [
+              `Access to ${enterpriseTier.length} premium products`,
+              `Categories: ${enterpriseCategories.slice(0, 4).join(', ')}`,
+              `Featured: ${enterpriseSample?.title.substring(0, 25)}...`,
+              `Avg rating: ${(enterpriseTier.reduce((sum, p) => sum + p.rating.rate, 0) / enterpriseTier.length).toFixed(1)} ★`,
+              `24/7 phone support`,
+              `Dedicated manager`,
+              `Custom integrations`,
+              `SLA guarantee`,
+              `On-premise option`
+            ],
+            color: '#000000',
+            buttonText: 'Contact Sales',
+            popular: false,
+            productCount: enterpriseTier.length
+          }
+        ];
+        
+        setPlans(transformedPlans);
+        setLoading(false);
+        
+      } catch (error) {
+        console.error('Error fetching pricing:', error);
+        // Fallback to static data if API fails
+        setPlans([
+          {
+            name: 'Basic',
+            price: { monthly: '999', yearly: '9,999' },
+            description: 'Perfect for small businesses just getting started',
+            features: ['Up to 100 invoices/month', 'Basic GST reports', 'Single user', 'Email support', 'Cloud backup', 'Basic inventory'],
+            color: '#000000',
+            buttonText: 'Start Basic',
+            popular: false
+          },
+          {
+            name: 'Pro',
+            price: { monthly: '1,999', yearly: '19,999' },
+            description: 'Ideal for growing businesses with advanced needs',
+            features: ['Unlimited invoices', 'Advanced GST reports', 'Up to 5 users', 'Priority support', 'Advanced inventory', 'Multi-user access', 'API access', 'Custom reports'],
+            color: '#8b5cf6',
+            buttonText: 'Start Pro',
+            popular: true
+          },
+          {
+            name: 'Enterprise',
+            price: { monthly: '3,999', yearly: '39,999' },
+            description: 'For large organizations with custom requirements',
+            features: ['Unlimited everything', 'Custom integrations', 'Unlimited users', '24/7 phone support', 'Dedicated manager', 'SLA guarantee', 'Custom training', 'On-premise option'],
+            color: '#000000',
+            buttonText: 'Contact Sales',
+            popular: false
+          }
+        ]);
+        setLoading(false);
+      }
+    };
+
+    fetchPricingData();
+  }, []);
 
   useEffect(() => {
     const observerOptions = {
@@ -22,44 +178,29 @@ const Pricing = () => {
       });
     }, observerOptions);
 
-    cardRefs.current.forEach((ref) => {
-      if (ref) {
-        observer.observe(ref);
-      }
-    });
+    // Re-run observer when plans change
+    setTimeout(() => {
+      cardRefs.current.forEach((ref) => {
+        if (ref) {
+          observer.observe(ref);
+        }
+      });
+    }, 100);
 
     return () => observer.disconnect();
-  }, []);
+  }, [plans]);
 
-  const plans = [
-    {
-      name: 'Basic',
-      price: { monthly: '999', yearly: '9,999' },
-      description: 'Perfect for small businesses just getting started',
-      features: ['Up to 100 invoices/month', 'Basic GST reports', 'Single user', 'Email support', 'Cloud backup', 'Basic inventory'],
-      color: '#000000',
-      buttonText: 'Start Basic',
-      popular: false
-    },
-    {
-      name: 'Pro',
-      price: { monthly: '1,999', yearly: '19,999' },
-      description: 'Ideal for growing businesses with advanced needs',
-      features: ['Unlimited invoices', 'Advanced GST reports', 'Up to 5 users', 'Priority support', 'Advanced inventory', 'Multi-user access', 'API access', 'Custom reports'],
-      color: '#8b5cf6',
-      buttonText: 'Start Pro',
-      popular: true
-    },
-    {
-      name: 'Enterprise',
-      price: { monthly: '3,999', yearly: '39,999' },
-      description: 'For large organizations with custom requirements',
-      features: ['Unlimited everything', 'Custom integrations', 'Unlimited users', '24/7 phone support', 'Dedicated manager', 'SLA guarantee', 'Custom training', 'On-premise option'],
-      color: '#000000',
-      buttonText: 'Contact Sales',
-      popular: false
-    }
-  ];
+  // Loading state
+  if (loading) {
+    return (
+      <div className="py-10 sm:py-[60px] md:py-12 lg:py-[60px] bg-gradient-to-br from-[#f8fafc] to-[#f1f5f9] min-h-screen font-sans flex items-center justify-center">
+        <div className="text-center">
+          <div className="inline-block w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+          <p className="mt-4 text-gray-600">Loading pricing plans...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="py-10 sm:py-[60px] md:py-12 lg:py-[60px] bg-gradient-to-br from-[#f8fafc] to-[#f1f5f9] min-h-screen font-sans">
@@ -69,9 +210,9 @@ const Pricing = () => {
         <div className="text-center mb-8 sm:mb-10 md:mb-8 lg:mb-12 px-4 sm:px-0">
           <SectionTitle title="Simple, Transparent Pricing" />
           <p className="text-[#475569] text-base sm:text-lg md:text-sm lg:text-xl max-w-[600px] mx-auto mt-4 sm:mt-6 md:mt-3 lg:mt-4">
-            {/* Tablet: md:text-sm (14px) */}
             Choose the perfect plan for your business
           </p>
+          <p className="text-xs text-[#8b5cf6] mt-1">Based on {plans[0]?.productCount + plans[1]?.productCount + plans[2]?.productCount || 20} products</p>
         </div>
 
         {/* Toggle */}
@@ -94,7 +235,7 @@ const Pricing = () => {
           </button>
         </div>
 
-        {/* Pricing Cards */}
+        {/* Pricing Cards - Exactly 3 cards */}
         <div className="w-full px-4 sm:px-0">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-4 lg:gap-8 mb-10 items-stretch">
             {plans.map((plan, index) => (
@@ -121,6 +262,9 @@ const Pricing = () => {
                     <span className="text-base sm:text-lg md:text-xs lg:text-lg text-[#64748b]">/{billingCycle === 'monthly' ? 'mo' : 'yr'}</span>
                   </div>
                   <p className="text-sm sm:text-sm md:text-[10px] lg:text-base text-[#64748b] leading-relaxed px-2">{plan.description}</p>
+                  {plan.productCount && (
+                    <p className="text-xs text-[#8b5cf6] mt-1">{plan.productCount} products included</p>
+                  )}
                 </div>
 
                 <div className="flex-1 mb-8 md:mb-4 lg:mb-8">
@@ -156,15 +300,27 @@ const Pricing = () => {
             ))}
           </div>
 
-          {/* GUARANTEE BOX */}
-          <div className="flex flex-row items-center justify-center gap-3 p-4 sm:p-5 md:p-2 lg:p-5 bg-white rounded-[50px] max-w-[500px] md:max-w-[350px] lg:max-w-[500px] mt-12 sm:mt-16 md:mt-10 lg:mt-16 mx-auto shadow-[0_5px_20px_rgba(0,0,0,0.04)] border border-[#e2e8f0]">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="flex-shrink-0 w-6 h-6 md:w-4 md:h-4 lg:w-6 lg:h-6">
-              <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="#3b82f6" strokeWidth="2" />
-              <path d="M12 6V12L16 14" stroke="#3b82f6" strokeWidth="2" strokeLinecap="round" />
-            </svg>
-            <span className="text-sm sm:text-sm md:text-[9px] lg:text-base text-[#475569] font-medium leading-tight">
-              30-day money-back guarantee • No questions asked
-            </span>
+          {/* Bottom Section - View All Plans and Guarantee in ONE ROW */}
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-8 mb-4 px-4">
+            {/* View All Plans Button - Left Side */}
+            <a 
+              href="/pricing" 
+              className="group inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-full font-semibold text-sm shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 w-full sm:w-auto justify-center"
+            >
+              <span>View All Plans</span>
+              <span className="group-hover:translate-x-1 transition-transform">→</span>
+            </a>
+
+            {/* GUARANTEE BOX - Right Side */}
+            <div className="flex flex-row items-center justify-center gap-3 p-4 sm:p-5 md:p-2 lg:p-5 bg-white rounded-[50px] shadow-[0_5px_20px_rgba(0,0,0,0.04)] border border-[#e2e8f0] w-full sm:w-auto">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="flex-shrink-0 w-6 h-6 md:w-4 md:h-4 lg:w-6 lg:h-6">
+                <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="#3b82f6" strokeWidth="2" />
+                <path d="M12 6V12L16 14" stroke="#3b82f6" strokeWidth="2" strokeLinecap="round" />
+              </svg>
+              <span className="text-sm sm:text-sm md:text-[9px] lg:text-base text-[#475569] font-medium leading-tight">
+                30-day money-back guarantee • No questions asked
+              </span>
+            </div>
           </div>
         </div>
       </Container>
