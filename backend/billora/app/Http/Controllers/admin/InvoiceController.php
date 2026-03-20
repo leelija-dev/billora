@@ -28,6 +28,13 @@ class InvoiceController extends Controller
                 ]);
             }
             $user = Auth::user()->id;
+             $customer =  Customers::findOrFail($user);
+            if($customer->plan_id == null || $customer->is_active == false){
+                return response()->json([
+                    'status' => false,
+                    'message' =>'You do not have any active plan. Please upgrade your plan.'
+                ]);
+            }
         $products = Products::where('user_id', $user)->with(['brand', 'category', 'unit', 'stocks'])
             ->where('is_active', true)
             ->whereHas('stocks')
@@ -58,6 +65,7 @@ class InvoiceController extends Controller
                 'message' => 'Authentication required. Please login first.'
             ]);
         }
+        
         $request->validate([
             "user_id"       => 'required',
             "customer_id"   => 'required|exists:bill_customer,id',
@@ -67,7 +75,13 @@ class InvoiceController extends Controller
         ]);
 
         DB::beginTransaction();
-
+        $customer =  Customers::findOrFail($request->user_id);
+        if($customer->plan_id == null || $customer->is_active == false){
+                return response()->json([
+                    'status' => false,
+                    'message' =>'You do not have any active plan. Please upgrade your plan.'
+                ]);
+        }
         try {
 
             $items = $request->items;
@@ -181,11 +195,17 @@ class InvoiceController extends Controller
     try {
 
         $userId = Auth::user()->id;
-
+        $customer =  Customers::findOrFail($userId);
+        if($customer->plan_id == null || $customer->is_active == false){
+                return response()->json([
+                    'status' => false,
+                    'message' =>'You do not have any active plan. Please upgrade your plan.'
+                ]);
+        }
         $bill = Invoice::with('invoiceItems')
             ->where('user_id', $userId)
             ->where('id', $id)
-            ->first();
+            ->first();  
 
         if (!$bill) {
             return response()->json([
@@ -259,6 +279,13 @@ class InvoiceController extends Controller
             ]);
         }
        $user = Auth::user()->id;
+       $customer =  Customers::findOrFail($user);
+        if($customer->plan_id == null || $customer->is_active == false){
+                return response()->json([
+                    'status' => false,
+                    'message' =>'You do not have any active plan. Please upgrade your plan.'
+                ]);
+        }
        $products = Products::with(['brand', 'category', 'unit'])
             ->where('is_active', true)
             ->where('user_id', $id)
@@ -285,7 +312,13 @@ class InvoiceController extends Controller
         ]);
 
         DB::beginTransaction();
-
+        $customer =  Customers::findOrFail($request->user_id);
+        if($customer->plan_id == null || $customer->is_active == false){
+                return response()->json([
+                    'status' => false,
+                    'message' =>'You do not have any active plan. Please upgrade your plan.'
+                ]);
+        }
         try {
 
             $items = $request->items;

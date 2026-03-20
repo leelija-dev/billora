@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use App\Models\BillCustomer;
 use App\Models\BillPaymentHistory;
 use Illuminate\Support\Facades\Auth;
+use App\Models\Customers;
 class BillCustomerController extends Controller
 {
     public function index(Request $request, $id)
@@ -61,6 +62,14 @@ class BillCustomerController extends Controller
                 'message' => 'Unauthorized, You are not allowed to perform this action,logged in user not mathched with our data',
             ]);
         }
+        //check active plan
+         $customer =  Customers::findOrFail($user);
+        if($customer->plan_id == null || $customer->is_active == false){
+                return response()->json([
+                    'status' => false,
+                    'message' =>'You do not have any active plan. Please upgrade your plan.'
+                ]);
+        }
         try {
             $billCustomer = BillCustomer::create($data);
             return response()->json([
@@ -78,6 +87,14 @@ class BillCustomerController extends Controller
     public function show($id){
         try{
             $user = Auth::user()->id;   
+            //check active plan
+             $customer =  Customers::findOrFail($user);
+            if($customer->plan_id == null || $customer->is_active == false){
+                    return response()->json([
+                        'status' => false,
+                        'message' =>'You do not have any active plan. Please upgrade your plan.'
+                    ]);
+            }
             $billCustomer = BillCustomer::where('id', $id)->where('admin_id', $user)->first();
              // $billCustomer = BillCustomer::with('paymentHistories')->findOrFail($id);
             $query = BillPaymentHistory::where('admin_id', $user)->where('customer_id', $billCustomer->id);
@@ -121,6 +138,15 @@ class BillCustomerController extends Controller
         ]);
         try {
         $user = Auth::user()->id;
+        //check active plan
+         $customer =  Customers::findOrFail($user);
+        if($customer->plan_id == null || $customer->is_active == false){
+                return response()->json([
+                    'status' => false,
+                    'message' =>'You do not have any active plan. Please upgrade your plan.'
+                ]);
+        }
+        //check user
         if($user != $data['user_id']){
             return response()->json([
                 'status' =>true,
@@ -149,6 +175,15 @@ class BillCustomerController extends Controller
             'user_id' => 'required',
         ]);
         $user = Auth::user()->id;
+        //check active plan 
+         $customer =  Customers::findOrFail($user);
+        if($customer->plan_id == null || $customer->is_active == false){
+                return response()->json([
+                    'status' => false,
+                    'message' =>'You do not have any active plan. Please upgrade your plan.'
+                ]);
+        }
+        //check user
         if($user != $data['user_id']){
             return response()->json([
                 'status' => false,
@@ -185,6 +220,15 @@ class BillCustomerController extends Controller
         ]);
         try {
             $user = Auth::user()->id;
+            // check active plan 
+            $customer =  Customers::findOrFail($user);
+            if($customer->plan_id == null || $customer->is_active == false){
+                    return response()->json([
+                        'status' => false,
+                        'message' =>'You do not have any active plan. Please upgrade your plan.'
+                    ]);
+            }
+            //check user
             if($user != $data['user_id']){
                 return response()->json([
                     'status' =>false,
@@ -214,6 +258,14 @@ class BillCustomerController extends Controller
     public function forceDelete($id){
         try {
             $user = Auth::user()->id;
+            //check active plan
+             $customer =  Customers::findOrFail($user);
+            if($customer->plan_id == null || $customer->is_active == false){
+                    return response()->json([
+                        'status' => false,
+                        'message' =>'You do not have any active plan. Please upgrade your plan.'
+                    ]);
+            }
             $billCustomer = BillCustomer::withTrashed()->where('admin_id',$user)->where('id',$id)->first();
             if($billCustomer->isEmpty()){
                 return response()->json([
@@ -239,6 +291,15 @@ class BillCustomerController extends Controller
             'due_payment' => 'required'
         ]);
         $user =Auth::user()->id;
+        //check active plan
+         $customer =  Customers::findOrFail($user);
+        if($customer->plan_id == null || $customer->is_active == false){
+                return response()->json([
+                    'status' => false,
+                    'message' =>'You do not have any active plan. Please upgrade your plan.'
+                ]);
+        }
+        //check user authentication
         if(!Auth::check()){
             return response()->json([
                 'status' => false,

@@ -28,6 +28,7 @@ Route::prefix('users')->group(function () {
 
    Route::post('/store', [CustomerController::class, 'store']);
    Route::post('/login', [CustomerController::class, 'login']);
+   
    // Route::get
    //    Route::post('/logout', [CustomerController::class, 'logout']);
    Route::middleware('auth:sanctum')->post('/logout', [CustomerController::class, 'logout']);
