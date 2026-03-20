@@ -592,268 +592,172 @@
 
 <body>
     @include('admin.sidebar')
+    
     <div class="card" style="bg:white;">
         <div class="main-content">
+            <div class="grid grid-cols-1 gap-4 mb-6">
 
-            <!-- Page Header -->
-            {{-- <div class="page-header">
-            <div class="header-left">
-                <h1>Customer Management</h1>
-                <p>Manage your customers and their information <span>Total: {{ count($customers) }} customers</span></p>
+                <div class="bg-white shadow rounded-xl p-6">
+
+                    <!-- Customer Name -->
+                    <h1 class="text-2xl md:text-3xl font-bold text-gray-800 mb-2">
+                        {{ $customer->name  ?? ''}}
+                    </h1>
+
+                    <!-- Customer Info -->
+                    <div class="space-y-1 " style="font-size: 12px;" >
+
+                        <p>
+                            <span class="font-semibold  " ></span>
+                            {{ $customer->email ?? ''}}
+                        </p>
+
+                        <p>
+                            <span class="font-semibold text-gray-700 text-sm" ></span>
+                            {{ $customer->phone ?? '' }}
+                        </p>
+
+                    </div>
+                    
+                    <div class="mt-4">
+    <a href="{{ url()->previous() }}" 
+       class="inline-flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-blue-600">
+
+        <!-- Arrow Icon -->
+        <svg xmlns="http://www.w3.org/2000/svg" 
+             class="w-5 h-5" 
+             fill="none" 
+             viewBox="0 0 24 24" 
+             stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                  d="M15 19l-7-7 7-7" />
+        </svg>
+
+        Back
+    </a>
+</div>
+                </div>
+                    
             </div>
-            <div class="header-right">
-                <div class="search-box">
-                    <svg viewBox="0 0 24 24">
-                        <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
-                    </svg>
-                    <input type="text" placeholder="Search customers..." id="searchInput">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+
+                <div class="bg-white rounded-lg shadow p-6 border-l-4 border-blue-500">
+                    <h3 class="text-blue-500 font-semibold"><strong>Total Plans </strong></h3>
+                    <p class="text-2xl font-bold mt-1 text-blue-600">{{ count($plans) }}</p>
+                </div>
+                <div class="bg-white rounded-lg shadow p-6 border-l-4 border-green-500">
+                    <h3 class="text-gray-500  text-green-600"><strong>Active Plans </strong></h3>
+                    <p class="text-2xl font-bold mt-1 text-green-600">
+                        {{ $plans->where('status', 'active')->count() }}
+                    </p>
                 </div>
                 
-            </div>
-        </div> --}}
 
-            <!-- Stats Cards -->
-            {{-- <div class="stats-grid"> --}}
-            {{-- @php
-                $activeCount = count(array_filter($customers, function($c) { return $c['status'] === 'active'; }));
-                $pendingCount = count(array_filter($customers, function($c) { return $c['status'] === 'pending'; }));
-                $totalRevenue = array_sum(array_map(function($c) { 
-                    return (float) str_replace(['$', ','], '', $c['revenue']); 
-                }, $customers));
-            @endphp --}}
+               <div class="bg-white rounded-lg shadow p-6 border-l-4 border-yellow-500">
+                    <h3 class="text-gray-500  text-yellow-600"><strong>Pending Payments </strong></h3>
+                    <p class="text-2xl font-bold mt-1 text-yellow-600">
+                        {{ $plans->where('payment_status', 'pending')->count() }}
+                    </p>
+                </div>
 
-            {{-- <div class="stat-card">
-                <div class="stat-info">
-                    <h3>Total Customers</h3>
-                    <div class="stat-number">{{ count($customers) }}</div>
-                </div>
-                <div class="stat-icon">
-                    <svg viewBox="0 0 24 24">
-                        <path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-1 .05 1.16.84 2 1.87 2 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/>
-                    </svg>
-                </div>
             </div>
-            
-            <div class="stat-card">
-                <div class="stat-info">
-                    <h3>Active</h3>
-                    <div class="stat-number"></div>
-                </div>
-                <div class="stat-icon">
-                    <svg viewBox="0 0 24 24">
-                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
-                    </svg>
-                </div>
-            </div>
-            
-            <div class="stat-card">
-                <div class="stat-info">
-                    <h3>Pending</h3>
-                    <div class="stat-number"></div>
-                </div>
-                <div class="stat-icon">
-                    <svg viewBox="0 0 24 24">
-                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
-                    </svg>
-                </div>
-            </div>
-            
-            <div class="stat-card">
-                <div class="stat-info">
-                    <h3>Revenue</h3>
-                    <div class="stat-number"></div>
-                </div>
-                <div class="stat-icon">
-                    <svg viewBox="0 0 24 24">
-                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1.5 15h-3v-2h3v2zm3-6.5c-.29.39-.71.73-1.26 1.01-.41.21-.75.47-.98.74-.22.27-.34.57-.34.95v.3h-3v-.3c0-.66.18-1.26.54-1.78.36-.52.89-.93 1.59-1.23.42-.18.73-.39.92-.62.19-.23.28-.48.28-.77 0-.3-.12-.56-.35-.78-.23-.22-.55-.33-.94-.33-.4 0-.73.12-.97.35-.24.23-.39.53-.45.9l-2.92-.37c.09-.7.4-1.3.91-1.78.51-.48 1.22-.73 2.1-.73.96 0 1.75.25 2.35.75.6.5.9 1.13.9 1.91 0 .53-.17 1-.51 1.42z"/>
-                    </svg>
-                </div>
-            </div>
-        </div> --}}
-
-            <!-- Tabs -->
-            {{-- <div class="tabs-section">
-            <button class="tab-btn active">All</button>
-            <button class="tab-btn">Active</button>
-            <button class="tab-btn">Pending</button>
-            <button class="tab-btn">Inactive</button>
-        </div> --}}
-
             <!-- Customers Table -->
             <div class="table-container">
                 <div class="flex items-center justify-between m-4">
 
                     <!-- Left: Title -->
-                    <h2 class="table-title text-xl font-semibold">Customers</h2>
-
-                    <!-- Right: Search -->
-                    <div class="search-box flex items-center  rounded px-2">
-                        <svg viewBox="0 0 24 24" class="w-5 h-5 text-gray-500">
-                            <path
-                                d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z" />
-                        </svg>
-
-                        <input type="text" placeholder="Search customers..." id="searchInput"
-                            class="outline-none px-2 py-1">
-                    </div>
-
+                    <h2 class="table-title text-xl font-semibold">Plans History</h2>
+                                 
                 </div>
 
                 <table class="customers-table">
                     <thead>
                         <tr>
-                            <th>Sl. No</th>
-                            <th>Customer</th>
+                            <th>Plan Id</th>
+                            <th>Plan Name</th>
                             <th>Status</th>
-                            <th>Revenue</th>
-                            <th class="text-center">Joined</th>
-                             <th>Plans</th>
-                            <th>Actions</th>
+                            <th>Price</th>
+                            <th>Payment Method</th>
+                            <th>Payment Status </th>
+                            <th>Start Date</th>
+                            <th class="text-center">End Date</th>
+                            <th>Date</th>
                         </tr>
                     </thead>
                     <tbody>
-                        @if (isset($customers) && count($customers) > 0)
-                            @foreach ($customers as $customer)
+                        @if (isset($plans) && count($plans) > 0)
+                            @foreach ($plans as $plan)
                                 <tr>
                                     <td class="text-center">
-                                        {{ $loop->iteration + ($customers->currentPage() - 1) * $customers->perPage() }}
+                                        {{ $plan->id }}
                                     </td>
                                     <td>
                                         <div class="customer-info">
 
                                             <div class="customer-details">
-                                                <span class="customer-name">{{ $customer['name'] }}</span>
-                                                <span class="customer-email">{{ $customer['email'] }}</span>
+                                                <span class="customer-name">{{ ucfirst($plan->plan?->name ?? '') }}</span>
+                                                
                                             </div>
                                         </div>
                                     </td>
                                     <td class="text-center">
-
+                                        @php
+                                          $planStatus = strtolower(trim($plan->status ?? ''));
+                                        @endphp
+                                        <span class="px-2 py-1 text-sm font-semibold rounded
+                                            {{ $planStatus == 'expired' ? 'bg-yellow-100 text-yellow-800' : 
+                                            ($planStatus == 'active' ? 'bg-green-100 text-green-800' : 
+                                            ($planStatus == 'cancelled' ? 'bg-red-100 text-red-800' : 
+                                            'bg-blue-100 text-blue-800')) }}">
+                                            {{ ucfirst($planStatus) }}
+                                        </span>
+                                    </td>
+                                    <td class="text-center">
+                                          {{config('app.app_currency')}}{{ $plan->price ?? '' }}  
                                     </td>
                                     
-                                    <td class="text-center"><strong></strong></td>
-                                    <td class="text-center">{{ $customer['created_at']->format('d M Y h:i A') }}</td>
+                                    
                                     <td class="text-center">
-                                        <a href="{{route('admin.customers.plans',$customer->id)}}">
-                                            <button class="action-btn" title="Notifications">
-                                                <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
-                                                    <path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6V11c0-3.07-1.63-5.64-4.5-6.32V4a1.5 1.5 0 0 0-3 0v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/>
-                                                </svg>
-                                            </button>
-                                        </a>
+                                        {{ $plan->payment_method ?? '' }}
                                     </td>
                                     <td class="text-center">
-                                        <div class="action-buttons">
-                                            <button class="action-btn" onclick="viewCustomer({{ $customer['id'] }})"
-                                                title="View">
-                                                <svg viewBox="0 0 24 24">
-                                                    <path
-                                                        d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z" />
-                                                </svg>
-                                            </button>
-                                            <button class="action-btn" onclick="editCustomer({{ $customer['id'] }})"
-                                                title="Edit">
-                                                <svg viewBox="0 0 24 24">
-                                                    <path
-                                                        d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 5.63l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83c.39-.39.39-1.02 0-1.41z" />
-                                                </svg>
-                                            </button>
-                                        </div>
+                                        @php
+                                          $status = strtolower(trim($plan->payment_status ?? ''));
+                                        @endphp
+
+                                        <span class="px-2 py-1 text-sm font-semibold rounded
+                                            {{ $status == 'pending' ? 'bg-yellow-100 text-yellow-800' : 
+                                            ($status == 'success' ? 'bg-green-100 text-green-800' : 
+                                            ($status == 'failed' ? 'bg-red-100 text-red-800' : 
+                                            'bg-blue-100 text-blue-800')) }}">
+                                            {{ ucfirst($status) }}
+                                        </span>
+                                    </td>
+                                    <td class="text-center">{{ $plan->start_date->format('d-m-Y') ?? '' }}</td>
+                                    <td class="text-center">{{ $plan->end_date->format('d-m-Y') ?? '' }}</td>
+                                    <td class="text-center">
+                                        {{ $plan->created_at->format('M d, Y h:i A') ?? '' }}
                                     </td>
                                 </tr>
                             @endforeach
                         @else
                             <tr>
-                                <td colspan="6" style="text-align: center; padding: 48px; color: #94a3b8;">
-                                    No customers found.
+                                <td colspan="8" style="text-align: center; padding: 48px; color: #94a3b8;">
+                                    No plans found!
                                 </td>
                             </tr>
                         @endif
                     </tbody>
                 </table>
                 <div class="pagination flex justify-end mt-4">
-                    {{ $customers->links('pagination::tailwind') }}
+                    {{-- {{ $plans->links('pagination::tailwind') }} --}}
                 </div>
             </div>
 
 
-            <!-- Pagination -->
-            {{-- <div class="pagination">
-            <div class="pagination-info">
-                Showing <strong>1</strong> to <strong>2</strong> of <strong>{{ count($customers) }}</strong> customers
-            </div>
-            <div class="pagination-controls">
-                <button class="page-btn prev disabled">
-                    <svg viewBox="0 0 24 24">
-                        <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
-                    </svg>
-                    Previous
-                </button>
-                <button class="page-btn active">1</button>
-                <button class="page-btn next disabled">
-                    Next
-                    <svg viewBox="0 0 24 24">
-                        <path d="M8.59 16.59L10 18l6-6-6-6-1.41 1.41L13.17 12z"/>
-                    </svg>
-                </button>
-            </div>
-        </div> --}}
         </div>
     </div>
-    <script>
-        // Simple view function
-        function viewCustomer(id) {
-            alert('View customer: ' + id);
-        }
-
-        function editCustomer(id) {
-            alert('Edit customer: ' + id);
-        }
-
-        // Search functionality
-        document.getElementById('searchInput').addEventListener('input', function(e) {
-            const searchTerm = e.target.value.toLowerCase();
-            const rows = document.querySelectorAll('.customers-table tbody tr');
-
-            rows.forEach(row => {
-                if (row.cells.length > 1) {
-                    const name = row.querySelector('.customer-name')?.textContent.toLowerCase() || '';
-                    const email = row.querySelector('.customer-email')?.textContent.toLowerCase() || '';
-
-                    if (name.includes(searchTerm) || email.includes(searchTerm)) {
-                        row.style.display = '';
-                    } else {
-                        row.style.display = 'none';
-                    }
-                }
-            });
-        });
-
-        // Tab functionality
-        document.querySelectorAll('.tab-btn').forEach(btn => {
-            btn.addEventListener('click', function() {
-                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-                this.classList.add('active');
-
-                const filter = this.textContent.toLowerCase();
-                const rows = document.querySelectorAll('.customers-table tbody tr');
-
-                rows.forEach(row => {
-                    if (row.cells.length > 1) {
-                        const statusCell = row.cells[1]?.querySelector('.status-badge');
-                        if (statusCell) {
-                            const status = statusCell.textContent.toLowerCase();
-                            if (filter === 'all' || status === filter) {
-                                row.style.display = '';
-                            } else {
-                                row.style.display = 'none';
-                            }
-                        }
-                    }
-                });
-            });
-        });
-    </script>
+   
 </body>
 
 </html>

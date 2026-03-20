@@ -5,6 +5,8 @@ namespace App\Http\Controllers\admin\superadmin;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Customers;
+use App\Models\PlanPurchaseHistory;
+
 class CustomerController extends Controller
 {
    public function index(Request $request)
@@ -25,5 +27,10 @@ class CustomerController extends Controller
     $customers = $query->paginate(15)->withQueryString();
 
     return view('admin.customers.index', compact('customers'));
+}
+public function plans($id){
+      $customer = Customers::find($id);
+      $plans = PlanPurchaseHistory::with('plan')->where('user_id',$id)->get();
+    return view('admin.customers.customer_plan',compact('customer','plans','id'));
 }
 }

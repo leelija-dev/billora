@@ -20,7 +20,11 @@ class PlanPurchaseHistory extends Model
         'payment_method'
     ];
     protected $casts = [
-        'status' =>'enum:active,expired,cancelled',
-        'payment_status'=>'enum:pending,success,failed'
+        'start_date' => 'date',
+        'end_date' => 'date',
     ];
+
+    public function plan(){
+        return $this->belongsTo(Plans::class ,'plan_id');
+    }
 }
