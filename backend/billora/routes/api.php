@@ -15,7 +15,7 @@ use App\Http\Controllers\admin\CategoriesController;
 use App\Http\Controllers\admin\DashboardController;
 use App\Http\Controllers\admin\CartsController;
 use App\Http\Controllers\admin\ReportController;
-
+use App\Http\Controllers\admin\PlanPurchaseHistoryController;
 Route::get('/test', function () {
    return response()->json([
       'message' => 'Hello World',
@@ -156,4 +156,7 @@ Route::prefix('dashboard')->group(function (){
 
 Route::middleware('auth:sanctum')->prefix('reports')->group(function () {
    Route::get('/', [ReportController::class, 'index']);
+});
+Route::middleware('auth:sanctum')->prefix('plans-purchase-history')->group(function () {
+   Route::get('/{id}', [PlanPurchaseHistoryController::class, 'index']);
 });

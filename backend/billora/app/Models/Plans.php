@@ -29,5 +29,19 @@ class Plans extends Model
         'duration_days'=>'integer',
         'price'=>'decimal:2'
     ];
-    
+    public function planPermissions(){
+        return $this->hasMany(PlanPermission::class);
+    }
+    public function planPermissionDetails(){
+        return $this->hasMany(PlanPermissionDetails::class);
+    }
+    public function permissions()
+{
+    return $this->belongsToMany(
+        PlanPermission::class,
+        'plan_permission_details', // pivot table
+        'plan_id',
+        'permission_id'
+    );
+}
 }
