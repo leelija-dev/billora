@@ -45,6 +45,7 @@ Route::prefix('users')->group(function () {
 //Products
 Route::middleware('auth:sanctum')->prefix('products')->group(function () {
    Route::get('/', [ProductsController::class, 'index']); //all products
+   Route::get('/create/{id}', [ProductsController::class, 'create']);  // product create page data(brand,unit,category)
    Route::post('/store', [ProductsController::class, 'store']); //store product
    Route::get('/{id}', [ProductsController::class, 'show']); //single product
    Route::put('/{id}', [ProductsController::class, 'update']); // update product

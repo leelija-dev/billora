@@ -51,6 +51,7 @@ class StocksController extends Controller
     public function create(){
         try{
         $user = Auth::user()->id;
+    
         $products = Products::where('user_id', $user)->get();
         $units = Unit::where('user_id', $user)->get();
         return response()->json([
