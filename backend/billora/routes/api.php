@@ -26,7 +26,7 @@ Route::prefix('users')->group(function () {
    //    Route::get('/', [CustomerController::class, 'index']);
    Route::middleware('auth:sanctum')->get('/', [CustomerController::class, 'index']);
 
-   Route::post('/store', [CustomerController::class, 'store']);
+   Route::post('/register', [CustomerController::class, 'store']);
    Route::post('/login', [CustomerController::class, 'login']);
    
    // Route::get
