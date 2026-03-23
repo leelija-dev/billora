@@ -61,7 +61,7 @@ class PlansController extends Controller
             'is_active'     =>'required',
             'duration_days' =>'required',
             'currency'      =>'nullable',
-            'permission'    =>'nullable|array',
+            'permissions'    =>'nullable|array',
         ]);
         $admin = Auth::guard('admin')->user();
         
@@ -71,8 +71,8 @@ class PlansController extends Controller
         try{
             $plan = Plans::create($data);
             if($plan){
-                foreach($data['permission'] as $permission){
-                    PlanPermission::create([
+                foreach($data['permissions'] as $permission){
+                    PlanPermissionDetails::create([
                         'plan_id' => $plan->id,
                         'permission_id' => $permission
                     ]);

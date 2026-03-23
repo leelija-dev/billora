@@ -178,7 +178,7 @@
                                                 </div>
                                                 <div class="ml-4">
                                                     <div class="text-sm font-medium text-gray-900">{{ $plan->name }}</div>
-                                                    <div class="text-sm text-gray-500">{{ $plan->description ?? ' ' }}</div>
+                                                    <div class="text-sm text-gray-500">{!! $plan->description ?? ' ' !!}</div>
                                                 </div>
                                             </div>
                                         </td>

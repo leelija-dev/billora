@@ -19,7 +19,8 @@ protected $fillable=[
         'email',
         'phone',
         'password',
-        'email_varified_at',
+        'email_verified_at',
+        'verification_token',
         'remember_token',
         'company_name',
         'gst_number',
@@ -36,6 +37,9 @@ protected $hidden = [
         'password',
         'remember_token'
     ];
+     protected $casts = [
+        'email_verified_at' => 'datetime',
+    ];
 
 public function plan()
     {
@@ -48,7 +52,7 @@ public function plan()
             return collect([]);
         }
  
-        return \App\Models\PlanPermissionDetail::with('permission')
+        return \App\Models\PlanPermissionDetails::with('permission')
             ->where('plan_id', $this->plan_id)
             ->where('is_active', true)
             ->get()
@@ -62,11 +66,32 @@ public function plan()
             return false;
         }
  
-        return \App\Models\PlanPermissionDetail::where('plan_id', $this->plan_id)
+        return \App\Models\PlanPermissionDetails::where('plan_id', $this->plan_id)
             ->whereHas('permission', function($query) use ($permissionKey) {
                 $query->where('key', $permissionKey);
             })
             ->where('is_active', true)
             ->exists();
     }
+    
+ 
+    // Implement MustVerifyEmail interface methods
+    public function hasVerifiedEmail()
+    {
+        return !is_null($this->email_verified_at);
+    }
+ 
+    public function markEmailAsVerified()
+    {
+        return $this->forceFill([
+            'email_verified_at' => now(),
+            'verification_token' => null,
+        ])->save();
+    }
+ 
+    public function getEmailForVerification()
+    {
+        return $this->email;
+    }
+
 }
