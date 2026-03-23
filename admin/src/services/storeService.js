@@ -1,29 +1,33 @@
 import { apiClient } from './apiClient';
 
 export const storeAPI = {
-  // Get store by user ID
+  // Get store/shop by user ID
   getByUserId: (userId, search = '') => {
     const params = search ? { search } : {}
     return apiClient.get(`/store/${userId}`, { params })
   },
 
-  // Create store
+  // Register/save store/shop
   create: (storeData) => {
     return apiClient.post('/store/store', storeData)
   },
 
-  // Get single store for editing
-  getById: (id) => {
-    return apiClient.get(`/store/edit/${id}`)
+  // Edit/show shop (POST method)
+  getEditData: (userId) => {
+    return apiClient.post(`/store/edit/${userId}`)
   },
 
-  // Update store
+  // Update shop
   update: (id, storeData) => {
     return apiClient.put(`/store/${id}`, storeData)
   },
 
-  // Delete store
+  // Delete shop
   delete: (id) => {
     return apiClient.delete(`/store/${id}`)
   },
 }
+
+// Export as default for consistency
+const storeService = storeAPI
+export default storeService

@@ -11,6 +11,7 @@ import Register from '../pages/auth/Register'
 import Dashboard from '../pages/dashboard/Dashboard'
 import Products from '../pages/products/Products'
 import Units from '../pages/units/Units'
+import Stores from '../pages/stores/Stores'
 import Inventory from '../pages/inventory/Inventory'
 import Orders from '../pages/orders/Orders'
 import Customers from '../pages/customers/Customers'
@@ -38,6 +39,7 @@ const AppRoutes = () => {
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/products" element={<Products />} />
           <Route path="/units" element={<Units />} />
+          <Route path="/stores" element={<Stores />} />
           <Route path="/stock" element={<Inventory />} />
           <Route path="/orders" element={<Orders />} />
           <Route path="/customers" element={<Customers />} />
