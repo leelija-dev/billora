@@ -13,6 +13,7 @@ import {
   FiClock,
   FiAlertCircle
 } from 'react-icons/fi'
+import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useInvoiceStore } from '../../store/invoiceStore'
 import Button from '../../components/common/Button/Button'
@@ -23,8 +24,10 @@ import Select from '../../components/common/Select/Select'
 import InvoiceTable from '../../components/features/Invoices/InvoiceTable'
 import InvoiceForm from '../../components/features/Invoices/InvoiceForm'
 import InvoiceModal from '../../components/features/Invoices/InvoiceModal'
+import BillGenerateForm from '../../components/features/Invoices/BillGenerateForm'
 
 const Invoices = () => {
+  const navigate = useNavigate()
   const {
     invoices,
     totalInvoices,
@@ -36,7 +39,7 @@ const Invoices = () => {
     createInvoice,
     updateInvoice,
     deleteInvoice,
-    markAsPaid,
+    fetchBillGenerateData,
     setFilters,
   } = useInvoiceStore()
 
@@ -49,6 +52,7 @@ const Invoices = () => {
   const [formSubmitting, setFormSubmitting] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [invoiceToDelete, setInvoiceToDelete] = useState(null)
+  const [showBillGenerate, setShowBillGenerate] = useState(false)
 
   useEffect(() => {
     fetchInvoices()
@@ -160,15 +164,20 @@ const Invoices = () => {
     setFilters({ search: '', status: '' })
   }
 
+  const handleBillGenerate = () => {
+    navigate('/invoice')
+  }
+
   // Calculate stats
   const stats = {
     total: invoices?.length || 0,
+    completed: invoices?.filter(i => i.status === 'completed').length || 0,
     paid: invoices?.filter(i => i.status === 'paid').length || 0,
     unpaid: invoices?.filter(i => i.status === 'unpaid').length || 0,
     overdue: invoices?.filter(i => i.status === 'overdue').length || 0,
-    totalAmount: invoices?.reduce((sum, i) => sum + (i.total || 0), 0) || 0,
-    paidAmount: invoices?.filter(i => i.status === 'paid').reduce((sum, i) => sum + (i.total || 0), 0) || 0,
-    unpaidAmount: invoices?.filter(i => i.status === 'unpaid' || i.status === 'overdue').reduce((sum, i) => sum + (i.total || 0), 0) || 0,
+    totalAmount: invoices?.reduce((sum, i) => sum + (parseFloat(i.total_amount) || 0), 0) || 0,
+    paidAmount: invoices?.filter(i => i.status === 'completed' || i.status === 'paid').reduce((sum, i) => sum + (parseFloat(i.paid_amount) || 0), 0) || 0,
+    unpaidAmount: invoices?.filter(i => i.status !== 'completed' && i.status !== 'paid').reduce((sum, i) => sum + (parseFloat(i.total_amount) || 0), 0) || 0,
   }
 
   const StatCard = ({ title, value, icon: Icon, color, subtitle, delay }) => (
@@ -296,14 +305,14 @@ const Invoices = () => {
             />
             <StatCard
               title="Total Amount"
-              value={`$${stats.totalAmount.toFixed(2)}`}
+              value={`₹${stats.totalAmount.toFixed(2)}`}
               icon={FiDollarSign}
               color="from-purple-500 to-indigo-500"
               delay={0.5}
             />
             <StatCard
               title="Outstanding"
-              value={`$${stats.unpaidAmount.toFixed(2)}`}
+              value={`₹${stats.unpaidAmount.toFixed(2)}`}
               icon={FiDollarSign}
               color="from-red-500 to-orange-500"
               subtitle={`${((stats.unpaidAmount / stats.totalAmount) * 100 || 0).toFixed(1)}% of total`}
@@ -324,13 +333,22 @@ const Invoices = () => {
             transition={{ duration: 0.3 }}
             className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6"
           >
-            <InvoiceForm
-              initialData={editInvoice}
-              mode={formMode}
-              onSubmit={formMode === 'add' ? handleAddSubmit : handleEditSubmit}
-              onCancel={handleCancelForm}
-              isSubmitting={formSubmitting}
-            />
+            {formMode === 'add' ? (
+              <BillGenerateForm
+                mode={formMode}
+                onSubmit={handleAddSubmit}
+                onCancel={handleCancelForm}
+                isSubmitting={formSubmitting}
+              />
+            ) : (
+              <InvoiceForm
+                initialData={editInvoice}
+                mode={formMode}
+                onSubmit={handleEditSubmit}
+                onCancel={handleCancelForm}
+                isSubmitting={formSubmitting}
+              />
+            )}
           </motion.div>
         )}
       </AnimatePresence>
@@ -558,6 +576,54 @@ const Invoices = () => {
                     className="flex-1"
                   >
                     Delete
+                  </Button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Bill Generate Modal */}
+      <AnimatePresence>
+        {showBillGenerate && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+            onClick={() => setShowBillGenerate(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full p-6"
+              onClick={e => e.stopPropagation()}
+            >
+              <div className="text-center">
+                <div className="w-16 h-16 bg-green-100 dark:bg-green-900/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <FaReceipt className="w-8 h-8 text-green-600 dark:text-green-400" />
+                </div>
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
+                  Bill Generation
+                </h3>
+                <p className="text-gray-600 dark:text-gray-400 mb-6">
+                  Generate bills with stock management integration. This will open the bill generation page where you can create new invoices with product selection and stock management.
+                </p>
+                <div className="flex space-x-3">
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowBillGenerate(false)}
+                    className="flex-1"
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={() => window.open('/invoice', '_blank')}
+                    className="flex-1"
+                  >
+                    Open Bill Generator
                   </Button>
                 </div>
               </div>

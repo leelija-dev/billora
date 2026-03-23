@@ -19,6 +19,8 @@ import {
   FiGrid,
 } from 'react-icons/fi';
 import { motion, AnimatePresence } from 'framer-motion';
+import { FaStore } from 'react-icons/fa';
+import { TbRuler2 } from "react-icons/tb";
 
 const Sidebar = () => {
   const { sidebarOpen, toggleSidebar, isMobile, setIsMobile } = useUIStore();
@@ -47,8 +49,8 @@ const Sidebar = () => {
     { path: '/dashboard', name: 'Dashboard', icon: FiHome, badge: null },
     { path: '/products', name: 'Products', icon: FiPackage, badge: null },
     { path: '/categories', name: 'Categories', icon: FiGrid, badge: null },
-    { path: '/units', name: 'Units', icon: FiBox, badge: null },
-    { path: '/stores', name: 'Stores', icon: FiPackage, badge: null },
+    { path: '/units', name: 'Units', icon: TbRuler2, badge: null },
+    { path: '/stores', name: 'Stores', icon: FaStore, badge: null },
     { path: '/stock', name: 'Stock', icon: FiArchive, badge: 'Low Stock' },
     { path: '/orders', name: 'Orders', icon: FiShoppingBag, badge: '12' },
     { path: '/customers', name: 'Customers', icon: FiUsers, badge: null },
