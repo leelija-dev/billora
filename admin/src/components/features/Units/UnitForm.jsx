@@ -2,27 +2,58 @@ import React, { useState, useEffect } from 'react'
 import Input from '../../common/Input/Input'
 import Button from '../../common/Button/Button'
 import { motion } from 'framer-motion'
+import { useAuthStore } from '../../../store/authStore'
 
 const UnitForm = ({ initialData, onSubmit, onCancel, isSubmitting = false }) => {
+  const { user } = useAuthStore()
+  
+  // Get current user ID
+  const getUserId = () => {
+    const authData = localStorage.getItem('auth')
+    if (authData) {
+      try {
+        const parsed = JSON.parse(authData)
+        return parsed.user?.id || parsed.userId || '1'
+      } catch {
+        return '1'
+      }
+    }
+    return '1'
+  }
+
+  const currentUserId = getUserId()
+
   const [formData, setFormData] = useState({
     code: '',
     name: '',
-    user_id: '', // This should come from auth context
-    created_by: '', // This should come from auth context
+    user_id: '',
+    created_by: '',
   })
 
   const [errors, setErrors] = useState({})
+
+  // Auto-populate user_id and created_by from auth context
+  useEffect(() => {
+    if (!initialData) {
+      // For new units, pre-populate with current user
+      setFormData(prev => ({
+        ...prev,
+        user_id: currentUserId,
+        created_by: currentUserId,
+      }))
+    }
+  }, [initialData, currentUserId])
 
   useEffect(() => {
     if (initialData) {
       setFormData({
         code: initialData.code || '',
         name: initialData.name || '',
-        user_id: initialData.user_id || '',
-        created_by: initialData.created_by || '',
+        user_id: initialData.user_id || currentUserId,
+        created_by: initialData.created_by || currentUserId,
       })
     }
-  }, [initialData])
+  }, [initialData, currentUserId])
 
   const handleChange = (e) => {
     const { name, value } = e.target
@@ -51,7 +82,8 @@ const UnitForm = ({ initialData, onSubmit, onCancel, isSubmitting = false }) => 
       newErrors.name = 'Unit name is required'
     }
     
-    if (!formData.user_id.trim()) {
+    // user_id might be a number, so check differently
+    if (!formData.user_id || formData.user_id === '') {
       newErrors.user_id = 'User ID is required'
     }
     
@@ -101,17 +133,9 @@ const UnitForm = ({ initialData, onSubmit, onCancel, isSubmitting = false }) => 
         />
       </div>
 
-      <Input
-        label="User ID"
-        name="user_id"
-        value={formData.user_id}
-        onChange={handleChange}
-        placeholder="Enter user ID"
-        error={errors.user_id}
-        required
-        disabled={isSubmitting}
-        type="number"
-      />
+      {/* Hidden fields for user_id and created_by */}
+      <input type="hidden" name="user_id" value={formData.user_id} />
+      <input type="hidden" name="created_by" value={formData.created_by} />
 
       <div className="flex items-center justify-end space-x-4 pt-6 border-t border-gray-200 dark:border-gray-700">
         <motion.div

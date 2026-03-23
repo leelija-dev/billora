@@ -14,18 +14,25 @@ const useUnitStore = create((set, get) => ({
 
   // Fetch units
   fetchUnits: async (page = 1, filters = {}) => {
+    console.log('fetchUnits called with:', page, filters)
     set({ loading: true, error: null })
     try {
       const response = await unitsAPI.getAll(page, filters)
+      console.log('API Response in store:', response)
+      console.log('Units data:', response.data.data.data)
+      const unitsArray = response.data.data.data || []
+      const paginationData = response.data.data || {}
       set({
-        units: response.data.data || [],
-        totalUnits: response.data.total || 0,
-        currentPage: response.data.current_page || 1,
-        pageSize: response.data.per_page || 10,
+        units: unitsArray,
+        totalUnits: paginationData.total || 0,
+        currentPage: paginationData.current_page || 1,
+        pageSize: paginationData.per_page || 10,
         loading: false,
       })
+      console.log('Store updated with units:', unitsArray)
       return response.data
     } catch (error) {
+      console.log('Error in fetchUnits:', error)
       set({
         error: error.response?.data?.message || 'Failed to fetch units',
         loading: false,
@@ -36,6 +43,7 @@ const useUnitStore = create((set, get) => ({
 
   // Create unit
   createUnit: async (unitData) => {
+    console.log('createUnit called with:', unitData)
     set({ loading: true, error: null })
     try {
       const response = await unitsAPI.create(unitData)

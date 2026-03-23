@@ -40,6 +40,11 @@ const Units = () => {
 
   // Ensure units is an array
   const safeUnits = Array.isArray(units) ? units : []
+  
+  // Debug: Log units data
+  console.log('Units from store:', units)
+  console.log('SafeUnits:', safeUnits)
+  console.log('TotalUnits:', totalUnits)
 
   const [showAddForm, setShowAddForm] = useState(false)
   const [showEditForm, setShowEditForm] = useState(false)
