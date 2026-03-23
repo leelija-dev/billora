@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Unit;
 // use Psy\Util\Str;
+use App\Models\Customers;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Auth;
 class UnitController extends Controller
@@ -57,6 +58,13 @@ class UnitController extends Controller
             ], 401);
         }
         $user = Auth::user()->id;
+        $customer =  Customers::findOrFail($user);
+        if($customer->plan_id == null || $customer->is_active == false){
+            return response()->json([
+                'status' => false,
+                'message' =>'You do not have any active plan. Please upgrade your plan.'
+            ]);
+        }
         $unit = $request->validate([
             'code'        => 'required',
             'name'        => 'required',
@@ -90,6 +98,13 @@ class UnitController extends Controller
             ], 401);
             }
             $user=Auth::user()->id;
+            $customer =  Customers::findOrFail($user);
+            if($customer->plan_id == null || $customer->is_active == false){
+                return response()->json([
+                    'status' => false,
+                    'message' =>'You do not have any active plan. Please upgrade your plan.'
+                ]);
+            }
             $unit = Unit::where('id', $id)->where('user_id',$user)->get();
             return response()->json([
                 'status' => true,
@@ -112,6 +127,13 @@ class UnitController extends Controller
             ], 401);
         }
         $user = Auth::user()->id;
+        $customer =  Customers::findOrFail($user);
+        if($customer->plan_id == null || $customer->is_active == false){
+            return response()->json([
+                'status' => false,
+                'message' =>'You do not have any active plan. Please upgrade your plan.'
+            ]);
+        }
         $data = $request->validate([
             'code'    => 'required',
             'name'    => 'required'
@@ -142,6 +164,14 @@ class UnitController extends Controller
                 'message' => 'Authentication required. Please login first.'
             ], 401);
         }
+            $user = Auth::user()->id;
+            $customer =  Customers::findOrFail($user);
+            if($customer->plan_id == null || $customer->is_active == false){
+                return response()->json([
+                    'status' => false,
+                    'message' =>'You do not have any active plan. Please upgrade your plan.'
+                ]);
+            }
             $unit = Unit::findOrFail($id);
             $unit->delete();
             return response()->json([

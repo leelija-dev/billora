@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use App\Models\Stocks;
 use App\Models\Products;
 use App\Models\Unit;
+use App\Models\Customers;
 use Illuminate\Support\Facades\Auth;
 class StocksController extends Controller
 {
@@ -51,6 +52,14 @@ class StocksController extends Controller
     public function create(){
         try{
         $user = Auth::user()->id;
+        // cheeck active plan
+         $customer =  Customers::findOrFail($user);
+        if($customer->plan_id == null || $customer->is_active == false){
+                return response()->json([
+                    'status' => false,
+                    'message' =>'You do not have any active plan. Please upgrade your plan.'
+                ]);
+        }
         $products = Products::where('user_id', $user)->get();
         $units = Unit::where('user_id', $user)->get();
         return response()->json([
@@ -76,6 +85,7 @@ class StocksController extends Controller
             
         ]);
         try{
+            //check authenticated user
         if(!Auth::check()){
             return response()->json([
                 'status' => false,
@@ -83,6 +93,14 @@ class StocksController extends Controller
             ]);
         }
         $user = Auth::user()->id;
+        //check active plan
+         $customer =  Customers::findOrFail($user);
+        if($customer->plan_id == null || $customer->is_active == false){
+                return response()->json([
+                    'status' => false,
+                    'message' =>'You do not have any active plan. Please upgrade your plan.'
+                ]);
+        }
         $stocks['user_id'] = $user;
         $stocks['created_by'] = $user;
         $stock = Stocks::create($stocks);
@@ -103,6 +121,7 @@ class StocksController extends Controller
     }   
     public function edit($id){
         try{
+            //check authenticated user
             if(!Auth::check()){
                 return response()->json([
                    'status' => false,
@@ -110,6 +129,15 @@ class StocksController extends Controller
                 ]);
             }
         $user = Auth::user()->id;
+        //check active plan
+        $customer =  Customers::findOrFail($user);
+        if($customer->plan_id == null || $customer->is_active == false){
+                return response()->json([
+                    'status' => false,
+                    'message' =>'You do not have any active plan. Please upgrade your plan.'
+                ]);
+        }
+
         $stock = Stocks::where('user_id', $user)->where('id', $id)->first();
         return response()->json([
             'status' => true,
@@ -133,6 +161,14 @@ class StocksController extends Controller
                 ]);
             }
             $user = Auth::user()->id;
+            //check active plan
+            $customer =  Customers::findOrFail($user);
+                if($customer->plan_id == null || $customer->is_active == false){
+                        return response()->json([
+                            'status' => false,
+                            'message' =>'You do not have any active plan. Please upgrade your plan.'
+                        ]);
+                }
             $data=$request->validate([
                 'product_id'    =>'required',
                 'purchase_price'=>'nullable',
@@ -161,11 +197,20 @@ class StocksController extends Controller
                     'user_id'=>'required'
                 ]);
                 $user_id = $data['user_id'];
+                //check authenticated user
                 if(!Auth::check()){
                     return response()->json([
                        'status' => false,
                        'message' => 'Authentication required. Please login first.' 
                     ]);
+                }
+                //check active plan
+                $customer =  Customers::findOrFail($user_id);
+                if($customer->plan_id == null || $customer->is_active == false){
+                        return response()->json([
+                            'status' => false,
+                            'message' =>'You do not have any active plan. Please upgrade your plan.'
+                        ]);
                 }
             $user = Auth::user()->id;
             $stock = Stocks::where('id', $id)
@@ -190,6 +235,7 @@ class StocksController extends Controller
                 'user_id' =>'required',
             ]);
             try{
+                //check authenticated user
                 if(!Auth::check()){
                     return response()->json([
                        'status' => false,
@@ -197,6 +243,14 @@ class StocksController extends Controller
                     ]);
                 }
                 $user = Auth::user()->id;
+                //check active plan
+                $customer =  Customers::findOrFail($user);
+                if($customer->plan_id == null || $customer->is_active == false){
+                        return response()->json([
+                            'status' => false,
+                            'message' =>'You do not have any active plan. Please upgrade your plan.'
+                        ]);
+                }
             $stock = Stocks::where('id', $id)
             ->where('user_id', $data['user_id'])
             ->first();

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Categories;
 use Illuminate\Support\Str;
+use App\Models\Customers;
 use Illuminate\Support\Facades\Auth;
 class CategoriesController extends Controller
 {
@@ -13,7 +14,6 @@ class CategoriesController extends Controller
 {
     $user = Auth::user()->id;
     $search = $request->search;
-
     $categories = Categories::where('user_id', $user)
         ->where(function ($query) use ($search) {
             $query->where('id', 'like', "%$search%")
@@ -45,6 +45,13 @@ class CategoriesController extends Controller
                'message' => 'Unauthorized user'
             ]);
         }
+        $customer =  Customers::findOrFail($data['user_id']);
+        if($customer->plan_id == null || $customer->is_active == false){
+            return response()->json([
+                'status' => false,
+                'message' =>'You do not have any active plan. Please upgrade your plan.'
+            ]);
+        }
         $data['slug'] = Str::slug($data['name']);
         $category = Categories::create($data);
         return response()->json([
@@ -56,7 +63,13 @@ class CategoriesController extends Controller
     public function edit($id)
 {
     $user = Auth::user()->id;
-
+     $customer =  Customers::findOrFail($user);
+        if($customer->plan_id == null || $customer->is_active == false){
+            return response()->json([
+                'status' => false,
+                'message' =>'You do not have any active plan. Please upgrade your plan.'
+            ]);
+        }
     $category = Categories::where('user_id', $user)
         ->where('id', $id)
         ->first();
@@ -86,11 +99,22 @@ class CategoriesController extends Controller
             'created_by'  => 'nullable',
             'description' => 'nullable'
         ]);
-
+         $customer =  Customers::findOrFail($userId);
+        if($customer->plan_id == null || $customer->is_active == false){
+            return response()->json([
+                'status' => false,
+                'message' =>'You do not have any active plan. Please upgrade your plan.'
+            ]);
+        }
         $category = Categories::where('id', $id)
             ->where('user_id', $userId)
             ->firstOrFail();
-
+        if(!$category) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Category not found'
+            ], 404);
+        }
         $category->update($data);
 
         return response()->json([
@@ -113,7 +137,13 @@ class CategoriesController extends Controller
     try {
 
         $user = Auth::user()->id;
-
+        $customer =  Customers::findOrFail($user);
+        if($customer->plan_id == null || $customer->is_active == false){
+            return response()->json([
+                'status' => false,
+                'message' =>'You do not have any active plan. Please upgrade your plan.'
+            ]);
+        }
         $category = Categories::where('user_id', $user)
             ->where('id', $id)
             ->first();

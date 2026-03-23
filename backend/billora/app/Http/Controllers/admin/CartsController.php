@@ -13,6 +13,7 @@ use App\Models\Stocks;
 use App\Models\BillCustomer;
 use App\Models\BillPaymentHistory;
 use Illuminate\Support\Facades\DB;
+use App\Models\Customers;
 class CartsController extends Controller
 {
     public function index()
@@ -63,7 +64,14 @@ class CartsController extends Controller
 
     try {
         $userId = Auth::user()->id;
-
+        //check active plan
+         $customer =  Customers::findOrFail($userId);
+        if($customer->plan_id == null || $customer->is_active == false){
+                return response()->json([
+                    'status' => false,
+                    'message' =>'You do not have any active plan. Please upgrade your plan.'
+                ]);
+        }
         // Check if cart already exists
         $existingCart = Carts::where('user_id', $userId)
             ->where('product_id', $data['product_id'])
@@ -117,13 +125,23 @@ class CartsController extends Controller
             'price'      => 'required|numeric'
         ]);
         $user = Auth::user()->id;
+        //check active plan
+         $customer =  Customers::findOrFail($user);
+        if($customer->plan_id == null || $customer->is_active == false){
+                return response()->json([
+                    'status' => false,
+                    'message' =>'You do not have any active plan. Please upgrade your plan.'
+                ]);
+        }
         try {
+            //check user
             if (!Auth::check()) {
                 return response()->json([
                     'status' => false,
                     'message' => 'Authentication required. Please login first.'
                 ]);
             }
+            //check authenticated user
             if ($user != $data['user_id']) {
                 return response()->json([
                     'status' => false,
@@ -165,13 +183,23 @@ class CartsController extends Controller
             'stock_id' => 'required',
         ]);
         $user = Auth::user()->id;
+        //check active plan
+         $customer =  Customers::findOrFail($data['user_id']);
+        if($customer->plan_id == null || $customer->is_active == false){
+                return response()->json([
+                    'status' => false,
+                    'message' =>'You do not have any active plan. Please upgrade your plan.'
+                ]);
+        }
         try {
+            // check user
             if (!Auth::check()) {
                 return response()->json([
                     'status' => false,
                     'message' => 'Authentication required. Please login first.'
                 ]);
             }
+            //check authenticated user
             if ($user != $data['user_id']) {
                 return response()->json([
                     'status' => false,
@@ -217,7 +245,14 @@ class CartsController extends Controller
         ]);
 
         DB::beginTransaction();
-
+        //check active plan
+             $customer =  Customers::findOrFail($request->user_id);
+            if($customer->plan_id == null || $customer->is_active == false){
+                    return response()->json([
+                        'status' => false,
+                        'message' =>'You do not have any active plan. Please upgrade your plan.'
+                    ]);
+            }
         try {
 
             $items = $request->items;

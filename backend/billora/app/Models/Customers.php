@@ -28,7 +28,9 @@ protected $fillable=[
         'state',
         'country',
         'pincode',
-        'created_by'
+        'created_by',
+        'plan_id',
+        'is_active'
 ];
 protected $hidden = [
         'password',
