@@ -155,10 +155,11 @@ Route::prefix('dashboard')->group(function (){
    Route::get('/overview/{id}', [DashboardController::class, 'index']);
    
 });
-
+//reports 
 Route::middleware('auth:sanctum')->prefix('reports')->group(function () {
    Route::get('/', [ReportController::class, 'index']);
 });
+// plan purchase history
 Route::middleware('auth:sanctum')->prefix('plans-purchase-history')->group(function () {
    Route::get('/{id}', [PlanPurchaseHistoryController::class, 'index']);
 });
