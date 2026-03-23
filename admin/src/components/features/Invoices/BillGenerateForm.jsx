@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { FiSave, FiX, FiPlus, FiTrash2, FiUser, FiShoppingCart, FiDollarSign, FiPackage, FiSearch } from 'react-icons/fi'
+import { FiSave, FiX, FiPlus, FiTrash2, FiUser, FiShoppingCart, FiDollarSign, FiPackage, FiSearch, FiAlertCircle } from 'react-icons/fi'
 import Input from '../../common/Input/Input'
 import Button from '../../common/Button/Button'
 import Select from '../../common/Select/Select'
 import EmptyState from '../../common/EmptyState/EmptyState'
 import { invoiceAPI } from '../../../services/invoiceService'
+import { stockAPI } from '../../../services/stockService'
 // Import mock data as fallback
 import { mockCustomers } from '../../../services/mockData/mockCustomers'
 import { mockStores } from '../../../services/mockData/mockStores'
@@ -77,7 +78,7 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
       const finalUnits = unitsList.length > 0 ? unitsList : mockUnits
       
       console.log('Final counts - Customers:', finalCustomers.length, 'Stores:', finalStores.length, 'Products:', finalProducts.length, 'Units:', finalUnits.length)
-      console.log('Using mock data fallback for empty lists')
+      console.log('Using API data for customers, stores, products and mock data for units')
       
     } catch (error) {
       console.error('Failed to fetch bill generate data:', error)
@@ -98,30 +99,82 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
     }
   }
 
-  const handleAddItem = (product) => {
-    const unit = units.find(u => u.id === product.unit_id)
-    const newItem = {
-      product_id: product.id,
-      product_name: product.name || product.product_name,
-      product_code: product.code || product.product_code,
-      quantity: 1,
-      item_count: 1,
-      unit_id: product.unit_id,
-      unit_name: unit?.short_name || unit?.name || 'pcs',
-      price: parseFloat(product.price) || 0,
-      gst: parseFloat(product.gst) || 0,
-      discount: 0,
-      total_price: parseFloat(product.price) || 0,
-      status: 'completed'
+  const handleAddItem = async (product) => {
+    try {
+      // Fetch stock data for this product to get real price
+      const stockResponse = await stockAPI.getAll(product.name || product.product_name)
+      console.log('Stock API response:', stockResponse)
+      
+      // Extract stock data from the nested structure
+      const stockList = stockResponse.data?.data?.data || stockResponse.data?.data || []
+      console.log('Stock list:', stockList)
+      
+      const stockItem = stockList.find(stock => stock.product_id === product.id)
+      console.log('Found stock item:', stockItem)
+      
+      const unit = units.find(u => u.id === product.unit_id)
+      
+      // Use stock price if available, otherwise use product price
+      const sellingPrice = stockItem?.selling_price || product.price || 0
+      const purchasePrice = stockItem?.purchase_price || product.cost || 0
+      const gst = stockItem?.gst_percentage || product.gst || 0
+      const stockQuantity = stockItem?.quantity || 0
+      
+      console.log('Product pricing - Selling:', sellingPrice, 'GST:', gst, 'Stock:', stockQuantity)
+      
+      const newItem = {
+        product_id: product.id,
+        product_name: product.name || product.product_name,
+        product_code: product.code || product.product_code,
+        quantity: 1,
+        item_count: 1,
+        unit_id: product.unit_id,
+        unit_name: unit?.short_name || unit?.name || 'pcs',
+        price: parseFloat(sellingPrice) || 0,
+        purchase_price: parseFloat(purchasePrice) || 0,
+        gst: parseFloat(gst) || 0,
+        discount: 0,
+        total_price: parseFloat(sellingPrice) || 0,
+        status: 'completed',
+        stock_quantity: stockQuantity
+      }
+      
+      setFormData(prev => ({
+        ...prev,
+        items: [...prev.items, newItem]
+      }))
+      
+      setShowProductList(false)
+      setProductSearch('')
+    } catch (error) {
+      console.error('Failed to fetch stock data:', error)
+      // Fallback to product data if stock fetch fails
+      const unit = units.find(u => u.id === product.unit_id)
+      const newItem = {
+        product_id: product.id,
+        product_name: product.name || product.product_name,
+        product_code: product.code || product.product_code,
+        quantity: 1,
+        item_count: 1,
+        unit_id: product.unit_id,
+        unit_name: unit?.short_name || unit?.name || 'pcs',
+        price: parseFloat(product.price) || 0,
+        purchase_price: parseFloat(product.cost) || 0,
+        gst: parseFloat(product.gst) || 0,
+        discount: 0,
+        total_price: parseFloat(product.price) || 0,
+        status: 'completed',
+        stock_quantity: 0
+      }
+      
+      setFormData(prev => ({
+        ...prev,
+        items: [...prev.items, newItem]
+      }))
+      
+      setShowProductList(false)
+      setProductSearch('')
     }
-    
-    setFormData(prev => ({
-      ...prev,
-      items: [...prev.items, newItem]
-    }))
-    
-    setShowProductList(false)
-    setProductSearch('')
   }
 
   const handleUpdateItem = (index, field, value) => {
@@ -129,7 +182,25 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
       const newItems = [...prev.items]
       const item = newItems[index]
       
-      if (field === 'quantity' || field === 'price' || field === 'gst' || field === 'discount') {
+      if (field === 'quantity') {
+        const newQuantity = parseFloat(value) || 0
+        
+        // Validate against stock quantity
+        if (item.stock_quantity > 0 && newQuantity > item.stock_quantity) {
+          console.warn(`Cannot add more than available stock. Available: ${item.stock_quantity}, Requested: ${newQuantity}`)
+          // Don't update if it exceeds stock
+          return prev
+        }
+        
+        item.quantity = newQuantity
+        item.item_count = newQuantity
+        
+        // Recalculate total price
+        const basePrice = item.price * item.quantity
+        const gstAmount = basePrice * (item.gst / 100)
+        const discountAmount = basePrice * (item.discount / 100)
+        item.total_price = basePrice + gstAmount - discountAmount
+      } else if (field === 'price' || field === 'gst' || field === 'discount') {
         const numValue = parseFloat(value) || 0
         item[field] = numValue
         
@@ -173,6 +244,16 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
     
     if (!formData.customer_id || !formData.store_id || formData.items.length === 0) {
       setError('Please fill all required fields and add at least one item')
+      return
+    }
+    
+    // Check for stock validation
+    const stockIssues = formData.items.filter(item => 
+      item.stock_quantity > 0 && item.quantity > item.stock_quantity
+    )
+    
+    if (stockIssues.length > 0) {
+      setError(`Cannot proceed. ${stockIssues.length} item(s) exceed available stock. Please adjust quantities.`)
       return
     }
     
@@ -254,6 +335,22 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
           className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-4 text-red-700 dark:text-red-300"
         >
           {error}
+        </motion.div>
+      )}
+
+      {/* Stock Warning */}
+      {formData.items.some(item => item.stock_quantity > 0 && item.quantity > item.stock_quantity) && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-xl p-4 text-yellow-700 dark:text-yellow-300"
+        >
+          <div className="flex items-center">
+            <FiAlertCircle className="w-5 h-5 mr-2" />
+            <span>
+              Some items exceed available stock. Please adjust quantities or the system will automatically limit them to available stock.
+            </span>
+          </div>
         </motion.div>
       )}
 
@@ -380,9 +477,12 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
                               <p className="font-semibold text-gray-900 dark:text-white">
                                 ₹{parseFloat(product.price || 0).toFixed(2)}
                               </p>
-                              <p className="text-xs text-gray-500 dark:text-gray-400">
-                                Stock: {product.stock || 'N/A'}
-                              </p>
+                              <div className="text-xs text-gray-500 dark:text-gray-400 space-y-1">
+                                <p>Stock: {product.stock || 'N/A'}</p>
+                                {product.gst && (
+                                  <p>GST: {parseFloat(product.gst).toFixed(1)}%</p>
+                                )}
+                              </div>
                             </div>
                           </div>
                         </div>
@@ -527,16 +627,28 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
                       <p className="font-medium text-gray-900 dark:text-white text-sm">{item.product_name}</p>
                       <p className="text-xs text-gray-500 dark:text-gray-400">{item.product_code}</p>
                       <p className="text-xs text-gray-400 dark:text-gray-500">{item.unit_name}</p>
+                      {item.stock_quantity !== undefined && (
+                        <p className="text-xs text-blue-600 dark:text-blue-400">Stock: {item.stock_quantity}</p>
+                      )}
                     </div>
                   </div>
                   <div className="md:col-span-1">
                     <Input
                       type="number"
                       min="1"
+                      max={item.stock_quantity > 0 ? item.stock_quantity : undefined}
                       value={item.quantity}
                       onChange={(e) => handleUpdateItem(index, 'quantity', e.target.value)}
-                      className="w-full text-sm"
+                      className={`w-full text-sm ${
+                        item.stock_quantity > 0 && item.quantity > item.stock_quantity 
+                          ? 'border-red-500 bg-red-50' 
+                          : ''
+                      }`}
+                      title={item.stock_quantity > 0 ? `Max available: ${item.stock_quantity}` : 'No stock limit'}
                     />
+                    {item.stock_quantity > 0 && (
+                      <p className="text-xs text-gray-500 mt-1">Max: {item.stock_quantity}</p>
+                    )}
                   </div>
                   <div className="md:col-span-2">
                     <Input

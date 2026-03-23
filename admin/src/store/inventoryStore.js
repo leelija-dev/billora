@@ -174,21 +174,45 @@ export const useInventoryStore = create((set, get) => ({
     }
   },
 
-  deleteStock: async (id) => {
+  deleteStock: async (id, userId) => {
+    console.log('🗑️ Inventory Store - Starting delete for stock ID:', id, 'User ID:', userId)
     set({ loading: true })
     try {
-      await stocksAPI.delete(id)
-      set((state) => ({
-        stocks: state.stocks.filter(s => s.id !== id),
-        totalStocks: state.totalStocks - 1,
-        loading: false,
-      }))
+      const response = await stocksAPI.delete(id, userId)
+      console.log('🗑️ Inventory Store - Delete API response:', response)
+      
+      // Check if the delete was successful
+      if (response.data?.status === false) {
+        throw new Error(response.data.message || 'Failed to delete stock')
+      }
+      
+      set((state) => {
+        const currentStocks = state.stocks
+        const filteredStocks = currentStocks.filter(s => s.id !== id)
+        console.log('🗑️ Inventory Store - Before deletion:', {
+          totalStocks: currentStocks.length,
+          stockIdToDelete: id,
+          foundStock: currentStocks.some(s => s.id === id)
+        })
+        console.log('🗑️ Inventory Store - After deletion:', {
+          totalStocks: filteredStocks.length,
+          stockRemoved: !filteredStocks.some(s => s.id === id)
+        })
+        
+        return {
+          stocks: filteredStocks,
+          totalStocks: state.totalStocks - 1,
+          loading: false,
+        }
+      })
       toast.success('Stock deleted successfully')
       return { success: true }
     } catch (error) {
-      toast.error('Failed to delete stock')
+      console.error('🗑️ Inventory Store - Delete Error:', error)
+      console.error('🗑️ Inventory Store - Delete Error Response:', error.response?.data)
+      toast.error(`Failed to delete stock: ${error.response?.data?.message || error.message}`)
       set({ loading: false })
-      return { success: false }
+      return { success: false, error: error.response?.data }
     }
   },
 
