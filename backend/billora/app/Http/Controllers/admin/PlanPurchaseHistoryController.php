@@ -24,7 +24,7 @@ class PlanPurchaseHistoryController extends Controller
                 'message' => 'You are not authorized to access this resource.'
             ]);
         }
-        $plans = PlanPurchaseHistory::where('user_id', $id)->get();
+        $plans = PlanPurchaseHistory::where('user_id', $id)->paginate(15)->withQueryString();
         if($plans->isEmpty()){
             return response()->json([
                 'status' => false,
@@ -33,7 +33,7 @@ class PlanPurchaseHistoryController extends Controller
         }
         return response()->json([
             'status' => true,
-            'message' => 'Plan List',
+            'message' => 'Plan purchase history',
             'data' => $plans
         ]);
     }

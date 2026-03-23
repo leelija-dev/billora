@@ -750,7 +750,7 @@
                     </tbody>
                 </table>
                 <div class="pagination flex justify-end mt-4">
-                    {{-- {{ $plans->links('pagination::tailwind') }} --}}
+                    {{ $plans->links('pagination::tailwind') }}
                 </div>
             </div>
 
