@@ -1,10 +1,14 @@
 import { apiClient } from './apiClient';
 
 export const unitsAPI = {
-  // Get all units
-  getAll: (search = '') => {
-    const params = search ? { search } : {}
-    return apiClient.get('/units', { params })
+  // Get all units with pagination
+  getAll: (page = 1, filters = {}) => {
+    const params = new URLSearchParams()
+    
+    if (page) params.append('page', page)
+    if (filters.search) params.append('search', filters.search)
+    
+    return apiClient.get(`/units?${params.toString()}`)
   },
 
   // Get single unit
@@ -27,3 +31,7 @@ export const unitsAPI = {
     return apiClient.delete(`/units/${id}`)
   },
 }
+
+// Export as default for consistency
+const unitsService = unitsAPI
+export default unitsService
