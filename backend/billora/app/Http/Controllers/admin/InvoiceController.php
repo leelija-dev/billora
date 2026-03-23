@@ -35,10 +35,30 @@ class InvoiceController extends Controller
                     'message' =>'You do not have any active plan. Please upgrade your plan.'
                 ]);
             }
+        $permissions = DB::table('plan_permission_details as ppd')
+            ->join('plan_permission as pp', 'pp.id', '=', 'ppd.permission_id')
+            ->where('ppd.plan_id', $customer->plan_id)
+            ->select('pp.permission_name', 'pp.id', 'pp.slug')
+            ->get();
+        $hasStockPermission = false;
+
+        foreach ($permissions as $permission) {
+            if ($permission->slug === 'stock-management') {
+                $hasStockPermission = true;
+                break;
+            }
+        }
+        if($hasStockPermission){
         $products = Products::where('user_id', $user)->with(['brand', 'category', 'unit', 'stocks'])
             ->where('is_active', true)
             ->whereHas('stocks')
             ->get();
+        }else{
+             $products = Products::where('user_id', $user)
+                ->with(['brand', 'category', 'unit'])
+                ->where('is_active', true)
+                ->get();
+        }
         $customers = BillCustomer::where('admin_id', $user)->get();
         $stores = Store::where('user_id', $user)->get();
         return response()->json([
@@ -46,7 +66,8 @@ class InvoiceController extends Controller
             'message'   => 'Products and Customers List',
             'products'  => $products,
             'customers' => $customers,
-            'stores'    => $stores
+            'stores'    => $stores,
+            'permissions'=> $permissions
         ]);
         }catch(\Exception $e){
             return response()->json([
@@ -83,6 +104,15 @@ class InvoiceController extends Controller
                 ]);
         }
         try {
+            // check permission 
+            $permissions = DB::table('plan_permission_details as ppd')
+            ->join('plan_permission as pp', 'pp.id', '=', 'ppd.permission_id')
+            ->where('ppd.plan_id', $customer->plan_id)
+            ->pluck('pp.slug')
+            ->toArray();
+
+            $hasStockPermission = in_array('stock-management', $permissions);
+
 
             $items = $request->items;
 
@@ -90,8 +120,25 @@ class InvoiceController extends Controller
             $totalItems = count($items);
 
             foreach ($items as $item) {
+                
+              if ($hasStockPermission) {
+                $stock = Stocks::where('id', $item['stock_id'])
+                    ->where('product_id', $item['product_id'])
+                    ->first();
 
-                $price = $item['price'];
+                if (!$stock || $stock->quantity < $item['quantity']) {
+                    DB::rollback();
+                    return response()->json([
+                        'status' => false,
+                        'message' => 'Stock not available'
+                    ]);
+                }
+                $price = $stock->selling_price;
+              }else{
+                    $product = Products::find($item['product_id']);
+                $price = $product->selling_price ?? 0;
+              }
+                // $price = $item['price'];
                 $qty = $item['quantity'];
                 $discount = ((($price * $qty) * $item['discount'] ?? 0) / 100);
                 $gst = (((($price * $qty) - $discount) * $item['gst'] ?? 0) / 100);
@@ -115,8 +162,17 @@ class InvoiceController extends Controller
 
             // Store invoice items
             foreach ($items as $item) {
+                if ($hasStockPermission) {
+                $stock = Stocks::where('id', $item['stock_id'])
+                    ->where('product_id', $item['product_id'])
+                    ->first();
 
-                $price = $item['price'];
+                    $price = $stock->selling_price;
+                } else {
+                    $product = Products::find($item['product_id']);
+                    $price = $product->selling_price ?? 0;
+                }
+                // $price = $item['price'];
                 $qty = $item['quantity'];
 
                 $discount = ((($price * $qty) * $item['discount'] ?? 0) / 100);
@@ -159,6 +215,7 @@ class InvoiceController extends Controller
             ]);
             
             //stock update
+            if ($hasStockPermission) {
             foreach ($items as $item) {
                 $stock = Stocks::where('id', $item['stock_id'])->where('product_id', $item['product_id'])->first();
                 if($stock->quantity >= $item['quantity'])
@@ -172,13 +229,14 @@ class InvoiceController extends Controller
                     ]);
                 }
             }
-
+            }
             DB::commit();
 
             return response()->json([
                 'status'  => true,
                 'message' => 'Invoice Created Successfully',
-                'invoice_id' => $invoice->id
+                'invoice_id' => $invoice->id,
+                'stock_permission' => $hasStockPermission
             ]);
         } catch (\Exception $e) {
 

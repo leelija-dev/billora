@@ -3,6 +3,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\admin\AuthController;
 use App\Http\Controllers\admin\superadmin\CustomerController;
 use App\Http\Controllers\admin\superadmin\PlansController;
+use App\Http\Controllers\admin\superadmin\PlanPermissionController;
 Route::middleware(['web', 'admin.guest'])->prefix('admin')->group(function () {
     Route::view('/login', 'admin.login')->name('login');
     Route::post('/login', [AuthController::class, 'login'])->name('admin.login');
@@ -37,6 +38,8 @@ Route::middleware(['web', 'admin.auth'])->prefix('admin')->group(function () {
         Route::get('/show/{id}', [PlansController::class, 'show'])->name('admin.plans.show');
     
     });
-
+    Route::prefix('plan-permission')->group(function () {
+        Route::get('/', [PlanPermissionController::class, 'index'])->name('admin.plan-permission.index');
+    });
 
 });

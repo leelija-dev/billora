@@ -36,4 +36,37 @@ protected $hidden = [
         'password',
         'remember_token'
     ];
+
+public function plan()
+    {
+        return $this->belongsTo(Plans::class, 'plan_id');
+    }
+// Get customer's plan permissions
+    public function getPlanPermissions()
+    {
+        if (!$this->plan) {
+            return collect([]);
+        }
+ 
+        return \App\Models\PlanPermissionDetail::with('permission')
+            ->where('plan_id', $this->plan_id)
+            ->where('is_active', true)
+            ->get()
+            ->pluck('permission');
+    }
+ 
+    // Check if customer has specific permission
+    public function hasPermission($permissionKey)
+    {
+        if (!$this->plan) {
+            return false;
+        }
+ 
+        return \App\Models\PlanPermissionDetail::where('plan_id', $this->plan_id)
+            ->whereHas('permission', function($query) use ($permissionKey) {
+                $query->where('key', $permissionKey);
+            })
+            ->where('is_active', true)
+            ->exists();
+    }
 }
