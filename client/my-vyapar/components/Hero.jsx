@@ -26,8 +26,7 @@ const Hero = () => {
   return (
     <div className="overflow-x-hidden font-sans">
       {/* ===== ANIMATED HERO SECTION ===== */}
-      <section className="relative z-10 min-h-[100vh] flex items-center pb-32 pt-10 bg-gradient-to-br from-slate-50 via-indigo-50 to-sky-100 overflow-hidden">
-        
+      <section className="relative z-10 min-h-[100vh] flex items-center pb-32 pt-10 lg:pb-20 lg:pt-6 bg-gradient-to-br from-slate-50 via-indigo-50 to-sky-100 overflow-hidden">
         <style>{`
           @keyframes fadeInUp { 
             from { opacity: 0; transform: translateY(30px); } 
@@ -255,10 +254,10 @@ const Hero = () => {
             </div>
 
             {/* --- IMAGE CONTAINER - Responsive sizing for all devices --- */}
-            <div className="flex-1 relative min-h-[300px] sm:min-h-[350px] md:min-h-[400px] w-full max-w-[550px] sm:max-w-[600px] md:max-w-[650px] lg:max-w-[700px] xl:max-w-[750px] mt-8 sm:mt-10 lg:mt-0 flex flex-col items-center px-4 sm:px-0">
+            <div className="flex-1 relative min-h-[300px] sm:min-h-[350px] md:min-h-[100px] w-full max-w-[550px] sm:max-w-[600px] md:max-w-[550px] lg:max-w-[700px] xl:max-w-[750px] mt-8 sm:mt-10 lg:mt-0 flex flex-col items-center px-4 sm:px-0">
               
               {/* PC Monitor Model - Responsive sizing */}
-              <div className="relative w-full z-10 flight-pc">
+              <div className="relative w-full max-w-[500px] md:max-w-[400px] lg:max-w-full z-10 flight-pc mx-auto">
                 {/* Monitor Screen */}
                 <div className="relative aspect-[16/10] bg-slate-900 rounded-[12px] sm:rounded-[16px] md:rounded-[20px] p-1.5 sm:p-2 md:p-2.5 shadow-2xl border border-slate-700/50">
                   <div className="w-full h-full bg-slate-800 rounded-lg sm:rounded-xl overflow-hidden relative shadow-inner">
@@ -309,15 +308,14 @@ const Hero = () => {
                 <div className="relative w-24 sm:w-32 md:w-40 h-2 sm:h-2.5 md:h-3 bg-slate-800 rounded-t-lg sm:rounded-t-xl mx-auto shadow-2xl border-t border-slate-600"></div>
               </div>
 
-              {/* Floating Mobile Image - Responsive sizing and positioning */}
-              <div className="absolute left-0  xl:top-[50%] xl:left-3 sm:left-2 md:left-4 top-[40%] sm:top-[50%] md:top-[55%] lg:top-[40%] w-[90px] sm:w-[105px] md:w-[115px] lg:w-[125px] h-[180px] sm:h-[210px] md:h-[230px] lg:h-[250px] bg-slate-800 rounded-[20px] sm:rounded-[25px] md:rounded-[30px] lg:rounded-[35px] p-1.5 sm:p-2 shadow-2xl z-30 hidden sm:block flight-phone border border-slate-700">
-                <div className="w-full h-full bg-slate-900 rounded-[16px] sm:rounded-[20px] md:rounded-[25px] lg:rounded-[30px] overflow-hidden relative border-2 border-slate-800">
-                  {/* Screen Content with Loading States */}
-                  <div className="absolute inset-0 flex items-center justify-center bg-slate-900">
-                    {/* State 0: Blank Black */}
-                    {screenState === 0 && (
-                      <div className="w-full h-full bg-black"></div>
-                    )}
+             <div className="absolute left-0 xl:top-[50%] xl:left-3 sm:left-2 md:left-4 top-[30%] sm:top-[50%] md:top-[40%] lg:top-[40%] w-[90px] sm:w-[105px] md:w-[80px] lg:w-[125px] h-[180px] sm:h-[210px] md:h-[160px] lg:h-[250px] bg-slate-800 rounded-[20px] sm:rounded-[25px] md:rounded-[20px] lg:rounded-[35px] p-1.5 sm:p-2 md:p-1.5 lg:p-2 shadow-2xl z-30 hidden sm:block flight-phone border border-slate-700">
+  <div className="w-full h-full bg-slate-900 rounded-[16px] sm:rounded-[20px] md:rounded-[16px] lg:rounded-[30px] overflow-hidden relative border-2 border-slate-800">
+    {/* Screen Content with Loading States */}
+    <div className="absolute inset-0 flex items-center justify-center bg-slate-900">
+      {/* State 0: Blank Black */}
+      {screenState === 0 && (
+        <div className="w-full h-full bg-black"></div>
+      )}
                     
                     {/* State 1: Blue B Logo Reveal */}
                     {screenState === 1 && (
@@ -362,7 +360,7 @@ const Hero = () => {
       </section>
 
       {/* --- SUPERB FEATURES SECTION - Responsive for all devices --- */}
-     <section className="relative hidden md:block lg:w-[92%] md:w-[85%] -mt-16 sm:-mt-20 md:-mt-24 w-full mx-auto z-40 px-4 md:px-0 mb-32 sm:mb-40 md:mb-48">
+     <section className="relative hidden md:block lg:w-[92%] md:w-[85%] -mt-10 sm:-mt-20 md:-mt-28 w-full mx-auto z-50 px-4 md:px-0 mb-32 sm:mb-40 md:mb-48">
         <div className="relative bg-[#0f172a] rounded-[24px] sm:rounded-[30px] md:rounded-[40px]   lg:rounded-[45px] pt-[60px] sm:pt-[80px] md:pt-[100px]   lg:pt-[110px]  pb-[80px] sm:pb-[90px] md:pb-[100px]   lg:pb-[110px]  max-w-[90%] sm:max-w-[85%] md:max-w-[1100px]  lg:max-w-[1200px]   mx-auto shadow-2xl border border-white/10 overflow-visible"
              style={{ 
                backgroundImage: "radial-gradient(circle, rgba(255,255,255,0.05) 1px, transparent 1px)", 
