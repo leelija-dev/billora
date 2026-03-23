@@ -1,14 +1,6 @@
 // solution/page.jsx
 "use client";
 
-import {
-  FileText,
-  BarChart3,
-  ShieldCheck,
-  Smartphone,
-  Users,
-  Layers,
-} from "lucide-react";
 import Link from "next/link";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
