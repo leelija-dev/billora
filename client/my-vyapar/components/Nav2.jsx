@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";  // Only one import of Link
 import { useRouter } from "next/navigation";
+// hei
 
 const Nav2 = () => {
   const router = useRouter();
