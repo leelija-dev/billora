@@ -10,6 +10,7 @@ import Register from '../pages/auth/Register'
 // Main Pages
 import Dashboard from '../pages/dashboard/Dashboard'
 import Products from '../pages/products/Products'
+import Categories from '../pages/categories/Categories'
 import Units from '../pages/units/Units'
 import Stores from '../pages/stores/Stores'
 import Inventory from '../pages/inventory/Inventory'
@@ -38,6 +39,7 @@ const AppRoutes = () => {
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/products" element={<Products />} />
+          <Route path="/categories" element={<Categories />} />
           <Route path="/units" element={<Units />} />
           <Route path="/stores" element={<Stores />} />
           <Route path="/stock" element={<Inventory />} />

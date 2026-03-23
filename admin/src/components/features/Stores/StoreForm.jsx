@@ -171,7 +171,7 @@ const StoreForm = ({
 
       {/* Form */}
       <form onSubmit={handleSubmit(onFormSubmit)} className="p-6 space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {formFields.map((field) => (
             <div key={field.name} className={field.gridCols}>
               <Input
@@ -190,13 +190,13 @@ const StoreForm = ({
           ))}
 
           {/* Status Field */}
-          <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+          <div className="space-y-1">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 ">
               Status
             </label>
             <select
               {...register('status', { required: 'Status is required' })}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+              className="w-full px-3 py-2 h-[42px] border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
               disabled={isSubmitting}
             >
               <option value="active">Active</option>
@@ -208,7 +208,7 @@ const StoreForm = ({
           </div>
 
           {/* Logo Upload */}
-          <div className="space-y-2 col-span-2">
+          <div className="space-y-2 md:col-span-3">
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Store Logo
             </label>
