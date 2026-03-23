@@ -5,8 +5,8 @@ import React, { useState } from "react";
 import { FcGoogle } from "react-icons/fc";
 import { FaEye, FaEyeSlash, FaHome } from "react-icons/fa";
 import { useRouter } from "next/navigation";
-import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
+// import Navbar from "@/components/Navbar";
+// import Footer from "@/components/Footer";
 
 const RegisterPage = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -14,7 +14,7 @@ const RegisterPage = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#ece9f1] to-[#dfe3f8] flex flex-col font-sans">
-      <Navbar />
+      {/* <Navbar /> */}
       
       <div className="flex-1 flex justify-center items-center py-20 px-4 relative">
         
@@ -89,7 +89,7 @@ const RegisterPage = () => {
         </div>
       </div>
       
-      <Footer />
+       
     </div>
   );
 };

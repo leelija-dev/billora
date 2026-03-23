@@ -42,7 +42,7 @@ const Testimonials = () => {
 
   return (
     <section 
-      className="py-12 sm:py-16 md:py-14 lg:py-24 bg-[#f8fafc] overflow-hidden font-sans"
+      className="py-8 sm:py-16 md:py-4 lg:py-18 bg-[#f8fafc] overflow-hidden font-sans"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
@@ -52,13 +52,13 @@ const Testimonials = () => {
           <SectionTitle 
             title="They succeeded online, now it's your turn"
           />
-          <p className="text-slate-500 text-base sm:text-base md:text-sm lg:text-lg mb-8 sm:mb-12 md:mb-8 lg:mb-16">
+          <p className="text-slate-500 text-base sm:text-base md:text-sm lg:text-lg mb-6 sm:mb-12 md:mb-7 lg:mb-16">
             {/* Tablet: md:text-sm (14px) */}
             Deep-dive into how we empower businesses.
           </p>
 
           {/* Testimonial Carousel */}
-          <div className="relative h-auto min-h-[450px] sm:min-h-[450px] md:min-h-[380px] lg:min-h-[500px] w-full flex items-center justify-center [perspective:1200px] [transform-style:preserve-3d]">
+          <div className="relative h-auto min-h-[450px] sm:min-h-[450px] md:min-h-[320px] lg:min-h-[500px] w-full flex items-center justify-center [perspective:1200px] [transform-style:preserve-3d]">
             {testimonials.map((item, index) => {
               let position = "hidden";
               if (index === currentIndex) position = "active";
@@ -82,7 +82,7 @@ const Testimonials = () => {
           </div>
 
           {/* Controls */}
-          <div className="flex flex-col items-center gap-6 sm:gap-8 md:gap-5 lg:gap-8 mt-8 sm:mt-10 md:mt-6 lg:mt-12">
+          <div className="flex flex-col items-center gap-4 sm:gap-8 md:gap-3 lg:gap-8 mt-6 sm:mt-10 md:mt-4 lg:mt-12">
             
             {/* Navigation Buttons */}
             <div className="flex gap-4 sm:gap-4 md:gap-2 lg:gap-4">
@@ -135,10 +135,10 @@ const Testimonials = () => {
 };
 
 const Card = ({ data, isActive }) => (
-  <div className={`bg-white rounded-2xl sm:rounded-3xl p-6 sm:p-8 md:p-5 lg:p-10 text-left border border-slate-100 shadow-[0_20px_50px_rgba(0,0,0,0.05)] transition-all ${!isActive && "pointer-events-none"}`}>
+  <div className={`bg-white rounded-2xl sm:rounded-3xl p-6 sm:p-8 md:p-4 lg:p-10 text-left border border-slate-100 shadow-[0_20px_50px_rgba(0,0,0,0.05)] transition-all ${!isActive && "pointer-events-none"}`}>
     
     {/* Avatar & Info */}
-    <div className="flex items-center gap-4 sm:gap-4 md:gap-2 lg:gap-4 mb-6 sm:mb-8 md:mb-4 lg:mb-8">
+    <div className="flex items-center gap-4 sm:gap-4 md:gap-2 lg:gap-4 mb-6 sm:mb-8 md:mb-3 lg:mb-8">
       <div className="w-14 h-14 sm:w-14 sm:h-14 md:w-9 md:h-9 lg:w-16 lg:h-16 rounded-lg sm:rounded-2xl bg-blue-600 flex items-center justify-center text-3xl sm:text-3xl md:text-lg lg:text-3xl shadow-lg shadow-blue-200 flex-shrink-0">
         {data.avatar}
       </div>
@@ -157,7 +157,7 @@ const Card = ({ data, isActive }) => (
     </div>
 
     {/* Footer Info */}
-    <div className="mt-6 sm:mt-8 md:mt-4 lg:mt-8 pt-6 sm:pt-8 md:pt-4 lg:pt-8 border-t border-slate-50 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4 md:gap-1 lg:gap-4">
+    <div className="mt-6 sm:mt-8 md:mt-3 lg:mt-8 pt-6 sm:pt-8 md:pt-3 lg:pt-8 border-t border-slate-50 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4 md:gap-1 lg:gap-4">
       <span className="flex items-center gap-1.5 sm:gap-2 md:gap-1 lg:gap-2 text-sm sm:text-sm md:text-[9px] lg:text-sm text-slate-400">
         📍 <span className="truncate">{data.location}</span>
       </span>

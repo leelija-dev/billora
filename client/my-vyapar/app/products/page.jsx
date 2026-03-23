@@ -568,64 +568,64 @@ export default function ProductsPage() {
                           <p className="text-xs text-green-600 mt-1">Free Delivery</p>
                         </div>
                         
-                        <div className="flex flex-col gap-3 w-full mt-3">
-                          {product.inStock ? (
-                            quantity === 0 ? (
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  addToCart(product);
-                                }}
-                                className="w-full py-3 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition"
-                              >
-                                Add to Cart
-                              </button>
-                            ) : (
-                              <div className="flex items-center justify-between w-full border rounded-lg overflow-hidden">
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    updateQuantity(product.id, quantity - 1);
-                                  }}
-                                  className="w-12 h-12 flex items-center justify-center bg-gray-100 hover:bg-gray-200 text-xl font-bold transition"
-                                >
-                                  −
-                                </button>
-                                <span className="flex-1 text-center font-semibold text-lg">
-                                  {quantity}
-                                </span>
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    updateQuantity(product.id, quantity + 1);
-                                  }}
-                                  className="w-12 h-12 flex items-center justify-center bg-gray-100 hover:bg-gray-200 text-xl font-bold transition"
-                                >
-                                  +
-                                </button>
-                              </div>
-                            )
-                          ) : (
-                            <button
-                              disabled
-                              className="w-full py-3 rounded-lg bg-gray-300 text-gray-500 cursor-not-allowed"
-                            >
-                              Out of Stock
-                            </button>
-                          )}
-                          
-                          <button 
-                            onClick={(e) => e.stopPropagation()}
-                            disabled={!product.inStock}
-                            className={`w-full py-3 rounded-lg transition ${
-                              product.inStock
-                                ? "bg-purple-600 text-white hover:bg-purple-700"
-                                : "bg-gray-300 text-gray-500 cursor-not-allowed"
-                            }`}
-                          >
-                            Buy Now
-                          </button>
-                        </div>
+                   <div className="flex flex-row gap-3 w-full mt-3">
+  {product.inStock ? (
+    quantity === 0 ? (
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          addToCart(product);
+        }}
+        className="flex-1 py-3 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition"
+      >
+        Add to Cart
+      </button>
+    ) : (
+      <div className="flex-1 flex items-center justify-between border rounded-lg overflow-hidden">
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            updateQuantity(product.id, quantity - 1);
+          }}
+          className="w-12 h-12 flex items-center justify-center bg-gray-100 hover:bg-gray-200 text-xl font-bold transition"
+        >
+          −
+        </button>
+        <span className="flex-1 text-center font-semibold text-lg">
+          {quantity}
+        </span>
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            updateQuantity(product.id, quantity + 1);
+          }}
+          className="w-12 h-12 flex items-center justify-center bg-gray-100 hover:bg-gray-200 text-xl font-bold transition"
+        >
+          +
+        </button>
+      </div>
+    )
+  ) : (
+    <button
+      disabled
+      className="flex-1 py-3 rounded-lg bg-gray-300 text-gray-500 cursor-not-allowed"
+    >
+      Out of Stock
+    </button>
+  )}
+  
+  <button 
+    onClick={(e) => e.stopPropagation()}
+    disabled={!product.inStock}
+    className={`flex-1 py-3 rounded-lg transition ${
+      product.inStock
+        ? "bg-purple-600 text-white hover:bg-purple-700"
+        : "bg-gray-300 text-gray-500 cursor-not-allowed"
+    }`}
+  >
+    Buy Now
+  </button>
+</div>
                       </div>
                     );
                   })}

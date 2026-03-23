@@ -292,7 +292,7 @@ const CardContent = ({ item }) => {
           {item.fullDescription && item.fullDescription !== item.description && (
             <button
               onClick={toggleReadMore}
-              className="text-lg font-semibold mt-3 transition-colors hover:opacity-80"
+              className="text-2xl font-semibold mt-3 transition-colors hover:opacity-80"
               style={{ color: item.color }}
             >
               {isExpanded ? "Show less" : "Read more"}
