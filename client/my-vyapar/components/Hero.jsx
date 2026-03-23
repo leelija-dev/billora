@@ -360,7 +360,7 @@ const Hero = () => {
       </section>
 
       {/* --- SUPERB FEATURES SECTION - Responsive for all devices --- */}
-     <section className="relative hidden md:block lg:w-[92%] md:w-[85%] -mt-10 sm:-mt-20 md:-mt-28 w-full mx-auto z-50 px-4 md:px-0 mb-32 sm:mb-40 md:mb-48">
+     <section className="relative hidden md:block lg:w-[92%] md:w-[85%] -mt-10 sm:-mt-20 md:-mt-28 lg:-mt-20 w-full mx-auto z-50 px-4 md:px-0 mb-32 sm:mb-40 md:mb-48">
         <div className="relative bg-[#0f172a] rounded-[24px] sm:rounded-[30px] md:rounded-[40px]   lg:rounded-[45px] pt-[60px] sm:pt-[80px] md:pt-[100px]   lg:pt-[110px]  pb-[80px] sm:pb-[90px] md:pb-[100px]   lg:pb-[110px]  max-w-[90%] sm:max-w-[85%] md:max-w-[1100px]  lg:max-w-[1200px]   mx-auto shadow-2xl border border-white/10 overflow-visible"
              style={{ 
                backgroundImage: "radial-gradient(circle, rgba(255,255,255,0.05) 1px, transparent 1px)", 
