@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useEffect, useState } from 'react'
 import { 
   FiPlus, 
   FiSearch, 
@@ -6,155 +6,213 @@ import {
   FiTrash2, 
   FiFilter, 
   FiPackage,
+  FiDownload,
+  FiRefreshCw,
+  FiMoreVertical,
+  FiX,
+  FiArrowLeft,
+  FiAlertCircle,
+  FiMail,
+  FiPhone,
+  FiMapPin,
   FiGrid,
   FiList,
-  FiDownload,
-  FiUpload,
-  FiMoreVertical,
   FiEye,
   FiCopy,
   FiArchive,
-  FiAlertCircle,
-  FiChevronDown,
-  FiX,
-  FiRefreshCw,
-  FiArrowLeft
+  FiUpload,
 } from 'react-icons/fi'
 import { motion, AnimatePresence } from 'framer-motion'
-import { useProductStore } from '../../store/productStore'
+
 import Button from '../../components/common/Button/Button'
 import Input from '../../components/common/Input/Input'
 import Table from '../../components/common/Table/Table'
 import StatusBadge from '../../components/common/StatusBadge/StatusBadge'
 import Pagination from '../../components/common/Pagination/Pagination'
 import EmptyState from '../../components/common/EmptyState/EmptyState'
-import ProductModal from '../../components/features/Products/ProductModal'
 import Select from '../../components/common/Select/Select'
-import ProductForm from '../../components/features/Products/ProductForm' // You'll need to create this component
+import StoreForm from '../../components/features/Stores/StoreForm'
+import useStoreStore from '../../store/storeStore'
 
-const Products = () => {
+const Stores = () => {
   const {
-    products,
-    totalProducts,
+    stores,
+    totalStores,
     currentPage,
     pageSize,
     loading,
     filters,
-    fetchProducts,
-    deleteProduct,
+    fetchStores,
+    createStore,
+    updateStore,
+    deleteStore,
+    getEditData,
     setFilters,
-    createProduct,
-    updateProduct,
-  } = useProductStore()
+  } = useStoreStore()
 
+  // Ensure stores is an array
+  const safeStores = Array.isArray(stores) ? stores : []
+  
   const [showAddForm, setShowAddForm] = useState(false)
   const [showEditForm, setShowEditForm] = useState(false)
-  const [selectedProduct, setSelectedProduct] = useState(null)
+  const [selectedStore, setSelectedStore] = useState(null)
   const [searchTerm, setSearchTerm] = useState(filters.search || '')
   const [showFilters, setShowFilters] = useState(false)
   const [viewMode, setViewMode] = useState('table') // 'table' or 'grid'
-  const [selectedProducts, setSelectedProducts] = useState([])
+  const [selectedStores, setSelectedStores] = useState([])
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [refreshing, setRefreshing] = useState(false)
   const [formSubmitting, setFormSubmitting] = useState(false)
   const [initialLoading, setInitialLoading] = useState(true)
 
+  // Get current user ID
+  const getUserId = () => {
+    const authData = localStorage.getItem('auth')
+    if (authData) {
+      try {
+        const parsed = JSON.parse(authData)
+        return parsed.user?.id || parsed.userId || '1'
+      } catch {
+        return '1'
+      }
+    }
+    return '1'
+  }
+
+  const currentUserId = getUserId()
+
   useEffect(() => {
     const fetchData = async () => {
       try {
-        await fetchProducts()
+        console.log('🔄 Fetching stores for user:', currentUserId)
+        await fetchStores(currentUserId)
+        console.log('✅ Stores fetched successfully')
+      } catch (error) {
+        console.error('❌ Failed to fetch stores:', error)
       } finally {
         setInitialLoading(false)
       }
     }
     fetchData()
-  }, [])
+  }, [currentUserId])
 
   useEffect(() => {
     const debounceTimer = setTimeout(() => {
       setFilters({ search: searchTerm })
+      // Refresh stores when search term changes and not in form mode
+      if (!showAddForm && !showEditForm) {
+        fetchStores(currentUserId)
+      }
     }, 500)
 
     return () => clearTimeout(debounceTimer)
-  }, [searchTerm, setFilters])
+  }, [searchTerm, setFilters, currentUserId, fetchStores, showAddForm, showEditForm])
 
-  const handleAddProduct = () => {
+  const handleAddStore = () => {
     setShowAddForm(true)
+    setShowEditForm(false)
+    setSelectedStore(null)
   }
 
-  const handleEditProduct = (product) => {
-    setSelectedProduct(product)
-    setShowEditForm(true)
+  const handleEditStore = async (store) => {
+    try {
+      const editData = await getEditData(currentUserId)
+      setSelectedStore(editData.data || store)
+      setShowEditForm(true)
+      setShowAddForm(false)
+    } catch (error) {
+      console.error('Failed to fetch edit data:', error)
+      setSelectedStore(store)
+      setShowEditForm(true)
+      setShowAddForm(false)
+    }
   }
 
   const handleCancelForm = () => {
     setShowAddForm(false)
     setShowEditForm(false)
-    setSelectedProduct(null)
+    setSelectedStore(null)
   }
 
-  const handleSubmitProduct = async (productData) => {
+  const handleSubmitStore = async (storeData) => {
     setFormSubmitting(true)
     try {
-      if (showEditForm && selectedProduct) {
-        await updateProduct(selectedProduct.id, productData)
+      if (showEditForm && selectedStore) {
+        await updateStore(selectedStore.id, storeData)
+        console.log('✅ Store updated successfully')
       } else {
-        await createProduct(productData)
+        await createStore(storeData)
+        console.log('✅ Store created successfully')
       }
-      // Refresh the product list
-      await fetchProducts()
+      // Refresh the store list
+      await fetchStores(currentUserId)
       // Hide the form
       handleCancelForm()
     } catch (error) {
-      console.error('Error saving product:', error)
-      // Handle error (show toast notification, etc.)
+      console.error(`Error ${showEditForm ? 'updating' : 'creating'} store:`, error)
     } finally {
       setFormSubmitting(false)
     }
   }
 
   const handleDelete = async (id) => {
-    if (window.confirm('Are you sure you want to delete this product?')) {
-      await deleteProduct(id)
+    if (window.confirm('Are you sure you want to delete this store?')) {
+      await deleteStore(id)
+      await fetchStores(currentUserId)
     }
   }
 
   const handleBulkDelete = async () => {
-    if (window.confirm(`Are you sure you want to delete ${selectedProducts.length} products?`)) {
+    if (window.confirm(`Are you sure you want to delete ${selectedStores.length} stores?`)) {
       // Implement bulk delete
-      setSelectedProducts([])
+      for (const id of selectedStores) {
+        await deleteStore(id)
+      }
+      setSelectedStores([])
       setShowDeleteConfirm(false)
+      await fetchStores(currentUserId)
     }
   }
 
   const handlePageChange = (page) => {
-    fetchProducts(page)
+    fetchStores(currentUserId, { ...filters, page })
   }
 
   const handleRefresh = async () => {
     setRefreshing(true)
-    await fetchProducts()
+    await fetchStores(currentUserId)
     setRefreshing(false)
   }
 
   const clearFilters = () => {
     setSearchTerm('')
-    setFilters({ search: '', category: '', status: '' })
+    setFilters({ search: '', status: '', type: '' })
+    fetchStores(currentUserId)
   }
 
-  const toggleProductSelection = (productId) => {
-    setSelectedProducts(prev =>
-      prev.includes(productId)
-        ? prev.filter(id => id !== productId)
-        : [...prev, productId]
+  const toggleStoreSelection = (storeId) => {
+    setSelectedStores(prev =>
+      prev.includes(storeId)
+        ? prev.filter(id => id !== storeId)
+        : [...prev, storeId]
     )
   }
 
-  const selectAllProducts = () => {
-    if (selectedProducts.length === products.length) {
-      setSelectedProducts([])
+  const selectAllStores = () => {
+    if (selectedStores.length === safeStores.length) {
+      setSelectedStores([])
     } else {
-      setSelectedProducts(products.map(p => p.id))
+      setSelectedStores(safeStores.map(s => s.id))
+    }
+  }
+
+  // Helper function to get status display
+  const getStatusDisplay = (store) => {
+    const isActive = store.status === true || store.status === 'active' || store.status === 1
+    return {
+      active: isActive,
+      text: isActive ? 'Active' : 'Inactive',
+      variant: isActive ? 'success' : 'default'
     }
   }
 
@@ -164,8 +222,8 @@ const Products = () => {
         <div className="flex items-center">
           <input
             type="checkbox"
-            checked={selectedProducts.length === products.length && products.length > 0}
-            onChange={selectAllProducts}
+            checked={selectedStores.length === safeStores.length && safeStores.length > 0}
+            onChange={selectAllStores}
             className="w-4 h-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
           />
         </div>
@@ -174,14 +232,14 @@ const Products = () => {
       cell: (_, row) => (
         <input
           type="checkbox"
-          checked={selectedProducts.includes(row.id)}
-          onChange={() => toggleProductSelection(row.id)}
+          checked={selectedStores.includes(row.id)}
+          onChange={() => toggleStoreSelection(row.id)}
           className="w-4 h-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
         />
       ),
     },
     {
-      header: 'Product',
+      header: 'Store',
       accessor: 'name',
       cell: (value, row) => (
         <div className="flex items-center">
@@ -189,86 +247,62 @@ const Products = () => {
             whileHover={{ scale: 1.05 }}
             className="relative"
           >
-            {row.image ? (
-              <img
-                src={row.image}
-                alt={value}
-                className="w-12 h-12 rounded-xl object-cover mr-3 ring-2 ring-gray-200 dark:ring-gray-700"
-              />
-            ) : (
-              <div className="w-12 h-12 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-600 rounded-xl mr-3 flex items-center justify-center ring-2 ring-gray-200 dark:ring-gray-700">
-                <FiPackage className="w-6 h-6 text-gray-500 dark:text-gray-400" />
-              </div>
-            )}
-            {row.lowStock && (
-              <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full ring-2 ring-white dark:ring-gray-800" />
-            )}
+            <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl mr-3 flex items-center justify-center ring-2 ring-gray-200 dark:ring-gray-700">
+              <FiPackage className="w-6 h-6 text-white" />
+            </div>
           </motion.div>
           <div>
             <p className="font-medium text-gray-900 dark:text-white">{value}</p>
-            <p className="text-sm text-gray-500 dark:text-gray-400">SKU: {row.sku}</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">GST: {row.gst || 'N/A'}</p>
           </div>
         </div>
       ),
     },
     {
-      header: 'Category',
-      accessor: 'category_id',
-      cell: (value) => (
-        <span className="px-3 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg text-sm">
-          Category {value}
-        </span>
-      ),
-    },
-    {
-      header: 'Price',
-      accessor: 'selling_price',
-      cell: (value) => (
-        <span className="font-semibold text-gray-900 dark:text-white">
-          ${value ? parseFloat(value).toFixed(2) : '0.00'}
-        </span>
-      ),
-    },
-    {
-      header: 'Stock',
-      accessor: 'stock',
+      header: 'Contact',
+      accessor: 'email',
       cell: (value, row) => (
-        <div className="flex items-center space-x-2">
-          <div className="w-16 h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-            <motion.div
-              initial={{ width: 0 }}
-              animate={{ width: `${(value / row.maxStock) * 100}%` }}
-              transition={{ duration: 0.5 }}
-              className={`h-full rounded-full ${
-                value <= row.lowStockThreshold 
-                  ? 'bg-red-500' 
-                  : value <= row.lowStockThreshold * 2
-                  ? 'bg-yellow-500'
-                  : 'bg-green-500'
-              }`}
-            />
+        <div className="space-y-1">
+          <div className="flex items-center space-x-2 text-sm">
+            <FiMail className="w-4 h-4 text-gray-400" />
+            <span className="text-gray-600 dark:text-gray-400">{value || 'N/A'}</span>
           </div>
-          <span className={`text-sm font-medium ${
-            value <= row.lowStockThreshold 
-              ? 'text-red-600 dark:text-red-400' 
-              : value <= row.lowStockThreshold * 2
-              ? 'text-yellow-600 dark:text-yellow-400'
-              : 'text-gray-900 dark:text-white'
-          }`}>
-            {value}
-          </span>
+          {row.mobile && (
+            <div className="flex items-center space-x-2 text-sm">
+              <FiPhone className="w-4 h-4 text-gray-400" />
+              <span className="text-gray-600 dark:text-gray-400">{row.mobile}</span>
+            </div>
+          )}
+        </div>
+      ),
+    },
+    {
+      header: 'Location',
+      accessor: 'address',
+      cell: (value, row) => (
+        <div className="space-y-1">
+          <div className="flex items-start space-x-2 text-sm">
+            <FiMapPin className="w-4 h-4 text-gray-400 mt-0.5" />
+            <div>
+              <div className="text-gray-600 dark:text-gray-400">{value || 'N/A'}</div>
+              <div className="text-gray-500 dark:text-gray-500">{row.city || 'N/A'}</div>
+            </div>
+          </div>
         </div>
       ),
     },
     {
       header: 'Status',
-      accessor: 'is_active',
-      cell: (value) => (
-        <StatusBadge
-          status={value ? 'active' : 'inactive'}
-          variant={value ? 'success' : 'default'}
-        />
-      ),
+      accessor: 'status',
+      cell: (value) => {
+        const isActive = value === true || value === 'active' || value === 1
+        return (
+          <StatusBadge
+            status={isActive ? 'active' : 'inactive'}
+            variant={isActive ? 'success' : 'default'}
+          />
+        )
+      },
     },
     {
       header: 'Actions',
@@ -278,9 +312,9 @@ const Products = () => {
           <motion.button
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.95 }}
-            onClick={() => handleEditProduct(row)}
+            onClick={() => handleEditStore(row)}
             className="p-2 text-blue-600 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
-            title="Edit product"
+            title="Edit store"
           >
             <FiEdit2 className="w-4 h-4" />
           </motion.button>
@@ -289,7 +323,7 @@ const Products = () => {
             whileTap={{ scale: 0.95 }}
             onClick={() => handleDelete(value)}
             className="p-2 text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20 rounded-lg transition-colors"
-            title="Delete product"
+            title="Delete store"
           >
             <FiTrash2 className="w-4 h-4" />
           </motion.button>
@@ -325,11 +359,23 @@ const Products = () => {
     },
   ]
 
+  // Skeleton Loader Component
+  const SkeletonLoader = () => (
+    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-12">
+      <div className="flex flex-col items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mb-4"></div>
+        <p className="text-gray-600 dark:text-gray-400">
+          Loading store data...
+        </p>
+      </div>
+    </div>
+  )
+
   return (
     <motion.div 
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="space-y-6 p-6"
+      className="space-y-6 p-6 min-h-screen bg-gray-50 dark:bg-gray-900"
     >
       {/* Header with Gradient */}
       <motion.div
@@ -340,11 +386,11 @@ const Products = () => {
       >
         <div>
           <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-gray-300 bg-clip-text text-transparent">
-            Products
+            Stores
           </h1>
           <p className="text-gray-600 dark:text-gray-400 mt-2 flex items-center">
             <FiPackage className="w-4 h-4 mr-2" />
-            Manage your product catalog and inventory
+            Manage your store/shop information and settings
           </p>
         </div>
         
@@ -410,18 +456,18 @@ const Products = () => {
             </>
           )}
 
-          {/* Add Product Button or Back Button */}
+          {/* Add Store Button or Back Button */}
           {!showAddForm && !showEditForm ? (
             <motion.div
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
             >
               <Button
-                onClick={handleAddProduct}
+                onClick={handleAddStore}
                 icon={FiPlus}
                 className="shadow-lg shadow-primary-500/30"
               >
-                Add Product
+                Add Store
               </Button>
             </motion.div>
           ) : (
@@ -435,7 +481,7 @@ const Products = () => {
                 onClick={handleCancelForm}
                 icon={FiArrowLeft}
               >
-                Back to Products
+                Back to Stores
               </Button>
             </motion.div>
           )}
@@ -448,23 +494,20 @@ const Products = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: 20 }}
-          className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6"
         >
-          <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">
-            {showEditForm ? 'Edit Product' : 'Add New Product'}
-          </h2>
-          <ProductForm
-            initialData={selectedProduct}
-            onSubmit={handleSubmitProduct}
+          <StoreForm
+            store={selectedStore}
+            onSubmit={handleSubmitStore}
             onCancel={handleCancelForm}
             isSubmitting={formSubmitting}
+            isEdit={showEditForm}
           />
         </motion.div>
       ) : (
         <>
           {/* Bulk Actions Bar */}
           <AnimatePresence>
-            {selectedProducts.length > 0 && (
+            {selectedStores.length > 0 && (
               <motion.div
                 initial={{ opacity: 0, y: -20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -474,10 +517,10 @@ const Products = () => {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-3">
                     <span className="text-sm font-medium text-primary-700 dark:text-primary-300">
-                      {selectedProducts.length} products selected
+                      {selectedStores.length} store{selectedStores.length !== 1 ? 's' : ''} selected
                     </span>
                     <button
-                      onClick={() => setSelectedProducts([])}
+                      onClick={() => setSelectedStores([])}
                       className="text-xs text-primary-600 hover:text-primary-700 dark:text-primary-400"
                     >
                       Clear selection
@@ -524,7 +567,7 @@ const Products = () => {
                   <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
                   <Input
                     type="text"
-                    placeholder="Search products by name, SKU, or category..."
+                    placeholder="Search stores by name, email, or city..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="pl-10"
@@ -544,12 +587,12 @@ const Products = () => {
                   >
                     <FiFilter className="w-4 h-4" />
                     <span>Filters</span>
-                    {(filters.category || filters.status) && (
+                    {(filters.status || filters.type) && (
                       <span className="ml-1 w-2 h-2 bg-primary-500 rounded-full" />
                     )}
                   </motion.button>
 
-                  {(searchTerm || filters.category || filters.status) && (
+                  {(searchTerm || filters.status || filters.type) && (
                     <motion.button
                       initial={{ scale: 0 }}
                       animate={{ scale: 1 }}
@@ -574,21 +617,7 @@ const Products = () => {
                     className="overflow-hidden"
                   >
                     <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <Select
-                          label="Category"
-                          options={[
-                            { value: '', label: 'All Categories' },
-                            { value: 'electronics', label: 'Electronics' },
-                            { value: 'clothing', label: 'Clothing' },
-                            { value: 'books', label: 'Books' },
-                            { value: 'home', label: 'Home & Garden' },
-                            { value: 'sports', label: 'Sports' },
-                            { value: 'toys', label: 'Toys' },
-                          ]}
-                          value={filters.category}
-                          onChange={(e) => setFilters({ category: e.target.value })}
-                        />
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <Select
                           label="Status"
                           options={[
@@ -596,19 +625,25 @@ const Products = () => {
                             { value: 'active', label: 'Active' },
                             { value: 'inactive', label: 'Inactive' },
                           ]}
-                          value={filters.status}
-                          onChange={(e) => setFilters({ status: e.target.value })}
+                          value={filters.status || ''}
+                          onChange={(e) => {
+                            setFilters({ status: e.target.value })
+                            fetchStores(currentUserId)
+                          }}
                         />
                         <Select
-                          label="Stock Status"
+                          label="Store Type"
                           options={[
-                            { value: '', label: 'All Stock' },
-                            { value: 'low', label: 'Low Stock' },
-                            { value: 'out', label: 'Out of Stock' },
-                            { value: 'in', label: 'In Stock' },
+                            { value: '', label: 'All Types' },
+                            { value: 'retail', label: 'Retail' },
+                            { value: 'warehouse', label: 'Warehouse' },
+                            { value: 'online', label: 'Online' },
                           ]}
-                          value={filters.stockStatus}
-                          onChange={(e) => setFilters({ stockStatus: e.target.value })}
+                          value={filters.type || ''}
+                          onChange={(e) => {
+                            setFilters({ type: e.target.value })
+                            fetchStores(currentUserId)
+                          }}
                         />
                       </div>
                     </div>
@@ -618,173 +653,177 @@ const Products = () => {
             )}
           </motion.div>
 
-          {/* Products Display */}
+          {/* Stores Display */}
           <motion.div
             initial={{ y: 20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ delay: 0.2 }}
           >
-            {initialLoading || loading ? (
+            {initialLoading ? (
+              <SkeletonLoader />
+            ) : loading && !initialLoading ? (
               <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-12">
                 <div className="flex flex-col items-center justify-center">
                   <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mb-4"></div>
                   <p className="text-gray-600 dark:text-gray-400">
-                    {initialLoading ? 'Loading product data...' : 'Updating product data...'}
+                    Updating store data...
                   </p>
                 </div>
               </div>
-            ) : products.length > 0 ? (
+            ) : safeStores.length > 0 ? (
               viewMode === 'table' ? (
                 <>
                   <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg overflow-hidden">
                     <Table
                       columns={columns}
-                      data={products}
+                      data={safeStores}
                       loading={loading}
                     />
                   </div>
-                  <Pagination
-                    currentPage={currentPage}
-                    totalItems={totalProducts}
-                    pageSize={pageSize}
-                    onPageChange={handlePageChange}
-                  />
+                  {totalStores > pageSize && (
+                    <Pagination
+                      currentPage={currentPage}
+                      totalItems={totalStores}
+                      pageSize={pageSize}
+                      onPageChange={handlePageChange}
+                    />
+                  )}
                 </>
               ) : (
                 // Grid View
                 <>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                    {products.map((product, index) => (
-                      <motion.div
-                        key={product.id}
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: index * 0.05 }}
-                        whileHover={{ y: -4 }}
-                        className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg overflow-hidden group"
-                      >
-                        {/* Product Image */}
-                        <div className="relative h-48 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-600">
-                          {product.image ? (
-                            <img
-                              src={product.image}
-                              alt={product.name}
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center">
-                              <FiPackage className="w-16 h-16 text-gray-400 dark:text-gray-500" />
-                            </div>
-                          )}
-                          
-                          {/* Quick Actions Overlay */}
-                          <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center space-x-2">
-                            <motion.button
-                              whileHover={{ scale: 1.1 }}
-                              whileTap={{ scale: 0.95 }}
-                              onClick={() => handleEditProduct(product)}
-                              className="p-2 bg-white rounded-lg text-blue-600 hover:bg-blue-50"
-                            >
-                              <FiEdit2 className="w-4 h-4" />
-                            </motion.button>
-                            <motion.button
-                              whileHover={{ scale: 1.1 }}
-                              whileTap={{ scale: 0.95 }}
-                              onClick={() => handleDelete(product.id)}
-                              className="p-2 bg-white rounded-lg text-red-600 hover:bg-red-50"
-                            >
-                              <FiTrash2 className="w-4 h-4" />
-                            </motion.button>
-                            <motion.button
-                              whileHover={{ scale: 1.1 }}
-                              whileTap={{ scale: 0.95 }}
-                              className="p-2 bg-white rounded-lg text-gray-600 hover:bg-gray-50"
-                            >
-                              <FiEye className="w-4 h-4" />
-                            </motion.button>
-                          </div>
-
-                          {/* Low Stock Badge */}
-                          {product.stock <= product.lowStockThreshold && (
-                            <div className="absolute top-2 left-2 px-2 py-1 bg-red-500 text-white text-xs font-medium rounded-lg flex items-center">
-                              <FiAlertCircle className="w-3 h-3 mr-1" />
-                              Low Stock
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Product Info */}
-                        <div className="p-4">
-                          <h3 className="font-semibold text-gray-900 dark:text-white mb-1">
-                            {product.name}
-                          </h3>
-                          <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">
-                            SKU: {product.sku}
-                          </p>
-                          
-                          <div className="flex items-center justify-between mb-3">
-                            <span className="text-lg font-bold text-gray-900 dark:text-white">
-                              ${product.selling_price ? parseFloat(product.selling_price).toFixed(2) : '0.00'}
-                            </span>
-                            <StatusBadge
-                              status={product.is_active ? 'active' : 'inactive'}
-                              variant={product.is_active ? 'success' : 'default'}
-                              size="sm"
-                            />
-                          </div>
-
-                          {/* Stock Progress */}
-                          <div className="space-y-1">
-                            <div className="flex justify-between text-xs">
-                              <span className="text-gray-500 dark:text-gray-400">Stock</span>
-                              <span className={`font-medium ${
-                                product.stock <= product.lowStockThreshold 
-                                  ? 'text-red-600 dark:text-red-400' 
-                                  : 'text-gray-700 dark:text-gray-300'
-                              }`}>
-                                {product.stock} / {product.maxStock}
-                              </span>
-                            </div>
-                            <div className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                              <motion.div
-                                initial={{ width: 0 }}
-                                animate={{ width: `${(product.stock / product.maxStock) * 100}%` }}
-                                transition={{ duration: 0.5 }}
-                                className={`h-full rounded-full ${
-                                  product.stock <= product.lowStockThreshold 
-                                    ? 'bg-red-500' 
-                                    : product.stock <= product.lowStockThreshold * 2
-                                    ? 'bg-yellow-500'
-                                    : 'bg-green-500'
-                                }`}
+                    {safeStores.map((store, index) => {
+                      const status = getStatusDisplay(store)
+                      return (
+                        <motion.div
+                          key={store.id}
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: index * 0.05 }}
+                          whileHover={{ y: -4 }}
+                          className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg overflow-hidden group"
+                        >
+                          {/* Store Header */}
+                          <div className="relative h-32 bg-gradient-to-r from-blue-500 to-purple-600">
+                            <div className="absolute inset-0 bg-black/20 group-hover:bg-black/30 transition-colors" />
+                            <div className="absolute bottom-4 left-4 right-4 flex justify-between items-end">
+                              <div className="flex items-center space-x-3">
+                                <div className="w-12 h-12 bg-white/20 backdrop-blur rounded-xl flex items-center justify-center">
+                                  <FiPackage className="w-6 h-6 text-white" />
+                                </div>
+                                <div>
+                                  <h3 className="font-semibold text-white text-lg">
+                                    {store.name}
+                                  </h3>
+                                  <p className="text-white/80 text-sm">GST: {store.gst || 'N/A'}</p>
+                                </div>
+                              </div>
+                              <StatusBadge
+                                status={status.active ? 'active' : 'inactive'}
+                                variant={status.active ? 'success' : 'default'}
+                                size="sm"
                               />
                             </div>
+                            
+                            {/* Quick Actions Overlay */}
+                            <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center space-x-2">
+                              <motion.button
+                                whileHover={{ scale: 1.1 }}
+                                whileTap={{ scale: 0.95 }}
+                                onClick={() => handleEditStore(store)}
+                                className="p-2 bg-white rounded-lg text-blue-600 hover:bg-blue-50"
+                              >
+                                <FiEdit2 className="w-4 h-4" />
+                              </motion.button>
+                              <motion.button
+                                whileHover={{ scale: 1.1 }}
+                                whileTap={{ scale: 0.95 }}
+                                onClick={() => handleDelete(store.id)}
+                                className="p-2 bg-white rounded-lg text-red-600 hover:bg-red-50"
+                              >
+                                <FiTrash2 className="w-4 h-4" />
+                              </motion.button>
+                              <motion.button
+                                whileHover={{ scale: 1.1 }}
+                                whileTap={{ scale: 0.95 }}
+                                className="p-2 bg-white rounded-lg text-gray-600 hover:bg-gray-50"
+                              >
+                                <FiEye className="w-4 h-4" />
+                              </motion.button>
+                            </div>
                           </div>
-                        </div>
-                      </motion.div>
-                    ))}
+
+                          {/* Store Info */}
+                          <div className="p-4 space-y-3">
+                            {/* Contact */}
+                            <div className="space-y-2">
+                              {store.email && (
+                                <div className="flex items-center space-x-2 text-sm">
+                                  <FiMail className="w-4 h-4 text-gray-400" />
+                                  <span className="text-gray-600 dark:text-gray-400 truncate">
+                                    {store.email}
+                                  </span>
+                                </div>
+                              )}
+                              {store.mobile && (
+                                <div className="flex items-center space-x-2 text-sm">
+                                  <FiPhone className="w-4 h-4 text-gray-400" />
+                                  <span className="text-gray-600 dark:text-gray-400">
+                                    {store.mobile}
+                                  </span>
+                                </div>
+                              )}
+                              {(store.address || store.city) && (
+                                <div className="flex items-start space-x-2 text-sm">
+                                  <FiMapPin className="w-4 h-4 text-gray-400 mt-0.5" />
+                                  <div className="text-gray-600 dark:text-gray-400">
+                                    {store.address && <div>{store.address}</div>}
+                                    {store.city && <div className="text-gray-500">{store.city}</div>}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                            
+                            {/* Additional Info */}
+                            <div className="pt-2 border-t border-gray-100 dark:border-gray-700">
+                              <div className="flex justify-between text-sm">
+                                <span className="text-gray-500 dark:text-gray-400">Created:</span>
+                                <span className="text-gray-700 dark:text-gray-300">
+                                  {store.created_at ? new Date(store.created_at).toLocaleDateString() : 'N/A'}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        </motion.div>
+                      )
+                    })}
                   </div>
-                  <Pagination
-                    currentPage={currentPage}
-                    totalItems={totalProducts}
-                    pageSize={pageSize}
-                    onPageChange={handlePageChange}
-                  />
+                  {totalStores > pageSize && (
+                    <Pagination
+                      currentPage={currentPage}
+                      totalItems={totalStores}
+                      pageSize={pageSize}
+                      onPageChange={handlePageChange}
+                    />
+                  )}
                 </>
               )
             ) : (
               <EmptyState
                 icon={FiPackage}
-                title="No products yet"
-                description="Get started by adding your first product to the catalog. You can add products individually or import them in bulk."
+                title="No stores yet"
+                description={searchTerm ? "No stores match your search criteria" : "Get started by adding your first store to manage your business locations"}
                 action={
-                  <Button 
-                    onClick={handleAddProduct}
-                    icon={FiPlus}
-                    size="lg"
-                  >
-                    Add Your First Product
-                  </Button>
+                  !searchTerm && (
+                    <Button 
+                      onClick={handleAddStore}
+                      icon={FiPlus}
+                      size="lg"
+                    >
+                      Add Your First Store
+                    </Button>
+                  )
                 }
               />
             )}
@@ -814,10 +853,10 @@ const Products = () => {
                   <FiTrash2 className="w-8 h-8 text-red-600 dark:text-red-400" />
                 </div>
                 <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
-                  Delete Products
+                  Delete {selectedStores.length > 1 ? 'Stores' : 'Store'}
                 </h3>
                 <p className="text-gray-600 dark:text-gray-400 mb-6">
-                  Are you sure you want to delete {selectedProducts.length} selected products? This action cannot be undone.
+                  Are you sure you want to delete {selectedStores.length} selected {selectedStores.length === 1 ? 'store' : 'stores'}? This action cannot be undone.
                 </p>
                 <div className="flex space-x-3">
                   <Button
@@ -844,4 +883,4 @@ const Products = () => {
   )
 }
 
-export default Products
+export default Stores

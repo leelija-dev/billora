@@ -15,6 +15,8 @@ import {
   FiLogOut,
   FiHelpCircle,
   FiBell,
+  FiBox,
+  FiGrid,
 } from 'react-icons/fi';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -44,7 +46,10 @@ const Sidebar = () => {
   const menuItems = [
     { path: '/dashboard', name: 'Dashboard', icon: FiHome, badge: null },
     { path: '/products', name: 'Products', icon: FiPackage, badge: null },
-    { path: '/inventory', name: 'Inventory', icon: FiArchive, badge: 'Low Stock' },
+    { path: '/categories', name: 'Categories', icon: FiGrid, badge: null },
+    { path: '/units', name: 'Units', icon: FiBox, badge: null },
+    { path: '/stores', name: 'Stores', icon: FiPackage, badge: null },
+    { path: '/stock', name: 'Stock', icon: FiArchive, badge: 'Low Stock' },
     { path: '/orders', name: 'Orders', icon: FiShoppingBag, badge: '12' },
     { path: '/customers', name: 'Customers', icon: FiUsers, badge: null },
     { path: '/invoices', name: 'Invoices', icon: FiFileText, badge: '3' },

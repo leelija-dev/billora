@@ -7,7 +7,7 @@ import Input from '../../components/common/Input/Input'
 
 const Register = () => {
   const navigate = useNavigate()
-  const { register: registerCompany, isLoading } = useAuthStore()
+  const { register: registerUser, isLoading } = useAuthStore()
   const [step, setStep] = useState(1)
   
   const {
@@ -22,10 +22,26 @@ const Register = () => {
 
   const onSubmit = async (data) => {
     if (step === 1) {
-      const isValid = await trigger(['companyName', 'companyEmail', 'phone'])
+      const isValid = await trigger(['name', 'email', 'phone', 'city', 'state', 'country', 'pincode'])
       if (isValid) setStep(2)
     } else {
-      const result = await registerCompany(data)
+      // Prepare data for API
+      const userData = {
+        name: data.name,
+        email: data.email,
+        phone: data.phone,
+        password: data.password,
+        company_name: data.company_name || '',
+        gst_number: data.gst_number || '',
+        address: data.address || '',
+        city: data.city,
+        state: data.state,
+        country: data.country,
+        pincode: data.pincode,
+        created_by: null
+      }
+      
+      const result = await registerUser(userData)
       if (result.success) {
         navigate('/login')
       }
@@ -41,10 +57,10 @@ const Register = () => {
             <span className="text-white font-bold text-2xl">S</span>
           </div>
           <h2 className="text-3xl font-bold text-gray-900 dark:text-white">
-            Register Your Company
+            Register Your Account
           </h2>
           <p className="text-gray-600 dark:text-gray-400 mt-2">
-            Start your 14-day free trial. No credit card required.
+            Create your account to get started
           </p>
         </div>
 
@@ -58,7 +74,7 @@ const Register = () => {
                 }`}>
                   1
                 </div>
-                <span className="ml-2 text-sm font-medium">Company Info</span>
+                <span className="ml-2 text-sm font-medium">Personal Info</span>
               </div>
               <div className={`flex-1 h-1 mx-4 ${
                 step >= 2 ? 'bg-primary-600' : 'bg-gray-200 dark:bg-gray-700'
@@ -69,7 +85,7 @@ const Register = () => {
                 }`}>
                   2
                 </div>
-                <span className="ml-2 text-sm font-medium">Admin Account</span>
+                <span className="ml-2 text-sm font-medium">Account Setup</span>
               </div>
             </div>
           </div>
@@ -81,58 +97,10 @@ const Register = () => {
             {step === 1 ? (
               <>
                 <Input
-                  label="Company Name"
-                  placeholder="Enter your company name"
-                  error={errors.companyName?.message}
-                  {...register('companyName', {
-                    required: 'Company name is required',
-                  })}
-                />
-
-                <Input
-                  label="Company Email"
-                  type="email"
-                  placeholder="Enter company email"
-                  error={errors.companyEmail?.message}
-                  {...register('companyEmail', {
-                    required: 'Company email is required',
-                    pattern: {
-                      value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-                      message: 'Invalid email address',
-                    },
-                  })}
-                />
-
-                <Input
-                  label="Phone Number"
-                  type="tel"
-                  placeholder="Enter phone number"
-                  error={errors.phone?.message}
-                  {...register('phone', {
-                    required: 'Phone number is required',
-                  })}
-                />
-
-                <Select
-                  label="Company Size"
-                  options={[
-                    { value: '1-10', label: '1-10 employees' },
-                    { value: '11-50', label: '11-50 employees' },
-                    { value: '51-200', label: '51-200 employees' },
-                    { value: '201+', label: '201+ employees' },
-                  ]}
-                  {...register('companySize', {
-                    required: 'Please select company size',
-                  })}
-                />
-              </>
-            ) : (
-              <>
-                <Input
                   label="Full Name"
                   placeholder="Enter your full name"
-                  error={errors.fullName?.message}
-                  {...register('fullName', {
+                  error={errors.name?.message}
+                  {...register('name', {
                     required: 'Full name is required',
                   })}
                 />
@@ -152,6 +120,79 @@ const Register = () => {
                 />
 
                 <Input
+                  label="Phone Number"
+                  type="tel"
+                  placeholder="Enter phone number"
+                  error={errors.phone?.message}
+                  {...register('phone', {
+                    required: 'Phone number is required',
+                  })}
+                />
+
+                <Input
+                  label="Company Name (Optional)"
+                  placeholder="Enter company name"
+                  error={errors.company_name?.message}
+                  {...register('company_name')}
+                />
+
+                <Input
+                  label="GST Number (Optional)"
+                  placeholder="Enter GST number"
+                  error={errors.gst_number?.message}
+                  {...register('gst_number')}
+                />
+
+                <Input
+                  label="Address (Optional)"
+                  placeholder="Enter address"
+                  error={errors.address?.message}
+                  {...register('address')}
+                />
+
+                <div className="grid grid-cols-2 gap-4">
+                  <Input
+                    label="City"
+                    placeholder="Enter city"
+                    error={errors.city?.message}
+                    {...register('city', {
+                      required: 'City is required',
+                    })}
+                  />
+
+                  <Input
+                    label="State"
+                    placeholder="Enter state"
+                    error={errors.state?.message}
+                    {...register('state', {
+                      required: 'State is required',
+                    })}
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <Input
+                    label="Country"
+                    placeholder="Enter country"
+                    error={errors.country?.message}
+                    {...register('country', {
+                      required: 'Country is required',
+                    })}
+                  />
+
+                  <Input
+                    label="Pincode"
+                    placeholder="Enter pincode"
+                    error={errors.pincode?.message}
+                    {...register('pincode', {
+                      required: 'Pincode is required',
+                    })}
+                  />
+                </div>
+              </>
+            ) : (
+              <>
+                <Input
                   label="Password"
                   type="password"
                   placeholder="Create a password"
@@ -159,12 +200,8 @@ const Register = () => {
                   {...register('password', {
                     required: 'Password is required',
                     minLength: {
-                      value: 8,
-                      message: 'Password must be at least 8 characters',
-                    },
-                    pattern: {
-                      value: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
-                      message: 'Password must contain uppercase, lowercase and number',
+                      value: 6,
+                      message: 'Password must be at least 6 characters',
                     },
                   })}
                 />

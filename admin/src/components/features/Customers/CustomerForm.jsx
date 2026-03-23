@@ -11,12 +11,9 @@ const CustomerForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting }) =
     name: '',
     email: '',
     phone: '',
-    company: '',
     address: '',
     city: '',
-    country: '',
     status: 'active',
-    notes: '',
     ...initialData
   })
 
@@ -28,12 +25,9 @@ const CustomerForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting }) =
         name: initialData.name || '',
         email: initialData.email || '',
         phone: initialData.phone || '',
-        company: initialData.company || '',
         address: initialData.address || '',
         city: initialData.city || '',
-        country: initialData.country || '',
         status: initialData.status || 'active',
-        notes: initialData.notes || '',
       })
     }
   }, [initialData])
@@ -144,13 +138,6 @@ const CustomerForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting }) =
             placeholder="+1 (555) 000-0000"
           />
 
-          <Input
-            label="Company"
-            name="company"
-            value={formData.company}
-            onChange={handleChange}
-            placeholder="Company name (optional)"
-          />
         </div>
 
         <div className="space-y-4">
@@ -166,23 +153,14 @@ const CustomerForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting }) =
             placeholder="Street address"
           />
 
-          <div className="grid grid-cols-2 gap-4">
-            <Input
-              label="City"
-              name="city"
-              value={formData.city}
-              onChange={handleChange}
-              placeholder="City"
-            />
-
-            <Input
-              label="Country"
-              name="country"
-              value={formData.country}
-              onChange={handleChange}
-              placeholder="Country"
-            />
-          </div>
+          <Input
+            label="City"
+            name="city"
+            value={formData.city}
+            onChange={handleChange}
+            placeholder="City"
+            className="col-span-2"
+          />
 
           <Select
             label="Status"
@@ -195,20 +173,6 @@ const CustomerForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting }) =
               { value: 'blocked', label: 'Blocked' },
             ]}
           />
-
-          <div className="col-span-2">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Notes
-            </label>
-            <textarea
-              name="notes"
-              value={formData.notes}
-              onChange={handleChange}
-              rows="3"
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
-              placeholder="Additional notes about the customer..."
-            />
-          </div>
         </div>
       </div>
 
