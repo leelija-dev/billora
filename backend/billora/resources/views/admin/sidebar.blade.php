@@ -48,9 +48,9 @@
                 <span class="ml-3">Plans</span>
             </a>
 
-            <a href="#" class="flex items-center px-4 py-3 hover:bg-blue-100">
+            <a href="{{route('admin.plan-permission.index')}}" class="flex items-center px-4 py-3 {{request()->routeIs('admin.plan-permission.index') ?'bg-blue-100 text-blue-600 font-semibold' : 'hover:bg-blue-100'}} hover:bg-blue-100">
                 <i data-feather="shopping-cart"></i>
-                <span class="ml-3">Orders</span>
+                <span class="ml-3">Plans Permission</span>
             </a>
 
             <a href="#" class="flex items-center px-4 py-3 hover:bg-blue-100">
