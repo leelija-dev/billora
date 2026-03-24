@@ -16,6 +16,7 @@ use App\Http\Controllers\admin\DashboardController;
 use App\Http\Controllers\admin\CartsController;
 use App\Http\Controllers\admin\ReportController;
 use App\Http\Controllers\admin\PlanPurchaseHistoryController;
+use App\Http\Controllers\admin\PaymentController;
 Route::get('/test', function () {
    return response()->json([
       'message' => 'Hello World',
@@ -162,4 +163,10 @@ Route::middleware('auth:sanctum')->prefix('reports')->group(function () {
 // plan purchase history
 Route::middleware('auth:sanctum')->prefix('plans-purchase-history')->group(function () {
    Route::get('/{id}', [PlanPurchaseHistoryController::class, 'index']);
+});
+
+//payment 
+Route::prefix('cashfree')->group(function () {
+    Route::post('/create-order', [PaymentController::class, 'createOrder']);
+    Route::get('/verify/{order_id}', [PaymentController::class, 'verifyPayment']);
 });
