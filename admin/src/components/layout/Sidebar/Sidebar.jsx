@@ -17,6 +17,7 @@ import {
   FiBell,
   FiBox,
   FiGrid,
+  FiBarChart2,
 } from 'react-icons/fi';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FaStore } from 'react-icons/fa';
@@ -55,6 +56,7 @@ const Sidebar = () => {
     { path: '/orders', name: 'Orders', icon: FiShoppingBag, badge: '12' },
     { path: '/customers', name: 'Customers', icon: FiUsers, badge: null },
     { path: '/invoices', name: 'Invoices', icon: FiFileText, badge: '3' },
+    { path: '/reports', name: 'Reports', icon: FiBarChart2, badge: null },
     { path: '/billing', name: 'Billing', icon: FiCreditCard, badge: null },
     { path: '/settings', name: 'Settings', icon: FiSettings, badge: null },
   ];
