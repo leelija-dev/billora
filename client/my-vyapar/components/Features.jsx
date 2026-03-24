@@ -51,7 +51,6 @@ const Features = () => {
           }
         });
       },
-      // threshold: 0.1 is critical for 480px height to trigger animations early
       { threshold: 0.1, rootMargin: "0px 0px -10px 0px" }
     );
 
@@ -67,16 +66,44 @@ const Features = () => {
   };
 
   return (
-    /* py-4 for mobile/short screens ensures the header is visible immediately */
-    <section className="py-4 sm:py-12 md:py-20 lg:py-24 bg-white font-sans overflow-hidden relative">
+    <section className="py-4 sm:py-12 md:py-20 lg:py-24 bg-gradient-to-br from-slate-50 to-white font-sans overflow-hidden relative">
       
-      {/* Background Decor - Lowered opacity to keep focus on text */}
-      <div className="hidden md:block absolute top-10 left-0 w-72 h-72 bg-blue-50 rounded-full blur-3xl opacity-30 -z-10"></div>
+      {/* Floating Blob Bubbles - Animated Background */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        {/* Blob 1 - Top Left - Purple/Blue */}
+        <div className="absolute top-0 -left-20 w-96 h-96 bg-gradient-to-br from-purple-200/50 to-blue-200/50 rounded-full mix-blend-multiply blur-3xl animate-blob"></div>
+        
+        {/* Blob 2 - Top Right - Yellow/Pink */}
+        <div className="absolute top-0 -right-20 w-96 h-96 bg-gradient-to-br from-yellow-200/40 to-pink-200/40 rounded-full mix-blend-multiply blur-3xl animate-blob animation-delay-2000"></div>
+        
+        {/* Blob 3 - Center - Blue/Indigo */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-gradient-to-br from-blue-200/30 to-indigo-200/30 rounded-full mix-blend-multiply blur-3xl animate-blob animation-delay-4000"></div>
+        
+        {/* Blob 4 - Bottom Left - Green/Teal */}
+        <div className="absolute bottom-0 -left-20 w-80 h-80 bg-gradient-to-br from-green-200/40 to-teal-200/40 rounded-full mix-blend-multiply blur-3xl animate-blob animation-delay-3000"></div>
+        
+        {/* Blob 5 - Bottom Right - Orange/Red */}
+        <div className="absolute bottom-0 -right-20 w-96 h-96 bg-gradient-to-br from-orange-200/40 to-red-200/40 rounded-full mix-blend-multiply blur-3xl animate-blob animation-delay-5000"></div>
+        
+        {/* Blob 6 - Left Center - Indigo/Purple */}
+        <div className="absolute top-1/3 -left-32 w-80 h-80 bg-gradient-to-br from-indigo-200/40 to-purple-200/40 rounded-full mix-blend-multiply blur-3xl animate-blob animation-delay-1000"></div>
+        
+        {/* Blob 7 - Right Center - Pink/Rose */}
+        <div className="absolute top-2/3 -right-32 w-80 h-80 bg-gradient-to-br from-pink-200/40 to-rose-200/40 rounded-full mix-blend-multiply blur-3xl animate-blob animation-delay-6000"></div>
+        
+        {/* Small Floating Bubbles */}
+        <div className="absolute top-20 left-[10%] w-16 h-16 bg-blue-300/30 rounded-full blur-xl animate-float"></div>
+        <div className="absolute top-40 right-[15%] w-24 h-24 bg-purple-300/30 rounded-full blur-xl animate-float animation-delay-1000"></div>
+        <div className="absolute bottom-32 left-[20%] w-20 h-20 bg-pink-300/30 rounded-full blur-xl animate-float animation-delay-2000"></div>
+        <div className="absolute bottom-48 right-[25%] w-28 h-28 bg-indigo-300/30 rounded-full blur-xl animate-float animation-delay-3000"></div>
+        <div className="absolute top-1/2 left-[5%] w-12 h-12 bg-teal-300/30 rounded-full blur-lg animate-float animation-delay-4000"></div>
+        <div className="absolute top-3/4 right-[10%] w-32 h-32 bg-amber-300/30 rounded-full blur-xl animate-float animation-delay-1500"></div>
+      </div>
 
       <Container>
         <div className="relative z-10">
           
-          {/* Header Section: mb-4 is tight enough to prevent the 'cut' on 480px viewports */}
+          {/* Header Section */}
           <div className="text-center mb-6 sm:mb-16 max-w-[800px] mx-auto">
             <SectionTitle title="Powerful features to grow your business" />
             <p className="hidden xs:block text-xs sm:text-base lg:text-lg text-[#666] px-4 mt-1">
@@ -104,7 +131,7 @@ const Features = () => {
                         : isEven ? 'opacity-0 -translate-x-10' : 'opacity-0 translate-x-10'
                     }`}
                   >
-                    <div className="w-full max-w-[380px] lg:max-w-[500px] overflow-hidden rounded-xl shadow-md border border-gray-50">
+                    <div className="w-full max-w-[380px] lg:max-w-[500px] overflow-hidden rounded-xl shadow-lg border border-gray-100 bg-white/80 backdrop-blur-sm">
                       <Image
                         src={feature.image}
                         alt={feature.title}
@@ -138,11 +165,11 @@ const Features = () => {
 
                     <button
                       onClick={() => toggleReadMore(index)}
-                      className="inline-flex items-center gap-1 mt-3 text-[#2f5fa5] font-bold text-xs sm:text-base hover:underline"
+                      className="inline-flex items-center gap-1 mt-3 text-[#2f5fa5] font-bold text-xs sm:text-base hover:underline transition-all duration-300 hover:scale-105"
                     >
                       {expandedItems[index] ? 'Show less' : 'Read more'}
                       <svg 
-                        className={`w-3 h-3 sm:w-4 sm:h-4 transition-transform ${expandedItems[index] ? 'rotate-180' : ''}`} 
+                        className={`w-3 h-3 sm:w-4 sm:h-4 transition-transform duration-300 ${expandedItems[index] ? 'rotate-180' : ''}`} 
                         fill="none" stroke="currentColor" viewBox="0 0 24 24"
                       >
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -155,6 +182,71 @@ const Features = () => {
           </div>
         </div>
       </Container>
+
+      <style jsx>{`
+        @keyframes blob {
+          0% {
+            transform: translate(0px, 0px) scale(1);
+          }
+          33% {
+            transform: translate(30px, -50px) scale(1.1);
+          }
+          66% {
+            transform: translate(-20px, 20px) scale(0.9);
+          }
+          100% {
+            transform: translate(0px, 0px) scale(1);
+          }
+        }
+        
+        @keyframes float {
+          0% {
+            transform: translateY(0px) translateX(0px);
+          }
+          50% {
+            transform: translateY(-20px) translateX(10px);
+          }
+          100% {
+            transform: translateY(0px) translateX(0px);
+          }
+        }
+        
+        .animate-blob {
+          animation: blob 15s infinite ease-in-out;
+        }
+        
+        .animate-float {
+          animation: float 8s infinite ease-in-out;
+        }
+        
+        .animation-delay-1000 {
+          animation-delay: 1s;
+        }
+        
+        .animation-delay-1500 {
+          animation-delay: 1.5s;
+        }
+        
+        .animation-delay-2000 {
+          animation-delay: 2s;
+        }
+        
+        .animation-delay-3000 {
+          animation-delay: 3s;
+        }
+        
+        .animation-delay-4000 {
+          animation-delay: 4s;
+        }
+        
+        .animation-delay-5000 {
+          animation-delay: 5s;
+        }
+        
+        .animation-delay-6000 {
+          animation-delay: 6s;
+        }
+      `}</style>
     </section>
   );
 };

@@ -991,6 +991,7 @@ const AppointmentPage = () => {
                 className="fixed bottom-4 right-4 left-4 sm:left-auto bg-[#4461F2] text-white px-5 py-4 rounded-xl shadow-2xl flex items-center gap-3 max-w-md mx-auto sm:mx-0"
               >
                 <CheckCircle size={24} />
+                {/* d */}
                 <div>
                   <p className="text-lg font-bold">Demo Booked Successfully!</p>
                   <p className="text-sm opacity-90">We'll contact you shortly</p>
