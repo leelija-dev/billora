@@ -266,7 +266,7 @@ const Hero = () => {
               <div className="absolute left-0 xl:top-[50%] xl:left-3 sm:left-2 md:left-4 top-[30%] sm:top-[50%] md:top-[40%] lg:top-[40%] z-30 hidden sm:block flight-phone mobile-model-adjust"
                 style={{
                   width: '90px',
-                  height: '180px',
+                  height: '200px',
                 }}
               >
                 <div className="relative w-full h-full bg-slate-800 rounded-[20px] p-1.5 shadow-2xl border border-slate-700 mobile-inner"
