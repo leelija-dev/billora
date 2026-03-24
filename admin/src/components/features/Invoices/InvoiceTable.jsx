@@ -4,7 +4,6 @@ import {
   FiEye, 
   FiDownload, 
   FiEdit2, 
-  FiTrash2, 
   FiCheckCircle,
   FiClock,
   FiAlertCircle,
@@ -19,7 +18,6 @@ const InvoiceTable = ({
   onView, 
   onDownload,
   onEdit,
-  onDelete,
   onMarkPaid 
 }) => {
   const getStatusConfig = (status) => {
@@ -141,16 +139,6 @@ const InvoiceTable = ({
             title="Edit Invoice"
           >
             <FiEdit2 className="w-4 h-4" />
-          </motion.button>
-          
-          <motion.button
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => onDelete(row)}
-            className="p-1.5 text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20 rounded-lg transition-colors"
-            title="Delete Invoice"
-          >
-            <FiTrash2 className="w-4 h-4" />
           </motion.button>
         </div>
       ),

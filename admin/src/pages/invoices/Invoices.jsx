@@ -506,8 +506,7 @@ const Invoices = () => {
                     onView={handleView}
                     onDownload={handleDownload}
                     onEdit={handleEditClick}
-                    onDelete={handleDeleteClick}
-                    onMarkPaid={handleMarkPaid}
+                                        onMarkPaid={handleMarkPaid}
                   />
                 </div>
 
