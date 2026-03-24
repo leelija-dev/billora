@@ -25,6 +25,7 @@ class CustomerController extends Controller
     }
     public function store(Request $request)
     {
+        try{
         $data = $request->validate([
             'name'          => 'nullable|string',
             'email'         => 'required|email',
@@ -49,6 +50,13 @@ class CustomerController extends Controller
             'message' => 'User Register Successfully',
             'data' => $customer
         ]);
+    }catch (\Exception $e) {
+        return response()->json([
+            'status' => false,
+            'message' => $e->getMessage()
+        ]);
+    }
+
     }
 //    public function login(Request $request) //web based 
 // {
