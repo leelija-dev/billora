@@ -454,7 +454,7 @@ const Products = () => {
             {showEditForm ? 'Edit Product' : 'Add New Product'}
           </h2>
           <ProductForm
-            initialData={selectedProduct}
+            product={selectedProduct}
             onSubmit={handleSubmitProduct}
             onCancel={handleCancelForm}
             isSubmitting={formSubmitting}

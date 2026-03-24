@@ -21,9 +21,43 @@ export const useInvoiceStore = create((set, get) => ({
     set({ loading: true })
     try {
       const response = await invoiceAPI.getAll(page, filters)
-      
+      const invoices = response.data?.data?.data || response.data?.data || []
+
+      // Enrich invoices with customer and store names
+      const enrichedInvoices = await Promise.all(
+        invoices.map(async (invoice) => {
+          try {
+            // Fetch customer and store details
+            const [customerResponse, storeResponse] = await Promise.all([
+              invoiceAPI.getCustomer(invoice.customer_id),
+              invoiceAPI.getStore(invoice.store_id)
+            ])
+            
+            const customer = customerResponse.data?.data || customerResponse.data || {}
+            // Store API returns paginated response, so we need to get the first store from data.data
+            const storeData = storeResponse.data?.data?.data || storeResponse.data?.data || []
+            const store = storeData[0] || {}
+            
+            return {
+              ...invoice,
+              customer: customer,
+              store: store,
+              customer_name: customer.name || `Customer #${invoice.customer_id}`,
+              store_name: store.name || `Store #${invoice.store_id}`
+            }
+          } catch (error) {
+            console.error('Failed to fetch customer/store details:', error)
+            return {
+              ...invoice,
+              customer_name: `Customer #${invoice.customer_id}`,
+              store_name: `Store #${invoice.store_id}`
+            }
+          }
+        })
+      )
+
       set({
-        invoices: response.data?.data?.data || response.data?.data || [],
+        invoices: enrichedInvoices,
         totalInvoices: response.data?.data?.total || response.data?.total || 0,
         currentPage: response.data?.data?.current_page || page,
         pageSize: response.data?.data?.per_page || 10,

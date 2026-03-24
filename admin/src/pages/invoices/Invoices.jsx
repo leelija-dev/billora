@@ -172,12 +172,14 @@ const Invoices = () => {
   const stats = {
     total: invoices?.length || 0,
     completed: invoices?.filter(i => i.status === 'completed').length || 0,
-    paid: invoices?.filter(i => i.status === 'paid').length || 0,
+    paid: invoices?.filter(i => i.status === 'paid' || i.status === 'completed').length || 0,
     unpaid: invoices?.filter(i => i.status === 'unpaid').length || 0,
     overdue: invoices?.filter(i => i.status === 'overdue').length || 0,
     totalAmount: invoices?.reduce((sum, i) => sum + (parseFloat(i.total_amount) || 0), 0) || 0,
-    paidAmount: invoices?.filter(i => i.status === 'completed' || i.status === 'paid').reduce((sum, i) => sum + (parseFloat(i.paid_amount) || 0), 0) || 0,
-    unpaidAmount: invoices?.filter(i => i.status !== 'completed' && i.status !== 'paid').reduce((sum, i) => sum + (parseFloat(i.total_amount) || 0), 0) || 0,
+    paidAmount: invoices?.filter(i => i.status === 'paid' || i.status === 'completed')
+      .reduce((sum, i) => sum + (parseFloat(i.paid_amount) || 0), 0) || 0,
+    unpaidAmount: invoices?.filter(i => i.status === 'unpaid' || i.status === 'overdue')
+      .reduce((sum, i) => sum + (parseFloat(i.total_amount) || 0), 0) || 0,
   }
 
   const StatCard = ({ title, value, icon: Icon, color, subtitle, delay }) => (

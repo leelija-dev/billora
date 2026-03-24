@@ -20,7 +20,9 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
     store_id: '',
     paid_amount: 0,
     created_by: 1,
-    items: []
+    items: [],
+    payment_status: 'paid', // New field: 'paid', 'semi_paid', 'non_paid'
+    payment_amount: 0 // New field: for semi-paid amount
   })
 
   const [loading, setLoading] = useState(false)
@@ -114,29 +116,32 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
       
       const unit = units.find(u => u.id === product.unit_id)
       
-      // Use stock price if available, otherwise use product price
-      const sellingPrice = stockItem?.selling_price || product.price || 0
-      const purchasePrice = stockItem?.purchase_price || product.cost || 0
-      const gst = stockItem?.gst_percentage || product.gst || 0
+      // Use product data for GST and discount, stock data for price if available
+      const sellingPrice = stockItem?.selling_price || product.selling_price || product.price || 0
+      const purchasePrice = stockItem?.purchase_price || product.purchase_price || product.cost || 0
+      const gst = parseFloat(product.gst_percentage) || parseFloat(stockItem?.gst_percentage) || parseFloat(product.gst) || 0
+      const discount = parseFloat(product.discount_percentage) || parseFloat(stockItem?.discount) || parseFloat(product.discount) || 0
       const stockQuantity = stockItem?.quantity || 0
+      const stockId = stockItem?.id || null
       
-      console.log('Product pricing - Selling:', sellingPrice, 'GST:', gst, 'Stock:', stockQuantity)
+      console.log('Product pricing - Selling:', sellingPrice, 'GST:', gst, 'Discount:', discount, 'Stock:', stockQuantity, 'Stock ID:', stockId)
       
       const newItem = {
         product_id: product.id,
         product_name: product.name || product.product_name,
-        product_code: product.code || product.product_code,
+        product_code: product.sku || product.code || product.product_code,
         quantity: 1,
         item_count: 1,
         unit_id: product.unit_id,
         unit_name: unit?.short_name || unit?.name || 'pcs',
         price: parseFloat(sellingPrice) || 0,
         purchase_price: parseFloat(purchasePrice) || 0,
-        gst: parseFloat(gst) || 0,
-        discount: 0,
+        gst: gst,
+        discount: discount,
         total_price: parseFloat(sellingPrice) || 0,
         status: 'completed',
-        stock_quantity: stockQuantity
+        stock_quantity: stockQuantity,
+        stock_id: stockId // Add stock_id field
       }
       
       setFormData(prev => ({
@@ -150,21 +155,29 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
       console.error('Failed to fetch stock data:', error)
       // Fallback to product data if stock fetch fails
       const unit = units.find(u => u.id === product.unit_id)
+      
+      // Use product data for GST and discount
+      const sellingPrice = parseFloat(product.selling_price) || parseFloat(product.price) || 0
+      const purchasePrice = parseFloat(product.purchase_price) || parseFloat(product.cost) || 0
+      const gst = parseFloat(product.gst_percentage) || parseFloat(product.gst) || 0
+      const discount = parseFloat(product.discount_percentage) || parseFloat(product.discount) || 0
+      
       const newItem = {
         product_id: product.id,
         product_name: product.name || product.product_name,
-        product_code: product.code || product.product_code,
+        product_code: product.sku || product.code || product.product_code,
         quantity: 1,
         item_count: 1,
         unit_id: product.unit_id,
         unit_name: unit?.short_name || unit?.name || 'pcs',
-        price: parseFloat(product.price) || 0,
-        purchase_price: parseFloat(product.cost) || 0,
-        gst: parseFloat(product.gst) || 0,
-        discount: 0,
-        total_price: parseFloat(product.price) || 0,
+        price: sellingPrice,
+        purchase_price: purchasePrice,
+        gst: gst,
+        discount: discount,
+        total_price: sellingPrice,
         status: 'completed',
-        stock_quantity: 0
+        stock_quantity: 0,
+        stock_id: null // No stock data available
       }
       
       setFormData(prev => ({
@@ -257,10 +270,24 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
       return
     }
     
+    // Validate payment amount for semi-paid
+    if (formData.payment_status === 'semi_paid') {
+      const totals = calculateTotals()
+      if (!formData.payment_amount || formData.payment_amount <= 0) {
+        setError('Please enter a valid payment amount for semi-paid option')
+        return
+      }
+      if (parseFloat(formData.payment_amount) > totals.totalAmount) {
+        setError('Payment amount cannot exceed total invoice amount')
+        return
+      }
+    }
+    
     const totals = calculateTotals()
     const submissionData = {
       ...formData,
-      paid_amount: totals.totalAmount.toString()
+      paid_amount: formData.payment_status === 'paid' ? totals.totalAmount.toString() : 
+                  formData.payment_status === 'semi_paid' ? formData.payment_amount.toString() : '0'
     }
     
     onSubmit(submissionData)
@@ -354,7 +381,7 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
         </motion.div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Left Column - Customer Info */}
         <div className="lg:col-span-1 space-y-4">
           <div className="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-4">
@@ -396,7 +423,7 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
                 <motion.div
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="p-3 bg-white dark:bg-gray-600 rounded-lg border border-gray-200 dark:border-gray-500"
+                  className="p-3 bg-white dark:bg-gray-600 rounded-lg border border-gray-200 dark:border-gray-500 hidden"
                 >
                   <p className="font-medium text-gray-900 dark:text-white">
                     {customers.find(c => c.id === formData.customer_id)?.name}
@@ -411,7 +438,7 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
                 <motion.div
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="p-3 bg-white dark:bg-gray-600 rounded-lg border border-gray-200 dark:border-gray-500"
+                  className="p-3 bg-white dark:bg-gray-600 rounded-lg border border-gray-200 dark:border-gray-500 hidden"
                 >
                   <p className="font-medium text-gray-900 dark:text-white">
                     {stores.find(s => s.id === formData.store_id)?.name}
@@ -527,59 +554,6 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
                   </div>
                 </div>
               )}
-            </div>
-          </div>
-        </div>
-
-        {/* Right Column - Financial Summary */}
-        <div className="lg:col-span-1 space-y-4">
-          <div className="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-4">
-            <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4 flex items-center">
-              <FiDollarSign className="w-4 h-4 mr-2" />
-              Invoice Summary
-            </h3>
-
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-600 dark:text-gray-300">Subtotal:</span>
-                  <span className="font-medium text-gray-900 dark:text-white">
-                    ₹{totals.subtotal.toFixed(2)}
-                  </span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-600 dark:text-gray-300">GST:</span>
-                  <span className="font-medium text-gray-900 dark:text-white">
-                    ₹{totals.totalGst.toFixed(2)}
-                  </span>
-                </div>
-                {totals.totalDiscount > 0 && (
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-600 dark:text-gray-300">Discount:</span>
-                    <span className="font-medium text-green-600 dark:text-green-400">
-                      -₹{totals.totalDiscount.toFixed(2)}
-                    </span>
-                  </div>
-                )}
-                <div className="flex justify-between text-base font-bold pt-2 border-t border-gray-200 dark:border-gray-500">
-                  <span className="text-gray-900 dark:text-white">Total Amount:</span>
-                  <span className="text-primary-600 dark:text-primary-400">
-                    ₹{totals.totalAmount.toFixed(2)}
-                  </span>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Paid Amount
-                </label>
-                <Input
-                  type="number"
-                  value={totals.totalAmount}
-                  readOnly
-                  className="bg-gray-100 dark:bg-gray-600"
-                />
-              </div>
             </div>
           </div>
         </div>
@@ -705,6 +679,143 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
           </>
         )}
       </div>
+
+      {/* Payment Options Section */}
+      {formData.items.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-4"
+        >
+          <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4 flex items-center">
+            <FiDollarSign className="w-4 h-4 mr-2" />
+            Payment Options & Invoice Summary
+          </h3>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Left Column - Payment Options */}
+            <div className="space-y-4">
+              <div>
+                <Select
+                  label="Payment Status"
+                  options={[
+                    { value: 'paid', label: 'Full Paid' },
+                    { value: 'semi_paid', label: 'Semi Paid' },
+                    { value: 'non_paid', label: 'Non Paid' }
+                  ]}
+                  value={formData.payment_status}
+                  onChange={(e) => setFormData(prev => ({ 
+                    ...prev, 
+                    payment_status: e.target.value,
+                    payment_amount: e.target.value === 'semi_paid' ? prev.payment_amount : 0
+                  }))}
+                  required
+                />
+              </div>
+
+              {formData.payment_status === 'semi_paid' && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                >
+                  <Input
+                    label="Payment Amount"
+                    type="number"
+                    step="0.01"
+                    placeholder="Enter payment amount"
+                    value={formData.payment_amount}
+                    onChange={(e) => setFormData(prev => ({ ...prev, payment_amount: e.target.value }))}
+                    required
+                    max={calculateTotals().totalAmount}
+                  />
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    Remaining amount: ₹{(calculateTotals().totalAmount - (parseFloat(formData.payment_amount) || 0)).toFixed(2)}
+                  </p>
+                </motion.div>
+              )}
+            </div>
+
+            {/* Right Column - Invoice Summary */}
+            <div className="space-y-4">
+              <div className="bg-white dark:bg-gray-600 rounded-lg p-4 border border-gray-200 dark:border-gray-500">
+                <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Invoice Breakdown</h4>
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600 dark:text-gray-300">Subtotal:</span>
+                    <span className="font-medium text-gray-900 dark:text-white">
+                      ₹{calculateTotals().subtotal.toFixed(2)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600 dark:text-gray-300">GST:</span>
+                    <span className="font-medium text-gray-900 dark:text-white">
+                      ₹{calculateTotals().totalGst.toFixed(2)}
+                    </span>
+                  </div>
+                  {calculateTotals().totalDiscount > 0 && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600 dark:text-gray-300">Discount:</span>
+                      <span className="font-medium text-green-600 dark:text-green-400">
+                        -₹{calculateTotals().totalDiscount.toFixed(2)}
+                      </span>
+                    </div>
+                  )}
+                  <div className="flex justify-between text-base font-bold pt-2 border-t border-gray-200 dark:border-gray-500">
+                    <span className="text-gray-900 dark:text-white">Total Amount:</span>
+                    <span className="text-primary-600 dark:text-primary-400">
+                      ₹{calculateTotals().totalAmount.toFixed(2)}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Payment Summary */}
+          <div className="mt-4 p-3 bg-white dark:bg-gray-600 rounded-lg border border-gray-200 dark:border-gray-500">
+            <div className="flex justify-between items-center">
+              <div>
+                <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Payment Status: <span className="capitalize">{formData.payment_status.replace('_', ' ')}</span>
+                </p>
+                {formData.payment_status === 'paid' && (
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    Full payment of ₹{calculateTotals().totalAmount.toFixed(2)}
+                  </p>
+                )}
+                {formData.payment_status === 'semi_paid' && (
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    Partial payment of ₹{parseFloat(formData.payment_amount || 0).toFixed(2)} / ₹{calculateTotals().totalAmount.toFixed(2)}
+                  </p>
+                )}
+                {formData.payment_status === 'non_paid' && (
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    No payment received
+                  </p>
+                )}
+              </div>
+              <div className="text-right">
+                <p className="text-lg font-bold text-gray-900 dark:text-white">
+                  ₹{formData.payment_status === 'paid' ? calculateTotals().totalAmount.toFixed(2) : 
+                     formData.payment_status === 'semi_paid' ? parseFloat(formData.payment_amount || 0).toFixed(2) : '0.00'}
+                </p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  Paid Amount: ₹{
+                    formData.payment_status === 'paid' ? calculateTotals().totalAmount.toFixed(2) : 
+                    formData.payment_status === 'semi_paid' ? parseFloat(formData.payment_amount || 0).toFixed(2) : 
+                    '0.00'
+                  }
+                </p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  {formData.payment_status === 'paid' ? 'Paid in Full' : 
+                   formData.payment_status === 'semi_paid' ? 'Partial Payment' : 'Unpaid'}
+                </p>
+              </div>
+            </div>
+          </div>
+        </motion.div>
+      )}
     </motion.form>
   )
 }

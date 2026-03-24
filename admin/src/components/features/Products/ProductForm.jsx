@@ -21,7 +21,22 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
     formState: { errors },
     setValue,
     reset,
-  } = useForm()
+  } = useForm({
+    defaultValues: {
+      name: '',
+      sku: '',
+      brand_id: '',
+      category_id: '',
+      unit_amount: '',
+      unit_id: '',
+      selling_price: '',
+      purchase_price: '',
+      gst_percentage: '',
+      discount_percentage: '',
+      description: '',
+      is_active: true,
+    }
+  })
 
   useEffect(() => {
     // Fetch dropdown data
@@ -32,23 +47,45 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
 
   useEffect(() => {
     if (product) {
-      // Set form values for editing
-      reset({
-        name: product.name,
-        sku: product.sku,
-        brand_id: product.brand_id,
-        category_id: product.category_id,
-        unit_amount: product.unit_amount,
-        unit_id: product.unit_id,
-        selling_price: product.selling_price,
-        purchase_price: product.purchase_price,
-        gst_percentage: product.gst_percentage,
-        discount_percentage: product.discount_percentage,
-        description: product.description,
-        is_active: product.is_active,
-      })
+      console.log(' ProductForm - Product prop changed:', product)
+      console.log(' ProductForm - Brands:', brands)
+      console.log(' ProductForm - Categories:', categories)
+      console.log(' ProductForm - Units:', units)
+      
+      // Wait for dropdown data to be loaded before setting values
+      if (brands && brands.length > 0 && categories && categories.length > 0 && units && units.length > 0) {
+        console.log(' ProductForm - Setting form values...')
+        
+        // Set form values for editing using setValue instead of reset
+        setValue('name', product.name || '')
+        setValue('sku', product.sku || '')
+        setValue('brand_id', product.brand_id || '')
+        setValue('category_id', product.category_id || '')
+        setValue('unit_amount', product.unit_amount || '')
+        setValue('unit_id', product.unit_id || '')
+        setValue('selling_price', product.selling_price || '')
+        setValue('purchase_price', product.purchase_price || '')
+        setValue('gst_percentage', product.gst_percentage || '')
+        setValue('discount_percentage', product.discount_percentage || '')
+        setValue('description', product.description || '')
+        setValue('is_active', product.is_active !== undefined ? product.is_active : true)
+        
+        console.log(' ProductForm - Form values set successfully')
+      } else {
+        console.log(' ProductForm - Waiting for dropdown data...')
+        // Set text fields immediately, but wait for dropdowns
+        setValue('name', product.name || '')
+        setValue('sku', product.sku || '')
+        setValue('unit_amount', product.unit_amount || '')
+        setValue('selling_price', product.selling_price || '')
+        setValue('purchase_price', product.purchase_price || '')
+        setValue('gst_percentage', product.gst_percentage || '')
+        setValue('discount_percentage', product.discount_percentage || '')
+        setValue('description', product.description || '')
+        setValue('is_active', product.is_active !== undefined ? product.is_active : true)
+      }
     }
-  }, [product, reset])
+  }, [product, setValue, brands, categories, units])
 
   const onFormSubmit = (data) => {
     const productData = {
