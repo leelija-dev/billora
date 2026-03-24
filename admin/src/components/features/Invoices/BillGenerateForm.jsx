@@ -122,8 +122,9 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
       const gst = parseFloat(product.gst_percentage) || parseFloat(stockItem?.gst_percentage) || parseFloat(product.gst) || 0
       const discount = parseFloat(product.discount_percentage) || parseFloat(stockItem?.discount) || parseFloat(product.discount) || 0
       const stockQuantity = stockItem?.quantity || 0
+      const stockId = stockItem?.id || null
       
-      console.log('Product pricing - Selling:', sellingPrice, 'GST:', gst, 'Discount:', discount, 'Stock:', stockQuantity)
+      console.log('Product pricing - Selling:', sellingPrice, 'GST:', gst, 'Discount:', discount, 'Stock:', stockQuantity, 'Stock ID:', stockId)
       
       const newItem = {
         product_id: product.id,
@@ -139,7 +140,8 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
         discount: discount,
         total_price: parseFloat(sellingPrice) || 0,
         status: 'completed',
-        stock_quantity: stockQuantity
+        stock_quantity: stockQuantity,
+        stock_id: stockId // Add stock_id field
       }
       
       setFormData(prev => ({
@@ -174,7 +176,8 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
         discount: discount,
         total_price: sellingPrice,
         status: 'completed',
-        stock_quantity: 0
+        stock_quantity: 0,
+        stock_id: null // No stock data available
       }
       
       setFormData(prev => ({
