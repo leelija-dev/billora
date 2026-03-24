@@ -18,7 +18,7 @@ import {
   FiCpu
 } from 'react-icons/fi'
 import { motion, AnimatePresence } from 'framer-motion'
-import { plansAPI } from '../../services'
+import { plansAPI, invoiceAPI } from '../../services'
 import SubscriptionCard from '../../components/features/Billing/SubscriptionCard'
 import PaymentHistory from '../../components/features/Billing/PaymentHistory'
 import SubscriptionForm from '../../components/features/Billing/SubscriptionForm'
@@ -58,7 +58,7 @@ const Billing = () => {
     setLoading(true)
     setError(null)
     try {
-      // Fetch plans using the new API
+      // Fetch plans using new API
       const plansRes = await plansAPI.getAll().catch(err => {
         console.warn('Failed to fetch plans:', err)
         return { data: [] }
@@ -66,14 +66,20 @@ const Billing = () => {
       
       setPlans(plansRes?.data || [])
       
+      // Fetch invoice history using new API
+      const invoicesRes = await invoiceAPI.getAll(1, {}).catch(err => {
+        console.warn('Failed to fetch invoices:', err)
+        return { data: [] }
+      })
+      
+      setInvoices(invoicesRes?.data?.data || [])
+      setInvoicesCount(invoicesRes?.data?.total || 0)
+      
       // Note: Subscription and payment history would need to be implemented
       // based on your API specification. For now, we'll set default values.
       setSubscription(null)
       setPayments([])
       setPaymentsCount(0)
-      setInvoices([])
-      setInvoicesCount(0)
-
     } catch (error) {
       console.error('Failed to fetch billing data:', error)
       setError('Failed to load billing information. Please try again.')

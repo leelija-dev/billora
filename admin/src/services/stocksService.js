@@ -1,10 +1,10 @@
 import { apiClient } from './apiClient';
 
 export const stocksAPI = {
-  // Get all stocks
+  // Get all stocks with search
   getAll: (search = '') => {
-    const params = search ? { search } : {}
-    return apiClient.get('/stocks', { params })
+    const params = search ? `?search=${encodeURIComponent(search)}` : '';
+    return apiClient.get(`/stocks${params}`);
   },
 
   // Get single stock
@@ -19,19 +19,24 @@ export const stocksAPI = {
 
   // Update stock
   update: (id, stockData) => {
-    console.log('🔄 Stocks API - Updating stock:', id, stockData)
-    const response = apiClient.put(`/stocks/${id}`, stockData)
-    console.log('🔄 Stocks API - Update request sent')
-    return response
+    console.log(' Stocks API - Updating stock:', id, stockData)
+    return apiClient.put(`/stocks/${id}`, stockData)
   },
 
   // Delete stock
-  delete: (id) => {
-    return apiClient.delete(`/stocks/${id}`)
+  delete: (id, userId) => {
+    console.log(' Stocks API - Deleting stock:', id, 'User ID:', userId)
+    return apiClient.delete(`/stocks/${id}`, { 
+      data: { user_id: userId }
+    })
   },
 
   // Add stock / update stock
   addStock: (id, userId, quantity) => {
-    return apiClient.post(`/stocks/add-stock/${id}`, { user_id: userId, quantity })
+    console.log(' Stocks API - Adding stock to:', id, 'User:', userId, 'Quantity:', quantity)
+    return apiClient.post(`/stocks/add-stock/${id}`, { 
+      user_id: userId, 
+      quantity: quantity 
+    })
   },
 }

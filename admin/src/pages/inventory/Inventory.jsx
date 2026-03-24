@@ -119,7 +119,7 @@ const Stock = () => {
 
   const handleDeleteStock = async (id) => {
     if (window.confirm('Are you sure you want to delete this stock?')) {
-      await deleteStock(id)
+      await deleteStock(id, user.id)
     }
   }
 
