@@ -12,7 +12,9 @@ import {
   FiEdit3,
   FiMail,
   FiPhone,
-  FiMapPin
+  FiMapPin,
+  FiPrinter,
+  FiChevronDown
 } from 'react-icons/fi'
 import { FaStore } from 'react-icons/fa'
 import { useNavigate, useParams } from 'react-router-dom'
@@ -30,6 +32,7 @@ const ReportDetails = () => {
   const [loading, setLoading] = useState(true)
   const [report, setReport] = useState(null)
   const [error, setError] = useState(null)
+  const [showExportDropdown, setShowExportDropdown] = useState(false)
 
   // Fetch report details
   useEffect(() => {
@@ -98,21 +101,45 @@ const ReportDetails = () => {
     }
   }, [id])
 
-  const handleExport = () => {
+  // Export report in different formats
+  const handleExport = (format) => {
     if (!report) return
     
+    const data = [[
+      report.id || '',
+      report.created_at ? new Date(report.created_at).toLocaleDateString() : new Date().toLocaleDateString(),
+      report.customer_name || `Customer #${report.customer_id}`,
+      report.store_name || `Store #${report.store_id}`,
+      report.total_amount || 0,
+      report.paid_amount || 0,
+      report.total_items || 0,
+      report.status || 'N/A'
+    ]]
+
+    const headers = ['Invoice ID', 'Date', 'Customer Name', 'Store Name', 'Total Amount', 'Paid Amount', 'Total Items', 'Status']
+    
+    switch (format) {
+      case 'excel':
+        exportToExcel(headers, data)
+        break
+      case 'pdf':
+        exportToPDF(headers, data)
+        break
+      case 'word':
+        exportToWord(headers, data)
+        break
+      default:
+        exportToCSV(headers, data)
+    }
+    
+    setShowExportDropdown(false)
+  }
+
+  // Export to CSV
+  const exportToCSV = (headers, data) => {
     const csvContent = [
-      ['Invoice ID', 'Date', 'Customer Name', 'Store Name', 'Total Amount', 'Paid Amount', 'Total Items', 'Status'],
-      [
-        report.id || '',
-        report.created_at ? new Date(report.created_at).toLocaleDateString() : new Date().toLocaleDateString(),
-        report.customer_name || `Customer #${report.customer_id}`,
-        report.store_name || `Store #${report.store_id}`,
-        report.total_amount || 0,
-        report.paid_amount || 0,
-        report.total_items || 0,
-        report.status || 'N/A'
-      ]
+      headers,
+      ...data
     ].map(row => row.join(',')).join('\n')
 
     const blob = new Blob([csvContent], { type: 'text/csv' })
@@ -122,6 +149,210 @@ const ReportDetails = () => {
     a.download = `report_${report.id}.csv`
     a.click()
     window.URL.revokeObjectURL(url)
+  }
+
+  // Export to Excel
+  const exportToExcel = (headers, data) => {
+    const csvContent = [
+      headers,
+      ...data
+    ].map(row => row.join(',')).join('\n')
+
+    const blob = new Blob([csvContent], { type: 'application/vnd.ms-excel' })
+    const url = window.URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `report_${report.id}.xls`
+    a.click()
+    window.URL.revokeObjectURL(url)
+  }
+
+  // Export to PDF
+  const exportToPDF = (headers, data) => {
+    const printWindow = window.open('', '_blank')
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Report Export - Invoice #${report.id}</title>
+        <style>
+          body { font-family: Arial, sans-serif; margin: 20px; }
+          table { border-collapse: collapse; width: 100%; margin-top: 20px; }
+          th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+          th { background-color: #f2f2f2; font-weight: bold; }
+          h1 { color: #333; }
+          .summary { margin: 20px 0; padding: 15px; background: #f9f9f9; border-radius: 5px; }
+        </style>
+      </head>
+      <body>
+        <h1>Report Details - Invoice #${report.id}</h1>
+        <p>Generated on: ${new Date().toLocaleString()}</p>
+        
+        <div class="summary">
+          <h3>Summary</h3>
+          <p><strong>Customer:</strong> ${report.customer_name}</p>
+          <p><strong>Store:</strong> ${report.store_name}</p>
+          <p><strong>Date:</strong> ${report.created_at ? new Date(report.created_at).toLocaleString() : 'N/A'}</p>
+          <p><strong>Status:</strong> ${report.status}</p>
+        </div>
+        
+        <table>
+          <thead>
+            <tr>${headers.map(header => `<th>${header}</th>`).join('')}</tr>
+          </thead>
+          <tbody>
+            ${data.map(row => `<tr>${row.map(cell => `<td>${cell}</td>`).join('')}</tr>`).join('')}
+          </tbody>
+        </table>
+        
+        ${report.invoice_items && report.invoice_items.length > 0 ? `
+          <h3>Invoice Items</h3>
+          <table>
+            <thead>
+              <tr><th>Product</th><th>Quantity</th><th>Price</th><th>Total</th></tr>
+            </thead>
+            <tbody>
+              ${report.invoice_items.map(item => `
+                <tr>
+                  <td>${item.product_name || `Product #${item.product_id}`}</td>
+                  <td>${item.quantity}</td>
+                  <td>₹${parseFloat(item.price || 0).toFixed(2)}</td>
+                  <td>₹${parseFloat(item.total_price || item.total || 0).toFixed(2)}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        ` : ''}
+      </body>
+      </html>
+    `
+    
+    printWindow.document.write(htmlContent)
+    printWindow.document.close()
+    printWindow.print()
+  }
+
+  // Export to Word
+  const exportToWord = (headers, data) => {
+    const tableContent = `
+      <table>
+        <tr>${headers.map(header => `<th>${header}</th>`).join('')}</tr>
+        ${data.map(row => `<tr>${row.map(cell => `<td>${cell}</td>`).join('')}</tr>`).join('')}
+      </table>
+    `
+    
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Report Export - Invoice #${report.id}</title>
+        <meta charset="utf-8">
+      </head>
+      <body>
+        <h1>Report Details - Invoice #${report.id}</h1>
+        <p>Generated on: ${new Date().toLocaleString()}</p>
+        
+        <div style="margin: 20px 0; padding: 15px; background: #f9f9f9; border-radius: 5px;">
+          <h3>Summary</h3>
+          <p><strong>Customer:</strong> ${report.customer_name}</p>
+          <p><strong>Store:</strong> ${report.store_name}</p>
+          <p><strong>Date:</strong> ${report.created_at ? new Date(report.created_at).toLocaleString() : 'N/A'}</p>
+          <p><strong>Status:</strong> ${report.status}</p>
+        </div>
+        
+        ${tableContent}
+        
+        ${report.invoice_items && report.invoice_items.length > 0 ? `
+          <h3>Invoice Items</h3>
+          <table>
+            <thead>
+              <tr><th>Product</th><th>Quantity</th><th>Price</th><th>Total</th></tr>
+            </thead>
+            <tbody>
+              ${report.invoice_items.map(item => `
+                <tr>
+                  <td>${item.product_name || `Product #${item.product_id}`}</td>
+                  <td>${item.quantity}</td>
+                  <td>₹${parseFloat(item.price || 0).toFixed(2)}</td>
+                  <td>₹${parseFloat(item.total_price || item.total || 0).toFixed(2)}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        ` : ''}
+      </body>
+      </html>
+    `
+    
+    const blob = new Blob([htmlContent], { type: 'application/msword' })
+    const url = window.URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `report_${report.id}.doc`
+    a.click()
+    window.URL.revokeObjectURL(url)
+  }
+
+  // Print function
+  const handlePrint = () => {
+    if (!report) return
+    
+    const printContent = `
+      <div style="font-family: Arial, sans-serif; padding: 20px;">
+        <h1 style="color: #333; margin-bottom: 20px;">Report Details - Invoice #${report.id}</h1>
+        <p style="color: #666; margin-bottom: 20px;">Generated on: ${new Date().toLocaleString()}</p>
+        
+        <div style="margin: 20px 0; padding: 15px; background: #f9f9f9; border-radius: 5px;">
+          <h3>Summary</h3>
+          <p><strong>Customer:</strong> ${report.customer_name}</p>
+          <p><strong>Store:</strong> ${report.store_name}</p>
+          <p><strong>Date:</strong> ${report.created_at ? new Date(report.created_at).toLocaleString() : 'N/A'}</p>
+          <p><strong>Status:</strong> ${report.status}</p>
+          <p><strong>Total Amount:</strong> ₹${parseFloat(report.total_amount || 0).toFixed(2)}</p>
+          <p><strong>Paid Amount:</strong> ₹${parseFloat(report.paid_amount || 0).toFixed(2)}</p>
+          <p><strong>Total Items:</strong> ${report.total_items || 0}</p>
+        </div>
+        
+        ${report.invoice_items && report.invoice_items.length > 0 ? `
+          <h3>Invoice Items</h3>
+          <table style="border-collapse: collapse; width: 100%; margin-top: 20px;">
+            <thead>
+              <tr style="background-color: #f2f2f2;">
+                <th style="border: 1px solid #ddd; padding: 8px;">Product</th>
+                <th style="border: 1px solid #ddd; padding: 8px;">Quantity</th>
+                <th style="border: 1px solid #ddd; padding: 8px;">Price</th>
+                <th style="border: 1px solid #ddd; padding: 8px;">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${report.invoice_items.map(item => `
+                <tr>
+                  <td style="border: 1px solid #ddd; padding: 8px;">${item.product_name || `Product #${item.product_id}`}</td>
+                  <td style="border: 1px solid #ddd; padding: 8px;">${item.quantity}</td>
+                  <td style="border: 1px solid #ddd; padding: 8px;">₹${parseFloat(item.price || 0).toFixed(2)}</td>
+                  <td style="border: 1px solid #ddd; padding: 8px;">₹${parseFloat(item.total_price || item.total || 0).toFixed(2)}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        ` : ''}
+      </div>
+    `
+    
+    const printWindow = window.open('', '_blank')
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Report Print - Invoice #${report.id}</title>
+      </head>
+      <body>
+        ${printContent}
+      </body>
+      </html>
+    `)
+    printWindow.document.close()
+    printWindow.print()
   }
 
   const handleBack = () => {
@@ -210,15 +441,104 @@ const ReportDetails = () => {
             </div>
             
             <div className="flex items-center space-x-3">
+              {/* Print Button */}
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                onClick={handleExport}
-                className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-xl transition-colors flex items-center space-x-2"
+                onClick={handlePrint}
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl transition-colors flex items-center space-x-2"
               >
-                <FiDownload className="w-4 h-4" />
-                <span>Export</span>
+                <FiPrinter className="w-4 h-4" />
+                <span>Print</span>
               </motion.button>
+
+              {/* Export Dropdown */}
+              <div className="relative">
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => setShowExportDropdown(!showExportDropdown)}
+                  className="px-4 py-2 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white rounded-xl transition-all duration-200 shadow-lg shadow-green-500/30 flex items-center space-x-2"
+                >
+                  <FiDownload className="w-4 h-4" />
+                  <span>Export</span>
+                  <FiChevronDown className={`w-4 h-4 transition-transform ${showExportDropdown ? 'rotate-180' : ''}`} />
+                </motion.button>
+
+                <AnimatePresence>
+                  {showExportDropdown && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                      transition={{ duration: 0.2 }}
+                      className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg z-50"
+                    >
+                      <div className="py-2">
+                        <motion.button
+                          whileHover={{ backgroundColor: 'rgba(0, 0, 0, 0.05)' }}
+                          whileTap={{ scale: 0.98 }}
+                          onClick={() => handleExport('excel')}
+                          className="w-full px-4 py-3 text-left text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center space-x-3 transition-colors"
+                        >
+                          <div className="w-8 h-8 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center">
+                            <FiFileText className="w-4 h-4 text-green-600 dark:text-green-400" />
+                          </div>
+                          <div>
+                            <p className="font-medium">Excel</p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">.xls format</p>
+                          </div>
+                        </motion.button>
+
+                        <motion.button
+                          whileHover={{ backgroundColor: 'rgba(0, 0, 0, 0.05)' }}
+                          whileTap={{ scale: 0.98 }}
+                          onClick={() => handleExport('pdf')}
+                          className="w-full px-4 py-3 text-left text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center space-x-3 transition-colors"
+                        >
+                          <div className="w-8 h-8 bg-red-100 dark:bg-red-900/30 rounded-lg flex items-center justify-center">
+                            <FiFileText className="w-4 h-4 text-red-600 dark:text-red-400" />
+                          </div>
+                          <div>
+                            <p className="font-medium">PDF</p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">Printable format</p>
+                          </div>
+                        </motion.button>
+
+                        <motion.button
+                          whileHover={{ backgroundColor: 'rgba(0, 0, 0, 0.05)' }}
+                          whileTap={{ scale: 0.98 }}
+                          onClick={() => handleExport('word')}
+                          className="w-full px-4 py-3 text-left text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center space-x-3 transition-colors"
+                        >
+                          <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
+                            <FiFileText className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                          </div>
+                          <div>
+                            <p className="font-medium">Word</p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">.doc format</p>
+                          </div>
+                        </motion.button>
+
+                        <motion.button
+                          whileHover={{ backgroundColor: 'rgba(0, 0, 0, 0.05)' }}
+                          whileTap={{ scale: 0.98 }}
+                          onClick={() => handleExport('csv')}
+                          className="w-full px-4 py-3 text-left text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center space-x-3 transition-colors"
+                        >
+                          <div className="w-8 h-8 bg-purple-100 dark:bg-purple-900/30 rounded-lg flex items-center justify-center">
+                            <FiFileText className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                          </div>
+                          <div>
+                            <p className="font-medium">CSV</p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">Data format</p>
+                          </div>
+                        </motion.button>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
             </div>
           </div>
         </motion.div>
