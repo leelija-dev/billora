@@ -1,6 +1,7 @@
 <?php 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\admin\AuthController;
+use App\Http\Controllers\admin\superadmin\AdminUserController;
 use App\Http\Controllers\admin\superadmin\CustomerController;
 use App\Http\Controllers\admin\superadmin\PlansController;
 use App\Http\Controllers\admin\superadmin\PlanPermissionController;
@@ -20,7 +21,7 @@ Route::middleware(['web', 'admin.auth'])->prefix('admin')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout'])->name('admin.logout');
     //     Route::view('/sidebar', 'admin.sidebar')->name('sidebar');
 
-
+    
     Route::prefix('customers')->group(function () {
         Route::get('/', [CustomerController::class, 'index'])->name('admin.customers.index'); 
         Route::get('all-plans/{id}', [CustomerController::class, 'plans'])->name('admin.customers.plans');
@@ -42,4 +43,9 @@ Route::middleware(['web', 'admin.auth'])->prefix('admin')->group(function () {
         Route::get('/', [PlanPermissionController::class, 'index'])->name('admin.plan-permission.index');
     });
 
+
+    Route::prefix('admin-users')->group(function (){
+        Route::get('/', [AdminUserController::class, 'index'])->name('admin.admin-users.index');
+
+    });
 });

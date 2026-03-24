@@ -58,9 +58,9 @@
                 <span class="ml-3">Reports</span>
             </a>
 
-            <a href="#" class="flex items-center px-4 py-3 hover:bg-blue-100">
-                <i data-feather="settings"></i>
-                <span class="ml-3">Settings</span>
+            <a href="{{route('admin.admin-users.index')}}" class="flex items-center px-4 py-3 {{request()->routeIs('admin.admin-users.index') ?'bg-blue-100 text-blue-600 font-semibold' : 'hover:bg-blue-100'}} hover:bg-blue-100">
+                <i data-feather="user"></i>
+                <span class="ml-3">Admin User</span>
             </a>
 
             <!-- Logout Link with Form -->
