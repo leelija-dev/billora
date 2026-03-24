@@ -53,10 +53,12 @@ const InvoiceTable = ({
       accessor: 'customer_id',
       cell: (value, row) => (
         <div>
-          <p className="font-medium text-gray-900 dark:text-white">Customer #{value}</p>
-          {row.customer_name && (
-            <p className="text-xs text-gray-500 dark:text-gray-400">{row.customer_name}</p>
-          )}
+          <p className="font-medium text-gray-900 dark:text-white">
+            {row.customer_name || `Customer #${value}`}
+          </p>
+          <p className="text-xs text-gray-500 dark:text-gray-400">
+            ID: #{value}
+          </p>
         </div>
       ),
     },
@@ -65,10 +67,12 @@ const InvoiceTable = ({
       accessor: 'store_id',
       cell: (value, row) => (
         <div>
-          <p className="font-medium text-gray-900 dark:text-white">Store #{value}</p>
-          {row.store_name && (
-            <p className="text-xs text-gray-500 dark:text-gray-400">{row.store_name}</p>
-          )}
+          <p className="font-medium text-gray-900 dark:text-white">
+            {row.store_name || `Store #${value}`}
+          </p>
+          <p className="text-xs text-gray-500 dark:text-gray-400">
+            ID: #{value}
+          </p>
         </div>
       ),
     },

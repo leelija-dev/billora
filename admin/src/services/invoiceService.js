@@ -26,6 +26,16 @@ export const invoiceAPI = {
     return apiClient.get('/invoice/')
   },
 
+  // Get customer details by ID
+  getCustomer: (customerId) => {
+    return apiClient.get(`/customer/show/${customerId}`)
+  },
+
+  // Get store details by ID
+  getStore: (storeId) => {
+    return apiClient.get(`/store/${storeId}`)
+  },
+
   // Create/store new invoice/bill
   create: (invoiceData) => {
     return apiClient.post('/invoice/store', invoiceData)
