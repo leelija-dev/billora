@@ -32,10 +32,12 @@ export const useInvoiceStore = create((set, get) => ({
               invoiceAPI.getCustomer(invoice.customer_id),
               invoiceAPI.getStore(invoice.store_id)
             ])
-
+            
             const customer = customerResponse.data?.data || customerResponse.data || {}
-            const store = storeResponse.data?.data || storeResponse.data || {}
-
+            // Store API returns paginated response, so we need to get the first store from data.data
+            const storeData = storeResponse.data?.data?.data || storeResponse.data?.data || []
+            const store = storeData[0] || {}
+            
             return {
               ...invoice,
               customer: customer,
