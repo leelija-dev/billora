@@ -1,7 +1,6 @@
 // about/page.jsx
 "use client";
 
-import { Users, Target, ShieldCheck, Sparkles } from "lucide-react";
 import Link from "next/link";
 import Navbar from "../../components/Navbar";
 import Footer from "../../components/Footer";
@@ -48,7 +47,7 @@ export default function AboutPage() {
           <div className="grid md:grid-cols-2 gap-8 md:gap-10 lg:gap-12 px-4 sm:px-0">
             
             <div className="group p-6 sm:p-8 md:p-8 lg:p-10 rounded-3xl border bg-white shadow-sm hover:shadow-xl transition duration-300">
-              <Target className="text-blue-600 mb-4 md:mb-6 group-hover:scale-110 transition" size={36} />
+              <span className="text-4xl mb-4 md:mb-6 block group-hover:scale-110 transition">🎯</span>
               <h2 className="text-xl sm:text-xl md:text-2xl lg:text-2xl font-bold mb-3 md:mb-4">Our Mission</h2>
               <p className="text-gray-600 text-sm sm:text-sm md:text-base leading-relaxed">
                 To simplify business accounting and GST billing for every
@@ -57,7 +56,7 @@ export default function AboutPage() {
             </div>
 
             <div className="group p-6 sm:p-8 md:p-8 lg:p-10 rounded-3xl border bg-white shadow-sm hover:shadow-xl transition duration-300">
-              <Sparkles className="text-purple-600 mb-4 md:mb-6 group-hover:scale-110 transition" size={36} />
+              <span className="text-4xl mb-4 md:mb-6 block group-hover:scale-110 transition">✨</span>
               <h2 className="text-xl sm:text-xl md:text-2xl lg:text-2xl font-bold mb-3 md:mb-4">Our Vision</h2>
               <p className="text-gray-600 text-sm sm:text-sm md:text-base leading-relaxed">
                 To become India's most trusted business management platform,
@@ -110,7 +109,7 @@ export default function AboutPage() {
             <div className="grid md:grid-cols-3 gap-6 md:gap-5 lg:gap-8">
               
               <div className="group p-6 sm:p-6 md:p-5 lg:p-8 rounded-3xl border hover:shadow-xl transition duration-300">
-                <Users className="text-blue-600 mx-auto mb-4 md:mb-5 group-hover:scale-110 transition" size={36} />
+                <span className="text-4xl mb-4 md:mb-5 block group-hover:scale-110 transition">👥</span>
                 <h3 className="text-lg sm:text-lg md:text-base lg:text-xl font-semibold mb-2 md:mb-3">Easy to Use</h3>
                 <p className="text-gray-600 text-sm sm:text-sm md:text-xs lg:text-base">
                   Built for business owners — no accounting knowledge required.
@@ -118,7 +117,7 @@ export default function AboutPage() {
               </div>
 
               <div className="group p-6 sm:p-6 md:p-5 lg:p-8 rounded-3xl border hover:shadow-xl transition duration-300">
-                <ShieldCheck className="text-purple-600 mx-auto mb-4 md:mb-5 group-hover:scale-110 transition" size={36} />
+                <span className="text-4xl mb-4 md:mb-5 block group-hover:scale-110 transition">🛡️</span>
                 <h3 className="text-lg sm:text-lg md:text-base lg:text-xl font-semibold mb-2 md:mb-3">Secure & Reliable</h3>
                 <p className="text-gray-600 text-sm sm:text-sm md:text-xs lg:text-base">
                   Enterprise-grade security ensures your business data stays protected.
@@ -126,7 +125,7 @@ export default function AboutPage() {
               </div>
 
               <div className="group p-6 sm:p-6 md:p-5 lg:p-8 rounded-3xl border hover:shadow-xl transition duration-300">
-                <Sparkles className="text-blue-600 mx-auto mb-4 md:mb-5 group-hover:scale-110 transition" size={36} />
+                <span className="text-4xl mb-4 md:mb-5 block group-hover:scale-110 transition">✨</span>
                 <h3 className="text-lg sm:text-lg md:text-base lg:text-xl font-semibold mb-2 md:mb-3">Modern Technology</h3>
                 <p className="text-gray-600 text-sm sm:text-sm md:text-xs lg:text-base">
                   Continuously evolving with new features to support growing businesses.

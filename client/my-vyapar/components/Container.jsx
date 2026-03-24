@@ -1,6 +1,6 @@
 // components/Container.jsx
 import React from 'react';
-
+// min-h-[60vh]
 const Container = ({ 
   children, 
   className = '' 
