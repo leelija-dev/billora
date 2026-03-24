@@ -7,7 +7,8 @@ use Illuminate\Http\Request;
 use App\Models\Customers;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
-
+use Illuminate\Support\Str;
+use App\Notifications\VerifyEmailNotification;
 class CustomerController extends Controller
 {
 
@@ -24,29 +25,38 @@ class CustomerController extends Controller
     }
     public function store(Request $request)
     {
+        try{
         $data = $request->validate([
-            'name'          => 'required|string',
+            'name'          => 'nullable|string',
             'email'         => 'required|email',
-            'phone'         => 'required',
+            'phone'         => 'nullable',
             'password'      => 'required',
             'company_name'  => 'nullable',
             'gst_number'    => 'nullable',
             'address'       => 'nullable',
-            'city'          => 'required',
-            'state'         => 'required',
-            'country'       => 'required',
-            'pincode'       => 'required',
+            'city'          => 'nullable',
+            'state'         => 'nullable',
+            'country'       => 'nullable',
+            'pincode'       => 'nullable',
             'created_by'    => 'nullable'
 
         ]);
+         $data['verification_token'] = Str::random(64);
         $data['password'] = Hash::make($data['password']);
         $customer = Customers::create($data);
-
+        $customer->notify(new VerifyEmailNotification($data['verification_token']));
         return response()->json([
             'status' => true,
-            'message' => 'User Created Successfully',
+            'message' => 'User Register Successfully',
             'data' => $customer
         ]);
+    }catch (\Exception $e) {
+        return response()->json([
+            'status' => false,
+            'message' => $e->getMessage()
+        ]);
+    }
+
     }
 //    public function login(Request $request) //web based 
 // {
@@ -88,7 +98,13 @@ public function login(Request $request)  //postman
             'message' => 'User not found'
         ]);
     }
-
+// Block login if not verified
+if (is_null($user->email_verified_at)) {
+    return response()->json([
+        'status' => false,
+        'message' => 'Please verify your email before login'
+    ]);
+}
     if (!Hash::check($request->password, $user->password)) {
         return response()->json([
             'status' => false,
@@ -122,5 +138,20 @@ public function logout(Request $request)
         'status' => true,
         'message' => 'Logout successful'
     ]);
+}
+public function verifyEmail($token)
+{
+    $customer = Customers::where('verification_token', $token)->first();
+
+    if (!$customer) {
+        return "Invalid or expired token";
+    }
+
+    $customer->update([
+        'email_verified_at' => now(),
+        'verification_token' => null
+    ]);
+
+    return "Email verified successfully. You can now login.";
 }
 }

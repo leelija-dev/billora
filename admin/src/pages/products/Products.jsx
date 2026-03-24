@@ -43,7 +43,7 @@ const Products = () => {
     fetchProducts,
     deleteProduct,
     setFilters,
-    addProduct,
+    createProduct,
     updateProduct,
   } = useProductStore()
 
@@ -57,9 +57,17 @@ const Products = () => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [refreshing, setRefreshing] = useState(false)
   const [formSubmitting, setFormSubmitting] = useState(false)
+  const [initialLoading, setInitialLoading] = useState(true)
 
   useEffect(() => {
-    fetchProducts()
+    const fetchData = async () => {
+      try {
+        await fetchProducts()
+      } finally {
+        setInitialLoading(false)
+      }
+    }
+    fetchData()
   }, [])
 
   useEffect(() => {
@@ -91,7 +99,7 @@ const Products = () => {
       if (showEditForm && selectedProduct) {
         await updateProduct(selectedProduct.id, productData)
       } else {
-        await addProduct(productData)
+        await createProduct(productData)
       }
       // Refresh the product list
       await fetchProducts()
@@ -205,19 +213,19 @@ const Products = () => {
     },
     {
       header: 'Category',
-      accessor: 'category',
+      accessor: 'category_id',
       cell: (value) => (
         <span className="px-3 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg text-sm">
-          {value}
+          Category {value}
         </span>
       ),
     },
     {
       header: 'Price',
-      accessor: 'price',
+      accessor: 'selling_price',
       cell: (value) => (
         <span className="font-semibold text-gray-900 dark:text-white">
-          ${value.toFixed(2)}
+          ${value ? parseFloat(value).toFixed(2) : '0.00'}
         </span>
       ),
     },
@@ -254,7 +262,7 @@ const Products = () => {
     },
     {
       header: 'Status',
-      accessor: 'isActive',
+      accessor: 'is_active',
       cell: (value) => (
         <StatusBadge
           status={value ? 'active' : 'inactive'}
@@ -446,7 +454,7 @@ const Products = () => {
             {showEditForm ? 'Edit Product' : 'Add New Product'}
           </h2>
           <ProductForm
-            initialData={selectedProduct}
+            product={selectedProduct}
             onSubmit={handleSubmitProduct}
             onCancel={handleCancelForm}
             isSubmitting={formSubmitting}
@@ -502,100 +510,112 @@ const Products = () => {
             transition={{ delay: 0.1 }}
             className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6"
           >
-            <div className="flex flex-col sm:flex-row gap-4">
-              <div className="flex-1 relative">
-                <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                <Input
-                  type="text"
-                  placeholder="Search products by name, SKU, or category..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
+            {initialLoading ? (
+              <div className="animate-pulse">
+                <div className="h-10 bg-gray-200 dark:bg-gray-700 rounded mb-4"></div>
+                <div className="flex space-x-2">
+                  <div className="h-10 bg-gray-200 dark:bg-gray-700 rounded w-24"></div>
+                  <div className="h-10 bg-gray-200 dark:bg-gray-700 rounded w-20"></div>
+                </div>
               </div>
-              
-              <div className="flex items-center space-x-2">
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => setShowFilters(!showFilters)}
-                  className={`px-4 py-2 rounded-xl border transition-colors flex items-center space-x-2 ${
-                    showFilters 
-                      ? 'bg-primary-50 border-primary-200 text-primary-600 dark:bg-primary-900/20 dark:border-primary-800 dark:text-primary-400'
-                      : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'
-                  }`}
-                >
-                  <FiFilter className="w-4 h-4" />
-                  <span>Filters</span>
-                  {(filters.category || filters.status) && (
-                    <span className="ml-1 w-2 h-2 bg-primary-500 rounded-full" />
-                  )}
-                </motion.button>
-
-                {(searchTerm || filters.category || filters.status) && (
+            ) : (
+              <div className="flex flex-col sm:flex-row gap-4">
+                <div className="flex-1 relative">
+                  <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                  <Input
+                    type="text"
+                    placeholder="Search products by name, SKU, or category..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+                
+                <div className="flex items-center space-x-2">
                   <motion.button
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    onClick={clearFilters}
-                    className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => setShowFilters(!showFilters)}
+                    className={`px-4 py-2 rounded-xl border transition-colors flex items-center space-x-2 ${
+                      showFilters 
+                        ? 'bg-primary-50 border-primary-200 text-primary-600 dark:bg-primary-900/20 dark:border-primary-800 dark:text-primary-400'
+                        : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'
+                    }`}
                   >
-                    <FiX className="w-5 h-5" />
+                    <FiFilter className="w-4 h-4" />
+                    <span>Filters</span>
+                    {(filters.category || filters.status) && (
+                      <span className="ml-1 w-2 h-2 bg-primary-500 rounded-full" />
+                    )}
                   </motion.button>
-                )}
-              </div>
-            </div>
 
-            <AnimatePresence>
-              {showFilters && (
-                <motion.div
-                  initial={{ height: 0, opacity: 0 }}
-                  animate={{ height: 'auto', opacity: 1 }}
-                  exit={{ height: 0, opacity: 0 }}
-                  transition={{ duration: 0.3 }}
-                  className="overflow-hidden"
-                >
-                  <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <Select
-                        label="Category"
-                        options={[
-                          { value: '', label: 'All Categories' },
-                          { value: 'electronics', label: 'Electronics' },
-                          { value: 'clothing', label: 'Clothing' },
-                          { value: 'books', label: 'Books' },
-                          { value: 'home', label: 'Home & Garden' },
-                          { value: 'sports', label: 'Sports' },
-                          { value: 'toys', label: 'Toys' },
-                        ]}
-                        value={filters.category}
-                        onChange={(e) => setFilters({ category: e.target.value })}
-                      />
-                      <Select
-                        label="Status"
-                        options={[
-                          { value: '', label: 'All Status' },
-                          { value: 'active', label: 'Active' },
-                          { value: 'inactive', label: 'Inactive' },
-                        ]}
-                        value={filters.status}
-                        onChange={(e) => setFilters({ status: e.target.value })}
-                      />
-                      <Select
-                        label="Stock Status"
-                        options={[
-                          { value: '', label: 'All Stock' },
-                          { value: 'low', label: 'Low Stock' },
-                          { value: 'out', label: 'Out of Stock' },
-                          { value: 'in', label: 'In Stock' },
-                        ]}
-                        value={filters.stockStatus}
-                        onChange={(e) => setFilters({ stockStatus: e.target.value })}
-                      />
+                  {(searchTerm || filters.category || filters.status) && (
+                    <motion.button
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      onClick={clearFilters}
+                      className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+                    >
+                      <FiX className="w-5 h-5" />
+                    </motion.button>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {!initialLoading && (
+              <AnimatePresence>
+                {showFilters && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: 'auto', opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.3 }}
+                    className="overflow-hidden"
+                  >
+                    <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <Select
+                          label="Category"
+                          options={[
+                            { value: '', label: 'All Categories' },
+                            { value: 'electronics', label: 'Electronics' },
+                            { value: 'clothing', label: 'Clothing' },
+                            { value: 'books', label: 'Books' },
+                            { value: 'home', label: 'Home & Garden' },
+                            { value: 'sports', label: 'Sports' },
+                            { value: 'toys', label: 'Toys' },
+                          ]}
+                          value={filters.category}
+                          onChange={(e) => setFilters({ category: e.target.value })}
+                        />
+                        <Select
+                          label="Status"
+                          options={[
+                            { value: '', label: 'All Status' },
+                            { value: 'active', label: 'Active' },
+                            { value: 'inactive', label: 'Inactive' },
+                          ]}
+                          value={filters.status}
+                          onChange={(e) => setFilters({ status: e.target.value })}
+                        />
+                        <Select
+                          label="Stock Status"
+                          options={[
+                            { value: '', label: 'All Stock' },
+                            { value: 'low', label: 'Low Stock' },
+                            { value: 'out', label: 'Out of Stock' },
+                            { value: 'in', label: 'In Stock' },
+                          ]}
+                          value={filters.stockStatus}
+                          onChange={(e) => setFilters({ stockStatus: e.target.value })}
+                        />
+                      </div>
                     </div>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            )}
           </motion.div>
 
           {/* Products Display */}
@@ -604,7 +624,16 @@ const Products = () => {
             animate={{ y: 0, opacity: 1 }}
             transition={{ delay: 0.2 }}
           >
-            {products.length > 0 ? (
+            {initialLoading || loading ? (
+              <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-12">
+                <div className="flex flex-col items-center justify-center">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mb-4"></div>
+                  <p className="text-gray-600 dark:text-gray-400">
+                    {initialLoading ? 'Loading product data...' : 'Updating product data...'}
+                  </p>
+                </div>
+              </div>
+            ) : products.length > 0 ? (
               viewMode === 'table' ? (
                 <>
                   <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg overflow-hidden">
@@ -695,11 +724,11 @@ const Products = () => {
                           
                           <div className="flex items-center justify-between mb-3">
                             <span className="text-lg font-bold text-gray-900 dark:text-white">
-                              ${product.price.toFixed(2)}
+                              ${product.selling_price ? parseFloat(product.selling_price).toFixed(2) : '0.00'}
                             </span>
                             <StatusBadge
-                              status={product.isActive ? 'active' : 'inactive'}
-                              variant={product.isActive ? 'success' : 'default'}
+                              status={product.is_active ? 'active' : 'inactive'}
+                              variant={product.is_active ? 'success' : 'default'}
                               size="sm"
                             />
                           </div>

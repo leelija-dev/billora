@@ -13,7 +13,10 @@ use App\Models\Unit;
 use App\Http\Controllers\admin\PlanController;
 use App\Http\Controllers\admin\CategoriesController;
 use App\Http\Controllers\admin\DashboardController;
-
+use App\Http\Controllers\admin\CartsController;
+use App\Http\Controllers\admin\ReportController;
+use App\Http\Controllers\admin\PlanPurchaseHistoryController;
+use App\Http\Controllers\admin\PaymentController;
 Route::get('/test', function () {
    return response()->json([
       'message' => 'Hello World',
@@ -24,8 +27,9 @@ Route::prefix('users')->group(function () {
    //    Route::get('/', [CustomerController::class, 'index']);
    Route::middleware('auth:sanctum')->get('/', [CustomerController::class, 'index']);
 
-   Route::post('/store', [CustomerController::class, 'store']);
+   Route::post('/register', [CustomerController::class, 'store']);
    Route::post('/login', [CustomerController::class, 'login']);
+   
    // Route::get
    //    Route::post('/logout', [CustomerController::class, 'logout']);
    Route::middleware('auth:sanctum')->post('/logout', [CustomerController::class, 'logout']);
@@ -43,6 +47,7 @@ Route::prefix('users')->group(function () {
 //Products
 Route::middleware('auth:sanctum')->prefix('products')->group(function () {
    Route::get('/', [ProductsController::class, 'index']); //all products
+   Route::get('/create/{id}', [ProductsController::class, 'create']);  // product create page data(brand,unit,category)
    Route::post('/store', [ProductsController::class, 'store']); //store product
    Route::get('/{id}', [ProductsController::class, 'show']); //single product
    Route::put('/{id}', [ProductsController::class, 'update']); // update product
@@ -104,7 +109,7 @@ Route::middleware('auth:sanctum')->prefix('store')->group(function () {
 });
 
 //client or bill generation customer
-Route::prefix('customer')->group(function () {
+Route::middleware('auth:sanctum')->prefix('customer')->group(function () {
  
    Route::post('/store', [BillCustomerController::class, 'store']);
    Route::get('/{id}', [BillCustomerController::class, 'index']);
@@ -118,7 +123,7 @@ Route::prefix('customer')->group(function () {
 });
 
 // categories
-Route::prefix('categories')->group(function () {
+Route::middleware('auth:sanctum')->prefix('categories')->group(function () {
    Route::get('/', [CategoriesController::class, 'index']);
    // Route::get('/create', [CategoriesController::class, 'create']);
    Route::post('/store', [CategoriesController::class, 'store']);
@@ -138,7 +143,30 @@ Route::prefix('plans')->group(function (){
    Route::patch('/{id}', [PlanController::class, 'restore']);
    Route::delete('/{id}/force', [PlanController::class, 'forceDelete']);
 });
+//cart products
+Route::middleware('auth:sanctum')->prefix('carts')->group(function () {
+   Route::get('/', [CartsController::class, 'index']);
+   Route::post('/store', [CartsController::class, 'store']);
+   Route::put('/{id}', [CartsController::class, 'update']);
+   Route::delete('/{id}', [CartsController::class, 'destroy']);
+});
+
+
 Route::prefix('dashboard')->group(function (){
    Route::get('/overview/{id}', [DashboardController::class, 'index']);
    
+});
+//reports 
+Route::middleware('auth:sanctum')->prefix('reports')->group(function () {
+   Route::get('/', [ReportController::class, 'index']);
+});
+// plan purchase history
+Route::middleware('auth:sanctum')->prefix('plans-purchase-history')->group(function () {
+   Route::get('/{id}', [PlanPurchaseHistoryController::class, 'index']);
+});
+
+//payment 
+Route::prefix('cashfree')->group(function () {
+    Route::post('/create-order', [PaymentController::class, 'createOrder']);
+    Route::get('/verify/{order_id}', [PaymentController::class, 'verifyPayment']);
 });

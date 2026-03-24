@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import api from '../services/api'
+import { productsAPI } from '../services'
 import toast from 'react-hot-toast'
 
 export const useProductStore = create((set, get) => ({
@@ -14,25 +14,39 @@ export const useProductStore = create((set, get) => ({
     status: '',
   },
 
-  fetchProducts: async (page = 1) => {
+  fetchProducts: async (page = 1, search = '') => {
     set({ loading: true })
     try {
-      const { filters, pageSize } = get()
-      const response = await api.get('/products/', {
-        params: {
-          page,
-          page_size: pageSize,
-          ...filters,
-        },
+      const response = await productsAPI.getAll(search)
+      
+      console.log(' Product Store - Raw API Response:', response)
+      
+      // Handle your API's response structure
+      const apiData = response.data
+      const products = apiData.data?.data || [] // Your API nests products in data.data.data
+      const total = apiData.data?.total || products.length
+      
+      console.log(' Product Store - Processed Data:', {
+        apiData,
+        products,
+        total,
+        productsLength: products.length
       })
       
       set({
-        products: response.data.results,
-        totalProducts: response.data.count,
+        products: products,
+        totalProducts: total,
         currentPage: page,
         loading: false,
       })
+      
+      console.log(' Product Store - State Updated:', {
+        productsCount: products.length,
+        totalProducts: total,
+        loading: false
+      })
     } catch (error) {
+      console.error(' Product Store - Error:', error)
       toast.error('Failed to fetch products')
       set({ loading: false })
     }
@@ -41,9 +55,12 @@ export const useProductStore = create((set, get) => ({
   createProduct: async (productData) => {
     set({ loading: true })
     try {
-      const response = await api.post('/products/', productData)
+      const response = await productsAPI.create(productData)
+      const apiData = response.data
+      const product = apiData.data || apiData // Handle both nested and flat responses
+      
       set((state) => ({
-        products: [response.data, ...state.products],
+        products: [product, ...state.products],
         totalProducts: state.totalProducts + 1,
         loading: false,
       }))
@@ -59,7 +76,7 @@ export const useProductStore = create((set, get) => ({
   updateProduct: async (id, productData) => {
     set({ loading: true })
     try {
-      const response = await api.put(`/products/${id}/`, productData)
+      const response = await productsAPI.update(id, productData)
       set((state) => ({
         products: state.products.map((p) => 
           p.id === id ? response.data : p
@@ -78,7 +95,7 @@ export const useProductStore = create((set, get) => ({
   deleteProduct: async (id) => {
     set({ loading: true })
     try {
-      await api.delete(`/products/${id}/`)
+      await productsAPI.delete(id)
       set((state) => ({
         products: state.products.filter((p) => p.id !== id),
         totalProducts: state.totalProducts - 1,
@@ -95,6 +112,6 @@ export const useProductStore = create((set, get) => ({
 
   setFilters: (filters) => {
     set({ filters: { ...get().filters, ...filters } })
-    get().fetchProducts(1)
+    get().fetchProducts(1, filters.search)
   },
 }))
