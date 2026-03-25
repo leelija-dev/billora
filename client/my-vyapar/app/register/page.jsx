@@ -1,120 +1,108 @@
 "use client";
 
 import React, { useState } from "react";
-import { FcGoogle } from "react-icons/fc";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 import { useRouter } from "next/navigation";
+import { registerUser } from "@/services/authService";
 
 const RegisterPage = () => {
   const [showPassword, setShowPassword] = useState(false);
-  const router = useRouter();
-
-  // ONLY UI fields
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
-  // REGISTER FUNCTION
-  const handleRegister = async () => {
+  const router = useRouter();
+
+  const handleRegister = async (e) => {
+    e.preventDefault();
+    
+    setLoading(true);
+    setError("");
+    
     try {
-      const res = await fetch("http://localhost:8000/api/users/store", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-
-        // ✅ Sending required fields with dummy values
-        body: JSON.stringify({
-          name: "User",
-          email: email,
-          phone: "9999999999",
-          password: password,
-          city: "Kolkata",
-          state: "WB",
-          country: "India",
-          pincode: "700000",
-        }),
-      });
-
-      const data = await res.json();
-      console.log(data);
-
-      if (data.success) {
-        alert("Registration Successful");
-        router.push("/login");
-      } else {
-        alert("Registration Failed");
+      const res = await registerUser({ name, email, password });
+      
+      if (res.status === false) {
+        throw new Error(res.message || "Registration failed");
       }
+      
+      alert("Registration Successful! Please check your email to verify your account.");
+      router.push("/login");
+      
     } catch (error) {
-      console.error(error);
+      setError(error.message || "Registration Failed. Please try again.");
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#ece9f1] to-[#dfe3f8] flex flex-col font-sans">
-      <div className="flex-1 flex justify-center items-center py-20 px-4">
-        
-        <div className="w-[550px] bg-white py-10 px-[50px] rounded-[25px] shadow-[0_8px_25px_rgba(0,0,0,0.08)] max-sm:w-[90%] max-sm:px-5">
+    <div className="min-h-screen flex justify-center items-center bg-gray-100">
+      <form onSubmit={handleRegister} className="w-[400px] bg-white p-8 rounded shadow">
+        <h1 className="text-2xl font-bold text-center mb-5">Register</h1>
 
-          <h1 className="text-center text-[#2d236b] text-4xl font-bold mb-6">
-            Register
-          </h1>
-
-          {/* Google */}
-          <button className="w-full py-3.5 rounded-xl border border-[#ddd] mb-6">
-            <div className="flex justify-center">
-              <FcGoogle size={22} />
-            </div>
-          </button>
-
-          {/* Email */}
-          <div className="mb-5">
-            <label className="text-sm">Email</label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full p-3 rounded-xl border mt-1"
-            />
+        {error && (
+          <div className="bg-red-100 text-red-700 p-3 rounded mb-4">
+            {error}
           </div>
+        )}
 
-          {/* Password */}
-          <div className="mb-5 relative">
-            <label className="text-sm">Password</label>
-            <input
-              type={showPassword ? "text" : "password"}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full p-3 rounded-xl border mt-1"
-            />
-            <span
-              className="absolute right-4 top-[38px] cursor-pointer"
-              onClick={() => setShowPassword(!showPassword)}
-            >
-              {showPassword ? <FaEyeSlash /> : <FaEye />}
-            </span>
-          </div>
+        <input
+          type="text"
+          placeholder="Full Name"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          className="w-full mb-4 p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+          required
+        />
 
-          {/* Button */}
-          <button
-            onClick={handleRegister}
-            className="w-full py-3.5 bg-gradient-to-r from-[#5b5bd6] to-[#3b82f6] text-white font-bold rounded-xl"
+        <input
+          type="email"
+          placeholder="Email Address"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          className="w-full mb-4 p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+          required
+        />
+
+        <div className="relative">
+          <input
+            type={showPassword ? "text" : "password"}
+            placeholder="Password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className="w-full mb-4 p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+            required
+            minLength={6}
+          />
+          <span
+            className="absolute right-3 top-3 cursor-pointer text-gray-500"
+            onClick={() => setShowPassword(!showPassword)}
           >
-            Register
-          </button>
-
-          {/* Login */}
-          <p className="text-center mt-5">
-            Already have an account?{" "}
-            <span
-              onClick={() => router.push("/login")}
-              className="text-blue-500 cursor-pointer"
-            >
-              Log in
-            </span>
-          </p>
-
+            {showPassword ? <FaEyeSlash /> : <FaEye />}
+          </span>
         </div>
-      </div>
+
+        <button
+          type="submit"
+          disabled={loading}
+          className="w-full bg-blue-500 text-white py-2 rounded hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition duration-200"
+        >
+          {loading ? "Registering..." : "Register"}
+        </button>
+
+        <p className="text-center mt-4 text-gray-600">
+          Already have an account?{" "}
+          <span
+            onClick={() => router.push("/login")}
+            className="text-blue-500 cursor-pointer hover:underline"
+          >
+            Login
+          </span>
+        </p>
+      </form>
     </div>
   );
 };

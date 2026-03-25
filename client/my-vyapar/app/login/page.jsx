@@ -1,100 +1,149 @@
 "use client";
 
 import React, { useState } from "react";
-import { FcGoogle } from "react-icons/fc";
 import { FaEye, FaEyeSlash, FaHome } from "react-icons/fa";
 import { useRouter } from "next/navigation";
-// import Navbar from "@/components/Navbar";
-// import Footer from "@/components/Footer";
+import { loginUser } from "@/services/authService";
+import { saveAuthData } from "@/store/authStore";
 
-const Login = () => {
+const LoginPage = () => {
   const [showPassword, setShowPassword] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
   const router = useRouter();
+
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    
+    setLoading(true);
+    setError("");
+    
+    try {
+      const res = await loginUser({ email, password });
+      
+      // Check if API returned error
+      if (res.status === false || res.success === false) {
+        // Handle specific error messages from Laravel
+        if (res.message && res.message.includes("User not found")) {
+          throw new Error("No account found with this email. Please register first.");
+        } else if (res.message && res.message.includes("password")) {
+          throw new Error("Invalid password. Please try again.");
+        } else if (res.message && res.message.includes("verify")) {
+          throw new Error("Please verify your email before logging in. Check your inbox.");
+        } else {
+          throw new Error(res.message || "Invalid credentials");
+        }
+      }
+      
+      // Check if user data exists
+      if (!res.user && !res.data?.user && !res.id) {
+        throw new Error("No account found with this email. Please register first.");
+      }
+      
+      const userData = res.user || res.data?.user || res;
+      const token = res.token || res.data?.token || null;
+      
+      // Save to localStorage
+      saveAuthData(userData, token);
+      
+      // Show success message
+      alert("Login Successful ✅");
+      
+      // Redirect to home
+      router.push("/");
+      
+    } catch (error) {
+      console.error("Login error:", error);
+      
+      // Show user-friendly error message
+      if (error.message.includes("No account") || error.message.includes("not found")) {
+        setError("❌ No account found with this email. Please register first.");
+      } else if (error.message.includes("password") || error.message.includes("Invalid credentials")) {
+        setError("❌ Invalid password. Please try again.");
+      } else if (error.message.includes("verify") || error.message.includes("verified")) {
+        setError("📧 Please verify your email before logging in. Check your inbox.");
+      } else {
+        setError(error.message || "❌ Login failed. Please try again.");
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#ece9f1] to-[#dfe3f8] flex flex-col">
-      {/* <Navbar /> */}
-      
       <div className="flex-1 flex justify-center items-center font-sans relative py-8">
-        {/* Back to Home Button */}
         <button
           onClick={() => router.push("/")}
-          className="absolute top-6 left-6 flex items-center gap-2 px-4 py-2 bg-white rounded-lg shadow-md hover:shadow-lg transition-all duration-300 hover:scale-105 text-[#2d236b] font-medium z-10"
+          className="absolute top-6 left-6 flex items-center gap-2 px-4 py-2 bg-white rounded-lg shadow-md hover:shadow-lg transition"
         >
-          <FaHome className="text-[#5b5bd6]" size={20} />
+          <FaHome />
           <span>Back to Home</span>
         </button>
 
-        <div className="w-[550px] bg-white py-10 px-[50px] rounded-[25px] shadow-[0_10px_25px_rgba(0,0,0,0.08)] max-md:w-[450px] max-md:px-8 max-sm:w-[90%] max-sm:px-5 max-sm:py-8">
-          
+        <form onSubmit={handleLogin} className="w-[550px] bg-white py-10 px-[50px] rounded-[25px] shadow">
+          <h1 className="text-center text-3xl font-bold mb-6">LOG IN</h1>
 
-          <h1 className="text-center text-[#2d236b] my-6 text-3xl font-bold max-sm:text-2xl">
-            LOG IN
-          </h1>
+          {error && (
+            <div className="bg-red-100 text-red-700 p-3 rounded mb-4">
+              {error}
+            </div>
+          )}
 
-          {/* Social Buttons */}
-          <div className="flex gap-5 mb-6">
-            <button className="flex-1 py-3 rounded-[30px] border border-[#ddd] bg-white cursor-pointer hover:shadow-md transition-shadow">
-              <FcGoogle size={25} className="mx-auto" />
-            </button>
-          </div>
-
-          {/* Email */}
           <div className="flex flex-col mb-5">
-            <label className="mb-1.5 text-sm">Email Address</label>
-            <input 
-              type="email" 
-              placeholder="Enter your email" 
-              className="p-3 rounded-[30px] border border-[#ccc] outline-none focus:border-[#5b5bd6] transition-colors"
+            <label className="mb-2 font-medium">Email</label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="p-3 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Enter your email"
+              required
             />
           </div>
 
-          {/* Password */}
           <div className="flex flex-col mb-5 relative">
-            <label className="mb-1.5 text-sm">Password</label>
+            <label className="mb-2 font-medium">Password</label>
             <input
               type={showPassword ? "text" : "password"}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="p-3 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="Enter your password"
-              className="p-3 rounded-[30px] border border-[#ccc] outline-none focus:border-[#5b5bd6] transition-colors"
+              required
             />
             <span
-              className="absolute right-[18px] top-[38px] cursor-pointer text-[#555]"
+              className="absolute right-4 top-[42px] cursor-pointer text-gray-500"
               onClick={() => setShowPassword(!showPassword)}
             >
               {showPassword ? <FaEyeSlash /> : <FaEye />}
             </span>
           </div>
 
-          <p className="text-sm mb-5 cursor-pointer hover:text-[#3b82f6] transition-colors">
-            Forgot password?
-          </p>
-
-          <button 
-            className="w-full py-3.5 rounded-xl border-none bg-gradient-to-r from-[#5b5bd6] to-[#3b82f6] text-white text-base font-bold cursor-pointer hover:shadow-lg hover:scale-105 transition-all duration-300"
-            onClick={() => router.push("/login")}
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full py-3 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition duration-200"
           >
-            LOG IN
+            {loading ? "Logging in..." : "LOGIN"}
           </button>
 
-          <div className="text-center mt-6 text-sm">
-            <p className="mb-2">Can't Access Your Account?</p>
-            <p>
-              DON'T HAVE AN ACCOUNT?{" "}
-              <span 
-                onClick={() => router.push("/register")}
-                className="text-[#3b82f6] font-bold cursor-pointer hover:underline"
-              >
-                SIGN UP
-              </span>
-            </p>
-          </div>
-        </div>
+          <p className="text-center mt-5">
+            Don't have an account?{" "}
+            <span
+              onClick={() => router.push("/register")}
+              className="text-blue-500 cursor-pointer hover:underline"
+            >
+              SIGN UP
+            </span>
+          </p>
+        </form>
       </div>
-       {/* <Footer />
-       */}
     </div>
-    
   );
 };
 
-export default Login;
+export default LoginPage;
