@@ -295,6 +295,35 @@ const InvoiceDetail = () => {
     }
   }
 
+  const handlePrintThermal = () => {
+    const thermalContent = generateThermalInvoiceHTML(invoice)
+    
+    // Create iframe for thermal printing
+    const iframe = document.createElement('iframe')
+    iframe.style.position = 'absolute'
+    iframe.style.left = '-9999px'
+    iframe.style.top = '-9999px'
+    iframe.style.width = '80mm' // 3-inch thermal paper width
+    iframe.style.height = '0px'
+    iframe.style.border = 'none'
+    
+    document.body.appendChild(iframe)
+    
+    const iframeDoc = iframe.contentDocument || iframe.contentWindow.document
+    iframeDoc.open()
+    iframeDoc.write(thermalContent)
+    iframeDoc.close()
+    
+    // Wait for content to load before printing
+    iframe.onload = () => {
+      iframe.contentWindow.print()
+      // Remove iframe after printing dialog is closed
+      setTimeout(() => {
+        document.body.removeChild(iframe)
+      }, 1000)
+    }
+  }
+
   const handleDownloadPDF = () => {
     const htmlContent = generateInvoiceHTML(invoice)
     const container = document.createElement('div')
@@ -331,12 +360,306 @@ const InvoiceDetail = () => {
     document.body.removeChild(container)
   }
 
+  const generateThermalInvoiceHTML = (invoice) => {
+    if (!invoice) return ''
+
+    // Helper function to safely parse numbers
+    const parseNumber = (value) => {
+      if (value === null || value === undefined) return 0
+      if (typeof value === 'number') return value
+      if (typeof value === 'string') return parseFloat(value) || 0
+      return 0
+    }
+
+    // Helper function to safely format currency
+    const formatCurrency = (value) => {
+      const num = parseNumber(value)
+      return num.toFixed(2)
+    }
+
+    // Calculate totals from invoice items
+    const calculateSubtotal = () => {
+      if (!invoice.items || !Array.isArray(invoice.items)) return 0
+      return invoice.items.reduce((sum, item) => {
+        return sum + parseNumber(item.total_price)
+      }, 0)
+    }
+
+    const calculateTotalGST = () => {
+      if (!invoice.items || !Array.isArray(invoice.items)) return 0
+      return invoice.items.reduce((sum, item) => {
+        const itemPrice = parseNumber(item.price)
+        const itemGst = parseNumber(item.gst)
+        const quantity = parseNumber(item.quantity)
+        const subtotal = itemPrice * quantity
+        return sum + (subtotal * itemGst / 100)
+      }, 0)
+    }
+
+    const calculateTotalDiscount = () => {
+      if (!invoice.items || !Array.isArray(invoice.items)) return 0
+      return invoice.items.reduce((sum, item) => {
+        const itemPrice = parseNumber(item.price)
+        const itemDiscount = parseNumber(item.discount)
+        const quantity = parseNumber(item.quantity)
+        const subtotal = itemPrice * quantity
+        return sum + (subtotal * itemDiscount / 100)
+      }, 0)
+    }
+
+    const subtotal = calculateSubtotal()
+    const totalGST = calculateTotalGST()
+    const totalDiscount = calculateTotalDiscount()
+    const totalAmount = parseNumber(invoice.total_amount)
+    const paidAmount = parseNumber(invoice.paid_amount)
+    const changeAmount = paidAmount - totalAmount
+
+    return `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Thermal Invoice #${invoice.id}</title>
+        <meta charset="utf-8">
+        <style>
+          @page {
+            margin: 5mm;
+            size: 80mm 297mm; /* 3-inch thermal paper */
+          }
+          body {
+            font-family: 'Courier New', monospace;
+            margin: 0;
+            padding: 10px;
+            background: #ffffff;
+            color: #000;
+            font-size: 12px;
+            line-height: 1.2;
+            width: 80mm;
+          }
+          .thermal-header {
+            text-align: center;
+            margin-bottom: 15px;
+          }
+          .thermal-header h1 {
+            font-size: 16px;
+            font-weight: bold;
+            margin: 0 0 5px 0;
+            text-transform: uppercase;
+          }
+          .thermal-header .subtitle {
+            font-size: 10px;
+            margin: 2px 0;
+          }
+          .separator {
+            border-top: 1px dashed #000;
+            margin: 10px 0;
+          }
+          .invoice-info {
+            margin-bottom: 10px;
+          }
+          .info-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 2px 0;
+            font-size: 10px;
+          }
+          .info-label {
+            color: #666;
+          }
+          .info-value {
+            font-weight: bold;
+          }
+          .customer-info {
+            margin-bottom: 10px;
+            font-size: 10px;
+            font-weight: bold;
+          }
+          .items-header {
+            display: flex;
+            margin-bottom: 5px;
+            font-size: 10px;
+            font-weight: bold;
+            border-bottom: 1px solid #000;
+            padding-bottom: 2px;
+          }
+          .item-col {
+            padding: 0 2px;
+          }
+          .item-name {
+            flex: 3;
+          }
+          .item-qty {
+            flex: 1;
+            text-align: right;
+          }
+          .item-price {
+            flex: 1;
+            text-align: right;
+          }
+          .item-total {
+            flex: 1;
+            text-align: right;
+          }
+          .item-row {
+            display: flex;
+            margin: 2px 0;
+            font-size: 9px;
+          }
+          .summary {
+            margin: 10px 0;
+          }
+          .summary-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 2px 0;
+            font-size: 10px;
+          }
+          .total-row {
+            font-weight: bold;
+            font-size: 12px;
+            border-top: 1px solid #000;
+            padding-top: 2px;
+            margin-top: 5px;
+          }
+          .total-amount {
+            color: #000;
+            font-size: 14px;
+          }
+          .payment-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 2px 0;
+            font-size: 10px;
+          }
+          .paid-amount {
+            color: #000;
+            font-weight: bold;
+          }
+          .change-amount {
+            color: #000;
+            font-weight: bold;
+          }
+          .footer {
+            text-align: center;
+            margin-top: 15px;
+            font-size: 9px;
+            color: #666;
+          }
+          @media print {
+            body { margin: 0; padding: 5px; }
+          }
+        </style>
+      </head>
+      <body>
+        <!-- Store Header -->
+        <div class="thermal-header">
+          <h1>${invoice.store_name || 'Your Store Name'}</h1>
+          <div class="subtitle">${invoice.store_address || 'Store Address'}</div>
+          <div class="subtitle">Tel: ${invoice.store_phone || 'Store Phone'}</div>
+        </div>
+
+        <!-- Separator -->
+        <div class="separator"></div>
+
+        <!-- Invoice Info -->
+        <div class="invoice-info">
+          <div class="info-row">
+            <span class="info-label">Invoice:</span>
+            <span class="info-value">${invoice.invoice_number || `INV-${invoice.id}`}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Date:</span>
+            <span class="info-value">${new Date(invoice.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
+          </div>
+        </div>
+
+        <!-- Customer Info -->
+        <div class="customer-info">
+          Customer ID: ${invoice.customer_id || 'Walk-in Customer'}
+        </div>
+
+        <!-- Separator -->
+        <div class="separator"></div>
+
+        <!-- Items Header -->
+        <div class="items-header">
+          <div class="item-col item-name">Item</div>
+          <div class="item-col item-qty">Qty</div>
+          <div class="item-col item-price">Price</div>
+          <div class="item-col item-total">Total</div>
+        </div>
+
+        <!-- Items List -->
+        ${invoice.items?.map((item, index) => {
+          const itemPrice = parseNumber(item.price)
+          const itemTotal = parseNumber(item.total_price)
+          const quantity = parseNumber(item.quantity)
+          
+          return `
+            <div class="item-row">
+              <div class="item-col item-name">Product #${item.product_id}</div>
+              <div class="item-col item-qty">${quantity}</div>
+              <div class="item-col item-price">$${formatCurrency(itemPrice)}</div>
+              <div class="item-col item-total">$${formatCurrency(itemTotal)}</div>
+            </div>
+          `
+        }).join('')}
+
+        <!-- Separator -->
+        <div class="separator"></div>
+
+        <!-- Summary -->
+        <div class="summary">
+          <div class="summary-row">
+            <span>Subtotal:</span>
+            <span>$${formatCurrency(subtotal)}</span>
+          </div>
+          <div class="summary-row">
+            <span>GST:</span>
+            <span>$${formatCurrency(totalGST)}</span>
+          </div>
+          <div class="summary-row">
+            <span>Discount:</span>
+            <span style="color: #000;">-$${formatCurrency(totalDiscount)}</span>
+          </div>
+          <div class="summary-row total-row">
+            <span>TOTAL:</span>
+            <span class="total-amount">$${formatCurrency(totalAmount)}</span>
+          </div>
+        </div>
+
+        <!-- Payment -->
+        <div class="payment">
+          <div class="payment-row">
+            <span>Paid:</span>
+            <span class="paid-amount">$${formatCurrency(paidAmount)}</span>
+          </div>
+          ${changeAmount > 0 ? `
+            <div class="payment-row">
+              <span>Change:</span>
+              <span class="change-amount">$${formatCurrency(changeAmount)}</span>
+            </div>
+          ` : ''}
+        </div>
+
+        <!-- Separator -->
+        <div class="separator"></div>
+
+        <!-- Footer -->
+        <div class="footer">
+          <div>Thank you for your purchase!</div>
+          <div>${new Date().toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' })}</div>
+        </div>
+      </body>
+      </html>
+    `
+  }
+
   const generateInvoiceHTML = (invoice) => {
     if (!invoice) return ''
 
     const totalAmount = parseFloat(invoice.total_amount || 0)
     const paidAmount = parseFloat(invoice.paid_amount || 0)
-    const dueAmount = totalAmount - paidAmount
+    const changeAmount = paidAmount - totalAmount
 
     return `
       <!DOCTYPE html>
@@ -352,15 +675,15 @@ const InvoiceDetail = () => {
           body {
             font-family: 'Segoe UI', Arial, sans-serif;
             margin: 0;
-            padding: 20px;
+            padding: 32px;
             background: #ffffff;
             color: #333;
             line-height: 1.4;
           }
           .invoice-header {
             text-align: center;
-            margin-bottom: 30px;
-            padding-bottom: 20px;
+            margin-bottom: 32px;
+            padding-bottom: 32px;
           }
           .invoice-header h1 {
             color: #333;
@@ -380,7 +703,7 @@ const InvoiceDetail = () => {
           }
           .invoice-title {
             text-align: center;
-            margin-bottom: 30px;
+            margin-bottom: 24px;
           }
           .invoice-title h2 {
             color: #333;
@@ -391,7 +714,7 @@ const InvoiceDetail = () => {
           .invoice-meta {
             display: flex;
             justify-content: space-between;
-            margin-bottom: 30px;
+            margin-bottom: 24px;
           }
           .invoice-meta-item {
             text-align: left;
@@ -408,16 +731,16 @@ const InvoiceDetail = () => {
           }
           .customer-details {
             background: #f8f9fa;
-            padding: 20px;
+            padding: 16px;
             border-radius: 8px;
-            margin-bottom: 30px;
+            margin-bottom: 24px;
             border: 1px solid #e9ecef;
           }
           .customer-details h3 {
             color: #495057;
             font-size: 14px;
             font-weight: 600;
-            margin: 0 0 15px 0;
+            margin: 0 0 12px 0;
             text-transform: uppercase;
             letter-spacing: 0.5px;
           }
@@ -435,7 +758,7 @@ const InvoiceDetail = () => {
           .items-table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 30px;
+            margin-bottom: 24px;
             font-size: 12px;
           }
           .items-table th {
@@ -451,7 +774,6 @@ const InvoiceDetail = () => {
           .items-table td {
             padding: 12px 8px;
             border-bottom: 1px solid #e9ecef;
-            vertical-align: top;
           }
           .items-table .text-right {
             text-align: right;
@@ -464,16 +786,16 @@ const InvoiceDetail = () => {
           }
           .summary-section {
             background: #f8f9fa;
-            padding: 20px;
+            padding: 16px;
             border-radius: 8px;
-            margin-bottom: 30px;
+            margin-bottom: 24px;
             border: 1px solid #e9ecef;
           }
           .summary-section h3 {
             color: #495057;
             font-size: 14px;
             font-weight: 600;
-            margin: 0 0 15px 0;
+            margin: 0 0 12px 0;
             text-transform: uppercase;
             letter-spacing: 0.5px;
           }
@@ -490,45 +812,47 @@ const InvoiceDetail = () => {
             font-weight: 600;
             color: #333;
           }
-          .summary-row .value-green {
-            color: #28a745;
-          }
-          .summary-row .value-blue {
-            color: #007bff;
-          }
-          .summary-total {
-            border-top: 2px solid #333;
+          .summary-row.total {
+            border-top: 1px solid #dee2e6;
             padding-top: 8px;
             margin-top: 8px;
-          }
-          .summary-total .label {
-            font-size: 18px;
-            color: #333;
+            font-size: 16px;
             font-weight: 700;
           }
-          .summary-total .value {
-            font-size: 20px;
+          .summary-row.total .value {
             color: #007bff;
-            font-weight: 700;
           }
           .payment-details {
-            background: #f8f9fa;
-            padding: 20px;
+            background: #e8f5e8;
+            padding: 16px;
             border-radius: 8px;
-            margin-bottom: 30px;
-            border: 1px solid #e9ecef;
+            margin-bottom: 24px;
+            border: 1px solid #c3e6cb;
           }
           .payment-details h3 {
-            color: #495057;
+            color: #155724;
             font-size: 14px;
             font-weight: 600;
-            margin: 0 0 15px 0;
+            margin: 0 0 12px 0;
             text-transform: uppercase;
             letter-spacing: 0.5px;
           }
+          .payment-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 4px;
+            font-size: 14px;
+          }
+          .payment-row .label {
+            color: #666;
+          }
+          .payment-row .value {
+            font-weight: 600;
+            color: #155724;
+          }
           .footer {
             text-align: center;
-            margin-top: 40px;
+            margin-top: 32px;
             padding-top: 20px;
             border-top: 1px solid #e9ecef;
           }
@@ -608,26 +932,26 @@ const InvoiceDetail = () => {
                 <td>${index + 1}</td>
                 <td>${item.product_name || `Product #${item.product_id}`}</td>
                 <td class="text-right">${item.quantity}</td>
-                <td class="text-right">₹${itemPrice.toFixed(2)}</td>
+                <td class="text-right">$${itemPrice.toFixed(2)}</td>
                 <td class="text-right">${itemGst || 0}%</td>
                 <td class="text-right">${itemDiscount || 0}%</td>
-                <td class="text-right text-bold text-green">₹${itemTotal.toFixed(2)}</td>
+                <td class="text-right text-bold text-green">$${itemTotal.toFixed(2)}</td>
               </tr>
               `;
             }).join('')}
           </tbody>
         </table>
 
-        <!-- Summary -->
+        <!-- Summary Section -->
         <div class="summary-section">
           <h3>Summary</h3>
           <div class="summary-row">
             <span class="label">Subtotal:</span>
-            <span class="value">₹${totalAmount.toFixed(2)}</span>
+            <span class="value">$${totalAmount.toFixed(2)}</span>
           </div>
           <div class="summary-row">
             <span class="label">Total GST:</span>
-            <span class="value">₹${invoice.items?.reduce((sum, item) => {
+            <span class="value">$${invoice.items?.reduce((sum, item) => {
               const itemPrice = typeof item.price === 'string' ? parseFloat(item.price) : (typeof item.price === 'number' ? item.price : 0);
               const itemGst = typeof item.gst === 'string' ? parseFloat(item.gst) : (typeof item.gst === 'number' ? item.gst : 0);
               const subtotal = itemPrice * parseFloat(item.quantity || 0);
@@ -636,36 +960,37 @@ const InvoiceDetail = () => {
           </div>
           <div class="summary-row">
             <span class="label">Total Discount:</span>
-            <span class="value value-green">-₹${invoice.items?.reduce((sum, item) => {
+            <span class="value" style="color: #28a745;">-$${invoice.items?.reduce((sum, item) => {
               const itemPrice = typeof item.price === 'string' ? parseFloat(item.price) : (typeof item.price === 'number' ? item.price : 0);
               const itemDiscount = typeof item.discount === 'string' ? parseFloat(item.discount) : (typeof item.discount === 'number' ? item.discount : 0);
               const subtotal = itemPrice * parseFloat(item.quantity || 0);
               return sum + (subtotal * itemDiscount / 100);
             }, 0).toFixed(2)}</span>
           </div>
-          <div class="summary-row summary-total">
-            <span class="label">Grand Total:</span>
-            <span class="value value-blue">₹${totalAmount.toFixed(2)}</span>
+          <div class="summary-row total">
+            <span>Grand Total:</span>
+            <span class="value">$${totalAmount.toFixed(2)}</span>
           </div>
         </div>
 
         <!-- Payment Details -->
         <div class="payment-details">
           <h3>Payment Details:</h3>
-          <div class="summary-row">
+          <div class="payment-row">
             <span class="label">Amount Paid:</span>
-            <span class="value value-green">₹${paidAmount.toFixed(2)}</span>
+            <span class="value">$${paidAmount.toFixed(2)}</span>
           </div>
-          ${dueAmount > 0 ? `
-          <div class="summary-row">
-            <span class="label">Due Amount:</span>
-            <span class="value">₹${dueAmount.toFixed(2)}</span>
-          </div>` : ''}
-          ${dueAmount < 0 ? `
-          <div class="summary-row">
-            <span class="label">Change Returned:</span>
-            <span class="value value-blue">₹${Math.abs(dueAmount).toFixed(2)}</span>
-          </div>` : ''}
+          ${changeAmount > 0 ? `
+            <div class="payment-row">
+              <span class="label">Change Returned:</span>
+              <span class="value">$${changeAmount.toFixed(2)}</span>
+            </div>
+          ` : paidAmount < totalAmount ? `
+            <div class="payment-row">
+              <span class="label">Due Amount:</span>
+              <span class="value" style="color: #dc3545;">$${(totalAmount - paidAmount).toFixed(2)}</span>
+            </div>
+          ` : ''}
         </div>
 
         <!-- Footer -->
@@ -738,57 +1063,41 @@ const InvoiceDetail = () => {
                 Back to Invoices
               </Button>
               <div className="flex items-center space-x-4">
-                <div>
-                  <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-                    Invoice #{invoice.id}
-                  </h1>
-                  <p className="text-gray-600 dark:text-gray-400 mt-1">
-                    {new Date(invoice.created_at).toLocaleDateString('en-US', { 
-                      year: 'numeric', 
-                      month: 'long', 
-                      day: 'numeric',
-                      hour: '2-digit',
-                      minute: '2-digit'
-                    })}
-                  </p>
-                </div>
-                <div className="ml-6">
-                  <StatusBadge 
-                    status={invoice.status || 'unpaid'}
-                    config={getStatusConfig(invoice.status || 'unpaid')}
-                  />
-                </div>
+                <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+                  Invoice #{invoice.invoice_number || invoice.id}
+                </h1>
+                <StatusBadge 
+                  status={invoice.status || 'unpaid'} 
+                  className="text-sm"
+                />
               </div>
+              <p className="text-gray-600 dark:text-gray-400 mt-1">
+                Created on {new Date(invoice.created_at).toLocaleDateString('en-US', { 
+                  year: 'numeric', 
+                  month: 'long', 
+                  day: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit'
+                })}
+              </p>
             </div>
-            
-            <div className="flex items-center space-x-3">
+            <div className="flex space-x-2">
               <Button
-                onClick={handleEdit}
+                onClick={handlePrintThermal}
                 variant="outline"
                 className="flex items-center"
               >
-                <FiEdit2 className="w-4 h-4 mr-2" />
-                Edit
+                <FiPrinter className="w-4 h-4 mr-2" />
+                Thermal Print
               </Button>
-              
-              <Button
-                onClick={handleDelete}
-                variant="danger"
-                className="flex items-center"
-              >
-                <FiTrash2 className="w-4 h-4 mr-2" />
-                Delete
-              </Button>
-              
               <Button
                 onClick={handlePrint}
                 variant="outline"
                 className="flex items-center"
               >
                 <FiPrinter className="w-4 h-4 mr-2" />
-                Print
+                A4 Print
               </Button>
-              
               <Button
                 onClick={handleDownloadPDF}
                 className="flex items-center"
@@ -800,151 +1109,128 @@ const InvoiceDetail = () => {
           </div>
         </div>
 
-        {/* Main Content Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Left Column - Invoice Details */}
+        {/* Main Content */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="grid grid-cols-1 lg:grid-cols-3 gap-6"
+        >
+          {/* Left Column - Store Info, Customer Info, Items */}
           <div className="lg:col-span-2 space-y-6">
-            {/* Store & Customer Info Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Store Information */}
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3, delay: 0.1 }}
-                className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6"
-              >
-                <div className="flex items-center mb-4">
-                  <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/20 rounded-lg flex items-center justify-center mr-3">
-                    <FiFileText className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-                  </div>
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Store Information</h3>
+            {/* Store Information */}
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.5, delay: 0.1 }}
+              className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6"
+            >
+              <div className="flex items-center mb-4">
+                <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/20 rounded-lg flex items-center justify-center mr-3">
+                  <FiDollarSign className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                 </div>
-                <div className="space-y-3">
-                  <div>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Store Name</p>
-                    <p className="font-medium text-gray-900 dark:text-white">{invoice.store_name}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Address</p>
-                    <p className="font-medium text-gray-900 dark:text-white">{invoice.store_address}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">GST</p>
-                    <p className="font-medium text-gray-900 dark:text-white">{invoice.store_gst}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Contact</p>
-                    <p className="font-medium text-gray-900 dark:text-white">{invoice.store_email}</p>
-                    <p className="font-medium text-gray-900 dark:text-white">{invoice.store_phone}</p>
-                  </div>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Store Information</h3>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Store Name</p>
+                  <p className="font-medium text-gray-900 dark:text-white">{invoice.store_name}</p>
                 </div>
-              </motion.div>
+                <div>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">GST Number</p>
+                  <p className="font-medium text-gray-900 dark:text-white">{invoice.store_gst || 'N/A'}</p>
+                </div>
+                <div className="md:col-span-2">
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Address</p>
+                  <p className="font-medium text-gray-900 dark:text-white">{invoice.store_address}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Email</p>
+                  <p className="font-medium text-gray-900 dark:text-white">{invoice.store_email}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Phone</p>
+                  <p className="font-medium text-gray-900 dark:text-white">{invoice.store_phone}</p>
+                </div>
+              </div>
+            </motion.div>
 
-              {/* Customer Information */}
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3, delay: 0.2 }}
-                className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6"
-              >
-                <div className="flex items-center mb-4">
-                  <div className="w-10 h-10 bg-green-100 dark:bg-green-900/20 rounded-lg flex items-center justify-center mr-3">
-                    <FiDollarSign className="w-5 h-5 text-green-600 dark:text-green-400" />
-                  </div>
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Customer Information</h3>
+            {/* Customer Information */}
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.5, delay: 0.2 }}
+              className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6"
+            >
+              <div className="flex items-center mb-4">
+                <div className="w-10 h-10 bg-green-100 dark:bg-green-900/20 rounded-lg flex items-center justify-center mr-3">
+                  <FiCheckCircle className="w-5 h-5 text-green-600 dark:text-green-400" />
                 </div>
-                <div className="space-y-3">
-                  <div>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Customer Name</p>
-                    <p className="font-medium text-gray-900 dark:text-white">{invoice.customer_name}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Phone</p>
-                    <p className="font-medium text-gray-900 dark:text-white">{invoice.customer_phone}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Email</p>
-                    <p className="font-medium text-gray-900 dark:text-white">{invoice.customer_email}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Address</p>
-                    <p className="font-medium text-gray-900 dark:text-white">{invoice.customer_address}</p>
-                  </div>
-                  {invoice.customer_gst && invoice.customer_gst !== 'N/A' && (
-                    <div>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">GST</p>
-                      <p className="font-medium text-gray-900 dark:text-white">{invoice.customer_gst}</p>
-                    </div>
-                  )}
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Customer Information</h3>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Customer Name</p>
+                  <p className="font-medium text-gray-900 dark:text-white">{invoice.customer_name}</p>
                 </div>
-              </motion.div>
-            </div>
+                <div>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Phone</p>
+                  <p className="font-medium text-gray-900 dark:text-white">{invoice.customer_phone}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Email</p>
+                  <p className="font-medium text-gray-900 dark:text-white">{invoice.customer_email}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">GST Number</p>
+                  <p className="font-medium text-gray-900 dark:text-white">{invoice.customer_gst || 'N/A'}</p>
+                </div>
+                <div className="md:col-span-2">
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Address</p>
+                  <p className="font-medium text-gray-900 dark:text-white">{invoice.customer_address}</p>
+                </div>
+              </div>
+            </motion.div>
 
             {/* Items Table */}
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3, delay: 0.3 }}
-              className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.5, delay: 0.3 }}
+              className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden"
             >
-              <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+              <div className="p-6 border-b border-gray-200 dark:border-gray-700">
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Invoice Items</h3>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full">
-                  <thead className="bg-gray-50 dark:bg-gray-700/50">
+                  <thead className="bg-gray-50 dark:bg-gray-700">
                     <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                        #
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                        Product Name
-                      </th>
-                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                        Quantity
-                      </th>
-                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                        Price
-                      </th>
-                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                        GST
-                      </th>
-                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                        Discount
-                      </th>
-                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                        Total
-                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">#</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Item</th>
+                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Qty</th>
+                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Price</th>
+                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">GST</th>
+                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Disc</th>
+                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Total</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                  <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                     {invoice.items?.map((item, index) => {
                       const itemPrice = typeof item.price === 'string' ? parseFloat(item.price) : (typeof item.price === 'number' ? item.price : 0);
                       const itemTotal = typeof item.total_price === 'string' ? parseFloat(item.total_price) : (typeof item.total_price === 'number' ? item.total_price : 0);
+                      const itemGst = typeof item.gst === 'string' ? parseFloat(item.gst) : (typeof item.gst === 'number' ? item.gst : 0);
+                      const itemDiscount = typeof item.discount === 'string' ? parseFloat(item.discount) : (typeof item.discount === 'number' ? item.discount : 0);
                       
                       return (
-                        <tr key={item.id || index} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-300">
-                            {index + 1}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
-                            {item.product_name || `Product #${item.product_id}`}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-300 text-right">
-                            {item.quantity}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-300 text-right">
-                            ₹{itemPrice.toFixed(2)}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-300 text-right">
-                            {item.gst || 0}%
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-300 text-right">
-                            {item.discount || 0}%
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-green-600 dark:text-green-400 text-right">
-                            ₹{itemTotal.toFixed(2)}
-                          </td>
+                        <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{index + 1}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{item.product_name || `Product #${item.product_id}`}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-900 dark:text-white">{item.quantity}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-900 dark:text-white">₹{itemPrice.toFixed(2)}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-900 dark:text-white">{itemGst || 0}%</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-900 dark:text-white">{itemDiscount || 0}%</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-right font-medium text-green-600 dark:text-green-400">₹{itemTotal.toFixed(2)}</td>
                         </tr>
                       );
                     })}
@@ -954,55 +1240,49 @@ const InvoiceDetail = () => {
             </motion.div>
           </div>
 
-          {/* Right Column - Summary & Payment */}
+          {/* Right Column - Summary, Payment, Actions */}
           <div className="space-y-6">
             {/* Financial Summary */}
             <motion.div
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.3, delay: 0.4 }}
-              className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6"
+              transition={{ duration: 0.5, delay: 0.4 }}
+              className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6"
             >
-              <div className="flex items-center mb-6">
+              <div className="flex items-center mb-4">
                 <div className="w-10 h-10 bg-purple-100 dark:bg-purple-900/20 rounded-lg flex items-center justify-center mr-3">
                   <FiDollarSign className="w-5 h-5 text-purple-600 dark:text-purple-400" />
                 </div>
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Financial Summary</h3>
               </div>
-              
-              <div className="space-y-4">
-                <div className="flex justify-between items-center py-2 border-b border-gray-100 dark:border-gray-700">
-                  <span className="text-sm text-gray-600 dark:text-gray-400">Subtotal</span>
+              <div className="space-y-3">
+                <div className="flex justify-between">
+                  <span className="text-gray-600 dark:text-gray-400">Subtotal:</span>
                   <span className="font-medium text-gray-900 dark:text-white">₹{parseFloat(invoice.total_amount || 0).toFixed(2)}</span>
                 </div>
-                
-                <div className="flex justify-between items-center py-2 border-b border-gray-100 dark:border-gray-700">
-                  <span className="text-sm text-gray-600 dark:text-gray-400">Total GST</span>
-                  <span className="font-medium text-gray-900 dark:text-white">
-                    ₹{invoice.items?.reduce((sum, item) => {
-                      const itemPrice = typeof item.price === 'string' ? parseFloat(item.price) : (typeof item.price === 'number' ? item.price : 0);
-                      const itemGst = typeof item.gst === 'string' ? parseFloat(item.gst) : (typeof item.gst === 'number' ? item.gst : 0);
-                      const subtotal = itemPrice * parseFloat(item.quantity || 0);
-                      return sum + (subtotal * itemGst / 100);
-                    }, 0).toFixed(2)}
-                  </span>
+                <div className="flex justify-between">
+                  <span className="text-gray-600 dark:text-gray-400">Total GST:</span>
+                  <span className="font-medium text-gray-900 dark:text-white">₹{invoice.items?.reduce((sum, item) => {
+                    const itemPrice = typeof item.price === 'string' ? parseFloat(item.price) : (typeof item.price === 'number' ? item.price : 0);
+                    const itemGst = typeof item.gst === 'string' ? parseFloat(item.gst) : (typeof item.gst === 'number' ? item.gst : 0);
+                    const subtotal = itemPrice * parseFloat(item.quantity || 0);
+                    return sum + (subtotal * itemGst / 100);
+                  }, 0).toFixed(2)}</span>
                 </div>
-                
-                <div className="flex justify-between items-center py-2 border-b border-gray-100 dark:border-gray-700">
-                  <span className="text-sm text-gray-600 dark:text-gray-400">Total Discount</span>
-                  <span className="font-medium text-green-600 dark:text-green-400">
-                    -₹{invoice.items?.reduce((sum, item) => {
-                      const itemPrice = typeof item.price === 'string' ? parseFloat(item.price) : (typeof item.price === 'number' ? item.price : 0);
-                      const itemDiscount = typeof item.discount === 'string' ? parseFloat(item.discount) : (typeof item.discount === 'number' ? item.discount : 0);
-                      const subtotal = itemPrice * parseFloat(item.quantity || 0);
-                      return sum + (subtotal * itemDiscount / 100);
-                    }, 0).toFixed(2)}
-                  </span>
+                <div className="flex justify-between">
+                  <span className="text-gray-600 dark:text-gray-400">Total Discount:</span>
+                  <span className="font-medium text-green-600 dark:text-green-400">-₹{invoice.items?.reduce((sum, item) => {
+                    const itemPrice = typeof item.price === 'string' ? parseFloat(item.price) : (typeof item.price === 'number' ? item.price : 0);
+                    const itemDiscount = typeof item.discount === 'string' ? parseFloat(item.discount) : (typeof item.discount === 'number' ? item.discount : 0);
+                    const subtotal = itemPrice * parseFloat(item.quantity || 0);
+                    return sum + (subtotal * itemDiscount / 100);
+                  }, 0).toFixed(2)}</span>
                 </div>
-                
-                <div className="flex justify-between items-center pt-4 border-t-2 border-gray-200 dark:border-gray-600">
-                  <span className="text-lg font-bold text-gray-900 dark:text-white">Grand Total</span>
-                  <span className="text-xl font-bold text-blue-600 dark:text-blue-400">₹{parseFloat(invoice.total_amount || 0).toFixed(2)}</span>
+                <div className="border-t border-gray-200 dark:border-gray-700 pt-3">
+                  <div className="flex justify-between">
+                    <span className="text-lg font-semibold text-gray-900 dark:text-white">Grand Total:</span>
+                    <span className="text-lg font-bold text-blue-600 dark:text-blue-400">₹{parseFloat(invoice.total_amount || 0).toFixed(2)}</span>
+                  </div>
                 </div>
               </div>
             </motion.div>
@@ -1011,39 +1291,31 @@ const InvoiceDetail = () => {
             <motion.div
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.3, delay: 0.5 }}
-              className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6"
+              transition={{ duration: 0.5, delay: 0.5 }}
+              className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6"
             >
-              <div className="flex items-center mb-6">
+              <div className="flex items-center mb-4">
                 <div className="w-10 h-10 bg-green-100 dark:bg-green-900/20 rounded-lg flex items-center justify-center mr-3">
                   <FiCheckCircle className="w-5 h-5 text-green-600 dark:text-green-400" />
                 </div>
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Payment Details</h3>
               </div>
-              
-              <div className="space-y-4">
-                <div className="flex justify-between items-center py-2">
-                  <span className="text-sm text-gray-600 dark:text-gray-400">Amount Paid</span>
-                  <span className="font-semibold text-green-600 dark:text-green-400">₹{parseFloat(invoice.paid_amount || 0).toFixed(2)}</span>
+              <div className="space-y-3">
+                <div className="flex justify-between">
+                  <span className="text-gray-600 dark:text-gray-400">Amount Paid:</span>
+                  <span className="font-medium text-green-600 dark:text-green-400">₹{parseFloat(invoice.paid_amount || 0).toFixed(2)}</span>
                 </div>
-                
-                {parseFloat(invoice.paid_amount || 0) < parseFloat(invoice.total_amount || 0) && (
-                  <div className="flex justify-between items-center py-2">
-                    <span className="text-sm text-gray-600 dark:text-gray-400">Due Amount</span>
-                    <span className="font-semibold text-orange-600 dark:text-orange-400">
-                      ₹{(parseFloat(invoice.total_amount || 0) - parseFloat(invoice.paid_amount || 0)).toFixed(2)}
-                    </span>
+                {parseFloat(invoice.paid_amount || 0) > parseFloat(invoice.total_amount || 0) ? (
+                  <div className="flex justify-between">
+                    <span className="text-gray-600 dark:text-gray-400">Change Returned:</span>
+                    <span className="font-medium text-blue-600 dark:text-blue-400">₹{(parseFloat(invoice.paid_amount || 0) - parseFloat(invoice.total_amount || 0)).toFixed(2)}</span>
                   </div>
-                )}
-                
-                {parseFloat(invoice.paid_amount || 0) > parseFloat(invoice.total_amount || 0) && (
-                  <div className="flex justify-between items-center py-2">
-                    <span className="text-sm text-gray-600 dark:text-gray-400">Change Returned</span>
-                    <span className="font-semibold text-blue-600 dark:text-blue-400">
-                      ₹{(parseFloat(invoice.paid_amount || 0) - parseFloat(invoice.total_amount || 0)).toFixed(2)}
-                    </span>
+                ) : parseFloat(invoice.paid_amount || 0) < parseFloat(invoice.total_amount || 0) ? (
+                  <div className="flex justify-between">
+                    <span className="text-gray-600 dark:text-gray-400">Due Amount:</span>
+                    <span className="font-medium text-orange-600 dark:text-orange-400">₹{(parseFloat(invoice.total_amount || 0) - parseFloat(invoice.paid_amount || 0)).toFixed(2)}</span>
                   </div>
-                )}
+                ) : null}
               </div>
             </motion.div>
 
@@ -1051,22 +1323,35 @@ const InvoiceDetail = () => {
             <motion.div
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.3, delay: 0.6 }}
-              className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6"
+              transition={{ duration: 0.5, delay: 0.6 }}
+              className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6"
             >
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Quick Actions</h3>
+              <div className="flex items-center mb-4">
+                <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/20 rounded-lg flex items-center justify-center mr-3">
+                  <FiPrinter className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Quick Actions</h3>
+              </div>
               <div className="space-y-3">
+                <Button
+                  onClick={handlePrintThermal}
+                  variant="outline"
+                  className="w-full flex items-center justify-center"
+                >
+                  <FiPrinter className="w-4 h-4 mr-2" />
+                  Print Thermal (3")
+                </Button>
                 <Button
                   onClick={handlePrint}
                   variant="outline"
-                  className="w-full justify-center"
+                  className="w-full flex items-center justify-center"
                 >
                   <FiPrinter className="w-4 h-4 mr-2" />
-                  Print Invoice
+                  Print A4
                 </Button>
                 <Button
                   onClick={handleDownloadPDF}
-                  className="w-full justify-center"
+                  className="w-full flex items-center justify-center"
                 >
                   <FiDownload className="w-4 h-4 mr-2" />
                   Download PDF
@@ -1074,7 +1359,7 @@ const InvoiceDetail = () => {
               </div>
             </motion.div>
           </div>
-        </div>
+        </motion.div>
       </div>
     </div>
   )
