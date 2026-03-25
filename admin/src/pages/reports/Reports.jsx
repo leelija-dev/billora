@@ -13,7 +13,6 @@ import {
   FiChevronDown,
   FiEye,
   FiAlertCircle,
-  FiArrowLeft,
   FiPrinter,
   FiFile
 } from 'react-icons/fi'
@@ -27,6 +26,9 @@ import LoadingSpinner from '../../components/common/Spinner/Spinner'
 import EmptyState from '../../components/common/EmptyState/EmptyState'
 import Table from '../../components/common/Table/Table'
 import StatusBadge from '../../components/common/StatusBadge/StatusBadge'
+import * as XLSX from 'xlsx'
+import jsPDF from 'jspdf'
+import autoTable from 'jspdf-autotable'
 
 const Reports = () => {
   const { user } = useAuthStore()
@@ -41,6 +43,7 @@ const Reports = () => {
   const [refreshing, setRefreshing] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
   const [showExportDropdown, setShowExportDropdown] = useState(false)
+  const [selectedFilter, setSelectedFilter] = useState('currentMonth')
 
   // Fetch today's reports by default
   const fetchReports = async (start = '', end = '') => {
@@ -101,9 +104,9 @@ const Reports = () => {
     }
   }
 
-  // Initialize with today's reports
+  // Initialize with current month reports
   useEffect(() => {
-    fetchReports()
+    handleQuickFilter('currentMonth')
   }, [])
 
   // Apply search filter
@@ -135,12 +138,60 @@ const Reports = () => {
     setEndDate('')
     setSearchTerm('')
     setShowFilters(false)
+    setSelectedFilter('all')
     fetchReports()
   }
 
   // Get today's date for default input values
   const getTodayDate = () => {
     return new Date().toISOString().split('T')[0]
+  }
+
+  // Quick filter functions
+  const handleQuickFilter = (filterType) => {
+    setSelectedFilter(filterType)
+    const today = new Date()
+    let start = ''
+    let end = ''
+
+    switch (filterType) {
+      case 'today':
+        start = end = getTodayDate()
+        break
+      case '7days':
+        end = getTodayDate()
+        const sevenDaysAgo = new Date(today)
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
+        start = sevenDaysAgo.toISOString().split('T')[0]
+        break
+      case '30days':
+        end = getTodayDate()
+        const thirtyDaysAgo = new Date(today)
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
+        start = thirtyDaysAgo.toISOString().split('T')[0]
+        break
+      case 'pastMonth':
+        const lastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1)
+        const lastMonthEnd = new Date(today.getFullYear(), today.getMonth(), 0)
+        start = lastMonth.toISOString().split('T')[0]
+        end = lastMonthEnd.toISOString().split('T')[0]
+        break
+      case 'currentMonth':
+        const currentMonthStart = new Date(today.getFullYear(), today.getMonth(), 1)
+        const currentMonthEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0)
+        start = currentMonthStart.toISOString().split('T')[0]
+        end = currentMonthEnd.toISOString().split('T')[0]
+        break
+      case 'all':
+      default:
+        start = ''
+        end = ''
+        break
+    }
+
+    setStartDate(start)
+    setEndDate(end)
+    fetchReports(start, end)
   }
 
   // Calculate report statistics
@@ -162,187 +213,753 @@ const Reports = () => {
 
   const stats = calculateStats()
 
-  // Export reports in different formats
-  const handleExport = (format) => {
+  // Prepare data for export
+  const prepareExportData = () => {
+    const headers = [
+      'Invoice ID', 
+      'Date', 
+      'Customer Name', 
+      'Customer ID', 
+      'Store Name', 
+      'Store ID', 
+      'Total Amount (₹)', 
+      'Paid Amount (₹)', 
+      'Due Amount (₹)', 
+      'Total Items', 
+      'Status',
+      'Created At'
+    ]
+    
     const data = filteredReports.map(report => [
       report.id || '',
-      report.created_at ? new Date(report.created_at).toLocaleDateString() : new Date().toLocaleDateString(),
+      report.created_at ? new Date(report.created_at).toLocaleDateString() : 'N/A',
       report.customer_name || `Customer #${report.customer_id}`,
+      report.customer_id || '',
       report.store_name || `Store #${report.store_id}`,
-      report.total_amount || 0,
-      report.paid_amount || 0,
+      report.store_id || '',
+      parseFloat(report.total_amount || 0).toFixed(2),
+      parseFloat(report.paid_amount || 0).toFixed(2),
+      (parseFloat(report.total_amount || 0) - parseFloat(report.paid_amount || 0)).toFixed(2),
       report.total_items || 0,
-      report.status || 'N/A'
+      report.status || 'N/A',
+      report.created_at ? new Date(report.created_at).toLocaleString() : 'N/A'
     ])
-
-    const headers = ['Invoice ID', 'Date', 'Customer Name', 'Store Name', 'Total Amount', 'Paid Amount', 'Total Items', 'Status']
     
-    switch (format) {
-      case 'excel':
-        exportToExcel(headers, data)
-        break
-      case 'pdf':
-        exportToPDF(headers, data)
-        break
-      case 'word':
-        exportToWord(headers, data)
-        break
-      default:
-        exportToCSV(headers, data)
+    return { headers, data }
+  }
+
+  // Enhanced Excel Export
+  const handleExportToExcel = () => {
+    try {
+      const { headers, data } = prepareExportData()
+      
+      // Create workbook and worksheet
+      const wsData = [headers, ...data]
+      const ws = XLSX.utils.aoa_to_sheet(wsData)
+      
+      // Set column widths
+      const colWidths = headers.map(() => ({ wch: 15 }))
+      ws['!cols'] = colWidths
+      
+      // Add styling to header row
+      const headerRange = XLSX.utils.decode_range(ws['!ref'])
+      for (let C = headerRange.s.c; C <= headerRange.e.c; ++C) {
+        const cellAddress = XLSX.utils.encode_cell({ r: 0, c: C })
+        if (!ws[cellAddress]) continue
+        ws[cellAddress].s = {
+          fill: { fgColor: { rgb: "4F46E5" } },
+          font: { color: { rgb: "FFFFFF" }, bold: true },
+          alignment: { horizontal: "center" }
+        }
+      }
+      
+      // Add summary statistics
+      const summaryData = [
+        ['', '', '', '', '', '', 'SUMMARY STATISTICS', '', '', '', ''],
+        ['', '', '', '', '', '', 'Total Revenue:', `₹${stats.revenue.toFixed(2)}`, '', '', ''],
+        ['', '', '', '', '', '', 'Total Orders:', stats.orders, '', '', ''],
+        ['', '', '', '', '', '', 'Total Products Sold:', stats.products, '', '', ''],
+        ['', '', '', '', '', '', 'Average Order Value:', `₹${stats.averageOrder.toFixed(2)}`, '', '', ''],
+        ['', '', '', '', '', '', `Report Period: ${startDate || 'All'} to ${endDate || 'All'}`, '', '', '', ''],
+        ['', '', '', '', '', '', `Generated on: ${new Date().toLocaleString()}`, '', '', '', '']
+      ]
+      
+      // Add summary to new rows
+      const startRow = data.length + 2
+      summaryData.forEach((row, idx) => {
+        row.forEach((value, colIdx) => {
+          const cellAddress = XLSX.utils.encode_cell({ r: startRow + idx, c: colIdx })
+          if (value) {
+            ws[cellAddress] = { t: 's', v: value }
+          }
+        })
+      })
+      
+      // Create workbook and save
+      const wb = XLSX.utils.book_new()
+      XLSX.utils.book_append_sheet(wb, ws, 'Reports Data')
+      
+      // Generate filename
+      const filename = `reports_${startDate || 'all'}_${endDate || 'all'}_${new Date().toISOString().split('T')[0]}.xlsx`
+      XLSX.writeFile(wb, filename)
+      
+      setShowExportDropdown(false)
+    } catch (error) {
+      console.error('Excel export failed:', error)
+      alert('Failed to export to Excel. Please try again.')
+    }
+  }
+
+  // Fixed PDF Export with proper string conversion
+const handleExportToPDF = () => {
+  try {
+    const doc = new jsPDF({
+      orientation: 'landscape',
+      unit: 'mm',
+      format: 'a4'
+    })
+    
+    const pageWidth = doc.internal.pageSize.getWidth()
+    const pageHeight = doc.internal.pageSize.getHeight()
+    
+    // Modern header with gradient effect (using solid colors)
+    doc.setFillColor(67, 56, 202) // Indigo
+    doc.rect(0, 0, pageWidth, 45, 'F')
+    
+    // Add subtle pattern overlay
+    doc.setDrawColor(99, 102, 241)
+    doc.setLineWidth(0.15)
+    for (let i = 0; i < 30; i++) {
+      doc.line(i * 25, 0, i * 25 + 15, 45)
     }
     
+    // Title
+    doc.setTextColor(255, 255, 255)
+    doc.setFontSize(28)
+    doc.setFont('helvetica', 'bold')
+    doc.text('REPORTS DASHBOARD', pageWidth / 2, 22, { align: 'center' })
+    
+    doc.setFontSize(10)
+    doc.setFont('helvetica', 'normal')
+    doc.text('Business Intelligence Report', pageWidth / 2, 32, { align: 'center' })
+    
+    // Date badge
+    doc.setFillColor(255, 255, 255)
+    doc.roundedRect(pageWidth - 42, 12, 32, 10, 2, 2, 'F')
+    doc.setTextColor(67, 56, 202)
+    doc.setFontSize(8)
+    const todayDate = new Date().toLocaleDateString('en-GB')
+    doc.text(todayDate, pageWidth - 26, 19, { align: 'center' })
+    
+    // Helper function to format numbers with Rs.
+    const formatCurrency = (amount) => {
+      const num = parseFloat(amount)
+      if (isNaN(num)) return 'Rs. 0.00'
+      // Format with commas for thousands
+      const formatted = num.toLocaleString('en-IN', { 
+        minimumFractionDigits: 2, 
+        maximumFractionDigits: 2 
+      })
+      return `Rs. ${formatted}`
+    }
+    
+    // Helper to format plain number
+    const formatNumber = (num) => {
+      return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")
+    }
+    
+    // Statistics cards
+    const statsCards = [
+      { 
+        label: 'Total Revenue', 
+        value: formatCurrency(stats.revenue),
+        color: [59, 130, 246],
+        bgColor: [239, 246, 255]
+      },
+      { 
+        label: 'Total Orders', 
+        value: formatNumber(stats.orders),
+        color: [34, 197, 94],
+        bgColor: [240, 253, 244]
+      },
+      { 
+        label: 'Products Sold', 
+        value: formatNumber(stats.products),
+        color: [168, 85, 247],
+        bgColor: [250, 245, 255]
+      },
+      { 
+        label: 'Avg Order Value', 
+        value: formatCurrency(stats.averageOrder),
+        color: [249, 115, 22],
+        bgColor: [255, 247, 237]
+      }
+    ]
+    
+    const cardWidth = (pageWidth - 40) / 4
+    statsCards.forEach((card, idx) => {
+      const x = 15 + (idx * cardWidth)
+      
+      // Card background
+      doc.setFillColor(...card.bgColor)
+      doc.roundedRect(x, 55, cardWidth - 5, 38, 4, 4, 'F')
+      
+      // Label
+      doc.setTextColor(75, 85, 99)
+      doc.setFontSize(9)
+      doc.setFont('helvetica', 'normal')
+      doc.text(card.label, x + 8, 70)
+      
+      // Value
+      doc.setTextColor(...card.color)
+      doc.setFontSize(14)
+      doc.setFont('helvetica', 'bold')
+      
+      // Handle text truncation for long values
+      let displayValue = card.value
+      if (displayValue.length > 22) {
+        displayValue = displayValue.substring(0, 19) + '...'
+      }
+      doc.text(displayValue, x + 8, 86)
+    })
+    
+    // Quick insights bar
+    const insightY = 102
+    doc.setFillColor(249, 250, 251)
+    doc.roundedRect(15, insightY, pageWidth - 30, 18, 3, 3, 'F')
+    
+    const avgOrderFormatted = formatCurrency(stats.averageOrder)
+    const insights = [
+      `${formatNumber(stats.orders)} Orders`,
+      `${avgOrderFormatted}`,
+      `${formatNumber(stats.products)} Items`,
+      `${avgOrderFormatted}/Order`
+    ]
+    
+    doc.setTextColor(31, 41, 55)
+    doc.setFontSize(8)
+    const insightSpacing = (pageWidth - 40) / 4
+    insights.forEach((insight, idx) => {
+      const xPos = 20 + (idx * insightSpacing)
+      doc.text(insight, xPos, insightY + 12)
+    })
+    
+    // Table data with proper formatting
+    const tableData = filteredReports.map(report => {
+      const totalAmount = parseFloat(report.total_amount || 0)
+      const paidAmount = parseFloat(report.paid_amount || 0)
+      
+      return [
+        { content: `#${report.id || ''}`, styles: { fontStyle: 'bold', textColor: [79, 70, 229] } },
+        { content: report.created_at ? new Date(report.created_at).toLocaleDateString('en-GB') : 'N/A', styles: { halign: 'center' } },
+        { content: (report.customer_name || `Customer #${report.customer_id}`).substring(0, 22), styles: { cellWidth: 42 } },
+        { content: (report.store_name || `Store #${report.store_id}`).substring(0, 20), styles: { cellWidth: 38 } },
+        { content: formatCurrency(totalAmount), styles: { textColor: [34, 197, 94], fontStyle: 'bold', halign: 'right' } },
+        { content: formatCurrency(paidAmount), styles: { textColor: [59, 130, 246], halign: 'right' } },
+        { content: formatNumber(report.total_items || 0), styles: { halign: 'center' } },
+        { 
+          content: String(report.status || 'completed').toUpperCase(),
+          styles: {
+            fillColor: report.status === 'completed' ? [220, 252, 231] : 
+                      report.status === 'pending' ? [254, 243, 199] : [254, 226, 226],
+            textColor: report.status === 'completed' ? [22, 163, 74] : 
+                      report.status === 'pending' ? [180, 83, 9] : [185, 28, 28],
+            fontStyle: 'bold',
+            halign: 'center'
+          }
+        }
+      ]
+    })
+    
+    autoTable(doc, {
+      head: [[
+        { content: 'INVOICE', styles: { halign: 'center', cellWidth: 24 } },
+        { content: 'DATE', styles: { halign: 'center', cellWidth: 24 } },
+        { content: 'CUSTOMER', styles: { cellWidth: 42 } },
+        { content: 'STORE', styles: { cellWidth: 38 } },
+        { content: 'TOTAL', styles: { halign: 'right', cellWidth: 32 } },
+        { content: 'PAID', styles: { halign: 'right', cellWidth: 32 } },
+        { content: 'ITEMS', styles: { halign: 'center', cellWidth: 20 } },
+        { content: 'STATUS', styles: { halign: 'center', cellWidth: 28 } }
+      ]],
+      body: tableData,
+      startY: insightY + 25,
+      theme: 'striped',
+      headStyles: {
+        fillColor: [79, 70, 229],
+        textColor: 255,
+        fontSize: 9,
+        fontStyle: 'bold',
+        halign: 'center',
+        lineWidth: 0
+      },
+      bodyStyles: {
+        fontSize: 8,
+        lineColor: [229, 231, 235],
+        lineWidth: 0.1
+      },
+      alternateRowStyles: {
+        fillColor: [249, 250, 251]
+      },
+      margin: { left: 15, right: 15 },
+      didDrawPage: (data) => {
+        const pageCount = doc.internal.getNumberOfPages()
+        const currentPage = doc.internal.getCurrentPageInfo().pageNumber
+        
+        // Footer
+        doc.setDrawColor(203, 213, 225)
+        doc.setLineWidth(0.3)
+        doc.line(15, pageHeight - 10, pageWidth - 15, pageHeight - 10)
+        
+        doc.setFontSize(7)
+        doc.setTextColor(100, 116, 139)
+        doc.text(
+          `Page ${currentPage} of ${pageCount} • Confidential`,
+          pageWidth / 2,
+          pageHeight - 5,
+          { align: 'center' }
+        )
+      }
+    })
+    
+    // Summary section after table
+    const finalY = doc.lastAutoTable.finalY + 8
+    const totalRevenue = stats.revenue
+    const totalPaid = filteredReports.reduce((sum, r) => sum + (parseFloat(r.paid_amount) || 0), 0)
+    const totalDue = totalRevenue - totalPaid
+    
+    // Summary box
+    doc.setFillColor(245, 245, 245)
+    doc.roundedRect(15, finalY, pageWidth - 30, 28, 3, 3, 'F')
+    
+    doc.setTextColor(0, 0, 0)
+    doc.setFontSize(9)
+    doc.setFont('helvetica', 'bold')
+    doc.text('Summary', 20, finalY + 6)
+    
+    doc.setFontSize(7)
+    doc.setFont('helvetica', 'normal')
+    doc.setTextColor(75, 85, 99)
+    
+    const summaryItems = [
+      `Total Revenue: ${formatCurrency(totalRevenue)}`,
+      `Total Paid: ${formatCurrency(totalPaid)}`,
+      `Total Due: ${formatCurrency(totalDue)}`,
+      `Total Items: ${formatNumber(stats.products)}`,
+      `Avg Order: ${formatCurrency(stats.averageOrder)}`
+    ]
+    
+    const summarySpacing = (pageWidth - 40) / 5
+    summaryItems.forEach((item, idx) => {
+      let displayItem = item
+      if (displayItem.length > 26) {
+        displayItem = displayItem.substring(0, 23) + '...'
+      }
+      doc.text(displayItem, 20 + (idx * summarySpacing), finalY + 14)
+    })
+    
+    // Disclaimer
+    doc.setFontSize(6)
+    doc.setTextColor(150, 150, 150)
+    doc.text('* This report is generated automatically. Please verify all data for accuracy.', 15, finalY + 24)
+    
+    // Save PDF
+    const filename = `reports_${startDate || 'all'}_${endDate || 'all'}_${new Date().toISOString().split('T')[0]}.pdf`
+    doc.save(filename)
+    
     setShowExportDropdown(false)
+  } catch (error) {
+    console.error('PDF export failed:', error)
+    alert('Failed to export to PDF. Please try again. Error: ' + error.message)
   }
+}
 
-  // Export to CSV
-  const exportToCSV = (headers, data) => {
-    const csvContent = [
-      headers,
-      ...data
-    ].map(row => row.join(',')).join('\n')
-
-    const blob = new Blob([csvContent], { type: 'text/csv' })
-    const url = window.URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `reports_${startDate || 'all'}_${endDate || 'all'}.csv`
-    a.click()
-    window.URL.revokeObjectURL(url)
-  }
-
-  // Export to Excel (using CSV format as base)
-  const exportToExcel = (headers, data) => {
-    const csvContent = [
-      headers,
-      ...data
-    ].map(row => row.join(',')).join('\n')
-
-    const blob = new Blob([csvContent], { type: 'application/vnd.ms-excel' })
-    const url = window.URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `reports_${startDate || 'all'}_${endDate || 'all'}.xls`
-    a.click()
-    window.URL.revokeObjectURL(url)
-  }
-
-  // Export to PDF (using window.print as base)
-  const exportToPDF = (headers, data) => {
-    const printWindow = window.open('', '_blank')
-    const htmlContent = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <title>Reports Export</title>
-        <style>
-          body { font-family: Arial, sans-serif; margin: 20px; }
-          table { border-collapse: collapse; width: 100%; margin-top: 20px; }
-          th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-          th { background-color: #f2f2f2; font-weight: bold; }
-          h1 { color: #333; }
-        </style>
-      </head>
-      <body>
-        <h1>Reports Export</h1>
-        <p>Generated on: ${new Date().toLocaleString()}</p>
-        <table>
-          <thead>
-            <tr>${headers.map(header => `<th>${header}</th>`).join('')}</tr>
-          </thead>
-          <tbody>
-            ${data.map(row => `<tr>${row.map(cell => `<td>${cell}</td>`).join('')}</tr>`).join('')}
-          </tbody>
-        </table>
-      </body>
-      </html>
-    `
-    
-    printWindow.document.write(htmlContent)
-    printWindow.document.close()
-    printWindow.print()
-  }
-
-  // Export to Word
-  const exportToWord = (headers, data) => {
-    const tableContent = `
-      <table>
-        <tr>${headers.map(header => `<th>${header}</th>`).join('')}</tr>
-        ${data.map(row => `<tr>${row.map(cell => `<td>${cell}</td>`).join('')}</tr>`).join('')}
-      </table>
-    `
-    
-    const htmlContent = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <title>Reports Export</title>
-        <meta charset="utf-8">
-      </head>
-      <body>
-        <h1>Reports Export</h1>
-        <p>Generated on: ${new Date().toLocaleString()}</p>
-        ${tableContent}
-      </body>
-      </html>
-    `
-    
-    const blob = new Blob([htmlContent], { type: 'application/msword' })
-    const url = window.URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `reports_${startDate || 'all'}_${endDate || 'all'}.doc`
-    a.click()
-    window.URL.revokeObjectURL(url)
-  }
-
-  // Print function
-  const handlePrint = () => {
-    const printContent = `
-      <div style="font-family: Arial, sans-serif; padding: 20px;">
-        <h1 style="color: #333; margin-bottom: 20px;">Reports Dashboard</h1>
-        <p style="color: #666; margin-bottom: 20px;">Generated on: ${new Date().toLocaleString()}</p>
-        ${filteredReports.length === 0 ? '<p>No reports found</p>' : `
-          <table style="border-collapse: collapse; width: 100%; margin-top: 20px;">
+  // Enhanced Word Export
+  const handleExportToWord = () => {
+    try {
+      // Create HTML content
+      const htmlContent = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>Reports Export</title>
+          <meta charset="utf-8">
+          <style>
+            body {
+              font-family: 'Segoe UI', Arial, sans-serif;
+              margin: 40px;
+              color: #333;
+            }
+            .header {
+              background: linear-gradient(135deg, #4F46E5 0%, #6366F1 100%);
+              padding: 30px;
+              border-radius: 10px;
+              margin-bottom: 30px;
+              color: white;
+            }
+            .header h1 {
+              margin: 0 0 10px 0;
+              font-size: 28px;
+            }
+            .header p {
+              margin: 0;
+              opacity: 0.9;
+            }
+            .company-info {
+              margin-top: 15px;
+              font-size: 12px;
+              border-top: 1px solid rgba(255,255,255,0.3);
+              padding-top: 15px;
+            }
+            .summary-cards {
+              display: flex;
+              gap: 20px;
+              margin-bottom: 30px;
+              flex-wrap: wrap;
+            }
+            .card {
+              background: #f8f9fa;
+              border-radius: 8px;
+              padding: 20px;
+              flex: 1;
+              min-width: 200px;
+              border-left: 4px solid #4F46E5;
+            }
+            .card h3 {
+              margin: 0 0 10px 0;
+              font-size: 14px;
+              color: #666;
+            }
+            .card .value {
+              font-size: 24px;
+              font-weight: bold;
+              color: #4F46E5;
+            }
+            table {
+              width: 100%;
+              border-collapse: collapse;
+              margin-top: 20px;
+              font-size: 12px;
+            }
+            th {
+              background: #4F46E5;
+              color: white;
+              padding: 12px;
+              text-align: left;
+              font-weight: bold;
+            }
+            td {
+              padding: 10px;
+              border-bottom: 1px solid #e0e0e0;
+            }
+            tr:hover {
+              background: #f5f5f5;
+            }
+            .footer {
+              margin-top: 30px;
+              padding-top: 20px;
+              border-top: 1px solid #e0e0e0;
+              font-size: 10px;
+              color: #999;
+              text-align: center;
+            }
+            .status-badge {
+              display: inline-block;
+              padding: 4px 8px;
+              border-radius: 4px;
+              font-size: 11px;
+              font-weight: bold;
+            }
+            .status-completed { background: #d4edda; color: #155724; }
+            .status-pending { background: #fff3cd; color: #856404; }
+            .status-cancelled { background: #f8d7da; color: #721c24; }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <h1>Reports Dashboard</h1>
+            <p>Comprehensive Business Report</p>
+            <div class="company-info">
+              Your Company Name<br>
+              123 Business Street, City, Country<br>
+              Email: info@company.com | Phone: +1 234 567 890
+            </div>
+          </div>
+          
+          <div class="summary-cards">
+            <div class="card">
+              <h3>Total Revenue</h3>
+              <div class="value">₹${stats.revenue.toFixed(2)}</div>
+            </div>
+            <div class="card">
+              <h3>Total Orders</h3>
+              <div class="value">${stats.orders}</div>
+            </div>
+            <div class="card">
+              <h3>Products Sold</h3>
+              <div class="value">${stats.products}</div>
+            </div>
+            <div class="card">
+              <h3>Avg Order Value</h3>
+              <div class="value">₹${stats.averageOrder.toFixed(2)}</div>
+            </div>
+          </div>
+          
+          <div style="margin-bottom: 20px;">
+            <strong>Report Period:</strong> ${startDate || 'All'} - ${endDate || 'All'}<br>
+            <strong>Generated on:</strong> ${new Date().toLocaleString()}<br>
+            <strong>Total Records:</strong> ${filteredReports.length}
+          </div>
+          
+           <table>
             <thead>
-              <tr style="background-color: #f2f2f2;">
-                <th style="border: 1px solid #ddd; padding: 8px;">Invoice ID</th>
-                <th style="border: 1px solid #ddd; padding: 8px;">Date</th>
-                <th style="border: 1px solid #ddd; padding: 8px;">Customer Name</th>
-                <th style="border: 1px solid #ddd; padding: 8px;">Store Name</th>
-                <th style="border: 1px solid #ddd; padding: 8px;">Total Amount</th>
-                <th style="border: 1px solid #ddd; padding: 8px;">Paid Amount</th>
-                <th style="border: 1px solid #ddd; padding: 8px;">Total Items</th>
-                <th style="border: 1px solid #ddd; padding: 8px;">Status</th>
+              <tr>
+                <th>Invoice ID</th>
+                <th>Date</th>
+                <th>Customer Name</th>
+                <th>Store Name</th>
+                <th>Total Amount</th>
+                <th>Paid Amount</th>
+                <th>Total Items</th>
+                <th>Status</th>
               </tr>
             </thead>
             <tbody>
               ${filteredReports.map(report => `
                 <tr>
-                  <td style="border: 1px solid #ddd; padding: 8px;">#${report.id || ''}</td>
-                  <td style="border: 1px solid #ddd; padding: 8px;">${report.created_at ? new Date(report.created_at).toLocaleDateString() : 'N/A'}</td>
-                  <td style="border: 1px solid #ddd; padding: 8px;">${report.customer_name || `Customer #${report.customer_id}`}</td>
-                  <td style="border: 1px solid #ddd; padding: 8px;">${report.store_name || `Store #${report.store_id}`}</td>
-                  <td style="border: 1px solid #ddd; padding: 8px;">₹${parseFloat(report.total_amount || 0).toFixed(2)}</td>
-                  <td style="border: 1px solid #ddd; padding: 8px;">₹${parseFloat(report.paid_amount || 0).toFixed(2)}</td>
-                  <td style="border: 1px solid #ddd; padding: 8px;">${report.total_items || 0}</td>
-                  <td style="border: 1px solid #ddd; padding: 8px;">${report.status || 'N/A'}</td>
+                  <td>#${report.id || ''}</td>
+                  <td>${report.created_at ? new Date(report.created_at).toLocaleDateString() : 'N/A'}</td>
+                  <td>${report.customer_name || `Customer #${report.customer_id}`}</td>
+                  <td>${report.store_name || `Store #${report.store_id}`}</td>
+                  <td>₹${parseFloat(report.total_amount || 0).toFixed(2)}</td>
+                  <td>₹${parseFloat(report.paid_amount || 0).toFixed(2)}</td>
+                  <td>${report.total_items || 0}</td>
+                  <td>
+                    <span class="status-badge status-${(report.status || 'completed').toLowerCase()}">
+                      ${report.status || 'N/A'}
+                    </span>
+                  </td>
                 </tr>
               `).join('')}
             </tbody>
           </table>
-        `}
-      </div>
-    `
-    
+          
+          <div class="footer">
+            <p>Confidential - For Internal Use Only</p>
+            <p>* This report is generated automatically. Please verify all data for accuracy.</p>
+          </div>
+        </body>
+        </html>
+      `
+      
+      // Create blob and download
+      const blob = new Blob([htmlContent], { 
+        type: 'application/msword'
+      })
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `reports_${startDate || 'all'}_${endDate || 'all'}_${new Date().toISOString().split('T')[0]}.doc`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      window.URL.revokeObjectURL(url)
+      
+      setShowExportDropdown(false)
+    } catch (error) {
+      console.error('Word export failed:', error)
+      alert('Failed to export to Word. Please try again.')
+    }
+  }
+
+  // Enhanced CSV Export
+  const handleExportToCSV = () => {
+    try {
+      const { headers, data } = prepareExportData()
+      
+      // Create CSV content
+      const csvRows = []
+      csvRows.push(headers.join(','))
+      
+      data.forEach(row => {
+        const escapedRow = row.map(cell => {
+          if (typeof cell === 'string' && (cell.includes(',') || cell.includes('"') || cell.includes('\n'))) {
+            return `"${cell.replace(/"/g, '""')}"`
+          }
+          return cell
+        })
+        csvRows.push(escapedRow.join(','))
+      })
+      
+      // Add summary statistics
+      csvRows.push('')
+      csvRows.push('SUMMARY STATISTICS')
+      csvRows.push(`Total Revenue,₹${stats.revenue.toFixed(2)}`)
+      csvRows.push(`Total Orders,${stats.orders}`)
+      csvRows.push(`Total Products Sold,${stats.products}`)
+      csvRows.push(`Average Order Value,₹${stats.averageOrder.toFixed(2)}`)
+      csvRows.push(`Report Period,${startDate || 'All'} - ${endDate || 'All'}`)
+      csvRows.push(`Generated on,${new Date().toLocaleString()}`)
+      
+      const csvContent = csvRows.join('\n')
+      
+      // Create blob and download
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `reports_${startDate || 'all'}_${endDate || 'all'}_${new Date().toISOString().split('T')[0]}.csv`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      window.URL.revokeObjectURL(url)
+      
+      setShowExportDropdown(false)
+    } catch (error) {
+      console.error('CSV export failed:', error)
+      alert('Failed to export to CSV. Please try again.')
+    }
+  }
+
+  // Main export handler
+  const handleExport = (format) => {
+    switch (format) {
+      case 'excel':
+        handleExportToExcel()
+        break
+      case 'pdf':
+        handleExportToPDF()
+        break
+      case 'word':
+        handleExportToWord()
+        break
+      case 'csv':
+        handleExportToCSV()
+        break
+      default:
+        handleExportToCSV()
+    }
+  }
+
+  // Print function
+  const handlePrint = () => {
     const printWindow = window.open('', '_blank')
     printWindow.document.write(`
       <!DOCTYPE html>
       <html>
       <head>
         <title>Reports Print</title>
+        <style>
+          body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+          }
+          h1 {
+            color: #333;
+            margin-bottom: 20px;
+          }
+          table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-top: 20px;
+          }
+          th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+          }
+          th {
+            background-color: #f2f2f2;
+            font-weight: bold;
+          }
+          .stats {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+          }
+          .stat-card {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 15px;
+            flex: 1;
+            border-left: 4px solid #4F46E5;
+          }
+          .stat-card h3 {
+            margin: 0 0 5px 0;
+            font-size: 12px;
+            color: #666;
+          }
+          .stat-card .value {
+            font-size: 20px;
+            font-weight: bold;
+            color: #4F46E5;
+          }
+          @media print {
+            body { margin: 0; padding: 20px; }
+            table { page-break-inside: avoid; }
+            tr { page-break-inside: avoid; }
+          }
+        </style>
       </head>
       <body>
-        ${printContent}
+        <h1>Reports Dashboard</h1>
+        <p>Generated on: ${new Date().toLocaleString()}</p>
+        
+        <div class="stats">
+          <div class="stat-card">
+            <h3>Total Revenue</h3>
+            <div class="value">₹${stats.revenue.toFixed(2)}</div>
+          </div>
+          <div class="stat-card">
+            <h3>Total Orders</h3>
+            <div class="value">${stats.orders}</div>
+          </div>
+          <div class="stat-card">
+            <h3>Products Sold</h3>
+            <div class="value">${stats.products}</div>
+          </div>
+          <div class="stat-card">
+            <h3>Avg Order Value</h3>
+            <div class="value">₹${stats.averageOrder.toFixed(2)}</div>
+          </div>
+        </div>
+        
+        ${filteredReports.length === 0 ? '<p>No reports found</p>' : `
+          <table>
+            <thead>
+              <tr>
+                <th>Invoice ID</th>
+                <th>Date</th>
+                <th>Customer Name</th>
+                <th>Store Name</th>
+                <th>Total Amount</th>
+                <th>Paid Amount</th>
+                <th>Total Items</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${filteredReports.map(report => `
+                <tr>
+                  <td>#${report.id || ''}</td>
+                  <td>${report.created_at ? new Date(report.created_at).toLocaleDateString() : 'N/A'}</td>
+                  <td>${report.customer_name || `Customer #${report.customer_id}`}</td>
+                  <td>${report.store_name || `Store #${report.store_id}`}</td>
+                  <td>₹${parseFloat(report.total_amount || 0).toFixed(2)}</td>
+                  <td>₹${parseFloat(report.paid_amount || 0).toFixed(2)}</td>
+                  <td>${report.total_items || 0}</td>
+                  <td>${report.status || 'N/A'}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        `}
+        
+        <p style="margin-top: 30px; font-size: 10px; color: #999; text-align: center;">
+          Confidential - For Internal Use Only<br>
+          Generated on: ${new Date().toLocaleString()}
+        </p>
       </body>
       </html>
     `)
@@ -570,7 +1187,7 @@ const Reports = () => {
                       </div>
                       <div>
                         <p className="font-medium">Excel</p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">.xls format</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">.xlsx format</p>
                       </div>
                     </motion.button>
 
@@ -585,7 +1202,7 @@ const Reports = () => {
                       </div>
                       <div>
                         <p className="font-medium">PDF</p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">Printable format</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">Professional format</p>
                       </div>
                     </motion.button>
 
@@ -615,7 +1232,7 @@ const Reports = () => {
                       </div>
                       <div>
                         <p className="font-medium">CSV</p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">Data format</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">Raw data format</p>
                       </div>
                     </motion.button>
                   </div>
@@ -762,6 +1379,76 @@ const Reports = () => {
               className="overflow-hidden"
             >
               <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
+                {/* Quick Filter Capsules */}
+                <div className="mb-6">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+                    Quick Filters
+                  </label>
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      onClick={() => handleQuickFilter('all')}
+                      className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                        selectedFilter === 'all'
+                          ? 'bg-primary-500 text-white shadow-md'
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
+                      }`}
+                    >
+                      All Time
+                    </button>
+                    <button
+                      onClick={() => handleQuickFilter('today')}
+                      className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                        selectedFilter === 'today'
+                          ? 'bg-primary-500 text-white shadow-md'
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
+                      }`}
+                    >
+                      Today
+                    </button>
+                    <button
+                      onClick={() => handleQuickFilter('currentMonth')}
+                      className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                        selectedFilter === 'currentMonth'
+                          ? 'bg-primary-500 text-white shadow-md'
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
+                      }`}
+                    >
+                      Current Month
+                    </button>
+                    <button
+                      onClick={() => handleQuickFilter('7days')}
+                      className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                        selectedFilter === '7days'
+                          ? 'bg-primary-500 text-white shadow-md'
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
+                      }`}
+                    >
+                      Last 7 Days
+                    </button>
+                    <button
+                      onClick={() => handleQuickFilter('30days')}
+                      className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                        selectedFilter === '30days'
+                          ? 'bg-primary-500 text-white shadow-md'
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
+                      }`}
+                    >
+                      Last 30 Days
+                    </button>
+                    <button
+                      onClick={() => handleQuickFilter('pastMonth')}
+                      className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                        selectedFilter === 'pastMonth'
+                          ? 'bg-primary-500 text-white shadow-md'
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
+                      }`}
+                    >
+                      Past Month
+                    </button>
+                  </div>
+                </div>
+                
+                {/* Custom Date Range */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">

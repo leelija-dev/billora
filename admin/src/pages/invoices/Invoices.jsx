@@ -71,8 +71,7 @@ const Invoices = () => {
   }
 
   const handleView = (invoice) => {
-    setSelectedInvoice(invoice)
-    setShowViewModal(true)
+    navigate(`/invoices/detail/${invoice.id}`)
   }
 
   const handleDownload = (invoice) => {
