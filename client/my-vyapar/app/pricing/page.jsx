@@ -49,6 +49,23 @@ const Pricing = () => {
     fetchPricingData();
   }, []);
 
+  useEffect(() => {
+    const observerOptions = { threshold: 0.1, rootMargin: '0px' };
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('card-visible');
+        }
+      });
+    }, observerOptions);
+
+    cardRefs.current.forEach((ref) => {
+      if (ref) observer.observe(ref);
+    });
+
+    return () => observer.disconnect();
+  }, [plans]);
+
   if (loading) return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
 
   return (
@@ -60,14 +77,36 @@ const Pricing = () => {
             <SectionTitle title="Simple, Transparent Pricing" />
           </div>
 
+          {/* Billing Toggle */}
+          <div className="flex justify-center items-center mb-12 bg-white p-1.5 rounded-full max-w-[340px] mx-auto shadow-sm border border-gray-100">
+            <button
+              className={`px-8 py-3 rounded-full text-sm font-bold transition-all duration-300 flex-1 ${
+                billingCycle === 'monthly' ? 'bg-[#3b82f6] text-white shadow-md' : 'text-[#1e293b]'
+              }`}
+              onClick={() => setBillingCycle('monthly')}
+            >
+              Monthly
+            </button>
+            <button
+              className={`px-8 py-3 rounded-full text-sm font-bold transition-all duration-300 flex-1 ${
+                billingCycle === 'yearly' ? 'bg-[#3b82f6] text-white shadow-md' : 'text-[#1e293b]'
+              }`}
+              onClick={() => setBillingCycle('yearly')}
+            >
+              Yearly
+            </button>
+          </div>
+
           {/* Pricing Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-16 items-stretch px-4 pt-8">
             {plans.map((plan, index) => (
               <div
                 key={plan.id}
-                className={`bg-white rounded-[30px] p-8 shadow-sm relative transition-all duration-500 border border-[#e2e8f0] flex flex-col ${
-                  plan.popular ? 'border-2 border-[#8b5cf6] lg:scale-105 z-10' : 'z-0'
-                } hover:z-50 hover:-translate-y-3 hover:shadow-2xl`}
+                ref={(el) => (cardRefs.current[index] = el)}
+                className={`bg-white rounded-[30px] p-8 shadow-sm relative transition-all duration-300 border border-[#e2e8f0] flex flex-col opacity-0 translate-y-10
+                  ${plan.popular ? 'border-2 border-[#8b5cf6] lg:scale-[1.02] z-10' : 'z-0'}
+                  hover:-translate-y-1 hover:shadow-xl hover:z-50
+                  ${index === plans.length - 1 && plans.length % 2 !== 0 ? 'md:col-start-2 lg:col-start-auto' : ''}`}
               >
                 {plan.popular && (
                   <div className="absolute top-[-16px] left-1/2 -translate-x-1/2 text-white px-6 py-2 rounded-full text-[10px] font-bold uppercase tracking-widest" style={{ background: plan.color }}>
@@ -89,7 +128,15 @@ const Pricing = () => {
                     ))}
                   </ul>
                 </div>
-                <button className="w-full py-4 rounded-full font-bold" style={{ backgroundColor: plan.popular ? plan.color : 'transparent', color: plan.popular ? 'white' : plan.color, border: `2px solid ${plan.color}` }}>
+                <button 
+                  className={`w-full py-4 rounded-full font-bold transition-all duration-300 shadow-md hover:brightness-105 active:scale-95
+                    ${plan.popular ? 'text-white' : 'bg-white border-2 hover:bg-gray-50'}`}
+                  style={{ 
+                    backgroundColor: plan.popular ? plan.color : 'transparent', 
+                    color: plan.popular ? 'white' : plan.color, 
+                    border: plan.popular ? 'none' : `2px solid ${plan.color}`
+                  }}
+                >
                   {plan.buttonText}
                 </button>
               </div>
@@ -106,7 +153,21 @@ const Pricing = () => {
       </div>
       <Footer />
       <style jsx>{`
-        .card-visible { opacity: 1; transform: translateY(0); }
+        .card-visible {
+          opacity: 1 !important;
+          transform: translateY(0) !important;
+        }
+        
+        /* Responsive fix to center single card on medium screens */
+        @media (min-width: 768px) and (max-width: 1023px) {
+          .grid > :last-child:nth-child(3) {
+            grid-column: span 2;
+            justify-self: center;
+            width: 50%;
+            margin-left: auto;
+            margin-right: auto;
+          }
+        }
       `}</style>
     </>
   );

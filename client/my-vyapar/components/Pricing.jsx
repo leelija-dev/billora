@@ -105,7 +105,7 @@ const Pricing = () => {
 
   if (loading) {
     return (
-      <div className="py-20 bg-[#f8fafc]  min-h-[90vh] flex items-center justify-center">
+      <div className="py-20 bg-[#f8fafc] min-h-[90vh] flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-500"></div>
       </div>
     );
@@ -152,9 +152,10 @@ const Pricing = () => {
             <div
               key={index}
               ref={(el) => (cardRefs.current[index] = el)}
-              className={`bg-white rounded-[30px] p-8 shadow-[0_20px_50px_rgba(0,0,0,0.05)] relative transition-all duration-500 border border-[#e2e8f0] flex flex-col opacity-0 translate-y-10 
-                ${plan.popular ? 'border-2 border-[#8b5cf6] lg:scale-105 z-20 shadow-purple-100' : 'z-10'}
-                hover:-translate-y-2 hover:shadow-2xl hover:z-30`}
+              className={`bg-white rounded-[30px] p-8 shadow-[0_20px_50px_rgba(0,0,0,0.05)] relative transition-all duration-300 border border-[#e2e8f0] flex flex-col opacity-0 translate-y-10 
+                ${plan.popular ? 'border-2 border-[#8b5cf6] lg:scale-[1.02] z-20 shadow-purple-100' : 'z-10'}
+                hover:-translate-y-1 hover:shadow-xl hover:z-30
+                ${index === plans.length - 1 && plans.length === 3 ? 'md:col-start-2 lg:col-start-auto' : ''}`}
             >
               {plan.popular && (
                 <div className="absolute top-[-14px] left-1/2 -translate-x-1/2 text-white px-6 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider shadow-lg" style={{ background: plan.color }}>
@@ -190,7 +191,7 @@ const Pricing = () => {
 
               <div className="mt-auto">
                 <button
-                  className={`w-full py-4 rounded-full text-base font-bold transition-all duration-300 shadow-lg hover:brightness-110 active:scale-95
+                  className={`w-full py-4 rounded-full text-base font-bold transition-all duration-300 shadow-md hover:brightness-105 active:scale-95
                     ${plan.popular ? 'bg-[#8b5cf6] text-white' : 'bg-white border-2 hover:bg-gray-50'}`}
                   style={{
                     color: plan.popular ? 'white' : plan.color,
@@ -236,6 +237,17 @@ const Pricing = () => {
         .card-visible {
           opacity: 1 !important;
           transform: translateY(0) !important;
+        }
+        
+        /* Additional responsive fix for medium screens */
+        @media (min-width: 768px) and (max-width: 1023px) {
+          .grid > :last-child:nth-child(3) {
+            grid-column: span 2;
+            justify-self: center;
+            width: 50%;
+            margin-left: auto;
+            margin-right: auto;
+          }
         }
       `}</style>
     </div>
