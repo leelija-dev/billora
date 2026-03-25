@@ -68,7 +68,7 @@ const Features = () => {
 
   return (
     /* py-4 for mobile/short screens ensures the header is visible immediately */
-    <section className="py-4 sm:py-12 md:py-20 lg:py-24 bg-white font-sans overflow-hidden relative">
+    <section className="py-4 sm:py-12 md:py-17 lg:py-24 bg-white font-sans overflow-hidden relative">
       
       {/* Background Decor - Lowered opacity to keep focus on text */}
       <div className="hidden md:block absolute top-10 left-0 w-72 h-72 bg-blue-50 rounded-full blur-3xl opacity-30 -z-10"></div>
