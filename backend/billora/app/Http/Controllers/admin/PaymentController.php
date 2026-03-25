@@ -153,7 +153,11 @@ class PaymentController extends Controller
             'start_date' => Carbon::now(),
             'end_date' => Carbon::now()->addDays($plan->duration_days ?? 30)
         ]);
-
+        //customer plan activate
+        $customer->update([
+            'plan_id' => $plan->id,
+            'is_active' => true
+        ]);
         // Generate mail
         $adminMail = $this->adminMail(
             $customer->id,
@@ -188,7 +192,7 @@ class PaymentController extends Controller
         ]);
     }
 
-    // ⏳ PENDING
+    //  PENDING
     if ($orderStatus === 'ACTIVE') {
 
         $payment->update([
