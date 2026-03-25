@@ -33,10 +33,10 @@ import {
 } from 'react-icons/fi'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuthStore } from '../../store/authStore'
-import api from '../../services/api'
+import { dashboardAPI } from '../../services'
 
 const Dashboard = () => {
-  const { company } = useAuthStore()
+  const { company, user } = useAuthStore()
   const [timeRange, setTimeRange] = useState('7d')
   const [stats, setStats] = useState({
     revenue: 0,
@@ -61,28 +61,32 @@ const Dashboard = () => {
   const fetchDashboardData = async () => {
     try {
       setLoading(true)
-      const [statsRes, revenueRes, ordersRes] = await Promise.all([
-        api.get('/dashboard/stats/'),
-        api.get('/dashboard/revenue/', { params: { range: timeRange } }),
-        api.get('/dashboard/recent-orders/'),
-      ])
+      
+      if (!user?.id) {
+        throw new Error('User not authenticated')
+      }
 
-      const rawStats = statsRes.data
+      // Use the correct dashboard endpoint from your API specification
+      const response = await dashboardAPI.getOverview(user.id)
+      
+      // Process the response data according to your API structure
+      const data = response.data
       const normalizedStats = {
-        revenue: rawStats?.revenue?.total ?? rawStats?.revenue ?? 0,
-        orders: rawStats?.orders?.total ?? rawStats?.orders ?? 0,
-        products: rawStats?.products?.total ?? rawStats?.products ?? 0,
-        customers: rawStats?.customers?.total ?? rawStats?.customers ?? 0,
-        lowStock: rawStats?.products?.lowStock ?? rawStats?.lowStock ?? 0,
-        revenueChange: rawStats?.revenue?.change ?? null,
-        ordersChange: rawStats?.orders?.change ?? null,
-        productsChange: rawStats?.products?.change ?? null,
-        customersChange: rawStats?.customers?.change ?? null,
+        revenue: data?.stats?.totalRevenue ?? 0,
+        orders: data?.stats?.totalOrders ?? 0,
+        products: data?.stats?.totalProducts ?? 0,
+        customers: data?.stats?.totalCustomers ?? 0,
+        lowStock: data?.stats?.lowStock ?? 0,
+        revenueChange: data?.stats?.revenueTrend ?? null,
+        ordersChange: data?.stats?.ordersTrend ?? null,
+        productsChange: data?.stats?.productsTrend ?? null,
+        customersChange: data?.stats?.customersTrend ?? null,
       }
 
       setStats(normalizedStats)
-      setRevenueData(revenueRes.data)
-      setRecentOrders(ordersRes.data)
+      // Set other data as needed from your API response
+      setRevenueData(data?.revenueData || [])
+      setRecentOrders(data?.recentOrders || [])
     } catch (error) {
       console.error('Failed to fetch dashboard data:', error)
     } finally {
@@ -486,10 +490,26 @@ const Dashboard = () => {
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
                       <div className="w-8 h-8 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-600 rounded-full flex items-center justify-center text-xs font-medium text-gray-700 dark:text-gray-300">
-                        {order.customer?.charAt(0) || 'U'}
+                        {(() => {
+                          const customer = order.customer;
+                          if (typeof customer === 'string') {
+                            return customer.charAt(0) || 'U';
+                          } else if (customer && typeof customer === 'object') {
+                            return customer.name?.charAt(0) || customer.first_name?.charAt(0) || 'U';
+                          }
+                          return 'U';
+                        })()}
                       </div>
                       <span className="ml-3 text-sm text-gray-600 dark:text-gray-300">
-                        {order.customer}
+                        {(() => {
+                          const customer = order.customer;
+                          if (typeof customer === 'string') {
+                            return customer;
+                          } else if (customer && typeof customer === 'object') {
+                            return customer.name || customer.first_name || 'Unknown Customer';
+                          }
+                          return 'Unknown Customer';
+                        })()}
                       </span>
                     </div>
                   </td>

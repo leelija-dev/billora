@@ -5,13 +5,19 @@ namespace App\Http\Controllers\admin;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Products;
+use App\Models\Unit;
+use App\Models\Brand;
+use App\Models\Categories;
+use App\Models\Stocks;
+use App\Models\Customers;
 use Illuminate\Support\Facades\Auth;
+
 class ProductsController extends Controller
 {
     public function index(Request $request)
     {
         try {
-            if(!Auth::check()){
+            if (!Auth::check()) {
                 return response()->json([
                     'status' => false,
                     'message' => 'Authentication required. Please login first.'
@@ -41,10 +47,51 @@ class ProductsController extends Controller
             ]);
         }
     }
+    public function create($id)
+    {
+        $user = Auth::user()->id;
+        if (!Auth::check()) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Authentication required. Please login first.'
+            ]);
+        }
+        if ($user != $id) {
+            return response()->json([
+                'status' => false,
+                'message' => 'You are not authenticated user!'
+            ]);
+        }
+         try {
+        $customer = Customers::findOrFail($id);
+        if($customer->plan_id == null || $customer->is_active == false){
+            return response()->json([
+                'status' => false,
+                'message' =>'You do not have any active plan. Please upgrade your plan.'
+            ]);
+        }
+       
+            $brand = Brand::where('user_id', $id)->get();
+            $category = Categories::where('user_id', $id)->get();
+            $unit = Unit::where('user_id', $id)->get();
+            return response()->json([
+                'status' => true,
+                'message' => 'Product Create',
+                'brand' => $brand,
+                'category' => $category,
+                'unit' => $unit
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => false,
+                'message' => $e->getMessage()
+            ]);
+        }
+    }
     public function store(Request $request)
     {
         try {
-             $user = Auth::user()->id;
+            $user = Auth::user()->id;
             $data = $request->validate([
                 // 'sku'                   => 'required|unique:products',
                 'sku' => 'required|unique:products,sku,NULL,id,user_id,' . $user,
@@ -60,13 +107,13 @@ class ProductsController extends Controller
                 'description'           => 'nullable',
                 'is_active'             => 'required',
             ]);
-            if(!Auth::check()){
+            if (!Auth::check()) {
                 return response()->json([
                     'status' => false,
-                    'message' => 'Authentication required. Please login first.' 
+                    'message' => 'Authentication required. Please login first.'
                 ]);
             }
-           
+
             $data['user_id'] = $user;
             $data['created_by'] = $user;
             $product = Products::create($data);
@@ -85,10 +132,10 @@ class ProductsController extends Controller
     public function show($id)
     {
         try {
-            if(!Auth::check()){
+            if (!Auth::check()) {
                 return response()->json([
                     'status' => false,
-                    'message' => 'Authentication required. Please login first.' 
+                    'message' => 'Authentication required. Please login first.'
                 ]);
             }
             $user = Auth::user()->id;
@@ -108,13 +155,21 @@ class ProductsController extends Controller
     public function update($id, Request $request)
     {   // update product
         try {
-            if(!Auth::check()){
+            if (!Auth::check()) {
                 return response()->json([
                     'status' => false,
-                    'message' => 'Authentication required. Please login first.' 
+                    'message' => 'Authentication required. Please login first.'
                 ]);
             }
             $user = Auth::user()->id;
+            $customer = Customers::findOrFail($user);
+            if($customer->plan_id == null || $customer->is_active == false){
+                return response()->json([
+                    'status' => false,
+                    'message' =>'You do not have any active plan. Please upgrade your plan.'
+                ]);
+            }
+            
             $product = Products::where('user_id', $user)->where('id', $id)->first();
             $data = $request->validate([
                 'name'                  => 'required',
@@ -146,13 +201,20 @@ class ProductsController extends Controller
     public function destroy($id)
     {
         try {
-            if(!Auth::check()){
+            if (!Auth::check()) {
                 return response()->json([
                     'status' => false,
-                    'message' => 'Authentication required. Please login first.' 
+                    'message' => 'Authentication required. Please login first.'
                 ]);
             }
             $user = Auth::user()->id;
+            $customer = Customers::findOrFail($user);
+            if($customer->plan_id == null || $customer->is_active == false){
+                return response()->json([
+                    'status' => false,
+                    'message' =>'You do not have any active plan. Please upgrade your plan.'
+                ]);
+            }
             $product = Products::where('user_id', $user)->where('id', $id)->first();
             $product->delete();
             return response()->json([
@@ -170,14 +232,22 @@ class ProductsController extends Controller
     public function restore($id)
     {
         try {
-            if(!Auth::check()){
+            if (!Auth::check()) {
                 return response()->json([
                     'status' => false,
-                    'message' => 'Authentication required. Please login first.' 
+                    'message' => 'Authentication required. Please login first.'
                 ]);
             }
             $user = Auth::user()->id;
-            $product = Products::withTrashed()->where('user_id',$user)->where('id',$id)->get();
+            // check active plan
+            $customer = Customers::findOrFail($user);
+            if($customer->plan_id == null || $customer->is_active == false){
+                return response()->json([
+                    'status' => false,
+                    'message' =>'You do not have any active plan. Please upgrade your plan.'
+                ]);
+            }
+            $product = Products::withTrashed()->where('user_id', $user)->where('id', $id)->get();
             $product->restore();
             return response()->json([
                 'status' => true,
@@ -194,14 +264,22 @@ class ProductsController extends Controller
     public function forceDelete($id)
     {
         try {
-            if(!Auth::check()){
+            if (!Auth::check()) {
                 return response()->json([
                     'status' => false,
-                    'message' => 'Authentication required. Please login first.' 
+                    'message' => 'Authentication required. Please login first.'
                 ]);
             }
             $user = Auth::user()->id;
-            $product = Products::withTrashed()->where('user_id',$user)->where('id',$id)->first();
+            // check active plan
+            $customer = Customers::findOrFail($user);
+            if($customer->plan_id == null || $customer->is_active == false){
+                return response()->json([
+                    'status' => false,
+                    'message' =>'You do not have any active plan. Please upgrade your plan.'
+                ]);
+            }
+            $product = Products::withTrashed()->where('user_id', $user)->where('id', $id)->first();
             $product->forceDelete();
             return response()->json([
                 'status' => true,

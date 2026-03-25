@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import toast from 'react-hot-toast'
-import { authAPI } from '../services/api'
+import { authService } from '../services/authService'
 import { useAuthStore } from './authStore'
 
 export const useSettingsStore = create(
@@ -47,7 +47,7 @@ export const useSettingsStore = create(
       loadSettings: async () => {
         set({ loading: true })
         try {
-          const res = await authAPI.me()
+          const res = await authService.me()
           const me = res?.data || {}
           const user = me.user || me
 
@@ -84,7 +84,7 @@ export const useSettingsStore = create(
             name: `${profile.firstName} ${profile.lastName}`.trim(),
           }
 
-          const res = await authAPI.updateProfile(payload)
+          const res = await authService.updateProfile(payload)
           const updatedUser = res?.data?.user || res?.data || payload
 
           useAuthStore.getState().updateUser(updatedUser)
@@ -113,7 +113,7 @@ export const useSettingsStore = create(
 
         set({ savingPassword: true })
         try {
-          await authAPI.changePassword({
+          await authService.changePassword({
             current_password: security.currentPassword,
             new_password: security.newPassword,
           })

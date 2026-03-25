@@ -6,7 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Store;
 use Illuminate\Support\Facades\Auth;
-
+use App\Models\Customers;
 class StoreController extends Controller
 {
     public function index(Request $request, $id)
@@ -63,6 +63,8 @@ class StoreController extends Controller
                 'message' => 'Authentication required. Please login first.'
             ]);
         }
+        $user = Auth::user()->id;
+        
         $store = $request->validate([
             'user_id'     => 'required',
             'name'        => 'required',
@@ -75,8 +77,19 @@ class StoreController extends Controller
             'status'      => 'required',
             'created_by'  => 'required'
         ]);
-
-
+        if ($store['user_id'] != $user) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Unauthorized, You are not allowed to perform this action',
+            ]);
+        }
+        $customer =  Customers::findOrFail($store['user_id']);
+        if($customer->plan_id == null || $customer->is_active == false){
+                return response()->json([
+                    'status' => false,
+                    'message' =>'You do not have any active plan. Please upgrade your plan.'
+                ]);
+        }
         try {
             $store = Store::create($store);
             return response()->json([
@@ -96,7 +109,13 @@ class StoreController extends Controller
         try {
 
             $userId = Auth::user()->id;
-
+            $customer =  Customers::findOrFail($userId);
+            if($customer->plan_id == null || $customer->is_active == false){
+                    return response()->json([
+                        'status' => false,
+                        'message' =>'You do not have any active plan. Please upgrade your plan.'
+                    ]);
+            }
             $store = Store::where('user_id', $userId)
                 ->where('id', $id)
                 ->first();
@@ -123,6 +142,7 @@ class StoreController extends Controller
     } 
     public function update(Request $request, $id)
     {
+        $user = Auth::user()->id;
         $data = $request->validate([
             'name'    => 'required',
             'gst'     => 'nullable',
@@ -134,7 +154,14 @@ class StoreController extends Controller
             'status'  => 'required',
         ]);
         try {
-            $store = Store::findOrFail($id);
+            $customer =  Customers::findOrFail($user);
+            if($customer->plan_id == null || $customer->is_active == false){
+                    return response()->json([
+                        'status' => false,
+                        'message' =>'You do not have any active plan. Please upgrade your plan.'
+                    ]);
+            }
+            $store = Store::where('user_id', $user)->where('id', $id)->first();
             $store->update($data);
             return response()->json([
                 'status' => true,
@@ -151,7 +178,15 @@ class StoreController extends Controller
     public function delete($id)
     {
         try {
-            $store = Store::findOrFail($id);
+            $user = Auth::user()->id;
+            $customer =  Customers::findOrFail($user);
+            if($customer->plan_id == null || $customer->is_active == false){
+                    return response()->json([
+                        'status' => false,
+                        'message' =>'You do not have any active plan. Please upgrade your plan.'
+                    ]);
+            }
+            $store = Store::where('user_id', $user)->where('id', $id)->first();
             $store->delete();
             return response()->json([
                 'status' => true,

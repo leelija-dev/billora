@@ -73,7 +73,7 @@ const BrandDetailScreen = () => {
   };
 
   const handleViewProduct = (product) => {
-    navigation.navigate("ProductDetail", { productId: product.id });
+    navigation.navigate("ProductsStack", { screen: "ProductDetail", params: { productId: product.id } });
   };
 
   // Format date safely
@@ -200,6 +200,7 @@ const BrandDetailScreen = () => {
             className="rounded-2xl p-6 mt-4 mb-4"
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
+            style={{ borderRadius: 12 }}
           >
             <View className="items-center">
               <View className="w-20 h-20 bg-white/20 rounded-2xl items-center justify-center mb-4">
@@ -235,14 +236,14 @@ const BrandDetailScreen = () => {
           </LinearGradient>
 
           {/* Tabs */}
-          <View className={`flex-row rounded-2xl p-1 mb-4 shadow-sm ${
+          <View className={`flex-row rounded-[50px]  mb-4 shadow-sm ${
             isDarkMode ? 'bg-gray-800' : 'bg-white'
           }`}>
             {["details", "products"].map((tab) => (
               <TouchableOpacity
                 key={tab}
                 onPress={() => setActiveTab(tab)}
-                className={`flex-1 py-3 rounded-xl ${
+                className={`flex-1 py-3 rounded-[50px] ${
                   activeTab === tab ? "bg-blue-500" : ""
                 }`}
               >
@@ -429,7 +430,7 @@ const BrandDetailScreen = () => {
                   Products from this Brand
                 </Text>
                 <TouchableOpacity
-                  onPress={() => navigation.navigate("Products", { brandId: brand.id })}
+                  onPress={() => navigation.navigate("ProductsStack", { screen: "Products", params: { brandId: brand.id } })}
                   className="bg-blue-500 px-4 py-2 rounded-xl"
                 >
                   <Text className="text-white font-medium">View All</Text>
@@ -500,7 +501,7 @@ const BrandDetailScreen = () => {
                     No products from this brand
                   </Text>
                   <TouchableOpacity
-                    onPress={() => navigation.navigate("AddProduct", { brandId: brand.id })}
+                    onPress={() => navigation.navigate("ProductsStack", { screen: "AddProduct", params: { brandId: brand.id } })}
                     className="mt-4 bg-blue-500 px-4 py-2 rounded-xl"
                   >
                     <Text className="text-white font-medium">Add Product</Text>
@@ -509,7 +510,6 @@ const BrandDetailScreen = () => {
               )}
             </View>
           )}
-
           {/* Action Buttons */}
           <View className="flex-row gap-3 mb-6">
             <TouchableOpacity

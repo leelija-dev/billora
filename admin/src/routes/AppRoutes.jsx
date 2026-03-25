@@ -10,12 +10,19 @@ import Register from '../pages/auth/Register'
 // Main Pages
 import Dashboard from '../pages/dashboard/Dashboard'
 import Products from '../pages/products/Products'
+import Categories from '../pages/categories/Categories'
+import Units from '../pages/units/Units'
+import Stores from '../pages/stores/Stores'
 import Inventory from '../pages/inventory/Inventory'
 import Orders from '../pages/orders/Orders'
 import Customers from '../pages/customers/Customers'
 import Invoices from '../pages/invoices/Invoices'
 import Billing from '../pages/billing/Billing'
+import BillGenerate from '../pages/bill-generate/BillGenerate'
 import Settings from '../pages/settings/Settings'
+
+// Test Page
+import APITest from '../components/test/APITest'
 
 const AppRoutes = () => {
   return (
@@ -24,16 +31,23 @@ const AppRoutes = () => {
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
       
+      {/* Test Route */}
+      <Route path="/test-api" element={<APITest />} />
+      
       {/* Protected Routes */}
       <Route element={<ProtectedRoute />}>
         <Route element={<Layout />}>
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/products" element={<Products />} />
-          <Route path="/inventory" element={<Inventory />} />
+          <Route path="/categories" element={<Categories />} />
+          <Route path="/units" element={<Units />} />
+          <Route path="/stores" element={<Stores />} />
+          <Route path="/stock" element={<Inventory />} />
           <Route path="/orders" element={<Orders />} />
           <Route path="/customers" element={<Customers />} />
           <Route path="/invoices" element={<Invoices />} />
+          <Route path="/invoice" element={<BillGenerate />} />
           <Route path="/billing" element={<Billing />} />
           <Route path="/settings" element={<Settings />} />
         </Route>

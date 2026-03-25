@@ -8,8 +8,8 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class Plans extends Model
 {
     use SoftDeletes;
-    
-    protected $table='plans';
+
+    protected $table = 'plans';
 
     protected $fillable = [
         'name',
@@ -24,10 +24,26 @@ class Plans extends Model
     ];
 
     protected $casts = [
-        'features'=>'array',
-        'is_active'=>'boolean:2',
-        'duration_days'=>'integer',
-        'price'=>'decimal:2'
+        'features' => 'array',
+        'is_active' => 'boolean:2',
+        'duration_days' => 'integer',
+        'price' => 'decimal:2'
     ];
-    
+    public function planPermissions()
+    {
+        return $this->hasMany(PlanPermission::class);
+    }
+    public function planPermissionDetails()
+    {
+        return $this->hasMany(PlanPermissionDetails::class);
+    }
+    public function permissions()
+    {
+        return $this->belongsToMany(
+            PlanPermission::class,
+            'plan_permission_details', // pivot table
+            'plan_id',
+            'permission_id'
+        );
+    }
 }

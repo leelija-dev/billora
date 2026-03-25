@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
 import { unitsAPI } from '../api/units';
+import { productsAPI } from '../api/products';
 
 export const useUnitDetail = (unitId) => {
   const [unit, setUnit] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [products, setProducts] = useState([]);
 
   const fetchUnit = async () => {
     if (!unitId) {
@@ -25,11 +27,23 @@ export const useUnitDetail = (unitId) => {
       
       if (response?.data?.data) {
         unitData = response.data.data;
+        // If it's an array with one item, extract the first item
+        if (Array.isArray(unitData) && unitData.length > 0) {
+          unitData = unitData[0];
+        }
         console.log('Extracted Unit Data:', unitData);
       } else if (response?.data) {
         unitData = response.data;
+        // If it's an array with one item, extract the first item
+        if (Array.isArray(unitData) && unitData.length > 0) {
+          unitData = unitData[0];
+        }
       } else {
         unitData = response;
+        // If it's an array with one item, extract the first item
+        if (Array.isArray(unitData) && unitData.length > 0) {
+          unitData = unitData[0];
+        }
       }
       
       setUnit(unitData);
@@ -110,20 +124,57 @@ export const useUnitDetail = (unitId) => {
     }
   };
 
+  const fetchProductsByUnit = async () => {
+    console.log('fetchProductsByUnit called with unitId:', unitId);
+    if (!unitId) {
+      console.log('No unitId, returning early');
+      return;
+    }
+
+    try {
+      console.log('Calling productsAPI.getAll with unit_id:', unitId);
+      const response = await productsAPI.getAll({ unit_id: unitId });
+      console.log('Products by Unit Response:', response);
+      
+      let productsData = [];
+      
+      // Handle paginated response structure
+      if (response?.data?.data?.data) {
+        productsData = response.data.data.data;
+      } else if (response?.data?.data) {
+        productsData = response.data.data;
+      } else if (response?.data) {
+        productsData = response.data;
+      } else {
+        productsData = response;
+      }
+      
+      console.log('Setting products:', Array.isArray(productsData) ? productsData : []);
+      setProducts(Array.isArray(productsData) ? productsData : []);
+      
+    } catch (err) {
+      console.error('Error fetching products by unit:', err);
+      setProducts([]);
+    }
+  };
+
   const refreshUnit = () => {
     fetchUnit();
+    fetchProductsByUnit();
   };
 
   const clearError = () => setError(null);
 
   useEffect(() => {
     fetchUnit();
+    fetchProductsByUnit();
   }, [unitId]);
 
   return {
     unit,
     loading,
     error,
+    products,
     updateUnit,
     deleteUnit,
     refreshUnit,
