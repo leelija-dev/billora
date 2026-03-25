@@ -45,9 +45,9 @@ class CustomerController extends Controller
          $data['verification_token'] = Str::random(64);
         $data['password'] = Hash::make($data['password']);
         $customer = Customers::create($data);
-        $customer->notify(new VerifyEmailNotification($data['verification_token']));
+        // $customer->notify(new VerifyEmailNotification($data['verification_token']));
 
-        $customerMail = $this->CustomerMail($customer->id);
+       $customerMail = $this->CustomerMail($customer->id, $data['verification_token']);
         $adminMail = $this->AdminMail($customer->id);
         $admin_mail_id = config('app.admin_mail');
         // Send admin mail
@@ -56,9 +56,10 @@ class CustomerController extends Controller
                     ->subject("New User Registered");
         });
         //customer mail
+       
         Mail::html($customerMail, function ($message) use ($customer) {
             $message->to($customer->email)
-                    ->subject("Registration Successful");
+                    ->subject('Welcome! Please Verify Your Email');
         });
 
         return response()->json([
@@ -171,8 +172,10 @@ public function verifyEmail($token)
     return "Email verified successfully. You can now login.";
 }
 
-public function CustomerMail($customer_id){
+public function CustomerMail($customer_id,$token){
     $customer = Customers::findOrFail($customer_id);
+    $verifyUrl = url('/verify-email/' . $token);
+
     $html = "
     <!DOCTYPE html>
 <html lang='en'>
@@ -442,10 +445,15 @@ public function CustomerMail($customer_id){
         <div class='content'>
             <div class='greeting'>Hello!</div>
             
-            <div class='message'>
-                Thank you for joining ".config('app.name')."! We're excited to have you on board. 
-                Your account has been successfully created and you're now ready to explore all our features.
+                <div class='message'>
+            Your account has been successfully created. 
+                Please verify your email before logging in.
             </div>
+
+            <div class='action-buttons'>
+                <a href='".$verifyUrl."' class='btn btn-primary'>Verify Your Email</a>
+            </div>
+
 
             <!-- Password Box (Optional - only if password is provided) 
             <div class='password-box'>
@@ -462,11 +470,11 @@ public function CustomerMail($customer_id){
                 </div>
                 <div class='info-item'>
                     <span class='info-label'>Registration Date: </span>
-                    <span class='info-value'>".($customer->created_at->format('d-m-Y h:i A'))."</span>
+                    <span class='info-value'> ".($customer->created_at->format('d-m-Y h:i A'))."</span>
                 </div>
                 <div class='info-item'>
                     <span class='info-label'>Account Status: </span>
-                    <span class='info-value'>Please verify your account before logging in.</span>
+                    <span class='info-value'> Please verify your account before logging in.</span>
                 </div>
             </div>
 
@@ -481,15 +489,15 @@ public function CustomerMail($customer_id){
                 <div style='font-weight: 700; margin-bottom: 12px; color: #2d3748;'> What you can do next:</div>
                 <ul class='feature-list'>
                     <li>
-                        <span class='feature-icon'></span>
+                        <span class='feature-icon'> </span>
                         <span> Verify your account before logging in.</span>
                     </li>
                     <li>
-                        <span class='feature-icon'></span>
+                        <span class='feature-icon'> </span>
                         <span> Set up your profile.</span>
                     </li>
                     <li>
-                        <span class='feature-icon'></span>
+                        <span class='feature-icon'> </span>
                         <span> Explore our plans and choose the best fit for you</span>
                     </li>
                    
@@ -846,9 +854,6 @@ public function adminMail($customer_id) {
             <p><strong>".config('app.name')."</strong> </p>
             <p>This is an automated notification sent to the admin team</p>
             
-            <p style='font-size: 11px; margin-top: 16px;'>
-                Sent on January 15, 2026 at 10:35 AM
-            </p>
              <p style='font-size: 11px; margin-top: 16px;'>@".date('Y')." all rights reserved</p>
         </div>
     </div>
