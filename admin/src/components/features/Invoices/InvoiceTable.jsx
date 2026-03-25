@@ -13,6 +13,8 @@ import {
 } from 'react-icons/fi'
 import Table from '../../common/Table/Table'
 import StatusBadge from '../../common/StatusBadge/StatusBadge'
+import { storeAPI } from '../../../services'
+
 
 const InvoiceTable = ({ 
   invoices, 
@@ -25,7 +27,70 @@ const InvoiceTable = ({
   onPrintThermal
 }) => {
   const [printDropdown, setPrintDropdown] = useState(null)
+  const [stores, setStores] = useState({})
+  const [storesLoading, setStoresLoading] = useState(true)
   const dropdownRef = useRef(null)
+
+  // Fetch store data when invoices change
+  useEffect(() => {
+    const fetchStoreData = async () => {
+      const storeIds = [...new Set(invoices?.map(invoice => invoice.store_id).filter(Boolean))]
+      
+      if (storeIds.length === 0) {
+        setStoresLoading(false)
+        return
+      }
+
+      setStoresLoading(true)
+      
+      try {
+        // Group invoices by user_id to fetch stores efficiently
+        const userStoreMap = {}
+        storeIds.forEach(storeId => {
+          const invoice = invoices.find(inv => inv.store_id === storeId)
+          if (invoice && invoice.user_id) {
+            if (!userStoreMap[invoice.user_id]) {
+              userStoreMap[invoice.user_id] = []
+            }
+            userStoreMap[invoice.user_id].push(storeId)
+          }
+        })
+
+        // Fetch stores for each user
+        const storePromises = Object.entries(userStoreMap).map(async ([userId, storeIdsForUser]) => {
+          try {
+            const response = await storeAPI.getByUserId(userId)
+            const storesArray = response.data?.data?.data || response.data?.data || []
+            
+            // Find the specific stores we need
+            const relevantStores = storesArray.filter(store => storeIdsForUser.includes(store.id))
+            
+            return relevantStores.reduce((acc, store) => {
+              acc[store.id] = store
+              return acc
+            }, {})
+          } catch (error) {
+            console.error(`Failed to fetch stores for user ${userId}:`, error)
+            return {}
+          }
+        })
+
+        const storeResults = await Promise.all(storePromises)
+        const allStores = storeResults.reduce((acc, stores) => ({ ...acc, ...stores }), {})
+        
+        console.log('🏪 Fetched stores:', allStores)
+        setStores(allStores)
+        setStoresLoading(false)
+      } catch (error) {
+        console.error('Failed to fetch store data:', error)
+        setStoresLoading(false)
+      }
+    }
+
+    if (invoices && invoices.length > 0) {
+      fetchStoreData()
+    }
+  }, [invoices])
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -84,16 +149,33 @@ const InvoiceTable = ({
     {
       header: 'Store',
       accessor: 'store_id',
-      cell: (value, row) => (
-        <div>
-          <p className="font-medium text-gray-900 dark:text-white">
-            {row.store_name || `Store #${value}`}
-          </p>
-          <p className="text-xs text-gray-500 dark:text-gray-400">
-            ID: #{value}
-          </p>
-        </div>
-      ),
+      cell: (value, row) => {
+        const storeData = stores[value]
+        
+        if (storesLoading) {
+          return (
+            <div>
+              <div className="animate-pulse">
+                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-24 mb-2"></div>
+                <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-16"></div>
+              </div>
+            </div>
+          )
+        }
+        
+        const storeName = storeData?.name || row.store_name || `Store #${value}`
+        
+        return (
+          <div>
+            <p className="font-medium text-gray-900 dark:text-white">
+              {storeName}
+            </p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              ID: #{value}
+            </p>
+          </div>
+        )
+      },
     },
     {
       header: 'Total Amount',
