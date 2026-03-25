@@ -176,10 +176,10 @@ const InvoiceModal = ({ isOpen, onClose, invoice }) => {
                       {item.quantity}
                     </td>
                     <td className="px-4 py-3 text-right text-sm text-gray-900 dark:text-white">
-                      ${item.unitPrice.toFixed(2)}
+                      ₹${item.unitPrice.toFixed(2)}
                     </td>
                     <td className="px-4 py-3 text-right text-sm font-medium text-gray-900 dark:text-white">
-                      ${(item.quantity * item.unitPrice).toFixed(2)}
+                      ₹${(item.quantity * item.unitPrice).toFixed(2)}
                     </td>
                   </tr>
                 ))}
@@ -190,7 +190,7 @@ const InvoiceModal = ({ isOpen, onClose, invoice }) => {
                     Subtotal:
                   </td>
                   <td className="px-4 py-3 text-right text-sm font-medium text-gray-900 dark:text-white">
-                    ${invoice.subtotal?.toFixed(2)}
+                    ₹${invoice.subtotal?.toFixed(2)}
                   </td>
                 </tr>
                 <tr>
@@ -198,7 +198,7 @@ const InvoiceModal = ({ isOpen, onClose, invoice }) => {
                     Tax ({invoice.taxRate}%):
                   </td>
                   <td className="px-4 py-3 text-right text-sm font-medium text-gray-900 dark:text-white">
-                    ${invoice.tax?.toFixed(2)}
+                    ₹${invoice.tax?.toFixed(2)}
                   </td>
                 </tr>
                 <tr>
@@ -206,7 +206,7 @@ const InvoiceModal = ({ isOpen, onClose, invoice }) => {
                     Total:
                   </td>
                   <td className="px-4 py-3 text-right text-base font-bold text-primary-600">
-                    ${invoice.total?.toFixed(2)}
+                    ₹${invoice.total?.toFixed(2)}
                   </td>
                 </tr>
               </tfoot>

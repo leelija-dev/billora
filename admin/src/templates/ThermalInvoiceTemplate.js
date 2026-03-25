@@ -241,8 +241,8 @@ export const generateThermalInvoiceHTML = (invoice) => {
           <div class="item-row">
             <div class="item-col item-name">Product #${item.product_id}</div>
             <div class="item-col item-qty">${quantity}</div>
-            <div class="item-col item-price">$${formatCurrency(itemPrice)}</div>
-            <div class="item-col item-total">$${formatCurrency(itemTotal)}</div>
+            <div class="item-col item-price">₹${formatCurrency(itemPrice)}</div>
+            <div class="item-col item-total">₹${formatCurrency(itemTotal)}</div>
           </div>
         `
       }).join('')}
@@ -254,19 +254,19 @@ export const generateThermalInvoiceHTML = (invoice) => {
       <div class="summary">
         <div class="summary-row">
           <span>Subtotal:</span>
-          <span>$${formatCurrency(subtotal)}</span>
+          <span>₹${formatCurrency(subtotal)}</span>
         </div>
         <div class="summary-row">
           <span>GST:</span>
-          <span>$${formatCurrency(totalGST)}</span>
+          <span>₹${formatCurrency(totalGST)}</span>
         </div>
         <div class="summary-row">
           <span>Discount:</span>
-          <span style="color: #000;">-$${formatCurrency(totalDiscount)}</span>
+          <span style="color: #000;">-₹${formatCurrency(totalDiscount)}</span>
         </div>
         <div class="summary-row total-row">
           <span>TOTAL:</span>
-          <span class="total-amount">$${formatCurrency(totalAmount)}</span>
+          <span class="total-amount">₹${formatCurrency(totalAmount)}</span>
         </div>
       </div>
 
@@ -274,12 +274,12 @@ export const generateThermalInvoiceHTML = (invoice) => {
       <div class="payment">
         <div class="payment-row">
           <span>Paid:</span>
-          <span class="paid-amount">$${formatCurrency(paidAmount)}</span>
+          <span class="paid-amount">₹${formatCurrency(paidAmount)}</span>
         </div>
         ${changeAmount > 0 ? `
           <div class="payment-row">
             <span>Change:</span>
-            <span class="change-amount">$${formatCurrency(changeAmount)}</span>
+            <span class="change-amount">₹${formatCurrency(changeAmount)}</span>
           </div>
         ` : ''}
       </div>

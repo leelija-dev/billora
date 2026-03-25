@@ -280,10 +280,10 @@ export const generateA4InvoiceHTML = (invoice) => {
               <td>${index + 1}</td>
               <td>${item.product_name }</td>
               <td class="text-right">${item.quantity}</td>
-              <td class="text-right">$${itemPrice.toFixed(2)}</td>
+              <td class="text-right">₹${itemPrice.toFixed(2)}</td>
               <td class="text-right">${itemGst || 0}%</td>
               <td class="text-right">${itemDiscount || 0}%</td>
-              <td class="text-right text-bold text-green">$${itemTotal.toFixed(2)}</td>
+              <td class="text-right text-bold text-green">₹${itemTotal.toFixed(2)}</td>
             </tr>
             `;
           }).join('')}
@@ -295,11 +295,11 @@ export const generateA4InvoiceHTML = (invoice) => {
         <h3>Summary</h3>
         <div class="summary-row">
           <span class="label">Subtotal:</span>
-          <span class="value">$${totalAmount.toFixed(2)}</span>
+          <span class="value">₹${totalAmount.toFixed(2)}</span>
         </div>
         <div class="summary-row">
           <span class="label">Total GST:</span>
-          <span class="value">$${invoice.items?.reduce((sum, item) => {
+          <span class="value">₹${invoice.items?.reduce((sum, item) => {
             const itemPrice = typeof item.price === 'string' ? parseFloat(item.price) : (typeof item.price === 'number' ? item.price : 0);
             const itemGst = typeof item.gst === 'string' ? parseFloat(item.gst) : (typeof item.gst === 'number' ? item.gst : 0);
             const subtotal = itemPrice * parseFloat(item.quantity || 0);
@@ -308,7 +308,7 @@ export const generateA4InvoiceHTML = (invoice) => {
         </div>
         <div class="summary-row">
           <span class="label">Total Discount:</span>
-          <span class="value" style="color: #28a745;">-$${invoice.items?.reduce((sum, item) => {
+          <span class="value" style="color: #28a745;">-₹${invoice.items?.reduce((sum, item) => {
             const itemPrice = typeof item.price === 'string' ? parseFloat(item.price) : (typeof item.price === 'number' ? item.price : 0);
             const itemDiscount = typeof item.discount === 'string' ? parseFloat(item.discount) : (typeof item.discount === 'number' ? item.discount : 0);
             const subtotal = itemPrice * parseFloat(item.quantity || 0);
@@ -317,7 +317,7 @@ export const generateA4InvoiceHTML = (invoice) => {
         </div>
         <div class="summary-row total">
           <span>Grand Total:</span>
-          <span class="value">$${totalAmount.toFixed(2)}</span>
+          <span class="value">₹${totalAmount.toFixed(2)}</span>
         </div>
       </div>
 
@@ -326,17 +326,17 @@ export const generateA4InvoiceHTML = (invoice) => {
         <h3>Payment Details:</h3>
         <div class="payment-row">
           <span class="label">Amount Paid:</span>
-          <span class="value">$${paidAmount.toFixed(2)}</span>
+          <span class="value">₹${paidAmount.toFixed(2)}</span>
         </div>
         ${changeAmount > 0 ? `
           <div class="payment-row">
             <span class="label">Change Returned:</span>
-            <span class="value">$${changeAmount.toFixed(2)}</span>
+            <span class="value">₹${changeAmount.toFixed(2)}</span>
           </div>
         ` : paidAmount < totalAmount ? `
           <div class="payment-row">
             <span class="label">Due Amount:</span>
-            <span class="value" style="color: #dc3545;">$${(totalAmount - paidAmount).toFixed(2)}</span>
+            <span class="value" style="color: #dc3545;">₹${(totalAmount - paidAmount).toFixed(2)}</span>
           </div>
         ` : ''}
       </div>
