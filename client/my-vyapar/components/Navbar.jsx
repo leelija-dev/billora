@@ -11,6 +11,7 @@ const Navbar = () => {
 
   // Handle scroll effect for better UX
   useEffect(() => {
+  //  .
     const handleScroll = () => {
       setScrolled(window.scrollY > 20);
     };
