@@ -25,6 +25,10 @@ import InvoiceTable from '../../components/features/Invoices/InvoiceTable'
 import InvoiceForm from '../../components/features/Invoices/InvoiceForm'
 import InvoiceModal from '../../components/features/Invoices/InvoiceModal'
 import BillGenerateForm from '../../components/features/Invoices/BillGenerateForm'
+import { printA4Invoice, printThermalInvoice } from '../../templates/PrintUtils'
+import { customerAPI } from '../../services/customerService'
+import { storeAPI } from '../../services/storeService'
+import { productsAPI } from '../../services/productsService'
 
 const Invoices = () => {
   const navigate = useNavigate()
@@ -165,6 +169,210 @@ const Invoices = () => {
 
   const handleBillGenerate = () => {
     navigate('/invoice')
+  }
+
+  const handlePrintA4 = async (invoice) => {
+    try {
+      // Fetch real customer and store data using proper services
+      const [customerResponse, storeResponse] = await Promise.all([
+        customerAPI.getById(invoice.customer_id),
+        storeAPI.getByUserId(invoice.user_id) // Use user_id instead of store_id
+      ])
+
+      console.log('👤 Customer response:', customerResponse)
+      console.log('🏪 Store response:', storeResponse)
+
+      // Handle different response structures
+      const customerData = customerResponse.data?.data || {}
+      const storesArray = storeResponse.data?.data?.data || storeResponse.data?.data || []
+      
+      // Find the specific store that matches the invoice's store_id
+      const storeData = storesArray.find(store => store.id === invoice.store_id) || storesArray[0] || {}
+
+      console.log('👤 Processed customer data:', customerData)
+      console.log('🏪 All stores for user:', storesArray)
+      console.log('🏪 Invoice store_id:', invoice.store_id)
+      console.log('🏪 Selected store data:', storeData)
+
+      // Get invoice items
+      const invoiceItems = invoice.invoice_items || invoice.items || []
+      console.log('📦 Invoice items before product fetch:', invoiceItems)
+
+      let enhancedItems = []
+      
+      if (invoiceItems.length > 0) {
+        // Fetch product details for each item
+        const productPromises = invoiceItems.map(item => 
+          productsAPI.getById(item.product_id)
+            .then(productResponse => {
+              console.log(`📦 Product ${item.product_id} response:`, productResponse)
+              const productData = productResponse.data?.data || productResponse.data || {}
+              return {
+                ...item,
+                product_name: productData.name || item.product_name || item.name || `Product #${item.product_id || item.id || 'Unknown'}`,
+                price: parseFloat(item.price || productData.selling_price || 0),
+                quantity: parseFloat(item.quantity || item.item_count || 1),
+                total_price: parseFloat(item.total_price || item.total || 0),
+                gst: parseFloat(item.gst || productData.gst_percentage || 0),
+                discount: parseFloat(item.discount || productData.discount_percentage || 0)
+              }
+            })
+            .catch(error => {
+              console.error(`Failed to fetch product ${item.product_id}:`, error)
+              // Fallback to original item data if product fetch fails
+              return {
+                ...item,
+                product_name: item.product_name || item.name || `Product #${item.product_id || item.id || 'Unknown'}`,
+                price: parseFloat(item.price || 0),
+                quantity: parseFloat(item.quantity || item.item_count || 1),
+                total_price: parseFloat(item.total_price || item.total || 0),
+                gst: parseFloat(item.gst || 0),
+                discount: parseFloat(item.discount || 0)
+              }
+            })
+        )
+        
+        enhancedItems = await Promise.all(productPromises)
+        console.log('📦 Enhanced items with product data:', enhancedItems)
+      } else {
+        // No items, use fallback
+        enhancedItems = [{
+          id: 1,
+          product_id: 1,
+          product_name: 'Product Item',
+          price: parseFloat(invoice.total_amount || 1000),
+          quantity: 1,
+          total_price: parseFloat(invoice.total_amount || 1000),
+          gst: 18,
+          discount: 0
+        }]
+      }
+
+      // Enhance invoice data with real API data
+      const enhancedInvoice = {
+        ...invoice,
+        invoice_number: invoice.invoice_number || `INV-${invoice.id}`,
+        customer_name: customerData.name || invoice.customer_name || 'Walk-in Customer',
+        customer_phone: customerData.phone || invoice.customer_phone || 'N/A',
+        customer_email: customerData.email || invoice.customer_email || 'N/A',
+        customer_address: customerData.address ? `${customerData.address}, ${customerData.city}` : invoice.customer_address || 'N/A',
+        customer_gst: customerData.gst || invoice.customer_gst || 'N/A',
+        store_name: storeData.name || invoice.store_name || 'Your Store Name',
+        store_address: storeData.address ? `${storeData.address}, ${storeData.city}` : invoice.store_address || '123 Business Street, City',
+        store_gst: storeData.gst || invoice.store_gst || 'GSTIN123456',
+        store_email: storeData.email || invoice.store_email || 'store@business.com',
+        store_phone: storeData.mobile || storeData.phone || invoice.store_phone || '123-456-7890',
+        items: enhancedItems
+      }
+      console.log('✅ Enhanced invoice for A4 print:', enhancedInvoice)
+      printA4Invoice(enhancedInvoice)
+    } catch (error) {
+      console.error('Failed to fetch data for A4 printing:', error)
+      // Fallback to original invoice data
+      printA4Invoice(invoice)
+    }
+  }
+
+  const handlePrintThermal = async (invoice) => {
+    try {
+      // Fetch real customer and store data using proper services
+      const [customerResponse, storeResponse] = await Promise.all([
+        customerAPI.getById(invoice.customer_id),
+        storeAPI.getByUserId(invoice.user_id) // Use user_id instead of store_id
+      ])
+
+      console.log('👤 Customer response for thermal:', customerResponse)
+      console.log('🏪 Store response for thermal:', storeResponse)
+
+      // Handle different response structures
+      const customerData = customerResponse.data?.data || {}
+      const storesArray = storeResponse.data?.data?.data || storeResponse.data?.data || []
+      
+      // Find the specific store that matches the invoice's store_id
+      const storeData = storesArray.find(store => store.id === invoice.store_id) || storesArray[0] || {}
+
+      console.log('👤 Processed customer data for thermal:', customerData)
+      console.log('🏪 All stores for user:', storesArray)
+      console.log('🏪 Invoice store_id:', invoice.store_id)
+      console.log('🏪 Selected store data for thermal:', storeData)
+
+      // Get invoice items
+      const invoiceItems = invoice.invoice_items || invoice.items || []
+      console.log('📦 Invoice items before product fetch for thermal:', invoiceItems)
+
+      let enhancedItems = []
+      
+      if (invoiceItems.length > 0) {
+        // Fetch product details for each item
+        const productPromises = invoiceItems.map(item => 
+          productsAPI.getById(item.product_id)
+            .then(productResponse => {
+              console.log(`📦 Product ${item.product_id} response for thermal:`, productResponse)
+              const productData = productResponse.data?.data || productResponse.data || {}
+              return {
+                ...item,
+                product_name: productData.name || item.product_name || item.name || `Product #${item.product_id || item.id || 'Unknown'}`,
+                price: parseFloat(item.price || productData.selling_price || 0),
+                quantity: parseFloat(item.quantity || item.item_count || 1),
+                total_price: parseFloat(item.total_price || item.total || 0),
+                gst: parseFloat(item.gst || productData.gst_percentage || 0),
+                discount: parseFloat(item.discount || productData.discount_percentage || 0)
+              }
+            })
+            .catch(error => {
+              console.error(`Failed to fetch product ${item.product_id} for thermal:`, error)
+              // Fallback to original item data if product fetch fails
+              return {
+                ...item,
+                product_name: item.product_name || item.name || `Product #${item.product_id || item.id || 'Unknown'}`,
+                price: parseFloat(item.price || 0),
+                quantity: parseFloat(item.quantity || item.item_count || 1),
+                total_price: parseFloat(item.total_price || item.total || 0),
+                gst: parseFloat(item.gst || 0),
+                discount: parseFloat(item.discount || 0)
+              }
+            })
+        )
+        
+        enhancedItems = await Promise.all(productPromises)
+        console.log('📦 Enhanced items with product data for thermal:', enhancedItems)
+      } else {
+        // No items, use fallback
+        enhancedItems = [{
+          id: 1,
+          product_id: 1,
+          product_name: 'Product Item',
+          price: parseFloat(invoice.total_amount || 1000),
+          quantity: 1,
+          total_price: parseFloat(invoice.total_amount || 1000),
+          gst: 18,
+          discount: 0
+        }]
+      }
+
+      // Enhance invoice data with real API data
+      const enhancedInvoice = {
+        ...invoice,
+        invoice_number: invoice.invoice_number || `INV-${invoice.id}`,
+        customer_name: customerData.name || invoice.customer_name || 'Walk-in Customer',
+        customer_phone: customerData.phone || invoice.customer_phone || 'N/A',
+        customer_email: customerData.email || invoice.customer_email || 'N/A',
+        customer_address: customerData.address ? `${customerData.address}, ${customerData.city}` : invoice.customer_address || 'N/A',
+        customer_gst: customerData.gst || invoice.customer_gst || 'N/A',
+        store_name: storeData.name || invoice.store_name || 'Your Store Name',
+        store_address: storeData.address ? `${storeData.address}, ${storeData.city}` : invoice.store_address || 'Store Address',
+        store_gst: storeData.gst || invoice.store_gst || 'GSTIN123456',
+        store_email: storeData.email || invoice.store_email || 'store@business.com',
+        store_phone: storeData.mobile || storeData.phone || invoice.store_phone || 'Store Phone',
+        items: enhancedItems
+      }
+      console.log('✅ Enhanced invoice for thermal print:', enhancedInvoice)
+      printThermalInvoice(enhancedInvoice)
+    } catch (error) {
+      console.error('Failed to fetch data for thermal printing:', error)
+      // Fallback to original invoice data
+      printThermalInvoice(invoice)
+    }
   }
 
   // Calculate stats
@@ -505,7 +713,9 @@ const Invoices = () => {
                     onView={handleView}
                     onDownload={handleDownload}
                     onEdit={handleEditClick}
-                                        onMarkPaid={handleMarkPaid}
+                    onMarkPaid={handleMarkPaid}
+                    onPrintA4={handlePrintA4}
+                    onPrintThermal={handlePrintThermal}
                   />
                 </div>
 

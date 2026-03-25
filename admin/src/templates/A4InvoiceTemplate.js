@@ -278,7 +278,7 @@ export const generateA4InvoiceHTML = (invoice) => {
             return `
             <tr>
               <td>${index + 1}</td>
-              <td>${item.product_name || `Product #${item.product_id}`}</td>
+              <td>${item.product_name }</td>
               <td class="text-right">${item.quantity}</td>
               <td class="text-right">$${itemPrice.toFixed(2)}</td>
               <td class="text-right">${itemGst || 0}%</td>
