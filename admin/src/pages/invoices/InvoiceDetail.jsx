@@ -33,92 +33,215 @@ const InvoiceDetail = () => {
         setLoading(true)
         setError(null)
         
-        // First ensure we have the latest invoices data
-        await fetchInvoices()
+        console.log('🔍 Fetching invoice for ID:', id)
         
-        // Find the specific invoice from the store
-        const foundInvoice = invoices?.find(inv => inv.id === parseInt(id))
-        
-        if (foundInvoice) {
-          // Fetch detailed store and customer data
-          const [storeResponse, customerResponse] = await Promise.all([
-            // In a real implementation, you would have these API calls
-            // apiClient.get(`/store/${foundInvoice.store_id}`),
-            // apiClient.get(`/customer/show/${foundInvoice.customer_id}`)
+        // Try a more direct approach - fetch the invoice directly
+        try {
+          // Import the API client directly
+          const { default: apiClient } = await import('../../services/apiClient')
+          
+          // Fetch the specific invoice directly
+          const response = await apiClient.get(`/invoice/${id}`)
+          console.log('📋 Direct invoice response:', response)
+          
+          if (response.data?.status && response.data?.data) {
+            const foundInvoice = response.data.data
+            console.log('🎯 Found invoice directly:', foundInvoice)
             
-            // For now, using the data from API responses I can see in the logs
-            Promise.resolve({
-              data: {
-                status: true,
+            // Fetch detailed store and customer data
+            Promise.all([
+              // In a real implementation, you would have these API calls
+              // apiClient.get(`/store/${foundInvoice.store_id}`),
+              // apiClient.get(`/customer/show/${foundInvoice.customer_id}`)
+              
+              // For now, using the data from API responses I can see in the logs
+              Promise.resolve({
                 data: {
-                  name: "Sahil Foot House",
-                  address: "Barrackpore, Birlagate",
-                  city: "Barrackpore",
-                  email: "sahelleelija@gmail.com",
-                  mobile: "9007947586",
-                  gst: "sdu2349jf94"
+                  status: true,
+                  data: {
+                    name: "Sahil Foot House",
+                    address: "Barrackpore, Birlagate",
+                    city: "Barrackpore",
+                    email: "sahelleelija@gmail.com",
+                    mobile: "9007947586",
+                    gst: "sdu2349jf94"
+                  }
                 }
-              }
-            }),
-            Promise.resolve({
-              data: {
-                status: true,
+              }),
+              Promise.resolve({
                 data: {
-                  name: "Puma Footwear Shop",
-                  address: "Birlagate, Barrackpore",
-                  city: "Kolkata",
-                  email: "sahelleelija@gmail.com",
-                  phone: "9007947586"
+                  status: true,
+                  data: {
+                    name: "Puma Footwear Shop",
+                    address: "Birlagate, Barrackpore",
+                    city: "Kolkata",
+                    email: "sahelleelija@gmail.com",
+                    phone: "9007947586"
+                  }
                 }
+              })
+            ]).then(([storeResponse, customerResponse]) => {
+              const storeData = storeResponse.data.data
+              const customerData = customerResponse.data.data
+              
+              // Enhance the invoice with real data
+              const enhancedInvoice = {
+                ...foundInvoice,
+                invoice_number: foundInvoice.invoice_number || `INV-${foundInvoice.id}`,
+                customer_name: customerData.name || foundInvoice.customer_name || 'Walk-in Customer',
+                customer_phone: customerData.phone || foundInvoice.customer_phone || 'N/A',
+                customer_email: customerData.email || foundInvoice.customer_email || 'N/A',
+                customer_address: customerData.address ? `${customerData.address}, ${customerData.city}` : foundInvoice.customer_address || 'N/A',
+                customer_gst: customerData.gst || foundInvoice.customer_gst || 'N/A',
+                store_name: storeData.name || foundInvoice.store_name || 'Your Store Name',
+                store_address: storeData.address ? `${storeData.address}, ${storeData.city}` : foundInvoice.store_address || '123 Business Street, City',
+                store_gst: storeData.gst || foundInvoice.store_gst || 'GSTIN123456',
+                store_email: storeData.email || foundInvoice.store_email || 'store@business.com',
+                store_phone: storeData.mobile || foundInvoice.store_phone || '123-456-7890',
+                items: foundInvoice.items || [{
+                  id: 1,
+                  product_id: 1,
+                  product_name: 'Product Item',
+                  price: parseFloat(foundInvoice.total_amount || 1000),
+                  quantity: 1,
+                  total_price: parseFloat(foundInvoice.total_amount || 1000),
+                  gst: 18,
+                  discount: 0
+                }]
               }
+              console.log('✅ Enhanced invoice:', enhancedInvoice)
+              setInvoice(enhancedInvoice)
+              setLoading(false)
+            }).catch(error => {
+              console.error('Failed to fetch store/customer data:', error)
+              setError('Failed to load store/customer details')
+              setLoading(false)
             })
-          ])
-          
-          const storeData = storeResponse.data.data
-          const customerData = customerResponse.data.data
-          
-          // Enhance the invoice with real data
-          const enhancedInvoice = {
-            ...foundInvoice,
-            invoice_number: foundInvoice.invoice_number || `INV-${foundInvoice.id}`,
-            customer_name: customerData.name || foundInvoice.customer_name || 'Walk-in Customer',
-            customer_phone: customerData.phone || foundInvoice.customer_phone || 'N/A',
-            customer_email: customerData.email || foundInvoice.customer_email || 'N/A',
-            customer_address: customerData.address ? `${customerData.address}, ${customerData.city}` : foundInvoice.customer_address || 'N/A',
-            customer_gst: customerData.gst || foundInvoice.customer_gst || 'N/A',
-            store_name: storeData.name || foundInvoice.store_name || 'Your Store Name',
-            store_address: storeData.address ? `${storeData.address}, ${storeData.city}` : foundInvoice.store_address || '123 Business Street, City',
-            store_gst: storeData.gst || foundInvoice.store_gst || 'GSTIN123456',
-            store_email: storeData.email || foundInvoice.store_email || 'store@business.com',
-            store_phone: storeData.mobile || foundInvoice.store_phone || '123-456-7890',
-            items: foundInvoice.items || [{
-              id: 1,
-              product_id: 1,
-              product_name: 'Product Item',
-              price: parseFloat(foundInvoice.total_amount || 1000),
-              quantity: 1,
-              total_price: parseFloat(foundInvoice.total_amount || 1000),
-              gst: 18,
-              discount: 0
-            }]
+          } else {
+            console.log('❌ No invoice data in response')
+            setError(`Invoice #${id} not found in direct API call`)
+            setLoading(false)
           }
-          setInvoice(enhancedInvoice)
-        } else {
-          setError('Invoice not found')
+        } catch (apiError) {
+          console.error('Direct API call failed:', apiError)
+          
+          // Fallback to store method
+          console.log('🔄 Falling back to store method')
+          await fetchInvoices()
+          
+          // Use a more reliable way to wait for state update
+          let attempts = 0
+          const maxAttempts = 10
+          const checkInterval = setInterval(() => {
+            attempts++
+            const currentInvoices = invoices
+            console.log(`📋 Current invoices from store (attempt ${attempts}):`, currentInvoices)
+            
+            if (currentInvoices && currentInvoices.length > 0) {
+              // Clear the interval once we have data
+              clearInterval(checkInterval)
+              
+              // Find the specific invoice from the store
+              const foundInvoice = currentInvoices?.find(inv => inv.id === parseInt(id))
+              console.log('🎯 Found invoice:', foundInvoice)
+              
+              if (foundInvoice) {
+                // Fetch detailed store and customer data
+                Promise.all([
+                  // In a real implementation, you would have these API calls
+                  // apiClient.get(`/store/${foundInvoice.store_id}`),
+                  // apiClient.get(`/customer/show/${foundInvoice.customer_id}`)
+                  
+                  // For now, using the data from API responses I can see in the logs
+                  Promise.resolve({
+                    data: {
+                      status: true,
+                      data: {
+                        name: "Sahil Foot House",
+                        address: "Barrackpore, Birlagate",
+                        city: "Barrackpore",
+                        email: "sahelleelija@gmail.com",
+                        mobile: "9007947586",
+                        gst: "sdu2349jf94"
+                      }
+                    }
+                  }),
+                  Promise.resolve({
+                    data: {
+                      status: true,
+                      data: {
+                        name: "Puma Footwear Shop",
+                        address: "Birlagate, Barrackpore",
+                        city: "Kolkata",
+                        email: "sahelleelija@gmail.com",
+                        phone: "9007947586"
+                      }
+                    }
+                  })
+                ]).then(([storeResponse, customerResponse]) => {
+                  const storeData = storeResponse.data.data
+                  const customerData = customerResponse.data.data
+                  
+                  // Enhance the invoice with real data
+                  const enhancedInvoice = {
+                    ...foundInvoice,
+                    invoice_number: foundInvoice.invoice_number || `INV-${foundInvoice.id}`,
+                    customer_name: customerData.name || foundInvoice.customer_name || 'Walk-in Customer',
+                    customer_phone: customerData.phone || foundInvoice.customer_phone || 'N/A',
+                    customer_email: customerData.email || foundInvoice.customer_email || 'N/A',
+                    customer_address: customerData.address ? `${customerData.address}, ${customerData.city}` : foundInvoice.customer_address || 'N/A',
+                    customer_gst: customerData.gst || foundInvoice.customer_gst || 'N/A',
+                    store_name: storeData.name || foundInvoice.store_name || 'Your Store Name',
+                    store_address: storeData.address ? `${storeData.address}, ${storeData.city}` : foundInvoice.store_address || '123 Business Street, City',
+                    store_gst: storeData.gst || foundInvoice.store_gst || 'GSTIN123456',
+                    store_email: storeData.email || foundInvoice.store_email || 'store@business.com',
+                    store_phone: storeData.mobile || foundInvoice.store_phone || '123-456-7890',
+                    items: foundInvoice.items || [{
+                      id: 1,
+                      product_id: 1,
+                      product_name: 'Product Item',
+                      price: parseFloat(foundInvoice.total_amount || 1000),
+                      quantity: 1,
+                      total_price: parseFloat(foundInvoice.total_amount || 1000),
+                      gst: 18,
+                      discount: 0
+                    }]
+                  }
+                  console.log('✅ Enhanced invoice:', enhancedInvoice)
+                  setInvoice(enhancedInvoice)
+                  setLoading(false)
+                }).catch(error => {
+                  console.error('Failed to fetch store/customer data:', error)
+                  setError('Failed to load store/customer details')
+                  setLoading(false)
+                })
+              } else {
+                console.log('❌ Invoice not found in data, available invoices:', currentInvoices?.map(inv => inv.id))
+                setError(`Invoice #${id} not found`)
+                setLoading(false)
+              }
+            } else if (attempts >= maxAttempts) {
+              // Clear interval if max attempts reached
+              clearInterval(checkInterval)
+              console.log('❌ Max attempts reached, invoices still empty')
+              setError('Failed to load invoice data after multiple attempts')
+              setLoading(false)
+            }
+          }, 200) // Check every 200ms
         }
+        
       } catch (error) {
         console.error('Failed to fetch invoice:', error)
         setError('Failed to load invoice details')
-      } finally {
         setLoading(false)
       }
     }
 
-    // Only run once when component mounts or ID changes
+    // Only fetch when ID changes and we don't already have the invoice
     if (id && !invoice) {
       fetchInvoice()
     }
-  }, [id, fetchInvoices])
+  }, [id, fetchInvoices]) // Removed 'invoices' from dependencies
 
   const getStatusConfig = (status) => {
     const configs = {
