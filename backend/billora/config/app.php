@@ -124,4 +124,6 @@ return [
     ],
     'app_currency' => env('APP_CURRENCY', '₹'),
 
+    'admin_mail' => env('ADMIN_MAIL','lakshman.leelija@gmail.com'),
+
 ];
