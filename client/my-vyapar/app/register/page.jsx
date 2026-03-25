@@ -12,6 +12,7 @@ const RegisterPage = () => {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
 
   const router = useRouter();
 
@@ -20,19 +21,37 @@ const RegisterPage = () => {
     
     setLoading(true);
     setError("");
+    setSuccess("");
     
     try {
-      const res = await registerUser({ name, email, password });
+      const res = await registerUser({ 
+        name: name, 
+        email: email, 
+        password: password 
+      });
       
-      if (res.status === false) {
+      if (res.status === false || res.success === false) {
         throw new Error(res.message || "Registration failed");
       }
       
-      alert("Registration Successful! Please check your email to verify your account.");
-      router.push("/login");
+      setSuccess("Registration successful! Please check your email to verify your account.");
+      
+      // Clear form
+      setName("");
+      setEmail("");
+      setPassword("");
+      
+      // Redirect to login after 3 seconds
+      setTimeout(() => {
+        router.push("/login");
+      }, 3000);
       
     } catch (error) {
-      setError(error.message || "Registration Failed. Please try again.");
+      if (error.message.includes("email") || error.message.includes("duplicate")) {
+        setError("This email is already registered. Please use a different email or login.");
+      } else {
+        setError(error.message || "Registration failed. Please try again.");
+      }
     } finally {
       setLoading(false);
     }
@@ -40,55 +59,71 @@ const RegisterPage = () => {
 
   return (
     <div className="min-h-screen flex justify-center items-center bg-gray-100">
-      <form onSubmit={handleRegister} className="w-[400px] bg-white p-8 rounded shadow">
-        <h1 className="text-2xl font-bold text-center mb-5">Register</h1>
+      <form onSubmit={handleRegister} className="w-[450px] bg-white p-8 rounded-lg shadow-lg">
+        <h1 className="text-3xl font-bold text-center mb-6 text-gray-800">Register</h1>
 
         {error && (
-          <div className="bg-red-100 text-red-700 p-3 rounded mb-4">
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
             {error}
           </div>
         )}
 
-        <input
-          type="text"
-          placeholder="Full Name"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          className="w-full mb-4 p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-          required
-        />
+        {success && (
+          <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
+            {success}
+          </div>
+        )}
 
-        <input
-          type="email"
-          placeholder="Email Address"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          className="w-full mb-4 p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-          required
-        />
+        <div className="mb-4">
+          <label className="block text-gray-700 font-medium mb-2">Full Name</label>
+          <input
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            placeholder="Enter your full name"
+            required
+            disabled={loading}
+          />
+        </div>
 
-        <div className="relative">
+        <div className="mb-4">
+          <label className="block text-gray-700 font-medium mb-2">Email Address</label>
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            placeholder="Enter your email"
+            required
+            disabled={loading}
+          />
+        </div>
+
+        <div className="mb-6 relative">
+          <label className="block text-gray-700 font-medium mb-2">Password</label>
           <input
             type={showPassword ? "text" : "password"}
-            placeholder="Password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="w-full mb-4 p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            placeholder="Enter your password"
             required
             minLength={6}
+            disabled={loading}
           />
           <span
-            className="absolute right-3 top-3 cursor-pointer text-gray-500"
+            className="absolute right-3 bottom-3 cursor-pointer text-gray-500"
             onClick={() => setShowPassword(!showPassword)}
           >
-            {showPassword ? <FaEyeSlash /> : <FaEye />}
+            {showPassword ? <FaEyeSlash size={20} /> : <FaEye size={20} />}
           </span>
         </div>
 
         <button
           type="submit"
           disabled={loading}
-          className="w-full bg-blue-500 text-white py-2 rounded hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition duration-200"
+          className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed font-medium text-lg"
         >
           {loading ? "Registering..." : "Register"}
         </button>
@@ -97,7 +132,7 @@ const RegisterPage = () => {
           Already have an account?{" "}
           <span
             onClick={() => router.push("/login")}
-            className="text-blue-500 cursor-pointer hover:underline"
+            className="text-blue-600 cursor-pointer hover:underline"
           >
             Login
           </span>
