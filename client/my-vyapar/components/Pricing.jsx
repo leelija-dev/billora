@@ -205,21 +205,22 @@ const Pricing = () => {
           ))}
         </div>
 
-        {/* Bottom Section */}
-        <div className="flex flex-col md:flex-row items-center justify-between gap-8 px-4 border-t border-gray-100 pt-12">
-          <div className="hidden lg:block w-[150px]" />
+      {/* Bottom Section */}
+<div className="flex flex-col md:flex-row items-center justify-between gap-8 px-4 border-t border-gray-100 pt-12">
+  <div className="hidden lg:block w-[150px]" />
 
-          <div className="flex flex-row items-center gap-4 py-3 px-8 bg-white rounded-full shadow-sm border border-gray-100">
-            <div className="bg-blue-50 p-2 rounded-full">
-               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="text-blue-600">
-                <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="currentColor" strokeWidth="2" />
-                <path d="M12 6V12L16 14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-              </svg>
-            </div>
-            <span className="text-sm text-[#475569] font-semibold whitespace-nowrap">
-              30-day money-back guarantee • No questions asked
-            </span>
-          </div>
+  <div className="flex flex-row items-center gap-3 sm:gap-4 py-2 sm:py-3 px-4 sm:px-8 bg-white rounded-full shadow-sm border border-gray-100">
+    <div className="bg-blue-50 p-1 sm:p-2 rounded-full">
+      <svg width="16" height="16" className="sm:w-5 sm:h-5 text-blue-600" viewBox="0 0 24 24" fill="none">
+        <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="currentColor" strokeWidth="2" />
+        <path d="M12 6V12L16 14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+      </svg>
+    </div>
+    <span className="text-xs sm:text-sm text-[#475569] font-semibold whitespace-nowrap">
+      30-day money-back guarantee • No questions asked
+    </span>
+  </div>
+
 
           <a
             href="/pricing"
