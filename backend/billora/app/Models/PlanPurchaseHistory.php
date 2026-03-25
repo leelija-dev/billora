@@ -20,9 +20,9 @@ class PlanPurchaseHistory extends Model
         'payment_method'
     ];
     protected $casts = [
-        'start_date' => 'date',
-        'end_date' => 'date',
-    ];
+    'start_date' => 'datetime',
+    'end_date' => 'datetime',
+];
 
     public function plan(){
         return $this->belongsTo(Plans::class ,'plan_id');
