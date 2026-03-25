@@ -25,18 +25,19 @@ class CustomerController extends Controller
     }
     public function store(Request $request)
     {
+        try{
         $data = $request->validate([
-            'name'          => 'required|string',
+            'name'          => 'nullable|string',
             'email'         => 'required|email',
-            'phone'         => 'required',
+            'phone'         => 'nullable',
             'password'      => 'required',
             'company_name'  => 'nullable',
             'gst_number'    => 'nullable',
             'address'       => 'nullable',
-            'city'          => 'required',
-            'state'         => 'required',
-            'country'       => 'required',
-            'pincode'       => 'required',
+            'city'          => 'nullable',
+            'state'         => 'nullable',
+            'country'       => 'nullable',
+            'pincode'       => 'nullable',
             'created_by'    => 'nullable'
 
         ]);
@@ -46,9 +47,16 @@ class CustomerController extends Controller
         $customer->notify(new VerifyEmailNotification($data['verification_token']));
         return response()->json([
             'status' => true,
-            'message' => 'User Created Successfully',
+            'message' => 'User Register Successfully',
             'data' => $customer
         ]);
+    }catch (\Exception $e) {
+        return response()->json([
+            'status' => false,
+            'message' => $e->getMessage()
+        ]);
+    }
+
     }
 //    public function login(Request $request) //web based 
 // {
