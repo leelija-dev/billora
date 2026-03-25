@@ -1,120 +1,143 @@
 "use client";
 
 import React, { useState } from "react";
-import { FcGoogle } from "react-icons/fc";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 import { useRouter } from "next/navigation";
+import { registerUser } from "@/services/authService";
 
 const RegisterPage = () => {
   const [showPassword, setShowPassword] = useState(false);
-  const router = useRouter();
-
-  // ONLY UI fields
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
 
-  // REGISTER FUNCTION
-  const handleRegister = async () => {
+  const router = useRouter();
+
+  const handleRegister = async (e) => {
+    e.preventDefault();
+    
+    setLoading(true);
+    setError("");
+    setSuccess("");
+    
     try {
-      const res = await fetch("http://localhost:8000/api/users/store", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-
-        // ✅ Sending required fields with dummy values
-        body: JSON.stringify({
-          name: "User",
-          email: email,
-          phone: "9999999999",
-          password: password,
-          city: "Kolkata",
-          state: "WB",
-          country: "India",
-          pincode: "700000",
-        }),
+      const res = await registerUser({ 
+        name: name, 
+        email: email, 
+        password: password 
       });
-
-      const data = await res.json();
-      console.log(data);
-
-      if (data.success) {
-        alert("Registration Successful");
-        router.push("/login");
-      } else {
-        alert("Registration Failed");
+      
+      if (res.status === false || res.success === false) {
+        throw new Error(res.message || "Registration failed");
       }
+      
+      setSuccess("Registration successful! Please check your email to verify your account.");
+      
+      // Clear form
+      setName("");
+      setEmail("");
+      setPassword("");
+      
+      // Redirect to login after 3 seconds
+      setTimeout(() => {
+        router.push("/login");
+      }, 3000);
+      
     } catch (error) {
-      console.error(error);
+      if (error.message.includes("email") || error.message.includes("duplicate")) {
+        setError("This email is already registered. Please use a different email or login.");
+      } else {
+        setError(error.message || "Registration failed. Please try again.");
+      }
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#ece9f1] to-[#dfe3f8] flex flex-col font-sans">
-      <div className="flex-1 flex justify-center items-center py-20 px-4">
-        
-        <div className="w-[550px] bg-white py-10 px-[50px] rounded-[25px] shadow-[0_8px_25px_rgba(0,0,0,0.08)] max-sm:w-[90%] max-sm:px-5">
+    <div className="min-h-screen flex justify-center items-center bg-gray-100">
+      <form onSubmit={handleRegister} className="w-[450px] bg-white p-8 rounded-lg shadow-lg">
+        <h1 className="text-3xl font-bold text-center mb-6 text-gray-800">Register</h1>
 
-          <h1 className="text-center text-[#2d236b] text-4xl font-bold mb-6">
-            Register
-          </h1>
-
-          {/* Google */}
-          <button className="w-full py-3.5 rounded-xl border border-[#ddd] mb-6">
-            <div className="flex justify-center">
-              <FcGoogle size={22} />
-            </div>
-          </button>
-
-          {/* Email */}
-          <div className="mb-5">
-            <label className="text-sm">Email</label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full p-3 rounded-xl border mt-1"
-            />
+        {error && (
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+            {error}
           </div>
+        )}
 
-          {/* Password */}
-          <div className="mb-5 relative">
-            <label className="text-sm">Password</label>
-            <input
-              type={showPassword ? "text" : "password"}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full p-3 rounded-xl border mt-1"
-            />
-            <span
-              className="absolute right-4 top-[38px] cursor-pointer"
-              onClick={() => setShowPassword(!showPassword)}
-            >
-              {showPassword ? <FaEyeSlash /> : <FaEye />}
-            </span>
+        {success && (
+          <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
+            {success}
           </div>
+        )}
 
-          {/* Button */}
-          <button
-            onClick={handleRegister}
-            className="w-full py-3.5 bg-gradient-to-r from-[#5b5bd6] to-[#3b82f6] text-white font-bold rounded-xl"
-          >
-            Register
-          </button>
-
-          {/* Login */}
-          <p className="text-center mt-5">
-            Already have an account?{" "}
-            <span
-              onClick={() => router.push("/login")}
-              className="text-blue-500 cursor-pointer"
-            >
-              Log in
-            </span>
-          </p>
-
+        <div className="mb-4">
+          <label className="block text-gray-700 font-medium mb-2">Full Name</label>
+          <input
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            placeholder="Enter your full name"
+            required
+            disabled={loading}
+          />
         </div>
-      </div>
+
+        <div className="mb-4">
+          <label className="block text-gray-700 font-medium mb-2">Email Address</label>
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            placeholder="Enter your email"
+            required
+            disabled={loading}
+          />
+        </div>
+
+        <div className="mb-6 relative">
+          <label className="block text-gray-700 font-medium mb-2">Password</label>
+          <input
+            type={showPassword ? "text" : "password"}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            placeholder="Enter your password"
+            required
+            minLength={6}
+            disabled={loading}
+          />
+          <span
+            className="absolute right-3 bottom-3 cursor-pointer text-gray-500"
+            onClick={() => setShowPassword(!showPassword)}
+          >
+            {showPassword ? <FaEyeSlash size={20} /> : <FaEye size={20} />}
+          </span>
+        </div>
+
+        <button
+          type="submit"
+          disabled={loading}
+          className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed font-medium text-lg"
+        >
+          {loading ? "Registering..." : "Register"}
+        </button>
+
+        <p className="text-center mt-4 text-gray-600">
+          Already have an account?{" "}
+          <span
+            onClick={() => router.push("/login")}
+            className="text-blue-600 cursor-pointer hover:underline"
+          >
+            Login
+          </span>
+        </p>
+      </form>
     </div>
   );
 };
