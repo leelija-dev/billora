@@ -1,9 +1,9 @@
+// start-free-trial/page.jsx
 "use client";
 
 import Link from "next/link";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Calendar, Clock, Shield, Zap, Sparkles, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 export default function StartFreeTrial() {
@@ -11,7 +11,7 @@ export default function StartFreeTrial() {
   const [email, setEmail] = useState("");
   const [isVisible, setIsVisible] = useState(true);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
     console.log(email);
 
@@ -28,7 +28,7 @@ export default function StartFreeTrial() {
     }, 300);
   };
 
-  const handleSocialLogin = (provider: string) => {
+  const handleSocialLogin = (provider) => {
     console.log("Login with:", provider);
 
     if (provider === "google") {
@@ -73,7 +73,7 @@ export default function StartFreeTrial() {
               onClick={handleClose}
               className="absolute top-4 right-4 sm:top-6 sm:right-6 p-2 rounded-full bg-white shadow hover:bg-gray-100"
             >
-              <X className="w-5 h-5 text-gray-600" />
+              <span className="text-xl text-gray-600">✕</span>
             </button>
 
             <div className="w-full max-w-5xl mx-auto px-2 sm:px-4">
@@ -130,17 +130,17 @@ export default function StartFreeTrial() {
                   {/* Trust badges */}
                   <div className="flex flex-wrap gap-2 sm:gap-3">
                     <div className="flex items-center gap-1 px-3 py-1 bg-white text-gray-700 rounded-full text-xs shadow">
-                      <Shield className="w-3 h-3 text-indigo-600" />
+                      <span className="text-indigo-600">🛡️</span>
                       No credit card
                     </div>
 
                     <div className="flex items-center gap-1 px-3 py-1 bg-white text-gray-700 rounded-full text-xs shadow">
-                      <Clock className="w-3 h-3 text-indigo-600" />
+                      <span className="text-indigo-600">⏰</span>
                       14 days free
                     </div>
 
                     <div className="flex items-center gap-1 px-3 py-1 bg-white text-gray-700 rounded-full text-xs shadow">
-                      <Zap className="w-3 h-3 text-indigo-600" />
+                      <span className="text-indigo-600">⚡</span>
                       Instant setup
                     </div>
                   </div>
@@ -192,7 +192,7 @@ export default function StartFreeTrial() {
                         {item.emoji ? (
                           <span className="text-xl">{item.icon}</span>
                         ) : (
-                          <img src={item.icon} className="w-5 h-5" />
+                          <img src={item.icon} className="w-5 h-5" alt={item.name} />
                         )}
                       </button>
                     ))}
@@ -222,7 +222,7 @@ export default function StartFreeTrial() {
                     />
 
                     <p className="text-xs text-gray-500 mt-2 flex items-center gap-1">
-                      <Calendar className="w-3 h-3" />
+                      <span className="text-indigo-600">📅</span>
                       Your 14-day trial starts immediately
                     </p>
 
@@ -269,7 +269,7 @@ export default function StartFreeTrial() {
                 className="mt-6 text-center text-sm text-gray-600"
               >
                 <p className="flex items-center justify-center gap-2">
-                  <Sparkles className="w-4 h-4 text-indigo-500" />
+                  <span className="text-indigo-500">✨</span>
                   Trusted by 1 Cr+ Indian businesses • GST Ready • Made in India
                 </p>
               </motion.div>

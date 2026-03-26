@@ -1,13 +1,12 @@
 "use client";
 
-import React, { useRef } from "react";
+import React, { useRef, useState } from "react";
 import {
   motion,
   useScroll,
   useTransform,
   useSpring,
 } from "framer-motion";
-import Link from "next/link";
 import Container from "../components/Container";
 import SectionTitle from "./SectionTitle";
 
@@ -17,7 +16,7 @@ const INDUSTRY_DATA = [
     tag: "Innovation",
     title: "Drive Innovation",
     description: "Transform your business with cutting-edge billing solutions designed for the modern era of digital commerce.",
-    buttonText: "Learn More",
+    fullDescription: "Transform your business with cutting-edge billing solutions designed for the modern era of digital commerce. Our innovative platform leverages AI and machine learning to automate complex billing processes, reduce errors, and provide real-time insightsreduce errors, and provide real-time insightsreduce errors, and provide real-time insightsreduce errors, and provide real-time insightsreduce errors, and provide real-time insightsreduce errors, and provide real-time insightsreduce errors, and provide real-time insightsreduce errors, and provide real-time insightsreduce errors, and provide real-time insightsreduce errors, and provide real-time insightsreduce errors, and provide real-time insightsreduce errors, and provide real-time insights.",  
     buttonLink: "/solutions/innovation",
     icon: "🚀",
     color: "#7fa1d0",
@@ -29,7 +28,7 @@ const INDUSTRY_DATA = [
     tag: "Growth",
     title: "Empower Growth",
     description: "Scale your business with powerful accounting tools that provide deep insights into your financial health.",
-    buttonText: "Scale Now",
+    fullDescription: "Scale your business with powerful accounting tools that provide deep insights into your financial health. Our comprehensive suite includes advanced analytics, forecasting capabilities, and customizable dashboards.",
     buttonLink: "/solutions/growth",
     icon: "📈",
     color: "#6366f1",
@@ -41,7 +40,7 @@ const INDUSTRY_DATA = [
     tag: "Compliance",
     title: "GSTR Filing",
     description: "Simplify GST returns with automated filing systems that ensure accuracy and save hours of manual work.",
-    buttonText: "Start Filing",
+    fullDescription: "Simplify GST returns with automated filing systems that ensure accuracy and save hours of manual work. Our intelligent platform automatically extracts data from invoices, validates entries, and generates error-free returns.",
     buttonLink: "/solutions/gstr",
     icon: "📑",
     color: "#7bb2cc",
@@ -53,7 +52,7 @@ const INDUSTRY_DATA = [
     tag: "Operations",
     title: "Unite Industries",
     description: "Connect all your business operations seamlessly in one unified platform, from inventory to final sale.",
-    buttonText: "Connect All",
+    fullDescription: "Connect all your business operations seamlessly in one unified platform, from inventory to final sale. Break down silos between departments with integrated workflows, real-time synchronization, and automated processes.",
     buttonLink: "/solutions/unite",
     icon: "🔗",
     color: "#4b5563",
@@ -65,7 +64,7 @@ const INDUSTRY_DATA = [
     tag: "Reach",
     title: "Expand Reach",
     description: "Grow your customer base with professional digital invoices and integrated payment gateways.",
-    buttonText: "Grow Reach",
+    fullDescription: "Grow your customer base with professional digital invoices and integrated payment gateways. Our platform enables you to send branded, professional invoices that enhance your company's image.",
     buttonLink: "/solutions/expand",
     icon: "🌍",
     color: "#4b22c5",
@@ -82,26 +81,25 @@ const IndustrySection = () => {
     offset: ["start start", "end end"],
   });
 
-  // More responsive spring for smoother animation
   const smoothProgress = useSpring(scrollYProgress, {
-    stiffness: 100, // Increased from 70 for faster response
-    damping: 25,    // Adjusted for smoother movement
+    stiffness: 150,
+    damping: 30,
     restDelta: 0.001,
   });
 
   return (
-    <section ref={containerRef} className="relative h-[800vh] bg-white">
+    <section ref={containerRef} className="relative h-[500vh] bg-white">
       <div className="sticky top-0 h-screen w-full flex flex-col overflow-hidden">
-        <div className="h-[30vh] flex items-end justify-center pb-12 z-20">
+        <div className="h-[25vh] flex items-center justify-center pb-4 z-20">
           <Container size="full">
-            <div className="text-center max-w-5xl mx-auto">
-              <SectionTitle title="Supporting Businesses  from a wide range of industries" />
+            <div className="text-center max-w-4xl mx-auto px-4">
+              <SectionTitle title="Supporting Businesses from a wide range of industries" />
             </div>
           </Container>
         </div>
 
-        <div className="h-[60vh] flex items-center justify-center z-10">
-          <div className="w-full max-w-[1440px] mx-auto px-4 md:px-10 relative h-full">
+        <div className="h-[65vh] flex items-center justify-center z-10">
+          <div className="w-full max-w-[1600px] mx-auto px-6 md:px-12 relative h-full">
             {INDUSTRY_DATA.map((industry, index) => (
               <IndustryCard
                 key={industry.id}
@@ -113,7 +111,6 @@ const IndustrySection = () => {
             ))}
           </div>
         </div>
-
         <div className="h-[10vh]"></div>
       </div>
     </section>
@@ -121,202 +118,107 @@ const IndustrySection = () => {
 };
 
 const IndustryCard = ({ item, index, total, progress }) => {
-  // Adjusted scroll space - each card gets less space for faster transitions
-  const cardScrollSpace = 0.12; // Reduced from 0.15
-  const start = index * cardScrollSpace;
-  const end = (index + 1) * cardScrollSpace;
+  const scrollRangePerCard = 1 / total;
+  const start = index * scrollRangePerCard;
+  const end = (index + 1) * scrollRangePerCard;
   
-  // Cards start appearing earlier and transition faster
-  const appearStart = start;
-  const appearEnd = start + 0.06; // Faster appearance (was 0.12)
-  
-  // Cards start disappearing earlier
-  const disappearStart = end - 0.04; // Earlier disappearance (was end - 0.03)
-  const disappearEnd = end + 0.02; // Faster disappearance (was end + 0.07)
+  const enterStart = start;
+  const enterEnd = start + 0.12;
+  const exitStart = end - 0.12;
+  const exitEnd = end;
 
   const isLast = index === total - 1;
 
-  // Animation Transforms - smoother curves
-  const yIn = useTransform(
-    progress, 
-    [appearStart, appearEnd], 
-    index === 0 ? [0, 0] : [150, 0] // Reduced from 200 for smoother entry
-  );
-  
-  const scaleIn = useTransform(
-    progress, 
-    [appearStart, appearEnd], 
-    index === 0 ? [1, 1] : [0.7, 1] // Less dramatic scale (was 0.6)
-  );
-  
-  const opacityIn = useTransform(
-    progress, 
-    [appearStart, appearEnd], 
-    index === 0 ? [1, 1] : [0, 1]
-  );
-  
-  const yOut = useTransform(
-    progress, 
-    [disappearStart, disappearEnd], 
-    [0, -80] // Less dramatic exit (was -100)
-  );
-  
-  const opacityOut = useTransform(
-    progress, 
-    [disappearStart, disappearEnd], 
-    [1, 0]
-  );
+  const yIn = useTransform(progress, [enterStart, enterEnd], index === 0 ? [0, 0] : [200, 0]);
+  const scaleIn = useTransform(progress, [enterStart, enterEnd], index === 0 ? [1, 1] : [0.8, 1]);
+  const opacityIn = useTransform(progress, [enterStart, enterEnd], index === 0 ? [1, 1] : [0, 1]);
+  const yOut = useTransform(progress, [exitStart, exitEnd], [0, -150]);
+  const scaleOut = useTransform(progress, [exitStart, exitEnd], [1, 0.8]);
+  const opacityOut = useTransform(progress, [exitStart, exitEnd], [1, 0]);
 
-  // For non-last cards
-  if (!isLast) {
-    const currentY = progress.get() > disappearStart ? yOut : yIn;
-    const currentOpacity = progress.get() > disappearStart ? opacityOut : opacityIn;
-
-    return (
-      <motion.div
-        style={{
-          y: currentY,
-          scale: scaleIn,
-          opacity: currentOpacity,
-          zIndex: index + 10,
-          position: 'absolute',
-          inset: 0,
-          margin: 'auto',
-          width: '100%',
-          height: '100%',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          transition: 'all 0.2s ease-out' // Smooth transition
-        }}
-      >
-        <CardContent item={item} />
-      </motion.div>
-    );
-  }
-
-  // For last card - smoother exit
-  const lastCardStart = index * cardScrollSpace;
-  const lastCardAppearEnd = lastCardStart + 0.06;
-  const lastCardHoldEnd = 0.88; // Hold until 88% (was 0.95)
-  const lastCardExitEnd = 0.96; // Exit faster (was 1.0)
-
-  const yLast = useTransform(progress, [lastCardStart, lastCardAppearEnd], [150, 0]);
-  const scaleLast = useTransform(progress, [lastCardStart, lastCardAppearEnd], [0.7, 1]);
-  const opacityLast = useTransform(progress, [lastCardStart, lastCardAppearEnd], [0, 1]);
-  
-  const holdY = useTransform(progress, [lastCardAppearEnd, lastCardHoldEnd], [0, 0]);
-  const holdOpacity = useTransform(progress, [lastCardAppearEnd, lastCardHoldEnd], [1, 1]);
-  
-  const exitOpacity = useTransform(progress, [lastCardHoldEnd, lastCardExitEnd], [1, 0]);
-
-  const currentY = progress.get() < lastCardAppearEnd ? yLast : holdY;
-  const currentOpacity = progress.get() < lastCardAppearEnd ? opacityLast : 
-                         progress.get() < lastCardHoldEnd ? holdOpacity : exitOpacity;
+  const isExiting = progress.get() > exitStart && !isLast;
+  const currentY = isExiting ? yOut : yIn;
+  const currentScale = isExiting ? scaleOut : scaleIn;
+  const currentOpacity = isExiting ? opacityOut : opacityIn;
 
   return (
-    <motion.div
-      style={{
-        y: currentY,
-        scale: scaleLast,
-        opacity: currentOpacity,
-        zIndex: index + 10,
-        position: 'absolute',
-        inset: 0,
-        margin: 'auto',
-        width: '100%',
-        height: '100%',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        transition: 'all 0.2s ease-out'
-      }}
-    >
+    <motion.div style={{
+        y: currentY, scale: currentScale, opacity: currentOpacity,
+        zIndex: 10 + index, position: 'absolute', inset: 0,
+        margin: 'auto', width: '100%', height: '100%', display: 'flex',
+        alignItems: 'center', justifyContent: 'center',
+    }}>
       <CardContent item={item} />
     </motion.div>
   );
 };
 
-const CardContent = ({ item }) => (
-  <div 
-    className="w-full max-w-6xl bg-white flex flex-col md:flex-row mx-auto overflow-hidden rounded-[40px]" 
-    style={{ height: 'min(600px, 75vh)' }}
-  >
-    <div className="flex-1 p-10 lg:p-20 flex flex-col justify-center order-2 md:order-1 bg-white">
-      <div className="flex items-center gap-4 mb-8">
-        <span className="text-5xl">{item.icon}</span>
-        <span
-          className="px-5 py-2 rounded-full text-xs font-[900] uppercase tracking-[0.2em]"
-          style={{ backgroundColor: item.lightColor, color: item.color }}
-        >
-          {item.tag}
-        </span>
+const CardContent = ({ item }) => {
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  return (
+    <div
+      className="w-full max-w-[1440px] bg-white flex flex-col md:flex-row mx-auto overflow-hidden rounded-[40px]"
+      style={{ height: 'min(650px, 75vh)' }}
+    >
+      {/* TEXT AREA: Added overflow-y-auto so details can scroll if they exceed height */}
+      <div className="flex-1 px-8 lg:px-16 py-12 flex flex-col justify-center order-2 md:order-1 bg-white overflow-y-auto custom-scrollbar">
+        <div className="flex items-center gap-4 mb-6">
+          <span className="text-5xl">{item.icon}</span>
+          <span className="px-5 py-2 rounded-full text-xs font-[900] uppercase tracking-[0.2em]"
+            style={{ backgroundColor: item.lightColor, color: item.color }}>
+            {item.tag}
+          </span>
+        </div>
+
+        <h3 className="text-2xl lg:text-[30px] font-[900] text-[#0f172a] mb-6 leading-[1.1] tracking-[-0.04em]">
+          {item.title}
+        </h3>
+
+        <div className="mb-8">
+          <p className="text-lg lg:text-xl text-slate-500 leading-relaxed max-w-[500px]">
+            {isExpanded ? item.fullDescription : item.description}
+          </p>
+          
+          {item.fullDescription && (
+            <button onClick={() => setIsExpanded(!isExpanded)}
+              className="text-lg font-semibold mt-3 transition-colors hover:opacity-80 inline-block cursor-pointer"
+              style={{ color: item.color }}
+              type="button">
+              {isExpanded ? "Show less" : "Read more"}
+            </button>
+          )}
+        </div>
       </div>
-      
-      <h3 className="text-4xl lg:text-[64px] font-[900] text-[#0f172a] mb-8 leading-[1] tracking-[-0.04em]">
-        {item.title}
-      </h3>
-      
-      <p className="text-lg lg:text-xl text-slate-500 mb-10 leading-relaxed max-w-[90%]">
-        {item.description}
-      </p>
-      
-      <Link href={item.buttonLink}>
-        <button 
-          className="group inline-flex items-center gap-3 px-10 py-5 rounded-2xl font-[900] transition-all hover:scale-105 active:scale-95 text-white w-fit text-xl"
-          style={{ 
-            backgroundColor: item.color,
-            boxShadow: `0 20px 40px -10px ${item.color}66`
+
+      <div className="h-72 md:h-full md:flex-[1.4] relative order-1 md:order-2 overflow-hidden bg-slate-50">
+        <div
+          className="relative w-full h-full"
+          style={{
+            WebkitMaskImage: `
+              linear-gradient(to bottom, transparent, black 8%, black 92%, transparent),
+              linear-gradient(to right, transparent, black 8%, black 92%, transparent)
+            `,
+            maskImage: `
+              linear-gradient(to bottom, transparent, black 8%, black 92%, transparent),
+              linear-gradient(to right, transparent, black 8%, black 92%, transparent)
+            `,
+            WebkitMaskComposite: 'source-in',
+            maskComposite: 'intersect',
           }}
         >
-          <span>{item.buttonText}</span>
-          <span className="group-hover:translate-x-2 transition-transform">→</span>
-        </button>
-      </Link>
-    </div>
+          <img
+            src={item.image}
+            alt={item.title}
+            className="w-full h-full object-cover"
+          />
+        </div>
 
-    {/* Image Side - With Faded White Border Effect */}
-    <div className="h-64 md:h-full md:flex-[1.2] relative order-1 md:order-2 overflow-hidden bg-slate-50">
-      
-      {/* Main image with mask for fade effect on all edges */}
-      <div 
-        className="relative w-full h-full"
-        style={{
-          WebkitMaskImage: `
-            linear-gradient(to bottom, transparent, black 10%, black 90%, transparent),
-            linear-gradient(to right, transparent, black 10%, black 90%, transparent)
-          `,
-          maskImage: `
-            linear-gradient(to bottom, transparent, black 10%, black 90%, transparent),
-            linear-gradient(to right, transparent, black 10%, black 90%, transparent)
-          `,
-          WebkitMaskComposite: 'source-in',
-          maskComposite: 'intersect',
-        }}
-      >
-        <img
-          src={item.image}
-          alt={item.title}
-          className="w-full h-full object-cover"
-        />
+        <div className="absolute inset-0 pointer-events-none mix-blend-overlay bg-[radial-gradient(circle_at_50%_50%,rgba(255,255,255,0.2)_0%,rgba(255,255,255,0.3)_50%,rgba(255,255,255,0.2)_100%)]" />
+        <div className="absolute inset-0 pointer-events-none" style={{ boxShadow: 'inset 0 0 40px rgba(255,255,255,0.2)', borderRadius: 'inherit' }} />
       </div>
-
-      {/* Soft white glow overlay for dreamy effect */}
-      <div className="absolute inset-0 pointer-events-none mix-blend-overlay"
-        style={{
-          background: 'radial-gradient(circle at 50% 50%, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0.4) 50%, rgba(255,255,255,0.2) 100%)',
-        }}
-      />
-
-      {/* Very subtle vignette for depth */}
-      <div className="absolute inset-0 pointer-events-none"
-        style={{
-          boxShadow: 'inset 0 0 50px rgba(255,255,255,0.3)',
-          borderRadius: 'inherit'
-        }}
-      />
     </div>
-  </div>
-);
+  );
+};
 
 export default IndustrySection;

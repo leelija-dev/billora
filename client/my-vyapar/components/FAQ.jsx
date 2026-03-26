@@ -56,27 +56,18 @@ const FAQ = () => {
                 <h4 className="text-[#1e88e5] mb-2 sm:mb-3 text-xs sm:text-sm md:text-base lg:text-lg font-semibold uppercase tracking-wide">
                   Questions & Answers
                 </h4>
-               <sectionTitle title="FREQUENTLY ASKED QUESTIONS" />
-                {/* <h2 className="text-lg sm:text-xl md:text-2xl lg:text-3xl xl:text-4xl font-black text-slate-900 mb-4 sm:mb-6 tracking-tight leading-tight">
+               <SectionTitle title="FREQUENTLY ASKED QUESTIONS" >
+                <h2 className="text-lg sm:text-xl md:text-2xl lg:text-3xl xl:text-4xl font-black text-slate-900 mb-4 sm:mb-6 tracking-tight leading-tight">
                   Frequently asked
                   <br className="hidden sm:block" />
                   <span className="relative inline-block">
                   <span className="relative z-10 px-1">Questions</span>
                   <span className="absolute inset-0 bg-[#f6c453] -skew-y-1 transform rounded-sm -z-0"></span>
                   </span>
-                </h2> */}
+                </h2>
 
-            {/* <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-black text-slate-900 mb-4 sm:mb-6 tracking-tight leading-tight">
-              Frequently asked
-              <br className="hidden sm:block" />
-              <span className="relative inline-block">
-                <span className="relative z-10 px-1">Questions</span>
-                <span className="absolute inset-0 bg-[#f6c453] -skew-y-1 transform rounded-sm -z-0"></span>
-              </span>
-            </h2> */}
-            <SectionTitle title="Frequently Asked Questions" />
-
-                {/* <sectionTitle title="FREQUENTLY ASKED QUESTIONS" /> */}
+            
+            </SectionTitle>
 
                 <div className="flex items-center mb-8 sm:mb-10">
                   <div className="w-12 sm:w-16 h-0.5 bg-black mr-2 sm:mr-2.5"></div>
@@ -95,7 +86,7 @@ const FAQ = () => {
                 </div>
                 </div>
 
-                {/* RIGHT SIDE - FIXED: SMALLER TEXT */}
+                {/* RIGHT SIDE - FIXED: SMALLER TEXT */} 
           <div className="flex-1 w-full">
             {faqs.map((item, index) => (
               <div
