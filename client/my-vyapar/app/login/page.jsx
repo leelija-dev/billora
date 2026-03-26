@@ -222,7 +222,7 @@ const Login = () => {
           <div className="text-center mt-6 text-sm">
             <p className="mb-2">Can't Access Your Account?</p>
             <p>
-              DON'T HAVE AN ACCOUNT?{" "}
+              Don't have an account?{" "}
               <span 
                 onClick={() => router.push("/register")}
                 className="text-[#3b82f6] font-bold cursor-pointer hover:underline"

@@ -1,75 +1,67 @@
+// components/Pricing.jsx
 "use client";
 
 import React, { useEffect, useRef, useState } from 'react';
 import SectionTitle from "@/components/SectionTitle";
 import Container from "@/components/Container";
+import { getPlans } from '@/services/pricingService';
 
 const Pricing = ({ showAll = false, showButton = true, buttonLink = "/pricing" }) => {
   const [billingCycle, setBillingCycle] = useState('monthly');
   const [plans, setPlans] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [subscribing, setSubscribing] = useState(null);
-  const [subscribeMessage, setSubscribeMessage] = useState(null);
+  const [error, setError] = useState(null);
   const cardRefs = useRef([]);
 
-  // Fetch plans from Laravel API
-  useEffect(() => {
-    const fetchPlans = async () => {
-      try {
-        setLoading(true);
-        
-        const response = await fetch('http://localhost:8000/api/plans/');
-        const data = await response.json();
-        console.log('API Response:', data);
+  // Fetch plans from your Laravel API - always show only 3
+ useEffect(() => {
+  const fetchPlans = async () => {
+    try {
+      setLoading(true);
 
-        if (data.status === true && data.data) {
-          // Get all plans
-          const allPlans = data.data;
-          
-          // If showAll is false, show only 3 plans, else show all
-          const plansToShow = showAll ? allPlans : allPlans.slice(0, 3);
-          
-          // Transform API data to match UI structure
-          const transformedPlans = plansToShow.map((plan, index) => {
-            // Extract features from permissions - ONLY from database
-            const features = plan.permissions?.map(p => p.permission_name) || [];
-            
-            // Calculate yearly price (10x monthly)
-            const monthlyPrice = parseFloat(plan.price);
-            const yearlyPrice = monthlyPrice * 10;
-            
-            return {
-              id: plan.id,
-              name: plan.name,
-              price: {
-                monthly: monthlyPrice.toLocaleString('en-IN'),
-                yearly: yearlyPrice.toLocaleString('en-IN')
-              },
-              description: plan.description || `Perfect for ${plan.name.toLowerCase()} businesses`,
-              features: features,
-              color: index === 1 ? '#8b5cf6' : '#000000',
-              buttonText: plan.name.toLowerCase().includes('enterprise') ? 'Contact Sales' : `Start ${plan.name}`,
-              popular: index === 1,
-              is_active: plan.is_active === 1,
-              duration_days: plan.duration_days
-            };
-          });
-          
-          setPlans(transformedPlans);
-        } else {
-          console.error('Failed to fetch plans:', data.message);
-          setPlans([]);
-        }
-      } catch (error) {
-        console.error('Error fetching plans:', error);
-        setPlans([]);
-      } finally {
-        setLoading(false);
+      const data = await getPlans();
+
+      if (data.status === true && data.data) {
+        const allPlans = data.data;
+        const limitedPlans = allPlans.slice(0, 3);
+
+        const transformedPlans = limitedPlans.map((plan, index) => {
+          const features = plan.permissions?.map(p => p.permission_name) || [];
+
+          const monthlyPrice = parseFloat(plan.price);
+          const yearlyPrice = monthlyPrice * 10;
+
+          return {
+            id: plan.id,
+            name: plan.name,
+            price: {
+              monthly: monthlyPrice.toLocaleString('en-IN'),
+              yearly: yearlyPrice.toLocaleString('en-IN')
+            },
+            description: plan.description
+  ? plan.description.replace(/<[^>]*>?/gm, "")
+  : "",
+            features: features,
+            color: index === 1 ? '#8b5cf6' : '#000000',
+            buttonText: `Start ${plan.name}`,
+            popular: index === 1,
+          };
+        });
+
+        setPlans(transformedPlans);
+      } else {
+        setError(data.message || "Failed to fetch plans");
       }
-    };
+    } catch (error) {
+      console.error('Error fetching plans:', error);
+      setError("Something went wrong");
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    fetchPlans();
-  }, [showAll]); // Re-fetch if showAll changes
+  fetchPlans();
+}, []);
 
   // Handle subscription
   const handleSubscribe = async (planId) => {
@@ -145,13 +137,19 @@ const Pricing = ({ showAll = false, showButton = true, buttonLink = "/pricing" }
     );
   }
 
-  if (plans.length === 0) {
+  if (error) {
     return (
       <div className="py-20 bg-[#f8fafc] min-h-[90vh] flex items-center justify-center">
-        <div className="text-center">
-          <div className="text-gray-400 text-6xl mb-4">📦</div>
-          <h3 className="text-xl font-bold text-gray-800 mb-2">No Plans Available</h3>
-          <p className="text-gray-600">Please check back later for pricing plans.</p>
+        <div className="text-center max-w-md mx-auto p-8 bg-white rounded-xl shadow-lg">
+          <div className="text-red-500 text-5xl mb-4">⚠️</div>
+          <p className="text-red-500 mb-4 font-semibold">{error}</p>
+          <p className="text-gray-600 mb-6 text-sm">Showing fallback data while we fix the connection issue.</p>
+          <button 
+            onClick={() => window.location.reload()} 
+            className="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+          >
+            Retry
+          </button>
         </div>
       </div>
     );
@@ -160,16 +158,6 @@ const Pricing = ({ showAll = false, showButton = true, buttonLink = "/pricing" }
   return (
     <div className="py-10 sm:py-20 bg-gradient-to-br from-[#f8fafc] to-[#f1f5f9] font-sans overflow-x-hidden">
       <Container size="default">
-
-        {/* Success/Error Message */}
-        {subscribeMessage && (
-          <div className={`fixed top-24 right-4 z-50 p-4 rounded-lg shadow-lg max-w-md animate-slide-in ${
-            subscribeMessage.type === 'success' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
-          }`}>
-            <p className="font-medium">{subscribeMessage.text}</p>
-          </div>
-        )}
-
         {/* Header Section */}
         <div className="text-center mb-12 px-4">
           <SectionTitle title="Simple, Transparent Pricing" />
@@ -215,7 +203,7 @@ const Pricing = ({ showAll = false, showButton = true, buttonLink = "/pricing" }
               )}
 
               <div className="text-center mb-8 pb-8 border-b border-gray-50">
-                <h3 className="text-2xl font-bold text-[#1e293b] mb-4">{plan.name}</h3>
+                <h3 className="text-2xl font-bold text-[#1e293b] mb-4">{plan.name} </h3>
                 <div className="flex items-baseline justify-center gap-1">
                   <span className="text-xl font-semibold text-gray-400">₹</span>
                   <span className="text-5xl font-extrabold" style={{ color: plan.color }}>
@@ -293,16 +281,14 @@ const Pricing = ({ showAll = false, showButton = true, buttonLink = "/pricing" }
               </span>
             </div>
 
-            <a
-              href={buttonLink}
-              className="group inline-flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-full font-bold text-sm shadow-xl hover:shadow-blue-500/20 hover:-translate-y-1 transition-all duration-300"
-            >
-              <span>{showAll ? 'Need Help?' : 'View All Plans'}</span>
-              <span className="group-hover:translate-x-1 transition-transform">→</span>
-            </a>
-          </div>
-        )}
-
+          <a
+            href="/pricing"
+            className="group inline-flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-full font-bold text-sm shadow-xl hover:shadow-blue-500/20 hover:-translate-y-1 transition-all duration-300"
+          >
+            <span>View All Plans</span>
+            <span className="group-hover:translate-x-1 transition-transform">→</span>
+          </a>
+        </div>
       </Container>
 
       <style jsx>{`
@@ -311,22 +297,6 @@ const Pricing = ({ showAll = false, showButton = true, buttonLink = "/pricing" }
           transform: translateY(0) !important;
         }
         
-        @keyframes slide-in {
-          from {
-            opacity: 0;
-            transform: translateX(100%);
-          }
-          to {
-            opacity: 1;
-            transform: translateX(0);
-          }
-        }
-        
-        .animate-slide-in {
-          animation: slide-in 0.3s ease-out;
-        }
-        
-        /* Responsive fix for medium screens */
         @media (min-width: 768px) and (max-width: 1023px) {
           .grid > :last-child:nth-child(3) {
             grid-column: span 2;
