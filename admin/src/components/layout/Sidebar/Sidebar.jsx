@@ -57,7 +57,7 @@ const Sidebar = () => {
     { path: '/stock', name: 'Stock', icon: FiArchive, badge: 'Low Stock', permission: 'stock-management' },
     { path: '/orders', name: 'Orders', icon: FiShoppingBag, badge: '12' },
     { path: '/customers', name: 'Customers', icon: FiUsers, badge: null },
-    { path: '/invoices', name: 'Invoices', icon: FiFileText, badge: '3', permission: 'bill-generation' },
+    { path: '/invoices', name: 'Invoices', icon: FiFileText, badge: '3' },
     { path: '/reports', name: 'Reports', icon: FiBarChart2, badge: null },
     { path: '/billing', name: 'Plans', icon: FiCreditCard, badge: null },
     { path: '/settings', name: 'Settings', icon: FiSettings, badge: null },
