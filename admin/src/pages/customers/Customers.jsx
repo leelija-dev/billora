@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { 
   FiPlus, 
   FiSearch, 
   FiEdit2, 
   FiTrash2, 
   FiFilter, 
-  FiUsers,
+
   FiDownload,
   FiRefreshCw,
   FiMail,
@@ -33,8 +34,10 @@ import Pagination from '../../components/common/Pagination/Pagination'
 import EmptyState from '../../components/common/EmptyState/EmptyState'
 import CustomerForm from '../../components/features/Customers/CustomerForm'
 import Select from '../../components/common/Select/Select'
+import { FaUser, FaUsers } from 'react-icons/fa'
 
 const Customers = () => {
+  const navigate = useNavigate()
   const {
     customers,
     totalCustomers,
@@ -92,6 +95,10 @@ const Customers = () => {
     blocked: safeCustomers.filter(c => c?.status === 'blocked').length,
     totalSpent: safeCustomers.reduce((sum, c) => sum + (parseFloat(c?.due_amount) || 0), 0),
     totalOrders: safeCustomers.reduce((sum, c) => sum + (c?.total_orders || 0), 0),
+  }
+
+  const handleViewDetails = (customer) => {
+    navigate(`/customers/${customer.id}`)
   }
 
   const handleAddClick = () => {
@@ -357,6 +364,15 @@ const Customers = () => {
           <motion.button
             whileHover={{ scale: 1.1, rotate: 5 }}
             whileTap={{ scale: 0.9 }}
+            onClick={() => handleViewDetails(row)}
+            className="p-2 text-green-600 hover:bg-green-50 dark:text-green-400 dark:hover:bg-green-900/20 rounded-lg transition-colors"
+            title="View customer details"
+          >
+            <FaUsers className="w-4 h-4" />
+          </motion.button>
+          <motion.button
+            whileHover={{ scale: 1.1, rotate: 5 }}
+            whileTap={{ scale: 0.9 }}
             onClick={() => handleEditClick(row)}
             className="p-2 text-blue-600 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
             title="Edit customer"
@@ -436,7 +452,7 @@ const Customers = () => {
             Customers
           </h1>
           <p className="text-gray-600 dark:text-gray-400 mt-2 flex items-center">
-            <FiUsers className="w-4 h-4 mr-2" />
+            <FaUsers className="w-4 h-4 mr-2" />
             {showAddForm || showEditForm ? (
               <span>{showEditForm ? 'Edit Customer' : 'Add New Customer'}</span>
             ) : (
@@ -555,7 +571,7 @@ const Customers = () => {
                 <StatCard
                   title="Total Customers"
                   value={stats.total}
-                  icon={FiUsers}
+                  icon={FaUsers}
                   color="from-blue-500 to-cyan-500"
                   delay={0.1}
                 />
@@ -765,7 +781,7 @@ const Customers = () => {
               </div>
             ) : safeCustomers.length === 0 ? (
               <EmptyState
-                icon={FiUsers}
+                icon={FaUsers}
                 title="No customers found"
                 description="Try adjusting your search or filters, or add your first customer."
                 action={

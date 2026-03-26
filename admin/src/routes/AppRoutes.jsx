@@ -16,6 +16,7 @@ import Stores from '../pages/stores/Stores'
 import Inventory from '../pages/inventory/Inventory'
 import Orders from '../pages/orders/Orders'
 import Customers from '../pages/customers/Customers'
+import CustomerDetails from '../pages/customers/CustomerDetails'
 import Invoices from '../pages/invoices/Invoices'
 import InvoiceDetail from '../pages/invoices/InvoiceDetail'
 import Reports from '../pages/reports/Reports'
@@ -49,6 +50,7 @@ const AppRoutes = () => {
           <Route path="/stock" element={<Inventory />} />
           <Route path="/orders" element={<Orders />} />
           <Route path="/customers" element={<Customers />} />
+          <Route path="/customers/:id" element={<CustomerDetails />} />
           <Route path="/invoices" element={<Invoices />} />
           <Route path="/invoices/detail/:id" element={<InvoiceDetail />} />
           <Route path="/reports" element={<Reports />} />

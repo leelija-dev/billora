@@ -115,10 +115,10 @@ export const customerAPI = {
   },
 
   // Customer due payment
-  duePayment: async (id, amount) => {
+  makeDuePayment: async (id, paymentData) => {
     try {
-      console.log(`💳 Processing due payment for customer ${id}, amount: ${amount}`);
-      const response = await apiClient.put(`/customer/due-payment/${id}`, { due_payment: amount });
+      console.log(`💳 Processing due payment for customer ${id}, data:`, paymentData);
+      const response = await apiClient.put(`/customer/due-payment/${id}`, paymentData);
       console.log('💳 Due payment processed successfully');
       return response;
     } catch (error) {
@@ -128,14 +128,10 @@ export const customerAPI = {
   },
 
   // Get customer payment history with date filters
-  getPaymentHistory: async (id, startDate = '', endDate = '') => {
+  getPaymentHistory: async (id, queryParams = '') => {
     try {
-      const params = {};
-      if (startDate) params.start_date = startDate;
-      if (endDate) params.end_date = endDate;
-      
-      console.log(`💳 Fetching payment history for customer ${id} with params:`, params);
-      const response = await apiClient.get(`/customer/show/${id}`, { params });
+      console.log(`💳 Fetching payment history for customer ${id} with params:`, queryParams);
+      const response = await apiClient.get(`/customer/show/${id}${queryParams ? '?' + queryParams : ''}`);
       console.log('💳 Payment history fetched:', response.data);
       return response;
     } catch (error) {
