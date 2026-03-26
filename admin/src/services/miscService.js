@@ -13,6 +13,19 @@ export const plansAPI = {
       throw error.response?.data || error.message;
     }
   },
+
+  // Get single plan by ID
+  getById: async (planId) => {
+    try {
+      console.log(`📋 Fetching plan details for ID: ${planId}`);
+      const response = await apiClient.get(`/plans/${planId}`);
+      console.log('📋 Plan details fetched:', response.data);
+      return response;
+    } catch (error) {
+      console.error(`❌ Failed to fetch plan details for ID ${planId}:`, error);
+      throw error.response?.data || error.message;
+    }
+  },
 }
 
 export const dashboardAPI = {

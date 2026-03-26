@@ -33,10 +33,11 @@ import StatusBadge from '../../components/common/StatusBadge/StatusBadge'
 import Input from '../../components/common/Input/Input'
 import ProtectedRoute from '../../components/features/Auth/ProtectedRoute'
 
-const Billing = () => {
+const Plans = () => {
   const { canAccess, user, permissions } = usePermissionStore()
   const [loading, setLoading] = useState(true)
   const [actionLoading, setActionLoading] = useState(false)
+  const [initialLoading, setInitialLoading] = useState(true)
   const [showChangePlanForm, setShowChangePlanForm] = useState(false)
   const [showCancelConfirm, setShowCancelConfirm] = useState(false)
   const [showInvoiceModal, setShowInvoiceModal] = useState(false)
@@ -70,8 +71,13 @@ const Billing = () => {
 
   const currentPlan = useMemo(() => {
     if (!subscription?.plan) return null
+    // First check if we have plan details from subscription
+    if (subscription?.planDetails) {
+      return subscription.planDetails
+    }
+    // Fallback to finding plan in plans array
     return plans.find((p) => p.id === subscription.plan) || null
-  }, [plans, subscription?.plan])
+  }, [plans, subscription?.plan, subscription?.planDetails])
 
   // Get user ID from user object or localStorage
   const getUserId = () => {
@@ -99,8 +105,16 @@ const Billing = () => {
         return { data: [] }
       })
       
-      setInvoices(invoicesRes?.data?.data || [])
-      setInvoicesCount(invoicesRes?.data?.total || 0)
+      const invoiceData = invoicesRes?.data?.data;
+      if (Array.isArray(invoiceData)) {
+        setInvoices(invoiceData);
+      } else if (invoicesRes?.data && Array.isArray(invoicesRes.data)) {
+        setInvoices(invoicesRes.data);
+      } else {
+        console.warn('Unexpected invoice data format:', invoicesRes);
+        setInvoices([]);
+      }
+      setInvoicesCount(invoicesRes?.data?.total || 0);
       
       // Fetch dashboard overview using service
       try {
@@ -119,8 +133,26 @@ const Billing = () => {
         setPayments(historyData)
         setPaymentsCount(historyData?.length || 0)
         
-        // Set current subscription from latest purchase
-        if (historyData && historyData.length > 0) {
+        // Set current subscription from user's plan_id (from login) if no purchase history
+        if (user?.plan_id) {
+          // Fetch current plan details using user's plan_id
+          try {
+            const planRes = await plansAPI.getById(user.plan_id);
+            const planData = planRes?.data?.['Single Plan'];
+            if (planData) {
+              setSubscription({
+                plan: planData.id,
+                status: 'active', // User has an active plan from login
+                currentPeriodEnd: null, // Not available in login data
+                amount: parseFloat(planData.price) || 0,
+                planDetails: planData
+              });
+            }
+          } catch (planError) {
+            console.warn('Failed to fetch user plan details:', planError);
+          }
+        } else if (historyData && historyData.length > 0) {
+          // Fallback to purchase history if available
           const latestPurchase = historyData[0] // Assuming first is latest
           setSubscription({
             plan: latestPurchase.plan_id,
@@ -140,12 +172,13 @@ const Billing = () => {
       setError('Failed to load billing information. Please try again.')
     } finally {
       setLoading(false)
+      setInitialLoading(false)
     }
   }
 
   useEffect(() => {
     fetchAll()
-  }, [currentPage, paymentStatus, invoicePage])
+  }, [])
 
   const handlePurchasePlan = (plan) => {
     setSelectedPlan(plan)
@@ -451,11 +484,11 @@ const Billing = () => {
         {!subscription && !loading ? (
           <EmptyState
             icon={FiCreditCard}
-            title="No subscription found"
-            description="We couldn't load your subscription. Try again."
+            title="No Active Plan"
+            description="You don't have an active plan. Choose a plan below to get started."
             action={
-              <Button onClick={fetchAll} isLoading={loading}>
-                Reload
+              <Button onClick={() => setShowChangePlanForm(true)}>
+                Choose a Plan
               </Button>
             }
           />
@@ -471,43 +504,64 @@ const Billing = () => {
                   exit={{ opacity: 0 }}
                   className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6"
                 >
-                  <StatCard
-                    title="Total Spent"
-                    value={`$${stats.totalSpent.toFixed(2)}`}
-                    icon={FiDollarSign}
-                    color="from-blue-500 to-cyan-500"
-                    delay={0.1}
-                  />
-                  <StatCard
-                    title="Successful Payments"
-                    value={stats.successfulPayments}
-                    icon={FiCheckCircle}
-                    color="from-green-500 to-emerald-500"
-                    subtitle={`${((stats.successfulPayments / (payments.length || 1)) * 100).toFixed(1)}% success rate`}
-                    delay={0.2}
-                  />
-                  <StatCard
-                    title="Failed Payments"
-                    value={stats.failedPayments}
-                    icon={FiXCircle}
-                    color="from-red-500 to-pink-500"
-                    delay={0.3}
-                  />
-                  <StatCard
-                    title="Pending"
-                    value={stats.pendingPayments}
-                    icon={FiAlertCircle}
-                    color="from-yellow-500 to-orange-500"
-                    delay={0.4}
-                  />
-                  <StatCard
-                    title="Next Billing"
-                    value={stats.daysUntilBilling > 0 ? `${stats.daysUntilBilling} days` : 'Today'}
-                    icon={FiCalendar}
-                    color="from-purple-500 to-indigo-500"
-                    subtitle={stats.nextBilling ? new Date(stats.nextBilling).toLocaleDateString() : 'N/A'}
-                    delay={0.5}
-                  />
+                  {initialLoading ? (
+                    // Loading skeleton for stats cards
+                    Array.from({ length: 5 }).map((_, index) => (
+                      <motion.div 
+                        key={index}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: index * 0.1 }}
+                        className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6"
+                      >
+                        <div className="animate-pulse">
+                          <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/2 mb-4"></div>
+                          <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-3/4 mb-2"></div>
+                          <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-1/4"></div>
+                        </div>
+                      </motion.div>
+                    ))
+                  ) : (
+                    <>
+                      <StatCard
+                        title="Total Spent"
+                        value={`$${stats.totalSpent.toFixed(2)}`}
+                        icon={FiDollarSign}
+                        color="from-blue-500 to-cyan-500"
+                        delay={0.1}
+                      />
+                      <StatCard
+                        title="Successful Payments"
+                        value={stats.successfulPayments}
+                        icon={FiCheckCircle}
+                        color="from-green-500 to-emerald-500"
+                        subtitle={`${((stats.successfulPayments / (payments.length || 1)) * 100).toFixed(1)}% success rate`}
+                        delay={0.2}
+                      />
+                      <StatCard
+                        title="Failed Payments"
+                        value={stats.failedPayments}
+                        icon={FiXCircle}
+                        color="from-red-500 to-pink-500"
+                        delay={0.3}
+                      />
+                      <StatCard
+                        title="Pending"
+                        value={stats.pendingPayments}
+                        icon={FiAlertCircle}
+                        color="from-yellow-500 to-orange-500"
+                        delay={0.4}
+                      />
+                      <StatCard
+                        title="Next Billing"
+                        value={stats.daysUntilBilling > 0 ? `${stats.daysUntilBilling} days` : 'Today'}
+                        icon={FiCalendar}
+                        color="from-purple-500 to-indigo-500"
+                        subtitle={stats.nextBilling ? new Date(stats.nextBilling).toLocaleDateString() : 'N/A'}
+                        delay={0.5}
+                      />
+                    </>
+                  )}
                 </motion.div>
               )}
             </AnimatePresence>
@@ -543,278 +597,202 @@ const Billing = () => {
                   exit={{ opacity: 0 }}
                   className="space-y-6"
                 >
-                  {/* Subscription Cards */}
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    {/* Subscription Card */}
-                    <SubscriptionCard
-                      subscription={subscription}
-                      onUpgrade={() => setShowChangePlanForm(true)}
-                      onCancel={() => setShowCancelConfirm(true)}
-                      onReactivate={handleReactivate}
-                      onUpdatePaymentMethod={handleUpdatePaymentMethod}
-                      loading={actionLoading}
-                    />
+                  {initialLoading ? (
+                    // Loading skeleton for all content blocks
+                    <>
+                      {/* Subscription Cards Skeleton */}
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        {/* Subscription Card Skeleton */}
+                        <motion.div
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: 0.2 }}
+                          className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6"
+                        >
+                          <div className="animate-pulse">
+                            <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-1/3 mb-4"></div>
+                            <div className="space-y-3">
+                              <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-2/3"></div>
+                              <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/2"></div>
+                              <div className="h-10 bg-gray-200 dark:bg-gray-700 rounded w-full mb-4"></div>
+                              <div className="flex space-x-2">
+                                <div className="h-10 bg-gray-200 dark:bg-gray-700 rounded flex-1"></div>
+                                <div className="h-10 bg-gray-200 dark:bg-gray-700 rounded flex-1"></div>
+                              </div>
+                            </div>
+                          </div>
+                        </motion.div>
 
-                    {/* Plan Details & Usage Card */}
-                    <motion.div
-                      initial={{ opacity: 0, x: 20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 0.2 }}
-                      className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6"
-                    >
-                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                        Current Plan
-                      </h3>
-                      {currentPlan ? (
-                        <div className="space-y-3">
-                          <div className="flex items-center justify-between">
-                            <span className="text-gray-600 dark:text-gray-400">Plan</span>
-                            <span className="font-medium text-gray-900 dark:text-white">
-                              {currentPlan.name || 'Basic Plan'}
-                            </span>
+                        {/* Plan Details Card Skeleton */}
+                        <motion.div
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: 0.3 }}
+                          className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6"
+                        >
+                          <div className="animate-pulse">
+                            <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-1/4 mb-4"></div>
+                            <div className="space-y-3">
+                              <div className="flex justify-between">
+                                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/3"></div>
+                                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/2"></div>
+                              </div>
+                              <div className="flex justify-between">
+                                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/4"></div>
+                                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/3"></div>
+                              </div>
+                              <div className="flex justify-between">
+                                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/5"></div>
+                                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/4"></div>
+                              </div>
+                            </div>
                           </div>
-                          <div className="flex items-center justify-between">
-                            <span className="text-gray-600 dark:text-gray-400">Price</span>
-                            <span className="font-medium text-gray-900 dark:text-white">
-                              ${currentPlan.price || currentPlan.amount || 0}/{currentPlan.interval || 'month'}
-                            </span>
+                        </motion.div>
+                      </div>
+
+                      {/* Payment History Card Skeleton */}
+                      <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.4 }}
+                        className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6"
+                      >
+                        <div className="animate-pulse">
+                          <div className="flex items-center justify-between mb-4">
+                            <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-1/4"></div>
+                            <div className="flex space-x-2">
+                              <div className="h-10 bg-gray-200 dark:bg-gray-700 rounded w-32"></div>
+                              <div className="h-10 bg-gray-200 dark:bg-gray-700 rounded w-10"></div>
+                            </div>
                           </div>
-                          <div className="flex items-center justify-between">
-                            <span className="text-gray-600 dark:text-gray-400">Status</span>
-                            <StatusBadge
-                              status={subscription?.status || 'active'}
-                              variant={subscription?.status === 'active' ? 'success' : 'warning'}
+                          <div className="space-y-3">
+                            {Array.from({ length: 3 }).map((_, index) => (
+                              <div key={index} className="border-b border-gray-200 dark:border-gray-700 pb-3">
+                                <div className="flex items-center justify-between">
+                                  <div className="flex-1">
+                                    <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/3 mb-2"></div>
+                                    <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-1/4"></div>
+                                  </div>
+                                  <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/6"></div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </motion.div>
+                    </>
+                  ) : (
+                    // Actual content when not loading
+                    <>
+                      {/* Subscription Cards */}
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        {/* Subscription Card */}
+                        <SubscriptionCard
+                          subscription={subscription}
+                          onUpgrade={() => setShowChangePlanForm(true)}
+                          onCancel={() => setShowCancelConfirm(true)}
+                          onReactivate={handleReactivate}
+                          onUpdatePaymentMethod={handleUpdatePaymentMethod}
+                          loading={actionLoading}
+                        />
+
+                        {/* Plan Details & Payment History */}
+                        <motion.div
+                          initial={{ opacity: 0, x: 20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: 0.2 }}
+                          className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6"
+                        >
+                          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                            Current Plan
+                          </h3>
+                          {currentPlan ? (
+                            <div className="space-y-3">
+                              <div className="flex items-center justify-between">
+                                <span className="text-gray-600 dark:text-gray-400">Plan</span>
+                                <span className="font-medium text-gray-900 dark:text-white">
+                                  {currentPlan.name || 'Basic Plan'}
+                                </span>
+                              </div>
+                              <div className="flex items-center justify-between">
+                                <span className="text-gray-600 dark:text-gray-400">Price</span>
+                                <span className="font-medium text-gray-900 dark:text-white">
+                                  ${currentPlan.price || currentPlan.amount || 0}/{currentPlan.interval || 'month'}
+                                </span>
+                              </div>
+                              <div className="flex items-center justify-between">
+                                <span className="text-gray-600 dark:text-gray-400">Status</span>
+                                <StatusBadge
+                                  status={subscription?.status || 'active'}
+                                  variant={subscription?.status === 'active' ? 'success' : 'warning'}
+                                />
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="text-center py-4">
+                              <p className="text-gray-500 dark:text-gray-400">
+                                No active plan found
+                              </p>
+                            </div>
+                          )}
+                        </motion.div>
+                      </div>
+
+                      {/* Payment History */}
+                      <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.3 }}
+                        className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6"
+                      >
+                        <div className="flex items-center justify-between mb-4">
+                          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                            Payment History
+                          </h3>
+                          <div className="flex items-center space-x-2">
+                            <Select
+                              value={paymentStatus}
+                              onChange={setPaymentStatus}
+                              options={[
+                                { value: '', label: 'All Payments' },
+                                { value: 'succeeded', label: 'Successful' },
+                                { value: 'failed', label: 'Failed' },
+                                { value: 'pending', label: 'Pending' }
+                              ]}
+                              className="w-40"
+                            />
+                            <motion.button
+                              whileHover={{ scale: 1.05 }}
+                              whileTap={{ scale: 0.95 }}
+                              onClick={fetchAll}
+                              className="p-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shadow-sm"
+                            >
+                              <FiRefreshCw className={`w-4 h-4 text-gray-600 dark:text-gray-300 ${loading ? 'animate-spin' : ''}`} />
+                            </motion.button>
+                          </div>
+                        </div>
+                        <PaymentHistory
+                          payments={payments}
+                          loading={loading}
+                          onPaymentClick={(payment) => console.log('Payment clicked:', payment)}
+                        />
+                        {paymentsCount > pageSize && (
+                          <div className="mt-4 flex justify-center">
+                            <Pagination
+                              currentPage={currentPage}
+                              totalItems={paymentsCount}
+                              itemsPerPage={pageSize}
+                              onPageChange={setCurrentPage}
                             />
                           </div>
-                        </div>
-                      ) : (
-                        <div className="text-center py-4">
-                          <p className="text-gray-500 dark:text-gray-400">
-                            No active plan found
-                          </p>
-                        </div>
-                      )}
-                    </motion.div>
-                  </div>
-
-                  {/* Usage Overview */}
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.3 }}
-                    className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6"
-                  >
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                      Usage Overview
-                    </h3>
-                    <div className="space-y-4">
-                      <div>
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="text-sm text-gray-600 dark:text-gray-400">Storage Used</span>
-                          <span className="text-sm text-gray-900 dark:text-white">
-                            75 GB / 100 GB
-                          </span>
-                        </div>
-                        <div className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                          <motion.div
-                            initial={{ width: 0 }}
-                            animate={{ width: '75%' }}
-                            transition={{ duration: 1, delay: 0.5 }}
-                            className={`h-full ${getUsageColor(75)}`}
-                          />
-                        </div>
-                      </div>
-                      <div>
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="text-sm text-gray-600 dark:text-gray-400">API Calls</span>
-                          <span className="text-sm text-gray-900 dark:text-white">
-                            7,500 / 10,000
-                          </span>
-                        </div>
-                        <div className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                          <motion.div
-                            initial={{ width: 0 }}
-                            animate={{ width: '75%' }}
-                            transition={{ duration: 1, delay: 0.6 }}
-                            className={`h-full ${getUsageColor(75)}`}
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  </motion.div>
-
-                  {/* Payment History */}
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.4 }}
-                    className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6"
-                  >
-                    <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                        Payment History
-                      </h3>
-                      <div className="flex items-center space-x-2">
-                        <Select
-                          value={paymentStatus}
-                          onChange={setPaymentStatus}
-                          options={[
-                            { value: '', label: 'All Payments' },
-                            { value: 'succeeded', label: 'Successful' },
-                            { value: 'failed', label: 'Failed' },
-                            { value: 'pending', label: 'Pending' }
-                          ]}
-                          className="w-40"
-                        />
-                        <motion.button
-                          whileHover={{ scale: 1.05 }}
-                          whileTap={{ scale: 0.95 }}
-                          onClick={fetchAll}
-                          className="p-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shadow-sm"
-                        >
-                          <FiRefreshCw className={`w-4 h-4 text-gray-600 dark:text-gray-300 ${loading ? 'animate-spin' : ''}`} />
-                        </motion.button>
-                      </div>
-                    </div>
-                    <PaymentHistory
-                      payments={payments}
-                      loading={loading}
-                      onPaymentClick={(payment) => console.log('Payment clicked:', payment)}
-                    />
-                    {paymentsCount > pageSize && (
-                      <div className="mt-4 flex justify-center">
-                        <Pagination
-                          currentPage={currentPage}
-                          totalItems={paymentsCount}
-                          itemsPerPage={pageSize}
-                          onPageChange={setCurrentPage}
-                        />
-                      </div>
-                    )}
-                  </motion.div>
-
-                  {/* Invoice History */}
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.5 }}
-                    className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6"
-                  >
-                    <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                        Invoice History
-                      </h3>
-                      <motion.button
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        onClick={() => {
-                          // TODO: Implement invoice creation
-                          alert('Invoice creation will be implemented.')
-                        }}
-                        className="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-xl transition-colors shadow-lg"
-                      >
-                        Create Invoice
-                      </motion.button>
-                    </div>
-                    
-                    {invoices.length === 0 ? (
-                      <EmptyState
-                        icon={FiFileText}
-                        title="No invoices found"
-                        description="You haven't created any invoices yet."
-                      />
-                    ) : (
-                      <div className="overflow-x-auto">
-                        <table className="w-full">
-                          <thead>
-                            <tr className="border-b border-gray-200 dark:border-gray-700">
-                              <th className="text-left py-3 px-4 text-sm font-medium text-gray-700 dark:text-gray-300">
-                                Invoice #
-                              </th>
-                              <th className="text-left py-3 px-4 text-sm font-medium text-gray-700 dark:text-gray-300">
-                                Date
-                              </th>
-                              <th className="text-left py-3 px-4 text-sm font-medium text-gray-700 dark:text-gray-300">
-                                Customer
-                              </th>
-                              <th className="text-left py-3 px-4 text-sm font-medium text-gray-700 dark:text-gray-300">
-                                Amount
-                              </th>
-                              <th className="text-left py-3 px-4 text-sm font-medium text-gray-700 dark:text-gray-300">
-                                Status
-                              </th>
-                              <th className="text-left py-3 px-4 text-sm font-medium text-gray-700 dark:text-gray-300">
-                                Actions
-                              </th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {invoices.map((invoice) => (
-                              <tr key={invoice.id} className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700">
-                                <td className="py-3 px-4">
-                                  <span className="font-mono text-sm">
-                                    #{invoice.id}
-                                  </span>
-                                </td>
-                                <td className="py-3 px-4 text-sm">
-                                  {new Date(invoice.created_at).toLocaleDateString()}
-                                </td>
-                                <td className="py-3 px-4 text-sm">
-                                  {invoice.customer_name || 'Walk-in Customer'}
-                                </td>
-                                <td className="py-3 px-4 text-sm font-medium">
-                                  ${parseFloat(invoice.total_amount || 0).toFixed(2)}
-                                </td>
-                                <td className="py-3 px-4">
-                                  <StatusBadge
-                                    status={invoice.status || 'paid'}
-                                    variant={invoice.status === 'paid' ? 'success' : 'warning'}
-                                    size="sm"
-                                  />
-                                </td>
-                                <td className="py-3 px-4">
-                                  <div className="flex items-center space-x-2">
-                                    <motion.button
-                                      whileHover={{ scale: 1.1 }}
-                                      whileTap={{ scale: 0.9 }}
-                                      onClick={() => handleViewInvoice(invoice)}
-                                      className="p-1.5 text-blue-600 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
-                                      title="View Details"
-                                    >
-                                      <FiFileText className="w-4 h-4" />
-                                    </motion.button>
-                                    <motion.button
-                                      whileHover={{ scale: 1.1 }}
-                                      whileTap={{ scale: 0.9 }}
-                                      onClick={() => handleDownloadInvoice(invoice)}
-                                      className="p-1.5 text-green-600 hover:bg-green-50 dark:text-green-400 dark:hover:bg-green-900/20 rounded-lg transition-colors"
-                                      title="Download PDF"
-                                    >
-                                      <FiDownload className="w-4 h-4" />
-                                    </motion.button>
-                                  </div>
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    )}
-                    
-                    {invoicesCount > pageSize && (
-                      <div className="mt-4 flex justify-center">
-                        <Pagination
-                          currentPage={invoicePage}
-                          totalItems={invoicesCount}
-                          itemsPerPage={pageSize}
-                          onPageChange={setInvoicePage}
-                        />
-                      </div>
-                    )}
-                  </motion.div>
+                        )}
+                      </motion.div>
+                    </>
+                  )}
                 </motion.div>
               )}
             </AnimatePresence>
+
           </>
         )}
 
@@ -1096,4 +1074,4 @@ const Billing = () => {
   )
 }
 
-export default Billing
+export default Plans
