@@ -47,6 +47,7 @@ const Pricing = () => {
         setLoading(false);
       } catch (error) {
         console.error('Error fetching pricing plans:', error);
+        
         setError(error.message || 'Failed to load pricing plans');
         setLoading(false);
         
