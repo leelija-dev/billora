@@ -21,7 +21,7 @@ import Invoices from '../pages/invoices/Invoices'
 import InvoiceDetail from '../pages/invoices/InvoiceDetail'
 import Reports from '../pages/reports/Reports'
 import ReportDetails from '../pages/reports/ReportDetails'
-import Billing from '../pages/billing/Billing'
+import Plans from '../pages/billing/Plans'
 import BillGenerate from '../pages/bill-generate/BillGenerate'
 import Settings from '../pages/settings/Settings'
 
@@ -47,16 +47,16 @@ const AppRoutes = () => {
           <Route path="/categories" element={<Categories />} />
           <Route path="/units" element={<Units />} />
           <Route path="/stores" element={<Stores />} />
-          <Route path="/stock" element={<Inventory />} />
+          <Route path="/stock" element={<ProtectedRoute feature="stock-management"><Inventory /></ProtectedRoute>} />
           <Route path="/orders" element={<Orders />} />
           <Route path="/customers" element={<Customers />} />
           <Route path="/customers/:id" element={<CustomerDetails />} />
-          <Route path="/invoices" element={<Invoices />} />
-          <Route path="/invoices/detail/:id" element={<InvoiceDetail />} />
+          <Route path="/invoices" element={<ProtectedRoute feature="bill-generation"><Invoices /></ProtectedRoute>} />
+          <Route path="/invoices/detail/:id" element={<ProtectedRoute feature="bill-generation"><InvoiceDetail /></ProtectedRoute>} />
           <Route path="/reports" element={<Reports />} />
           <Route path="/reports/:id" element={<ReportDetails />} />
-          <Route path="/invoice" element={<BillGenerate />} />
-          <Route path="/billing" element={<Billing />} />
+          <Route path="/invoice" element={<ProtectedRoute feature="bill-generation"><BillGenerate /></ProtectedRoute>} />
+          <Route path="/billing" element={<Plans />} />
           <Route path="/settings" element={<Settings />} />
         </Route>
       </Route>

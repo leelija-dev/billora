@@ -18,6 +18,8 @@ import { FaReceipt } from "react-icons/fa";
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useInvoiceStore } from '../../store/invoiceStore'
+import { usePermissionStore } from '../../store/permissionStore'
+import ProtectedRoute from '../../components/features/Auth/ProtectedRoute'
 import Button from '../../components/common/Button/Button'
 import Input from '../../components/common/Input/Input'
 import Pagination from '../../components/common/Pagination/Pagination'
@@ -397,11 +399,12 @@ const Invoices = () => {
   )
 
   return (
-    <motion.div 
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      className="space-y-6 p-6"
-    >
+    <ProtectedRoute feature="bill-generation">
+      <motion.div 
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        className="space-y-6 p-6"
+      >
       {/* Header */}
       <motion.div
         initial={{ y: -20, opacity: 0 }}
@@ -961,6 +964,7 @@ const Invoices = () => {
         )}
       </AnimatePresence>
     </motion.div>
+    </ProtectedRoute>
   )
 }
 
