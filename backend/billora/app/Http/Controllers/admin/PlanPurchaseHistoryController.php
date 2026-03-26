@@ -25,12 +25,12 @@ class PlanPurchaseHistoryController extends Controller
             ]);
         }
         $plans = PlanPurchaseHistory::where('user_id', $id)->paginate(15)->withQueryString();
-        if($plans->isEmpty()){
-            return response()->json([
-                'status' => false,
-                'message' => 'You have not purchased any plan yet.'
-            ]);
-        }
+        // if($plans->isEmpty()){
+        //     return response()->json([
+        //         'status' => false,
+        //         'message' => 'You have not purchased any plan yet.'
+        //     ]);
+        // }
         return response()->json([
             'status' => true,
             'message' => 'Plan purchase history',

@@ -60,11 +60,11 @@ const RegisterPage = () => {
 
   const validatePassword = (value) => {
     if (!value) {
-      setPasswordError("Password is required");
+      // setPasswordError("Password is required");
       return false;
     }
-    if (value.length < 6) {
-      setPasswordError("Password must be at least 6 characters");
+    if (value.length < 8) {
+      setPasswordError("Password must be at least 8 characters");
       return false;
     }
     if (value.length > 50) {
@@ -252,14 +252,14 @@ const RegisterPage = () => {
               className={`p-3 rounded-xl border-2 outline-none text-sm focus:border-[#5b5bd6] transition-colors ${
                 emailError ? "border-red-500 bg-red-50" : "border-[#ddd]"
               }`}
-              placeholder="Enter your email"
+              placeholder="Example: name@company.com"
               required
               disabled={loading}
             />
             {emailError && (
               <p className="text-red-500 text-xs mt-1 ml-2">{emailError}</p>
             )}
-            <p className="text-gray-400 text-xs mt-1 ml-2">Example: name@company.com</p>
+            {/* <p className="text-gray-400 text-xs mt-1 ml-2">Example: name@company.com</p> */}
           </div>
 
           {/* Password Field */}
@@ -287,7 +287,7 @@ const RegisterPage = () => {
               <p className="text-red-500 text-xs mt-1 ml-2">{passwordError}</p>
             )}
             <p className="text-gray-400 text-xs mt-1 ml-2">
-              Password requirements: 6+ chars, uppercase, lowercase, number, special char (!@#$%^&*)
+              Password requirements: 8+ chars, uppercase, lowercase, number, special char (!@#$%^&*)
             </p>
           </div>
 

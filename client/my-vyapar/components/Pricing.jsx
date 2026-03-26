@@ -4,7 +4,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import SectionTitle from "@/components/SectionTitle";
 import Container from "@/components/Container";
-import { apiRequest } from '@/utils/api'; // Import your API utility
+import { getPlans } from '@/services/pricingService';
 
 const Pricing = () => {
   const [billingCycle, setBillingCycle] = useState('monthly');
@@ -13,112 +13,119 @@ const Pricing = () => {
   const [error, setError] = useState(null);
   const cardRefs = useRef([]);
 
-  useEffect(() => {
-    const fetchPricingData = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        
-        // Use your apiRequest utility to fetch plans
-        const data = await apiRequest('/plans/', 'GET');
-        
-        // Transform API data to match your component's expected format
-        const transformedPlans = data.map((plan) => ({
-          id: plan.id,
-          name: plan.name,
-          price: {
-            monthly: plan.monthly_price?.toString() || plan.price_monthly?.toString() || '0',
-            yearly: plan.yearly_price?.toString() || plan.price_yearly?.toString() || '0'
-          },
-          description: plan.description || `Perfect for ${plan.name.toLowerCase()} businesses`,
-          features: plan.features || [
-            '30-day money-back guarantee',
-            'Free updates',
-            'Email support',
-            'Priority customer support'
-          ],
-          color: plan.color || (plan.popular ? '#8b5cf6' : '#000000'),
-          buttonText: plan.button_text || plan.cta_text || `Start ${plan.name}`,
-          popular: plan.popular || false,
-          productCount: plan.product_count || 0
-        }));
-        
+  // Fetch plans from your Laravel API - always show only 3
+ useEffect(() => {
+  const fetchPlans = async () => {
+    try {
+      setLoading(true);
+
+      const data = await getPlans();
+
+      if (data.status === true && data.data) {
+        const allPlans = data.data;
+        const limitedPlans = allPlans.slice(0, 3);
+
+        const transformedPlans = limitedPlans.map((plan, index) => {
+          const features = plan.permissions?.map(p => p.permission_name) || [];
+
+          const monthlyPrice = parseFloat(plan.price);
+          const yearlyPrice = monthlyPrice * 10;
+
+          return {
+            id: plan.id,
+            name: plan.name,
+            price: {
+              monthly: monthlyPrice.toLocaleString('en-IN'),
+              yearly: yearlyPrice.toLocaleString('en-IN')
+            },
+            description: plan.description
+  ? plan.description.replace(/<[^>]*>?/gm, "")
+  : "",
+            features: features,
+            color: index === 1 ? '#8b5cf6' : '#000000',
+            buttonText: `Start ${plan.name}`,
+            popular: index === 1,
+          };
+        });
+
         setPlans(transformedPlans);
-        setLoading(false);
-      } catch (error) {
-        console.error('Error fetching pricing plans:', error);
-        
-        setError(error.message || 'Failed to load pricing plans');
-        setLoading(false);
-        
-        // Set fallback data in case API fails
-        setPlans([
-          {
-            id: 1,
-            name: 'Basic',
-            price: { monthly: '29', yearly: '290' },
-            description: "Perfect for startups",
-            features: [
-              '30-day money-back guarantee',
-              'Free updates',
-              'Email support',
-              'Basic analytics'
-            ],
-            color: '#000000',
-            buttonText: 'Start Basic',
-            popular: false,
-            productCount: 0
-          },
-          {
-            id: 2,
-            name: 'Pro',
-            price: { monthly: '99', yearly: '990' },
-            description: "Perfect for growing businesses",
-            features: [
-              '30-day money-back guarantee',
-              'Free updates',
-              'Email support',
-              'Priority support',
-              'Advanced analytics',
-              'API access'
-            ],
-            color: '#8b5cf6',
-            buttonText: 'Start Pro',
-            popular: true,
-            productCount: 0
-          },
-          {
-            id: 3,
-            name: 'Enterprise',
-            price: { monthly: '299', yearly: '2990' },
-            description: "Perfect for large organizations",
-            features: [
-              '30-day money-back guarantee',
-              'Free updates',
-              'Email support',
-              'Priority customer support',
-              'Custom integrations',
-              'SLA guarantee',
-              'Dedicated manager'
-            ],
-            color: '#000000',
-            buttonText: 'Contact Sales',
-            popular: false,
-            productCount: 0
-          }
-        ]);
+      } else {
+        setError(data.message || "Failed to fetch plans");
       }
-    };
+    } catch (error) {
+      console.error('Error fetching plans:', error);
+      setError("Something went wrong");
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    fetchPricingData();
-    
-    // Set up polling for real-time updates (every 30 seconds)
-    const intervalId = setInterval(fetchPricingData, 30000);
-    
-    return () => clearInterval(intervalId);
-  }, []);
+  fetchPlans();
+}, []);
 
-  // Intersection Observer for animations
+  // Fallback plans in case API fails
+  const getFallbackPlans = () => {
+    return [
+      {
+        id: 1,
+        name: 'Basic',
+        price: { monthly: '499', yearly: '4,990' },
+        description: "Perfect for small businesses",
+        features: [
+          'GST Billing',
+          'Invoice Generation',
+          'Customer Management',
+          'Email Support',
+          'Basic Reports',
+          'Mobile App Access'
+        ],
+        color: '#000000',
+        buttonText: 'Start Basic',
+        popular: false,
+      },
+      {
+        id: 2,
+        name: 'Pro',
+        price: { monthly: '999', yearly: '9,990' },
+        description: "Perfect for growing businesses",
+        features: [
+          'All Basic features',
+          'Inventory Management',
+          'Advanced Reports',
+          'Priority Support',
+          'API Access',
+          'Multi-user Access'
+        ],
+        color: '#8b5cf6',
+        buttonText: 'Start Pro',
+        popular: true,
+      },
+      {
+        id: 3,
+        name: 'Enterprise',
+        price: { monthly: '2,499', yearly: '24,990' },
+        description: "Perfect for large organizations",
+        features: [
+          'All Pro features',
+          'Custom Integration',
+          'Dedicated Manager',
+          'SLA Guarantee',
+          'White Labeling',
+          'Unlimited Users'
+        ],
+        color: '#000000',
+        buttonText: 'Contact Sales',
+        popular: false,
+      }
+    ];
+  };
+
+  // Handle subscription click
+  const handleSubscribe = (planId) => {
+    // This will redirect to the dedicated pricing page for subscription
+    window.location.href = `/pricing?subscribe=${planId}&cycle=${billingCycle}`;
+  };
+
   useEffect(() => {
     const observerOptions = { threshold: 0.1, rootMargin: '0px' };
     const observer = new IntersectionObserver((entries) => {
@@ -171,9 +178,6 @@ const Pricing = () => {
           <p className="text-[#475569] text-lg max-w-[600px] mx-auto mt-4">
             Choose the perfect plan for your business
           </p>
-          <p className="text-xs text-[#8b5cf6] mt-2 font-medium">
-            Live updates based on {plans.reduce((acc, p) => acc + (p.productCount || 0), 0)} catalog items
-          </p>
         </div>
 
         {/* Billing Toggle */}
@@ -192,20 +196,19 @@ const Pricing = () => {
             }`}
             onClick={() => setBillingCycle('yearly')}
           >
-            Yearly <span className="ml-1 text-[10px] bg-white/20 px-1.5 py-0.5 rounded"></span>
+            Yearly <span className="ml-1 text-[10px] bg-white/20 px-1.5 py-0.5 rounded">Save 20%</span>
           </button>
         </div>
 
-        {/* Pricing Cards Grid */}
+        {/* Pricing Cards Grid - Always shows 3 cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-16 items-stretch px-4">
-          {plans.map((plan, index) => (
+          {plans.slice(0, 3).map((plan, index) => (
             <div
               key={plan.id || index}
               ref={(el) => (cardRefs.current[index] = el)}
               className={`bg-white rounded-[30px] p-8 shadow-[0_20px_50px_rgba(0,0,0,0.05)] relative transition-all duration-300 border border-[#e2e8f0] flex flex-col opacity-0 translate-y-10 
                 ${plan.popular ? 'border-2 border-[#8b5cf6] lg:scale-[1.02] z-20 shadow-purple-100' : 'z-10'}
-                hover:-translate-y-1 hover:shadow-xl hover:z-30
-                ${index === plans.length - 1 && plans.length === 3 ? 'md:col-start-2 lg:col-start-auto' : ''}`}
+                hover:-translate-y-1 hover:shadow-xl hover:z-30`}
             >
               {plan.popular && (
                 <div className="absolute top-[-14px] left-1/2 -translate-x-1/2 text-white px-6 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider shadow-lg" style={{ background: plan.color }}>
@@ -214,7 +217,7 @@ const Pricing = () => {
               )}
 
               <div className="text-center mb-8 pb-8 border-b border-gray-50">
-                <h3 className="text-2xl font-bold text-[#1e293b] mb-4">{plan.name} Plan</h3>
+                <h3 className="text-2xl font-bold text-[#1e293b] mb-4">{plan.name} </h3>
                 <div className="flex items-baseline justify-center gap-1">
                   <span className="text-xl font-semibold text-gray-400">₹</span>
                   <span className="text-5xl font-extrabold" style={{ color: plan.color }}>
@@ -241,6 +244,7 @@ const Pricing = () => {
 
               <div className="mt-auto">
                 <button
+                  onClick={() => handleSubscribe(plan.id)}
                   className={`w-full py-4 rounded-full text-base font-bold transition-all duration-300 shadow-md hover:brightness-105 active:scale-95
                     ${plan.popular ? 'bg-[#8b5cf6] text-white' : 'bg-white border-2 hover:bg-gray-50'}`}
                   style={{
