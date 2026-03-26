@@ -88,4 +88,54 @@ export const authService = {
       throw error.response?.data || error.message;
     }
   },
+
+  // Get user plan details with permissions
+  getUserPlan: async (userId) => {
+    try {
+      console.log(' Fetching user plan details for user:', userId);
+      const response = await apiClient.get(`/users/${userId}/plan`);
+      console.log(' User plan details fetched:', response.data);
+      return response;
+    } catch (error) {
+      console.error(' Failed to fetch user plan:', error);
+      throw error.response?.data || error.message;
+    }
+  },
+
+  // Get plan details by plan ID
+  getPlanDetails: async (planId) => {
+    try {
+      console.log(' Fetching plan details for plan:', planId);
+      const response = await apiClient.get(`/plans/${planId}`);
+      console.log(' Plan details fetched:', response.data);
+      return response;
+    } catch (error) {
+      console.error(' Failed to fetch plan details:', error);
+      throw error.response?.data || error.message;
+    }
+  },
+
+  // Check if user has specific permission
+  hasPermission: (user, permissionSlug) => {
+    if (!user || !user.permissions) return false;
+    return user.permissions.some(permission => permission.slug === permissionSlug);
+  },
+
+  // Check if user can access specific feature
+  canAccess: (user, feature) => {
+    const permissionMap = {
+      'stock-management': 'stock-management',
+      'billing': 'bill-generation',
+      'reports': 'reports',
+      'customers': 'customer-management',
+      'products': 'product-management',
+      'invoices': 'bill-generation',
+      'dashboard': 'dashboard'
+    };
+    
+    const requiredPermission = permissionMap[feature];
+    if (!requiredPermission) return true; // If no specific permission required, allow access
+    
+    return authService.hasPermission(user, requiredPermission);
+  }
 }

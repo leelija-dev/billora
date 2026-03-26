@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { useUIStore } from '../../../store/uiStore';
+import { usePermissionStore } from '../../../store/permissionStore';
 import {
   FiHome,
   FiPackage,
@@ -17,6 +18,7 @@ import {
   FiBell,
   FiBox,
   FiGrid,
+  FiBarChart2,
 } from 'react-icons/fi';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FaStore } from 'react-icons/fa';
@@ -24,6 +26,7 @@ import { TbRuler2 } from "react-icons/tb";
 
 const Sidebar = () => {
   const { sidebarOpen, toggleSidebar, isMobile, setIsMobile } = useUIStore();
+  const { canAccess } = usePermissionStore();
   const location = useLocation();
   const [hoveredItem, setHoveredItem] = useState(null);
 
@@ -51,13 +54,20 @@ const Sidebar = () => {
     { path: '/categories', name: 'Categories', icon: FiGrid, badge: null },
     { path: '/units', name: 'Units', icon: TbRuler2, badge: null },
     { path: '/stores', name: 'Stores', icon: FaStore, badge: null },
-    { path: '/stock', name: 'Stock', icon: FiArchive, badge: 'Low Stock' },
+    { path: '/stock', name: 'Stock', icon: FiArchive, badge: 'Low Stock', permission: 'stock-management' },
     { path: '/orders', name: 'Orders', icon: FiShoppingBag, badge: '12' },
     { path: '/customers', name: 'Customers', icon: FiUsers, badge: null },
-    { path: '/invoices', name: 'Invoices', icon: FiFileText, badge: '3' },
-    { path: '/billing', name: 'Billing', icon: FiCreditCard, badge: null },
+    { path: '/invoices', name: 'Invoices', icon: FiFileText, badge: '3', permission: 'bill-generation' },
+    { path: '/reports', name: 'Reports', icon: FiBarChart2, badge: null },
+    { path: '/billing', name: 'Plans', icon: FiCreditCard, badge: null },
     { path: '/settings', name: 'Settings', icon: FiSettings, badge: null },
   ];
+
+  // Filter menu items based on permissions
+  const filteredMenuItems = menuItems.filter(item => {
+    if (!item.permission) return true; // Show items without permission requirements
+    return canAccess(item.permission);
+  });
 
   return (
     <>
@@ -136,7 +146,7 @@ const Sidebar = () => {
 
         {/* Navigation */}
         <nav className="mt-6 px-3 space-y-1 overflow-y-auto max-h-[calc(100vh-180px)] scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600">
-          {menuItems.map((item, index) => {
+          {filteredMenuItems.map((item, index) => {
             const Icon = item.icon;
             const isActive = location.pathname === item.path;
             

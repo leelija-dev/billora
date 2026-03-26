@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
 import { authService } from '../services/authService'
+import { usePermissionStore } from './permissionStore'
 import toast from 'react-hot-toast'
 
 export const useAuthStore = create(
@@ -61,6 +62,15 @@ export const useAuthStore = create(
             isLoading: false,
           })
           
+          // Set user in permission store
+          const { setUser: setPermissionUser, fetchUserPermissions } = usePermissionStore.getState()
+          setPermissionUser(user)
+          
+          // Fetch user permissions
+          if (user.plan_id) {
+            fetchUserPermissions(user.id)
+          }
+          
           toast.success('Login successful!')
           return { success: true }
         } catch (error) {
@@ -105,6 +115,11 @@ export const useAuthStore = create(
           isAuthenticated: false,
         })
         localStorage.removeItem('auth-storage')
+        
+        // Clear permission store
+        const { clearPermissions } = usePermissionStore.getState()
+        clearPermissions()
+        
         toast.success('Logged out successfully')
       },
 
