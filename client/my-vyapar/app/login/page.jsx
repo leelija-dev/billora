@@ -167,7 +167,7 @@ const Login = () => {
               value={email}
               onChange={handleEmailChange}
               onBlur={() => validateEmail(email)}
-              placeholder="Enter your email" 
+              placeholder="name@company.com" 
               className={`p-3 rounded-[30px] border outline-none focus:border-[#5b5bd6] transition-colors ${
                 emailError ? "border-red-500 bg-red-50" : "border-[#ccc]"
               }`}
@@ -177,7 +177,7 @@ const Login = () => {
             {emailError && (
               <p className="text-red-500 text-xs mt-1 ml-3">{emailError}</p>
             )}
-            <p className="text-gray-400 text-xs mt-1 ml-3">Example: name@company.com</p>
+            {/* <p className="text-gray-400 text-xs mt-1 ml-3">Example: name@company.com</p> */}
           </div>
 
           {/* Password Field */}
@@ -188,7 +188,7 @@ const Login = () => {
               value={password}
               onChange={handlePasswordChange}
               onBlur={() => validatePassword(password)}
-              placeholder="Enter your password"
+              placeholder="Example: password"
               className={`p-3 rounded-[30px] border outline-none focus:border-[#5b5bd6] transition-colors pr-12 ${
                 passwordError ? "border-red-500 bg-red-50" : "border-[#ccc]"
               }`}
@@ -204,7 +204,7 @@ const Login = () => {
             {passwordError && (
               <p className="text-red-500 text-xs mt-1 ml-3">{passwordError}</p>
             )}
-            <p className="text-gray-400 text-xs mt-1 ml-3">Minimum 6 characters</p>
+            {/* <p className="text-gray-400 text-xs mt-1 ml-3">Minimum 6 characters</p> */}
           </div>
 
           <p className="text-sm mb-5 cursor-pointer hover:text-[#3b82f6] transition-colors">

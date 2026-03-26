@@ -10,81 +10,139 @@ const Pricing = () => {
   const [loading, setLoading] = useState(true);
   const cardRefs = useRef([]);
 
+  // Fetch plans from your Laravel API - always show only 3
   useEffect(() => {
-    const fetchPricingData = async () => {
+    const fetchPlans = async () => {
       try {
-        const response = await fetch('https://fakestoreapi.com/products');
-        const products = await response.json();
-        const sortedProducts = [...products].sort((a, b) => a.price - b.price);
+        setLoading(true);
         
-        const transformedPlans = [
-          {
-            name: 'Basic',
-            price: { monthly: '16', yearly: '160' },
-            description: "Perfect for men's clothing businesses",
-            features: [
-              'Rating: 3.9 ★ (120 reviews)',
-              '30-day money-back guarantee',
-              'Free updates',
-              'Email support',
-              'Priority customer support',
-              'Advanced analytics'
-            ],
-            color: '#000000',
-            buttonText: 'Start Basic',
-            popular: false,
-            productCount: sortedProducts.filter(p => p.price < 20).length
-          },
-          {
-            name: 'Pro',
-            price: { monthly: '695', yearly: '6,950' },
-            description: "Perfect for jewelery businesses",
-            features: [
-              'Rating: 4.1 ★ (259 reviews)',
-              '30-day money-back guarantee',
-              'Free updates',
-              'Email support',
-              'Priority support',
-              'Advanced analytics',
-              'API access',
-              'Custom reports'
-            ],
-            color: '#8b5cf6',
-            buttonText: 'Start Pro',
-            popular: true,
-            productCount: sortedProducts.filter(p => p.price >= 20 && p.price < 100).length
-          },
-          {
-            name: 'Enterprise',
-            price: { monthly: '847', yearly: '8,470' },
-            description: "Perfect for enterprise organizations",
-            features: [
-              'Rating: 4.7 ★ (500 reviews)',
-              '30-day money-back guarantee',
-              'Free updates',
-              'Email support',
-              'Priority customer support',
-              'Custom integrations',
-              'SLA guarantee',
-              'Dedicated manager'
-            ],
-            color: '#000000',
-            buttonText: 'Contact Sales',
-            popular: false,
-            productCount: sortedProducts.filter(p => p.price >= 100).length
-          }
-        ];
-
-        setPlans(transformedPlans);
-        setLoading(false);
+        // Fetch from your real API
+        const response = await fetch('http://localhost:8000/api/plans/');
+        const data = await response.json();
+        
+        if (data.status === true && data.data) {
+          // Take only first 3 plans (or show all but limit to 3)
+          const allPlans = data.data;
+          const limitedPlans = allPlans.slice(0, 3);
+          
+          // Transform API data to match your UI structure
+          const transformedPlans = limitedPlans.map((plan, index) => {
+            // Extract features from permissions
+            const features = plan.permissions?.map(p => p.permission_name) || [];
+            
+            // Add some default features if needed to fill up
+            const defaultFeatures = [
+              'GST Billing',
+              'Invoice Generation',
+              'Customer Management',
+              'Email Support',
+              'Secure Data Storage',
+              '24/7 Support'
+            ];
+            
+            // Combine API features with default ones (take first 6)
+            const allFeatures = [...features, ...defaultFeatures].slice(0, 6);
+            
+            // Calculate yearly price (10x monthly)
+            const monthlyPrice = parseFloat(plan.price);
+            const yearlyPrice = monthlyPrice * 10;
+            
+            return {
+              id: plan.id,
+              name: plan.name,
+              price: {
+                monthly: monthlyPrice.toLocaleString('en-IN'),
+                yearly: yearlyPrice.toLocaleString('en-IN')
+              },
+              description: plan.description || `Perfect for ${plan.name.toLowerCase()} businesses`,
+              features: allFeatures,
+              color: index === 1 ? '#8b5cf6' : '#000000', // Make middle plan purple
+              buttonText: plan.name === 'Enterprise' ? 'Contact Sales' : `Start ${plan.name}`,
+              popular: index === 1, // Make the second plan popular
+              is_active: plan.is_active === 1
+            };
+          });
+          
+          setPlans(transformedPlans);
+        } else {
+          console.error('Failed to fetch plans:', data.message);
+          // Fallback to demo plans if API fails
+          setPlans(getFallbackPlans());
+        }
       } catch (error) {
-        console.error('Error fetching pricing:', error);
+        console.error('Error fetching plans:', error);
+        // Fallback to demo plans
+        setPlans(getFallbackPlans());
+      } finally {
         setLoading(false);
       }
     };
 
-    fetchPricingData();
+    fetchPlans();
   }, []);
+
+  // Fallback plans in case API fails
+  const getFallbackPlans = () => {
+    return [
+      {
+        id: 1,
+        name: 'Basic',
+        price: { monthly: '499', yearly: '4,990' },
+        description: "Perfect for small businesses",
+        features: [
+          'GST Billing',
+          'Invoice Generation',
+          'Customer Management',
+          'Email Support',
+          'Basic Reports',
+          'Mobile App Access'
+        ],
+        color: '#000000',
+        buttonText: 'Start Basic',
+        popular: false,
+      },
+      {
+        id: 2,
+        name: 'Pro',
+        price: { monthly: '999', yearly: '9,990' },
+        description: "Perfect for growing businesses",
+        features: [
+          'All Basic features',
+          'Inventory Management',
+          'Advanced Reports',
+          'Priority Support',
+          'API Access',
+          'Multi-user Access'
+        ],
+        color: '#8b5cf6',
+        buttonText: 'Start Pro',
+        popular: true,
+      },
+      {
+        id: 3,
+        name: 'Enterprise',
+        price: { monthly: '2,499', yearly: '24,990' },
+        description: "Perfect for large organizations",
+        features: [
+          'All Pro features',
+          'Custom Integration',
+          'Dedicated Manager',
+          'SLA Guarantee',
+          'White Labeling',
+          'Unlimited Users'
+        ],
+        color: '#000000',
+        buttonText: 'Contact Sales',
+        popular: false,
+      }
+    ];
+  };
+
+  // Handle subscription click
+  const handleSubscribe = (planId) => {
+    // This will redirect to the dedicated pricing page for subscription
+    window.location.href = `/pricing?subscribe=${planId}&cycle=${billingCycle}`;
+  };
 
   useEffect(() => {
     const observerOptions = { threshold: 0.1, rootMargin: '0px' };
@@ -121,9 +179,6 @@ const Pricing = () => {
           <p className="text-[#475569] text-lg max-w-[600px] mx-auto mt-4">
             Choose the perfect plan for your business
           </p>
-          <p className="text-xs text-[#8b5cf6] mt-2 font-medium">
-            Live updates based on {plans.reduce((acc, p) => acc + p.productCount, 0)} catalog items
-          </p>
         </div>
 
         {/* Billing Toggle */}
@@ -142,20 +197,19 @@ const Pricing = () => {
             }`}
             onClick={() => setBillingCycle('yearly')}
           >
-            Yearly <span className="ml-1 text-[10px] bg-white/20 px-1.5 py-0.5 rounded"></span>
+            Yearly <span className="ml-1 text-[10px] bg-white/20 px-1.5 py-0.5 rounded">Save 20%</span>
           </button>
         </div>
 
-        {/* Pricing Cards Grid */}
+        {/* Pricing Cards Grid - Always shows 3 cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-16 items-stretch px-4">
-          {plans.map((plan, index) => (
+          {plans.slice(0, 3).map((plan, index) => (
             <div
-              key={index}
+              key={plan.id || index}
               ref={(el) => (cardRefs.current[index] = el)}
               className={`bg-white rounded-[30px] p-8 shadow-[0_20px_50px_rgba(0,0,0,0.05)] relative transition-all duration-300 border border-[#e2e8f0] flex flex-col opacity-0 translate-y-10 
                 ${plan.popular ? 'border-2 border-[#8b5cf6] lg:scale-[1.02] z-20 shadow-purple-100' : 'z-10'}
-                hover:-translate-y-1 hover:shadow-xl hover:z-30
-                ${index === plans.length - 1 && plans.length === 3 ? 'md:col-start-2 lg:col-start-auto' : ''}`}
+                hover:-translate-y-1 hover:shadow-xl hover:z-30`}
             >
               {plan.popular && (
                 <div className="absolute top-[-14px] left-1/2 -translate-x-1/2 text-white px-6 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider shadow-lg" style={{ background: plan.color }}>
@@ -191,6 +245,7 @@ const Pricing = () => {
 
               <div className="mt-auto">
                 <button
+                  onClick={() => handleSubscribe(plan.id)}
                   className={`w-full py-4 rounded-full text-base font-bold transition-all duration-300 shadow-md hover:brightness-105 active:scale-95
                     ${plan.popular ? 'bg-[#8b5cf6] text-white' : 'bg-white border-2 hover:bg-gray-50'}`}
                   style={{
@@ -205,22 +260,21 @@ const Pricing = () => {
           ))}
         </div>
 
-      {/* Bottom Section */}
-<div className="flex flex-col md:flex-row items-center justify-between gap-8 px-4 border-t border-gray-100 pt-12">
-  <div className="hidden lg:block w-[150px]" />
+        {/* Bottom Section */}
+        <div className="flex flex-col md:flex-row items-center justify-between gap-8 px-4 border-t border-gray-100 pt-12">
+          <div className="hidden lg:block w-[150px]" />
 
-  <div className="flex flex-row items-center gap-3 sm:gap-4 py-2 sm:py-3 px-4 sm:px-8 bg-white rounded-full shadow-sm border border-gray-100">
-    <div className="bg-blue-50 p-1 sm:p-2 rounded-full">
-      <svg width="16" height="16" className="sm:w-5 sm:h-5 text-blue-600" viewBox="0 0 24 24" fill="none">
-        <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="currentColor" strokeWidth="2" />
-        <path d="M12 6V12L16 14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-      </svg>
-    </div>
-    <span className="text-xs sm:text-sm text-[#475569] font-semibold whitespace-nowrap">
-      30-day money-back guarantee • No questions asked
-    </span>
-  </div>
-
+          <div className="flex flex-row items-center gap-3 sm:gap-4 py-2 sm:py-3 px-4 sm:px-8 bg-white rounded-full shadow-sm border border-gray-100">
+            <div className="bg-blue-50 p-1 sm:p-2 rounded-full">
+              <svg width="16" height="16" className="sm:w-5 sm:h-5 text-blue-600" viewBox="0 0 24 24" fill="none">
+                <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="currentColor" strokeWidth="2" />
+                <path d="M12 6V12L16 14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+              </svg>
+            </div>
+            <span className="text-xs sm:text-sm text-[#475569] font-semibold whitespace-nowrap">
+              30-day money-back guarantee • No questions asked
+            </span>
+          </div>
 
           <a
             href="/pricing"
