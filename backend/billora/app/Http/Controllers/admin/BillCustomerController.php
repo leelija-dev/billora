@@ -306,14 +306,29 @@ class BillCustomerController extends Controller
                 'message' => 'Authentication required. Please login first.'
             ], 401);
         }
-        $customer = BillCustomer::where('admin_id',$user)->where('id',$id)->first();
-        $customer->update([
-            'due_amount' => ($customer->due_amount - $data['due_payment'])
+        $billCustomer = BillCustomer::where('admin_id',$user)->where('id',$id)->first();
+        $due_payment_history = BillPaymentHistory::create([
+        'admin_id'=>$user,
+        'invoice_id'=> null,
+        'customer_id'=> $billCustomer->id,
+        'store_id'=> null,
+        'total_amount'=> $billCustomer->due_amount,
+        'paid_amount'=>$data['due_payment'],
+        'due_amount'=> $billCustomer->due_amount - $data['due_payment'],
+        'payment_method'=> 'Cash',
+        'transaction_id'=> null,
+        'created_by'=> $user,
+        'remarks'=>'Due payment'
+
         ]);
+        $billCustomer->update([
+            'due_amount' => ($billCustomer->due_amount - $data['due_payment'])
+        ]);
+
         return response()->json([
             'status'    => true,
             'message'   => 'Bill Customer due amount updated successfully',
-            'data'      => $customer
+            'data'      => $billCustomer
         ]);
     }
 }
