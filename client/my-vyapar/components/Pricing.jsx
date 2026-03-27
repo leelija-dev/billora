@@ -307,6 +307,7 @@ const Pricing = ({ showAll = false, showButton = true, buttonLink = "/pricing", 
               duration_days: plan.duration_days,
             };
           });
+          // kl
 
           setPlans(transformedPlans);
         } else {
