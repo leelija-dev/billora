@@ -1,21 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import {
-  LineChart,
-  Line,
-  AreaChart,
-  Area,
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
-} from 'recharts'
+import ReactApexChart from 'react-apexcharts'
 import { 
   FiDollarSign, 
   FiShoppingBag, 
@@ -34,6 +18,9 @@ import {
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuthStore } from '../../store/authStore'
 import { dashboardAPI } from '../../services'
+import OrderStatusChart from '../../components/charts/OrderStatusChart'
+import RevenueChart from '../../components/charts/RevenueChart'
+import TopProductsChart from '../../components/charts/TopProductsChart'
 
 const Dashboard = () => {
   const { company, user } = useAuthStore()
@@ -51,6 +38,9 @@ const Dashboard = () => {
   })
   const [revenueData, setRevenueData] = useState([])
   const [recentOrders, setRecentOrders] = useState([])
+  const [salesDistribution, setSalesDistribution] = useState([])
+  const [orderStatus, setOrderStatus] = useState({})
+  const [topProducts, setTopProducts] = useState([])
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
 
@@ -84,11 +74,19 @@ const Dashboard = () => {
       }
 
       setStats(normalizedStats)
-      // Set other data as needed from your API response
-      setRevenueData(data?.revenueData || [])
+      setRevenueData(data?.revenueData?.daily || [])
       setRecentOrders(data?.recentOrders || [])
+      setSalesDistribution(data?.salesDistribution || [])
+      setOrderStatus(data?.orderStatus || {})
+      setTopProducts(data?.topProducts || [])
     } catch (error) {
       console.error('Failed to fetch dashboard data:', error)
+      // Set empty arrays for real data only
+      setRevenueData([])
+      setRecentOrders([])
+      setSalesDistribution([])
+      setOrderStatus({})
+      setTopProducts([])
     } finally {
       setLoading(false)
       setRefreshing(false)
@@ -129,7 +127,7 @@ const Dashboard = () => {
                 {value}
               </motion.p>
               
-              {change !== null && (
+              {change !== null && change !== undefined && (
                 <motion.div 
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
@@ -159,19 +157,127 @@ const Dashboard = () => {
 
   const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899']
 
-  const CustomTooltip = ({ active, payload, label }) => {
-    if (active && payload && payload.length) {
-      return (
-        <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700">
-          <p className="text-sm font-medium text-gray-900 dark:text-white">{label}</p>
-          <p className="text-sm text-primary-600 dark:text-primary-400 mt-1">
-            Revenue: ${payload[0].value.toLocaleString()}
-          </p>
-        </div>
-      )
-    }
-    return null
+  // Line Chart Configuration
+  const lineChartOptions = {
+    chart: {
+      height: 350,
+      type: 'line',
+      zoom: {
+        enabled: false
+      },
+      toolbar: {
+        show: false
+      },
+      background: 'transparent'
+    },
+    dataLabels: {
+      enabled: false
+    },
+    stroke: {
+      curve: 'smooth',
+      width: 3
+    },
+    title: {
+      text: 'Revenue Trends',
+      align: 'left',
+      style: {
+        fontSize: '16px',
+        fontWeight: 600,
+        color: '#374151'
+      }
+    },
+    grid: {
+      borderColor: '#e2e8f0',
+      row: {
+        colors: ['#f8fafc', 'transparent'],
+        opacity: 0.5
+      },
+    },
+    xaxis: {
+      categories: Array.isArray(revenueData) ? revenueData.map(item => item.date) : [],
+      labels: {
+        style: {
+          colors: '#64748b',
+          fontSize: '12px'
+        }
+      }
+    },
+    yaxis: {
+      labels: {
+        formatter: function (value) {
+          return '$' + value.toLocaleString()
+        },
+        style: {
+          colors: '#64748b',
+          fontSize: '12px'
+        }
+      }
+    },
+    tooltip: {
+      theme: 'dark',
+      y: {
+        formatter: function (value) {
+          return '$' + value.toLocaleString()
+        }
+      }
+    },
+    colors: ['#3b82f6']
   }
+
+  const lineChartSeries = [{
+    name: "Revenue",
+    data: Array.isArray(revenueData) ? revenueData.map(item => item.revenue) : []
+  }]
+
+  // Polar Area Chart Configuration
+  const polarChartOptions = {
+    chart: {
+      type: 'polarArea',
+      toolbar: {
+        show: false
+      },
+      background: 'transparent'
+    },
+    stroke: {
+      colors: ['#fff']
+    },
+    fill: {
+      opacity: 0.8
+    },
+    labels: Array.isArray(salesDistribution) ? salesDistribution.map(item => item.category) : [],
+    legend: {
+      position: 'bottom',
+      labels: {
+        colors: '#64748b'
+      }
+    },
+    responsive: [{
+      breakpoint: 480,
+      options: {
+        chart: {
+          width: 200
+        },
+        legend: {
+          position: 'bottom'
+        }
+      }
+    }],
+    colors: COLORS,
+    plotOptions: {
+      polarArea: {
+        rings: {
+          strokeWidth: 1,
+          strokeColor: '#e2e8f0'
+        },
+        spokes: {
+          strokeWidth: 1,
+          connectorColors: '#e2e8f0'
+        }
+      }
+    }
+  }
+
+  const polarChartSeries = Array.isArray(salesDistribution) ? salesDistribution.map(item => item.value) : []
 
   if (loading) {
     return (
@@ -201,7 +307,7 @@ const Dashboard = () => {
       >
         <div>
           <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-gray-300 bg-clip-text text-transparent">
-            Welcome back, {company?.name}!
+            Welcome back, {company?.name || 'User'}!
           </h1>
           <p className="text-gray-600 dark:text-gray-400 mt-2 flex items-center">
             <FiClock className="w-4 h-4 mr-2" />
@@ -343,42 +449,10 @@ const Dashboard = () => {
             </div>
           </div>
           
-          <div className="h-80">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={revenueData}>
-                <defs>
-                  <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/>
-                    <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.1} />
-                <XAxis 
-                  dataKey="date" 
-                  stroke="#6B7280"
-                  tick={{ fill: '#6B7280', fontSize: 12 }}
-                />
-                <YAxis 
-                  stroke="#6B7280"
-                  tick={{ fill: '#6B7280', fontSize: 12 }}
-                  tickFormatter={(value) => `$${value}`}
-                />
-                <Tooltip content={<CustomTooltip />} />
-                <Area
-                  type="monotone"
-                  dataKey="revenue"
-                  stroke="#3b82f6"
-                  strokeWidth={3}
-                  fillOpacity={1}
-                  fill="url(#colorRevenue)"
-                  activeDot={{ r: 8, fill: '#3b82f6' }}
-                />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
+          <RevenueChart data={revenueData} height={320} />
         </motion.div>
 
-        {/* Sales Distribution */}
+        {/* Order Status */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -386,52 +460,34 @@ const Dashboard = () => {
           className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6"
         >
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-6">
-            Sales Distribution
+            Order Status
           </h3>
           
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={[
-                    { name: 'Electronics', value: 400 },
-                    { name: 'Clothing', value: 300 },
-                    { name: 'Books', value: 200 },
-                    { name: 'Home', value: 150 },
-                    { name: 'Sports', value: 100 },
-                    { name: 'Other', value: 50 },
-                  ]}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={60}
-                  outerRadius={90}
-                  paddingAngle={2}
-                  dataKey="value"
-                >
-                  {[0,1,2,3,4,5].map((index) => (
-                    <Cell 
-                      key={`cell-${index}`} 
-                      fill={COLORS[index % COLORS.length]}
-                      stroke="none"
-                    />
-                  ))}
-                </Pie>
-                <Tooltip />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
-
-          {/* Legend */}
-          <div className="grid grid-cols-2 gap-3 mt-6">
-            {['Electronics', 'Clothing', 'Books', 'Home', 'Sports', 'Other'].map((item, index) => (
-              <div key={item} className="flex items-center space-x-2">
-                <div className={`w-3 h-3 rounded-full`} style={{ backgroundColor: COLORS[index % COLORS.length] }} />
-                <span className="text-xs text-gray-600 dark:text-gray-400">{item}</span>
-              </div>
-            ))}
-          </div>
+          <OrderStatusChart data={orderStatus} height={256} />
         </motion.div>
       </div>
+
+      {/* Top Products Chart */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.7 }}
+        className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6"
+      >
+        <div className="flex justify-between items-center mb-6">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+            Top Products
+          </h3>
+          <div className="flex items-center space-x-2">
+            <span className="text-sm text-gray-500 dark:text-gray-400">Best performing products</span>
+            <button className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
+              <FiMoreVertical className="w-4 h-4 text-gray-500" />
+            </button>
+          </div>
+        </div>
+        
+        <TopProductsChart data={topProducts} height={320} />
+      </motion.div>
 
       {/* Recent Orders */}
       <motion.div
@@ -485,36 +541,20 @@ const Dashboard = () => {
                   className="group"
                 >
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
-                    #{order.id}
+                    #{order.orderNumber}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
                       <div className="w-8 h-8 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-600 rounded-full flex items-center justify-center text-xs font-medium text-gray-700 dark:text-gray-300">
-                        {(() => {
-                          const customer = order.customer;
-                          if (typeof customer === 'string') {
-                            return customer.charAt(0) || 'U';
-                          } else if (customer && typeof customer === 'object') {
-                            return customer.name?.charAt(0) || customer.first_name?.charAt(0) || 'U';
-                          }
-                          return 'U';
-                        })()}
+                        {order.customer?.name?.charAt(0) || 'U'}
                       </div>
                       <span className="ml-3 text-sm text-gray-600 dark:text-gray-300">
-                        {(() => {
-                          const customer = order.customer;
-                          if (typeof customer === 'string') {
-                            return customer;
-                          } else if (customer && typeof customer === 'object') {
-                            return customer.name || customer.first_name || 'Unknown Customer';
-                          }
-                          return 'Unknown Customer';
-                        })()}
+                        {order.customer?.name || 'Unknown'}
                       </span>
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
-                    ${order.amount?.toLocaleString()}
+                    ${parseFloat(order.total || 0).toLocaleString()}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className={`px-3 py-1 text-xs font-medium rounded-full ${
@@ -532,7 +572,7 @@ const Dashboard = () => {
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                     <div className="flex items-center">
                       <FiCalendar className="w-3 h-3 mr-2" />
-                      {order.date}
+                      {new Date(order.createdAt).toLocaleDateString()}
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right">
