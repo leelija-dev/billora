@@ -88,7 +88,7 @@ const Login = () => {
       saveAuthData(userData, token);
       
       alert("Login Successful ✅");
-      router.push("/");
+      router.push("/pricing");
       
     } catch (error) {
       if (error.message.includes("No account")) {

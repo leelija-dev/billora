@@ -26,7 +26,7 @@ const Pricing = () => {
         const limitedPlans = allPlans.slice(0, 3);
 
         const transformedPlans = limitedPlans.map((plan, index) => {
-          const features = plan.permissions?.map(p => p.permission_name) || [];
+          const features = plan.features || [];
 
           const monthlyPrice = parseFloat(plan.price);
           const yearlyPrice = monthlyPrice * 10;
@@ -64,61 +64,61 @@ const Pricing = () => {
 }, []);
 
   // Fallback plans in case API fails
-  const getFallbackPlans = () => {
-    return [
-      {
-        id: 1,
-        name: 'Basic',
-        price: { monthly: '499', yearly: '4,990' },
-        description: "Perfect for small businesses",
-        features: [
-          'GST Billing',
-          'Invoice Generation',
-          'Customer Management',
-          'Email Support',
-          'Basic Reports',
-          'Mobile App Access'
-        ],
-        color: '#000000',
-        buttonText: 'Start Basic',
-        popular: false,
-      },
-      {
-        id: 2,
-        name: 'Pro',
-        price: { monthly: '999', yearly: '9,990' },
-        description: "Perfect for growing businesses",
-        features: [
-          'All Basic features',
-          'Inventory Management',
-          'Advanced Reports',
-          'Priority Support',
-          'API Access',
-          'Multi-user Access'
-        ],
-        color: '#8b5cf6',
-        buttonText: 'Start Pro',
-        popular: true,
-      },
-      {
-        id: 3,
-        name: 'Enterprise',
-        price: { monthly: '2,499', yearly: '24,990' },
-        description: "Perfect for large organizations",
-        features: [
-          'All Pro features',
-          'Custom Integration',
-          'Dedicated Manager',
-          'SLA Guarantee',
-          'White Labeling',
-          'Unlimited Users'
-        ],
-        color: '#000000',
-        buttonText: 'Contact Sales',
-        popular: false,
-      }
-    ];
-  };
+  // const getFallbackPlans = () => {
+  //   return [
+  //     {
+  //       id: 1,
+  //       name: 'Basic',
+  //       price: { monthly: '499', yearly: '4,990' },
+  //       description: "Perfect for small businesses",
+  //       features: [
+  //         'GST Billing',
+  //         'Invoice Generation',
+  //         'Customer Management',
+  //         'Email Support',
+  //         'Basic Reports',
+  //         'Mobile App Access'
+  //       ],
+  //       color: '#000000',
+  //       buttonText: 'Start Basic',
+  //       popular: false,
+  //     },
+  //     {
+  //       id: 2,
+  //       name: 'Pro',
+  //       price: { monthly: '999', yearly: '9,990' },
+  //       description: "Perfect for growing businesses",
+  //       features: [
+  //         'All Basic features',
+  //         'Inventory Management',
+  //         'Advanced Reports',
+  //         'Priority Support',
+  //         'API Access',
+  //         'Multi-user Access'
+  //       ],
+  //       color: '#8b5cf6',
+  //       buttonText: 'Start Pro',
+  //       popular: true,
+  //     },
+  //     {
+  //       id: 3,
+  //       name: 'Enterprise',
+  //       price: { monthly: '2,499', yearly: '24,990' },
+  //       description: "Perfect for large organizations",
+  //       features: [
+  //         'All Pro features',
+  //         'Custom Integration',
+  //         'Dedicated Manager',
+  //         'SLA Guarantee',
+  //         'White Labeling',
+  //         'Unlimited Users'
+  //       ],
+  //       color: '#000000',
+  //       buttonText: 'Contact Sales',
+  //       popular: false,
+  //     }
+  //   ];
+  // };
 
   // Handle subscription click
   const handleSubscribe = (planId) => {
@@ -229,7 +229,7 @@ const Pricing = () => {
               </div>
 
               <div className="flex-1 mb-8">
-                <h4 className="text-[10px] font-black text-[#1e293b] mb-6 uppercase tracking-[0.2em]">What's included:</h4>
+                <h4 className="text-[10px] font-black text-[#1e293b] mb-6 uppercase tracking-[0.2em]">Included Features:</h4>
                 <ul className="space-y-4">
                   {plan.features.map((feature, idx) => (
                     <li key={idx} className="flex items-start gap-3 text-sm text-[#475569]">

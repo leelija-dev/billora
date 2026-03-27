@@ -62,7 +62,7 @@ export default function TryMobileAppPage() {
               <div className="absolute left-1/2 -translate-x-1/2 top-12 sm:top-16 md:top-20 w-[140px] sm:w-[170px] md:w-[200px] h-[280px] sm:h-[340px] md:h-[400px] bg-gray-800 rounded-[24px] sm:rounded-[28px] md:rounded-[32px] p-1.5 sm:p-2 shadow-xl sm:shadow-2xl animate-floatSlow z-10">
                 <div className="w-full h-full bg-gray-900 rounded-[22px] sm:rounded-[26px] md:rounded-[28px] overflow-hidden relative">
                   <Image
-                    src="/image/mobail.png"
+                    src="/image/phone1.png"
                     alt="Mobile App Interface"
                     fill
                     className="object-cover"

@@ -29,7 +29,7 @@ const Pricing = () => {
         const limitedPlans = allPlans; // show ALL plans
  
          const transformedPlans = limitedPlans.map((plan, index) => {
-           const features = plan.permissions?.map(p => p.permission_name) || [];
+           const features = plan.features || [];
  
            const monthlyPrice = parseFloat(plan.price);
            const yearlyPrice = monthlyPrice * 10;
