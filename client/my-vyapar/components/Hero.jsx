@@ -26,6 +26,7 @@ const Hero = () => {
     <div className="overflow-x-hidden font-sans">
       {/* ===== ANIMATED HERO SECTION ===== */}
       <section className="relative z-10 min-h-[100vh] flex items-center sm:pb-32 sm:pt-10 lg:pb-20 lg:pt-6 bg-gradient-to-br from-slate-50 via-indigo-50 to-sky-100 overflow-hidden">
+        
         <style>{`
           @keyframes fadeInUp { 
             from { opacity: 0; transform: translateY(30px); } 
