@@ -23,4 +23,10 @@ class UserOrders extends Model
         'created_by'
         
     ];
+    public function user(){
+        return $this->belongsTo(Customers::class);
+    }
+    public function items(){
+        return $this->hasMany(UserOrderItems::class ,'customer_order_id');
+    }
 }

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Products;
 use App\Models\UserOrderItems;
 use App\Models\UserOrders;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use function PHPSTORM_META\map;
@@ -125,6 +126,32 @@ class UserOrdersController extends Controller
 
             DB::rollback();
 
+            return response()->json([
+                'status' => false,
+                'message' => $e->getMessage()
+            ]);
+        }
+    }
+
+
+    public function userOrderHistory($id){
+        try{
+        $user = Auth::user()->id;
+        if($user != $id){
+            return response()->json([
+                'status'=>false,
+                'message'=>'Unauthorized user'
+            ]);
+        }
+        $orderHistory = UserOrders::with(['items.product'])
+            ->where('user_id', $id)
+            ->get();
+        return response()->json([
+            'status' => true,
+            'message' => 'Order History',
+            'data' => $orderHistory 
+        ]);
+        }catch(\Exception $e){
             return response()->json([
                 'status' => false,
                 'message' => $e->getMessage()

@@ -21,7 +21,7 @@ class UserOrderItems extends Model
             'created_by'
     ];
 
-    public function products(){
+    public function product(){
         return $this->belongsTo(Products::class, 'product_id');
     }
     public function order(){

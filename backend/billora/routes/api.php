@@ -19,6 +19,7 @@ use App\Http\Controllers\admin\PlanPurchaseHistoryController;
 use App\Http\Controllers\admin\PaymentController;
 use App\Http\Controllers\admin\UserOrdersController;
 use App\Http\Controllers\PlanExpiryController;
+use App\Models\User;
 use App\Models\UserOrders;
 
 Route::get('/test', function () {
@@ -94,6 +95,9 @@ Route::middleware('auth:sanctum')->prefix('invoice')->group(function () {
    
    Route::delete('/{id}', [InvoiceController::class, 'destroy']);
    
+
+   // user order hisrtory
+   Route::get('/user-order-history/{id}', [UserOrdersController::class, 'userOrderHistory']);
 });
 //bill generate from product table(with out stock management)
 Route::prefix('invoices')->group(function () {
@@ -190,4 +194,5 @@ Route::prefix('restaurant-all-products')->group(function () {
 //user product order 
 Route::prefix('orders')->group(function () { 
    Route::post('/store', [UserOrdersController::class, 'store']);
+
 });
