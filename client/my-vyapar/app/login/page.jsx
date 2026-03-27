@@ -88,8 +88,6 @@ const Login = () => {
       saveAuthData(userData, token);
       
       alert("Login Successful ✅");
-      
-      // ✅ AFTER SUCCESSFUL LOGIN - REDIRECT TO PRICING PAGE
       router.push("/pricing");
       
     } catch (error) {

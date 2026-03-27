@@ -1,293 +1,270 @@
 "use client";
-import React, { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+
+import React, { useState, useEffect, useLayoutEffect, useRef } from "react";
+import { usePathname } from "next/navigation";
 import Link from "next/link";
 
 const Navbar = () => {
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [menuOpen, setMenuOpen] = useState(false); // (unused but kept as you said don't remove anything)
   const [scrolled, setScrolled] = useState(false);
-  const router = useRouter();
+  const [activeTab, setActiveTab] = useState(0);
+  
+  // Separate states for active indicator and hover preview
+  const [activeSliderStyle, setActiveSliderStyle] = useState({
+    width: 0,
+    transform: "translate3d(0px, 0, 0)",
+    opacity: 1,
+  });
+  const [activeLineStyle, setActiveLineStyle] = useState({
+    width: 0,
+    transform: "translate3d(0px, 0, 0)",
+    opacity: 1,
+  });
+  
+  const [hoverStyle, setHoverStyle] = useState({
+    width: 0,
+    transform: "translate3d(0px, 0, 0)",
+    opacity: 0,
+  });
 
-  // Handle scroll effect for better UX
+  const navRefs = useRef([]);
+  const containerRef = useRef(null);
+  const firstLoad = useRef(true);
+  const hoverTimeoutRef = useRef(null);
+
+  const pathname = usePathname();
+
+  // Route mapping
+  const routeMap = {
+    "/": 0,
+    "/trymobile": 1,
+    "/carrers": 2,
+    "/partner": 3,
+    "/solution": 4,
+    "/about": 5,
+    "/pricing": 6,
+    "/contact": 7,
+  };
+
   useEffect(() => {
-  //  .
-    const handleScroll = () => {
-      setScrolled(window.scrollY > 20);
+    setActiveTab(routeMap[pathname] ?? 0);
+  }, [pathname]);
+
+  // Update active indicator position
+  const updateActiveIndicator = () => {
+    const current = navRefs.current[activeTab];
+    const parent = containerRef.current;
+
+    if (!current || !parent) return;
+
+    const parentRect = parent.getBoundingClientRect();
+    const rect = current.getBoundingClientRect();
+
+    const left = rect.left - parentRect.left;
+    const width = rect.width;
+
+    const transition = firstLoad.current
+      ? "none"
+      : "all 0.4s cubic-bezier(0.34, 1.2, 0.64, 1)";
+
+    const commonStyle = {
+      width: `${width}px`,
+      transform: `translate3d(${left}px, 0, 0)`,
+      opacity: 1,
+      transition,
     };
+
+    setActiveSliderStyle(commonStyle);
+    setActiveLineStyle(commonStyle);
+  };
+
+  // Handle hover preview
+  const handleMouseEnter = (index) => {
+    // Clear any existing timeout
+    if (hoverTimeoutRef.current) {
+      clearTimeout(hoverTimeoutRef.current);
+    }
+
+    const element = navRefs.current[index];
+    const parent = containerRef.current;
+
+    if (!element || !parent) return;
+
+    const parentRect = parent.getBoundingClientRect();
+    const rect = element.getBoundingClientRect();
+
+    const left = rect.left - parentRect.left;
+    const width = rect.width;
+
+    setHoverStyle({
+      width: `${width}px`,
+      transform: `translate3d(${left}px, 0, 0)`,
+      opacity: 0.5,
+      transition: "all 0.25s cubic-bezier(0.4, 0, 0.2, 1)",
+    });
+  };
+
+  const handleMouseLeave = () => {
+    // Delay hiding hover to prevent flickering when moving between items
+    hoverTimeoutRef.current = setTimeout(() => {
+      setHoverStyle((prev) => ({
+        ...prev,
+        opacity: 0,
+        transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
+      }));
+    }, 50);
+  };
+
+  // Update indicator on active tab change and resize
+  useLayoutEffect(() => {
+    updateActiveIndicator();
+    firstLoad.current = false;
+  }, [activeTab]);
+
+  // Handle window resize and font loading
+  useEffect(() => {
+    const handleResize = () => {
+      updateActiveIndicator();
+    };
+
+    // Use ResizeObserver for dynamic content changes
+    const resizeObserver = new ResizeObserver(() => {
+      updateActiveIndicator();
+    });
+
+    if (containerRef.current) {
+      resizeObserver.observe(containerRef.current);
+    }
+
+    window.addEventListener("resize", handleResize);
+    
+    // Handle font loading
+    if (document.fonts) {
+      document.fonts.ready.then(() => {
+        updateActiveIndicator();
+      });
+    }
+
+    return () => {
+      window.removeEventListener("resize", handleResize);
+      resizeObserver.disconnect();
+      if (hoverTimeoutRef.current) {
+        clearTimeout(hoverTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  // Scroll shadow effect
+  useEffect(() => {
+    const handleScroll = () => setScrolled(window.scrollY > 20);
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  const handleLogoClick = () => {
-    if (typeof window !== "undefined") {
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    }
-    setIsMenuOpen(false);
-  };
-
-  const handleLinkClick = (section) => {
-    if (typeof window !== "undefined") {
-      document.getElementById(section)?.scrollIntoView({
-        behavior: "smooth",
-      });
-    }
-    setIsMenuOpen(false);
-  };
+  const navItems = [
+    { name: "Home", href: "/" },
+    { name: "Try Mobile", href: "/trymobile" },
+    { name: "Carrers", href: "/carrers" },
+    { name: "Partner", href: "/partner" },
+    { name: "Solution", href: "/solution" },
+    { name: "About", href: "/about" },
+    { name: "Pricing", href: "/pricing" },
+    { name: "Contact", href: "/contact" },
+  ];
 
   return (
-    <>
-      <nav className={`sticky top-0 bg-white z-[1000] h-20 flex items-center px-4 md:px-6 lg:px-8 xl:px-10 transition-shadow ${scrolled ? 'shadow-md' : 'shadow-sm'}`}>
-        <div className="max-w-[1400px] w-full mx-auto flex justify-between items-center h-full">
+    <nav
+      className={`sticky top-0 bg-white z-[1000] h-20 flex items-center px-6 transition-all duration-300 ${
+        scrolled ? "shadow-lg border-b border-gray-100" : "shadow-sm"
+      }`}
+    >
+      <div className="max-w-[1400px] w-full mx-auto flex justify-between items-center">
+        {/* Logo with hover effect */}
+        <Link 
+          href="/" 
+          className="flex items-center gap-2 group"
+        >
+          <span className="bg-blue-600 text-white px-2 py-1 rounded text-2xl font-bold transition-transform group-hover:scale-105">
+            B
+          </span>
+          <span className="text-2xl font-bold text-slate-800 group-hover:text-blue-600 transition-colors">
+            Billora
+          </span>
+        </Link>
 
-          {/* Logo - Responsive sizing */}
-          <Link
-            href="/"
-            className="flex items-center gap-1.5 sm:gap-2 lg:gap-2.5 transition-transform hover:scale-105 flex-shrink-0"
-            onClick={handleLogoClick}
+        {/* Desktop Navigation */}
+        <div className="hidden lg:flex items-center gap-6">
+          <div 
+            ref={containerRef} 
+            className="relative flex items-center"
+            onMouseLeave={handleMouseLeave}
           >
-            <span className="bg-blue-600 text-white px-2 sm:px-2.5 py-1 rounded text-xl sm:text-2xl lg:text-3xl font-bold leading-none">
-              B
-            </span>
-            <span className="text-slate-800 text-xl sm:text-2xl lg:text-3xl font-bold leading-none">
-              Billora
-            </span>
-          </Link>
+            {/* Hover Preview Slider - Semi-transparent */}
+            <div
+              className="absolute top-2 h-[36px] bg-blue-100 rounded-md pointer-events-none"
+              style={{
+                ...hoverStyle,
+                opacity: hoverStyle.opacity,
+                transition: hoverStyle.transition || "all 0.25s ease",
+              }}
+            />
 
-          {/* Mobile Toggle Button - Only visible on mobile/tablet */}
-          <button
-            className="flex lg:hidden flex-col gap-1.5 p-2 z-[1001] focus:outline-none focus:ring-2 focus:ring-blue-600 rounded hover:bg-gray-50 transition-colors"
-            onClick={() => setIsMenuOpen(true)}
-            aria-label="Toggle menu"
-          >
-            <span className="w-6 h-0.5 bg-slate-800 transition-all" />
-            <span className="w-6 h-0.5 bg-slate-800 transition-all" />
-            <span className="w-6 h-0.5 bg-slate-800 transition-all" />
-          </button>
+            {/* Active Background Slider */}
+            <div
+              className="absolute top-2 h-[36px] bg-blue-100 rounded-md pointer-events-none"
+              style={activeSliderStyle}
+            />
 
-          {/* DESKTOP MENU - Hidden on mobile/tablet, visible on lg and up */}
-          <div className="hidden lg:flex lg:flex-1 lg:justify-end lg:items-center lg:gap-4 xl:gap-8">
-            {/* Navigation Links - Responsive spacing for different large screens */}
-            <ul className="flex flex-row list-none gap-2 xl:gap-5 m-0 p-0 items-center">
-              <li className="w-full lg:w-auto border-b lg:border-none border-slate-100">
-                <Link
-                  href="/"
-                  className="block py-4 lg:py-0 text-slate-500 font-medium text-xs xl:text-sm transition-colors 
-                  hover:text-blue-600 lg:border-b-2 lg:border-transparent lg:hover:border-blue-600 
-                  capitalize whitespace-nowrap w-full text-left px-2 xl:px-0"
+            {/* Active Bottom Line Indicator */}
+            <div
+              className="absolute bottom-0 h-[3px] bg-blue-600 rounded-full pointer-events-none shadow-sm"
+              style={{
+                ...activeLineStyle,
+                boxShadow: "0 0 6px rgba(59,130,246,0.4)",
+              }}
+            />
+
+            {/* Navigation Links */}
+            <ul className="flex relative z-10">
+              {navItems.map((item, index) => (
+                <li
+                  key={index}
+                  ref={(el) => (navRefs.current[index] = el)}
+                  className="px-4"
                 >
-                  Home
-                </Link>
-              </li>
-              <li className="w-full lg:w-auto border-b lg:border-none border-slate-100">
-                <Link
-                  href="/trymobile"
-                  className="block py-4 lg:py-0 text-slate-500 font-medium text-xs xl:text-sm transition-colors 
-                  hover:text-blue-600 lg:border-b-2 lg:border-transparent lg:hover:border-blue-600 
-                  capitalize whitespace-nowrap w-full text-left px-2 xl:px-0"
-                >
-                  Try Mobile App
-                </Link>
-              </li>
-              <li className="w-full lg:w-auto border-b lg:border-none border-slate-100">
-                <Link
-                  href="/carrers"
-                  className="block py-4 lg:py-0 text-slate-500 font-medium text-xs xl:text-sm transition-colors 
-                  hover:text-blue-600 lg:border-b-2 lg:border-transparent lg:hover:border-blue-600 
-                  capitalize whitespace-nowrap w-full text-left px-2 xl:px-0"
-                >
-                  Carrers
-                </Link>
-              </li>
-              <li className="w-full lg:w-auto border-b lg:border-none border-slate-100">
-                <Link
-                  href="/partner"
-                  className="block py-4 lg:py-0 text-slate-500 font-medium text-xs xl:text-sm transition-colors 
-                  hover:text-blue-600 lg:border-b-2 lg:border-transparent lg:hover:border-blue-600 
-                  capitalize whitespace-nowrap w-full text-left px-2 xl:px-0"
-                >
-                  Partner
-                </Link>
-              </li>
-              <li className="w-full lg:w-auto border-b lg:border-none border-slate-100">
-                <Link
-                  href="/solution"
-                  className="block py-4 lg:py-0 text-slate-500 font-medium text-xs xl:text-sm transition-colors 
-                  hover:text-blue-600 lg:border-b-2 lg:border-transparent lg:hover:border-blue-600 
-                  capitalize whitespace-nowrap w-full text-left px-2 xl:px-0"
-                >
-                  Solution
-                </Link>
-              </li>
-              <li className="w-full lg:w-auto border-b lg:border-none border-slate-100">
-                <Link
-                  href="/about"
-                  className="block py-4 lg:py-0 text-slate-500 font-medium text-xs xl:text-sm transition-colors 
-                  hover:text-blue-600 lg:border-b-2 lg:border-transparent lg:hover:border-blue-600 
-                  capitalize whitespace-nowrap w-full text-left px-2 xl:px-0"
-                >
-                  About Us
-                </Link>
-              </li>
-              <li className="w-full lg:w-auto border-b lg:border-none border-slate-100">
-                <Link
-                  href="/pricing"
-                  className="block py-4 lg:py-0 text-slate-500 font-medium text-xs xl:text-sm transition-colors 
-                  hover:text-blue-600 lg:border-b-2 lg:border-transparent lg:hover:border-blue-600 
-                  capitalize whitespace-nowrap w-full text-left px-2 xl:px-0"
-                >
-                  Pricing
-                </Link>
-              </li>
-              <li className="w-full lg:w-auto border-b lg:border-none border-slate-100">
-                <Link
-                  href="/contact"
-                  className="block py-4 lg:py-0 text-slate-500 font-medium text-xs xl:text-sm transition-colors 
-                  hover:text-blue-600 lg:border-b-2 lg:border-transparent lg:hover:border-blue-600 
-                  capitalize whitespace-nowrap w-full text-left px-2 xl:px-0"
-                >
-                  Contact Us
-                </Link>
-              </li>
+                  <Link
+                    href={item.href}
+                    onClick={() => setActiveTab(index)}
+                    onMouseEnter={() => handleMouseEnter(index)}
+                    className={`block py-3 text-sm font-medium transition-all duration-200 ${
+                      activeTab === index
+                        ? "text-blue-600"
+                        : "text-slate-500 hover:text-blue-500"
+                    }`}
+                  >
+                    {item.name}
+                  </Link>
+                </li>
+              ))}
             </ul>
-
-            {/* CTA Buttons - Responsive for different screen sizes */}
-            <div className="flex items-center gap-2 xl:gap-4 flex-shrink-0">
-              <Link
-                href="/bookdemo"
-                className="px-3 xl:px-4 h-9 xl:h-10 bg-gradient-to-br from-blue-500 to-purple-600 text-white rounded-full font-semibold text-xs xl:text-sm flex items-center justify-center whitespace-nowrap hover:shadow-lg transition-all"
-              >
-                Book free demo
-              </Link>
-
-              <Link
-                href="/login"
-                className="px-4 xl:px-6 h-9 xl:h-10 bg-blue-600 text-white rounded-full font-semibold text-xs xl:text-sm flex items-center justify-center whitespace-nowrap hover:bg-blue-700 transition-colors"
-              >
-                Login
-              </Link>
-            </div>
           </div>
-        </div>
-      </nav>
 
-      {/* OVERLAY - For mobile menu */}
-      {isMenuOpen && (
-        <div
-          className="fixed inset-0 bg-black/40 z-[999] lg:hidden"
-          onClick={() => setIsMenuOpen(false)}
-        />
-      )}
-
-      {/* SIDEBAR (MOBILE/TABLET) - Optimized for all mobile sizes */}
-      <div
-        className={`fixed top-0 left-0 h-full w-72 sm:w-80 bg-white z-[1000] shadow-xl transform transition-transform duration-300 ease-in-out lg:hidden
-        ${isMenuOpen ? "translate-x-0" : "-translate-x-full"}`}
-      >
-        {/* HEADER */}
-        <div className="flex items-center justify-between p-4 sm:p-5 border-b">
-          <h2 className="text-xl sm:text-2xl font-bold text-blue-600">Menu</h2>
-          <button 
-            onClick={() => setIsMenuOpen(false)}
-            className="w-8 h-8 flex items-center justify-center text-xl hover:bg-gray-100 rounded-full transition-colors"
-            aria-label="Close menu"
+          {/* Login Button with hover animation */}
+          <Link
+            href="/login"
+            className="px-5 py-2 bg-blue-600 text-white rounded-full text-sm font-semibold transition-all duration-200 hover:bg-blue-700 hover:shadow-md hover:scale-105 active:scale-95"
           >
-            ✕
-          </button>
+            Login
+          </Link>
         </div>
 
-        {/* MENU ITEMS - Scrollable if needed */}
-        <div className="flex flex-col gap-3 sm:gap-4 p-4 sm:p-5 text-sm sm:text-base font-medium overflow-y-auto max-h-[calc(100vh-80px)]">
-          
-          <Link 
-            href="/" 
-            onClick={() => setIsMenuOpen(false)}
-            className="py-2 px-3 hover:bg-gray-50 rounded-lg transition-colors"
-          >
-            Home
-          </Link>
-          
-          <Link 
-            href="/trymobile" 
-            onClick={() => setIsMenuOpen(false)}
-            className="py-2 px-3 hover:bg-gray-50 rounded-lg transition-colors"
-          >
-            Try Mobile App
-          </Link>
-          
-          <Link 
-            href="/carrers" 
-            onClick={() => setIsMenuOpen(false)}
-            className="py-2 px-3 hover:bg-gray-50 rounded-lg transition-colors"
-          >
-            Carrers
-          </Link>
-          
-          <Link 
-            href="/partner" 
-            onClick={() => setIsMenuOpen(false)}
-            className="py-2 px-3 hover:bg-gray-50 rounded-lg transition-colors"
-          >
-            Partner
-          </Link>
-          
-          <Link 
-            href="/solution" 
-            onClick={() => setIsMenuOpen(false)}
-            className="py-2 px-3 hover:bg-gray-50 rounded-lg transition-colors"
-          >
-            Solution
-          </Link>
-          
-          <Link 
-            href="/about" 
-            onClick={() => setIsMenuOpen(false)}
-            className="py-2 px-3 hover:bg-gray-50 rounded-lg transition-colors"
-          >
-            About Us
-          </Link>
-          
-          <Link 
-            href="/pricing" 
-            onClick={() => setIsMenuOpen(false)}
-            className="py-2 px-3 hover:bg-gray-50 rounded-lg transition-colors"
-          >
-            Pricing
-          </Link>
-          
-          <Link 
-            href="/contact" 
-            onClick={() => setIsMenuOpen(false)}
-            className="py-2 px-3 hover:bg-gray-50 rounded-lg transition-colors"
-          >
-            Contact Us
-          </Link>
-
-          {/* CTA Buttons in Mobile Menu */}
-          <div className="mt-4 space-y-3">
-            <Link
-              href="/bookdemo"
-              className="w-full px-4 h-12 bg-gradient-to-br from-blue-500 to-purple-600 text-white 
-              rounded-full text-sm font-semibold flex items-center justify-center 
-              backdrop-blur-md shadow-lg hover:shadow-xl transition-all"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              Book free demo
-            </Link>
-
-            <Link
-              href="/login"
-              className="w-full px-4 h-12 bg-gradient-to-br from-blue-600 to-blue-800 text-white 
-              rounded-full text-sm font-semibold flex items-center justify-center 
-              backdrop-blur-md shadow-lg hover:shadow-xl transition-all"
-              onClick={() => setIsMenuOpen(false)} 
-            >
-              Login
-            </Link>
-          </div>
-        </div>
+        {/* Mobile Menu Button - Placeholder for future mobile implementation */}
+        <button className="lg:hidden p-2 rounded-md hover:bg-gray-100 transition-colors">
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
+        </button>
       </div>
-    </>
+    </nav>
   );
 };
 
