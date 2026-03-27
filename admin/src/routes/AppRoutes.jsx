@@ -48,7 +48,7 @@ const AppRoutes = () => {
           <Route path="/units" element={<Units />} />
           <Route path="/stores" element={<Stores />} />
           <Route path="/stock" element={<ProtectedRoute feature="stock-management"><Inventory /></ProtectedRoute>} />
-          <Route path="/orders" element={<Orders />} />
+          <Route path="/orders" element={<ProtectedRoute feature="hide-with-stock"><Orders /></ProtectedRoute>} />
           <Route path="/customers" element={<Customers />} />
           <Route path="/customers/:id" element={<CustomerDetails />} />
           <Route path="/invoices" element={<Invoices />} />

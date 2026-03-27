@@ -55,7 +55,7 @@ const Sidebar = () => {
     { path: '/units', name: 'Units', icon: TbRuler2, badge: null },
     { path: '/stores', name: 'Stores', icon: FaStore, badge: null },
     { path: '/stock', name: 'Stock', icon: FiArchive, badge: 'Low Stock', permission: 'stock-management' },
-    { path: '/orders', name: 'Orders', icon: FiShoppingBag, badge: '12' },
+    { path: '/orders', name: 'Orders', icon: FiShoppingBag, badge: '12', permission: 'hide-with-stock' },
     { path: '/customers', name: 'Customers', icon: FiUsers, badge: null },
     { path: '/invoices', name: 'Invoices', icon: FiFileText, badge: '3' },
     { path: '/reports', name: 'Reports', icon: FiBarChart2, badge: null },
@@ -66,6 +66,10 @@ const Sidebar = () => {
   // Filter menu items based on permissions
   const filteredMenuItems = menuItems.filter(item => {
     if (!item.permission) return true; // Show items without permission requirements
+    if (item.permission === 'hide-with-stock') {
+      // Hide this item if user has stock management permission
+      return !canAccess('stock-management');
+    }
     return canAccess(item.permission);
   });
 
