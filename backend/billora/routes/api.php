@@ -17,6 +17,8 @@ use App\Http\Controllers\admin\CartsController;
 use App\Http\Controllers\admin\ReportController;
 use App\Http\Controllers\admin\PlanPurchaseHistoryController;
 use App\Http\Controllers\admin\PaymentController;
+use App\Http\Controllers\PlanExpiryController;
+
 Route::get('/test', function () {
    return response()->json([
       'message' => 'Hello World',
@@ -169,4 +171,9 @@ Route::middleware('auth:sanctum')->prefix('plans-purchase-history')->group(funct
 Route::prefix('cashfree')->group(function () {
     Route::post('/create-order', [PaymentController::class, 'createOrder']);
     Route::get('/verify/{order_id}', [PaymentController::class, 'verifyPayment']);
+});
+
+//plan expire reminder
+Route::middleware('auth:sanctum')->prefix('plan-expire-reminder')->group(function () {
+   Route::get('/{id}', [PlanExpiryController::class, 'getExpiringPlans']);
 });
