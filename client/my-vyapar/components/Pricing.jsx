@@ -26,7 +26,7 @@ const Pricing = () => {
         const limitedPlans = allPlans.slice(0, 3);
 
         const transformedPlans = limitedPlans.map((plan, index) => {
-          const features = plan.features || [];
+        const features = plan.features || [];
 
           const monthlyPrice = parseFloat(plan.price);
           const yearlyPrice = monthlyPrice * 10;
