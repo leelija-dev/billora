@@ -7,8 +7,8 @@ import Nav2 from "@/components/Nav2";
 import Footer from "@/components/Footer";
 
 const PRODUCTS_PER_PAGE = 12;
-const API_BASE_URL = "http://localhost:8000/api";
-
+const API_BASE_URL = "http://localhost:8000/api/restaurant-all-products/{id}";
+console.log(API_BASE_URL);
 export default function ProductsPage() {
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("All");
