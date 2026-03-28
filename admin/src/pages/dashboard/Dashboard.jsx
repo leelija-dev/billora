@@ -1197,7 +1197,7 @@ const generateProfessionalPDF = async () => {
               <motion.p 
                 initial={{ scale: 0.5 }}
                 animate={{ scale: 1 }}
-                className="text-3xl font-bold text-gray-900 dark:text-white mt-2"
+                className="text-3xl font-bold text-gray-900 dark:text-white mt-2 break-all"
               >
                 {value}
               </motion.p>
@@ -1441,7 +1441,7 @@ const generateProfessionalPDF = async () => {
         </motion.div>
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
           <StatCard
             title="Total Revenue"
             value={`$${Number(stats.revenue || 0).toLocaleString()}`}
