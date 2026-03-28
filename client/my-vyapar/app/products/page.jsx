@@ -6,64 +6,28 @@ import Link from "next/link";
 import Nav2 from "@/components/Nav2";
 import Footer from "@/components/Footer";
 
-// Product templates
-const productTemplates = [
-  { baseName: "Basket", category: "Software", price: 1999, img: "basket" },
-  { baseName: "Headphones", category: "Electronics", price: 2999, img: "headphones" },
-  { baseName: "Laptop", category: "Electronics", price: 50000, img: "laptop2" },
-  { baseName: "Smart Watch", category: "Accessories", price: 3999, img: "watch" },
-  { baseName: "iPhone 14", category: "Mobile", price: 69999, img: "iphone" },
-  { baseName: "Samsung S23", category: "Mobile", price: 74999, img: "samsung" },
-  { baseName: "Basmati Rice", category: "Grocery", price: 499, img: "basmati" },
-  { baseName: "Cooking Oil", category: "Grocery", price: 180, img: "oil" },
-  { baseName: "Green Tea", category: "Grocery", price: 499, img: "grrentea" },
-  { baseName: "Casual Shirt", category: "Fashion", price: 749, img: "shirt" },
-  { baseName: "Mini Dress", category: "Fashion", price: 999, img: "minidress" },
-  { baseName: "Maxi Dress", category: "Fashion", price: 1299, img: "dress" },
-];
-
-// Generate 240 products
-const generateProducts = () => {
-  const products = [];
-  let id = 1;
-
-  for (let variation = 0; variation < 10; variation++) {
-    productTemplates.forEach((template) => {
-      const priceVariation = Math.floor(Math.random() * 500) - 250;
-      const finalPrice = Math.max(99, template.price + priceVariation);
-      
-      products.push({
-        id: id++,
-        title: variation === 0 ? template.baseName : `${template.baseName} ${String.fromCharCode(65 + variation)}`,
-        price: finalPrice,
-        rating: Math.floor(Math.random() * 3) + 3,
-        img: `/image/${template.img}.png`,
-        category: template.category,
-        description: `High quality ${template.category.toLowerCase()} product for daily use.`,
-        discount: Math.random() > 0.7 ? Math.floor(Math.random() * 30) + 10 : 0,
-        inStock: Math.random() > 0.15,
-        brand: ["Apple", "Samsung", "Sony", "LG", "Nike", "Adidas", "Puma", "Local"][Math.floor(Math.random() * 8)]
-      });
-    });
-  }
-
-  return products;
-};
-
-const ALL_PRODUCTS = generateProducts();
-const categories = ["All", ...new Set(ALL_PRODUCTS.map(p => p.category))];
 const PRODUCTS_PER_PAGE = 12;
 
 export default function ProductsPage() {
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("All");
   const [sort, setSort] = useState("");
-  const [maxPrice, setMaxPrice] = useState(75000);
+  const [maxPrice, setMaxPrice] = useState(2000);
   const [rating, setRating] = useState(0);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [inStockOnly, setInStockOnly] = useState(false);
+  
+  // Dynamic data from API
+  const [allProducts, setAllProducts] = useState([]);
+  const [categories, setCategories] = useState(["All"]);
+  const [loadingProducts, setLoadingProducts] = useState(true);
+  const [loadingCategories, setLoadingCategories] = useState(true);
+  
+  // Cart state with sessionStorage persistence
   const [cart, setCart] = useState([]);
+  const [isHydrated, setIsHydrated] = useState(false);
+  
   const [showCart, setShowCart] = useState(false);
   const [showCheckout, setShowCheckout] = useState(false);
   const [popup, setPopup] = useState(false);
@@ -71,14 +35,9 @@ export default function ProductsPage() {
   const [orderPlaced, setOrderPlaced] = useState(false);
 
   const [formData, setFormData] = useState({
-    fullName: "",
-    email: "",
     phone: "",
-    address: "",
-    city: "",
-    state: "",
-    pincode: "",
-    paymentMethod: "cod"
+  pincode: "",
+  paymentMethod: "cod"
   });
 
   const [displayedProducts, setDisplayedProducts] = useState([]);
@@ -88,12 +47,90 @@ export default function ProductsPage() {
   const [initialLoading, setInitialLoading] = useState(true);
   const [filteredCount, setFilteredCount] = useState(0);
   
+  // Refs for lazy loading
   const lastProductRef = useRef(null);
+  const observerRef = useRef(null);
 
-  // Function to save order to localStorage
+  // Fetch products from DummyJSON API using fetch
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        setLoadingProducts(true);
+        const response = await fetch('https://dummyjson.com/products');
+        const data = await response.json();
+        
+        // DummyJSON returns { products: [...] } - access the products array
+        const productsArray = data.products || [];
+        
+        // Transform API data to match our product structure
+        const transformedProducts = productsArray.map(product => ({
+          id: product.id,
+          title: product.title,
+          description: product.description,
+          price: product.price,
+          rating: Math.round(product.rating),
+          thumbnail: product.thumbnail,
+          category: product.category,
+          discount: product.discountPercentage || 0,
+          inStock: product.stock > 0,
+          brand: product.brand || product.category,
+          stock: product.stock,
+          images: product.images || [product.thumbnail]
+        }));
+        
+        setAllProducts(transformedProducts);
+        
+        // Extract unique categories from products
+        const uniqueCategories = [...new Set(transformedProducts.map(p => p.category))];
+        setCategories(["All", ...uniqueCategories.sort()]);
+        
+        setLoadingProducts(false);
+        
+        // Update max price based on products
+        if (transformedProducts.length > 0) {
+          const maxProductPrice = Math.max(...transformedProducts.map(p => p.price));
+          setMaxPrice(maxProductPrice);
+        }
+        
+      } catch (error) {
+        console.error('Error fetching products:', error);
+        setLoadingProducts(false);
+      }
+    };
+    
+    fetchProducts();
+  }, []);
+
+  // Load cart from sessionStorage
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const storedCart = sessionStorage.getItem('cart');
+      if (storedCart) {
+        try {
+          const parsedCart = JSON.parse(storedCart);
+          setCart(parsedCart);
+        } catch (error) {
+          console.error('Failed to parse cart from sessionStorage:', error);
+          setCart([]);
+        }
+      } else {
+        setCart([]);
+      }
+      setIsHydrated(true);
+    }
+  }, []);
+
+  // Save cart to sessionStorage
+  useEffect(() => {
+    if (isHydrated && typeof window !== 'undefined') {
+      sessionStorage.setItem('cart', JSON.stringify(cart));
+    }
+  }, [cart, isHydrated]);
+
+  // Function to save order to sessionStorage
   const saveOrderToLocalStorage = (orderData) => {
     try {
-      const existingOrders = JSON.parse(localStorage.getItem('userOrders') || '[]');
+      const existingOrders = JSON.parse(sessionStorage.getItem('userOrders') || '[]');
       
       const newOrder = {
         id: `ORD-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
@@ -109,13 +146,30 @@ export default function ProductsPage() {
       };
       
       existingOrders.unshift(newOrder);
-      localStorage.setItem('userOrders', JSON.stringify(existingOrders));
+      sessionStorage.setItem('userOrders', JSON.stringify(existingOrders));
       
       return newOrder;
     } catch (error) {
       console.error('Error saving order:', error);
       return null;
     }
+  };
+
+  // Clear cart function
+  const clearCart = () => {
+    if (cart.length === 0) return;
+    
+    setCart([]);
+    setPopupMessage("Cart cleared successfully!");
+    setPopup(true);
+    
+    if (window.popupTimeout) {
+      clearTimeout(window.popupTimeout);
+    }
+    
+    window.popupTimeout = setTimeout(() => {
+      setPopup(false);
+    }, 2000);
   };
 
   // Cart functions
@@ -134,7 +188,7 @@ export default function ProductsPage() {
       return [...prev, { ...product, quantity: 1 }];
     });
     
-    setPopupMessage(`${product.title} added to cart!`);
+    setPopupMessage(`${product.title.substring(0, 30)}${product.title.length > 30 ? '...' : ''} added to cart!`);
     setPopup(true);
     
     if (window.popupTimeout) {
@@ -194,18 +248,16 @@ export default function ProductsPage() {
     }));
   };
 
-  // Updated handlePlaceOrder with localStorage
   const handlePlaceOrder = (e) => {
     e.preventDefault();
     
-    if (!formData.fullName || !formData.email || !formData.phone || !formData.address || !formData.city || !formData.state || !formData.pincode) {
+    if (!formData.phone || !formData.pincode) {
       setPopupMessage("Please fill all fields!");
       setPopup(true);
       setTimeout(() => setPopup(false), 2000);
       return;
     }
 
-    // Create order data
     const orderData = {
       total: getCartTotal(),
       paymentMethod: formData.paymentMethod,
@@ -214,21 +266,15 @@ export default function ProductsPage() {
         name: item.title,
         quantity: item.quantity,
         price: item.price,
-        image: item.img,
+        image: item.thumbnail,
         category: item.category
       })),
       shippingAddress: {
-        fullName: formData.fullName,
-        email: formData.email,
         phone: formData.phone,
-        address: formData.address,
-        city: formData.city,
-        state: formData.state,
-        pincode: formData.pincode
+  pincode: formData.pincode
       }
     };
 
-    // Save order to localStorage
     const savedOrder = saveOrderToLocalStorage(orderData);
     
     if (savedOrder) {
@@ -238,19 +284,12 @@ export default function ProductsPage() {
       setPopupMessage("🎉 Order placed successfully!");
       setPopup(true);
       
-      // Clear cart after order
       setCart([]);
       
-      // Reset form
       setFormData({
-        fullName: "",
-        email: "",
         phone: "",
-        address: "",
-        city: "",
-        state: "",
-        pincode: "",
-        paymentMethod: "cod"
+  pincode: "",
+  paymentMethod: "cod"
       });
       
       setTimeout(() => {
@@ -268,9 +307,25 @@ export default function ProductsPage() {
     setShowCheckout(false);
   };
 
+  // Helper function to format category name with emoji
+  const formatCategoryName = (category) => {
+    if (!category || typeof category !== 'string') {
+      return '📦 Products';
+    }
+    
+    const categoryMap = {
+      'beauty': '💄 Beauty',
+      'fragrances': '🌸 Fragrances',
+      'furniture': '🪑 Furniture',
+      'groceries': '🛒 Groceries',
+    };
+    
+    return categoryMap[category.toLowerCase()] || `📦 ${category.charAt(0).toUpperCase() + category.slice(1)}`;
+  };
+
   // Filter products
   const getFilteredProducts = useCallback(() => {
-    return ALL_PRODUCTS.filter((p) => {
+    return allProducts.filter((p) => {
       const matchesSearch = p.title.toLowerCase().includes(search.toLowerCase());
       const matchesCategory = category === "All" || p.category === category;
       const matchesPrice = p.price <= maxPrice;
@@ -279,7 +334,7 @@ export default function ProductsPage() {
       
       return matchesSearch && matchesCategory && matchesPrice && matchesRating && matchesStock;
     });
-  }, [search, category, maxPrice, rating, inStockOnly]);
+  }, [search, category, maxPrice, rating, inStockOnly, allProducts]);
 
   const getSortedProducts = useCallback((productsToSort) => {
     const sorted = [...productsToSort];
@@ -289,21 +344,23 @@ export default function ProductsPage() {
     return sorted;
   }, [sort]);
 
+  // Reset pagination when filters change
   useEffect(() => {
+    if (allProducts.length === 0) return;
+    
     setInitialLoading(true);
     
-    setTimeout(() => {
-      const filtered = getFilteredProducts();
-      const sorted = getSortedProducts(filtered);
-      setFilteredCount(sorted.length);
-      
-      setDisplayedProducts(sorted.slice(0, PRODUCTS_PER_PAGE));
-      setPage(1);
-      setHasMore(sorted.length > PRODUCTS_PER_PAGE);
-      setInitialLoading(false);
-    }, 1000);
-  }, [search, category, maxPrice, rating, sort, inStockOnly, getFilteredProducts, getSortedProducts]);
+    const filtered = getFilteredProducts();
+    const sorted = getSortedProducts(filtered);
+    setFilteredCount(sorted.length);
+    
+    setDisplayedProducts(sorted.slice(0, PRODUCTS_PER_PAGE));
+    setPage(1);
+    setHasMore(sorted.length > PRODUCTS_PER_PAGE);
+    setInitialLoading(false);
+  }, [search, category, maxPrice, rating, sort, inStockOnly, getFilteredProducts, getSortedProducts, allProducts]);
 
+  // Lazy load more products
   const loadMoreProducts = useCallback(() => {
     if (loading || !hasMore) return;
     
@@ -327,27 +384,39 @@ export default function ProductsPage() {
       }
       
       setLoading(false);
-    }, 800);
+    }, 300);
   }, [loading, hasMore, page, getFilteredProducts, getSortedProducts]);
 
+  // Intersection Observer for infinite scroll
   useEffect(() => {
-    if (loading || initialLoading) return;
+    if (loading || initialLoading || !hasMore) return;
 
-    const observer = new IntersectionObserver(
+    if (observerRef.current) {
+      observerRef.current.disconnect();
+    }
+
+    observerRef.current = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting && hasMore) {
+        if (entries[0].isIntersecting && hasMore && !loading) {
           loadMoreProducts();
         }
       },
-      { threshold: 0.1, rootMargin: '200px' }
+      { 
+        threshold: 0.1,
+        rootMargin: '200px'
+      }
     );
 
     if (lastProductRef.current) {
-      observer.observe(lastProductRef.current);
+      observerRef.current.observe(lastProductRef.current);
     }
 
-    return () => observer.disconnect();
-  }, [loading, initialLoading, hasMore, loadMoreProducts]);
+    return () => {
+      if (observerRef.current) {
+        observerRef.current.disconnect();
+      }
+    };
+  }, [loading, initialLoading, hasMore, loadMoreProducts, displayedProducts]);
 
   const openProduct = (product) => {
     setSelectedProduct(product);
@@ -359,7 +428,7 @@ export default function ProductsPage() {
   };
 
   const handleImageError = (e) => {
-    e.currentTarget.src = "/image/placeholder.png";
+    e.currentTarget.src = "https://cdn.dummyjson.com/placeholder.png";
   };
 
   useEffect(() => {
@@ -369,6 +438,31 @@ export default function ProductsPage() {
       }
     };
   }, []);
+
+  const cartItemCount = isHydrated ? getCartItemCount() : 0;
+
+  // Helper function to render stars
+  const renderStars = (rating) => {
+    const fullStars = Math.floor(rating);
+    const emptyStars = 5 - fullStars;
+    return "★".repeat(fullStars) + "☆".repeat(emptyStars);
+  };
+
+  // Loading state for products
+  if (loadingProducts) {
+    return (
+      <>
+        <Nav2 />
+        <div className="bg-slate-50 min-h-screen flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <p className="text-gray-600 text-lg">Loading amazing products...</p>
+          </div>
+        </div>
+        <Footer />
+      </>
+    );
+  }
 
   return (
     <>
@@ -384,9 +478,9 @@ export default function ProductsPage() {
           className="bg-blue-600 text-white p-3 rounded-full shadow-lg hover:bg-blue-700 transition relative"
         >
           🛒
-          {getCartItemCount() > 0 && (
+          {cartItemCount > 0 && (
             <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs w-6 h-6 rounded-full flex items-center justify-center">
-              {getCartItemCount()}
+              {cartItemCount}
             </span>
           )}
         </button>
@@ -398,7 +492,7 @@ export default function ProductsPage() {
           Explore Products
         </h1>
         
-        {!initialLoading && (
+        {!initialLoading && allProducts.length > 0 && (
           <p className="text-center text-gray-600 mb-6">
             Showing {displayedProducts.length} of {filteredCount} products
           </p>
@@ -417,19 +511,21 @@ export default function ProductsPage() {
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
 
           {/* Sidebar Filters */}
-          <div className="bg-white/90 backdrop-blur-md p-6 rounded-2xl shadow-lg space-y-6 lg:sticky lg:top-24 h-fit border">
-            <div className="flex items-center justify-between">
+          <div className="bg-white/90 backdrop-blur-md p-6 rounded-2xl shadow-lg space-y-6 lg:sticky lg:top-24 h-[calc(100vh-120px)] overflow-y-auto border">
+            <div className="flex items-center justify-between sticky top-0 bg-white/90 pb-2 z-10">
               <h2 className="text-xl font-bold flex items-center gap-2">🧰 Filters</h2>
               <button
                 onClick={() => {
                   setCategory("All");
                   setRating(0);
-                  setMaxPrice(100000);
+                  setMaxPrice(Math.max(...allProducts.map(p => p.price), 2000));
                   setSort("");
+                  setInStockOnly(false);
+                  setSearch("");
                 }}
                 className="text-sm text-blue-600 hover:underline"
               >
-                Reset
+                Reset All
               </button>
             </div>
 
@@ -437,7 +533,7 @@ export default function ProductsPage() {
               <h3 className="font-semibold mb-3 flex items-center gap-2 text-gray-700">📦 Category</h3>
               <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
                 {categories.map((cat, i) => {
-                  const count = ALL_PRODUCTS.filter(
+                  const count = allProducts.filter(
                     (p) => cat === "All" || p.category === cat
                   ).length;
 
@@ -451,7 +547,7 @@ export default function ProductsPage() {
                           : "bg-gray-100 hover:bg-blue-50 hover:translate-x-1"
                       }`}
                     >
-                      <span>{cat}</span>
+                      <span>{cat === "All" ? "📋 All Categories" : formatCategoryName(cat)}</span>
                       <span className={`text-xs px-2 py-1 rounded-full ${
                         category === cat ? "bg-white text-blue-600" : "bg-gray-200"
                       }`}>
@@ -468,14 +564,15 @@ export default function ProductsPage() {
               <input
                 type="range"
                 min="0"
-                max="100000"
+                max={Math.max(...allProducts.map(p => p.price), 2000)}
+                step="10"
                 value={maxPrice}
                 onChange={(e) => setMaxPrice(Number(e.target.value))}
                 className="w-full accent-blue-600"
               />
               <div className="flex justify-between text-sm mt-2 text-gray-600">
-                <span>₹0</span>
-                <span className="font-semibold text-black">₹{maxPrice}</span>
+                <span>$0</span>
+                <span className="font-semibold text-black">${maxPrice.toFixed(2)}</span>
               </div>
             </div>
 
@@ -488,6 +585,7 @@ export default function ProductsPage() {
                 <option value="">Default</option>
                 <option value="low">Price Low → High</option>
                 <option value="high">Price High → Low</option>
+                <option value="rating">Rating High → Low</option>
               </select>
             </div>
 
@@ -504,10 +602,22 @@ export default function ProductsPage() {
                         : "bg-gray-100 hover:bg-yellow-100"
                     }`}
                   >
-                    <span>{"⭐".repeat(r)} & up</span>
+                    <span>{renderStars(r)} & up</span>
                   </button>
                 ))}
               </div>
+            </div>
+
+            <div>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={inStockOnly}
+                  onChange={(e) => setInStockOnly(e.target.checked)}
+                  className="w-4 h-4 accent-blue-600"
+                />
+                <span className="text-sm text-gray-700">In Stock Only</span>
+              </label>
             </div>
           </div>
 
@@ -517,132 +627,196 @@ export default function ProductsPage() {
               <div className="flex justify-center items-center py-20">
                 <div className="text-center">
                   <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                  <p className="text-gray-600 text-lg">Hang on, loading content...</p>
+                  <p className="text-gray-600 text-lg">Loading products...</p>
                 </div>
               </div>
             ) : (
               <>
                 <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
                   {displayedProducts.map((product, index) => {
-                    const quantity = getProductQuantity(product.id);
+                    const quantity = isHydrated ? getProductQuantity(product.id) : 0;
+                    const isChecked = quantity > 0;
                     
                     return (
                       <div
                         key={product.id}
                         ref={index === displayedProducts.length - 1 ? lastProductRef : null}
-                        className="bg-white rounded-2xl shadow-md hover:shadow-xl transition p-4 sm:p-6 relative group"
+                        className="bg-white rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-1 p-5 relative group"
                       >
+                        {/* Discount Badge - Top Left */}
+                        {product.discount > 0 && (
+                          <div className="absolute top-3 left-3 bg-red-500 text-white text-xs px-2 py-1 rounded z-10">
+                            {Math.round(product.discount)}% OFF
+                          </div>
+                        )}
+
+                        {/* Select Checkbox - Top Right */}
+                        <div className="absolute top-3 right-3 z-10">
+                          <div className="flex items-center gap-1.5 bg-white/90 backdrop-blur-sm px-2 py-1.5 rounded-full shadow-sm border border-gray-200">
+                            <input
+                              type="checkbox"
+                              id={`select-${product.id}`}
+                              checked={isChecked}
+                              onChange={(e) => {
+                                e.stopPropagation();
+                                if (e.target.checked) {
+                                  if (quantity === 0) {
+                                    addToCart(product);
+                                  }
+                                } else {
+                                  removeFromCart(product.id);
+                                }
+                              }}
+                              className="w-4 h-4 cursor-pointer accent-blue-600"
+                              disabled={!product.inStock}
+                            />
+                            <label 
+                              htmlFor={`select-${product.id}`} 
+                              className={`text-xs cursor-pointer select-none ${!product.inStock ? 'text-gray-400' : 'text-gray-700'}`}
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              Select
+                            </label>
+                          </div>
+                        </div>
+
+                        {/* Product Image */}
                         <div 
                           onClick={() => openProduct(product)}
                           className="cursor-pointer"
                         >
-                          <div className="relative h-40 mb-4">
+                          <div className="relative h-44 mb-4 flex items-center justify-center bg-white rounded-lg">
                             <Image
-                              src={product.img}
+                              src={product.thumbnail}
                               alt={product.title}
-                              fill
-                              className="object-contain"
+                              width={160}
+                              height={160}
+                              className="object-contain max-h-40 w-auto"
                               onError={handleImageError}
+                              loading={index < 6 ? "eager" : "lazy"}
+                              priority={index < 6}
                             />
                           </div>
                           
-                          <div className="absolute top-3 right-3 text-gray-400 hover:text-red-500 text-xl">❤️</div>
+                          {/* Product Title - Shortened */}
+                          <h2 className="font-bold text-base mb-1 line-clamp-2 h-12">
+                            {product.title.length > 50 ? product.title.substring(0, 50) + '...' : product.title}
+                          </h2>
                           
-                          {product.discount > 0 && (
-                            <div className="absolute top-3 left-3 bg-red-500 text-white text-xs px-2 py-1 rounded">
-                              {product.discount}% OFF
-                            </div>
+                          {/* Rating and Price Row */}
+                          <div className="flex items-center justify-between mt-2">
+                            <p className="text-yellow-500 text-sm">{renderStars(product.rating)}</p>
+                            <p className="text-xl font-bold text-blue-600">${product.price.toFixed(2)}</p>
+                          </div>
+                          
+                          {/* Category Badge */}
+                          <p className="text-xs text-gray-400 mt-2">
+                            {formatCategoryName(product.category)}
+                          </p>
+
+                          {/* Stock Status */}
+                          {product.inStock && product.stock && (
+                            <p className="text-xs text-green-600 mt-1">
+                              {product.stock} in stock
+                            </p>
                           )}
-                          
-                          {!product.inStock && (
-                            <div className="absolute bottom-20 left-3 bg-gray-500 text-white text-xs px-2 py-1 rounded">
-                              Out of Stock
-                            </div>
-                          )}
-                          
-                          <p className="text-xs text-gray-500 mt-1 line-clamp-2">{product.description}</p>
-                          <p className="text-xs text-gray-500">{product.category}</p>
-                          <h2 className="font-bold text-lg">{product.title}</h2>
-                          <p className="text-yellow-500 text-sm">{"⭐".repeat(product.rating)}</p>
-                          <p className="text-xl font-bold text-blue-600 mt-2">₹{product.price}</p>
-                          <p className="text-xs text-green-600 mt-1">Free Delivery</p>
                         </div>
                         
-                   <div className="flex flex-row gap-3 w-full mt-3">
-  {product.inStock ? (
-    quantity === 0 ? (
-      <button
-        onClick={(e) => {
-          e.stopPropagation();
-          addToCart(product);
-        }}
-        className="flex-1 py-3 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition"
-      >
-        Add to Cart
-      </button>
-    ) : (
-      <div className="flex-1 flex items-center justify-between border rounded-lg overflow-hidden">
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            updateQuantity(product.id, quantity - 1);
-          }}
-          className="w-12 h-12 flex items-center justify-center bg-gray-100 hover:bg-gray-200 text-xl font-bold transition"
-        >
-          −
-        </button>
-        <span className="flex-1 text-center font-semibold text-lg">
-          {quantity}
-        </span>
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            updateQuantity(product.id, quantity + 1);
-          }}
-          className="w-12 h-12 flex items-center justify-center bg-gray-100 hover:bg-gray-200 text-xl font-bold transition"
-        >
-          +
-        </button>
-      </div>
-    )
-  ) : (
-    <button
-      disabled
-      className="flex-1 py-3 rounded-lg bg-gray-300 text-gray-500 cursor-not-allowed"
-    >
-      Out of Stock
-    </button>
-  )}
-  
-  <button 
-    onClick={(e) => e.stopPropagation()}
-    disabled={!product.inStock}
-    className={`flex-1 py-3 rounded-lg transition ${
-      product.inStock
-        ? "bg-purple-600 text-white hover:bg-purple-700"
-        : "bg-gray-300 text-gray-500 cursor-not-allowed"
-    }`}
-  >
-    Buy Now
-  </button>
-</div>
+                        {/* Cart Controls */}
+                        <div className="flex flex-row gap-3 w-full mt-4">
+                          {product.inStock ? (
+                            quantity === 0 ? (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  addToCart(product);
+                                }}
+                                className="flex-1 py-2 rounded-xl bg-blue-600 text-white hover:bg-blue-700 transition text-sm font-medium"
+                              >
+                                Add to Cart
+                              </button>
+                            ) : (
+                              <div className="flex-1 flex items-center justify-between border rounded-xl overflow-hidden bg-gray-50">
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    updateQuantity(product.id, quantity - 1);
+                                  }}
+                                  className="w-8 h-8 flex items-center justify-center hover:bg-gray-200 text-lg font-bold transition"
+                                >
+                                  −
+                                </button>
+                                <span className="flex-1 text-center font-semibold text-sm">
+                                  {quantity}
+                                </span>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    updateQuantity(product.id, quantity + 1);
+                                  }}
+                                  className="w-8 h-8 flex items-center justify-center hover:bg-gray-200 text-lg font-bold transition"
+                                >
+                                  +
+                                </button>
+                              </div>
+                            )
+                          ) : (
+                            <button
+                              disabled
+                              className="flex-1 py-2 rounded-xl bg-gray-300 text-gray-500 cursor-not-allowed text-sm font-medium"
+                            >
+                              Out of Stock
+                            </button>
+                          )}
+                          
+                          <button 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (product.inStock) {
+                                if (quantity === 0) {
+                                  addToCart(product);
+                                }
+                                setShowCart(true);
+                              }
+                            }}
+                            disabled={!product.inStock}
+                            className={`flex-1 py-2 rounded-xl transition text-sm font-medium ${
+                              product.inStock
+                                ? "bg-purple-600 text-white hover:bg-purple-700"
+                                : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                            }`}
+                          >
+                            Buy Now
+                          </button>
+                        </div>
+
+                        {/* Out of Stock Overlay */}
+                        {!product.inStock && (
+                          <div className="absolute inset-0 bg-white/80 backdrop-blur-sm rounded-2xl flex items-center justify-center">
+                            <span className="bg-gray-800 text-white px-4 py-2 rounded-full text-sm font-semibold">
+                              Out of Stock
+                            </span>
+                          </div>
+                        )}
                       </div>
                     );
                   })}
                 </div>
 
+                {/* Loading Indicator */}
                 {loading && (
                   <div className="flex justify-center items-center py-8">
                     <div className="text-center">
                       <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
-                      <p className="text-gray-500">Loading more products...</p>
+                      <p className="text-gray-500 text-sm">Loading more products...</p>
                     </div>
                   </div>
                 )}
 
+                {/* End of Products Message */}
                 {!hasMore && displayedProducts.length > 0 && (
                   <div className="text-center py-8">
-                    <p className="text-gray-500">🎉 You've reached the end!</p>
+                    <p className="text-gray-500">🎉 You've reached the end! ({displayedProducts.length} products loaded)</p>
                   </div>
                 )}
 
@@ -653,7 +827,7 @@ export default function ProductsPage() {
                       onClick={() => {
                         setSearch("");
                         setCategory("All");
-                        setMaxPrice(75000);
+                        setMaxPrice(Math.max(...allProducts.map(p => p.price), 2000));
                         setRating(0);
                         setSort("");
                         setInStockOnly(false);
@@ -682,12 +856,13 @@ export default function ProductsPage() {
             </button>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5 sm:gap-6">
-              <div className="relative h-52 sm:h-64 md:h-80">
+              <div className="relative h-64 sm:h-80 md:h-96">
                 <Image
-                  src={selectedProduct.img}
+                  src={selectedProduct.thumbnail}
                   alt={selectedProduct.title}
                   fill
                   className="object-contain"
+                  onError={handleImageError}
                 />
               </div>
 
@@ -696,83 +871,114 @@ export default function ProductsPage() {
                   {selectedProduct.title}
                 </h2>
                 <p className="text-gray-500 text-sm sm:text-base mb-1">
-                  {selectedProduct.category} • {selectedProduct.brand}
+                  {formatCategoryName(selectedProduct.category)} • {selectedProduct.brand}
                 </p>
                 <p className="text-yellow-500 text-sm sm:text-base mb-2">
-                  {"⭐".repeat(selectedProduct.rating)}
+                  {renderStars(selectedProduct.rating)} ({selectedProduct.rating}★)
                 </p>
-                <p className="text-xl sm:text-2xl md:text-3xl font-bold text-blue-600 mb-3">
-                  ₹{selectedProduct.price}
+                <p className="text-2xl sm:text-3xl md:text-4xl font-bold text-blue-600 mb-3">
+                  ${selectedProduct.price.toFixed(2)}
                 </p>
                 {selectedProduct.discount > 0 && (
                   <p className="text-green-600 font-semibold mb-2">
-                    {selectedProduct.discount}% OFF
+                    {Math.round(selectedProduct.discount)}% OFF
                   </p>
                 )}
-                <p className="text-gray-600 text-sm sm:text-base mb-5">
+                <p className="text-gray-600 text-sm sm:text-base mb-5 leading-relaxed">
                   {selectedProduct.description}
                 </p>
-                <p className={`text-sm mb-4 ${selectedProduct.inStock ? 'text-green-600' : 'text-red-600'}`}>
-                  {selectedProduct.inStock ? '✅ In Stock' : '❌ Out of Stock'}
+                <p className={`text-sm mb-2 ${selectedProduct.inStock ? 'text-green-600' : 'text-red-600'}`}>
+                  {selectedProduct.inStock ? `✅ In Stock (${selectedProduct.stock} units available)` : '❌ Out of Stock'}
+                </p>
+                <p className="text-xs text-gray-500 mb-4">
+                  Free shipping on orders over $50
                 </p>
 
-                <div className="flex flex-col sm:flex-row gap-3 w-full">
-                  {selectedProduct.inStock ? (
-                    getProductQuantity(selectedProduct.id) === 0 ? (
-                      <button
-                        onClick={() => {
-                          addToCart(selectedProduct);
-                          closeModal();
+                <div className="flex flex-col gap-3 w-full">
+                  {selectedProduct.inStock && (
+                    <div className="flex items-center gap-2 mb-2">
+                      <input
+                        type="checkbox"
+                        id={`modal-select-${selectedProduct.id}`}
+                        checked={isHydrated ? getProductQuantity(selectedProduct.id) > 0 : false}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            if (getProductQuantity(selectedProduct.id) === 0) {
+                              addToCart(selectedProduct);
+                            }
+                          } else {
+                            removeFromCart(selectedProduct.id);
+                          }
                         }}
-                        className="flex-1 py-3 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition"
+                        className="w-5 h-5 cursor-pointer"
+                      />
+                      <label 
+                        htmlFor={`modal-select-${selectedProduct.id}`}
+                        className="text-sm cursor-pointer"
                       >
-                        Add to Cart
-                      </button>
-                    ) : (
-                      <div className="flex-1 flex items-center justify-between border rounded-lg overflow-hidden">
-                        <button
-                          onClick={() => {
-                            updateQuantity(selectedProduct.id, getProductQuantity(selectedProduct.id) - 1);
-                          }}
-                          className="w-12 h-12 flex items-center justify-center bg-gray-100 hover:bg-gray-200 text-xl font-bold transition"
-                        >
-                          −
-                        </button>
-                        <span className="flex-1 text-center font-semibold text-lg">
-                          {getProductQuantity(selectedProduct.id)}
-                        </span>
-                        <button
-                          onClick={() => {
-                            updateQuantity(selectedProduct.id, getProductQuantity(selectedProduct.id) + 1);
-                          }}
-                          className="w-12 h-12 flex items-center justify-center bg-gray-100 hover:bg-gray-200 text-xl font-bold transition"
-                        >
-                          +
-                        </button>
-                      </div>
-                    )
-                  ) : (
-                    <button
-                      disabled
-                      className="flex-1 py-3 rounded-lg bg-gray-300 text-gray-500 cursor-not-allowed"
-                    >
-                      Out of Stock
-                    </button>
+                        Select this item
+                      </label>
+                    </div>
                   )}
-                  
-                  <button
-                    onClick={() => {
-                      closeModal();
-                    }}
-                    disabled={!selectedProduct.inStock}
-                    className={`flex-1 py-3 rounded-lg transition ${
-                      selectedProduct.inStock
-                        ? "bg-purple-600 text-white hover:bg-purple-700"
-                        : "bg-gray-300 text-gray-500 cursor-not-allowed"
-                    }`}
-                  >
-                    Buy Now
-                  </button>
+
+                  <div className="flex flex-col sm:flex-row gap-3 w-full">
+                    {selectedProduct.inStock ? (
+                      (isHydrated ? getProductQuantity(selectedProduct.id) : 0) === 0 ? (
+                        <button
+                          onClick={() => {
+                            addToCart(selectedProduct);
+                            closeModal();
+                          }}
+                          className="flex-1 py-3 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition"
+                        >
+                          Add to Cart
+                        </button>
+                      ) : (
+                        <div className="flex-1 flex items-center justify-between border rounded-lg overflow-hidden">
+                          <button
+                            onClick={() => {
+                              updateQuantity(selectedProduct.id, getProductQuantity(selectedProduct.id) - 1);
+                            }}
+                            className="w-12 h-12 flex items-center justify-center bg-gray-100 hover:bg-gray-200 text-xl font-bold transition"
+                          >
+                            −
+                          </button>
+                          <span className="flex-1 text-center font-semibold text-lg">
+                            {getProductQuantity(selectedProduct.id)}
+                          </span>
+                          <button
+                            onClick={() => {
+                              updateQuantity(selectedProduct.id, getProductQuantity(selectedProduct.id) + 1);
+                            }}
+                            className="w-12 h-12 flex items-center justify-center bg-gray-100 hover:bg-gray-200 text-xl font-bold transition"
+                          >
+                            +
+                          </button>
+                        </div>
+                      )
+                    ) : (
+                      <button
+                        disabled
+                        className="flex-1 py-3 rounded-lg bg-gray-300 text-gray-500 cursor-not-allowed"
+                      >
+                        Out of Stock
+                      </button>
+                    )}
+                    
+                    <button
+                      onClick={() => {
+                        closeModal();
+                      }}
+                      disabled={!selectedProduct.inStock}
+                      className={`flex-1 py-3 rounded-lg transition ${
+                        selectedProduct.inStock
+                          ? "bg-purple-600 text-white hover:bg-purple-700"
+                          : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                      }`}
+                    >
+                      Buy Now
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -782,7 +988,7 @@ export default function ProductsPage() {
 
       {/* Cart Sidebar */}
       <div
-        className={`fixed top-0 right-0 h-full w-full sm:w-96 md:w-104 lg:w-120 xl:w-135 bg-white shadow-2xl z-50 transform transition-transform duration-500 ease-out ${
+        className={`fixed top-0 right-0 h-full w-full sm:w-96 bg-white shadow-2xl z-50 transform transition-transform duration-500 ease-out ${
           showCart ? "translate-x-0" : "translate-x-full"
         }`}
       >
@@ -798,7 +1004,7 @@ export default function ProductsPage() {
                   <>
                     Your Cart
                     <span className="ml-2 text-sm bg-white/30 px-3 py-1 rounded-full">
-                      {getCartItemCount()} {getCartItemCount() === 1 ? 'item' : 'items'}
+                      {cartItemCount} {cartItemCount === 1 ? 'item' : 'items'}
                     </span>
                   </>
                 )}
@@ -816,22 +1022,32 @@ export default function ProductsPage() {
           </div>
         </div>
 
-        <div 
-          className="overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100"
-          style={{ height: showCheckout ? 'calc(100vh - 180px)' : 'calc(100vh - 140px)' }}
-        >
-          <div className="p-6 space-y-4">
+        <div className="flex flex-col h-[calc(100%-120px)]">
+          <div className="flex-1 overflow-y-auto p-6 space-y-4">
             {!showCheckout ? (
               <>
-                <button
-                  onClick={() => {
-                    backToCart();
-                    setShowCart(false);
-                  }}
-                  className="flex items-center gap-2 text-gray-600 hover:text-indigo-600 transition-colors group mb-2"
-                >
-                  <span className="text-xl group-hover:-translate-x-1 transition-transform">x</span>
-                </button>
+                <div className="flex items-center justify-between mb-2">
+                  <button
+                    onClick={() => {
+                      backToCart();
+                      setShowCart(false);
+                    }}
+                    className="flex items-center gap-2 text-gray-600 hover:text-indigo-600 transition-colors group"
+                  >
+                    <span className="text-xl group-hover:-translate-x-1 transition-transform">←</span>
+                    Continue Shopping
+                  </button>
+                  
+                  {cart.length > 0 && (
+                    <button
+                      onClick={clearCart}
+                      className="flex items-center gap-1.5 text-red-600 hover:text-red-700 transition-colors text-sm font-medium px-3 py-1.5 rounded-lg hover:bg-red-50"
+                    >
+                      <span className="text-base">🗑️</span>
+                      Clear Cart
+                    </button>
+                  )}
+                </div>
 
                 {cart.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-12 px-4">
@@ -850,14 +1066,14 @@ export default function ProductsPage() {
                     </button>
                   </div>
                 ) : (
-                  cart.map((item, index) => (
+                  cart.map((item) => (
                     <div 
                       key={item.id} 
                       className="flex gap-4 items-start bg-gray-50/80 backdrop-blur-sm rounded-xl p-3 hover:shadow-md transition-all duration-300 hover:scale-[1.02] border border-gray-100"
                     >
                       <div className="relative w-20 h-20 bg-white rounded-xl overflow-hidden shadow-sm border border-gray-200 flex-shrink-0">
                         <img 
-                          src={item.img} 
+                          src={item.thumbnail} 
                           alt={item.title}
                           className="w-full h-full object-contain p-2"
                           onError={handleImageError}
@@ -867,7 +1083,7 @@ export default function ProductsPage() {
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-semibold text-gray-800 truncate">{item.title}</p>
                         <p className="text-xs text-gray-500 mt-1">
-                          <span className="font-medium">₹{item.price}</span> each
+                          <span className="font-medium">${item.price.toFixed(2)}</span> each
                         </p>
                         
                         <div className="flex items-center gap-3 mt-3">
@@ -890,7 +1106,7 @@ export default function ProductsPage() {
                       </div>
 
                       <div className="text-right flex-shrink-0">
-                        <p className="font-bold text-indigo-600">₹{item.price * item.quantity}</p>
+                        <p className="font-bold text-indigo-600">${(item.price * item.quantity).toFixed(2)}</p>
                         <button
                           onClick={() => removeFromCart(item.id)}
                           className="text-xs text-gray-400 hover:text-red-500 transition-colors mt-2 flex items-center gap-1"
@@ -914,15 +1130,15 @@ export default function ProductsPage() {
                     {cart.map((item) => (
                       <div key={item.id} className="flex justify-between text-sm items-center">
                         <span className="text-gray-600 truncate max-w-[180px]">
-                          {item.title} <span className="text-gray-400">x{item.quantity}</span>
+                          {item.title.substring(0, 30)}... <span className="text-gray-400">x{item.quantity}</span>
                         </span>
-                        <span className="font-medium text-gray-800 flex-shrink-0 ml-2">₹{item.price * item.quantity}</span>
+                        <span className="font-medium text-gray-800 flex-shrink-0 ml-2">${(item.price * item.quantity).toFixed(2)}</span>
                       </div>
                     ))}
                   </div>
                   <div className="border-t border-indigo-100 mt-4 pt-4 flex justify-between items-center">
                     <span className="font-semibold text-gray-700">Total Amount</span>
-                    <span className="text-xl font-bold text-indigo-600">₹{getCartTotal()}</span>
+                    <span className="text-xl font-bold text-indigo-600">${getCartTotal().toFixed(2)}</span>
                   </div>
                 </div>
 
@@ -934,96 +1150,19 @@ export default function ProductsPage() {
                 </div>
 
                 <form onSubmit={handlePlaceOrder} className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium mb-1">Full Name *</label>
-                    <input
-                      type="text"
-                      name="fullName"
-                      value={formData.fullName}
-                      onChange={handleInputChange}
-                      className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                      placeholder="John Doe"
-                      required
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium mb-1">Email *</label>
-                      <input
-                        type="email"
-                        name="email"
-                        value={formData.email}
-                        onChange={handleInputChange}
-                        className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                        placeholder="john@example.com"
-                        required
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium mb-1">Phone *</label>
-                      <input
-                        type="tel"
-                        name="phone"
-                        value={formData.phone}
-                        onChange={handleInputChange}
-                        className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                        placeholder="9876543210"
-                        required
-                      />
-                    </div>
-                  </div>
+                  
 
                   <div>
-                    <label className="block text-sm font-medium mb-1">Address *</label>
+                    <label className="block text-sm font-medium mb-1">Phone *</label>
                     <input
-                      type="text"
-                      name="address"
-                      value={formData.address}
+                      type="tel"
+                      name="phone"
+                      value={formData.phone}
                       onChange={handleInputChange}
                       className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                      placeholder="123 Main St, Apartment 4B"
+                      placeholder="9876543210"
                       required
                     />
-                  </div>
-
-                  <div className="grid grid-cols-3 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium mb-1">City *</label>
-                      <input
-                        type="text"
-                        name="city"
-                        value={formData.city}
-                        onChange={handleInputChange}
-                        className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                        placeholder="Mumbai"
-                        required
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium mb-1">State *</label>
-                      <input
-                        type="text"
-                        name="state"
-                        value={formData.state}
-                        onChange={handleInputChange}
-                        className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                        placeholder="Maharashtra"
-                        required
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium mb-1">Pincode *</label>
-                      <input
-                        type="text"
-                        name="pincode"
-                        value={formData.pincode}
-                        onChange={handleInputChange}
-                        className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                        placeholder="400001"
-                        required
-                      />
-                    </div>
                   </div>
 
                   <div>
@@ -1041,57 +1180,46 @@ export default function ProductsPage() {
                         <span className="flex-1">Cash on Delivery (COD)</span>
                         <span className="text-green-600 text-sm">✓ Pay when you receive</span>
                       </label>
-                      <label className="flex items-center gap-2 p-3 border rounded-lg cursor-pointer hover:bg-gray-50 opacity-50">
-                        <input
-                          type="radio"
-                          name="paymentMethod"
-                          value="online"
-                          disabled
-                          className="w-4 h-4"
-                        />
-                        <span className="flex-1">Online Payment</span>
-                        <span className="text-gray-500 text-sm">Coming soon</span>
-                      </label>
                     </div>
                   </div>
                 </form>
               </div>
             )}
           </div>
-        </div>
 
-        <div className="p-4 border-t bg-gray-50 absolute bottom-0 w-full flex-shrink-0">
-          {!showCheckout ? (
-            cart.length > 0 && (
-              <>
-                <div className="flex justify-between mb-3">
-                  <span className="font-semibold">Subtotal:</span>
-                  <span className="font-bold text-lg">₹{getCartTotal()}</span>
-                </div>
-                <button 
-                  onClick={() => setShowCheckout(true)}
-                  className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-3 rounded-lg hover:from-indigo-700 hover:to-purple-700 transition shadow-lg"
+          <div className="p-4 border-t bg-gray-50 flex-shrink-0">
+            {!showCheckout ? (
+              cart.length > 0 && (
+                <>
+                  <div className="flex justify-between mb-3">
+                    <span className="font-semibold">Subtotal:</span>
+                    <span className="font-bold text-lg">${getCartTotal().toFixed(2)}</span>
+                  </div>
+                  <button 
+                    onClick={() => setShowCheckout(true)}
+                    className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-3 rounded-lg hover:from-indigo-700 hover:to-purple-700 transition shadow-lg"
+                  >
+                    Proceed to Checkout
+                  </button>
+                </>
+              )
+            ) : (
+              <div className="flex gap-3">
+                <button
+                  onClick={backToCart}
+                  className="flex-1 px-4 py-3 border-2 border-gray-300 rounded-lg hover:border-indigo-600 hover:text-indigo-600 transition font-medium"
                 >
-                  Proceed to Checkout
+                  Back
                 </button>
-              </>
-            )
-          ) : (
-            <div className="flex gap-3">
-              <button
-                onClick={backToCart}
-                className="flex-1 px-4 py-3 border-2 border-gray-300 rounded-lg hover:border-indigo-600 hover:text-indigo-600 transition font-medium"
-              >
-                Back
-              </button>
-              <button
-                onClick={handlePlaceOrder}
-                className="flex-1 px-4 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg hover:from-green-700 hover:to-emerald-700 transition shadow-lg font-medium"
-              >
-                Place Order • ₹{getCartTotal()}
-              </button>
-            </div>
-          )}
+                <button
+                  onClick={handlePlaceOrder}
+                  className="flex-1 px-4 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg hover:from-green-700 hover:to-emerald-700 transition shadow-lg font-medium"
+                >
+                  Place Order • ${getCartTotal().toFixed(2)}
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
