@@ -88,7 +88,7 @@ const Login = () => {
       saveAuthData(userData, token);
       
       alert("Login Successful ✅");
-      router.push("/");
+      router.push("/pricing");
       
     } catch (error) {
       if (error.message.includes("No account")) {
@@ -167,7 +167,7 @@ const Login = () => {
               value={email}
               onChange={handleEmailChange}
               onBlur={() => validateEmail(email)}
-              placeholder="Enter your email" 
+              placeholder="name@company.com" 
               className={`p-3 rounded-[30px] border outline-none focus:border-[#5b5bd6] transition-colors ${
                 emailError ? "border-red-500 bg-red-50" : "border-[#ccc]"
               }`}
@@ -177,7 +177,6 @@ const Login = () => {
             {emailError && (
               <p className="text-red-500 text-xs mt-1 ml-3">{emailError}</p>
             )}
-            <p className="text-gray-400 text-xs mt-1 ml-3">Example: name@company.com</p>
           </div>
 
           {/* Password Field */}
@@ -204,7 +203,6 @@ const Login = () => {
             {passwordError && (
               <p className="text-red-500 text-xs mt-1 ml-3">{passwordError}</p>
             )}
-            <p className="text-gray-400 text-xs mt-1 ml-3">Minimum 6 characters</p>
           </div>
 
           <p className="text-sm mb-5 cursor-pointer hover:text-[#3b82f6] transition-colors">
@@ -222,7 +220,7 @@ const Login = () => {
           <div className="text-center mt-6 text-sm">
             <p className="mb-2">Can't Access Your Account?</p>
             <p>
-              DON'T HAVE AN ACCOUNT?{" "}
+              Don't have an account?{" "}
               <span 
                 onClick={() => router.push("/register")}
                 className="text-[#3b82f6] font-bold cursor-pointer hover:underline"
