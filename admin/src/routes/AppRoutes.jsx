@@ -48,14 +48,14 @@ const AppRoutes = () => {
           <Route path="/units" element={<Units />} />
           <Route path="/stores" element={<Stores />} />
           <Route path="/stock" element={<ProtectedRoute feature="stock-management"><Inventory /></ProtectedRoute>} />
-          <Route path="/orders" element={<Orders />} />
+          <Route path="/orders" element={<ProtectedRoute feature="hide-with-stock"><Orders /></ProtectedRoute>} />
           <Route path="/customers" element={<Customers />} />
           <Route path="/customers/:id" element={<CustomerDetails />} />
-          <Route path="/invoices" element={<ProtectedRoute feature="bill-generation"><Invoices /></ProtectedRoute>} />
-          <Route path="/invoices/detail/:id" element={<ProtectedRoute feature="bill-generation"><InvoiceDetail /></ProtectedRoute>} />
+          <Route path="/invoices" element={<Invoices />} />
+          <Route path="/invoices/detail/:id" element={<InvoiceDetail />} />
           <Route path="/reports" element={<Reports />} />
           <Route path="/reports/:id" element={<ReportDetails />} />
-          <Route path="/invoice" element={<ProtectedRoute feature="bill-generation"><BillGenerate /></ProtectedRoute>} />
+          <Route path="/invoice" element={<BillGenerate />} />
           <Route path="/billing" element={<Plans />} />
           <Route path="/settings" element={<Settings />} />
         </Route>
