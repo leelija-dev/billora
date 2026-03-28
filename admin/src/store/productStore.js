@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { productsAPI } from '../services'
+import { productsAPI, stocksAPI } from '../services'
 import toast from 'react-hot-toast'
 
 export const useProductStore = create((set, get) => ({
@@ -23,8 +23,48 @@ export const useProductStore = create((set, get) => ({
       
       // Handle your API's response structure
       const apiData = response.data
-      const products = apiData.data?.data || [] // Your API nests products in data.data.data
+      let products = apiData.data?.data || [] // Your API nests products in data.data.data
       const total = apiData.data?.total || products.length
+      
+      // Fetch stock data for each product
+      if (products.length > 0) {
+        try {
+          const stockPromises = products.map(product => 
+            stocksAPI.getById(product.id).catch(error => {
+              console.error(`Failed to fetch stock for product ${product.id}:`, error)
+              return null
+            })
+          )
+          
+          const stockResponses = await Promise.all(stockPromises)
+          
+          // Merge stock data with products
+          products = products.map((product, index) => {
+            const stockResponse = stockResponses[index]
+            const stockData = stockResponse?.data?.data || stockResponse?.data
+            
+            return {
+              ...product,
+              stock: stockData?.quantity || 0,
+              maxStock: stockData?.quantity || 100,
+              lowStockThreshold: 10,
+              lowStock: (stockData?.quantity || 0) <= 10
+            }
+          })
+          
+          console.log(' Product Store - Stock data merged:', products)
+        } catch (stockError) {
+          console.error(' Product Store - Error fetching stock data:', stockError)
+          // Set default stock values if stock API fails
+          products = products.map(product => ({
+            ...product,
+            stock: 0,
+            maxStock: 100,
+            lowStockThreshold: 10,
+            lowStock: true
+          }))
+        }
+      }
       
       console.log(' Product Store - Processed Data:', {
         apiData,
