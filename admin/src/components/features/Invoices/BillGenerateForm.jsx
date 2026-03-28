@@ -7,6 +7,7 @@ import Select from '../../common/Select/Select'
 import EmptyState from '../../common/EmptyState/EmptyState'
 import { invoiceAPI } from '../../../services/invoiceService'
 import { stockAPI } from '../../../services/stockService'
+import { useAuthStore } from '../../../store/authStore'
 // Import mock data as fallback
 import { mockCustomers } from '../../../services/mockData/mockCustomers'
 import { mockStores } from '../../../services/mockData/mockStores'
@@ -14,12 +15,30 @@ import { mockProducts } from '../../../services/mockData/mockProducts'
 import { mockUnits } from '../../../services/mockData/mockUnits'
 
 const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting }) => {
+  const { user } = useAuthStore()
+  
+  // Get current user ID
+  const getUserId = () => {
+    const authData = localStorage.getItem('auth')
+    if (authData) {
+      try {
+        const parsed = JSON.parse(authData)
+        return parsed.user?.id || parsed.userId || '1'
+      } catch {
+        return '1'
+      }
+    }
+    return '1'
+  }
+
+  const currentUserId = getUserId()
+
   const [formData, setFormData] = useState({
-    user_id: 1,
+    user_id: currentUserId, // API requires user_id (register user id)
     customer_id: '',
     store_id: '',
     paid_amount: 0,
-    created_by: 1,
+    created_by: currentUserId,
     items: [],
     payment_status: 'paid', // New field: 'paid', 'semi_paid', 'non_paid'
     payment_amount: 0 // New field: for semi-paid amount

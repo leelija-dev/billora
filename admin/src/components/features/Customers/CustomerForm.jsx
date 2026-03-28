@@ -5,19 +5,52 @@ import { FiSave, FiX } from 'react-icons/fi'
 import Input from '../../common/Input/Input'
 import Button from '../../common/Button/Button'
 import Select from '../../common/Select/Select'
+import { useAuthStore } from '../../../store/authStore'
 
 const CustomerForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting }) => {
+  const { user } = useAuthStore()
+  
+  // Get current user ID
+  const getUserId = () => {
+    const authData = localStorage.getItem('auth')
+    if (authData) {
+      try {
+        const parsed = JSON.parse(authData)
+        return parsed.user?.id || parsed.userId || '1'
+      } catch {
+        return '1'
+      }
+    }
+    return '1'
+  }
+
+  const currentUserId = getUserId()
+
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     phone: '',
     address: '',
     city: '',
+    admin_id: currentUserId, // API requires admin_id (register user id)
+    created_by: currentUserId,
     status: 'active',
     ...initialData
   })
 
   const [errors, setErrors] = useState({})
+
+  // Auto-populate admin_id and created_by from auth context
+  useEffect(() => {
+    if (!initialData) {
+      // For new customers, pre-populate with current user
+      setFormData(prev => ({
+        ...prev,
+        admin_id: currentUserId,
+        created_by: currentUserId,
+      }))
+    }
+  }, [initialData, currentUserId])
 
   useEffect(() => {
     if (initialData) {
@@ -28,9 +61,11 @@ const CustomerForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting }) =
         address: initialData.address || '',
         city: initialData.city || '',
         status: initialData.status || 'active',
+        admin_id: initialData.admin_id || currentUserId,
+        created_by: initialData.created_by || currentUserId,
       })
     }
-  }, [initialData])
+  }, [initialData, currentUserId])
 
   const validateForm = () => {
     const newErrors = {}
