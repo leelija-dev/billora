@@ -13,14 +13,15 @@ export const authService = {
     }
   },
 
-  register: async (companyData) => {
+  register: async (userData) => {
     try {
       console.log(' Attempting registration with data:', { 
-        name: companyData.name, 
-        email: companyData.email, 
-        phone: companyData.phone 
+        name: userData.name, 
+        email: userData.email, 
+        phone: userData.phone,
+        company_name: userData.company_name
       });
-      const response = await apiClient.post('/users/store', companyData);
+      const response = await apiClient.post('/users/register', userData);
       console.log(' Registration successful:', response.data);
       return response;
     } catch (error) {
