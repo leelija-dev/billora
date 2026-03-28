@@ -98,6 +98,10 @@ Route::middleware('auth:sanctum')->prefix('invoice')->group(function () {
 
    // user order hisrtory
    Route::get('/user-order-history/{id}', [UserOrdersController::class, 'userOrderHistory']);
+   Route::put('/update-order-status/{id}', [UserOrdersController::class, 'updateOrderStatus']);
+   Route::put('/update-payment-status/{id}', [UserOrdersController::class, 'updatePaymentStatus']);
+   Route::put('/update-order-payment/{id}', [UserOrdersController::class, 'updateOrderPayment']);
+   Route::get('/user-order-due/{id}',[UserOrdersController::class,'userOrderDue']);
 });
 //bill generate from product table(with out stock management)
 Route::prefix('invoices')->group(function () {
