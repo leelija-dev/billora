@@ -9,11 +9,13 @@ use App\Models\UserOrders;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Monolog\Handler\SyslogUdp\UdpSocket;
+
 use function PHPSTORM_META\map;
 
 class UserOrdersController extends Controller
 {
-    public function store(Request $request)
+    public function store(Request $request)   // store order and order items
     {
         DB::beginTransaction();
 
@@ -134,12 +136,13 @@ class UserOrdersController extends Controller
     }
 
 
-    public function userOrderHistory($id){
+    public function userOrderHistory($id){      //all user order history
         try{
         $user = Auth::user()->id;
         if($user != $id){
             return response()->json([
                 'status'=>false,
+                'user_id'=>$user,
                 'message'=>'Unauthorized user'
             ]);
         }
@@ -151,6 +154,117 @@ class UserOrdersController extends Controller
             'message' => 'Order History',
             'data' => $orderHistory 
         ]);
+        }catch(\Exception $e){
+            return response()->json([
+                'status' => false,
+                'message' => $e->getMessage()
+            ]);
+        }
+    }
+    public function updateOrderStatus(Request $request, $id){    //update order status
+        try{
+            $user = Auth::user()->id;
+            $data = $request->validate([
+                'order_status' => 'required'
+            ]);
+            $order = UserOrders::where('user_id', $user)->where('id', $id)->first();
+            $order_items = UserOrderItems::where('user_id', $user)->where('customer_order_id', $order->id)->get();
+            $order->update($data);
+            foreach($order_items as $item){
+                $item->update([
+                    'status' => $data['order_status']
+                ]);
+            }
+            return response()->json([
+                'status' => true,
+                'message' => 'Order status updated successfully',
+                'data' => $order
+            ]);
+        }catch(\Exception $e){
+            return response()->json([
+                'status' => false,
+                'message' => $e->getMessage()
+            ]);
+        }
+    }
+    public function updatePaymentStatus(Request $request, $id){    // update payment status
+        try{
+            $user = Auth::user()->id;
+            $data = $request->validate([
+                'payment_status' => 'required'
+            ]);
+            $order = UserOrders::where('user_id', $user)->where('id', $id)->first();
+            $order->update($data);
+            return response()->json([
+                'status' => true,
+                'message' => 'Payment status updated successfully',
+                'data' => $order
+            ]);
+        }catch(\Exception $e){
+            return response()->json([
+                'status' => false,
+                'message' => $e->getMessage()
+            ]);
+        }
+    }
+    public function userOrderDue( Request $request,$id){     //show single order and due
+        try{
+            $data=$request->validate([
+               'user_id' => 'required', 
+            ]);
+            $user = Auth::user()->id;
+            if($user != $data['user_id']){
+                return response()->json([
+                    'status' =>true,
+                    'message' =>"Unauthorized user"
+                ]);
+            }
+            $order = UserOrders::where('id', $id)->where('user_id',$data['user_id'])->get();
+            if(!$order){
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Order not found'
+                ]);
+            }
+            return response()->json([
+                'status' => true,
+                'message' => 'Order due',
+                'data' => $order
+            ]);
+        }catch(\Exception $e){
+            return response()->json([
+                'status' => false,
+                'message' => $e->getMessage()
+            ]);
+        }
+    }
+    public function updateOrderPayment(Request $request, $id){     // update order payment
+        try{
+            $data = $request->validate([
+                'user_id' => 'required',
+                'paid_amount' => 'required'
+            ]);
+            
+            $order = UserOrders::where('user_id', $data['user_id'])->where('id', $id)->first();
+            if (!$order) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Order not found'
+            ], 404);
+        }
+            $status ="pending";
+            if($order->total_amount == ((float)$order->paid_amount + (float)$data['paid_amount'])){
+                $status = "completed";
+            }
+            $order->update([
+                'paid_amount'=> (float)$order->paid_amount + $data['paid_amount'],
+                'payment_status' => $status
+            ]);
+            return response()->json([
+                'status' => true,
+                'message' => 'Payment updated successfully',
+                'data' => $order
+            ]);
         }catch(\Exception $e){
             return response()->json([
                 'status' => false,
