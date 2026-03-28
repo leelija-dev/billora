@@ -7,6 +7,7 @@ import Nav2 from "@/components/Nav2";
 import Footer from "@/components/Footer";
 
 const PRODUCTS_PER_PAGE = 12;
+const API_BASE_URL = "http://localhost:8000/api";
 
 export default function ProductsPage() {
   const [search, setSearch] = useState("");
@@ -35,9 +36,14 @@ export default function ProductsPage() {
   const [orderPlaced, setOrderPlaced] = useState(false);
 
   const [formData, setFormData] = useState({
+    fullName: "",
+    email: "",
     phone: "",
-  pincode: "",
-  paymentMethod: "cod"
+    address: "",
+    city: "",
+    state: "",
+    pincode: "",
+    paymentMethod: "cod"
   });
 
   const [displayedProducts, setDisplayedProducts] = useState([]);
@@ -51,39 +57,80 @@ export default function ProductsPage() {
   const lastProductRef = useRef(null);
   const observerRef = useRef(null);
 
-  // Fetch products from DummyJSON API using fetch
+  // Fetch categories from API
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        setLoadingCategories(true);
+        const response = await fetch(`${API_BASE_URL}/restaurant-all-products/categories`);
+        const data = await response.json();
+        
+        if (data && data.categories) {
+          setCategories(["All", ...data.categories]);
+        }
+        setLoadingCategories(false);
+      } catch (error) {
+        console.error('Error fetching categories:', error);
+        setLoadingCategories(false);
+      }
+    };
+    
+    fetchCategories();
+  }, []);
+
+  // Fetch products from API based on category
   useEffect(() => {
     const fetchProducts = async () => {
       try {
         setLoadingProducts(true);
-        const response = await fetch('https://dummyjson.com/products');
+        let url;
+        
+        if (category === "All") {
+          // If "All" is selected, we need to fetch all products
+          // You might need to fetch each category or have a separate endpoint
+          // For now, we'll fetch from a specific category or handle appropriately
+          // Assuming you have an endpoint for all products
+          url = `${API_BASE_URL}/restaurant-all-products`;
+        } else {
+          // Fetch products by category
+          url = `${API_BASE_URL}/restaurant-all-products/category/${category}`;
+        }
+        
+        const response = await fetch(url);
         const data = await response.json();
         
-        // DummyJSON returns { products: [...] } - access the products array
-        const productsArray = data.products || [];
-        
         // Transform API data to match our product structure
+        // Adjust this mapping based on your actual API response structure
+        let productsArray = [];
+        
+        if (Array.isArray(data)) {
+          productsArray = data;
+        } else if (data.products) {
+          productsArray = data.products;
+        } else if (data.data) {
+          productsArray = data.data;
+        } else if (data.items) {
+          productsArray = data.items;
+        } else {
+          productsArray = [];
+        }
+        
         const transformedProducts = productsArray.map(product => ({
-          id: product.id,
-          title: product.title,
-          description: product.description,
-          price: product.price,
-          rating: Math.round(product.rating),
-          thumbnail: product.thumbnail,
-          category: product.category,
-          discount: product.discountPercentage || 0,
-          inStock: product.stock > 0,
-          brand: product.brand || product.category,
-          stock: product.stock,
-          images: product.images || [product.thumbnail]
+          id: product.id || product._id,
+          title: product.name || product.title || "Product",
+          description: product.description || product.desc || "",
+          price: product.price || product.cost || 0,
+          rating: product.rating || Math.floor(Math.random() * 5) + 1,
+          thumbnail: product.image || product.thumbnail || product.img || "https://via.placeholder.com/200",
+          category: product.category || category,
+          discount: product.discount || product.discountPercentage || 0,
+          inStock: (product.stock > 0) || (product.inStock !== false),
+          brand: product.brand || product.category || category,
+          stock: product.stock || 10,
+          images: product.images || [product.image || product.thumbnail]
         }));
         
         setAllProducts(transformedProducts);
-        
-        // Extract unique categories from products
-        const uniqueCategories = [...new Set(transformedProducts.map(p => p.category))];
-        setCategories(["All", ...uniqueCategories.sort()]);
-        
         setLoadingProducts(false);
         
         // Update max price based on products
@@ -94,12 +141,13 @@ export default function ProductsPage() {
         
       } catch (error) {
         console.error('Error fetching products:', error);
+        setAllProducts([]);
         setLoadingProducts(false);
       }
     };
     
     fetchProducts();
-  }, []);
+  }, [category]);
 
   // Load cart from sessionStorage
   useEffect(() => {
@@ -128,7 +176,7 @@ export default function ProductsPage() {
   }, [cart, isHydrated]);
 
   // Function to save order to sessionStorage
-  const saveOrderToLocalStorage = (orderData) => {
+  const saveOrderToSessionStorage = (orderData) => {
     try {
       const existingOrders = JSON.parse(sessionStorage.getItem('userOrders') || '[]');
       
@@ -200,6 +248,25 @@ export default function ProductsPage() {
     }, 2000);
   };
 
+  // Buy now function - adds single product to cart and opens checkout
+  const buyNow = (product) => {
+    // Clear existing cart and add only this product
+    setCart([{ ...product, quantity: 1 }]);
+    // Open cart and go directly to checkout
+    setShowCart(true);
+    setShowCheckout(true);
+    setPopupMessage(`Proceeding to checkout with ${product.title.substring(0, 30)}${product.title.length > 30 ? '...' : ''}`);
+    setPopup(true);
+    
+    if (window.popupTimeout) {
+      clearTimeout(window.popupTimeout);
+    }
+    
+    window.popupTimeout = setTimeout(() => {
+      setPopup(false);
+    }, 2000);
+  };
+
   const removeFromCart = (productId) => {
     setCart(prev => prev.filter(item => item.id !== productId));
     setPopupMessage("Item removed from cart");
@@ -251,7 +318,7 @@ export default function ProductsPage() {
   const handlePlaceOrder = (e) => {
     e.preventDefault();
     
-    if (!formData.phone || !formData.pincode) {
+    if (!formData.fullName || !formData.phone || !formData.address || !formData.city || !formData.state || !formData.pincode) {
       setPopupMessage("Please fill all fields!");
       setPopup(true);
       setTimeout(() => setPopup(false), 2000);
@@ -270,12 +337,16 @@ export default function ProductsPage() {
         category: item.category
       })),
       shippingAddress: {
+        fullName: formData.fullName,
         phone: formData.phone,
-  pincode: formData.pincode
+        address: formData.address,
+        city: formData.city,
+        state: formData.state,
+        pincode: formData.pincode
       }
     };
 
-    const savedOrder = saveOrderToLocalStorage(orderData);
+    const savedOrder = saveOrderToSessionStorage(orderData);
     
     if (savedOrder) {
       setOrderPlaced(true);
@@ -287,9 +358,14 @@ export default function ProductsPage() {
       setCart([]);
       
       setFormData({
+        fullName: "",
+        email: "",
         phone: "",
-  pincode: "",
-  paymentMethod: "cod"
+        address: "",
+        city: "",
+        state: "",
+        pincode: "",
+        paymentMethod: "cod"
       });
       
       setTimeout(() => {
@@ -327,14 +403,13 @@ export default function ProductsPage() {
   const getFilteredProducts = useCallback(() => {
     return allProducts.filter((p) => {
       const matchesSearch = p.title.toLowerCase().includes(search.toLowerCase());
-      const matchesCategory = category === "All" || p.category === category;
       const matchesPrice = p.price <= maxPrice;
       const matchesRating = p.rating >= rating;
       const matchesStock = !inStockOnly || p.inStock;
       
-      return matchesSearch && matchesCategory && matchesPrice && matchesRating && matchesStock;
+      return matchesSearch && matchesPrice && matchesRating && matchesStock;
     });
-  }, [search, category, maxPrice, rating, inStockOnly, allProducts]);
+  }, [search, maxPrice, rating, inStockOnly, allProducts]);
 
   const getSortedProducts = useCallback((productsToSort) => {
     const sorted = [...productsToSort];
@@ -358,7 +433,7 @@ export default function ProductsPage() {
     setPage(1);
     setHasMore(sorted.length > PRODUCTS_PER_PAGE);
     setInitialLoading(false);
-  }, [search, category, maxPrice, rating, sort, inStockOnly, getFilteredProducts, getSortedProducts, allProducts]);
+  }, [search, maxPrice, rating, sort, inStockOnly, getFilteredProducts, getSortedProducts, allProducts]);
 
   // Lazy load more products
   const loadMoreProducts = useCallback(() => {
@@ -428,7 +503,7 @@ export default function ProductsPage() {
   };
 
   const handleImageError = (e) => {
-    e.currentTarget.src = "https://cdn.dummyjson.com/placeholder.png";
+    e.currentTarget.src = "https://via.placeholder.com/200";
   };
 
   useEffect(() => {
@@ -518,7 +593,9 @@ export default function ProductsPage() {
                 onClick={() => {
                   setCategory("All");
                   setRating(0);
-                  setMaxPrice(Math.max(...allProducts.map(p => p.price), 2000));
+                  if (allProducts.length > 0) {
+                    setMaxPrice(Math.max(...allProducts.map(p => p.price), 2000));
+                  }
                   setSort("");
                   setInStockOnly(false);
                   setSearch("");
@@ -533,10 +610,6 @@ export default function ProductsPage() {
               <h3 className="font-semibold mb-3 flex items-center gap-2 text-gray-700">📦 Category</h3>
               <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
                 {categories.map((cat, i) => {
-                  const count = allProducts.filter(
-                    (p) => cat === "All" || p.category === cat
-                  ).length;
-
                   return (
                     <button
                       key={i}
@@ -548,11 +621,6 @@ export default function ProductsPage() {
                       }`}
                     >
                       <span>{cat === "All" ? "📋 All Categories" : formatCategoryName(cat)}</span>
-                      <span className={`text-xs px-2 py-1 rounded-full ${
-                        category === cat ? "bg-white text-blue-600" : "bg-gray-200"
-                      }`}>
-                        {count}
-                      </span>
                     </button>
                   );
                 })}
@@ -564,7 +632,7 @@ export default function ProductsPage() {
               <input
                 type="range"
                 min="0"
-                max={Math.max(...allProducts.map(p => p.price), 2000)}
+                max={allProducts.length > 0 ? Math.max(...allProducts.map(p => p.price), 2000) : 2000}
                 step="10"
                 value={maxPrice}
                 onChange={(e) => setMaxPrice(Number(e.target.value))}
@@ -773,10 +841,7 @@ export default function ProductsPage() {
                             onClick={(e) => {
                               e.stopPropagation();
                               if (product.inStock) {
-                                if (quantity === 0) {
-                                  addToCart(product);
-                                }
-                                setShowCart(true);
+                                buyNow(product);
                               }
                             }}
                             disabled={!product.inStock}
@@ -827,7 +892,9 @@ export default function ProductsPage() {
                       onClick={() => {
                         setSearch("");
                         setCategory("All");
-                        setMaxPrice(Math.max(...allProducts.map(p => p.price), 2000));
+                        if (allProducts.length > 0) {
+                          setMaxPrice(Math.max(...allProducts.map(p => p.price), 2000));
+                        }
                         setRating(0);
                         setSort("");
                         setInStockOnly(false);
@@ -967,7 +1034,10 @@ export default function ProductsPage() {
                     
                     <button
                       onClick={() => {
-                        closeModal();
+                        if (selectedProduct.inStock) {
+                          buyNow(selectedProduct);
+                          closeModal();
+                        }
                       }}
                       disabled={!selectedProduct.inStock}
                       className={`flex-1 py-3 rounded-lg transition ${
@@ -1150,7 +1220,30 @@ export default function ProductsPage() {
                 </div>
 
                 <form onSubmit={handlePlaceOrder} className="space-y-4">
-                  
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Full Name *</label>
+                    <input
+                      type="text"
+                      name="fullName"
+                      value={formData.fullName}
+                      onChange={handleInputChange}
+                      className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                      placeholder="John Doe"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Email</label>
+                    <input
+                      type="email"
+                      name="email"
+                      value={formData.email}
+                      onChange={handleInputChange}
+                      className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                      placeholder="john@example.com"
+                    />
+                  </div>
 
                   <div>
                     <label className="block text-sm font-medium mb-1">Phone *</label>
@@ -1161,6 +1254,59 @@ export default function ProductsPage() {
                       onChange={handleInputChange}
                       className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
                       placeholder="9876543210"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Address *</label>
+                    <input
+                      type="text"
+                      name="address"
+                      value={formData.address}
+                      onChange={handleInputChange}
+                      className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                      placeholder="Street address"
+                      required
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium mb-1">City *</label>
+                      <input
+                        type="text"
+                        name="city"
+                        value={formData.city}
+                        onChange={handleInputChange}
+                        className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                        placeholder="City"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">State *</label>
+                      <input
+                        type="text"
+                        name="state"
+                        value={formData.state}
+                        onChange={handleInputChange}
+                        className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                        placeholder="State"
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Pincode *</label>
+                    <input
+                      type="text"
+                      name="pincode"
+                      value={formData.pincode}
+                      onChange={handleInputChange}
+                      className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                      placeholder="123456"
                       required
                     />
                   </div>

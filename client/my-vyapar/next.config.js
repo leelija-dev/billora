@@ -5,17 +5,25 @@ const nextConfig = {
   },
   images: {
     remotePatterns: [
+      // Allow images from your local API server
       {
-        protocol: 'https',
-        hostname: 'cdn.dummyjson.com',
-        port: '',
+        protocol: 'http',
+        hostname: 'localhost',
+        port: '8000',
         pathname: '/**',
       },
       {
+        protocol: 'http',
+        hostname: '127.0.0.1',
+        port: '8000',
+        pathname: '/**',
+      },
+      // Fallback for placeholder images
+      {
         protocol: 'https',
-        hostname: 'fakestoreapi.com',
+        hostname: 'via.placeholder.com',
         port: '',
-        pathname: '/img/**',
+        pathname: '/**',
       },
     ],
   },
