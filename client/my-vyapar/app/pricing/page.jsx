@@ -5,49 +5,120 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import SectionTitle from "../../components/SectionTitle";
 import Container from "../../components/Container";
+import { getPlans } from '@/services/pricingService';
 
 const Pricing = () => {
   const [billingCycle, setBillingCycle] = useState('monthly');
   const [plans, setPlans] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [subscribing, setSubscribing] = useState(null);
+  const [subscribeMessage, setSubscribeMessage] = useState(null);
   const cardRefs = useRef([]);
 
+  // Fetch plans from Laravel API - SHOW ALL PLANS
   useEffect(() => {
-    const fetchPricingData = async () => {
+    const fetchPlans = async () => {
       try {
-        const response = await fetch('https://fakestoreapi.com/products');
-        const products = await response.json();
-        
-        const transformedPlans = products.map((product, index) => {
-          const isPopular = (index + 1) % 3 === 0;
-          return {
-            id: product.id,
-            name: product.category.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ') + ' Plan',
-            price: {
-              monthly: Math.round(product.price).toLocaleString(),
-              yearly: Math.round(product.price * 10).toLocaleString()
-            },
-            description: `Perfect for ${product.category} businesses`,
-            features: [
-              `Premium ${product.category}`,
-              `Rating: ${product.rating.rate} ★`,
-              `30-day money-back guarantee`,
-              `Free updates`,
-              `Email support`
-            ],
-            color: (index + 1) % 2 === 0 ? '#8b5cf6' : '#000000',
-            buttonText: isPopular ? 'Start Pro' : 'Start Basic',
-            popular: isPopular
-          };
-        });
-        setPlans(transformedPlans);
-        setLoading(false);
+        setLoading(true);
+  
+        const data = await getPlans();
+  
+        if (data.status === true && data.data) {
+          const allPlans = data.data;
+          const limitedPlans = allPlans; // show ALL plans
+  
+          const transformedPlans = limitedPlans.map((plan, index) => {
+            const features = plan.features || [];
+  
+            const monthlyPrice = parseFloat(plan.price);
+            const yearlyPrice = monthlyPrice * 10;
+  
+            return {
+              id: plan.id,
+              name: plan.name,
+              price: {
+                monthly: monthlyPrice.toLocaleString('en-IN'),
+                yearly: yearlyPrice.toLocaleString('en-IN')
+              },
+              description: plan.description
+                ? plan.description.replace(/<[^>]*>?/gm, "")
+                : "",
+              features: features,
+              color: index === 1 ? '#8b5cf6' : '#000000',
+              buttonText: `Start ${plan.name}`,
+              popular: index === 1,
+            };
+          });
+  
+          setPlans(transformedPlans);
+        } else {
+          setError(data.message || "Failed to fetch plans");
+        }
       } catch (error) {
+        console.error('Error fetching plans:', error);
+        setError("Something went wrong");
+      } finally {
         setLoading(false);
       }
     };
-    fetchPricingData();
+  
+    fetchPlans();
   }, []);
+
+  // Handle subscription
+  const handleSubscribe = async (planId) => {
+    setSubscribing(planId);
+    setSubscribeMessage(null);
+    
+    try {
+      const response = await fetch('/api/subscribe', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ plan_id: planId, billing_cycle: billingCycle }),
+      });
+      
+      const data = await response.json();
+      console.log("SUBSCRIBE RESPONSE:", data);
+      
+      if (data.status === true) {
+        setSubscribeMessage({
+          type: 'success',
+          text: data.message || 'Subscription successful! Redirecting to dashboard...'
+        });
+        
+        // Save subscription info to localStorage
+        if (data.data) {
+          localStorage.setItem('subscription', JSON.stringify(data.data));
+        }
+        
+        // Redirect to dashboard after 2 seconds
+        setTimeout(() => {
+          window.location.href = '/dashboard';
+        }, 2000);
+      } else {
+        setSubscribeMessage({
+          type: 'error',
+          text: data.message || 'Subscription failed. Please try again.'
+        });
+      }
+    } catch (error) {
+      console.error('Subscription error:', error);
+      setSubscribeMessage({
+        type: 'error',
+        text: 'Something went wrong. Please try again.'
+      });
+    } finally {
+      setSubscribing(null);
+      
+      // Clear message after 5 seconds
+      setTimeout(() => {
+        setSubscribeMessage(null);
+      }, 5000);
+    }
+  };
 
   useEffect(() => {
     const observerOptions = { threshold: 0.1, rootMargin: '0px' };
@@ -66,107 +137,256 @@ const Pricing = () => {
     return () => observer.disconnect();
   }, [plans]);
 
-  if (loading) return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+  if (loading) {
+    return (
+      <>
+        <Navbar />
+        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#f8fafc] to-[#f1f5f9]">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500 mx-auto mb-4"></div>
+            <p className="text-gray-600 text-lg font-medium">Loading plans...</p>
+          </div>
+        </div>
+        <Footer />
+      </>
+    );
+  }
+
+  if (error) {
+    return (
+      <>
+        <Navbar />
+        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#f8fafc] to-[#f1f5f9]">
+          <div className="text-center bg-white p-8 rounded-2xl shadow-lg max-w-md">
+            <div className="text-red-500 text-6xl mb-4">⚠️</div>
+            <h3 className="text-xl font-bold text-gray-800 mb-2">Unable to Load Plans</h3>
+            <p className="text-gray-600 mb-4">{error}</p>
+            <button 
+              onClick={() => window.location.reload()} 
+              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+            >
+              Try Again
+            </button>
+          </div>
+        </div>
+        <Footer />
+      </>
+    );
+  }
+
+  if (plans.length === 0) {
+    return (
+      <>
+        <Navbar />
+        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#f8fafc] to-[#f1f5f9]">
+          <div className="text-center">
+            <div className="text-gray-400 text-6xl mb-4">📦</div>
+            <h3 className="text-xl font-bold text-gray-800 mb-2">No Plans Available</h3>
+            <p className="text-gray-600">Please check back later for pricing plans.</p>
+          </div>
+        </div>
+        <Footer />
+      </>
+    );
+  }
 
   return (
     <>
       <Navbar />
-      <div className="py-20 bg-gradient-to-br from-[#f8fafc] to-[#f1f5f9] min-h-screen font-sans">
+      <div className="py-20 bg-gradient-to-br from-[#f8fafc] to-[#f1f5f9] min-h-screen font-['Inter',system-ui,-apple-system,sans-serif]">
         <Container size="default">
+          
+          {/* Success/Error Message */}
+          {subscribeMessage && (
+            <div className={`fixed top-24 right-4 z-50 p-4 rounded-lg shadow-lg max-w-md animate-slide-in ${
+              subscribeMessage.type === 'success' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
+            }`}>
+              <p className="font-medium">{subscribeMessage.text}</p>
+            </div>
+          )}
+
+          {/* Header Section */}
           <div className="text-center mb-12">
             <SectionTitle title="Simple, Transparent Pricing" />
+            <p className="text-[#475569] text-lg max-w-[600px] mx-auto mt-4 font-medium">
+              Choose the perfect plan for your business. No hidden fees.
+            </p>
           </div>
 
-          {/* Billing Toggle */}
-          <div className="flex justify-center items-center mb-12 bg-white p-1.5 rounded-full max-w-[340px] mx-auto shadow-sm border border-gray-100">
-            <button
-              className={`px-8 py-3 rounded-full text-sm font-bold transition-all duration-300 flex-1 ${
-                billingCycle === 'monthly' ? 'bg-[#3b82f6] text-white shadow-md' : 'text-[#1e293b]'
-              }`}
-              onClick={() => setBillingCycle('monthly')}
-            >
-              Monthly
-            </button>
-            <button
-              className={`px-8 py-3 rounded-full text-sm font-bold transition-all duration-300 flex-1 ${
-                billingCycle === 'yearly' ? 'bg-[#3b82f6] text-white shadow-md' : 'text-[#1e293b]'
-              }`}
-              onClick={() => setBillingCycle('yearly')}
-            >
-              Yearly
-            </button>
-          </div>
-
-          {/* Pricing Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-16 items-stretch px-4 pt-8">
-            {plans.map((plan, index) => (
-              <div
-                key={plan.id}
-                ref={(el) => (cardRefs.current[index] = el)}
-                className={`bg-white rounded-[30px] p-8 shadow-sm relative transition-all duration-300 border border-[#e2e8f0] flex flex-col opacity-0 translate-y-10
-                  ${plan.popular ? 'border-2 border-[#8b5cf6] lg:scale-[1.02] z-10' : 'z-0'}
-                  hover:-translate-y-1 hover:shadow-xl hover:z-50
-                  ${index === plans.length - 1 && plans.length % 2 !== 0 ? 'md:col-start-2 lg:col-start-auto' : ''}`}
+          {/* Billing Toggle - Clean and Modern */}
+          <div className="flex justify-center items-center mb-12">
+            <div className="relative bg-white p-1 rounded-full shadow-md border border-gray-200 inline-flex">
+              <button
+                className={`relative px-6 sm:px-8 py-2.5 sm:py-3 rounded-full text-sm sm:text-base font-semibold transition-all duration-300 z-10 ${
+                  billingCycle === 'monthly' ? 'text-white' : 'text-gray-700 hover:text-gray-900'
+                }`}
+                onClick={() => setBillingCycle('monthly')}
               >
-                {plan.popular && (
-                  <div className="absolute top-[-16px] left-1/2 -translate-x-1/2 text-white px-6 py-2 rounded-full text-[10px] font-bold uppercase tracking-widest" style={{ background: plan.color }}>
-                    Most Popular
-                  </div>
-                )}
-                <div className="text-center mb-8 pb-8 border-b border-gray-50">
-                  <h3 className="text-xl font-bold mb-4">{plan.name}</h3>
-                  <div className="text-4xl font-extrabold" style={{ color: plan.color }}>
-                    ₹{billingCycle === 'monthly' ? plan.price.monthly : plan.price.yearly}
-                  </div>
-                </div>
-                <div className="flex-1 mb-8">
-                  <ul className="space-y-4">
-                    {plan.features.map((feature, idx) => (
-                      <li key={idx} className="flex items-center gap-3 text-sm">
-                        <span style={{ color: plan.color }}>✓</span> {feature}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-                <button 
-                  className={`w-full py-4 rounded-full font-bold transition-all duration-300 shadow-md hover:brightness-105 active:scale-95
-                    ${plan.popular ? 'text-white' : 'bg-white border-2 hover:bg-gray-50'}`}
-                  style={{ 
-                    backgroundColor: plan.popular ? plan.color : 'transparent', 
-                    color: plan.popular ? 'white' : plan.color, 
-                    border: plan.popular ? 'none' : `2px solid ${plan.color}`
-                  }}
-                >
-                  {plan.buttonText}
-                </button>
-              </div>
-            ))}
-          </div>
-
-          {/* Guarantee Section */}
-          <div className="mt-24 mb-12 flex justify-center">
-            <div className="py-4 px-10 bg-white rounded-full shadow-sm border border-gray-100 text-sm font-semibold">
-              30-day money-back guarantee • No questions asked
+                Monthly
+              </button>
+              <button
+                className={`relative px-6 sm:px-8 py-2.5 sm:py-3 rounded-full text-sm sm:text-base font-semibold transition-all duration-300 z-10 ${
+                  billingCycle === 'yearly' ? 'text-white' : 'text-gray-700 hover:text-gray-900'
+                }`}
+                onClick={() => setBillingCycle('yearly')}
+              >
+                Yearly
+                <span className="absolute -top-2 -right-1 sm:-top-3 sm:-right-2 bg-green-500 text-white text-[9px] sm:text-[10px] font-bold px-1.5 sm:px-2 py-0.5 rounded-full whitespace-nowrap">
+                  Save 20%
+                </span>
+              </button>
+              {/* Sliding Background */}
+              <div 
+                className={`absolute top-1 bottom-1 w-[calc(50%-4px)] bg-gradient-to-r from-blue-600 to-blue-500 rounded-full transition-all duration-300 ease-out ${
+                  billingCycle === 'monthly' ? 'left-1' : 'left-[calc(50%-2px)]'
+                }`}
+              />
             </div>
           </div>
+
+          {/* Pricing Cards Grid - SHOW ALL PLANS */}
+          <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-${Math.min(plans.length, 3)} gap-8 mb-16 items-stretch px-4`}>
+            {plans.map((plan, index) => {
+              const isPopular = index === 1; // Make second plan popular
+              
+              return (
+                <div
+                  key={plan.id}
+                  ref={(el) => (cardRefs.current[index] = el)}
+                  className={`bg-white rounded-2xl p-8 shadow-lg relative transition-all duration-500 border flex flex-col opacity-0 translate-y-10 hover:-translate-y-2 hover:shadow-2xl
+                    ${isPopular 
+                      ? 'border-2 border-purple-500 shadow-purple-100 scale-100 lg:scale-105 z-20' 
+                      : 'border-gray-200 hover:border-gray-300 z-10'
+                    }`}
+                >
+                  {isPopular && (
+                    <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-gradient-to-r from-purple-600 to-purple-500 text-white px-4 py-1 rounded-full text-xs font-bold uppercase tracking-wider shadow-lg">
+                      Most Popular
+                    </div>
+                  )}
+
+                  <div className="text-center mb-8 pb-6 border-b border-gray-100">
+                    <h3 className="text-2xl font-bold text-gray-900 mb-3">{plan.name}</h3>
+                    <div className="flex items-baseline justify-center gap-1 mb-2">
+                      <span className="text-2xl font-semibold text-gray-500">₹</span>
+                      <span className="text-5xl font-bold" style={{ color: isPopular ? '#8b5cf6' : '#000000' }}>
+                        {billingCycle === 'monthly' ? plan.price.monthly : plan.price.yearly}
+                      </span>
+                      <span className="text-gray-400 text-base font-medium">/{billingCycle === 'monthly' ? 'month' : 'year'}</span>
+                    </div>
+                    <p className="text-sm text-gray-600 font-medium">{plan.description}</p>
+                    {plan.duration_days && (
+                      <p className="text-xs text-gray-400 mt-2">{plan.duration_days} days validity</p>
+                    )}
+                  </div>
+
+                  <div className="flex-1 mb-8">
+                    <h4 className="text-xs font-bold text-gray-500 mb-5 uppercase tracking-wider">What's included</h4>
+                    <ul className="space-y-3.5">
+                      {plan.features.map((feature, idx) => (
+                        <li key={idx} className="flex items-start gap-3 text-sm text-gray-700">
+                          <svg className="w-5 h-5 flex-shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none">
+                            <path d="M20 6L9 17L4 12" stroke={isPopular ? '#8b5cf6' : '#000000'} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                          </svg>
+                          <span className="leading-relaxed">{feature}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  <div className="mt-auto pt-4">
+                    <button
+                      onClick={() => handleSubscribe(plan.id)}
+                      disabled={subscribing === plan.id}
+                      className={`w-full py-3.5 rounded-xl text-base font-semibold transition-all duration-300 hover:shadow-lg active:scale-95
+                        ${isPopular 
+                          ? 'bg-gradient-to-r from-purple-600 to-purple-500 text-white hover:from-purple-700 hover:to-purple-600' 
+                          : 'bg-white border-2 hover:bg-gray-50'
+                        }
+                        ${subscribing === plan.id ? 'opacity-50 cursor-not-allowed' : ''}`}
+                      style={{
+                        color: isPopular ? 'white' : '#000000',
+                        borderColor: isPopular ? 'transparent' : '#000000'
+                      }}
+                    >
+                      {subscribing === plan.id ? (
+                        <span className="flex items-center justify-center gap-2">
+                          <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                          </svg>
+                          Processing...
+                        </span>
+                      ) : (
+                        plan.buttonText
+                      )}
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Bottom Section */}
+          <div className="flex flex-col md:flex-row items-center justify-between gap-6 px-4 border-t border-gray-200 pt-12">
+            <div className="hidden lg:block w-[150px]" />
+
+            <div className="flex flex-row items-center gap-3 py-3 px-6 bg-white rounded-full shadow-sm border border-gray-200 hover:shadow-md transition-shadow duration-300">
+              <div className="bg-blue-50 p-2 rounded-full">
+                <svg width="18" height="18" className="text-blue-600" viewBox="0 0 24 24" fill="none">
+                  <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="currentColor" strokeWidth="2" />
+                  <path d="M12 6V12L16 14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                </svg>
+              </div>
+              <span className="text-sm text-gray-700 font-medium whitespace-nowrap">
+                30-day money-back guarantee • No questions asked
+              </span>
+            </div>
+
+            <a
+              href="/contact"
+              className="group inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl font-semibold text-sm shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300"
+            >
+              <span>Need Help?</span>
+              <svg className="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </a>
+          </div>
+
         </Container>
       </div>
       <Footer />
+
       <style jsx>{`
         .card-visible {
           opacity: 1 !important;
           transform: translateY(0) !important;
         }
         
-        /* Responsive fix to center single card on medium screens */
-        @media (min-width: 768px) and (max-width: 1023px) {
-          .grid > :last-child:nth-child(3) {
-            grid-column: span 2;
-            justify-self: center;
-            width: 50%;
-            margin-left: auto;
-            margin-right: auto;
+        @keyframes slide-in {
+          from {
+            opacity: 0;
+            transform: translateX(100%);
           }
+          to {
+            opacity: 1;
+            transform: translateX(0);
+          }
+        }
+        
+        .animate-slide-in {
+          animation: slide-in 0.3s ease-out;
+        }
+        
+        @keyframes spin {
+          to {
+            transform: rotate(360deg);
+          }
+        }
+        
+        .animate-spin {
+          animation: spin 1s linear infinite;
         }
       `}</style>
     </>
