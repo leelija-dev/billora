@@ -25,8 +25,27 @@ const StoreForm = ({
     watch,
   } = useForm()
 
-  // Get current user ID
+  // Get current user ID from auth store
   const getUserId = () => {
+    // First try to get user from auth store (most reliable)
+    if (user && user.id) {
+      return user.id.toString()
+    }
+    
+    // Fallback to localStorage if auth store is not available
+    const authStorage = localStorage.getItem('auth-storage')
+    if (authStorage) {
+      try {
+        const parsed = JSON.parse(authStorage)
+        const userId = parsed.state?.user?.id || parsed.user?.id
+        return userId ? userId.toString() : '1'
+      } catch (error) {
+        console.error('Error parsing auth storage:', error)
+        return '1'
+      }
+    }
+    
+    // Last fallback - try old auth key
     const authData = localStorage.getItem('auth')
     if (authData) {
       try {
@@ -36,6 +55,8 @@ const StoreForm = ({
         return '1'
       }
     }
+    
+    console.warn('No user found in auth store or localStorage, using fallback')
     return '1'
   }
 

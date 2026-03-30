@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react'
+import { motion } from 'framer-motion'
+import { FiSave, FiX } from 'react-icons/fi'
 import Input from '../../common/Input/Input'
 import Button from '../../common/Button/Button'
 import Select from '../../common/Select/Select'
-import { motion } from 'framer-motion'
 import { useAuthStore } from '../../../store/authStore'
 
-const CategoryForm = ({ initialData, onSubmit, onCancel, isSubmitting = false }) => {
+const BrandForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting }) => {
   const { user } = useAuthStore()
   
   // Get current user ID from auth store
@@ -28,6 +29,17 @@ const CategoryForm = ({ initialData, onSubmit, onCancel, isSubmitting = false })
       }
     }
     
+    // Last fallback - try old auth key
+    const authData = localStorage.getItem('auth')
+    if (authData) {
+      try {
+        const parsed = JSON.parse(authData)
+        return parsed.user?.id || parsed.userId || '1'
+      } catch {
+        return '1'
+      }
+    }
+    
     console.warn('No user found in auth store or localStorage, using fallback')
     return '1'
   }
@@ -35,11 +47,12 @@ const CategoryForm = ({ initialData, onSubmit, onCancel, isSubmitting = false })
   const currentUserId = getUserId()
 
   const [formData, setFormData] = useState({
-    user_id: currentUserId,
     name: '',
-    is_active: 1, // Use number (1 for active, 0 for inactive)
-    created_by: currentUserId,
     description: '',
+    is_active: 1,
+    user_id: currentUserId,
+    created_by: currentUserId,
+    ...initialData
   })
 
   const [errors, setErrors] = useState({})
@@ -47,7 +60,7 @@ const CategoryForm = ({ initialData, onSubmit, onCancel, isSubmitting = false })
   // Auto-populate user_id and created_by from auth context
   useEffect(() => {
     if (!initialData) {
-      // For new categories, pre-populate with current user and active status
+      // For new brands, pre-populate with current user
       setFormData(prev => ({
         ...prev,
         user_id: currentUserId,
@@ -63,11 +76,11 @@ const CategoryForm = ({ initialData, onSubmit, onCancel, isSubmitting = false })
       const isActive = (initialData.is_active === 1 || initialData.is_active === true) ? 1 : 0
       
       const formData = {
-        user_id: initialData.user_id || currentUserId,
         name: initialData.name || '',
-        is_active: isActive,
-        created_by: initialData.created_by || currentUserId,
         description: initialData.description || '',
+        is_active: isActive,
+        user_id: initialData.user_id || currentUserId,
+        created_by: initialData.created_by || currentUserId,
       }
       console.log('Setting form data for edit:', formData)
       setFormData(formData)
@@ -115,11 +128,7 @@ const CategoryForm = ({ initialData, onSubmit, onCancel, isSubmitting = false })
     }
     
     if (!formData.name.trim()) {
-      newErrors.name = 'Category name is required'
-    }
-    
-    if (formData.is_active === undefined || formData.is_active === '') {
-      newErrors.is_active = 'Status is required'
+      newErrors.name = 'Brand name is required'
     }
     
     setErrors(newErrors)
@@ -145,39 +154,72 @@ const CategoryForm = ({ initialData, onSubmit, onCancel, isSubmitting = false })
       onSubmit={handleSubmit}
       className="space-y-6"
     >
-      {/* Debug logging */}
-      {console.log('Rendering CategoryForm - formData.is_active:', formData.is_active, 'type:', typeof formData.is_active)}
-      
+      <div className="flex items-center justify-between">
+        <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+          {mode === 'add' ? 'Add New Brand' : 'Edit Brand'}
+        </h2>
+        <div className="flex items-center space-x-2">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onCancel}
+            icon={FiX}
+            disabled={isSubmitting}
+          >
+            Cancel
+          </Button>
+          <Button
+            type="submit"
+            variant="primary"
+            icon={FiSave}
+            loading={isSubmitting}
+          >
+            {mode === 'add' ? 'Create Brand' : 'Save Changes'}
+          </Button>
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Input
-          label="Category Name"
-          name="name"
-          value={formData.name}
-          onChange={handleChange}
-          placeholder="e.g., Electronics, Clothing, Food"
-          error={errors.name}
-          required
-          disabled={isSubmitting}
-        />
-        
-        <Select
-          label="Status"
-          name="is_active"
-          value={(() => {
-            // Convert number (1 or 0) to string ("true" or "false") for Select component
-            const stringValue = formData.is_active === 1 ? "true" : "false"
-            console.log('Select calculated value:', stringValue, 'from formData.is_active:', formData.is_active)
-            return stringValue
-          })()}
-          onChange={handleChange}
-          error={errors.is_active}
-          required
-          disabled={isSubmitting}
-          options={[
-            { value: "true", label: "Active" },
-            { value: "false", label: "Inactive" }
-          ]}
-        />
+        <div className="space-y-4">
+          <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">
+            Brand Information
+          </h3>
+          
+          <Input
+            label="Brand Name"
+            name="name"
+            value={formData.name}
+            onChange={handleChange}
+            error={errors.name}
+            required
+            placeholder="e.g., Tata, Samsung, Apple"
+            disabled={isSubmitting}
+          />
+        </div>
+
+        <div className="space-y-4">
+          <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">
+            Status & Settings
+          </h3>
+
+          <Select
+            label="Status"
+            name="is_active"
+            value={(() => {
+              // Convert number (1 or 0) to string ("true" or "false") for Select component
+              const stringValue = formData.is_active === 1 ? "true" : "false"
+              return stringValue
+            })()}
+            onChange={handleChange}
+            error={errors.is_active}
+            required
+            disabled={isSubmitting}
+            options={[
+              { value: "true", label: "Active" },
+              { value: "false", label: "Inactive" }
+            ]}
+          />
+        </div>
       </div>
 
       <div className="grid grid-cols-1 gap-6">
@@ -186,7 +228,7 @@ const CategoryForm = ({ initialData, onSubmit, onCancel, isSubmitting = false })
           name="description"
           value={formData.description}
           onChange={handleChange}
-          placeholder="Optional description for this category"
+          placeholder="Optional description for this brand"
           error={errors.description}
           disabled={isSubmitting}
           textarea
@@ -222,7 +264,7 @@ const CategoryForm = ({ initialData, onSubmit, onCancel, isSubmitting = false })
             disabled={isSubmitting}
             loading={isSubmitting}
           >
-            {isSubmitting ? 'Saving...' : (initialData ? 'Update Category' : 'Create Category')}
+            {isSubmitting ? 'Saving...' : (initialData ? 'Update Brand' : 'Create Brand')}
           </Button>
         </motion.div>
       </div>
@@ -230,4 +272,4 @@ const CategoryForm = ({ initialData, onSubmit, onCancel, isSubmitting = false })
   )
 }
 
-export default CategoryForm
+export default BrandForm

@@ -157,6 +157,32 @@ const ProtectedRoute = ({
 
   // Check feature access
   if (feature) {
+    // Handle special hide-with-stock logic
+    if (feature === 'hide-with-stock') {
+      const hasStockPermission = permissions.some(p => p.slug === PERMISSIONS.STOCK_MANAGEMENT)
+      if (hasStockPermission) {
+        return (
+          <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+            <EmptyState
+              icon={FiLock}
+              title="Access Denied"
+              description="Users with stock management permissions cannot access this feature."
+              action={
+                <button
+                  onClick={() => window.history.back()}
+                  className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+                >
+                  Go Back
+                </button>
+              }
+            />
+          </div>
+        )
+      }
+      // If user doesn't have stock permission, allow access
+      return children || <Outlet />
+    }
+
     const permissionMap = {
       'stock-management': PERMISSIONS.STOCK_MANAGEMENT,
       'billing': PERMISSIONS.BILL_GENERATION,

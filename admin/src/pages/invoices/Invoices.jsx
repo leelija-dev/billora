@@ -19,7 +19,6 @@ import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useInvoiceStore } from '../../store/invoiceStore'
 import { usePermissionStore } from '../../store/permissionStore'
-import ProtectedRoute from '../../components/features/Auth/ProtectedRoute'
 import Button from '../../components/common/Button/Button'
 import Input from '../../components/common/Input/Input'
 import Pagination from '../../components/common/Pagination/Pagination'
@@ -36,6 +35,7 @@ import { productsAPI } from '../../services/productsService'
 
 const Invoices = () => {
   const navigate = useNavigate()
+  const { canAccess } = usePermissionStore()
   const {
     invoices,
     totalInvoices,
@@ -50,6 +50,9 @@ const Invoices = () => {
     fetchBillGenerateData,
     setFilters,
   } = useInvoiceStore()
+
+  // Check if user has stock management permission
+  const hasStockPermission = canAccess('stock-management')
 
   const [formMode, setFormMode] = useState(null) // 'add', 'edit', or null
   const [searchTerm, setSearchTerm] = useState(filters.search || '')
@@ -399,12 +402,11 @@ const Invoices = () => {
   )
 
   return (
-    <ProtectedRoute feature="bill-generation">
-      <motion.div 
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        className="space-y-6 p-6"
-      >
+    <motion.div 
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      className="space-y-6 p-6"
+    >
       {/* Header */}
       <motion.div
         initial={{ y: -20, opacity: 0 }}
@@ -554,6 +556,7 @@ const Invoices = () => {
                 onSubmit={handleAddSubmit}
                 onCancel={handleCancelForm}
                 isSubmitting={formSubmitting}
+                hasStockPermission={hasStockPermission}
               />
             ) : (
               <InvoiceForm
@@ -562,6 +565,7 @@ const Invoices = () => {
                 onSubmit={handleEditSubmit}
                 onCancel={handleCancelForm}
                 isSubmitting={formSubmitting}
+                hasStockPermission={hasStockPermission}
               />
             )}
           </motion.div>
@@ -964,7 +968,6 @@ const Invoices = () => {
         )}
       </AnimatePresence>
     </motion.div>
-    </ProtectedRoute>
   )
 }
 
