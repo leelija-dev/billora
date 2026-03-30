@@ -46,13 +46,13 @@
                         <div class="flex items-center space-x-3">
                             <!-- Search -->
                            
-                            <a href="{{route('admin.plans.deleted')}}" ><button
+                            <a href="#" ><button
                                     class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg flex items-center transition duration-200">
                                 <i data-feather="trash" class="w-4 h-4 mr-2"></i>
                                 Trashed User
                             </button></a>
                             <!-- Add Plan Button -->
-                           <a href="{{route('admin.plans.create')}}" ><button
+                           <a href="#" ><button
                                     class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center transition duration-200">
                                 <i data-feather="plus" class="w-4 h-4 mr-2"></i>
                                 Add User
