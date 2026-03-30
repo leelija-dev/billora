@@ -26,7 +26,9 @@ class Products extends Model
         'discount_percentage',
         'description',
         'is_active',
-        'created_by'
+        'created_by',
+        'image',
+        'qr_code',
 
     ];
     public function brand(){
