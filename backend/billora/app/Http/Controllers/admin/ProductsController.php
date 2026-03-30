@@ -209,6 +209,26 @@ class ProductsController extends Controller
             ]);
         }
     }
+    private function getFileIdFromUrl($url) 
+{
+    parse_str(parse_url($url, PHP_URL_QUERY), $params);
+    return $params['id'] ?? null;
+}
+private function deleteFromDrive($fileId)
+{
+    $client = new \Google\Client();
+    $client->setClientId(env('GOOGLE_CLIENT_ID'));
+    $client->setClientSecret(env('GOOGLE_CLIENT_SECRET'));
+    $client->refreshToken(env('GOOGLE_REFRESH_TOKEN'));
+
+    $service = new \Google\Service\Drive($client);
+
+    try {
+        $service->files->delete($fileId);
+    } catch (\Exception $e) {
+        // ignore if already deleted
+    }
+}
     public function update($id, Request $request)
     {   // update product
         try {
@@ -241,7 +261,43 @@ class ProductsController extends Controller
                 'description'           => 'nullable',
                 'is_active'             => 'required',
             ]);
+            if($product){
+                    if ($request->hasFile('image')) {
 
+                    // delete old image
+                    if ($product->image) {
+                        $fileId = $this->getFileIdFromUrl($product->image);
+                        if ($fileId) {
+                            $this->deleteFromDrive($fileId);
+                        }
+                    }
+
+                    // upload new image
+                    $data['image'] = $this->uploadToDrive(
+                        $request->file('image'),
+                        env('GOOGLE_IMAGE_FOLDER_ID')
+                    );
+                }
+
+                //QR code
+                if ($request->hasFile('qr_code')) {
+
+                    // delete old qr
+                    if ($product->qr_code) {
+                        $fileId = $this->getFileIdFromUrl($product->qr_code);
+                        if ($fileId) {
+                            $this->deleteFromDrive($fileId);
+                        }
+                    }
+
+                    // upload new qr
+                    $data['qr_code'] = $this->uploadToDrive(
+                        $request->file('qr_code'),
+                        env('GOOGLE_QR_FOLDER_ID')
+                    );
+                }
+
+            }
             $product->update($data);
             return response()->json([
                 'status' => true,
@@ -337,6 +393,20 @@ class ProductsController extends Controller
                 ]);
             }
             $product = Products::withTrashed()->where('user_id', $user)->where('id', $id)->first();
+            if($product){
+                if($product->image){
+                    $fileId = $this->getFileIdFromUrl($product->image);
+                    if($fileId){
+                        $this->deleteFromDrive($fileId);
+                    }
+                }
+                if($product->qr_code){
+                    $fileId = $this->getFileIdFromUrl($product->qr_code);
+                    if($fileId){
+                        $this->deleteFromDrive($fileId);
+                    }
+                }
+            }
             $product->forceDelete();
             return response()->json([
                 'status' => true,
