@@ -12,6 +12,10 @@ use App\Models\Stocks;
 use App\Models\Customers;
 use App\Models\Store;
 use Illuminate\Support\Facades\Auth;
+use Google\Client;
+use Google\Service\Drive;
+use Google\Service\Drive\DriveFile;
+use Google\Service\Drive\Permission;
 
 class ProductsController extends Controller
 {
@@ -63,15 +67,15 @@ class ProductsController extends Controller
                 'message' => 'You are not authenticated user!'
             ]);
         }
-         try {
-        $customer = Customers::findOrFail($id);
-        if($customer->plan_id == null || $customer->is_active == false){
-            return response()->json([
-                'status' => false,
-                'message' =>'You do not have any active plan. Please upgrade your plan.'
-            ]);
-        }
-       
+        try {
+            $customer = Customers::findOrFail($id);
+            if ($customer->plan_id == null || $customer->is_active == false) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'You do not have any active plan. Please upgrade your plan.'
+                ]);
+            }
+
             $brand = Brand::where('user_id', $id)->get();
             $category = Categories::where('user_id', $id)->get();
             $unit = Unit::where('user_id', $id)->get();
@@ -89,12 +93,48 @@ class ProductsController extends Controller
             ]);
         }
     }
+
+    private function uploadToDrive($file)
+    {
+        $client = new Client();
+        $client->setClientId(env('GOOGLE_CLIENT_ID'));
+        $client->setClientSecret(env('GOOGLE_CLIENT_SECRET'));
+        $client->refreshToken(env('GOOGLE_REFRESH_TOKEN'));
+
+        $service = new Drive($client);
+
+        $fileMetadata = new DriveFile([
+            'name' => time() . '_' . $file->getClientOriginalName(),
+            'parents' => [env('GOOGLE_FOLDER_ID')]
+        ]);
+
+        $uploadedFile = $service->files->create($fileMetadata, [
+            'data' => file_get_contents($file->getRealPath()),
+            'mimeType' => $file->getMimeType(),
+            'uploadType' => 'multipart',
+            'fields' => 'id'
+        ]);
+
+        $fileId = $uploadedFile->id;
+
+        // Make file public
+        $permission = new Permission([
+            'type' => 'anyone',
+            'role' => 'reader'
+        ]);
+
+        $service->permissions->create($fileId, $permission);
+
+        return "https://drive.google.com/uc?export=view&id=" . $fileId;
+    }
     public function store(Request $request)
     {
         try {
             $user = Auth::user()->id;
+            
             $data = $request->validate([
                 // 'sku'                   => 'required|unique:products',
+                'user_id'              => 'nullable',
                 'sku' => 'required|unique:products,sku,NULL,id,user_id,' . $user,
                 'name'                  => 'required',
                 'brand_id'              => 'nullable|exists:brand,id',
@@ -107,6 +147,8 @@ class ProductsController extends Controller
                 'discount_percentage'   => 'nullable',
                 'description'           => 'nullable',
                 'is_active'             => 'required',
+                'image'                 => 'nullable',
+                'qr_code'               => 'nullable'
             ]);
             if (!Auth::check()) {
                 return response()->json([
@@ -114,7 +156,14 @@ class ProductsController extends Controller
                     'message' => 'Authentication required. Please login first.'
                 ]);
             }
+            if ($request->hasFile('image')) {
+                $data['image'] = $this->uploadToDrive($request->file('image'));
+            }
 
+            //  Upload QR Code to Google Drive
+            if ($request->hasFile('qr_code')) {
+                $data['qr_code'] = $this->uploadToDrive($request->file('qr_code'));
+            }
             $data['user_id'] = $user;
             $data['created_by'] = $user;
             $product = Products::create($data);
@@ -164,13 +213,13 @@ class ProductsController extends Controller
             }
             $user = Auth::user()->id;
             $customer = Customers::findOrFail($user);
-            if($customer->plan_id == null || $customer->is_active == false){
+            if ($customer->plan_id == null || $customer->is_active == false) {
                 return response()->json([
                     'status' => false,
-                    'message' =>'You do not have any active plan. Please upgrade your plan.'
+                    'message' => 'You do not have any active plan. Please upgrade your plan.'
                 ]);
             }
-            
+
             $product = Products::where('user_id', $user)->where('id', $id)->first();
             $data = $request->validate([
                 'name'                  => 'required',
@@ -210,10 +259,10 @@ class ProductsController extends Controller
             }
             $user = Auth::user()->id;
             $customer = Customers::findOrFail($user);
-            if($customer->plan_id == null || $customer->is_active == false){
+            if ($customer->plan_id == null || $customer->is_active == false) {
                 return response()->json([
                     'status' => false,
-                    'message' =>'You do not have any active plan. Please upgrade your plan.'
+                    'message' => 'You do not have any active plan. Please upgrade your plan.'
                 ]);
             }
             $product = Products::where('user_id', $user)->where('id', $id)->first();
@@ -242,10 +291,10 @@ class ProductsController extends Controller
             $user = Auth::user()->id;
             // check active plan
             $customer = Customers::findOrFail($user);
-            if($customer->plan_id == null || $customer->is_active == false){
+            if ($customer->plan_id == null || $customer->is_active == false) {
                 return response()->json([
                     'status' => false,
-                    'message' =>'You do not have any active plan. Please upgrade your plan.'
+                    'message' => 'You do not have any active plan. Please upgrade your plan.'
                 ]);
             }
             $product = Products::withTrashed()->where('user_id', $user)->where('id', $id)->get();
@@ -274,10 +323,10 @@ class ProductsController extends Controller
             $user = Auth::user()->id;
             // check active plan
             $customer = Customers::findOrFail($user);
-            if($customer->plan_id == null || $customer->is_active == false){
+            if ($customer->plan_id == null || $customer->is_active == false) {
                 return response()->json([
                     'status' => false,
-                    'message' =>'You do not have any active plan. Please upgrade your plan.'
+                    'message' => 'You do not have any active plan. Please upgrade your plan.'
                 ]);
             }
             $product = Products::withTrashed()->where('user_id', $user)->where('id', $id)->first();
@@ -296,88 +345,89 @@ class ProductsController extends Controller
     }
 
     /* public user show products */
-    public function userProducts( Request $request,$id){
-        try{
-            
+    public function userProducts(Request $request, $id)
+    {
+        try {
+
             // $products = Products::with('brand','category','unit')->where('user_id', $id)->where('is_active',true)->paginate(15);
-            $categoies = Categories::where('user_id',$id)->where('is_active',true)->get();
-            $brands = Brand::where('user_id',$id)->where('is_active',true)->get();
+            $categoies = Categories::where('user_id', $id)->where('is_active', true)->get();
+            $brands = Brand::where('user_id', $id)->where('is_active', true)->get();
             $store = Store::where('user_id', $id)->get();
             $products = Products::with('brand', 'category', 'unit')
-            ->where('user_id', $id)
-            ->where('is_active', true)
-            ->when($request->search, function ($query) use ($request) {
+                ->where('user_id', $id)
+                ->where('is_active', true)
+                ->when($request->search, function ($query) use ($request) {
 
-                $search = $request->search;
+                    $search = $request->search;
 
-                $query->where(function ($q) use ($search) {
+                    $query->where(function ($q) use ($search) {
 
-                    // Product name
-                    $q->where('name', 'like', "%{$search}%")
+                        // Product name
+                        $q->where('name', 'like', "%{$search}%")
 
-                    // SKU
-                    ->orWhere('sku', 'like', "%{$search}%")
+                            // SKU
+                            ->orWhere('sku', 'like', "%{$search}%")
 
-                    // Price
-                    ->orWhere('selling_price', 'like', "%{$search}%")
+                            // Price
+                            ->orWhere('selling_price', 'like', "%{$search}%")
 
-                    // Category name
-                    ->orWhereHas('category', function ($q) use ($search) {
-                        $q->where('name', 'like', "%{$search}%");
-                    })
+                            // Category name
+                            ->orWhereHas('category', function ($q) use ($search) {
+                                $q->where('name', 'like', "%{$search}%");
+                            })
 
-                    // Brand name
-                    ->orWhereHas('brand', function ($q) use ($search) {
-                        $q->where('name', 'like', "%{$search}%");
+                            // Brand name
+                            ->orWhereHas('brand', function ($q) use ($search) {
+                                $q->where('name', 'like', "%{$search}%");
+                            });
                     });
-
-                });
-            })
-            ->paginate(15);
-            if(!$products){
+                })
+                ->paginate(15);
+            if (!$products) {
                 return response()->json([
                     'status' => false,
                     'message' => 'Product not found!'
                 ]);
             }
             return response()->json([
-                'status'=>true,
-                'categories'=>$categoies,
-                'brands'=>$brands,
-                'stores'=>$store,
-                'products'=>$products
-                
+                'status' => true,
+                'categories' => $categoies,
+                'brands' => $brands,
+                'stores' => $store,
+                'products' => $products
+
             ]);
-        }catch(\Exception $e){
+        } catch (\Exception $e) {
             return response()->json([
                 'status' => false,
-                'message' =>$e->getMessage()
+                'message' => $e->getMessage()
             ]);
         }
     }
 
-    public function categoryProducts(Request $request,$id){
-        try{
-            
-            $user_id =$request->user_id;
-            
-            $products = Products::with('brand','category','unit')->where('category_id', $id)->where('user_id',$user_id)->paginate(15);
-            
-            if(!$products){
+    public function categoryProducts(Request $request, $id)
+    {
+        try {
+
+            $user_id = $request->user_id;
+
+            $products = Products::with('brand', 'category', 'unit')->where('category_id', $id)->where('user_id', $user_id)->paginate(15);
+
+            if (!$products) {
                 return response()->json([
-                    'status' => false,
+                    'status'  => false,
                     'message' => 'Product not found!'
                 ]);
             }
             return response()->json([
-                'status'=>true,
-                'products'=>$products,
+                'status' => true,
+                'products' => $products,
 
             ]);
-        }catch(\Exception $e){
+        } catch (\Exception $e) {
             return response()->json([
                 'status' => false,
-                'message' =>$e->getMessage()
+                'message' => $e->getMessage()
             ]);
         }
     }
