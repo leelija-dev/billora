@@ -4,6 +4,8 @@ const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 
 export const apiRequest = async (endpoint, method = "GET", body = null) => {
   try {
+    const token = localStorage.getItem("token"); // 🔥 GET TOKEN
+
     const fullUrl = `${BASE_URL}${endpoint}`;
 
     const { token } = getAuthData();
