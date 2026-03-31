@@ -684,17 +684,47 @@
                 <div class="flex items-center justify-between m-4">
 
                     <!-- Left: Title -->
-                    <h2 class="table-title text-xl font-semibold">Customers</h2>
+                    <h2 class="text-xl font-semibold">Customers</h2>
+
+                    <!-- Center: Buttons -->
+                    <div class="flex items-center gap-2 ">
+                        <button onclick="clearSelection()" class="px-3 py-2 bg-red-500 text-white rounded text-sm">
+                            All Unchecked
+                        </button>
+                        {{-- 
+                        <a href="{{route('admin.customers.customer-mail')}}"><button class="px-3 py-2 bg-blue-500 text-white rounded text-sm">
+                            Send Mail
+                        </button></a> --}}
+
+                        <button onclick="handleSendMail()"
+                            class="relative px-4 py-2 bg-blue-500 text-white rounded flex items-center gap-2">
+
+                            <!-- Mail Icon -->
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24"
+                                stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M16 12H8m0 0l-4-4m4 4l-4 4m8-8l4-4m-4 4l4 4" />
+                            </svg>
+
+                            <span>Send Mail</span>
+
+                            <!-- Red Badge -->
+                            <span id="selectedCount"
+                                class="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                                0
+                            </span>
+                        </button>
+                    </div>
 
                     <!-- Right: Search -->
-                    <div class="search-box flex items-center  rounded px-2">
+                    <div class="flex items-center border rounded px-2">
                         <svg viewBox="0 0 24 24" class="w-5 h-5 text-gray-500">
                             <path
-                                d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z" />
+                                d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zM9.5 14C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z" />
                         </svg>
 
                         <input type="text" placeholder="Search customers..." id="searchInput"
-                            class="outline-none px-2 py-1">
+                            class="outline-none px-8 py-3 text-sm">
                     </div>
 
                 </div>
@@ -702,12 +732,15 @@
                 <table class="customers-table">
                     <thead>
                         <tr>
+                            <th>
+                                <input type="checkbox" id="select_all"> Check All
+                            </th>
                             <th>Sl. No</th>
                             <th>Customer</th>
                             <th>Status</th>
                             <th>Revenue</th>
                             <th class="text-center">Joined</th>
-                             <th>Plans</th>
+                            <th>Plans</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
@@ -715,6 +748,10 @@
                         @if (isset($customers) && count($customers) > 0)
                             @foreach ($customers as $customer)
                                 <tr>
+                                    <td>
+                                        <input type="checkbox" name="select_customer[]" value="{{ $customer['id'] }}"
+                                            class="customer_checkbox">
+                                    </td>
                                     <td class="text-center">
                                         {{ $loop->iteration + ($customers->currentPage() - 1) * $customers->perPage() }}
                                     </td>
@@ -727,17 +764,30 @@
                                             </div>
                                         </div>
                                     </td>
-                                    <td class="text-center">
-
+                                    <td class="text-center is_active" data-status="{{ $customer->is_active }}">
+                                        {{-- {{ $customer['is_active'] ? 'Active' : 'Inactive' }} --}}
+                                        @if ($customer->is_active)
+                                            <span
+                                                class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800 ">
+                                                Active
+                                            </span>
+                                        @else
+                                            <span
+                                                class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800 ">
+                                                Inactive
+                                            </span>
+                                        @endif
                                     </td>
-                                    
+
                                     <td class="text-center"><strong></strong></td>
                                     <td class="text-center">{{ $customer['created_at']->format('d M Y h:i A') }}</td>
                                     <td class="text-center">
-                                        <a href="{{route('admin.customers.plans',$customer->id)}}">
+                                        <a href="{{ route('admin.customers.plans', $customer->id) }}">
                                             <button class="action-btn" title="Notifications">
-                                                <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
-                                                    <path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6V11c0-3.07-1.63-5.64-4.5-6.32V4a1.5 1.5 0 0 0-3 0v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/>
+                                                <svg viewBox="0 0 24 24" width="20" height="20"
+                                                    fill="currentColor">
+                                                    <path
+                                                        d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6V11c0-3.07-1.63-5.64-4.5-6.32V4a1.5 1.5 0 0 0-3 0v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z" />
                                                 </svg>
                                             </button>
                                         </a>
@@ -800,60 +850,196 @@
         </div> --}}
         </div>
     </div>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
     <script>
-        // Simple view function
-        function viewCustomer(id) {
-            alert('View customer: ' + id);
+        /* =========================
+               GLOBAL STATE
+            ========================= */
+        let selectedCustomers = JSON.parse(localStorage.getItem('selectedCustomers')) || [];
+        let isAllSelected = localStorage.getItem('isAllSelected') === 'true';
+
+        /* =========================
+           UPDATE COUNT
+        ========================= */
+        function updateSelectedCount() {
+            let count = isAllSelected ?
+                {{ $customers->total() }} :
+                selectedCustomers.length;
+
+            document.getElementById('selectedCount').innerText = count;
         }
 
-        function editCustomer(id) {
-            alert('Edit customer: ' + id);
-        }
+        /* =========================
+           PAGE LOAD
+        ========================= */
+        document.addEventListener("DOMContentLoaded", function() {
 
-        // Search functionality
-        document.getElementById('searchInput').addEventListener('input', function(e) {
-            const searchTerm = e.target.value.toLowerCase();
-            const rows = document.querySelectorAll('.customers-table tbody tr');
+            let checkboxes = document.querySelectorAll('.customer_checkbox');
+            let selectAll = document.getElementById('select_all');
 
-            rows.forEach(row => {
-                if (row.cells.length > 1) {
-                    const name = row.querySelector('.customer-name')?.textContent.toLowerCase() || '';
-                    const email = row.querySelector('.customer-email')?.textContent.toLowerCase() || '';
+            // Restore checkbox state
+            checkboxes.forEach(cb => {
+                if (isAllSelected || selectedCustomers.includes(cb.value)) {
+                    cb.checked = true;
+                }
 
-                    if (name.includes(searchTerm) || email.includes(searchTerm)) {
+                cb.addEventListener('change', function() {
+
+                    if (isAllSelected) {
+                        // switch to manual mode
+                        isAllSelected = false;
+                        localStorage.setItem('isAllSelected', 'false');
+                        selectedCustomers = [];
+                    }
+
+                    if (this.checked) {
+                        if (!selectedCustomers.includes(this.value)) {
+                            selectedCustomers.push(this.value);
+                        }
+                    } else {
+                        selectedCustomers = selectedCustomers.filter(id => id !== this.value);
+                    }
+
+                    localStorage.setItem('selectedCustomers', JSON.stringify(selectedCustomers));
+                    updateSelectedCount();
+                });
+            });
+
+            // Select All toggle
+            selectAll.addEventListener('change', function() {
+
+                if (this.checked) {
+                    isAllSelected = true;
+                    localStorage.setItem('isAllSelected', 'true');
+                    localStorage.removeItem('selectedCustomers');
+
+                    checkboxes.forEach(cb => cb.checked = true);
+
+                } else {
+                    isAllSelected = false;
+                    localStorage.setItem('isAllSelected', 'false');
+
+                    selectedCustomers = [];
+                    localStorage.setItem('selectedCustomers', JSON.stringify(selectedCustomers));
+
+                    checkboxes.forEach(cb => cb.checked = false);
+                }
+
+                updateSelectedCount();
+            });
+
+            updateSelectedCount(); // initial count
+
+            const searchInput = document.getElementById('searchInput');
+
+            searchInput.addEventListener('keyup', function() {
+
+                let search = this.value.toLowerCase();
+                let rows = document.querySelectorAll('.customers-table tbody tr');
+
+                rows.forEach(row => {
+
+                    let name = row.querySelector('.customer-name')?.textContent.toLowerCase() || '';
+                    let email = row.querySelector('.customer-email')?.textContent.toLowerCase() ||
+                        '';
+                    let is_active_value = row.querySelector('.is_active span')?.innerText
+                        .toLowerCase().trim() || '';
+
+                    let searchValue = search.toLowerCase();
+
+                    // Convert search → match DB meaning
+                    let matchStatus = false;
+
+                    if (searchValue === 'active') {
+                        matchStatus = is_active_value === 'active';
+                    } else if (searchValue === 'inactive') {
+                        matchStatus = is_active_value === 'inactive';
+                    } else {
+                        matchStatus = is_active_value.includes(searchValue);
+                    }
+
+                    // Final condition
+                    if (
+                        name.includes(searchValue) ||
+                        email.includes(searchValue) ||
+                        matchStatus
+                    ) {
                         row.style.display = '';
                     } else {
                         row.style.display = 'none';
                     }
-                }
-            });
-        });
 
-        // Tab functionality
-        document.querySelectorAll('.tab-btn').forEach(btn => {
-            btn.addEventListener('click', function() {
-                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-                this.classList.add('active');
-
-                const filter = this.textContent.toLowerCase();
-                const rows = document.querySelectorAll('.customers-table tbody tr');
-
-                rows.forEach(row => {
-                    if (row.cells.length > 1) {
-                        const statusCell = row.cells[1]?.querySelector('.status-badge');
-                        if (statusCell) {
-                            const status = statusCell.textContent.toLowerCase();
-                            if (filter === 'all' || status === filter) {
-                                row.style.display = '';
-                            } else {
-                                row.style.display = 'none';
-                            }
-                        }
-                    }
                 });
+
             });
+
         });
+
+        /* =========================
+           CLEAR SELECTION
+        ========================= */
+        function clearSelection() {
+            localStorage.removeItem('selectedCustomers');
+            localStorage.removeItem('isAllSelected');
+            location.reload();
+        }
+
+        /* =========================
+           SEND MAIL
+        ========================= */
+        function handleSendMail() {
+
+            let selected = JSON.parse(localStorage.getItem('selectedCustomers')) || [];
+            let isAll = localStorage.getItem('isAllSelected') === 'true';
+
+            if (!isAll && selected.length === 0) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'No Customer Selected',
+                    text: 'Please select at least one customer!',
+                });
+                return;
+            }
+
+            let url = "{{ route('admin.customers.customer-mail') }}";
+
+            if (isAll) {
+                url += "?all=true";
+            } else {
+                url += "?ids=" + selected.join(',');
+            }
+
+            window.location.href = url;
+        }
     </script>
+    {{-- <script>
+document.addEventListener("DOMContentLoaded", function () {
+
+    const searchInput = document.getElementById('searchInput');
+
+    searchInput.addEventListener('keyup', function () {
+
+        let search = this.value.toLowerCase();
+        let rows = document.querySelectorAll('.customers-table tbody tr');
+
+        rows.forEach(row => {
+
+            let name = row.querySelector('.customer-name')?.textContent.toLowerCase() || '';
+            let email = row.querySelector('.customer-email')?.textContent.toLowerCase() || '';
+
+            if (name.includes(search) || email.includes(search)) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+
+        });
+
+    });
+
+});
+</script> --}}
 </body>
 
 </html>
