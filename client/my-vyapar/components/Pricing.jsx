@@ -5,6 +5,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import SectionTitle from "@/components/SectionTitle";
 import Container from "@/components/Container";
 import { getPlans } from '@/services/pricingService';
+import { useRouter } from "next/navigation";
 
 const Pricing = () => {
   const [billingCycle, setBillingCycle] = useState('monthly');
@@ -12,6 +13,7 @@ const Pricing = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const cardRefs = useRef([]);
+  const router = useRouter();
 
   // Fetch plans from your Laravel API - always show only 3
   useEffect(() => {
@@ -64,10 +66,19 @@ const Pricing = () => {
   }, []);
 
   // Handle subscription click
-  const handleSubscribe = (planId) => {
-    // This will redirect to the dedicated pricing page for subscription
-    window.location.href = `/pricing?subscribe=${planId}&cycle=${billingCycle}`;
-  };
+const handleSubscribe = (planId) => {
+  const token = localStorage.getItem("token"); // ya jo bhi auth use kar rahe ho
+
+  const targetUrl = `/pricing?plan=${planId}&cycle=${billingCycle}`;
+
+  if (token) {
+    // ✅ user logged in
+    router.push(targetUrl);
+  } else {
+    // ❌ user not logged in → login page with redirect
+    router.push(`/login?redirect=${encodeURIComponent(targetUrl)}`);
+  }
+};
 
   useEffect(() => {
     const observerOptions = { threshold: 0.1, rootMargin: '0px' };
@@ -154,17 +165,24 @@ const Pricing = () => {
           </div>
         </div>
 
-        {/* Pricing Cards Grid - Always shows 3 cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-16 items-stretch px-4">
+        {/* Pricing Cards Grid - Fixed for tablet view */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8 mb-16 items-stretch px-4">
           {plans.slice(0, 3).map((plan, index) => (
             <div
               key={plan.id || index}
               ref={(el) => (cardRefs.current[index] = el)}
-              className={`bg-white rounded-2xl p-8 shadow-lg relative transition-all duration-500 border flex flex-col opacity-0 translate-y-10 hover:-translate-y-2 hover:shadow-2xl
+              className={`
+                bg-white rounded-2xl p-8 shadow-lg relative transition-all duration-500 border flex flex-col 
+                opacity-0 translate-y-10 hover:-translate-y-2 hover:shadow-2xl
                 ${plan.popular 
-                  ? 'border-2 border-purple-500 shadow-purple-100 scale-100 lg:scale-105 z-20' 
+                  ? 'border-2 border-purple-500 shadow-purple-100 lg:scale-105 z-20' 
                   : 'border-gray-200 hover:border-gray-300 z-10'
-                }`}
+                }
+                ${index === 2 && 'md:col-span-2 lg:col-span-1 md:max-w-md lg:max-w-none mx-auto lg:mx-0'}
+              `}
+              style={{
+                width: '100%'
+              }}
             >
               {plan.popular && (
                 <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-gradient-to-r from-purple-600 to-purple-500 text-white px-4 py-1 rounded-full text-xs font-bold uppercase tracking-wider shadow-lg">
@@ -263,13 +281,64 @@ const Pricing = () => {
           }
         }
         
+        /* Tablet specific fixes */
         @media (min-width: 768px) and (max-width: 1023px) {
-          .grid > :last-child:nth-child(3) {
+          .grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1.5rem;
+            justify-items: center;
+            align-items: start;
+          }
+          
+          /* Make the third card span full width on tablet */
+          .grid > :nth-child(3) {
             grid-column: span 2;
-            justify-self: center;
-            width: 50%;
-            margin-left: auto;
-            margin-right: auto;
+            max-width: 500px;
+            width: 100%;
+            margin: 0 auto;
+          }
+          
+          /* Adjust popular card scale on tablet */
+          .grid > :nth-child(2) {
+            transform: scale(1.02);
+            z-index: 20;
+          }
+          
+          /* Prevent overlap on all cards */
+          .grid > div {
+            margin-bottom: 0;
+            height: fit-content;
+          }
+        }
+        
+        /* Small tablet adjustments */
+        @media (min-width: 768px) and (max-width: 900px) {
+          .grid {
+            gap: 1.25rem;
+          }
+          
+          .grid > :nth-child(3) {
+            max-width: 450px;
+          }
+        }
+        
+        /* Mobile landscape */
+        @media (max-width: 767px) {
+          .grid {
+            gap: 1.5rem;
+          }
+          
+          .grid > div {
+            max-width: 100%;
+            margin: 0;
+          }
+        }
+        
+        /* Large desktop */
+        @media (min-width: 1280px) {
+          .grid {
+            gap: 2rem;
           }
         }
       `}</style>

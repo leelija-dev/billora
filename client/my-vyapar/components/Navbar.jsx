@@ -3,13 +3,23 @@
 import React, { useState, useEffect, useLayoutEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { FiLogIn, FiLogOut, FiUser, FiSettings, FiChevronDown, FiMenu, FiX } from "react-icons/fi";
+import { logoutUser } from "../services/authService";
+import { getAuthData, clearAuthData, isAuthenticated } from "../store/authStore";
+import toast from 'react-hot-toast';
 
 const Navbar = () => {
   const [scrolled, setScrolled] = useState(false);
   const [activeTab, setActiveTab] = useState(0);
   const [isNavAction, setIsNavAction] = useState(true);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [user, setUser] = useState(null);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [showUserMenu, setShowUserMenu] = useState(false);
   
+  // Slider styles
   const [activeSliderStyle, setActiveSliderStyle] = useState({
     width: 0,
     transform: "translate3d(0px, 0, 0)",
@@ -20,7 +30,6 @@ const Navbar = () => {
     transform: "translate3d(0px, 0, 0)",
     opacity: 1,
   });
-  
   const [hoverStyle, setHoverStyle] = useState({
     width: 0,
     transform: "translate3d(0px, 0, 0)",
@@ -36,8 +45,10 @@ const Navbar = () => {
   const activeTabRef = useRef(0);
   const animationFrameRef = useRef(null);
   const mobileMenuRef = useRef(null);
+  const userMenuRef = useRef(null);
 
   const pathname = usePathname();
+  const router = useRouter();
 
   const routeMap = {
     "/": 0,
@@ -54,10 +65,145 @@ const Navbar = () => {
     return routeMap.hasOwnProperty(path?.replace(/\/$/, ""));
   };
 
-  // Close mobile menu on route change
+  // Check login status from localStorage
+  const checkLoginStatus = () => {
+    try {
+      const authenticated = isAuthenticated();
+      setIsLoggedIn(authenticated);
+      
+      if (authenticated) {
+        const { user } = getAuthData();
+        setUser(user);
+      } else {
+        setUser(null);
+      }
+      return authenticated;
+    } catch (error) {
+      console.error('Error checking login status:', error);
+      setIsLoggedIn(false);
+      setUser(null);
+      return false;
+    }
+  };
+
+  // Handle logout with toast notification
+  const handleLogout = async () => {
+    const userName = user?.name || user?.email?.split('@')[0] || 'User';
+    
+    // Show confirmation toast with action buttons
+    const toastId = toast.custom((t) => (
+      <div className="bg-white rounded-lg shadow-lg border border-gray-200 p-4 max-w-sm w-full">
+        <div className="flex items-start gap-3">
+          <div className="flex-shrink-0">
+            <div className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center">
+              <FiLogOut className="text-red-600" size={16} />
+            </div>
+          </div>
+          <div className="flex-1">
+            <h3 className="text-sm font-semibold text-gray-900 mb-1">Confirm Logout</h3>
+            <p className="text-sm text-gray-600">
+              Logout from <span className="font-medium">{userName}</span>?
+            </p>
+          </div>
+        </div>
+        <div className="flex gap-2 mt-4">
+          <button
+            onClick={() => {
+              toast.dismiss(t.id);
+              performLogout();
+            }}
+            className="flex-1 px-3 py-1.5 bg-red-600 text-white text-sm font-medium rounded-md hover:bg-red-700 transition-colors"
+          >
+            Logout
+          </button>
+          <button
+            onClick={() => toast.dismiss(t.id)}
+            className="flex-1 px-3 py-1.5 bg-gray-100 text-gray-700 text-sm font-medium rounded-md hover:bg-gray-200 transition-colors"
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+    ), {
+      duration: Infinity,
+      position: 'top-center',
+    });
+
+    const performLogout = async () => {
+      if (isLoggingOut) return;
+      
+      setIsLoggingOut(true);
+      setShowUserMenu(false);
+      
+      // Dismiss any existing toasts
+      toast.dismiss();
+      
+      // Show loading toast
+      const loadingToastId = toast.loading('Logging out...', {
+        position: 'top-center',
+      });
+      
+      try {
+        const { user: userData } = getAuthData();
+        const userId = userData?._id || userData?.id;
+        
+        if (userId) {
+          const response = await logoutUser(userId);
+          if (response?.status === true || response?.success === true) {
+            // Success case - handled below
+          }
+        }
+        
+        clearAuthData();
+        setIsLoggedIn(false);
+        setUser(null);
+        window.dispatchEvent(new Event("userLoggedOut"));
+        
+        // Dismiss loading toast and show success
+        toast.dismiss(loadingToastId);
+        toast.success(`Successfully logged out. See you soon!`, {
+          duration: 3000,
+          position: 'top-right',
+          icon: '👋',
+        });
+        
+        router.push("/");
+        router.refresh();
+        
+      } catch (error) {
+        console.error("Logout failed:", error);
+        
+        // Dismiss loading toast and show error
+        toast.dismiss(loadingToastId);
+        toast.error(error?.message || 'Failed to logout. Please try again.', {
+          duration: 4000,
+          position: 'top-right',
+        });
+        
+        // Still clear local data as fallback
+        clearAuthData();
+        setIsLoggedIn(false);
+        setUser(null);
+        router.push("/");
+      } finally {
+        setIsLoggingOut(false);
+      }
+    };
+  };
+
+  // Close dropdown when clicking outside
   useEffect(() => {
-    setIsMobileMenuOpen(false);
-  }, [pathname]);
+    const handleClickOutside = (event) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target)) {
+        setShowUserMenu(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
 
   // Close mobile menu when clicking outside
   useEffect(() => {
@@ -80,6 +226,46 @@ const Navbar = () => {
     };
   }, [isMobileMenuOpen]);
 
+  // Check login status on component mount
+  useEffect(() => {
+    checkLoginStatus();
+  }, []);
+
+  // Listen for storage changes
+  useEffect(() => {
+    const handleStorageChange = (e) => {
+      if (e.key === "token" || e.key === "user") {
+        checkLoginStatus();
+      }
+    };
+
+    window.addEventListener("storage", handleStorageChange);
+    return () => {
+      window.removeEventListener("storage", handleStorageChange);
+    };
+  }, []);
+
+  // Listen for custom login/logout events
+  useEffect(() => {
+    const handleLoginEvent = () => checkLoginStatus();
+    const handleLogoutEvent = () => checkLoginStatus();
+
+    window.addEventListener("userLoggedIn", handleLoginEvent);
+    window.addEventListener("userLoggedOut", handleLogoutEvent);
+    
+    return () => {
+      window.removeEventListener("userLoggedIn", handleLoginEvent);
+      window.removeEventListener("userLoggedOut", handleLogoutEvent);
+    };
+  }, []);
+
+  // Close mobile menu on route change
+  useEffect(() => {
+    setIsMobileMenuOpen(false);
+    setShowUserMenu(false);
+  }, [pathname]);
+
+  // ============ SLIDER FUNCTIONS (unchanged) ============
   const updateActiveIndicator = () => {
     if (animationFrameRef.current) {
       cancelAnimationFrame(animationFrameRef.current);
@@ -165,7 +351,7 @@ const Navbar = () => {
       }
     }, 30);
   };
-
+  
   const handleNavClick = (index) => {
     activeTabRef.current = index;
     setActiveTab(index);
@@ -322,30 +508,51 @@ const Navbar = () => {
     { name: "Contact", href: "/contact" },
   ];
 
+  // Get user info
+  const getUserInitial = () => {
+    try {
+      if (user?.name) return user.name.charAt(0).toUpperCase();
+      if (user?.email) return user.email.charAt(0).toUpperCase();
+      const userStr = localStorage.getItem("user");
+      if (userStr) {
+        const userData = JSON.parse(userStr);
+        if (userData.name) return userData.name.charAt(0).toUpperCase();
+        if (userData.email) return userData.email.charAt(0).toUpperCase();
+      }
+    } catch (e) {
+      return "U";
+    }
+    return "U";
+  };
+
+  const userInitial = getUserInitial();
+  const userEmail = user?.email || '';
+  const userName = user?.name || user?.email?.split('@')[0] || 'User';
+
   return (
     <>
       <nav
-        className={`sticky top-0 bg-white z-[1000] h-16 md:h-20 flex items-center px-4 sm:px-6 transition-all duration-300 ${
+        className={`sticky top-0 bg-white z-[1000] h-16 md:h-20 flex items-center px-3 sm:px-4 md:px-6 transition-all duration-300 ${
           scrolled ? "shadow-lg border-b border-gray-100" : "shadow-sm"
         }`}
       >
-        <div className="max-w-[1400px] w-full mx-auto flex justify-between items-center">
+        <div className="max-w-[1400px] w-full mx-auto flex justify-between items-center gap-2 sm:gap-4">
           {/* Logo */}
           <Link 
             href="/" 
-            className="flex items-center gap-2 group"
+            className="flex items-center gap-1.5 sm:gap-2 group shrink-0"
             onClick={() => handleNavClick(0)}
           >
-            <span className="bg-blue-600 text-white px-1.5 sm:px-2 py-1 rounded text-xl sm:text-2xl font-bold transition-all duration-200 group-hover:scale-105 group-hover:shadow-md">
+            <span className="bg-blue-600 text-white px-1.5 py-1 rounded text-lg sm:text-xl md:text-2xl font-bold transition-all duration-200 group-hover:scale-105">
               B
             </span>
-            <span className="text-xl sm:text-2xl font-bold text-slate-800 group-hover:text-blue-600 transition-all duration-200">
+            <span className="text-lg sm:text-xl md:text-2xl font-bold text-slate-800 group-hover:text-blue-600 transition-all duration-200">
               Billora
             </span>
           </Link>
 
-          {/* Desktop Navigation */}
-          <div className="hidden lg:flex items-center gap-4 xl:gap-6">
+          {/* Desktop Navigation - Hidden on Mobile */}
+          <div className="hidden lg:flex items-center gap-2 xl:gap-4">
             <div 
               ref={containerRef} 
               className="relative flex items-center"
@@ -386,7 +593,7 @@ const Navbar = () => {
                   <li
                     key={index}
                     ref={(el) => (navRefs.current[index] = el)}
-                    className="px-3 xl:px-4"
+                    className="px-2 xl:px-3"
                   >
                     <Link
                       href={item.href}
@@ -408,31 +615,115 @@ const Navbar = () => {
             <Link
               href="/bookdemo"
               onClick={handleExternalClick}
-              className="px-4 sm:px-5 py-2 bg-gradient-to-r from-indigo-500 to-purple-500 text-white rounded-full text-sm font-semibold transition-all duration-200 hover:from-indigo-600 hover:to-purple-600 hover:shadow-md hover:scale-105 active:scale-95 whitespace-nowrap"
+              className="px-3 sm:px-4 py-1.5 sm:py-2 bg-gradient-to-r from-indigo-500 to-purple-500 text-white rounded-full text-xs sm:text-sm font-semibold transition-all duration-200 hover:shadow-md hover:scale-105 whitespace-nowrap"
             >
               Book Free Demo
             </Link>
 
-            <Link
-              href="/login"
-              onClick={handleExternalClick}
-              className="px-4 sm:px-5 py-2 bg-blue-600 text-white rounded-full text-sm font-semibold transition-all duration-200 hover:bg-blue-700 hover:shadow-md hover:scale-105 active:scale-95 whitespace-nowrap"
-            >
-              Login
-            </Link>
+            {/* Desktop Auth Section */}
+            {isLoggedIn ? (
+              <div className="relative" ref={userMenuRef}>
+                <button
+                  onClick={() => setShowUserMenu(!showUserMenu)}
+                  className="flex items-center gap-2 px-2 py-1.5 rounded-full hover:bg-gray-100 transition-all duration-200"
+                >
+                  <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 flex items-center justify-center text-white font-semibold text-sm shadow-md">
+                    {userInitial}
+                  </div>
+                  <div className="hidden xl:block text-left">
+                    <div className="text-sm font-medium text-gray-700 max-w-[120px] truncate">
+                      {userName}
+                    </div>
+                    <div className="text-xs text-gray-500 max-w-[120px] truncate">
+                      {userEmail}
+                    </div>
+                  </div>
+                  <FiChevronDown className={`text-gray-400 transition-transform duration-200 hidden sm:block ${showUserMenu ? 'rotate-180' : ''}`} size={14} />
+                </button>
+
+                {/* Desktop Dropdown Menu */}
+                {showUserMenu && (
+                  <div className="absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden z-50">
+                    <div className="px-4 py-3 border-b border-gray-100 bg-gray-50">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 flex items-center justify-center text-white font-semibold">
+                          {userInitial}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-gray-900 truncate">
+                            {userName}
+                          </p>
+                          <p className="text-xs text-gray-500 truncate">
+                            {userEmail}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="py-2">
+                      <Link
+                        href="/profile"
+                        onClick={() => setShowUserMenu(false)}
+                        className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                      >
+                        <FiUser size={18} />
+                        <span>My Profile</span>
+                      </Link>
+                      <Link
+                        href="/settings"
+                        onClick={() => setShowUserMenu(false)}
+                        className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                      >
+                        <FiSettings size={18} />
+                        <span>Settings</span>
+                      </Link>
+                    </div>
+                    <div className="border-t border-gray-100"></div>
+                    <div className="py-2">
+                      <button
+                        onClick={handleLogout}
+                        disabled={isLoggingOut}
+                        className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                      >
+                        {isLoggingOut ? (
+                          <>
+                            <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                            </svg>
+                            <span>Logging out...</span>
+                          </>
+                        ) : (
+                          <>
+                            <FiLogOut size={18} />
+                            <span>Logout</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <Link
+                  href="/login"
+                  onClick={handleExternalClick}
+                  className="flex items-center gap-1.5 px-3 sm:px-4 py-1.5 sm:py-2 bg-blue-600 text-white rounded-full text-xs sm:text-sm font-semibold hover:bg-blue-700 transition-all duration-200 whitespace-nowrap"
+                >
+                  <FiLogIn size={14} />
+                  <span>Login</span>
+                </Link>
+              </div>
+            )}
           </div>
 
           {/* Mobile Menu Button */}
           <button 
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className="lg:hidden p-2 rounded-md hover:bg-gray-100 transition-all duration-200 z-20 relative"
+            className="lg:hidden p-2 rounded-md hover:bg-gray-100 transition-all duration-200 z-20"
             aria-label="Toggle menu"
           >
-            <div className="w-6 h-5 flex flex-col justify-between">
-              <span className={`w-full h-0.5 bg-gray-600 rounded-full transition-all duration-300 ${isMobileMenuOpen ? 'rotate-45 translate-y-2' : ''}`}></span>
-              <span className={`w-full h-0.5 bg-gray-600 rounded-full transition-all duration-300 ${isMobileMenuOpen ? 'opacity-0' : ''}`}></span>
-              <span className={`w-full h-0.5 bg-gray-600 rounded-full transition-all duration-300 ${isMobileMenuOpen ? '-rotate-45 -translate-y-2' : ''}`}></span>
-            </div>
+            {isMobileMenuOpen ? <FiX size={22} /> : <FiMenu size={22} />}
           </button>
         </div>
       </nav>
@@ -440,60 +731,63 @@ const Navbar = () => {
       {/* Backdrop Overlay */}
       <div 
         className={`fixed inset-0 bg-black/50 z-[999] lg:hidden transition-all duration-300 ${
-          isMobileMenuOpen ? 'opacity-100 visible' : 'opacity-0 invisible'
+          isMobileMenuOpen ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'
         }`}
         onClick={() => setIsMobileMenuOpen(false)}
       />
 
-      {/* Mobile Menu - Slide from Right */}
+      {/* Mobile Menu Panel */}
       <div 
         ref={mobileMenuRef}
-        className={`fixed top-0 right-0 h-full w-full max-w-[320px] sm:max-w-[380px] bg-white shadow-2xl z-[1000] lg:hidden transition-all duration-300 ease-out ${
+        className={`fixed top-0 right-0 h-full w-full max-w-[320px] bg-white shadow-2xl z-[1000] lg:hidden transition-all duration-300 ease-out ${
           isMobileMenuOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
       >
         <div className="flex flex-col h-full">
           {/* Mobile Menu Header */}
-          <div className="flex items-center justify-between p-5 border-b border-gray-100">
+          <div className="flex items-center justify-between p-4 border-b border-gray-100">
             <Link 
               href="/" 
               className="flex items-center gap-2"
-              onClick={() => {
-                handleNavClick(0);
-                setIsMobileMenuOpen(false);
-              }}
+              onClick={() => setIsMobileMenuOpen(false)}
             >
-              <span className="bg-blue-600 text-white px-2 py-1 rounded text-xl font-bold">
-                B
-              </span>
-              <span className="text-xl font-bold text-slate-800">
-                Billora
-              </span>
+              <span className="bg-blue-600 text-white px-2 py-1 rounded text-xl font-bold">B</span>
+              <span className="text-xl font-bold text-slate-800">Billora</span>
             </Link>
             <button 
               onClick={() => setIsMobileMenuOpen(false)}
               className="p-2 rounded-full hover:bg-gray-100 transition-colors"
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
+              <FiX size={20} />
             </button>
           </div>
 
+          {/* Mobile User Info (if logged in) */}
+          {isLoggedIn && (
+            <div className="p-4 border-b border-gray-100 bg-gradient-to-r from-blue-50 to-indigo-50">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold text-lg">
+                  {userInitial}
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-semibold text-gray-900">{userName}</p>
+                  <p className="text-xs text-gray-500 break-all">{userEmail}</p>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Mobile Navigation Links */}
-          <div className="flex-1 overflow-y-auto py-4">
+          <div className="flex-1 overflow-y-auto py-2">
             {navItems.map((item, index) => (
               <Link
                 key={index}
                 href={item.href}
-                onClick={() => {
-                  handleNavClick(index);
-                  setIsMobileMenuOpen(false);
-                }}
-                className={`block px-6 py-4 text-base font-medium transition-all duration-200 ${
-                  isNavAction && activeTab === index
+                onClick={() => setIsMobileMenuOpen(false)}
+                className={`block px-5 py-3 text-base font-medium transition-all duration-200 ${
+                  pathname === item.href
                     ? "text-blue-600 bg-blue-50 border-l-4 border-blue-600"
-                    : "text-slate-600 hover:text-blue-500 hover:bg-gray-50"
+                    : "text-gray-700 hover:text-blue-500 hover:bg-gray-50"
                 }`}
               >
                 {item.name}
@@ -502,27 +796,69 @@ const Navbar = () => {
           </div>
 
           {/* Mobile Action Buttons */}
-          <div className="p-6 border-t border-gray-100 space-y-3">
+          <div className="p-4 border-t border-gray-100 space-y-2">
             <Link
               href="/bookdemo"
-              onClick={() => {
-                handleExternalClick();
-                setIsMobileMenuOpen(false);
-              }}
-              className="block w-full text-center px-5 py-3 bg-gradient-to-r from-indigo-500 to-purple-500 text-white rounded-xl text-sm font-semibold transition-all duration-200 hover:from-indigo-600 hover:to-purple-600 active:scale-95"
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="block w-full text-center px-4 py-3 bg-gradient-to-r from-indigo-500 to-purple-500 text-white rounded-xl text-sm font-semibold transition-all duration-200"
             >
               Book Free Demo
             </Link>
-            <Link
-              href="/login"
-              onClick={() => {
-                handleExternalClick();
-                setIsMobileMenuOpen(false);
-              }}
-              className="block w-full text-center px-5 py-3 bg-blue-600 text-white rounded-xl text-sm font-semibold transition-all duration-200 hover:bg-blue-700 active:scale-95"
-            >
-              Login
-            </Link>
+            
+            {isLoggedIn ? (
+              <>
+                <Link
+                  href="/profile"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="flex items-center gap-3 w-full px-4 py-3 border border-gray-200 text-gray-700 rounded-xl text-sm font-medium hover:bg-gray-50 transition-all"
+                >
+                  <FiUser size={18} />
+                  <span>My Profile</span>
+                </Link>
+                <Link
+                  href="/settings"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="flex items-center gap-3 w-full px-4 py-3 border border-gray-200 text-gray-700 rounded-xl text-sm font-medium hover:bg-gray-50 transition-all"
+                >
+                  <FiSettings size={18} />
+                  <span>Settings</span>
+                </Link>
+                <button
+                  onClick={() => {
+                    handleLogout();
+                    setIsMobileMenuOpen(false);
+                  }}
+                  disabled={isLoggingOut}
+                  className="flex items-center justify-center gap-2 w-full px-4 py-3 bg-red-500 text-white rounded-xl text-sm font-semibold hover:bg-red-600 transition-all disabled:opacity-50"
+                >
+                  {isLoggingOut ? (
+                    <>
+                      <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                      </svg>
+                      <span>Logging out...</span>
+                    </>
+                  ) : (
+                    <>
+                      <FiLogOut size={18} />
+                      <span>Logout</span>
+                    </>
+                  )}
+                </button>
+              </>
+            ) : (
+              <>
+                <Link
+                  href="/login"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="flex items-center justify-center gap-2 w-full px-4 py-3 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700 transition-all"
+                >
+                  <FiLogIn size={18} />
+                  <span>Login</span>
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </div>

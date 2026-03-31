@@ -3,9 +3,9 @@
 import React, { useState } from "react";
 import { FcGoogle } from "react-icons/fc";
 import { FaEye, FaEyeSlash, FaHome } from "react-icons/fa";
-import { useRouter } from "next/navigation";
 import { loginUser } from "../../services/authService";
 import { saveAuthData } from "../../store/authStore";
+import { useRouter, useSearchParams } from "next/navigation";
 
 const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -17,8 +17,8 @@ const Login = () => {
   // Validation error states
   const [emailError, setEmailError] = useState("");
   const [passwordError, setPasswordError] = useState("");
-
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   // Validation functions
   const validateEmail = (value) => {
@@ -85,10 +85,18 @@ const Login = () => {
       const userData = res.user || res.data?.user || res;
       const token = res.token || res.data?.token || null;
       
+      // ✅ Save auth data to localStorage
       saveAuthData(userData, token);
       
+      // ✅ Dispatch custom event to update navbar
+      window.dispatchEvent(new Event("userLoggedIn"));
+      
+      // ✅ Show success message
       alert("Login Successful ✅");
-      router.push("/pricing");
+      
+      // ✅ Redirect to previous page or pricing
+      const redirect = searchParams.get("redirect") || "/pricing";
+      router.push(redirect);
       
     } catch (error) {
       if (error.message.includes("No account")) {
