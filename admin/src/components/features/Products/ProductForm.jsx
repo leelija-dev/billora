@@ -9,7 +9,6 @@ import Button from '../../common/Button/Button'
 import Select from '../../common/Select/Select'
 import toast from 'react-hot-toast'
 import { FiUpload, FiX, FiImage } from 'react-icons/fi'
-import { BsQrCode } from "react-icons/bs";
 
 const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
   const { user } = useAuthStore()
@@ -20,10 +19,6 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
   // State for image upload
   const [selectedImage, setSelectedImage] = useState(null)
   const [imagePreview, setImagePreview] = useState(null)
-  const [qrCode, setQrCode] = useState('')
-  const [qrCodePreview, setQrCodePreview] = useState(null)
-  const [qrCodeFile, setQrCodeFile] = useState(null) // Store QR code as file
-  const [isGeneratingQR, setIsGeneratingQR] = useState(false)
 
   const {
     register,
@@ -49,7 +44,6 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
       is_active: true,
       created_by: user?.id || '',
       image: '',
-      qr_code: '',
     }
   })
 
@@ -102,39 +96,6 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
     }
   }, [product, setValue, brands, categories, units])
 
-  // Generate unique QR code for product (manual only)
-  const generateUniqueQRCode = async () => {
-    setIsGeneratingQR(true)
-    try {
-      // Generate unique QR code based on timestamp, user ID, and random string
-      const timestamp = Date.now()
-      const userId = user?.id || 'anonymous'
-      const randomString = Math.random().toString(36).substring(2, 15)
-      const uniqueId = `PROD_${userId}_${timestamp}_${randomString}`
-      
-      // Generate QR code using a free QR code API
-      const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(uniqueId)}&format=png`
-      
-      // Convert QR code URL to blob and create file
-      const response = await fetch(qrCodeUrl)
-      const blob = await response.blob()
-      const qrFile = new File([blob], `qr_${uniqueId}.png`, { type: 'image/png' })
-      
-      // Set QR code data
-      setQrCode(uniqueId)
-      setQrCodePreview(qrCodeUrl)
-      setQrCodeFile(qrFile) // Store QR code as file
-      setValue('qr_code', uniqueId)
-      
-      toast.success('QR code generated successfully!')
-    } catch (error) {
-      console.error('Failed to generate QR code:', error)
-      toast.error('Failed to generate QR code')
-    } finally {
-      setIsGeneratingQR(false)
-    }
-  }
-
   // Image handling functions
   const handleImageChange = (e) => {
     const file = e.target.files[0]
@@ -173,7 +134,6 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
       user_id: user.id, // Hidden field - current user ID
       created_by: user.id,
       image: selectedImage, // Include the image file
-      qr_code: qrCodeFile, // Send QR code as image file in qr_code field
       // Convert is_active boolean to integer (1 or 0) for backend compatibility
       is_active: data.is_active ? 1 : 0,
     }
@@ -236,59 +196,6 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
                 </div>
               </div>
             </div>
-          </div>
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            Product QR Code
-          </label>
-          <div className="space-y-3">
-            {/* QR Code Preview and Controls */}
-            <div className="flex items-center space-x-3">
-              {qrCodePreview ? (
-                <div className="relative">
-                  <img 
-                    src={qrCodePreview} 
-                    alt="Product QR Code" 
-                    className="w-20 h-20 border-2 border-gray-200 rounded-lg"
-                  />
-                  <div className="absolute -bottom-1 -right-1 bg-green-500 text-white rounded-full p-1">
-                    <BsQrCode className="w-3 h-3" />
-                  </div>
-                </div>
-              ) : (
-                <div className="w-20 h-20 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center">
-                  <BsQrCode className="w-8 h-8 text-gray-400" />
-                </div>
-              )}
-              
-              <div className="flex-1">
-                <Input
-                  placeholder="Click 'Generate QR Code' to create QR"
-                  value={qrCode}
-                  onChange={(e) => setQrCode(e.target.value)}
-                  {...register('qr_code')}
-                  readOnly
-                  className="bg-gray-50"
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  Generate QR code for product identification
-                </p>
-              </div>
-            </div>
-            
-            {/* Regenerate Button */}
-            <Button
-              type="button"
-              variant="outline"
-              onClick={generateUniqueQRCode}
-              isLoading={isGeneratingQR}
-              icon={BsQrCode}
-              className="w-full"
-            >
-              {qrCode ? 'Regenerate QR Code' : 'Generate QR Code'}
-            </Button>
           </div>
         </div>
       </div>
