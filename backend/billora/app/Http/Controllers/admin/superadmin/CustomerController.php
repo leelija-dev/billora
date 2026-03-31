@@ -8,7 +8,7 @@ use App\Models\Customers;
 use App\Models\PlanPurchaseHistory;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Log;
-
+use App\Jobs\SendCustomerMailJob;
 class CustomerController extends Controller
 {
    public function index(Request $request)
@@ -62,33 +62,12 @@ public function sendMail(Request $request)
             continue;
         }
 
-        try {
-
-            $mailContent = $this->Mail(
-                $customer->id,
-                $data['subject'],
-                $data['message']
-            );
-
-            Mail::html($mailContent, function ($mail) use ($customer, $data) {
-                $mail->to($customer->email)
-                     ->subject($data['subject']);
-            });
-
-        } catch (\Exception $e) {
-
-            // Log error and continue
-            Log::error("Mail failed for Customer ID {$customer->id} ({$customer->email})", [
-                'error' => $e->getMessage()
-            ]);
-
-            continue; // ⏭ skip and move next
-        }
+        //  Dispatch to queue
+        SendCustomerMailJob::dispatch($customer, $data['subject'], $data['message']);
     }
 
-    return back()->with('success', 'Mail sent sucessfully!');
+    return back()->with('success', 'Mail queued successfully!');
 }
-
     public function Mail($id,$subject,$message){
         $customer = Customers::find($id);
        $html = "<!DOCTYPE html>
