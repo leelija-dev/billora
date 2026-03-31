@@ -176,8 +176,8 @@ public function verifyEmail($token)
         'email_verified_at' => now(),
         'verification_token' => null
     ]);
-
-    return "Email verified successfully. You can now login.";
+    
+    return redirect(env('FRONTEND_LOGIN_URL') . '/login')->with('message', 'Email verified successfully. You can now log in.');
 }
 
 public function CustomerMail($customer_id,$token){
