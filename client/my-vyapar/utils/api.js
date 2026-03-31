@@ -1,22 +1,22 @@
-const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000/api';
+import { getAuthData } from '../store/authStore';
+
+const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 
 export const apiRequest = async (endpoint, method = "GET", body = null) => {
   try {
     const fullUrl = `${BASE_URL}${endpoint}`;
-    
-    // Get token from localStorage or wherever you store it
-    const token = localStorage.getItem('token'); // or sessionStorage, depending on your auth system
-    
+
+    const { token } = getAuthData();
+
     const headers = {
       "Content-Type": "application/json",
       "Accept": "application/json",
     };
-    
-    // Add Authorization header if token exists
+
     if (token) {
       headers["Authorization"] = `Bearer ${token}`;
     }
-    
+
     const res = await fetch(fullUrl, {
       method,
       headers,
