@@ -125,5 +125,7 @@ return [
     'app_currency' => env('APP_CURRENCY', '₹'),
 
     'admin_mail' => env('ADMIN_MAIL','lakshman.leelija@gmail.com'),
+    'admin_mobile'=> env('ADMIN_MOBILE','6296214817'),
+    'days_reminder' => env('REMIND_DAYS_BEFORE', 7),
 
 ];

@@ -17,6 +17,11 @@ use App\Http\Controllers\admin\CartsController;
 use App\Http\Controllers\admin\ReportController;
 use App\Http\Controllers\admin\PlanPurchaseHistoryController;
 use App\Http\Controllers\admin\PaymentController;
+use App\Http\Controllers\admin\UserOrdersController;
+use App\Http\Controllers\PlanExpiryController;
+use App\Models\User;
+use App\Models\UserOrders;
+
 Route::get('/test', function () {
    return response()->json([
       'message' => 'Hello World',
@@ -90,6 +95,13 @@ Route::middleware('auth:sanctum')->prefix('invoice')->group(function () {
    
    Route::delete('/{id}', [InvoiceController::class, 'destroy']);
    
+
+   // user order hisrtory
+   Route::get('/user-order-history/{id}', [UserOrdersController::class, 'userOrderHistory']);
+   Route::put('/update-order-status/{id}', [UserOrdersController::class, 'updateOrderStatus']);
+   Route::put('/update-payment-status/{id}', [UserOrdersController::class, 'updatePaymentStatus']);
+   Route::put('/update-order-payment/{id}', [UserOrdersController::class, 'updateOrderPayment']);
+   Route::get('/user-order-due/{id}',[UserOrdersController::class,'userOrderDue']);
 });
 //bill generate from product table(with out stock management)
 Route::prefix('invoices')->group(function () {
@@ -169,4 +181,22 @@ Route::middleware('auth:sanctum')->prefix('plans-purchase-history')->group(funct
 Route::prefix('cashfree')->group(function () {
     Route::post('/create-order', [PaymentController::class, 'createOrder']);
     Route::get('/verify/{order_id}', [PaymentController::class, 'verifyPayment']);
+});
+
+//plan expire reminder
+Route::middleware('auth:sanctum')->prefix('plan-expire-reminder')->group(function () {
+   Route::get('/{id}', [PlanExpiryController::class, 'getExpiringPlans']);
+});
+
+//public user access product with out login for restaurant,etc.
+Route::prefix('restaurant-all-products')->group(function () {
+   Route::get('/{id}', [ProductsController::class, 'userProducts']);  // for user products by id
+   Route::get('/category/{id}', [ProductsController::class, 'categoryProducts']);  // for user products by category({slug}')  
+
+});
+
+//user product order 
+Route::prefix('orders')->group(function () { 
+   Route::post('/store', [UserOrdersController::class, 'store']);
+
 });

@@ -24,7 +24,14 @@ class PlanPurchaseHistory extends Model
     'end_date' => 'datetime',
 ];
 
-    public function plan(){
+    public function plan()
+    {
         return $this->belongsTo(Plans::class ,'plan_id');
     }
+    public function user()
+    {
+        return $this->belongsTo(Customers::class ,'user_id');
+    }
+
+
 }

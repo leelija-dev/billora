@@ -33,8 +33,10 @@ import EmptyState from '../../components/common/EmptyState/EmptyState'
 import Select from '../../components/common/Select/Select'
 import StoreForm from '../../components/features/Stores/StoreForm'
 import useStoreStore from '../../store/storeStore'
+import { useAuthStore } from '../../store/authStore'
 
 const Stores = () => {
+  const { user } = useAuthStore()
   const {
     stores,
     totalStores,
@@ -65,8 +67,27 @@ const Stores = () => {
   const [formSubmitting, setFormSubmitting] = useState(false)
   const [initialLoading, setInitialLoading] = useState(true)
 
-  // Get current user ID
+  // Get current user ID from auth store
   const getUserId = () => {
+    // First try to get user from auth store (most reliable)
+    if (user && user.id) {
+      return user.id.toString()
+    }
+    
+    // Fallback to localStorage if auth store is not available
+    const authStorage = localStorage.getItem('auth-storage')
+    if (authStorage) {
+      try {
+        const parsed = JSON.parse(authStorage)
+        const userId = parsed.state?.user?.id || parsed.user?.id
+        return userId ? userId.toString() : '1'
+      } catch (error) {
+        console.error('Error parsing auth storage:', error)
+        return '1'
+      }
+    }
+    
+    // Last fallback - try old auth key
     const authData = localStorage.getItem('auth')
     if (authData) {
       try {
@@ -76,6 +97,8 @@ const Stores = () => {
         return '1'
       }
     }
+    
+    console.warn('No user found in auth store or localStorage, using fallback')
     return '1'
   }
 
@@ -84,6 +107,7 @@ const Stores = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
+        console.log(' Fetching stores for user:', currentUserId)
         console.log('🔄 Fetching stores for user:', currentUserId)
         await fetchStores(currentUserId)
         console.log('✅ Stores fetched successfully')

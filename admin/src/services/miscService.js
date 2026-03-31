@@ -13,6 +13,19 @@ export const plansAPI = {
       throw error.response?.data || error.message;
     }
   },
+
+  // Get single plan by ID
+  getById: async (planId) => {
+    try {
+      console.log(`📋 Fetching plan details for ID: ${planId}`);
+      const response = await apiClient.get(`/plans/${planId}`);
+      console.log('📋 Plan details fetched:', response.data);
+      return response;
+    } catch (error) {
+      console.error(`❌ Failed to fetch plan details for ID ${planId}:`, error);
+      throw error.response?.data || error.message;
+    }
+  },
 }
 
 export const dashboardAPI = {
@@ -98,6 +111,34 @@ export const reportsAPI = {
       return response;
     } catch (error) {
       console.error('❌ Failed to fetch reports:', error);
+      throw error.response?.data || error.message;
+    }
+  },
+}
+
+export const billingAPI = {
+  // Get user plan purchase history
+  getPlanPurchaseHistory: async (userId) => {
+    try {
+      console.log(`💳 Fetching plan purchase history for user: ${userId}`);
+      const response = await apiClient.get(`/plans-purchase-history/${userId}`);
+      console.log('💳 Plan purchase history fetched:', response.data);
+      return response;
+    } catch (error) {
+      console.error(`❌ Failed to fetch plan purchase history for user ${userId}:`, error);
+      throw error.response?.data || error.message;
+    }
+  },
+
+  // Create Cashfree order for plan purchase
+  createCashfreeOrder: async (orderData) => {
+    try {
+      console.log('💳 Creating Cashfree order:', orderData);
+      const response = await apiClient.post('/cashfree/create-order', orderData);
+      console.log('💳 Cashfree order created:', response.data);
+      return response;
+    } catch (error) {
+      console.error('❌ Failed to create Cashfree order:', error);
       throw error.response?.data || error.message;
     }
   },

@@ -43,12 +43,12 @@ const useStoreStore = create((set, get) => ({
     set({ loading: true, error: null })
     try {
       const response = await storeAPI.create(storeData)
-      const { stores } = get()
-      set({
-        stores: [response.data, ...stores],
-        totalStores: get().totalStores + 1,
-        loading: false,
-      })
+      console.log('✅ Store created successfully', response.data)
+      
+      // After successful creation, refresh the stores list
+      const userId = storeData.user_id
+      await get().fetchStores(userId)
+      
       return response.data
     } catch (error) {
       set({

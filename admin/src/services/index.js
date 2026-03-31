@@ -10,7 +10,7 @@ import { stocksAPI } from './stocksService';
 import { invoiceAPI } from './invoiceService';
 import { storeAPI } from './storeService';
 import { customerAPI } from './customerService';
-import { plansAPI, dashboardAPI, cartAPI, reportsAPI } from './miscService';
+import { plansAPI, dashboardAPI, cartAPI, reportsAPI, billingAPI } from './miscService';
 
 // Export individual services
 export { 
@@ -26,7 +26,8 @@ export {
   plansAPI,
   dashboardAPI,
   cartAPI,
-  reportsAPI
+  reportsAPI,
+  billingAPI
 };
 
 // Export core API utilities
@@ -48,4 +49,5 @@ export default {
   dashboardAPI,
   cartAPI,
   reportsAPI,
+  billingAPI,
 };

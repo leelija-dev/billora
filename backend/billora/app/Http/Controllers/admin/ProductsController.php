@@ -10,6 +10,7 @@ use App\Models\Brand;
 use App\Models\Categories;
 use App\Models\Stocks;
 use App\Models\Customers;
+use App\Models\Store;
 use Illuminate\Support\Facades\Auth;
 
 class ProductsController extends Controller
@@ -290,6 +291,93 @@ class ProductsController extends Controller
             return response()->json([
                 'status' => false,
                 'message' => $e->getMessage()
+            ]);
+        }
+    }
+
+    /* public user show products */
+    public function userProducts( Request $request,$id){
+        try{
+            
+            // $products = Products::with('brand','category','unit')->where('user_id', $id)->where('is_active',true)->paginate(15);
+            $categoies = Categories::where('user_id',$id)->where('is_active',true)->get();
+            $brands = Brand::where('user_id',$id)->where('is_active',true)->get();
+            $store = Store::where('user_id', $id)->get();
+            $products = Products::with('brand', 'category', 'unit')
+            ->where('user_id', $id)
+            ->where('is_active', true)
+            ->when($request->search, function ($query) use ($request) {
+
+                $search = $request->search;
+
+                $query->where(function ($q) use ($search) {
+
+                    // Product name
+                    $q->where('name', 'like', "%{$search}%")
+
+                    // SKU
+                    ->orWhere('sku', 'like', "%{$search}%")
+
+                    // Price
+                    ->orWhere('selling_price', 'like', "%{$search}%")
+
+                    // Category name
+                    ->orWhereHas('category', function ($q) use ($search) {
+                        $q->where('name', 'like', "%{$search}%");
+                    })
+
+                    // Brand name
+                    ->orWhereHas('brand', function ($q) use ($search) {
+                        $q->where('name', 'like', "%{$search}%");
+                    });
+
+                });
+            })
+            ->paginate(15);
+            if(!$products){
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Product not found!'
+                ]);
+            }
+            return response()->json([
+                'status'=>true,
+                'categories'=>$categoies,
+                'brands'=>$brands,
+                'stores'=>$store,
+                'products'=>$products
+                
+            ]);
+        }catch(\Exception $e){
+            return response()->json([
+                'status' => false,
+                'message' =>$e->getMessage()
+            ]);
+        }
+    }
+
+    public function categoryProducts(Request $request,$id){
+        try{
+            
+            $user_id =$request->user_id;
+            
+            $products = Products::with('brand','category','unit')->where('category_id', $id)->where('user_id',$user_id)->paginate(15);
+            
+            if(!$products){
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Product not found!'
+                ]);
+            }
+            return response()->json([
+                'status'=>true,
+                'products'=>$products,
+
+            ]);
+        }catch(\Exception $e){
+            return response()->json([
+                'status' => false,
+                'message' =>$e->getMessage()
             ]);
         }
     }
