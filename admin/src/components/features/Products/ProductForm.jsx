@@ -22,6 +22,7 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
   const [imagePreview, setImagePreview] = useState(null)
   const [qrCode, setQrCode] = useState('')
   const [qrCodePreview, setQrCodePreview] = useState(null)
+  const [qrCodeFile, setQrCodeFile] = useState(null) // Store QR code as file
   const [isGeneratingQR, setIsGeneratingQR] = useState(false)
 
   const {
@@ -101,7 +102,7 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
     }
   }, [product, setValue, brands, categories, units])
 
-  // Generate unique QR code for product
+  // Generate unique QR code for product (manual only)
   const generateUniqueQRCode = async () => {
     setIsGeneratingQR(true)
     try {
@@ -122,10 +123,8 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
       // Set QR code data
       setQrCode(uniqueId)
       setQrCodePreview(qrCodeUrl)
+      setQrCodeFile(qrFile) // Store QR code as file
       setValue('qr_code', uniqueId)
-      
-      // Store QR file for upload (similar to image)
-      setSelectedImage(prev => prev ? prev : null) // Keep existing image
       
       toast.success('QR code generated successfully!')
     } catch (error) {
@@ -135,17 +134,6 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
       setIsGeneratingQR(false)
     }
   }
-
-  // Auto-generate QR code when product name and SKU are entered
-  useEffect(() => {
-    const name = watch('name')
-    const sku = watch('sku')
-    
-    // Only generate QR code for new products (not editing) and when name and SKU are filled
-    if (!product && name && sku && !qrCode) {
-      generateUniqueQRCode()
-    }
-  }, [watch('name'), watch('sku'), product, qrCode])
 
   // Image handling functions
   const handleImageChange = (e) => {
@@ -185,6 +173,7 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
       user_id: user.id, // Hidden field - current user ID
       created_by: user.id,
       image: selectedImage, // Include the image file
+      qr_code: qrCodeFile, // Send QR code as image file in qr_code field
       // Convert is_active boolean to integer (1 or 0) for backend compatibility
       is_active: data.is_active ? 1 : 0,
     }
@@ -276,7 +265,7 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
               
               <div className="flex-1">
                 <Input
-                  placeholder="QR code will be auto-generated"
+                  placeholder="Click 'Generate QR Code' to create QR"
                   value={qrCode}
                   onChange={(e) => setQrCode(e.target.value)}
                   {...register('qr_code')}
@@ -284,7 +273,7 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
                   className="bg-gray-50"
                 />
                 <p className="text-xs text-gray-500 mt-1">
-                  Unique QR code for product identification
+                  Generate QR code for product identification
                 </p>
               </div>
             </div>

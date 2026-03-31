@@ -94,7 +94,7 @@ class ProductsController extends Controller
         }
     }
 
-    private function uploadToDrive($file)
+    private function uploadToDrive($file,$folderId)
     {
         $client = new Client();
         $client->setClientId(env('GOOGLE_CLIENT_ID'));
@@ -105,7 +105,7 @@ class ProductsController extends Controller
 
         $fileMetadata = new DriveFile([
             'name' => time() . '_' . $file->getClientOriginalName(),
-            'parents' => [env('GOOGLE_FOLDER_ID')]
+            'parents' => [$folderId]
         ]);
 
         $uploadedFile = $service->files->create($fileMetadata, [
@@ -156,14 +156,21 @@ class ProductsController extends Controller
                     'message' => 'Authentication required. Please login first.'
                 ]);
             }
-            if ($request->hasFile('image')) {
-                $data['image'] = $this->uploadToDrive($request->file('image'));
-            }
+           //  Upload Image → images folder
+        if ($request->hasFile('image')) {
+            $data['image'] = $this->uploadToDrive(
+                $request->file('image'),
+                env('GOOGLE_IMAGE_FOLDER_ID')
+            );
+        }
 
-            //  Upload QR Code to Google Drive
-            if ($request->hasFile('qr_code')) {
-                $data['qr_code'] = $this->uploadToDrive($request->file('qr_code'));
-            }
+        //  Upload QR → qr_codes folder
+        if ($request->hasFile('qr_code')) {
+            $data['qr_code'] = $this->uploadToDrive(
+                $request->file('qr_code'),
+                env('GOOGLE_QR_FOLDER_ID')
+            );
+        }
             $data['user_id'] = $user;
             $data['created_by'] = $user;
             $product = Products::create($data);

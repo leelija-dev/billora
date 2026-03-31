@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 use App\Notifications\VerifyEmailNotification;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Log;
 class CustomerController extends Controller
 {
 
@@ -46,7 +47,7 @@ class CustomerController extends Controller
         $data['password'] = Hash::make($data['password']);
         $customer = Customers::create($data);
         // $customer->notify(new VerifyEmailNotification($data['verification_token']));
-
+    try{
        $customerMail = $this->CustomerMail($customer->id, $data['verification_token']);
         $adminMail = $this->AdminMail($customer->id);
         $admin_mail_id = config('app.admin_mail');
@@ -61,7 +62,14 @@ class CustomerController extends Controller
             $message->to($customer->email)
                     ->subject('Welcome! Please Verify Your Email');
         });
+    }catch (\Exception $e) {
+        // Log the error or handle it as needed
+        Log::error('Mail sending failed', [
+                'error' => $e->getMessage(),
+                'user_id' => $customer->id
+            ]);
 
+        }
         return response()->json([
             'status' => true,
             'message' => 'User Register Successfully',

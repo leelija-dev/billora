@@ -50,11 +50,15 @@ export const productsAPI = {
       if (productData.discount_percentage) formData.append('discount_percentage', productData.discount_percentage);
       if (productData.description) formData.append('description', productData.description);
       if (productData.created_by) formData.append('created_by', productData.created_by);
-      if (productData.qr_code) formData.append('qr_code', productData.qr_code);
       
       // Add image file if present
       if (productData.image) {
         formData.append('image', productData.image);
+      }
+      
+      // Add QR code image file if present
+      if (productData.qr_code) {
+        formData.append('qr_code', productData.qr_code);
       }
       
       // Set is_active default to true if not provided
@@ -94,11 +98,15 @@ export const productsAPI = {
       if (productData.discount_percentage) formData.append('discount_percentage', productData.discount_percentage);
       if (productData.description) formData.append('description', productData.description);
       if (productData.created_by) formData.append('created_by', productData.created_by);
-      if (productData.qr_code) formData.append('qr_code', productData.qr_code);
       
       // Add image file if present
       if (productData.image) {
         formData.append('image', productData.image);
+      }
+      
+      // Add QR code image file if present
+      if (productData.qr_code) {
+        formData.append('qr_code', productData.qr_code);
       }
       
       // Set is_active default to true if not provided
