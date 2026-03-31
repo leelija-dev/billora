@@ -16,7 +16,14 @@ use Google\Client;
 use Google\Service\Drive;
 use Google\Service\Drive\DriveFile;
 use Google\Service\Drive\Permission;
-
+use chillerlan\QRCode\QRCode;
+use chillerlan\QRCode\QROptions;
+use Illuminate\Support\Facades\Log;
+use BaconQrCode\Renderer\Image\Png;
+use BaconQrCode\Renderer\ImageRenderer;
+use BaconQrCode\Renderer\RendererStyle\RendererStyle;
+use BaconQrCode\Renderer\Image\SvgImageBackEnd;
+use BaconQrCode\Writer;
 class ProductsController extends Controller
 {
     public function index(Request $request)
@@ -127,6 +134,68 @@ class ProductsController extends Controller
 
         return "https://drive.google.com/uc?export=view&id=" . $fileId;
     }
+ private function generateQrAndUpload($product)
+{
+    try {
+        $qrData = "ID:{$product->id}";
+        // OR better:
+        // $qrData = env('FRONTEND_URL') . "/product/" . $product->id;
+
+        $renderer = new ImageRenderer(
+            new RendererStyle(100),
+            new SvgImageBackEnd()
+        );
+
+        $writer = new Writer($renderer);
+
+        // Generate QR as string (NO FILE)
+        $qrContent = $writer->writeString($qrData);
+
+        return $this->uploadStringToDrive(
+            $qrContent,
+            'qr_' . $product->id . '_' . time() . '.svg',
+            env('GOOGLE_QR_FOLDER_ID')
+        );
+
+    } catch (\Exception $e) {
+        Log::error('QR Error: ' . $e->getMessage());
+        return null;
+    }
+}
+
+private function uploadStringToDrive($content, $fileName, $folderId)
+{
+    $client = new Client();
+    $client->setClientId(env('GOOGLE_CLIENT_ID'));
+    $client->setClientSecret(env('GOOGLE_CLIENT_SECRET'));
+    $client->refreshToken(env('GOOGLE_REFRESH_TOKEN'));
+
+    $service = new Drive($client);
+
+    $fileMetadata = new DriveFile([
+        'name' => $fileName,
+        'parents' => [$folderId]
+    ]);
+
+    $uploadedFile = $service->files->create($fileMetadata, [
+        'data' => $content,
+        'mimeType' => 'image/svg+xml',
+        'uploadType' => 'multipart',
+        'fields' => 'id'
+    ]);
+
+    $fileId = $uploadedFile->id;
+
+    // Make public
+    $permission = new Permission([
+        'type' => 'anyone',
+        'role' => 'reader'
+    ]);
+
+    $service->permissions->create($fileId, $permission);
+
+    return "https://drive.google.com/uc?export=view&id=" . $fileId;
+}
     public function store(Request $request)
     {
         try {
@@ -134,8 +203,8 @@ class ProductsController extends Controller
             
             $data = $request->validate([
                 // 'sku'                   => 'required|unique:products',
-                'user_id'              => 'nullable',
-                'sku' => 'required|unique:products,sku,NULL,id,user_id,' . $user,
+                'user_id'               => 'nullable',
+                'sku'                   => 'required|unique:products,sku,NULL,id,user_id,' . $user,
                 'name'                  => 'required',
                 'brand_id'              => 'nullable|exists:brand,id',
                 'category_id'           => 'required',
@@ -165,15 +234,21 @@ class ProductsController extends Controller
         }
 
         //  Upload QR → qr_codes folder
-        if ($request->hasFile('qr_code')) {
-            $data['qr_code'] = $this->uploadToDrive(
-                $request->file('qr_code'),
-                env('GOOGLE_QR_FOLDER_ID')
-            );
-        }
+        // if ($request->hasFile('qr_code')) {
+        //     $data['qr_code'] = $this->uploadToDrive(
+        //         $request->file('qr_code'),
+        //         env('GOOGLE_QR_FOLDER_ID')
+        //     );
+        // }
             $data['user_id'] = $user;
             $data['created_by'] = $user;
             $product = Products::create($data);
+            $qrUrl = $this->generateQrAndUpload($product);
+
+            //  Save QR in DB
+            $product->update([
+                'qr_code' => $qrUrl
+            ]);
             return response()->json([
                 'status' => true,
                 'message' => 'Product Created Successfully',
