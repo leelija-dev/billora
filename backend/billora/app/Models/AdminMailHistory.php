@@ -15,4 +15,9 @@ class AdminMailHistory extends Model
         'status',
         'error_message',
     ];
+
+    public function customer()
+    {
+        return $this->belongsTo(Customers::class, 'customer_id');
+    }
 }

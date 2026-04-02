@@ -1,10 +1,13 @@
 <?php 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\admin\AuthController;
+use App\Http\Controllers\admin\superadmin\AdminMailController;
 use App\Http\Controllers\admin\superadmin\AdminUserController;
 use App\Http\Controllers\admin\superadmin\CustomerController;
 use App\Http\Controllers\admin\superadmin\PlansController;
 use App\Http\Controllers\admin\superadmin\PlanPermissionController;
+use App\Models\AdminMailHistory;
+
 Route::middleware(['web', 'admin.guest'])->prefix('admin')->group(function () {
     Route::view('/login', 'admin.login')->name('login');
     Route::post('/login', [AuthController::class, 'login'])->name('admin.login');
@@ -45,7 +48,10 @@ Route::middleware(['web', 'admin.auth'])->prefix('admin')->group(function () {
         Route::get('/', [PlanPermissionController::class, 'index'])->name('admin.plan-permission.index');
     });
 
-
+    Route::prefix('mail-history')->group(function () {
+        Route::get('/', [AdminMailController::class, 'mailHistory'])->name('admin.mail-history');
+        Route::get('/{id}', [AdminMailController::class, 'viewMail'])->name('admin.mail-history.view');
+    });
     Route::prefix('admin-users')->group(function (){
         Route::get('/', [AdminUserController::class, 'index'])->name('admin.admin-users.index');
 
