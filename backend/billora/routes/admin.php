@@ -25,6 +25,8 @@ Route::middleware(['web', 'admin.auth'])->prefix('admin')->group(function () {
     Route::prefix('customers')->group(function () {
         Route::get('/', [CustomerController::class, 'index'])->name('admin.customers.index'); 
         Route::get('all-plans/{id}', [CustomerController::class, 'plans'])->name('admin.customers.plans');
+        Route::get('/send-mail', [CustomerController::class, 'customerMail'])->name('admin.customers.customer-mail');
+        Route::post('/send-mail', [CustomerController::class, 'sendMail'])->name('admin.customers.send-mail');
     });
     Route::prefix('plans')->group(function () {
         Route::get('/', [PlansController::class, 'index'])->name('admin.plans.index');

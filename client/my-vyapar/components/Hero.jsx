@@ -243,7 +243,7 @@ const Hero = () => {
                       )}
                       
                       {screenState === 2 && (
-                        <div className="w-full h-full fade-in">
+                        <div className="w-full h-full fade-in relative">
                           <Image 
                             src="/image/desktop.png" 
                             alt="PC Dashboard" 
@@ -361,13 +361,12 @@ const Hero = () => {
                 </Link>
               </div>
               <div className="flex-1 w-full">
-                <div className="w-full aspect-video bg-slate-100 rounded-xl sm:rounded-2xl overflow-hidden border border-slate-200 shadow-inner">
+                <div className="w-full aspect-video bg-slate-100 rounded-xl sm:rounded-2xl overflow-hidden border border-slate-200 shadow-inner relative">
                   <Image 
                     src="/image/desktop.png" 
                     alt="Dashboard" 
-                    width={500} 
-                    height={300} 
-                    className="w-full h-full object-cover"
+                    fill 
+                    className="object-cover"
                     sizes="(max-width: 768px) 100vw, 500px"
                   />
                 </div>
