@@ -79,12 +79,12 @@
 
             <!-- Stats Cards -->
             <div class="px-6 py-6">
-                <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div class="bg-white rounded-lg shadow p-6 border-l-4 border-blue-500">
                         <div class="flex items-center justify-between">
                             <div>
                                 <p class="text-sm text-blue-600"><strong>Total Mails</strong></p>
-                                <p class="text-2xl font-bold text-blue-600">{{ $totalmails ?? 0 }}</p>
+                                <p class="text-2xl font-bold text-blue-600">{{ $totalMails ?? 0 }}</p>
                             </div>
                             <div class="p-3 bg-blue-100 rounded-full">
                                 <i data-feather="layers" class="w-6 h-6 text-blue-600"></i>
@@ -96,7 +96,7 @@
                         <div class="flex items-center justify-between">
                             <div>
                                 <p class="text-sm text-green-600"><strong>Mails Send Successfully</strong></p>
-                                <p class="text-2xl font-bold text-green-600">{{ $activemails ?? 0 }}</p>
+                                <p class="text-2xl font-bold text-green-600">{{ $mailSent ?? 0 }}</p>
                             </div>
                             <div class="p-3 bg-green-100 rounded-full">
                                 <i data-feather="check-circle" class="w-6 h-6 text-green-600"></i>
@@ -104,32 +104,18 @@
                         </div>
                     </div>
 
-                    <div class="bg-white rounded-lg shadow p-6 border-l-4 border-yellow-500">
+                    <div class="bg-white rounded-lg shadow p-6 border-l-4 border-red-500">
                         <div class="flex items-center justify-between">
                             <div>
-                                <p class="text-sm text-yellow-600"> <strong>Failed Mails </strong></p>
-                                <p class="text-2xl font-bold text-yellow-600">{{ $inactivemails ?? 0 }}</p>
+                                <p class="text-sm text-red-600"> <strong>Failed Mails </strong></p>
+                                <p class="text-2xl font-bold text-red-600">{{ $mailFailed ?? 0 }}</p>
                             </div>
-                            <div class="p-3 bg-orange-100 rounded-full">
-                                <i data-feather="pause-circle" class="w-6 h-6 text-orange-600"></i>
+                            <div class="p-3 bg-red-100 rounded-full">
+                                <i data-feather="pause-circle" class="w-6 h-6 text-red-600"></i>
                             </div>
                         </div>
                     </div>
 
-                    <a href="#"> 
-                        <div class="bg-white rounded-lg shadow p-6 border-l-4 border-red-500">
-                        
-                            <div class="flex items-center justify-between">
-                                <div>
-                                    <p class="text-sm text-red-600"><strong> Deleted mails</strong></p>
-                                    <p class="text-2xl font-bold text-red-600">{{ $deletedmails ?? '0' }}</p>
-                                </div>
-                                <div class="p-3 bg-red-100 rounded-full">
-                                    <i data-feather="trash-2" class="w-6 h-6 text-red-600"></i>
-                                </div>
-                            </div>
-                        </div>
-                    </a>
                 </div>
             </div>
 

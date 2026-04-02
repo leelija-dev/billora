@@ -11,7 +11,10 @@ class AdminMailController extends Controller
 {
     public function mailHistory(){
         $mailHistory = AdminMailHistory::with('customer')->orderBy('created_at', 'desc')->paginate(10);
-        return view('admin.email.index', compact('mailHistory'));
+        $totalMails = AdminMailHistory::count();
+        $mailSent =  AdminMailHistory::where('status', 'sent')->count();
+        $mailFailed = AdminMailHistory::where('status', 'failed')->count();
+        return view('admin.email.index', compact('mailHistory', 'totalMails', 'mailSent', 'mailFailed'));
     }
     public function viewMail($id){
         $mailHistory = AdminMailHistory::with('customer')->findOrFail($id);

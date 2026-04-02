@@ -1,69 +1,292 @@
-<html>
+<!DOCTYPE html>
+<html lang="en">
+
 <head>
-  <meta charset='UTF-8'>
-  <meta name='viewport' content='width=device-width, initial-scale=1.0'>
-  <title>Announcement Email</title>
-  <style>
-    /* Basic reset for email clients */
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Mail Detail | Single Message View</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+       body {
+    background: #f1f5f9;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    padding: 2rem 1rem;
+}
+
+/* main container */
+.mail-detail-card {
+    max-width: 900px;
+    width: 100%;
+    background: #ffffff;
+    border-radius: 16px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+    overflow: hidden;
+}
+
+/* header */
+.mail-header-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid #e5e7eb;
+    background: #fff;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+/* back button */
+.back-button {
+    background: #eef2ff;
+    border: none;
+    padding: 0.5rem 1.2rem;
+    border-radius: 50px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: #3730a3;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.back-button:hover {
+    background: #e0e7ff;
+}
+
+/* subject */
+.mail-subject {
+    font-size: 1.6rem;
+    font-weight: 600;
+    padding: 1.5rem;
+    color: #111827;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+/* customer card */
+.customer-meta-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 1.5rem;
+    background: #f9fafb;
+    border-bottom: 1px solid #e5e7eb;
+    flex-wrap: wrap;
+}
+
+.avatar-circle {
+    width: 42px;
+    height: 42px;
+    background: #6366f1;
+    border-radius: 50%;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+}
+
+.customer-text {
+    margin-left: 10px;
+}
+
+.customer-email {
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: #111827;
+}
+
+.customer-name {
+    font-size: 0.8rem;
+    color: #6b7280;
+}
+
+.date-chip {
+    font-size: 0.8rem;
+    color: #475569;
+}
+
+/* message */
+.message-panel {
+    padding: 1.5rem;
+}
+
+.message-label {
+    font-size: 0.75rem;
+    color: #6366f1;
+    font-weight: 600;
+    margin-bottom: 0.8rem;
+    text-transform: uppercase;
+}
+
+.message-body {
+    background: #f8fafc;
+    padding: 1rem;
+    border-radius: 10px;
+    line-height: 1.7;
+    color: #1f2937;
+    font-size: 0.95rem;
+}
+
+/* footer */
+.footer-meta {
+    padding: 1rem 1.5rem;
+    font-size: 0.75rem;
+    color: #9ca3af;
+    border-top: 1px solid #e5e7eb;
+}
+
+/* mobile */
+@media (max-width: 640px) {
+    .mail-subject {
+        font-size: 1.3rem;
     }
-  </style>
+
+    .customer-meta-card {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+}
+.send-mail-btn {
+    background: #2563eb; /* primary blue */
+    color: #fff;
+    border: none;
+    padding: 0.6rem 1.4rem;
+    border-radius: 50px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.2s ease;
+}
+
+.send-mail-btn:hover {
+    background: #1d4ed8;
+    box-shadow: 0 4px 10px rgba(37, 99, 235, 0.3);
+    transform: translateY(-1px);
+}
+
+.send-mail-btn i {
+    font-size: 1rem;
+}
+
+.mail-header-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+/* LEFT BUTTON GROUP */
+.header-left {
+    display: flex;
+    align-items: center;
+    gap: 12px; /* spacing between buttons */
+}
+
+/* fix anchor button look */
+.back-button {
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+}
+    </style>
 </head>
-<body style='margin: 0; padding: 0; background-color: #e9ecef; font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;'>
-   @include('admin.sidebar')
-  <!-- Main Email Container -->
-  <table width='100%' cellpadding='0' cellspacing='0' border='0' align='center' bgcolor='#e9ecef' style='background-color: #e9ecef;'>
-    <tr>
-      <td align='center' style='padding: 40px 20px;'>
-        
-        <!-- Inner Content Table (max-width: 600px) -->
-        <table width='100%' max-width='600' cellpadding='0' cellspacing='0' border='0' align='center' style='max-width: 600px; width: 100%; background-color: #ffffff; border-radius: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); overflow: hidden;'>
-          
-          <!-- Header / Hero Section -->
-          <tr>
-            <td bgcolor='#1e3a5f' style='background-color: #1e3a5f; padding: 40px 30px; text-align: center;'>
-              <h1 style='color: #ffffff; font-size: 26px; font-weight: 600; margin: 0 0 8px 0;'>{{ config('app.name') }}</h1>
-              
-            </td>
-          </tr>
-          
-          <!-- Greeting / Body -->
-          <tr>
-            <td style='padding: 32px 30px 20px 30px; background-color: #ffffff;'>
-              <p style='font-size: 16px; color: #2d3748; line-height: 1.5; margin-bottom: 20px;'>Dear <strong>".$customer->name."</strong>,</p>
-              <p style='font-size: 16px; color: #2d3748; line-height: 1.5; margin-bottom: 20px;'>".$message."</p>
-                      
-            </td>
-          </tr>
-          
-          <!-- Divider -->
-          <tr>
-            <td style='padding: 0 30px;'>
-              <hr style='border: 0; height: 1px; background-color: #e2e8f0; margin: 8px 0;'>
-            </td>
-          </tr>
-          
-          <!-- Footer / Unsubscribe -->
-          <tr>
-            <td style='padding: 24px 30px 32px 30px; background-color: #ffffff;'>
-              
-              <p style='font-size: 12px; color: #64748b; text-align: center; margin-top: 16px;'>
-                &copy;  ". date('Y')." ". config('app.name').". All rights reserved.<br>
-                
-              </p>
-            </td>
-          </tr>
-          
-        </table>
-        <!-- End Inner Table -->
-               
-      </td>
-    </tr>
-  </table>
-  <!-- End Main Container -->
-  
+
+<body>
+    <div style="display:flex; width:100%;">
+    @include('admin.sidebar')
+
+    <div style="flex:1; padding:20px;">
+        <!-- your mail card here -->
+    </div>
+</div>
+    <div class="mail-detail-card">
+
+    <!-- Header -->
+   <div class="mail-header-bar">
+
+    <!-- LEFT SIDE -->
+    <div class="header-left">
+
+        <a href="{{ route('admin.mail-history') }}" class="back-button">
+            <i class="fas fa-arrow-left"></i> Back
+        </a>
+
+        <form action="{{ route('admin.customers.customer-mail') }}" method="GET">
+            <input type="hidden" name="ids" value="{{ $mailHistory->customer_id }}">
+
+            <button type="submit" class="send-mail-btn">
+                <i class="fab fa-telegram-plane"></i> Send Mail
+            </button>
+        </form>
+
+    </div>
+
+    <!-- RIGHT SIDE -->
+    <div class="badge-single">
+        <i class="fas fa-envelope-open-text"></i> Single message view
+    </div>
+
+</div>
+
+    <!-- Subject -->
+    <div class="mail-subject">
+        {{ $mailHistory->subject ?? 'No Subject' }}
+    </div>
+
+    <!-- Customer Info -->
+    <div class="customer-meta-card">
+        <div style="display:flex; align-items:center; gap:12px;">
+            <div class="avatar-circle">
+                {{ strtoupper(optional($mailHistory->customer)->name[0] ?? strtoupper(optional($mailHistory->customer)->email[0])) }}
+            </div>
+
+            <div>
+                <div class="customer-email">
+                    {{ optional($mailHistory->customer)->email ?? 'N/A' }}
+                </div>
+                <div class="customer-name">
+                    {{ optional($mailHistory->customer)->name ?? 'N/A' }}
+                </div>
+            </div>
+        </div>
+
+        <div class="date-chip">
+            {{ $mailHistory->created_at ? $mailHistory->created_at->format('M d, Y h:i A') : 'N/A' }}
+        </div>
+    </div>
+
+    <!-- Message -->
+    <div class="message-panel">
+        <div class="message-label">
+            Message Content
+        </div>
+
+        <div class="message-body">
+    
+
+    <p>
+        {!! ($mailHistory->message) !!}
+    </p>
+</div>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer-meta">
+        Message ID: {{ $mailHistory->id ?? 'N/A' }}
+    </div>
+
+</div>
 </body>
+
 </html>
