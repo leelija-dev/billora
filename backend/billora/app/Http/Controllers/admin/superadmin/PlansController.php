@@ -56,6 +56,8 @@ class PlansController extends Controller
         $data = $request->validate([
             'name'          =>'required',
             'price'         =>'required',
+            'gst'           =>'required',
+            'discount'      =>'required',
             'features'      =>'nullable',
             'description'   =>'nullable',
             'is_active'     =>'required',
@@ -107,6 +109,8 @@ class PlansController extends Controller
     $data = $request->validate([
         'name'          => 'required',
         'price'         => 'required',
+        'gst'           => 'required',
+        'discount'      => 'required',
         'features'      => 'nullable',
         'description'   => 'nullable',
         'is_active'     => 'nullable|boolean',

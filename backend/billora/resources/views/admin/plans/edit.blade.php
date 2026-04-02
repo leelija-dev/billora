@@ -644,7 +644,36 @@
                             @enderror
                         </div>
                     </div>
+                        <div class="form-group">
+                        <label class="form-label">
+                            GST (%)<span>*</span>
+                        </label>
+                        <div >
+                            
+                            <input type="number" name="gst" class="form-input currency-input"
+                                placeholder="Enter GST percentage" step="0.01" min="0" value="{{ $plan->gst ?? '0' }}"
+                                required>
+                            @error('gst')
+                                <span class="text-danger">{{ $message }}</span>
+                            @enderror
 
+                        </div>
+                     </div>
+                     <div class="form-group">
+                        <label class="form-label">
+                            Discount (%)<span>*</span>
+                        </label>
+                        <div >
+                            
+                            <input type="number" name="discount" class="form-input currency-input"
+                                placeholder="Enter discount percentage" step="0.01" min="0" value="{{$plan->discount ?? '0'}}"
+                                required>
+                            @error('discount')
+                                <span class="text-danger">{{ $message }}</span>
+                            @enderror
+
+                        </div>
+                     </div>
                     <!-- Duration Days -->
                     <div class="form-group">
                         <label class="form-label">

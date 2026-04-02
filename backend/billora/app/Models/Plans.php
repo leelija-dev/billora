@@ -20,14 +20,18 @@ class Plans extends Model
         'description',
         'is_active',
         'duration_days',
-        'currency'
+        'currency',
+        'gst',
+        'discount'
     ];
 
     protected $casts = [
         'features' => 'array',
         'is_active' => 'boolean:2',
         'duration_days' => 'integer',
-        'price' => 'decimal:2'
+        'price' => 'decimal:2',
+        'discount' => 'decimal:2',
+        'gst' => 'decimal:2',
     ];
     public function planPermissions()
     {
