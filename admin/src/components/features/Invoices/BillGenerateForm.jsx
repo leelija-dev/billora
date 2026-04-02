@@ -60,6 +60,9 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
   const [showStoreDropdown, setShowStoreDropdown] = useState(false)
   const [filteredCustomers, setFilteredCustomers] = useState([])
   const [filteredStores, setFilteredStores] = useState([])
+  
+  // Enhanced product search state
+  const [filteredProducts, setFilteredProducts] = useState([])
 
   useEffect(() => {
     fetchInitialData()
@@ -99,6 +102,26 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
       setFilteredStores(filtered)
     }
   }, [storeSearch, stores])
+
+  // Filter products based on search
+  useEffect(() => {
+    if (productSearch.trim() === '') {
+      setFilteredProducts(products)
+    } else {
+      const searchLower = productSearch.toLowerCase()
+      const filtered = products.filter(product => 
+        product.name?.toLowerCase().includes(searchLower) ||
+        product.product_name?.toLowerCase().includes(searchLower) ||
+        product.sku?.toLowerCase().includes(searchLower) ||
+        product.code?.toLowerCase().includes(searchLower) ||
+        product.product_code?.toLowerCase().includes(searchLower) ||
+        product.description?.toLowerCase().includes(searchLower) ||
+        product.brand?.name?.toLowerCase().includes(searchLower) ||
+        product.category?.name?.toLowerCase().includes(searchLower)
+      )
+      setFilteredProducts(filtered)
+    }
+  }, [productSearch, products])
 
   // Initialize search values when data is loaded
   useEffect(() => {
@@ -427,14 +450,23 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
     onSubmit(submissionData)
   }
 
-  const filteredProducts = products.filter(product => 
-    (product.name && product.name.toLowerCase().includes(productSearch.toLowerCase())) ||
-    (product.product_name && product.product_name.toLowerCase().includes(productSearch.toLowerCase())) ||
-    (product.code && product.code.toLowerCase().includes(productSearch.toLowerCase())) ||
-    (product.product_code && product.product_code.toLowerCase().includes(productSearch.toLowerCase()))
-  )
+  // Click outside handlers
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (!event.target.closest('.customer-dropdown')) {
+        setShowCustomerDropdown(false)
+      }
+      if (!event.target.closest('.store-dropdown')) {
+        setShowStoreDropdown(false)
+      }
+      if (!event.target.closest('.product-dropdown')) {
+        setShowProductList(false)
+      }
+    }
 
-  const totals = calculateTotals()
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
 
   if (loading) {
     return (
@@ -670,53 +702,87 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
             </h3>
 
             <div className="space-y-4">
-              <div className="relative">
-                <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                <Input
-                  type="text"
-                  placeholder="Search products by name or code..."
-                  value={productSearch}
-                  onChange={(e) => {
-                    setProductSearch(e.target.value)
-                    setShowProductList(true)
-                  }}
-                  onFocus={() => setShowProductList(true)}
-                  className="pl-10"
-                />
-              </div>
-
-              <AnimatePresence>
+              <div className="relative product-dropdown">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Search Products
+                </label>
+                <div className="relative">
+                  <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                  <Input
+                    type="text"
+                    placeholder="Search products by name, SKU, brand, category..."
+                    value={productSearch}
+                    onChange={(e) => {
+                      setProductSearch(e.target.value)
+                      setShowProductList(true)
+                    }}
+                    onFocus={() => setShowProductList(true)}
+                    className="pl-10"
+                  />
+                </div>
+                <AnimatePresence>
                 {showProductList && productSearch && (
                   <motion.div
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -10 }}
-                    className="absolute z-10 w-full mt-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg max-h-60 overflow-y-auto"
+                    className="absolute z-10 w-full mt-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg max-h-80 overflow-y-auto"
                   >
                     {filteredProducts.length > 0 ? (
                       filteredProducts.map(product => (
                         <div
                           key={product.id}
-                          className="p-3 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer border-b border-gray-100 dark:border-gray-700 last:border-b-0"
+                          className="p-4 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer border-b border-gray-100 dark:border-gray-700 last:border-b-0"
                           onClick={() => handleAddItem(product)}
                         >
-                          <div className="flex justify-between items-center">
-                            <div>
-                              <p className="font-medium text-gray-900 dark:text-white">
+                          <div className="flex justify-between items-start">
+                            <div className="flex-1">
+                              <div className="font-medium text-gray-900 dark:text-white mb-1">
                                 {product.name || product.product_name}
-                              </p>
-                              <p className="text-sm text-gray-500 dark:text-gray-400">
-                                {product.code || product.product_code}
-                              </p>
+                              </div>
+                              <div className="text-sm text-gray-500 dark:text-gray-400 space-y-1">
+                                <div>
+                                  📦 SKU: {product.sku || product.code || product.product_code || 'N/A'}
+                                </div>
+                                {product.brand?.name && (
+                                  <div>
+                                    🏷️ Brand: {product.brand.name}
+                                  </div>
+                                )}
+                                {product.category?.name && (
+                                  <div>
+                                    📂 Category: {product.category.name}
+                                  </div>
+                                )}
+                                {product.description && (
+                                  <div className="text-xs text-gray-400 dark:text-gray-500 truncate">
+                                    📝 {product.description}
+                                  </div>
+                                )}
+                              </div>
                             </div>
-                            <div className="text-right">
-                              <p className="font-semibold text-gray-900 dark:text-white">
-                                ₹{parseFloat(product.price || 0).toFixed(2)}
-                              </p>
-                              <div className="text-xs text-gray-500 dark:text-gray-400 space-y-1">
-                                <p>Stock: {product.stock || 'N/A'}</p>
-                                {product.gst && (
-                                  <p>GST: {parseFloat(product.gst).toFixed(1)}%</p>
+                            <div className="text-right ml-4">
+                              <div className="font-semibold text-gray-900 dark:text-white">
+                                ₹{parseFloat(product.selling_price || product.price || 0).toFixed(2)}
+                              </div>
+                              <div className="text-xs text-gray-500 dark:text-gray-400 space-y-1 mt-2">
+                                <div>
+                                  💰 Cost: ₹{parseFloat(product.purchase_price || product.cost || 0).toFixed(2)}
+                                </div>
+                                {product.stocks && product.stocks.length > 0 && (
+                                  <div>
+                                    📊 Stock: {product.stocks[0].quantity || 'N/A'} {product.unit?.short_name || product.unit?.name || 'pcs'}
+                                  </div>
+                                )}
+                                {product.gst_percentage && (
+                                  <div>
+                                    📈 GST: {parseFloat(product.gst_percentage).toFixed(1)}%
+                                  </div>
+                                )}
+                                {product.discount_percentage && (
+                                  <div>
+                                    🎁 Discount: {parseFloat(product.discount_percentage).toFixed(1)}%
+                                  </div>
                                 )}
                               </div>
                             </div>
@@ -731,6 +797,9 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
                   </motion.div>
                 )}
               </AnimatePresence>
+              </div>
+
+              
 
               {formData.items.length > 0 && (
                 <div className="mt-4">
