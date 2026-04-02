@@ -52,9 +52,83 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
   const [units, setUnits] = useState([])
   const [productSearch, setProductSearch] = useState('')
   const [showProductList, setShowProductList] = useState(false)
+  
+  // Search states for customer and store
+  const [customerSearch, setCustomerSearch] = useState('')
+  const [storeSearch, setStoreSearch] = useState('')
+  const [showCustomerDropdown, setShowCustomerDropdown] = useState(false)
+  const [showStoreDropdown, setShowStoreDropdown] = useState(false)
+  const [filteredCustomers, setFilteredCustomers] = useState([])
+  const [filteredStores, setFilteredStores] = useState([])
 
   useEffect(() => {
     fetchInitialData()
+  }, [])
+
+  // Filter customers based on search
+  useEffect(() => {
+    if (customerSearch.trim() === '') {
+      setFilteredCustomers(customers)
+    } else {
+      const searchLower = customerSearch.toLowerCase()
+      const filtered = customers.filter(customer => 
+        customer.name?.toLowerCase().includes(searchLower) ||
+        customer.phone?.toLowerCase().includes(searchLower) ||
+        customer.email?.toLowerCase().includes(searchLower) ||
+        customer.address?.toLowerCase().includes(searchLower) ||
+        customer.gst?.toLowerCase().includes(searchLower)
+      )
+      setFilteredCustomers(filtered)
+    }
+  }, [customerSearch, customers])
+
+  // Filter stores based on search
+  useEffect(() => {
+    if (storeSearch.trim() === '') {
+      setFilteredStores(stores)
+    } else {
+      const searchLower = storeSearch.toLowerCase()
+      const filtered = stores.filter(store => 
+        store.name?.toLowerCase().includes(searchLower) ||
+        store.mobile?.toLowerCase().includes(searchLower) ||
+        store.email?.toLowerCase().includes(searchLower) ||
+        store.address?.toLowerCase().includes(searchLower) ||
+        store.city?.toLowerCase().includes(searchLower) ||
+        store.gst?.toLowerCase().includes(searchLower)
+      )
+      setFilteredStores(filtered)
+    }
+  }, [storeSearch, stores])
+
+  // Initialize search values when data is loaded
+  useEffect(() => {
+    if (customers.length > 0 && formData.customer_id) {
+      const customer = customers.find(c => c.id === formData.customer_id)
+      if (customer) {
+        setCustomerSearch(customer.name || customer.customer_name)
+      }
+    }
+    if (stores.length > 0 && formData.store_id) {
+      const store = stores.find(s => s.id === formData.store_id)
+      if (store) {
+        setStoreSearch(store.name || store.store_name)
+      }
+    }
+  }, [customers, stores, formData.customer_id, formData.store_id])
+
+  // Click outside handlers
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (!event.target.closest('.customer-dropdown')) {
+        setShowCustomerDropdown(false)
+      }
+      if (!event.target.closest('.store-dropdown')) {
+        setShowStoreDropdown(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
   const fetchInitialData = async () => {
@@ -256,6 +330,47 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
     }))
   }
 
+  // Customer selection handlers
+  const handleCustomerSelect = (customer) => {
+    setFormData(prev => ({
+      ...prev,
+      customer_id: customer.id
+    }))
+    setCustomerSearch(customer.name || customer.customer_name)
+    setShowCustomerDropdown(false)
+  }
+
+  const handleCustomerSearchChange = (value) => {
+    setCustomerSearch(value)
+    setShowCustomerDropdown(true)
+  }
+
+  // Store selection handlers
+  const handleStoreSelect = (store) => {
+    setFormData(prev => ({
+      ...prev,
+      store_id: store.id
+    }))
+    setStoreSearch(store.name || store.store_name)
+    setShowStoreDropdown(false)
+  }
+
+  const handleStoreSearchChange = (value) => {
+    setStoreSearch(value)
+    setShowStoreDropdown(true)
+  }
+
+  // Get display names for selected customer and store
+  const getSelectedCustomerName = () => {
+    const customer = customers.find(c => c.id === formData.customer_id)
+    return customer?.name || customer?.customer_name || customerSearch
+  }
+
+  const getSelectedStoreName = () => {
+    const store = stores.find(s => s.id === formData.store_id)
+    return store?.name || store?.store_name || storeSearch
+  }
+
   const calculateTotals = () => {
     const subtotal = formData.items.reduce((sum, item) => sum + (item.price * item.quantity), 0)
     const totalGst = formData.items.reduce((sum, item) => {
@@ -410,42 +525,117 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
             </h3>
 
             <div className="space-y-4">
-              <Select
-                label="Select Customer"
-                options={[
-                  { value: '', label: 'Choose a customer...' },
-                  ...customers.map(customer => ({
-                    value: customer.id,
-                    label: customer.name
-                  }))
-                ]}
-                value={formData.customer_id}
-                onChange={(e) => setFormData(prev => ({ ...prev, customer_id: e.target.value }))}
-                required
-              />
+              {/* Customer Searchable Dropdown */}
+              <div className="relative customer-dropdown">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Select Customer
+                </label>
+                <div className="relative">
+                  <Input
+                    type="text"
+                    placeholder="Search customer by name, phone, email..."
+                    value={customerSearch}
+                    onChange={(e) => handleCustomerSearchChange(e.target.value)}
+                    onFocus={() => setShowCustomerDropdown(true)}
+                    className="pr-10"
+                    required
+                  />
+                  <FiSearch className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                </div>
+                
+                {/* Customer Dropdown */}
+                {showCustomerDropdown && (
+                  <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                    {filteredCustomers.length > 0 ? (
+                      filteredCustomers.map(customer => (
+                        <div
+                          key={customer.id}
+                          onClick={() => handleCustomerSelect(customer)}
+                          className="px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer border-b border-gray-100 dark:border-gray-700 last:border-b-0"
+                        >
+                          <div className="font-medium text-gray-900 dark:text-white">
+                            {customer.name || customer.customer_name}
+                          </div>
+                          <div className="text-sm text-gray-500 dark:text-gray-400">
+                            📞 {customer.phone || 'N/A'} | 📧 {customer.email || 'N/A'}
+                          </div>
+                          {customer.gst && (
+                            <div className="text-xs text-gray-400 dark:text-gray-500">
+                              GST: {customer.gst}
+                            </div>
+                          )}
+                        </div>
+                      ))
+                    ) : (
+                      <div className="px-4 py-3 text-gray-500 dark:text-gray-400 text-center">
+                        No customers found
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
 
-              <Select
-                label="Select Store"
-                options={[
-                  { value: '', label: 'Choose a store...' },
-                  ...stores.map(store => ({
-                    value: store.id,
-                    label: store.name
-                  }))
-                ]}
-                value={formData.store_id}
-                onChange={(e) => setFormData(prev => ({ ...prev, store_id: e.target.value }))}
-                required
-              />
+              {/* Store Searchable Dropdown */}
+              <div className="relative store-dropdown">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Select Store
+                </label>
+                <div className="relative">
+                  <Input
+                    type="text"
+                    placeholder="Search store by name, phone, email..."
+                    value={storeSearch}
+                    onChange={(e) => handleStoreSearchChange(e.target.value)}
+                    onFocus={() => setShowStoreDropdown(true)}
+                    className="pr-10"
+                    required
+                  />
+                  <FiSearch className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                </div>
+                
+                {/* Store Dropdown */}
+                {showStoreDropdown && (
+                  <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                    {filteredStores.length > 0 ? (
+                      filteredStores.map(store => (
+                        <div
+                          key={store.id}
+                          onClick={() => handleStoreSelect(store)}
+                          className="px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer border-b border-gray-100 dark:border-gray-700 last:border-b-0"
+                        >
+                          <div className="font-medium text-gray-900 dark:text-white">
+                            {store.name || store.store_name}
+                          </div>
+                          <div className="text-sm text-gray-500 dark:text-gray-400">
+                            📞 {store.mobile || store.phone || 'N/A'} | 📧 {store.email || 'N/A'}
+                          </div>
+                          <div className="text-sm text-gray-500 dark:text-gray-400">
+                            📍 {store.address}, {store.city}
+                          </div>
+                          {store.gst && (
+                            <div className="text-xs text-gray-400 dark:text-gray-500">
+                              GST: {store.gst}
+                            </div>
+                          )}
+                        </div>
+                      ))
+                    ) : (
+                      <div className="px-4 py-3 text-gray-500 dark:text-gray-400 text-center">
+                        No stores found
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
 
               {formData.customer_id && (
                 <motion.div
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="p-3 bg-white dark:bg-gray-600 rounded-lg border border-gray-200 dark:border-gray-500 hidden"
+                  className="p-3 bg-white dark:bg-gray-600 rounded-lg border border-gray-200 dark:border-gray-500"
                 >
                   <p className="font-medium text-gray-900 dark:text-white">
-                    {customers.find(c => c.id === formData.customer_id)?.name}
+                    {getSelectedCustomerName()}
                   </p>
                   <p className="text-sm text-gray-500 dark:text-gray-300">
                     Customer ID: #{formData.customer_id}
