@@ -32,21 +32,42 @@ export const productsAPI = {
   create: async (productData) => {
     try {
       console.log('📦 Creating product with data:', productData);
-      const response = await apiClient.post('/products/store', {
-        user_id: productData.user_id,
-        sku: productData.sku,
-        name: productData.name,
-        brand_id: productData.brand_id,
-        category_id: productData.category_id,
-        unit_amount: productData.unit_amount,
-        unit_id: productData.unit_id,
-        selling_price: productData.selling_price,
-        purchase_price: productData.purchase_price,
-        gst_percentage: productData.gst_percentage,
-        discount_percentage: productData.discount_percentage,
-        description: productData.description,
-        is_active: productData.is_active ?? true,
-        created_by: productData.created_by,
+      
+      // Create FormData for file upload
+      const formData = new FormData();
+      
+      // Add all product fields to FormData
+      if (productData.user_id) formData.append('user_id', productData.user_id);
+      if (productData.sku) formData.append('sku', productData.sku);
+      if (productData.name) formData.append('name', productData.name);
+      if (productData.brand_id) formData.append('brand_id', productData.brand_id);
+      if (productData.category_id) formData.append('category_id', productData.category_id);
+      if (productData.unit_amount) formData.append('unit_amount', productData.unit_amount);
+      if (productData.unit_id) formData.append('unit_id', productData.unit_id);
+      if (productData.selling_price) formData.append('selling_price', productData.selling_price);
+      if (productData.purchase_price) formData.append('purchase_price', productData.purchase_price);
+      if (productData.gst_percentage) formData.append('gst_percentage', productData.gst_percentage);
+      if (productData.discount_percentage) formData.append('discount_percentage', productData.discount_percentage);
+      if (productData.description) formData.append('description', productData.description);
+      if (productData.created_by) formData.append('created_by', productData.created_by);
+      
+      // Add image file if present
+      if (productData.image) {
+        formData.append('image', productData.image);
+      }
+      
+      // Add QR code image file if present
+      if (productData.qr_code) {
+        formData.append('qr_code', productData.qr_code);
+      }
+      
+      // Set is_active default to true if not provided
+      formData.append('is_active', productData.is_active ?? true);
+      
+      const response = await apiClient.post('/products/store', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
       });
       console.log('📦 Product created successfully:', response.data);
       return response;
@@ -60,20 +81,45 @@ export const productsAPI = {
   update: async (id, productData) => {
     try {
       console.log(`📦 Updating product ${id} with data:`, productData);
-      const response = await apiClient.put(`/products/${id}`, {
-        user_id: productData.user_id,
-        name: productData.name,
-        brand_id: productData.brand_id,
-        category_id: productData.category_id,
-        unit_amount: productData.unit_amount,
-        unit_id: productData.unit_id,
-        selling_price: productData.selling_price,
-        purchase_price: productData.purchase_price,
-        gst_percentage: productData.gst_percentage,
-        discount_percentage: productData.discount_percentage,
-        description: productData.description,
-        is_active: productData.is_active,
-        created_by: productData.created_by,
+      
+      // Create FormData for file upload
+      const formData = new FormData();
+      
+      // Add all product fields to FormData
+      if (productData.user_id) formData.append('user_id', productData.user_id);
+      if (productData.name) formData.append('name', productData.name);
+      if (productData.brand_id) formData.append('brand_id', productData.brand_id);
+      if (productData.category_id) formData.append('category_id', productData.category_id);
+      if (productData.unit_amount) formData.append('unit_amount', productData.unit_amount);
+      if (productData.unit_id) formData.append('unit_id', productData.unit_id);
+      if (productData.selling_price) formData.append('selling_price', productData.selling_price);
+      if (productData.purchase_price) formData.append('purchase_price', productData.purchase_price);
+      if (productData.gst_percentage) formData.append('gst_percentage', productData.gst_percentage);
+      if (productData.discount_percentage) formData.append('discount_percentage', productData.discount_percentage);
+      if (productData.description) formData.append('description', productData.description);
+      if (productData.created_by) formData.append('created_by', productData.created_by);
+      
+      // Add image file if present
+      if (productData.image) {
+        formData.append('image', productData.image);
+      }
+      
+      // Add QR code image file if present
+      if (productData.qr_code) {
+        formData.append('qr_code', productData.qr_code);
+      }
+      
+      // Set is_active default to true if not provided
+      if (productData.is_active !== undefined) {
+        formData.append('is_active', true);
+      } else {
+        formData.append('is_active', productData.is_active);
+      }
+      
+      const response = await apiClient.put(`/products/${id}`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
       });
       console.log('📦 Product updated successfully:', response.data);
       return response;

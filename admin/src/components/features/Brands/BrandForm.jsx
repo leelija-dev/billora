@@ -55,6 +55,9 @@ const BrandForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting }) => {
     ...initialData
   })
 
+  // Debug: Log initial formData
+  console.log('🏷️ Initial formData:', formData)
+
   const [errors, setErrors] = useState({})
 
   // Auto-populate user_id and created_by from auth context
@@ -72,6 +75,7 @@ const BrandForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting }) => {
 
   useEffect(() => {
     if (initialData) {
+      console.log('🏷️ BrandForm received initialData:', initialData)
       // Convert is_active to number (0 or 1) for consistent handling
       const isActive = (initialData.is_active === 1 || initialData.is_active === true) ? 1 : 0
       
@@ -82,7 +86,7 @@ const BrandForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting }) => {
         user_id: initialData.user_id || currentUserId,
         created_by: initialData.created_by || currentUserId,
       }
-      console.log('Setting form data for edit:', formData)
+      console.log('🏷️ Setting form data for edit:', formData)
       setFormData(formData)
     }
   }, [initialData, currentUserId])

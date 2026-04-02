@@ -23,6 +23,8 @@ import {
 } from 'react-icons/fi'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useOrderStore } from '../../store/orderStore'
+import { orderAPI } from '../../services/orderService'
+import { useAuthStore } from '../../store/authStore'
 import Button from '../../components/common/Button/Button'
 import Input from '../../components/common/Input/Input'
 import Table from '../../components/common/Table/Table'
@@ -34,6 +36,7 @@ import Select from '../../components/common/Select/Select'
 import Modal from '../../components/common/Modal/Modal'
 
 const Orders = () => {
+  const { user } = useAuthStore()
   const {
     orders,
     totalOrders,
@@ -49,12 +52,16 @@ const Orders = () => {
   const [showCreateForm, setShowCreateForm] = useState(false)
   const [showEditForm, setShowEditForm] = useState(false)
   const [showDetailsModal, setShowDetailsModal] = useState(false)
+  const [showPaymentModal, setShowPaymentModal] = useState(false)
   const [selectedOrder, setSelectedOrder] = useState(null)
   const [searchTerm, setSearchTerm] = useState(filters.search || '')
   const [showFilters, setShowFilters] = useState(false)
   const [refreshing, setRefreshing] = useState(false)
   const [dateRange, setDateRange] = useState('today')
   const [selectedOrders, setSelectedOrders] = useState([])
+  const [updatingStatus, setUpdatingStatus] = useState(false)
+  const [paymentDetails, setPaymentDetails] = useState(null)
+  const [paidAmount, setPaidAmount] = useState('')
   const [stats, setStats] = useState({
     total: 156,
     pending: 23,
@@ -86,8 +93,55 @@ const Orders = () => {
     setShowEditForm(true)
   }
 
-  const handleStatusChange = async (orderId, newStatus) => {
-    await updateOrderStatus(orderId, newStatus)
+  const handleOrderStatusChange = async (orderId, newStatus) => {
+    setUpdatingStatus(true)
+    try {
+      await orderAPI.updateOrderStatus(orderId, newStatus)
+      fetchOrders() // Refresh orders
+    } catch (error) {
+      console.error('Error updating order status:', error)
+    } finally {
+      setUpdatingStatus(false)
+    }
+  }
+
+  const handlePaymentStatusChange = async (orderId, newStatus) => {
+    setUpdatingStatus(true)
+    try {
+      await orderAPI.updatePaymentStatus(orderId, newStatus)
+      fetchOrders() // Refresh orders
+    } catch (error) {
+      console.error('Error updating payment status:', error)
+    } finally {
+      setUpdatingStatus(false)
+    }
+  }
+
+  const handleViewPaymentDetails = async (order) => {
+    try {
+      const response = await orderAPI.getOrderPaymentDetails(order.id, user.id)
+      setPaymentDetails(response.data)
+      setSelectedOrder(order)
+      setShowPaymentModal(true)
+    } catch (error) {
+      console.error('Error fetching payment details:', error)
+    }
+  }
+
+  const handleUpdatePayment = async () => {
+    if (!selectedOrder || !paidAmount) return
+    
+    setUpdatingStatus(true)
+    try {
+      await orderAPI.updateOrderPayment(selectedOrder.id, user.id, paidAmount)
+      setShowPaymentModal(false)
+      setPaidAmount('')
+      fetchOrders() // Refresh orders
+    } catch (error) {
+      console.error('Error updating payment:', error)
+    } finally {
+      setUpdatingStatus(false)
+    }
   }
 
   const handlePageChange = (page) => {
@@ -122,6 +176,7 @@ const Orders = () => {
     const colors = {
       pending: 'warning',
       processing: 'info',
+      ready_to_serve: 'primary',
       completed: 'success',
       cancelled: 'danger',
       refunded: 'default',
@@ -133,11 +188,25 @@ const Orders = () => {
     switch(status) {
       case 'pending': return FiClock
       case 'processing': return FiRefreshCw
+      case 'ready_to_serve': return FiCheckCircle
       case 'completed': return FiCheckCircle
       case 'cancelled': return FiXCircle
       default: return FiClock
     }
   }
+
+  const orderStatusOptions = [
+    { value: 'pending', label: 'Pending' },
+    { value: 'processing', label: 'Processing' },
+    { value: 'ready_to_serve', label: 'Ready to Serve' },
+    { value: 'completed', label: 'Completed' },
+  ]
+
+  const paymentStatusOptions = [
+    { value: 'pending', label: 'Pending' },
+    { value: 'completed', label: 'Completed' },
+    { value: 'failed', label: 'Failed' },
+  ]
 
   const columns = [
     {
@@ -284,11 +353,11 @@ const Orders = () => {
           <motion.button
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.95 }}
-            onClick={() => handleEditOrder(row)}
+            onClick={() => handleViewPaymentDetails(row)}
             className="p-2 text-green-600 hover:bg-green-50 dark:text-green-400 dark:hover:bg-green-900/20 rounded-lg transition-colors"
-            title="Edit Order"
+            title="Payment Details"
           >
-            <FiEdit className="w-4 h-4" />
+            <FiDollarSign className="w-4 h-4" />
           </motion.button>
           
           <div className="relative group">
@@ -300,8 +369,33 @@ const Orders = () => {
               <FiMoreVertical className="w-4 h-4" />
             </motion.button>
             
-            <div className="absolute right-0 mt-1 w-48 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10">
+            <div className="absolute right-0 mt-1 w-56 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10">
               <div className="p-1">
+                {/* Order Status Dropdown */}
+                <div className="px-3 py-2">
+                  <label className="text-xs font-medium text-gray-700 dark:text-gray-300 block mb-1">Order Status</label>
+                  <Select
+                    value={row.status}
+                    onChange={(e) => handleOrderStatusChange(row.id, e.target.value)}
+                    options={orderStatusOptions}
+                    className="text-sm"
+                    disabled={updatingStatus}
+                  />
+                </div>
+                
+                {/* Payment Status Dropdown */}
+                <div className="px-3 py-2 border-t border-gray-200 dark:border-gray-700">
+                  <label className="text-xs font-medium text-gray-700 dark:text-gray-300 block mb-1">Payment Status</label>
+                  <Select
+                    value={row.paymentStatus || 'pending'}
+                    onChange={(e) => handlePaymentStatusChange(row.id, e.target.value)}
+                    options={paymentStatusOptions}
+                    className="text-sm"
+                    disabled={updatingStatus}
+                  />
+                </div>
+                
+                <div className="border-t border-gray-200 dark:border-gray-700 my-1" />
                 <button className="w-full px-3 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg flex items-center space-x-2">
                   <FiPrinter className="w-4 h-4" />
                   <span>Print Invoice</span>
@@ -785,6 +879,82 @@ const Orders = () => {
       >
         {selectedOrder && (
           <OrderDetails order={selectedOrder} />
+        )}
+      </Modal>
+
+      {/* Payment Details Modal */}
+      <Modal
+        isOpen={showPaymentModal}
+        onClose={() => {
+          setShowPaymentModal(false)
+          setSelectedOrder(null)
+          setPaymentDetails(null)
+          setPaidAmount('')
+        }}
+        title={`Payment Details - Order #${selectedOrder?.orderNumber}`}
+        size="md"
+      >
+        {selectedOrder && paymentDetails && (
+          <div className="space-y-4">
+            <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">Order Information</h3>
+              <div className="space-y-2">
+                <div className="flex justify-between">
+                  <span className="text-gray-600 dark:text-gray-400">Order Total:</span>
+                  <span className="font-semibold text-gray-900 dark:text-white">
+                    ${selectedOrder.total?.toFixed(2) || '0.00'}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600 dark:text-gray-400">Total Paid:</span>
+                  <span className="font-semibold text-green-600 dark:text-green-400">
+                    ${paymentDetails.total_paid?.toFixed(2) || '0.00'}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600 dark:text-gray-400">Remaining Due:</span>
+                  <span className="font-semibold text-red-600 dark:text-red-400">
+                    ${paymentDetails.remaining_due?.toFixed(2) || '0.00'}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">Update Payment</h3>
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Payment Amount
+                  </label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    placeholder="Enter payment amount"
+                    value={paidAmount}
+                    onChange={(e) => setPaidAmount(e.target.value)}
+                    max={paymentDetails.remaining_due || 0}
+                  />
+                </div>
+                <div className="flex space-x-3">
+                  <Button
+                    onClick={handleUpdatePayment}
+                    disabled={!paidAmount || parseFloat(paidAmount) <= 0 || updatingStatus}
+                    className="flex-1"
+                  >
+                    {updatingStatus ? 'Processing...' : 'Update Payment'}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowPaymentModal(false)}
+                    className="flex-1"
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
         )}
       </Modal>
     </motion.div>
