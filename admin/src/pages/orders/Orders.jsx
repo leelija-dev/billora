@@ -72,8 +72,11 @@ const Orders = () => {
   })
 
   useEffect(() => {
-    fetchOrders()
-  }, [])
+    // Fetch orders with current user ID
+    if (user?.id) {
+      fetchOrders(1, user.id)
+    }
+  }, [user?.id])
 
   useEffect(() => {
     const debounceTimer = setTimeout(() => {
@@ -97,7 +100,7 @@ const Orders = () => {
     setUpdatingStatus(true)
     try {
       await orderAPI.updateOrderStatus(orderId, newStatus)
-      fetchOrders() // Refresh orders
+      fetchOrders(1, user.id) // Refresh orders with user ID
     } catch (error) {
       console.error('Error updating order status:', error)
     } finally {
@@ -109,7 +112,7 @@ const Orders = () => {
     setUpdatingStatus(true)
     try {
       await orderAPI.updatePaymentStatus(orderId, newStatus)
-      fetchOrders() // Refresh orders
+      fetchOrders(1, user.id) // Refresh orders with user ID
     } catch (error) {
       console.error('Error updating payment status:', error)
     } finally {
@@ -136,7 +139,7 @@ const Orders = () => {
       await orderAPI.updateOrderPayment(selectedOrder.id, user.id, paidAmount)
       setShowPaymentModal(false)
       setPaidAmount('')
-      fetchOrders() // Refresh orders
+      fetchOrders(1, user.id) // Refresh orders with user ID
     } catch (error) {
       console.error('Error updating payment:', error)
     } finally {
@@ -145,12 +148,12 @@ const Orders = () => {
   }
 
   const handlePageChange = (page) => {
-    fetchOrders(page)
+    fetchOrders(page, user.id)
   }
 
   const handleRefresh = async () => {
     setRefreshing(true)
-    await fetchOrders()
+    await fetchOrders(1, user.id)
     setRefreshing(false)
   }
 
@@ -158,7 +161,7 @@ const Orders = () => {
     setShowCreateForm(false)
     setShowEditForm(false)
     setSelectedOrder(null)
-    fetchOrders() // Refresh the data
+    fetchOrders(1, user.id) // Refresh data
   }
 
   const handleCancelForm = () => {
