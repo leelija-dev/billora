@@ -57,7 +57,7 @@
                 </a>
 
                 <a href="{{ route('admin.mail-history') }}"
-                    class="flex items-center px-4 py-3 {{ request()->routeIs('admin.mail-history') ? 'bg-blue-100 text-blue-600 font-semibold' : 'hover:bg-blue-100' }}">
+                    class="flex items-center px-4 py-3 {{ request()->routeIs('admin.mail-history','admin.mail-history.view') ? 'bg-blue-100 text-blue-600 font-semibold' : 'hover:bg-blue-100' }}">
                     <i data-feather="mail"></i>
                     <span class="ml-3">Mail History</span>
                 </a>
