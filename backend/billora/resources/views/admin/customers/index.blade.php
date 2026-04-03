@@ -689,7 +689,7 @@
                     <!-- Center: Buttons -->
                     <div class="flex items-center gap-2 ">
                         <button onclick="clearSelection()" class="px-3 py-2 bg-red-500 text-white rounded text-sm">
-                            All Unchecked
+                            Clear all checked
                         </button>
                         {{-- 
                         <a href="{{route('admin.customers.customer-mail')}}"><button class="px-3 py-2 bg-blue-500 text-white rounded text-sm">
@@ -713,8 +713,29 @@
                                 class="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
                                 0
                             </span>
+
+                            
                         </button>
-                    </div>
+                       <form action="{{ route('admin.customers.index') }}" method="GET">
+
+                        <select name="status"
+                            onchange="this.form.submit()"
+                            class="px-3 py-2 border rounded text-sm">
+
+                            <option value="">All Customers</option>
+
+                            <option value="1" {{ request('status') == '1' ? 'selected' : '' }}>
+                                Active Customers
+                            </option>
+
+                            <option value="0" {{ request('status') == '0' ? 'selected' : '' }}>
+                                Inactive Customers
+                            </option>
+
+                        </select>
+
+                    </form>
+                                        </div>
 
                     <!-- Right: Search -->
                     <div class="flex items-center border rounded px-2">
@@ -722,9 +743,10 @@
                             <path
                                 d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zM9.5 14C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z" />
                         </svg>
-
-                        <input type="text" placeholder="Search customers..." id="searchInput"
+                        <form action="{{ route('admin.customers.index') }}" method="GET">
+                        <input type="text" name="search" placeholder="Search customers..."  value="{{ request('search') }}" {{-- id="searchInput" --}}
                             class="outline-none px-8 py-3 text-sm">
+                        </form>
                     </div>
 
                 </div>
@@ -825,29 +847,6 @@
                     {{ $customers->links('pagination::tailwind') }}
                 </div>
             </div>
-
-
-            <!-- Pagination -->
-            {{-- <div class="pagination">
-            <div class="pagination-info">
-                Showing <strong>1</strong> to <strong>2</strong> of <strong>{{ count($customers) }}</strong> customers
-            </div>
-            <div class="pagination-controls">
-                <button class="page-btn prev disabled">
-                    <svg viewBox="0 0 24 24">
-                        <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
-                    </svg>
-                    Previous
-                </button>
-                <button class="page-btn active">1</button>
-                <button class="page-btn next disabled">
-                    Next
-                    <svg viewBox="0 0 24 24">
-                        <path d="M8.59 16.59L10 18l6-6-6-6-1.41 1.41L13.17 12z"/>
-                    </svg>
-                </button>
-            </div>
-        </div> --}}
         </div>
     </div>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -929,50 +928,9 @@
                 updateSelectedCount();
             });
 
-            updateSelectedCount(); // initial count
+            updateSelectedCount(); 
 
-            const searchInput = document.getElementById('searchInput');
-
-            searchInput.addEventListener('keyup', function() {
-
-                let search = this.value.toLowerCase();
-                let rows = document.querySelectorAll('.customers-table tbody tr');
-
-                rows.forEach(row => {
-
-                    let name = row.querySelector('.customer-name')?.textContent.toLowerCase() || '';
-                    let email = row.querySelector('.customer-email')?.textContent.toLowerCase() ||
-                        '';
-                    let is_active_value = row.querySelector('.is_active span')?.innerText
-                        .toLowerCase().trim() || '';
-
-                    let searchValue = search.toLowerCase();
-
-                    // Convert search → match DB meaning
-                    let matchStatus = false;
-
-                    if (searchValue === 'active') {
-                        matchStatus = is_active_value === 'active';
-                    } else if (searchValue === 'inactive') {
-                        matchStatus = is_active_value === 'inactive';
-                    } else {
-                        matchStatus = is_active_value.includes(searchValue);
-                    }
-
-                    // Final condition
-                    if (
-                        name.includes(searchValue) ||
-                        email.includes(searchValue) ||
-                        matchStatus
-                    ) {
-                        row.style.display = '';
-                    } else {
-                        row.style.display = 'none';
-                    }
-
-                });
-
-            });
+            
 
         });
 
@@ -988,30 +946,41 @@
         /* =========================
            SEND MAIL
         ========================= */
-        function handleSendMail() {
+       function handleSendMail() {
 
-            let selected = JSON.parse(localStorage.getItem('selectedCustomers')) || [];
-            let isAll = localStorage.getItem('isAllSelected') === 'true';
+    let selected = JSON.parse(localStorage.getItem('selectedCustomers')) || [];
+    let isAll = localStorage.getItem('isAllSelected') === 'true';
 
-            if (!isAll && selected.length === 0) {
-                Swal.fire({
-                    icon: 'warning',
-                    title: 'No Customer Selected',
-                    text: 'Please select at least one customer!',
-                });
-                return;
-            }
+    if (!isAll && selected.length === 0) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'No Customer Selected',
+            text: 'Please select at least one customer!',
+        });
+        return;
+    }
 
-            let url = "{{ route('admin.customers.customer-mail') }}";
+    let url = "{{ route('admin.customers.customer-mail') }}";
 
-            if (isAll) {
-                url += "?all=true";
-            } else {
-                url += "?ids=" + selected.join(',');
-            }
+    //  GET search from URL (BEST METHOD)
+    let params = new URLSearchParams(window.location.search);
+    let search = params.get('search');
+    let status = params.get('status');
+    if (isAll) {
+        url += "?all=true";
 
-            window.location.href = url;
+        if (search) {
+            url += "&search=" + encodeURIComponent(search);
+        }else if (status) {
+            url += "&status=" + encodeURIComponent(status);
         }
+
+    } else {
+        url += "?ids=" + selected.join(',');
+    }
+
+    window.location.href = url;
+}
     </script>
     {{-- <script>
 document.addEventListener("DOMContentLoaded", function () {
