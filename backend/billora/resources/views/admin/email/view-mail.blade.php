@@ -1,14 +1,6 @@
-<!DOCTYPE html>
-<html lang="en">
-
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>Mail Detail | Single Message View</title>
-    <link
-        href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&display=swap"
-        rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+@extends('admin.main-layout')
+@section('title','Mail Detail')
+@section('content')    
     <style>
        body {
     background: #f1f5f9;
@@ -200,15 +192,9 @@
     align-items: center;
 }
     </style>
-</head>
 
-<body>
     <div style="display:flex; width:100%;">
-    @include('admin.sidebar')
 
-    <div style="flex:1; padding:20px;">
-        <!-- your mail card here -->
-    </div>
 </div>
     <div class="mail-detail-card">
 
@@ -287,6 +273,4 @@
     </div>
 
 </div>
-</body>
-
-</html>
+@endsection

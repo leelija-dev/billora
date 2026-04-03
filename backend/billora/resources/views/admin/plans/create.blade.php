@@ -1,10 +1,7 @@
-<!DOCTYPE html>
-<html lang="en">
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Billora - Create New Plan</title>
+    @extends('admin.main-layout')
+    @section('title', 'Create New Plan')
+    @section('content')
     <style>
         * {
             margin: 0;
@@ -586,10 +583,8 @@
     gap: 25px;
 }
     </style>
-</head>
 
-<body>
-    @include('admin.sidebar')
+    {{-- @include('admin.sidebar') --}}
     <!-- Main Content - Full Width -->
     <div class="main-content">
 
@@ -934,6 +929,4 @@
 
         });
     </script>
-</body>
-
-</html>
+@endsection

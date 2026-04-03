@@ -1,10 +1,6 @@
-<!DOCTYPE html>
-<html lang="en">
-
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Billora - Plans Permissions</title>
+@extends('admin.main-layout')
+@section('title','Plan Permissions')
+@section('content')
     <style>
         * {
             margin: 0;
@@ -19,34 +15,6 @@
             display: flex;
         }
 
-        /* Sidebar */
-        /* .sidebar {
-            width: 280px;
-            background: white;
-            border-right: 1px solid #eef2f6;
-            position: fixed;
-            top: 0;
-            left: 0;
-            bottom: 0;
-            z-index: 1001;
-            padding: 32px 0;
-        }
-
-        .sidebar-header {
-            padding: 0 24px;
-            margin-bottom: 40px;
-        }
-
-        .sidebar-header h2 {
-            font-size: 24px;
-            font-weight: 700;
-            color: #111827;
-            letter-spacing: -0.5px;
-        }
-
-        .sidebar-header span {
-            color: #2563EB;
-        } */
 
         .nav-menu {
             list-style: none;
@@ -588,10 +556,7 @@
             }
         }
     </style>
-</head>
 
-<body>
-    @include('admin.sidebar')
     <div class="card" style="bg:white;">
         <div class="main-content">
 
@@ -780,6 +745,4 @@
         </div>
     </div>
     
-</body>
-
-</html>
+@endsection

@@ -1,12 +1,7 @@
-<!-- resources/views/admin/plans/deleted.blade.php -->
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Billora - Deleted Plans</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/feather-icons"></script>
+@extends('admin.main-layout')
+@section('title','Deleted Plans')
+@section('content')
+   
     <style>
         .fade-in {
             animation: fadeIn 0.3s ease-in;
@@ -66,12 +61,9 @@
             }
         }
     </style>
-</head>
 
-<body class="bg-gray-50 font-sans antialiased">
     <div class="flex h-screen overflow-hidden">
         <!-- Include Sidebar -->
-        @include('admin.sidebar')
         
         <!-- Main Content -->
         <div class="main-content flex-1 flex flex-col overflow-hidden">
@@ -637,5 +629,4 @@
             }
         });
     </script>
-</body>
-</html>
+    @endsection
