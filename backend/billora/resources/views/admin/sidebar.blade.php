@@ -38,7 +38,7 @@
             </a>
 
             <a href="{{route('admin.customers.index')}}" 
-            class="flex items-center px-4 py-3 {{ request()->routeIs('admin.customers.index','admin.customers.plans') ? 'bg-blue-100 text-blue-600 font-semibold' : 'hover:bg-blue-100' }}">
+            class="flex items-center px-4 py-3 {{ request()->routeIs('admin.customers.index','admin.customers.plans','admin.customers.customer-mail') ? 'bg-blue-100 text-blue-600 font-semibold' : 'hover:bg-blue-100' }}">
                 <i data-feather="users"></i>
                 <span class="ml-3">Customers</span>
             </a>
