@@ -67,11 +67,58 @@
                     <span class="ml-3">Mail History</span>
                 </a>
 
-                <a href="{{ route('admin.admin-users.index') }}"
-                    class="flex items-center px-4 py-3 {{ request()->routeIs('admin.admin-users.index') ? 'bg-blue-100 text-blue-600 font-semibold' : 'hover:bg-blue-100' }} hover:bg-blue-100">
-                    <i data-feather="user"></i>
-                    <span class="ml-3">Admin User</span>
-                </a>
+                @php
+                    $isUserMenuActive = request()->routeIs('admin.admin-users.*') || request()->routeIs('admin.permissions.index','admin.permissions.create');
+                @endphp
+
+                <div class="group">
+
+                    <!-- Parent -->
+                    <div class="flex items-center justify-between px-4 py-3 cursor-pointer rounded-lg
+                        {{ $isUserMenuActive ? 'bg-blue-100 text-blue-600 font-semibold' : 'hover:bg-blue-100' }}">
+                        
+                        <div class="flex items-center">
+                            <i data-feather="users" class="w-5 h-5"></i>
+                            <span class="ml-3">User Management</span>
+                        </div>
+
+                        <span class="transition-transform 
+                            {{ $isUserMenuActive ? 'rotate-180' : 'group-hover:rotate-180' }}">
+                            ▾
+                        </span>
+                    </div>
+
+                    <!-- Dropdown -->
+                    <div class="ml-8 mt-1 
+                        {{ $isUserMenuActive ? 'block' : 'hidden group-hover:block' }}">
+
+                        <!-- Admin User -->
+                        <a href="{{ route('admin.admin-users.index') }}"
+                            class="flex items-center px-4 py-2 text-sm rounded-lg 
+                            {{ request()->routeIs('admin.admin-users.*') ? 'bg-blue-100 text-blue-600 font-semibold' : 'hover:bg-blue-100' }}">
+                            
+                            <i data-feather="user" class="w-4 h-4"></i>
+                            <span class="ml-2">Admin User</span>
+                        </a>
+                        <!-- Role -->
+                        <a href="#"
+                            class="flex items-center px-4 py-2 text-sm rounded-lg 
+                            {{ request()->routeIs('#') ? 'bg-blue-100 text-blue-600 font-semibold' : 'hover:bg-blue-100' }}">
+                            
+                           <i data-feather="user-check" class="w-4 h-4"></i>
+                            <span class="ml-2">Role</span>
+                        </a>
+                        <!-- Permission -->
+                        <a href="{{ route('admin.permissions.index') }}"
+                            class="flex items-center px-4 py-2 text-sm rounded-lg 
+                            {{ request()->routeIs('admin.permissions.index','admin.permissions.create') ? 'bg-blue-100 text-blue-600 font-semibold' : 'hover:bg-blue-100' }}">
+                            
+                            <i data-feather="lock" class="w-4 h-4"></i>
+                            <span class="ml-2">Permission</span>
+                        </a>
+
+                    </div>
+                </div>
 
                 <!-- Logout Link with Form -->
                 <div class="px-4 pb-4">

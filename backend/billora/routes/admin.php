@@ -6,7 +6,9 @@ use App\Http\Controllers\admin\superadmin\AdminUserController;
 use App\Http\Controllers\admin\superadmin\CustomerController;
 use App\Http\Controllers\admin\superadmin\PlansController;
 use App\Http\Controllers\admin\superadmin\PlanPermissionController;
+use App\Http\Controllers\admin\superadmin\SuperAdminPermissionController;
 use App\Models\AdminMailHistory;
+use App\Models\SuperAdminPermission;
 
 Route::middleware(['web', 'admin.guest'])->prefix('admin')->group(function () {
     Route::view('/login', 'admin.login')->name('login');
@@ -60,6 +62,12 @@ Route::middleware(['web', 'admin.auth'])->prefix('admin')->group(function () {
     });
     Route::prefix('admin-users')->group(function (){
         Route::get('/', [AdminUserController::class, 'index'])->name('admin.admin-users.index');
+        Route::get('/create', [AdminUserController::class, 'create'])->name('admin.admin-users.create');
 
+    });
+    Route::prefix('permissions')->group(function (){
+        Route::get('/', [SuperAdminPermissionController::class, 'index'])->name('admin.permissions.index');
+        Route::get('/create', [SuperAdminPermissionController::class, 'create'])->name('admin.permissions.create');
+        Route::post('/store', [SuperAdminPermissionController::class, 'store'])->name('admin.permissions.store');
     });
 });
