@@ -6,6 +6,7 @@ import Footer from "@/components/Footer";
 import SectionTitle from "../../components/SectionTitle";
 import Container from "../../components/Container";
 import { getPlans } from '@/services/pricingService';
+import { useRouter } from 'next/navigation'; // Add this import
 
 const Pricing = () => {
   const [billingCycle, setBillingCycle] = useState('monthly');
@@ -15,6 +16,7 @@ const Pricing = () => {
   const [subscribing, setSubscribing] = useState(null);
   const [subscribeMessage, setSubscribeMessage] = useState(null);
   const cardRefs = useRef([]);
+  const router = useRouter(); // Initialize router
 
   // Fetch plans from Laravel API - SHOW ALL PLANS
   useEffect(() => {
@@ -66,58 +68,21 @@ const Pricing = () => {
     fetchPlans();
   }, []);
 
-  // Handle subscription
-  const handleSubscribe = async (planId) => {
-    setSubscribing(planId);
-    setSubscribeMessage(null);
+  // Handle subscription - Navigate to order summary instead of direct subscription
+  const handleSubscribe = (planId, planName, planPrice) => {
+    // Store selected plan details in localStorage or sessionStorage
+    const selectedPlan = {
+      id: planId,
+      name: planName,
+      billingCycle: billingCycle,
+      price: billingCycle === 'monthly' ? planPrice.monthly : planPrice.yearly,
+      originalPrice: billingCycle === 'monthly' ? planPrice.monthly : (parseInt(planPrice.yearly) * 1.2).toFixed(0), // Calculate original for discount display
+    };
     
-    try {
-      const response = await fetch('/api/subscribe', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ plan_id: planId, billing_cycle: billingCycle }),
-      });
-      
-      const data = await response.json();
-      console.log("SUBSCRIBE RESPONSE:", data);
-      
-      if (data.status === true) {
-        setSubscribeMessage({
-          type: 'success',
-          text: data.message || 'Subscription successful! Redirecting to dashboard...'
-        });
-        
-        // Save subscription info to localStorage
-        if (data.data) {
-          localStorage.setItem('subscription', JSON.stringify(data.data));
-        }
-        
-        // Redirect to dashboard after 2 seconds
-        setTimeout(() => {
-          window.location.href = '/dashboard';
-        }, 2000);
-      } else {
-        setSubscribeMessage({
-          type: 'error',
-          text: data.message || 'Subscription failed. Please try again.'
-        });
-      }
-    } catch (error) {
-      console.error('Subscription error:', error);
-      setSubscribeMessage({
-        type: 'error',
-        text: 'Something went wrong. Please try again.'
-      });
-    } finally {
-      setSubscribing(null);
-      
-      // Clear message after 5 seconds
-      setTimeout(() => {
-        setSubscribeMessage(null);
-      }, 5000);
-    }
+    localStorage.setItem('selectedPlan', JSON.stringify(selectedPlan));
+    
+    // Navigate to order summary page
+    router.push('/order-summary');
   };
 
   useEffect(() => {
@@ -296,7 +261,7 @@ const Pricing = () => {
 
                   <div className="mt-auto pt-4">
                     <button
-                      onClick={() => handleSubscribe(plan.id)}
+                      onClick={() => handleSubscribe(plan.id, plan.name, plan.price)}
                       disabled={subscribing === plan.id}
                       className={`w-full py-3.5 rounded-xl text-base font-semibold transition-all duration-300 hover:shadow-lg active:scale-95
                         ${isPopular 
@@ -325,6 +290,24 @@ const Pricing = () => {
                 </div>
               );
             })}
+          </div>
+
+          {/* View Cart / Order Summary Link - ADDED */}
+          <div className="text-center mb-8">
+            <button
+              onClick={() => router.push('/order-summary')}
+              className="inline-flex items-center gap-3 px-6 py-3 bg-white border-2 border-gray-300 rounded-xl hover:border-purple-500 hover:shadow-lg transition-all duration-300 group"
+            >
+              <svg className="w-5 h-5 text-gray-600 group-hover:text-purple-600 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-1.5 6M17 13l1.5 6M9 21h6M12 15v6" />
+              </svg>
+              <span className="font-semibold text-gray-700 group-hover:text-purple-600 transition-colors">
+                View Order Summary  
+              </span>
+              <svg className="w-4 h-4 text-gray-600 group-hover:text-purple-600 group-hover:translate-x-1 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
           </div>
 
           {/* Bottom Section */}
