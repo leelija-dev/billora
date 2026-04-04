@@ -1,18 +1,10 @@
 import "./globals.css";
-
-// export default function RootLayout({ children }) {
-//   return (
-//     <html lang="en">
-//       <body>{children}</body>
-//     </html>
-//   );
-// }
 import { Toaster } from 'react-hot-toast';
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en">
-      <body>
+    <html lang="en" suppressHydrationWarning>
+      <body suppressHydrationWarning={true}>
         {children}
         <Toaster 
           position="top-right"
