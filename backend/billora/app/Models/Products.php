@@ -29,8 +29,49 @@ class Products extends Model
         'created_by',
         'image',
         'qr_code',
+        'slug',  //new columns
+        'conversion_factor',
+        'minimum_stock_quantity',
+        'maximum_stock_quantity',
+        'current_stock',
+        'mrp',
+        'wholesale_price',
+        'gst_hsn_code',
+        'discount_amount',
+        'cess_percentage',
+        'attributes',
+        'medicine_type',
+        'other_medicine_type',
+        'expiry_date',
+        'batch_number',
+        'manufacturer_name',
+        'prescription_required',
+        'schedule_type',
+        'salt_composition',
+        'perishable',
+        'organic_certified',
+        'harvest_date',
+        'storage_instructions',
+        'short_description',
+        'barcode',
+        'is_featured',
+        'is_returnable',
+        'is_refundable',
+        'warranty_months',
+        'warehouse_location',
+        'supplier_id',
+        'updated_by'
 
     ];
+
+    public function images(): HasMany
+    {
+        return $this->hasMany(ProductImages::class, 'product_id');
+    }
+    public function variants(): HasMany
+    {
+        return $this->hasMany(ProductVariant::class, 'product_id');
+    }
     public function brand(){
         return $this->belongsTo(Brand::class);
     }

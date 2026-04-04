@@ -55,6 +55,11 @@
                     <i data-feather="shopping-cart"></i>
                     <span class="ml-3">Plans Permission</span>
                 </a>
+                 <a href="{{ route('admin.plans.purchase-history') }}"
+                    class="flex items-center px-4 py-3 {{ request()->routeIs('admin.plans.purchase-history') ? 'bg-blue-100 text-blue-600 font-semibold' : 'hover:bg-blue-100' }} hover:bg-blue-100">
+                    <i data-feather="shopping-cart"></i>
+                    <span class="ml-3">Plans Purchase History</span>
+                </a>
 
                 <a href="{{ route('admin.mail-history') }}"
                     class="flex items-center px-4 py-3 {{ request()->routeIs('admin.mail-history','admin.mail-history.view') ? 'bg-blue-100 text-blue-600 font-semibold' : 'hover:bg-blue-100' }}">
