@@ -51,11 +51,11 @@
                 </a>
 
                 <a href="{{ route('admin.plan-permission.index') }}"
-                    class="flex items-center px-4 py-3 {{ request()->routeIs('admin.plan-permission.index') ? 'bg-blue-100 text-blue-600 font-semibold' : 'hover:bg-blue-100' }} hover:bg-blue-100">
-                    <i data-feather="shopping-cart"></i>
+                    class="flex items-center px-4 py-3 {{ request()->routeIs('admin.plan-permission.index','admin.plan-permission.create') ? 'bg-blue-100 text-blue-600 font-semibold' : 'hover:bg-blue-100' }} hover:bg-blue-100">
+                    <i data-feather="file-text" class="w-5 h-5"></i>
                     <span class="ml-3">Plans Permission</span>
                 </a>
-                 <a href="{{ route('admin.plans.purchase-history') }}"
+                <a href="{{ route('admin.plans.purchase-history') }}"
                     class="flex items-center px-4 py-3 {{ request()->routeIs('admin.plans.purchase-history') ? 'bg-blue-100 text-blue-600 font-semibold' : 'hover:bg-blue-100' }} hover:bg-blue-100">
                     <i data-feather="shopping-cart"></i>
                     <span class="ml-3">Plans Purchase History</span>

@@ -47,6 +47,11 @@ Route::middleware(['web', 'admin.auth'])->prefix('admin')->group(function () {
     });
     Route::prefix('plan-permission')->group(function () {
         Route::get('/', [PlanPermissionController::class, 'index'])->name('admin.plan-permission.index');
+        Route::get('/create', [PlanPermissionController::class, 'create'])->name('admin.plan-permission.create');
+        Route::post('/store', [PlanPermissionController::class, 'store'])->name('admin.plan-permission.store');
+        Route::get('/edit/{id}', [PlanPermissionController::class, 'edit'])->name('admin.plan-permission.edit');
+        Route::post('/update/{id}', [PlanPermissionController::class, 'update'])->name('admin.plan-permission.update');
+        Route::delete('/delete/{id}', [PlanPermissionController::class, 'delete'])->name('admin.plan-permission.delete');
     });
 
     Route::prefix('mail-history')->group(function () {

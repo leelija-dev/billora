@@ -23,9 +23,7 @@
 
 
     <div class="flex h-screen">
-        <!-- Include Sidebar -->
-        {{-- @include('admin.sidebar') --}}
-        
+               
         <!-- Main Content -->
         <div class="main-content flex-1 overflow-auto">
             <!-- Top Header -->
@@ -113,7 +111,7 @@
                         </div>
                     </div>
 
-                    <a href="{{route('admin.plans.deleted')}}"> 
+                   
                         <div class="bg-white rounded-lg shadow p-6 border-l-4 border-red-500">
                         
                             <div class="flex items-center justify-between">
@@ -122,11 +120,14 @@
                                     <p class="text-2xl font-bold text-red-600">{{ $cancelledPayment ?? '0' }}</p>
                                 </div>
                                 <div class="p-3 bg-red-100 rounded-full">
-                                    <i data-feather="trash-2" class="w-6 h-6 text-red-600"></i>
+                                    <!-- Cancel icon as a red X using Tailwind -->
+                                    <div class="w-10 h-10 flex items-center justify-center text-red-600 text-4xl font-bold cursor-pointer">
+                                        ×
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                    </a>
+                    
                 </div>
             </div>
 
