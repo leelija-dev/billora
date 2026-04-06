@@ -29,6 +29,12 @@ export default function RootLayout({ children }) {
               },
             },
           }}
+          // ✅ ADD THIS - Prevents Toaster from affecting page background
+          containerStyle={{
+            top: 20,
+            right: 20,
+            zIndex: 9999,
+          }}
         />
       </body>
     </html>

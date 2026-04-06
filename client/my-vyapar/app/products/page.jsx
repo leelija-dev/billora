@@ -1,10 +1,11 @@
 'use client';
 
 import { useEffect, useState, useCallback, useRef } from 'react';
-import { getProducts } from '../../services/productService';
 import { getAuthData } from '../../store/authStore';
 import toast, { Toaster } from 'react-hot-toast';
 import Image from 'next/image';
+import Nav2 from "@/components/Nav2";
+import Footer from "@/components/Footer";
 
 const ProductsPage = () => {
   const [products, setProducts] = useState([]);
@@ -26,6 +27,12 @@ const ProductsPage = () => {
   const [hasMore, setHasMore] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [filteredCount, setFilteredCount] = useState(0);
+  
+  // Bulk selection states
+  const [selectedItems, setSelectedItems] = useState(new Set());
+  const [showDuplicateDialog, setShowDuplicateDialog] = useState(false);
+  const [duplicateProductsList, setDuplicateProductsList] = useState([]);
+  const [pendingBulkProducts, setPendingBulkProducts] = useState([]);
 
   const [formData, setFormData] = useState({
     fullName: "",
@@ -56,27 +63,23 @@ const ProductsPage = () => {
   };
 
   // ========== CART FUNCTIONS ==========
-  const addToCart = (product) => {
+  const addToCart = (product, quantityToAdd = 1) => {
     setCart((prev) => {
       const existing = prev.find((item) => item.id === product.id);
       if (existing) {
         return prev.map((item) =>
           item.id === product.id
-            ? { ...item, quantity: item.quantity + 1 }
+            ? { ...item, quantity: item.quantity + quantityToAdd }
             : item
         );
       }
       return [...prev, {
         ...product,
-        quantity: 1,
+        quantity: quantityToAdd,
         title: product.name,
         price: product.selling_price || product.price
       }];
     });
-
-    setPopupMessage(`${product.name} added to cart!`);
-    setPopup(true);
-    setTimeout(() => setPopup(false), 2000);
   };
 
   const removeFromCart = (productId) => {
@@ -111,6 +114,101 @@ const ProductsPage = () => {
   const getProductQuantity = (productId) => {
     const item = cart.find(item => item.id === productId);
     return item ? item.quantity : 0;
+  };
+
+  // ========== BULK SELECTION FUNCTIONS ==========
+  const toggleSelectItem = (productId) => {
+    setSelectedItems(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(productId)) {
+        newSet.delete(productId);
+      } else {
+        newSet.add(productId);
+      }
+      return newSet;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedItems.size === displayedProducts.length) {
+      setSelectedItems(new Set());
+    } else {
+      const allIds = displayedProducts.map(p => p.id);
+      setSelectedItems(new Set(allIds));
+    }
+  };
+
+  const clearSelection = () => {
+    setSelectedItems(new Set());
+    setPopupMessage("Selection cleared");
+    setPopup(true);
+    setTimeout(() => setPopup(false), 1500);
+  };
+
+  const handleBulkAddToCart = () => {
+    const selectedProductsList = Array.from(selectedItems)
+      .map(id => products.find(p => p.id === id))
+      .filter(p => p && p.inStock);
+    
+    if (selectedProductsList.length === 0) {
+      setPopupMessage("No products selected or selected products are out of stock");
+      setPopup(true);
+      setTimeout(() => setPopup(false), 2000);
+      return;
+    }
+
+    // Check for duplicates in cart
+    const duplicates = [];
+    const newProducts = [];
+    
+    selectedProductsList.forEach(product => {
+      const existingInCart = cart.find(item => item.id === product.id);
+      if (existingInCart) {
+        duplicates.push(product);
+      } else {
+        newProducts.push(product);
+      }
+    });
+
+    if (duplicates.length > 0) {
+      setDuplicateProductsList(duplicates);
+      setPendingBulkProducts(newProducts);
+      setShowDuplicateDialog(true);
+    } else {
+      // No duplicates, add all directly
+      selectedProductsList.forEach(product => {
+        addToCart(product, 1);
+      });
+      setPopupMessage(`${selectedProductsList.length} item(s) added to cart!`);
+      setPopup(true);
+      setTimeout(() => setPopup(false), 2000);
+      setSelectedItems(new Set());
+    }
+  };
+
+  const handleDuplicateDecision = (addToExisting) => {
+    if (addToExisting) {
+      // Add +1 to each duplicate product
+      duplicateProductsList.forEach(product => {
+        addToCart(product, 1);
+      });
+    }
+    
+    // Add new products
+    pendingBulkProducts.forEach(product => {
+      addToCart(product, 1);
+    });
+    
+    const totalAdded = duplicateProductsList.length + pendingBulkProducts.length;
+    setPopupMessage(`${totalAdded} item(s) added to cart!`);
+    setPopup(true);
+    setTimeout(() => setPopup(false), 2000);
+    
+    // Clear selection and dialog
+    setSelectedItems(new Set());
+    setShowDuplicateDialog(false);
+    setDuplicateProductsList([]);
+    setPendingBulkProducts([]);
   };
 
   const handleInputChange = (e) => {
@@ -203,114 +301,127 @@ const ProductsPage = () => {
     }
   };
 
-  // ========== FETCH PRODUCTS FROM API ==========
-  // ========== DEBUG FETCH PRODUCTS FUNCTION ==========
-  // ========== IMPROVED FETCH PRODUCTS FUNCTION ==========
-  // ========== FIXED FETCH PRODUCTS FUNCTION ==========
-  // ========== FETCH PRODUCTS FROM API ==========
-  const fetchProducts = async () => {
-    try {
-      setLoading(true);
-      console.log("=== Starting to fetch products ===");
+// ========== FETCH PRODUCTS FROM API ==========
+const fetchProducts = async () => {
+  try {
+    setLoading(true);
+    console.log("=== Starting to fetch products ===");
 
-      const { user } = getAuthData();
-      if (!user || !user.id) {
-        console.error("No user found");
-        toast.error("Please login to view products");
-        setLoading(false);
-        return;
-      }
-
-      const token = localStorage.getItem("token");
-      const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000/api';
-      const endpoint = `${BASE_URL}/restaurant-all-products/${user.id}`;
-
-      console.log("Fetching from:", endpoint);
-
-      const response = await fetch(endpoint, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`,
-        },
-      });
-
-      const data = await response.json();
-      console.log("API Response:", data);
-
-      // Extract products from the paginated response
-      let productsArray = [];
-
-      // Check for products in paginated response structure
-      if (data?.products?.data && Array.isArray(data.products.data)) {
-        productsArray = data.products.data;
-        console.log("Found products in products.data, count:", productsArray.length);
-      }
-      else if (data?.data && Array.isArray(data.data)) {
-        productsArray = data.data;
-        console.log("Found products in data.data, count:", productsArray.length);
-      }
-      else if (Array.isArray(data)) {
-        productsArray = data;
-        console.log("Found products in direct array, count:", productsArray.length);
-      }
-      else {
-        console.error("Unknown response structure");
-        toast.error("Unable to parse products");
-        setProducts([]);
-        setLoading(false);
-        return;
-      }
-
-      if (productsArray.length === 0) {
-        console.warn("No products found");
-        toast.info("No products available");
-        setProducts([]);
-        setLoading(false);
-        return;
-      }
-
-      // Transform products
-      const transformedProducts = productsArray.map(product => {
-        const rawName = product.name || "Unnamed Product";
-        const rawDescription = product.description || `High quality ${rawName}`;
-
-        return {
-          id: product.id,
-          name: toTitleCase(cleanText(rawName)),
-          title: toTitleCase(cleanText(rawName)),
-          selling_price: parseFloat(product.selling_price) || 0,
-          purchase_price: parseFloat(product.purchase_price) || 0,
-          price: parseFloat(product.selling_price) || 0,
-          category: toTitleCase(cleanText(product.category?.name || "General")),
-          category_id: product.category_id,
-          brand: toTitleCase(cleanText(product.brand?.name || "Unknown")),
-          brand_id: product.brand_id,
-          unit: toTitleCase(cleanText(product.unit?.name || "Piece")),
-          unit_id: product.unit_id,
-          unit_amount: product.unit_amount,
-          is_active: product.is_active === 1 || product.is_active === true,
-          inStock: product.is_active === 1 || product.is_active === true,
-          gst_percentage: parseFloat(product.gst_percentage) || 0,
-          discount_percentage: parseFloat(product.discount_percentage) || 0,
-          description: cleanText(rawDescription),
-          rating: 4,
-          img: product.image || "/image/placeholder.png",
-          sku: product.sku,
-        };
-      });
-
-      console.log("Transformed products for UI:", transformedProducts);
-      setProducts(transformedProducts);
-
-    } catch (error) {
-      console.error("Fetch error:", error);
-      toast.error("Failed to load products");
-      setProducts([]);
-    } finally {
+    // ✅ FIX 1: Check if we're on client side
+    if (typeof window === 'undefined') {
+      console.log("Server side - skipping fetch");
       setLoading(false);
+      return;
     }
-  };
+
+    // ✅ FIX 2: Safely get auth data with try-catch
+    let user = null;
+    let token = null;
+    
+    try {
+      const authData = getAuthData();
+      user = authData?.user;
+      token = localStorage.getItem("token");
+    } catch (error) {
+      console.error("Error getting auth data:", error);
+      toast.error("Please login again");
+      setLoading(false);
+      return;
+    }
+
+    // ✅ FIX 3: Check if user exists
+    if (!user || !user.id) {
+      console.error("No user found - redirecting to login");
+      toast.error("Please login to view products");
+      setLoading(false);
+      // Optional: redirect to login
+      // router.push('/login');
+      return;
+    }
+
+    const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000/api';
+    const endpoint = `${BASE_URL}/restaurant-all-products/${user.id}`;
+
+    console.log("Fetching from:", endpoint);
+
+    const response = await fetch(endpoint, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`,
+      },
+    });
+
+    const data = await response.json();
+    console.log("API Response:", data);
+
+    let productsArray = [];
+
+    if (data?.products?.data && Array.isArray(data.products.data)) {
+      productsArray = data.products.data;
+    }
+    else if (data?.data && Array.isArray(data.data)) {
+      productsArray = data.data;
+    }
+    else if (Array.isArray(data)) {
+      productsArray = data;
+    }
+    else {
+      console.error("Unknown response structure");
+      toast.error("Unable to parse products");
+      setProducts([]);
+      setLoading(false);
+      return;
+    }
+
+    if (productsArray.length === 0) {
+      console.warn("No products found");
+      toast("No products available");
+      setProducts([]);
+      setLoading(false);
+      return;
+    }
+
+    const transformedProducts = productsArray.map(product => {
+      const rawName = product.name || "Unnamed Product";
+      const rawDescription = product.description || `High quality ${rawName}`;
+
+      return {
+        id: product.id,
+        name: toTitleCase(cleanText(rawName)),
+        title: toTitleCase(cleanText(rawName)),
+        selling_price: parseFloat(product.selling_price) || 0,
+        purchase_price: parseFloat(product.purchase_price) || 0,
+        price: parseFloat(product.selling_price) || 0,
+        category: toTitleCase(cleanText(product.category?.name || "General")),
+        category_id: product.category_id,
+        brand: toTitleCase(cleanText(product.brand?.name || "Unknown")),
+        brand_id: product.brand_id,
+        unit: toTitleCase(cleanText(product.unit?.name || "Piece")),
+        unit_id: product.unit_id,
+        unit_amount: product.unit_amount,
+        is_active: product.is_active === 1 || product.is_active === true,
+        inStock: product.is_active === 1 || product.is_active === true,
+        gst_percentage: parseFloat(product.gst_percentage) || 0,
+        discount_percentage: parseFloat(product.discount_percentage) || 0,
+        description: cleanText(rawDescription),
+        rating: 4,
+        img: product.image || "/image/placeholder.png",
+        sku: product.sku,
+      };
+    });
+
+    console.log("Transformed products for UI:", transformedProducts);
+    setProducts(transformedProducts);
+
+  } catch (error) {
+    console.error("Fetch error:", error);
+    toast.error("Failed to load products");
+    setProducts([]);
+  } finally {
+    setLoading(false);
+  }
+};
 
   // ========== GET UNIQUE CATEGORIES ==========
   const getCategories = useCallback(() => {
@@ -362,7 +473,6 @@ const ProductsPage = () => {
     fetchProducts();
   }, []);
 
-
   // ========== UPDATE DISPLAYED PRODUCTS ==========
   useEffect(() => {
     if (products.length > 0) {
@@ -370,6 +480,7 @@ const ProductsPage = () => {
       setDisplayedProducts(filtered.slice(0, PRODUCTS_PER_PAGE));
       setPage(1);
       setHasMore(filtered.length > PRODUCTS_PER_PAGE);
+      setSelectedItems(new Set()); // Clear selection when filters change
     }
   }, [products, search, category, maxPrice, sort, applyFiltersAndSort]);
 
@@ -432,17 +543,22 @@ const ProductsPage = () => {
 
   if (loading) {
     return (
-      <div className="bg-slate-50 min-h-screen flex justify-center items-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600 text-lg">waity waity 💨💨</p>
+      <>
+        <Nav2 />
+        <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white flex justify-center items-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <p className="text-gray-600 text-lg"> <b> <strong> You have to wait for ashmit's approval ✋🚫 </strong></b> </p>
+          </div>
         </div>
-      </div>
+        <Footer />
+      </>
     );
   }
 
   return (
     <>
+      <Nav2 />
       <Toaster position="top-right" />
 
       {/* Floating Cart Button */}
@@ -463,16 +579,47 @@ const ProductsPage = () => {
         </button>
       </div>
 
-      <div className="bg-slate-50 min-h-screen px-4 sm:px-6 md:px-12 lg:px-20 py-12">
+      <div className="bg-white min-h-screen px-4 sm:px-6 md:px-12 lg:px-20 py-12">
         <h1 className="text-3xl sm:text-4xl font-bold text-center mb-4 text-black">
-  Our Products
-</h1>
+          Our Products
+        </h1>
 
         {!loading && products.length > 0 && (
           <p className="text-center text-gray-600 mb-6">
             Showing {displayedProducts.length} of {filteredCount} products
           </p>
         )}
+
+        {/* Bulk Action Bar */}
+        <div className="max-w-7xl mx-auto mb-6 flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            {displayedProducts.length > 0 && (
+              <button
+                onClick={toggleSelectAll}
+                className="px-4 py-2 text-sm bg-gray-200 hover:bg-gray-300 rounded-lg transition text-black"
+              >
+                {selectedItems.size === displayedProducts.length ? "Deselect All" : "Select All"}
+              </button>
+            )}
+            {selectedItems.size > 0 && (
+              <button
+                onClick={clearSelection}
+                className="px-4 py-2 text-sm bg-red-100 hover:bg-red-200 text-red-700 rounded-lg transition"
+              >
+                Clear ({selectedItems.size})
+              </button>
+            )}
+          </div>
+          
+          {selectedItems.size > 0 && (
+            <button
+              onClick={handleBulkAddToCart}
+              className="px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition font-semibold shadow-md flex items-center gap-2"
+            >
+              🛒 Add Selected ({selectedItems.size}) to Cart
+            </button>
+          )}
+        </div>
 
         {/* Search Bar */}
         <div className="max-w-xl mx-auto mb-10">
@@ -482,7 +629,7 @@ const ProductsPage = () => {
               placeholder="Search products..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="flex-1 px-4 py-3 border rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 outline-none"
+              className="flex-1 px-4 py-3 border rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 outline-none bg-white text-black"
             />
             <button
               onClick={() => {
@@ -498,9 +645,9 @@ const ProductsPage = () => {
 
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           {/* Sidebar Filters */}
-          <div className="bg-white/90 backdrop-blur-md p-6 rounded-2xl shadow-lg space-y-6 lg:sticky lg:top-24 h-fit border">
+          <div className="bg-white p-6 rounded-2xl shadow-lg space-y-6 lg:sticky lg:top-24 h-fit border">
             <div className="flex items-center justify-between">
-              <h2 className="text-xl font-bold flex items-center gap-2">🧰 Filters</h2>
+              <h2 className="text-xl font-bold flex items-center gap-2 text-black">🧰 Filters</h2>
               <button
                 onClick={() => {
                   setCategory("All");
@@ -526,11 +673,11 @@ const ProductsPage = () => {
                       onClick={() => setCategory(cat)}
                       className={`flex justify-between items-center w-full px-3 py-2 rounded-lg transition-all duration-200 ${category === cat
                           ? "bg-blue-600 text-white shadow-md scale-[1.02]"
-                          : "bg-gray-100 hover:bg-blue-50 hover:translate-x-1"
+                          : "bg-gray-100 hover:bg-blue-50 hover:translate-x-1 text-black"
                         }`}
                     >
                       <span>{cat}</span>
-                      <span className={`text-xs px-2 py-1 rounded-full ${category === cat ? "bg-white text-blue-600" : "bg-gray-200"
+                      <span className={`text-xs px-2 py-1 rounded-full ${category === cat ? "bg-white text-blue-600" : "bg-gray-200 text-black"
                         }`}>
                         {count}
                       </span>
@@ -563,7 +710,7 @@ const ProductsPage = () => {
               <select
                 value={sort}
                 onChange={(e) => setSort(e.target.value)}
-                className="w-full border rounded-lg p-2 focus:ring-2 focus:ring-blue-500 outline-none"
+                className="w-full border rounded-lg p-2 focus:ring-2 focus:ring-blue-500 outline-none text-black"
               >
                 <option value="">Default</option>
                 <option value="low">Price: Low to High</option>
@@ -591,13 +738,26 @@ const ProductsPage = () => {
                   {displayedProducts.map((product, index) => {
                     const quantity = getProductQuantity(product.id);
                     const productPrice = product.selling_price || product.price;
+                    const isSelected = selectedItems.has(product.id);
 
                     return (
                       <div
                         key={product.id}
                         ref={index === displayedProducts.length - 1 ? lastProductRef : null}
-                        className="bg-white rounded-2xl shadow-md hover:shadow-xl transition p-4 sm:p-6 relative group"
+                        className={`bg-white rounded-2xl shadow-md hover:shadow-xl transition p-4 sm:p-6 relative group border-2 ${isSelected ? 'border-blue-500 bg-blue-50' : 'border-transparent'}`}
                       >
+                        {/* Checkbox - Top Right */}
+                        <div className="absolute top-3 right-3 z-10">
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={() => toggleSelectItem(product.id)}
+                            onClick={(e) => e.stopPropagation()}
+                            className="w-5 h-5 sm:w-6 sm:h-6 accent-blue-600 cursor-pointer"
+                            disabled={!product.inStock}
+                          />
+                        </div>
+
                         <div onClick={() => openProduct(product)} className="cursor-pointer">
                           <div className="relative h-40 mb-4">
                             <Image
@@ -609,22 +769,16 @@ const ProductsPage = () => {
                             />
                           </div>
 
-                          <div className="absolute top-3 right-3 text-gray-400 hover:text-red-500 text-xl cursor-pointer" onClick={(e) => e.stopPropagation()}>
+                          <div className="absolute top-3 right-12 text-gray-400 hover:text-red-500 text-xl cursor-pointer" onClick={(e) => e.stopPropagation()}>
                             ♡
                           </div>
 
-                          <h2 className="font-bold text-lg text-slate-900 mt-1 break-words whitespace-normal leading-tight">{product.name || 'Unnamed Product'}</h2>
+                          <h2 className="font-bold text-lg text-black mt-1 break-words whitespace-normal leading-tight">{product.name || 'Unnamed Product'}</h2>
                           <p className="text-sm text-gray-600 mt-1 break-words whitespace-normal" style={{ minHeight: '2.4rem' }}>{product.description || 'No description available'}</p>
                           <p className="text-xs text-gray-500 mt-1 break-words">Category: {product.category || 'General'}</p>
                           <p className="text-xs text-gray-400 break-words">{product.brand || 'Unknown'} • {product.unit || 'Piece'}</p>
                           <p className="text-yellow-500 text-sm mt-1">{"⭐".repeat(product.rating)}</p>
                           <p className="text-xl font-bold text-blue-600 mt-2">₹{productPrice.toLocaleString()}</p>
-
-                          {/* {product.purchase_price > 0 && (
-                            <p className="text-xs text-gray-400 line-through">
-                              MRP: ₹{product.purchase_price.toLocaleString()}
-                            </p>
-                          )} */}
 
                           <p className={`text-xs mt-1 ${product.inStock ? 'text-green-600' : 'text-red-600'}`}>
                             {product.inStock ? '✅ In Stock' : '❌ Out of Stock'}
@@ -637,7 +791,10 @@ const ProductsPage = () => {
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  addToCart(product);
+                                  addToCart(product, 1);
+                                  setPopupMessage(`${product.name} added to cart!`);
+                                  setPopup(true);
+                                  setTimeout(() => setPopup(false), 2000);
                                 }}
                                 className="flex-1 py-3 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition"
                               >
@@ -650,11 +807,11 @@ const ProductsPage = () => {
                                     e.stopPropagation();
                                     updateQuantity(product.id, quantity - 1);
                                   }}
-                                  className="w-12 h-12 flex items-center justify-center bg-gray-100 hover:bg-gray-200 text-xl font-bold transition"
+                                  className="w-12 h-12 flex items-center justify-center bg-gray-100 hover:bg-gray-200 text-xl font-bold transition text-black"
                                 >
                                   −
                                 </button>
-                                <span className="flex-1 text-center font-semibold text-lg">
+                                <span className="flex-1 text-center font-semibold text-lg text-black">
                                   {quantity}
                                 </span>
                                 <button
@@ -662,7 +819,7 @@ const ProductsPage = () => {
                                     e.stopPropagation();
                                     updateQuantity(product.id, quantity + 1);
                                   }}
-                                  className="w-12 h-12 flex items-center justify-center bg-gray-100 hover:bg-gray-200 text-xl font-bold transition"
+                                  className="w-12 h-12 flex items-center justify-center bg-gray-100 hover:bg-gray-200 text-xl font-bold transition text-black"
                                 >
                                   +
                                 </button>
@@ -697,7 +854,35 @@ const ProductsPage = () => {
         </div>
       </div>
 
-      {/* Rest of your modals and cart sidebar - add them here */}
+      {/* Duplicate Products Dialog */}
+      {showDuplicateDialog && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[200] p-4">
+          <div className="bg-white rounded-2xl p-6 max-w-md w-full">
+            <h3 className="text-xl font-bold mb-4 text-black">⚠️ Products Already in Cart</h3>
+            <p className="text-gray-600 mb-3">These products are already in your cart:</p>
+            <ul className="mb-4 max-h-40 overflow-y-auto">
+              {duplicateProductsList.map(p => (
+                <li key={p.id} className="text-sm text-gray-700 py-1 border-b">• {p.name}</li>
+              ))}
+            </ul>
+            <p className="text-gray-600 mb-6">What would you like to do?</p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => handleDuplicateDecision(true)}
+                className="flex-1 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+              >
+                Add +1 to Each
+              </button>
+              <button
+                onClick={() => handleDuplicateDecision(false)}
+                className="flex-1 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400"
+              >
+                Skip Duplicates
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Product Modal */}
       {showModal && selectedProduct && (
@@ -705,7 +890,7 @@ const ProductsPage = () => {
           <div className="bg-white rounded-2xl w-full max-w-4xl p-4 sm:p-6 md:p-8 relative max-h-[90vh] overflow-y-auto">
             <button
               onClick={closeModal}
-              className="absolute top-3 right-3 z-50 bg-white/80 backdrop-blur rounded-full w-10 h-10 flex items-center justify-center text-xl shadow-md hover:bg-gray-100"
+              className="absolute top-3 right-3 z-50 bg-white/80 backdrop-blur rounded-full w-10 h-10 flex items-center justify-center text-xl shadow-md hover:bg-gray-100 text-black"
             >
               ✕
             </button>
@@ -719,7 +904,7 @@ const ProductsPage = () => {
                 />
               </div>
               <div>
-                <h2 className="text-xl sm:text-2xl md:text-3xl font-bold mb-2">{selectedProduct.name}</h2>
+                <h2 className="text-xl sm:text-2xl md:text-3xl font-bold mb-2 text-black">{selectedProduct.name}</h2>
                 <p className="text-gray-500 text-sm sm:text-base mb-1">
                   {selectedProduct.category} • {selectedProduct.brand}
                 </p>
@@ -740,8 +925,11 @@ const ProductsPage = () => {
                     getProductQuantity(selectedProduct.id) === 0 ? (
                       <button
                         onClick={() => {
-                          addToCart(selectedProduct);
+                          addToCart(selectedProduct, 1);
                           closeModal();
+                          setPopupMessage(`${selectedProduct.name} added to cart!`);
+                          setPopup(true);
+                          setTimeout(() => setPopup(false), 2000);
                         }}
                         className="flex-1 py-3 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition"
                       >
@@ -749,9 +937,9 @@ const ProductsPage = () => {
                       </button>
                     ) : (
                       <div className="flex-1 flex items-center justify-between border rounded-lg overflow-hidden">
-                        <button onClick={() => updateQuantity(selectedProduct.id, getProductQuantity(selectedProduct.id) - 1)} className="w-12 h-12 bg-gray-100 hover:bg-gray-200 text-xl">−</button>
-                        <span className="flex-1 text-center font-semibold text-lg">{getProductQuantity(selectedProduct.id)}</span>
-                        <button onClick={() => updateQuantity(selectedProduct.id, getProductQuantity(selectedProduct.id) + 1)} className="w-12 h-12 bg-gray-100 hover:bg-gray-200 text-xl">+</button>
+                        <button onClick={() => updateQuantity(selectedProduct.id, getProductQuantity(selectedProduct.id) - 1)} className="w-12 h-12 bg-gray-100 hover:bg-gray-200 text-xl text-black">−</button>
+                        <span className="flex-1 text-center font-semibold text-lg text-black">{getProductQuantity(selectedProduct.id)}</span>
+                        <button onClick={() => updateQuantity(selectedProduct.id, getProductQuantity(selectedProduct.id) + 1)} className="w-12 h-12 bg-gray-100 hover:bg-gray-200 text-xl text-black">+</button>
                       </div>
                     )
                   ) : (
@@ -837,7 +1025,7 @@ const ProductsPage = () => {
                   cart.map((item) => (
                     <div
                       key={item.id}
-                      className="flex gap-4 items-start bg-gray-50/80 backdrop-blur-sm rounded-xl p-3 hover:shadow-md transition-all duration-300 hover:scale-[1.02] border border-gray-100"
+                      className="flex gap-4 items-start bg-gray-50 rounded-xl p-3 hover:shadow-md transition-all duration-300 hover:scale-[1.02] border border-gray-100"
                     >
                       <div className="relative w-20 h-20 bg-white rounded-xl overflow-hidden shadow-sm border border-gray-200 flex-shrink-0">
                         <img
@@ -857,7 +1045,7 @@ const ProductsPage = () => {
                         <div className="flex items-center gap-3 mt-3">
                           <button
                             onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                            className="w-7 h-7 flex items-center justify-center bg-white border border-gray-300 rounded-lg hover:border-indigo-500 hover:text-indigo-600 transition-all"
+                            className="w-7 h-7 flex items-center justify-center bg-white border border-gray-300 rounded-lg hover:border-indigo-500 hover:text-indigo-600 transition-all text-black"
                           >
                             <span className="text-lg font-medium">−</span>
                           </button>
@@ -866,7 +1054,7 @@ const ProductsPage = () => {
                           </span>
                           <button
                             onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                            className="w-7 h-7 flex items-center justify-center bg-white border border-gray-300 rounded-lg hover:border-indigo-500 hover:text-indigo-600 transition-all"
+                            className="w-7 h-7 flex items-center justify-center bg-white border border-gray-300 rounded-lg hover:border-indigo-500 hover:text-indigo-600 transition-all text-black"
                           >
                             <span className="text-lg font-medium">+</span>
                           </button>
@@ -919,13 +1107,13 @@ const ProductsPage = () => {
 
                 <form onSubmit={handlePlaceOrder} className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium mb-1">Full Name *</label>
+                    <label className="block text-sm font-medium mb-1 text-black">Full Name *</label>
                     <input
                       type="text"
                       name="fullName"
                       value={formData.fullName}
                       onChange={handleInputChange}
-                      className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                      className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-black"
                       placeholder="John Doe"
                       required
                     />
@@ -933,25 +1121,25 @@ const ProductsPage = () => {
 
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium mb-1">Email *</label>
+                      <label className="block text-sm font-medium mb-1 text-black">Email *</label>
                       <input
                         type="email"
                         name="email"
                         value={formData.email}
                         onChange={handleInputChange}
-                        className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                        className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-black"
                         placeholder="john@example.com"
                         required
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium mb-1">Phone *</label>
+                      <label className="block text-sm font-medium mb-1 text-black">Phone *</label>
                       <input
                         type="tel"
                         name="phone"
                         value={formData.phone}
                         onChange={handleInputChange}
-                        className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                        className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-black"
                         placeholder="9876543210"
                         required
                       />
@@ -959,13 +1147,13 @@ const ProductsPage = () => {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium mb-1">Address *</label>
+                    <label className="block text-sm font-medium mb-1 text-black">Address *</label>
                     <input
                       type="text"
                       name="address"
                       value={formData.address}
                       onChange={handleInputChange}
-                      className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                      className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-black"
                       placeholder="123 Main St, Apartment 4B"
                       required
                     />
@@ -973,37 +1161,37 @@ const ProductsPage = () => {
 
                   <div className="grid grid-cols-3 gap-4">
                     <div>
-                      <label className="block text-sm font-medium mb-1">City *</label>
+                      <label className="block text-sm font-medium mb-1 text-black">City *</label>
                       <input
                         type="text"
                         name="city"
                         value={formData.city}
                         onChange={handleInputChange}
-                        className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                        className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-black"
                         placeholder="Mumbai"
                         required
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium mb-1">State *</label>
+                      <label className="block text-sm font-medium mb-1 text-black">State *</label>
                       <input
                         type="text"
                         name="state"
                         value={formData.state}
                         onChange={handleInputChange}
-                        className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                        className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-black"
                         placeholder="Maharashtra"
                         required
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium mb-1">Pincode *</label>
+                      <label className="block text-sm font-medium mb-1 text-black">Pincode *</label>
                       <input
                         type="text"
                         name="pincode"
                         value={formData.pincode}
                         onChange={handleInputChange}
-                        className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                        className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-black"
                         placeholder="400001"
                         required
                       />
@@ -1011,7 +1199,7 @@ const ProductsPage = () => {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium mb-2">Payment Method *</label>
+                    <label className="block text-sm font-medium mb-2 text-black">Payment Method *</label>
                     <div className="space-y-2">
                       <label className="flex items-center gap-2 p-3 border rounded-lg cursor-pointer hover:bg-gray-50">
                         <input
@@ -1022,7 +1210,7 @@ const ProductsPage = () => {
                           onChange={handleInputChange}
                           className="w-4 h-4"
                         />
-                        <span className="flex-1">Cash on Delivery (COD)</span>
+                        <span className="flex-1 text-black">Cash on Delivery (COD)</span>
                         <span className="text-green-600 text-sm">✓ Pay when you receive</span>
                       </label>
                       <label className="flex items-center gap-2 p-3 border rounded-lg cursor-pointer hover:bg-gray-50 opacity-50">
@@ -1033,7 +1221,7 @@ const ProductsPage = () => {
                           disabled
                           className="w-4 h-4"
                         />
-                        <span className="flex-1">Online Payment</span>
+                        <span className="flex-1 text-black">Online Payment</span>
                         <span className="text-gray-500 text-sm">Coming soon</span>
                       </label>
                     </div>
@@ -1049,8 +1237,8 @@ const ProductsPage = () => {
             cart.length > 0 && (
               <>
                 <div className="flex justify-between mb-3">
-                  <span className="font-semibold">Subtotal:</span>
-                  <span className="font-bold text-lg">₹{getCartTotal()}</span>
+                  <span className="font-semibold text-black">Subtotal:</span>
+                  <span className="font-bold text-lg text-black">₹{getCartTotal()}</span>
                 </div>
                 <button
                   onClick={() => setShowCheckout(true)}
@@ -1064,7 +1252,7 @@ const ProductsPage = () => {
             <div className="flex gap-3">
               <button
                 onClick={backToCart}
-                className="flex-1 px-4 py-3 border-2 border-gray-300 rounded-lg hover:border-indigo-600 hover:text-indigo-600 transition font-medium"
+                className="flex-1 px-4 py-3 border-2 border-gray-300 rounded-lg hover:border-indigo-600 hover:text-indigo-600 transition font-medium text-black"
               >
                 Back
               </button>
@@ -1084,7 +1272,7 @@ const ProductsPage = () => {
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[100] p-4">
           <div className="bg-white rounded-2xl p-8 max-w-md text-center">
             <div className="text-6xl mb-4">🎉</div>
-            <h2 className="text-2xl font-bold mb-2">Order Placed Successfully!</h2>
+            <h2 className="text-2xl font-bold mb-2 text-black">Order Placed Successfully!</h2>
             <p className="text-gray-600 mb-6">Thank you for shopping with us!</p>
             <button
               onClick={() => setOrderPlaced(false)}
@@ -1103,16 +1291,7 @@ const ProductsPage = () => {
         </div>
       )}
 
-      {/* Overlay when cart is open */}
-      {showCart && (
-        <div
-          className="fixed inset-0 bg-black/50 z-40"
-          onClick={() => {
-            setShowCart(false);
-            setShowCheckout(false);
-          }}
-        />
-      )}
+      <Footer />
 
       <style jsx>{`
         @keyframes slide-up {
