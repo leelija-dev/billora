@@ -1,10 +1,6 @@
-<!DOCTYPE html>
-<html lang="en">
-
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Billora - Plans Permissions</title>
+@extends('admin.main-layout')
+@section('title', 'Plan Permissions')
+@section('content')
     <style>
         * {
             margin: 0;
@@ -19,34 +15,6 @@
             display: flex;
         }
 
-        /* Sidebar */
-        /* .sidebar {
-            width: 280px;
-            background: white;
-            border-right: 1px solid #eef2f6;
-            position: fixed;
-            top: 0;
-            left: 0;
-            bottom: 0;
-            z-index: 1001;
-            padding: 32px 0;
-        }
-
-        .sidebar-header {
-            padding: 0 24px;
-            margin-bottom: 40px;
-        }
-
-        .sidebar-header h2 {
-            font-size: 24px;
-            font-weight: 700;
-            color: #111827;
-            letter-spacing: -0.5px;
-        }
-
-        .sidebar-header span {
-            color: #2563EB;
-        } */
 
         .nav-menu {
             list-style: none;
@@ -588,106 +556,85 @@
             }
         }
     </style>
-</head>
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
 
-<body>
-    @include('admin.sidebar')
-    <div class="card" style="bg:white;">
-        <div class="main-content">
-
-            <!-- Page Header -->
-            {{-- <div class="page-header">
-            <div class="header-left">
-                <h1>Customer Management</h1>
-                <p>Manage your customers and their information <span>Total: {{ count($customers) }} customers</span></p>
-            </div>
-            <div class="header-right">
-                <div class="search-box">
-                    <svg viewBox="0 0 24 24">
-                        <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
-                    </svg>
-                    <input type="text" placeholder="Search customers..." id="searchInput">
+        <!-- Total Permissions -->
+        <div class="bg-white rounded-lg shadow p-6 border-l-4 border-blue-500">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm text-blue-600"><strong>Total Permissions</strong></p>
+                    <p class="text-2xl font-bold text-blue-600">{{ $totalPermissions ?? '0' }}</p>
                 </div>
-                
-            </div>
-        </div> --}}
-
-            <!-- Stats Cards -->
-            {{-- <div class="stats-grid"> --}}
-            {{-- @php
-                $activeCount = count(array_filter($customers, function($c) { return $c['status'] === 'active'; }));
-                $pendingCount = count(array_filter($customers, function($c) { return $c['status'] === 'pending'; }));
-                $totalRevenue = array_sum(array_map(function($c) { 
-                    return (float) str_replace(['$', ','], '', $c['revenue']); 
-                }, $customers));
-            @endphp --}}
-
-            {{-- <div class="stat-card">
-                <div class="stat-info">
-                    <h3>Total Customers</h3>
-                    <div class="stat-number">{{ count($customers) }}</div>
-                </div>
-                <div class="stat-icon">
-                    <svg viewBox="0 0 24 24">
-                        <path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-1 .05 1.16.84 2 1.87 2 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/>
+                <div class="p-3 bg-blue-100 rounded-full">
+                    <!-- File / Document icon -->
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-10 h-10 text-blue-600" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                            d="M9 12h6m-6 4h6m2 4H7a2 2 0 01-2-2V6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v12a2 2 0 01-2 2z" />
                     </svg>
                 </div>
             </div>
-            
-            <div class="stat-card">
-                <div class="stat-info">
-                    <h3>Active</h3>
-                    <div class="stat-number"></div>
-                </div>
-                <div class="stat-icon">
-                    <svg viewBox="0 0 24 24">
-                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
-                    </svg>
-                </div>
-            </div>
-            
-            <div class="stat-card">
-                <div class="stat-info">
-                    <h3>Pending</h3>
-                    <div class="stat-number"></div>
-                </div>
-                <div class="stat-icon">
-                    <svg viewBox="0 0 24 24">
-                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
-                    </svg>
-                </div>
-            </div>
-            
-            <div class="stat-card">
-                <div class="stat-info">
-                    <h3>Revenue</h3>
-                    <div class="stat-number"></div>
-                </div>
-                <div class="stat-icon">
-                    <svg viewBox="0 0 24 24">
-                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1.5 15h-3v-2h3v2zm3-6.5c-.29.39-.71.73-1.26 1.01-.41.21-.75.47-.98.74-.22.27-.34.57-.34.95v.3h-3v-.3c0-.66.18-1.26.54-1.78.36-.52.89-.93 1.59-1.23.42-.18.73-.39.92-.62.19-.23.28-.48.28-.77 0-.3-.12-.56-.35-.78-.23-.22-.55-.33-.94-.33-.4 0-.73.12-.97.35-.24.23-.39.53-.45.9l-2.92-.37c.09-.7.4-1.3.91-1.78.51-.48 1.22-.73 2.1-.73.96 0 1.75.25 2.35.75.6.5.9 1.13.9 1.91 0 .53-.17 1-.51 1.42z"/>
-                    </svg>
-                </div>
-            </div>
-        </div> --}}
+        </div>
 
-            <!-- Tabs -->
-            {{-- <div class="tabs-section">
+        <!-- Active Permissions -->
+        <div class="bg-white rounded-lg shadow p-6 border-l-4 border-green-500 ">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm text-green-600"><strong>Active Permissions</strong></p>
+                    <p class="text-2xl font-bold text-green-600">{{ $activePermissions ?? '0' }}</p>
+                </div>
+                <div class="p-3 bg-green-100 rounded-full">
+                    <!-- Check / Active icon -->
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-10 h-10 text-green-600" fill="none"
+                        viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                </div>
+            </div>
+        </div>
+
+        <!-- Inactive Permissions -->
+        <div class="bg-white rounded-lg shadow p-6 border-l-4 border-yellow-500 ">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm text-yellow-600"><strong>Inactive Permissions</strong></p>
+                    <p class="text-2xl font-bold text-yellow-600">{{ $inactivePermissions ?? '0' }}</p>
+                </div>
+                <div class="p-3 bg-yellow-100 rounded-full">
+                    <!-- X / Inactive icon -->
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-10 h-10 text-yellow-600" fill="none"
+                        viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </div>
+            </div>
+        </div>
+
+
+    </div>
+
+    <!-- Tabs -->
+    {{-- <div class="tabs-section">
             <button class="tab-btn active">All</button>
             <button class="tab-btn">Active</button>
             <button class="tab-btn">Pending</button>
             <button class="tab-btn">Inactive</button>
         </div> --}}
 
-            <!-- Customers Table -->
-            <div class="table-container">
-                <div class="flex items-center justify-between m-4">
+    <!-- Customers Table -->
+    <div class="table-container">
+        <div class="flex items-center justify-between m-4">
 
-                    <!-- Left: Title -->
-                    <h2 class="table-title text-xl font-semibold">Plan Permission</h2>
-
-                    <!-- Right: Search -->
-                    {{-- <div class="search-box flex items-center  rounded px-2">
+            <!-- Left: Title -->
+            <h2 class="table-title text-xl font-semibold">Plan Permission</h2>
+            <a href="{{route('admin.plan-permission.create')}}" >
+            <button class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center transition duration-200">
+                <i data-feather="plus" class="w-4 h-4 mr-2"></i>
+                Add Permission  
+            </button></a>
+            <!-- Right: Search -->
+            {{-- <div class="search-box flex items-center  rounded px-2">
                         <svg viewBox="0 0 24 24" class="w-5 h-5 text-gray-500">
                             <path
                                 d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z" />
@@ -697,89 +644,128 @@
                             class="outline-none px-2 py-1">
                     </div> --}}
 
-                </div>
+        </div>
 
-                <table class="customers-table">
-                    <thead>
+        <table class="customers-table">
+            <thead>
+                <tr>
+                    <th>Sl. No</th>
+                    <th>Permission Name</th>
+                    <th>Permission Slug</th>
+                    <th>Description</th>
+                    <th>Status</th>
+                    <th>creaeted</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (isset($planPermission) && count($planPermission) > 0)
+                    @foreach ($planPermission as $permission)
                         <tr>
-                            <th>Sl. No</th>
-                            <th>Permission Name</th>
-                            <th>Permission Slug</th>
-                            <th>Description</th>
-                            <th>Status</th>
-                            <th>creaeted</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @if (isset($planPermission) && count($planPermission) > 0)
-                            @foreach ($planPermission as $permission)
-                                <tr>
-                                    <td class="text-center">
-                                        {{ $loop->iteration + ($planPermission->currentPage() - 1) * $planPermission->perPage() }}
-                                    </td>
-                                    <td>
-                                        <div class="customer-info">
+                            <td class="text-center">
+                                {{ $loop->iteration + ($planPermission->currentPage() - 1) * $planPermission->perPage() }}
+                            </td>
+                            <td>
+                                <div class="customer-info">
 
-                                            <div class="customer-details">
-                                                <span class="customer-name">{{ $permission->permission_name }}</span>
-                                                
-                                            </div>
-                                        </div>
-                                    </td>                                   
-                                    <td class="text-center">{{ $permission->slug }}</td>
-                                    <td class="text-center">{{ $permission->description }}</td>
-                                    <td class="text-center">
-                                        @if($permission->is_active == 1)
-                                            <span class="inline-flex items-center px-2 py-1 text-xs font-semibold text-green-700 bg-green-100 rounded-full">
-                                                Active
-                                            </span>
-                                        @else
-                                            <span class="inline-flex items-center px-2 py-1 text-xs font-semibold text-red-700 bg-red-100 rounded-full">
-                                                Inactive
-                                            </span>
-                                        @endif
-                                    </td>
-                                    <td class="text-center">
-                                        {{ $permission->created_at->format('M d, Y h:i A') }}
-                                    </td>
-                                    <td class="text-center">
-                                        <div class="action-buttons">
-                                            <a href="#"><button class="action-btn" 
-                                                title="View">
-                                                <svg viewBox="0 0 24 24">
-                                                    <path
-                                                        d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z" />
-                                                </svg>
-                                            </button></a>
-                                            <a href="#">
-                                            <button class="action-btn" onclick="editCustomer({{ $permission['id'] }})"
-                                                title="Edit">
-                                                <svg viewBox="0 0 24 24">
-                                                    <path
-                                                        d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 5.63l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83c.39-.39.39-1.02 0-1.41z" />
-                                                </svg>
-                                            </button></a>
-                                        </div>
-                                    </td>
-                                </tr>
-                            @endforeach
-                        @else
-                            <tr>
-                                <td colspan="6" style="text-align: center; padding: 48px; color: #94a3b8;">
-                                    No Plan Permissions found.
-                                </td>
-                            </tr>
-                        @endif
-                    </tbody>
-                </table>
-                <div class="pagination flex justify-end mt-4">
-                    {{ $planPermission->links('pagination::tailwind') }}
-                </div>
-            </div>
+                                    <div class="customer-details">
+                                        <span class="customer-name">{{ $permission->permission_name }}</span>
+
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="text-center">{{ $permission->slug }}</td>
+                            <td class="text-center">{{ $permission->description }}</td>
+                            <td class="text-center">
+                                @if ($permission->is_active == 1)
+                                    <span
+                                        class="inline-flex items-center px-2 py-1 text-xs font-semibold text-green-700 bg-green-100 rounded-full">
+                                        Active
+                                    </span>
+                                @else
+                                    <span
+                                        class="inline-flex items-center px-2 py-1 text-xs font-semibold text-red-700 bg-red-100 rounded-full">
+                                        Inactive
+                                    </span>
+                                @endif
+                            </td>
+                            <td class="text-center">
+                                {{ $permission->created_at->format('M d, Y h:i A') }}
+                            </td>
+                            <td class="text-center">
+                                <div class="action-buttons">
+                                    
+                                    <a href="{{route('admin.plan-permission.edit', $permission->id)}}">
+                                        <button class="action-btn" 
+                                            title="Edit">
+                                            <svg viewBox="0 0 24 24">
+                                                <path
+                                                    d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 5.63l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83c.39-.39.39-1.02 0-1.41z" />
+                                            </svg>
+                                        </button></a>
+                                </div>
+                            </td>
+                        </tr>
+                    @endforeach
+                @else
+                    <tr>
+                        <td colspan="6" style="text-align: center; padding: 48px; color: #94a3b8;">
+                            No Plan Permissions found.
+                        </td>
+                    </tr>
+                @endif
+            </tbody>
+        </table>
+        <div class="pagination flex justify-end mt-4">
+            {{ $planPermission->links('pagination::tailwind') }}
         </div>
     </div>
-    
-</body>
+    </div>
+    </div>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
-</html>
+<script>
+    const Toast = Swal.mixin({
+        toast: true,
+        position: 'top-end',
+        showConfirmButton: false,
+        timer: 3000,
+        timerProgressBar: true,
+        didOpen: (toast) => {
+            toast.onmouseenter = Swal.stopTimer;
+            toast.onmouseleave = Swal.resumeTimer;
+        }
+    });
+</script>
+
+{{-- SUCCESS --}}
+@if(session('success'))
+<script>
+    Toast.fire({
+        icon: 'success',
+        title: "{{ session('success') }}"
+    });
+</script>
+@endif
+
+{{-- ERROR --}}
+@if(session('error'))
+<script>
+    Toast.fire({
+        icon: 'error',
+        title: "{{ session('error') }}"
+    });
+</script>
+@endif
+
+{{-- VALIDATION ERROR --}}
+@if ($errors->any())
+<script>
+    Toast.fire({
+        icon: 'error',
+        title: `{!! implode('<br>', $errors->all()) !!}`
+    });
+</script>
+@endif
+
+@endsection

@@ -1,5 +1,5 @@
 @extends('admin.main-layout')
-@section('title','Admin Users')
+@section('title','All Plans')
 @section('content')
     <style>
         .fade-in {
@@ -24,7 +24,7 @@
 
     <div class="flex h-screen">
         <!-- Include Sidebar -->
-        
+        {{-- @include('admin.sidebar') --}}
         
         <!-- Main Content -->
         <div class="main-content flex-1 overflow-auto">
@@ -33,23 +33,41 @@
                 <div class="px-3 py-4">
                     <div class="flex justify-between items-center">
                         <div>
-                            <h1 class="text-2xl font-bold text-gray-800">User Management</h1>
+                            <h1 class="text-2xl font-bold text-gray-800">Permission Management</h1>
                         </div>
                         
                         <!-- Actions -->
                         <div class="flex items-center space-x-3">
                             <!-- Search -->
-                           
+                            <div class="relative">
+                                <form method="GET" action="{{ route('admin.plans.index') }}">
+                                    <input type="text" 
+                                        name="search"
+                                        value="{{ request('search') }}"
+                                        placeholder="Search plans..." 
+                                        class="pl-9 pr-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-transparent w-56">
+                                    <i data-feather="search" class="absolute left-2.5 top-2 w-3.5 h-3.5 text-gray-400"></i>
+                                    
+                                    <!-- Clear search if exists -->
+                                    @if(request('search'))
+                                        <button type="button" 
+                                                onclick="clearSearch()" 
+                                                class="absolute right-2 top-1.5 text-gray-400 hover:text-gray-600">
+                                            <i data-feather="x" class="w-3.5 h-3.5"></i>
+                                        </button>
+                                    @endif
+                                </form>
+                            </div>
                             <a href="#" ><button
                                     class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg flex items-center transition duration-200">
                                 <i data-feather="trash" class="w-4 h-4 mr-2"></i>
-                                Trashed User
+                                Trashed permissions
                             </button></a>
                             <!-- Add Plan Button -->
-                           <a href="{{route('admin.admin-users.create')}}" ><button
+                           <a href="{{route('admin.permissions.create')}}" ><button
                                     class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center transition duration-200">
                                 <i data-feather="plus" class="w-4 h-4 mr-2"></i>
-                                Add User
+                                Add permission
                             </button></a>
                         </div>
                     </div>
@@ -65,12 +83,12 @@
 
             <!-- Stats Cards -->
             <div class="px-6 py-6">
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
                     <div class="bg-white rounded-lg shadow p-6 border-l-4 border-blue-500">
                         <div class="flex items-center justify-between">
                             <div>
-                                <p class="text-sm text-blue-600"><strong>Total Users</strong></p>
-                                <p class="text-2xl font-bold text-blue-600">{{ $totalUser ?? 0 }}</p>
+                                <p class="text-sm text-blue-600"><strong>Total Permissions</strong></p>
+                                <p class="text-2xl font-bold text-blue-600">{{ $totalPermissions ?? 0 }}</p>
                             </div>
                             <div class="p-3 bg-blue-100 rounded-full">
                                 <i data-feather="layers" class="w-6 h-6 text-blue-600"></i>
@@ -81,8 +99,8 @@
                     <div class="bg-white rounded-lg shadow p-6 border-l-4 border-green-500">
                         <div class="flex items-center justify-between">
                             <div>
-                                <p class="text-sm text-green-600"><strong>Active Users</strong></p>
-                                <p class="text-2xl font-bold text-green-600">{{ $totalUser ?? 0 }}</p>
+                                <p class="text-sm text-green-600"><strong>Active Permissions</strong></p>
+                                <p class="text-2xl font-bold text-green-600">{{ $activePermissions ?? 0 }}</p>
                             </div>
                             <div class="p-3 bg-green-100 rounded-full">
                                 <i data-feather="check-circle" class="w-6 h-6 text-green-600"></i>
@@ -90,14 +108,25 @@
                         </div>
                     </div>
 
+                    <div class="bg-white rounded-lg shadow p-6 border-l-4 border-yellow-500">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm text-yellow-600"> <strong>Inactive Permissions </strong></p>
+                                <p class="text-2xl font-bold text-yellow-600">{{ $inactivePermissions ?? 0 }}</p>
+                            </div>
+                            <div class="p-3 bg-orange-100 rounded-full">
+                                <i data-feather="pause-circle" class="w-6 h-6 text-orange-600"></i>
+                            </div>
+                        </div>
+                    </div>
 
-                    <a href="#"> 
+                    <a href="{{route('admin.plans.deleted')}}"> 
                         <div class="bg-white rounded-lg shadow p-6 border-l-4 border-red-500">
                         
                             <div class="flex items-center justify-between">
                                 <div>
-                                    <p class="text-sm text-red-600"><strong> Deleted Users</strong></p>
-                                    <p class="text-2xl font-bold text-red-600">0</p>
+                                    <p class="text-sm text-red-600"><strong> Deleted Permissions</strong></p>
+                                    <p class="text-2xl font-bold text-red-600">{{ $deletedPlans ?? '0' }}</p>
                                 </div>
                                 <div class="p-3 bg-red-100 rounded-full">
                                     <i data-feather="trash-2" class="w-6 h-6 text-red-600"></i>
@@ -112,58 +141,61 @@
             <div class="px-6 pb-6">
                 <div class="bg-white rounded-lg shadow">
                     <div class="px-6 py-4 border-b border-gray-200">
-                        <h2 class="text-lg font-semibold text-gray-800">All Users</h2>
+                        <h2 class="text-lg font-semibold text-gray-800">All Permissions</h2>
                     </div>
                     
                     <div class="overflow-x-auto">
                         <table class="w-full">
                             <thead class="bg-gray-50 border-b border-gray-200">
                                 <tr>
-                                    <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">User Name</th>
-                                    <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
-                                    <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                                    <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Last login</th>
-                                    <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
-                                    <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sl. No</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Permission Name</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Permission Slug</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">status</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created At</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                                 </tr>
                             </thead>
                             <tbody class="bg-white divide-y divide-gray-200">
                                
-                                @forelse ($users as $user)
+                                @forelse ($permissions as $permission)
                                     <tr class="hover:bg-gray-50 transition duration-150">
                                        
-                                        <td class="px-6 py-4 whitespace-nowrap text-center">
-                                            <div class="flex items-center">
-                                               
-                                                <div class="ml-4">
-                                                    <div class="text-sm font-medium text-gray-900">{{ $user->username }}</div>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-center">
-                                            <div class="text-sm text-gray-900">{{ $user->email }}</div>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                           {{ $loop->iteration + ($permissions->currentPage() - 1) * $permissions->perPage() }}
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap">
-                                                {{ $user->lname ?? '' }} {{ $user->fname ?? '' }}
+                                            {{ $permission->name  ?? ''}}
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            
+                                                {{$permission->slug ?? ''}}
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                           @if($plan->is_active)
+                                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                                                    Active
+                                                </span>
+                                            @else
+                                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
+                                                    Inactive
+                                                </span>
+                                            @endif
                                         </td>
                                         <td class="px-6 py-4">
-                                            {{ $user->last_login_at->format('d-m-Y h:i A') ?? '' }}
+                                            {{ $permission->created_at->format('M d, Y h:i A') }}
                                         </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                            {{ $user->created_at->format('d-m-Y h:i A') }}
-                                        </td>
+                                    
                                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                            <a href="#"> 
+                                            <a href="{{ route('admin.plans.edit', $permission->id) }}"> 
                                                 <button  class="text-blue-600 hover:text-blue-900 mr-3">
                                                     <i data-feather="edit-2" class="w-4 h-4"></i>
                                                 </button>
                                             </a>
-                                            <a href="#">
-                                            <button  
+                                            <button onclick="deletePlan({{ $permission->id }})" 
                                                 class="text-red-600 hover:text-red-900">
                                                 <i data-feather="trash-2" class="w-4 h-4"></i>
                                             </button>
-                                            </a>
                                         </td>
                                     </tr>
                                 @empty
@@ -171,8 +203,8 @@
                                         <td colspan="7" class="px-6 py-12 text-center">
                                             <div class="text-center">
                                                 <i data-feather="inbox" class="mx-auto h-12 w-12 text-gray-400"></i>
-                                                <h3 class="mt-2 text-sm font-medium text-gray-900">No admin user found</h3>
-                                                
+                                                <h3 class="mt-2 text-sm font-medium text-gray-900">No permissions found!</h3>
+                                                                                                
                                             </div>
                                         </td>
                                     </tr>
@@ -182,7 +214,7 @@
                         </table>
                     </div>
                     <div class="p-4">
-                        {{ $users->links('pagination::tailwind') }}
+                        {{ $permissions->links('pagination::tailwind') }}
                     </div>
                 </div>
             </div>

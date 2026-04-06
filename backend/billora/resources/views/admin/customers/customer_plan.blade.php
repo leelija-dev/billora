@@ -1,10 +1,6 @@
-<!DOCTYPE html>
-<html lang="en">
-
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Billora - Customer Management</title>
+@extends('admin.main-layout')
+@section('title','Customer Plan Details')
+@section('content')
     <style>
         * {
             margin: 0;
@@ -588,10 +584,6 @@
             }
         }
     </style>
-</head>
-
-<body>
-    @include('admin.sidebar')
     
     <div class="card" style="bg:white;">
         <div class="main-content">
@@ -758,6 +750,4 @@
         </div>
     </div>
    
-</body>
-
-</html>
+@endsection
