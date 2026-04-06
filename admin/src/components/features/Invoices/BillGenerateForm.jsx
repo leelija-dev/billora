@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { FiSave, FiX, FiPlus, FiTrash2, FiUser, FiShoppingCart, FiDollarSign, FiPackage, FiSearch, FiAlertCircle } from 'react-icons/fi'
+import { FiSave, FiX, FiPlus, FiTrash2, FiUser, FiShoppingCart, FiDollarSign, FiPackage, FiSearch, FiAlertCircle, FiMinus } from 'react-icons/fi'
 import Input from '../../common/Input/Input'
 import Button from '../../common/Button/Button'
 import Select from '../../common/Select/Select'
@@ -392,6 +392,66 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
   const getSelectedStoreName = () => {
     const store = stores.find(s => s.id === formData.store_id)
     return store?.name || store?.store_name || storeSearch
+  }
+
+  // Quantity increment/decrement handlers
+  const handleIncrementQuantity = (index) => {
+    const item = formData.items[index]
+    const maxValue = item.stock_quantity > 0 ? item.stock_quantity : undefined
+    const newQuantity = parseFloat(item.quantity) + 1
+    
+    if (maxValue && newQuantity > maxValue) {
+      return // Don't exceed stock limit
+    }
+    
+    handleUpdateItem(index, 'quantity', newQuantity)
+  }
+
+  const handleDecrementQuantity = (index) => {
+    const item = formData.items[index]
+    const newQuantity = parseFloat(item.quantity) - 1
+    
+    if (newQuantity >= 1) {
+      handleUpdateItem(index, 'quantity', newQuantity)
+    }
+  }
+
+  // GST increment/decrement handlers
+  const handleIncrementGst = (index) => {
+    const item = formData.items[index]
+    const newGst = parseFloat(item.gst) + 1
+    
+    if (newGst <= 100) {
+      handleUpdateItem(index, 'gst', newGst)
+    }
+  }
+
+  const handleDecrementGst = (index) => {
+    const item = formData.items[index]
+    const newGst = parseFloat(item.gst) - 1
+    
+    if (newGst >= 0) {
+      handleUpdateItem(index, 'gst', newGst)
+    }
+  }
+
+  // Discount increment/decrement handlers
+  const handleIncrementDiscount = (index) => {
+    const item = formData.items[index]
+    const newDiscount = parseFloat(item.discount) + 1
+    
+    if (newDiscount <= 100) {
+      handleUpdateItem(index, 'discount', newDiscount)
+    }
+  }
+
+  const handleDecrementDiscount = (index) => {
+    const item = formData.items[index]
+    const newDiscount = parseFloat(item.discount) - 1
+    
+    if (newDiscount >= 0) {
+      handleUpdateItem(index, 'discount', newDiscount)
+    }
   }
 
   const calculateTotals = () => {
@@ -838,125 +898,193 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
       </div>
 
       {/* Invoice Items Table */}
-      <div className="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-4">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center">
-            <FiShoppingCart className="w-4 h-4 mr-2" />
-            Invoice Items ({formData.items.length})
-          </h3>
-        </div>
-        
-        {formData.items.length === 0 ? (
-          <EmptyState
-            icon={FiPackage}
-            title="No items added"
-            description="Search and add products to create your invoice"
-          />
-        ) : (
-          <>
-            {/* Items Header */}
-            <div className="hidden md:grid grid-cols-12 gap-4 mb-2 px-3">
-              <div className="col-span-4 text-xs font-medium text-gray-500 dark:text-gray-400">Product</div>
-              <div className="col-span-1 text-xs font-medium text-gray-500 dark:text-gray-400">Qty</div>
-              <div className="col-span-2 text-xs font-medium text-gray-500 dark:text-gray-400">Price</div>
-              <div className="col-span-1 text-xs font-medium text-gray-500 dark:text-gray-400">GST %</div>
-              <div className="col-span-1 text-xs font-medium text-gray-500 dark:text-gray-400">Discount %</div>
-              <div className="col-span-2 text-xs font-medium text-gray-500 dark:text-gray-400">Total</div>
-              <div className="col-span-1"></div>
-            </div>
-
-            <div className="space-y-3">
-              {formData.items.map((item, index) => (
-                <motion.div
-                  key={index}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: 20 }}
-                  className="grid grid-cols-1 md:grid-cols-12 gap-3 items-start bg-white dark:bg-gray-600 p-3 rounded-lg"
-                >
-                  <div className="md:col-span-4">
-                    <div>
-                      <p className="font-medium text-gray-900 dark:text-white text-sm">{item.product_name}</p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">{item.product_code}</p>
-                      <p className="text-xs text-gray-400 dark:text-gray-500">{item.unit_name}</p>
-                      {item.stock_quantity !== undefined && (
-                        <p className="text-xs text-blue-600 dark:text-blue-400">Stock: {item.stock_quantity}</p>
-                      )}
-                    </div>
-                  </div>
-                  <div className="md:col-span-1">
-                    <Input
-                      type="number"
-                      min="1"
-                      max={item.stock_quantity > 0 ? item.stock_quantity : undefined}
-                      value={item.quantity}
-                      onChange={(e) => handleUpdateItem(index, 'quantity', e.target.value)}
-                      className={`w-full text-sm ${
-                        item.stock_quantity > 0 && item.quantity > item.stock_quantity 
-                          ? 'border-red-500 bg-red-50' 
-                          : ''
-                      }`}
-                      title={item.stock_quantity > 0 ? `Max available: ${item.stock_quantity}` : 'No stock limit'}
-                    />
-                    {item.stock_quantity > 0 && (
-                      <p className="text-xs text-gray-500 mt-1">Max: {item.stock_quantity}</p>
-                    )}
-                  </div>
-                  <div className="md:col-span-2">
-                    <Input
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      value={item.price}
-                      onChange={(e) => handleUpdateItem(index, 'price', e.target.value)}
-                      className="w-full text-sm"
-                    />
-                  </div>
-                  <div className="md:col-span-1">
-                    <Input
-                      type="number"
-                      min="0"
-                      max="100"
-                      step="0.01"
-                      value={item.gst}
-                      onChange={(e) => handleUpdateItem(index, 'gst', e.target.value)}
-                      className="w-full text-sm"
-                    />
-                  </div>
-                  <div className="md:col-span-1">
-                    <Input
-                      type="number"
-                      min="0"
-                      max="100"
-                      step="0.01"
-                      value={item.discount}
-                      onChange={(e) => handleUpdateItem(index, 'discount', e.target.value)}
-                      className="w-full text-sm"
-                    />
-                  </div>
-                  <div className="md:col-span-2">
-                    <Input
-                      type="number"
-                      value={item.total_price.toFixed(2)}
-                      readOnly
-                      className="w-full text-sm bg-gray-50 dark:bg-gray-500"
-                    />
-                  </div>
-                  <div className="md:col-span-1 flex justify-end">
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveItem(index)}
-                      className="p-2 text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20 rounded-lg transition-colors"
-                    >
-                      <FiTrash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-          </>
-        )}
-      </div>
+<div className="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-4">
+  <div className="flex items-center justify-between mb-4">
+    <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center">
+      <FiShoppingCart className="w-4 h-4 mr-2" />
+      Invoice Items ({formData.items.length})
+    </h3>
+  </div>
+  
+  {formData.items.length === 0 ? (
+    <EmptyState
+      icon={FiPackage}
+      title="No items added"
+      description="Search and add products to create your invoice"
+    />
+  ) : (
+    <div className="overflow-x-auto">
+      <table className="w-full min-w-[800px]">
+        <thead>
+          <tr className="border-b border-gray-200 dark:border-gray-600">
+            <th className="text-left text-xs font-medium text-gray-500 dark:text-gray-400 pb-3">Product</th>
+            <th className="text-center text-xs font-medium text-gray-500 dark:text-gray-400 pb-3 w-[100px]">Qty</th>
+            <th className="text-center text-xs font-medium text-gray-500 dark:text-gray-400 pb-3 w-[100px]">Price</th>
+            <th className="text-center text-xs font-medium text-gray-500 dark:text-gray-400 pb-3 w-[100px]">GST %</th>
+            <th className="text-center text-xs font-medium text-gray-500 dark:text-gray-400 pb-3 w-[100px]">Discount %</th>
+            <th className="text-center text-xs font-medium text-gray-500 dark:text-gray-400 pb-3 w-[100px]">Total</th>
+            <th className="text-center text-xs font-medium text-gray-500 dark:text-gray-400 pb-3 w-[60px]"></th>
+          </tr>
+        </thead>
+        <tbody>
+          {formData.items.map((item, index) => (
+            <motion.tr
+              key={index}
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 20 }}
+              className="border-b border-gray-100 dark:border-gray-700 last:border-b-0"
+            >
+              <td className="py-3">
+                <div className="space-y-1">
+                  <p className="font-medium text-gray-900 dark:text-white text-sm">{item.product_name}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">{item.product_code}</p>
+                  <p className="text-xs text-gray-400 dark:text-gray-500">{item.unit_name}</p>
+                  {item.stock_quantity !== undefined && (
+                    <p className="text-xs text-blue-600 dark:text-blue-400">Stock: {item.stock_quantity}</p>
+                  )}
+                  {item.stock_quantity > 0 && (
+                    <p className="text-xs text-gray-500">Max: {item.stock_quantity}</p>
+                  )}
+                </div>
+               </td>
+              <td className="py-3">
+                <div className="flex items-center justify-center space-x-1">
+                  <button
+                    type="button"
+                    onClick={() => handleDecrementQuantity(index)}
+                    disabled={parseFloat(item.quantity) <= 1}
+                    className="p-1 text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-600 rounded disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    title="Decrease quantity"
+                  >
+                    <FiMinus className="w-3 h-3" />
+                  </button>
+                  <Input
+                    type="text"
+                    min="1"
+                    max={item.stock_quantity > 0 ? item.stock_quantity : undefined}
+                    value={item.quantity.toString()}
+                    onChange={(e) => handleUpdateItem(index, 'quantity', e.target.value)}
+                    className={`w-14 text-sm text-center ${
+                      item.stock_quantity > 0 && item.quantity > item.stock_quantity 
+                        ? 'border-red-500 bg-red-50' 
+                        : ''
+                    }`}
+                    title={item.stock_quantity > 0 ? `Max available: ${item.stock_quantity}` : 'No stock limit'}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => handleIncrementQuantity(index)}
+                    disabled={item.stock_quantity > 0 && parseFloat(item.quantity) >= item.stock_quantity}
+                    className="p-1 text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-600 rounded disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    title="Increase quantity"
+                  >
+                    <FiPlus className="w-3 h-3" />
+                  </button>
+                </div>
+               </td>
+              <td className="py-3">
+                <div className="flex justify-center">
+                  <Input
+                    type="text"
+                    min="0"
+                    step="0.01"
+                    value={item.price.toString()}
+                    onChange={(e) => handleUpdateItem(index, 'price', e.target.value)}
+                    className="w-20 text-sm text-center"
+                  />
+                </div>
+               </td>
+              <td className="py-3">
+                <div className="flex items-center justify-center space-x-1">
+                  <button
+                    type="button"
+                    onClick={() => handleDecrementGst(index)}
+                    disabled={parseFloat(item.gst) <= 0}
+                    className="p-1 text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-600 rounded disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    title="Decrease GST"
+                  >
+                    <FiMinus className="w-3 h-3" />
+                  </button>
+                  <Input
+                    type="text"
+                    min="0"
+                    max="100"
+                    step="0.01"
+                    value={item.gst.toString()}
+                    onChange={(e) => handleUpdateItem(index, 'gst', e.target.value)}
+                    className="w-14 text-sm text-center"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => handleIncrementGst(index)}
+                    disabled={parseFloat(item.gst) >= 100}
+                    className="p-1 text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-600 rounded disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    title="Increase GST"
+                  >
+                    <FiPlus className="w-3 h-3" />
+                  </button>
+                </div>
+               </td>
+              <td className="py-3">
+                <div className="flex items-center justify-center space-x-1">
+                  <button
+                    type="button"
+                    onClick={() => handleDecrementDiscount(index)}
+                    disabled={parseFloat(item.discount) <= 0}
+                    className="p-1 text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-600 rounded disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    title="Decrease Discount"
+                  >
+                    <FiMinus className="w-3 h-3" />
+                  </button>
+                  <Input
+                    type="text"
+                    min="0"
+                    max="100"
+                    step="0.01"
+                    value={item.discount.toString()}
+                    onChange={(e) => handleUpdateItem(index, 'discount', e.target.value)}
+                    className="w-14 text-sm text-center"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => handleIncrementDiscount(index)}
+                    disabled={parseFloat(item.discount) >= 100}
+                    className="p-1 text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-600 rounded disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    title="Increase Discount"
+                  >
+                    <FiPlus className="w-3 h-3" />
+                  </button>
+                </div>
+               </td>
+              <td className="py-3">
+                <div className="flex justify-center">
+                  <Input
+                    type="text"
+                    value={item.total_price.toFixed(2)}
+                    readOnly
+                    className="w-20 text-sm text-center bg-gray-50 dark:bg-gray-500"
+                  />
+                </div>
+               </td>
+              <td className="py-3">
+                <div className="flex justify-center">
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveItem(index)}
+                    className="p-2 text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                  >
+                    <FiTrash2 className="w-4 h-4" />
+                  </button>
+                </div>
+               </td>
+            </motion.tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )}
+</div>
 
       {/* Payment Options Section */}
       {formData.items.length > 0 && (
@@ -999,7 +1127,7 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
                 >
                   <Input
                     label="Payment Amount"
-                    type="number"
+                    type="text"
                     step="0.01"
                     placeholder="Enter payment amount"
                     value={formData.payment_amount}
