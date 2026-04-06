@@ -68,7 +68,7 @@
                 </a>
 
                 @php
-                    $isUserMenuActive = request()->routeIs('admin.admin-users.*') || request()->routeIs('admin.permissions.index','admin.permissions.create');
+                    $isUserMenuActive = request()->routeIs('admin.admin-users.*') || request()->routeIs('admin.permissions.index','admin.permissions.create','admin.roles.index','admin.roles.create','admin.roles.edit');
                 @endphp
 
                 <div class="group">
@@ -101,9 +101,9 @@
                             <span class="ml-2">Admin User</span>
                         </a>
                         <!-- Role -->
-                        <a href="#"
+                        <a href="{{route('admin.roles.index')}}"
                             class="flex items-center px-4 py-2 text-sm rounded-lg 
-                            {{ request()->routeIs('#') ? 'bg-blue-100 text-blue-600 font-semibold' : 'hover:bg-blue-100' }}">
+                            {{ request()->routeIs('admin.roles.index','admin.roles.create','admin.roles.edit') ? 'bg-blue-100 text-blue-600 font-semibold' : 'hover:bg-blue-100' }}">
                             
                            <i data-feather="user-check" class="w-4 h-4"></i>
                             <span class="ml-2">Role</span>

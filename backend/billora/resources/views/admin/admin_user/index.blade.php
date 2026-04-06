@@ -122,6 +122,7 @@
                                     <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">User Name</th>
                                     <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
                                     <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                                    <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
                                     <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Last login</th>
                                     <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
                                     <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
@@ -145,6 +146,13 @@
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap">
                                                 {{ $user->lname ?? '' }} {{ $user->fname ?? '' }}
+                                        </td>
+                                        <td class="px-6 py-4">
+                                           @foreach ($user->roles as $role)
+                                                        {{ $role->name }}@if (!$loop->last)
+                                                            ,
+                                                        @endif
+                                            @endforeach
                                         </td>
                                         <td class="px-6 py-4">
                                             {{ $user->last_login_at->format('d-m-Y h:i A') ?? '' }}
