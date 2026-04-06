@@ -6,7 +6,9 @@ use App\Http\Controllers\admin\superadmin\AdminUserController;
 use App\Http\Controllers\admin\superadmin\CustomerController;
 use App\Http\Controllers\admin\superadmin\PlansController;
 use App\Http\Controllers\admin\superadmin\PlanPermissionController;
+use App\Http\Controllers\admin\superadmin\SuperAdminPermissionController;
 use App\Models\AdminMailHistory;
+use App\Models\SuperAdminPermission;
 
 Route::middleware(['web', 'admin.guest'])->prefix('admin')->group(function () {
     Route::view('/login', 'admin.login')->name('login');
@@ -47,6 +49,11 @@ Route::middleware(['web', 'admin.auth'])->prefix('admin')->group(function () {
     });
     Route::prefix('plan-permission')->group(function () {
         Route::get('/', [PlanPermissionController::class, 'index'])->name('admin.plan-permission.index');
+        Route::get('/create', [PlanPermissionController::class, 'create'])->name('admin.plan-permission.create');
+        Route::post('/store', [PlanPermissionController::class, 'store'])->name('admin.plan-permission.store');
+        Route::get('/edit/{id}', [PlanPermissionController::class, 'edit'])->name('admin.plan-permission.edit');
+        Route::post('/update/{id}', [PlanPermissionController::class, 'update'])->name('admin.plan-permission.update');
+        Route::delete('/delete/{id}', [PlanPermissionController::class, 'delete'])->name('admin.plan-permission.delete');
     });
 
     Route::prefix('mail-history')->group(function () {
@@ -55,6 +62,12 @@ Route::middleware(['web', 'admin.auth'])->prefix('admin')->group(function () {
     });
     Route::prefix('admin-users')->group(function (){
         Route::get('/', [AdminUserController::class, 'index'])->name('admin.admin-users.index');
+        Route::get('/create', [AdminUserController::class, 'create'])->name('admin.admin-users.create');
 
+    });
+    Route::prefix('permissions')->group(function (){
+        Route::get('/', [SuperAdminPermissionController::class, 'index'])->name('admin.permissions.index');
+        Route::get('/create', [SuperAdminPermissionController::class, 'create'])->name('admin.permissions.create');
+        Route::post('/store', [SuperAdminPermissionController::class, 'store'])->name('admin.permissions.store');
     });
 });
