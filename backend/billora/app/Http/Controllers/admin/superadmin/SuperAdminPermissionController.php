@@ -10,7 +10,11 @@ class SuperAdminPermissionController extends Controller
 {
     public function index(){
         $permissions = SuperAdminPermission::paginate(10);
-        return view('admin.admin_permission.index',compact('permissions'));
+        $totalPermissions = SuperAdminPermission::count();
+        $activePermissions = SuperAdminPermission::where('is_active',1)->count();
+        $inactivePermissions = SuperAdminPermission::where('is_active',0)->count();
+
+        return view('admin.admin_permission.index',compact('permissions','totalPermissions','activePermissions','inactivePermissions'));
     }
     public function create(){
         return view('admin.admin_permission.create');

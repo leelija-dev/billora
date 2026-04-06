@@ -88,7 +88,7 @@
                         <div class="flex items-center justify-between">
                             <div>
                                 <p class="text-sm text-blue-600"><strong>Total Permissions</strong></p>
-                                <p class="text-2xl font-bold text-blue-600">{{ $totalPlans ?? 0 }}</p>
+                                <p class="text-2xl font-bold text-blue-600">{{ $totalPermissions ?? 0 }}</p>
                             </div>
                             <div class="p-3 bg-blue-100 rounded-full">
                                 <i data-feather="layers" class="w-6 h-6 text-blue-600"></i>
@@ -100,7 +100,7 @@
                         <div class="flex items-center justify-between">
                             <div>
                                 <p class="text-sm text-green-600"><strong>Active Permissions</strong></p>
-                                <p class="text-2xl font-bold text-green-600">{{ $activePlans ?? 0 }}</p>
+                                <p class="text-2xl font-bold text-green-600">{{ $activePermissions ?? 0 }}</p>
                             </div>
                             <div class="p-3 bg-green-100 rounded-full">
                                 <i data-feather="check-circle" class="w-6 h-6 text-green-600"></i>
@@ -112,7 +112,7 @@
                         <div class="flex items-center justify-between">
                             <div>
                                 <p class="text-sm text-yellow-600"> <strong>Inactive Permissions </strong></p>
-                                <p class="text-2xl font-bold text-yellow-600">{{ $inactivePlans ?? 0 }}</p>
+                                <p class="text-2xl font-bold text-yellow-600">{{ $inactivePermissions ?? 0 }}</p>
                             </div>
                             <div class="p-3 bg-orange-100 rounded-full">
                                 <i data-feather="pause-circle" class="w-6 h-6 text-orange-600"></i>

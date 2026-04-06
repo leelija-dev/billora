@@ -3,14 +3,13 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Spatie\Permission\Models\Role as SpatieRole;
 
-class SuperAdminPermission extends Model
+class Roles extends SpatieRole
 {
-    protected $table = 'superadmin_permission';
+    protected $table = 'roles';
     protected $fillable = [
         'name',
-        'slug',
         'guard_name',
-        'is_active'
-    ] ;
+    ];
 }
