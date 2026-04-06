@@ -10,6 +10,7 @@ class SuperAdminPermission extends Model
     protected $fillable = [
         'name',
         'slug',
+        'guard_name',
         'is_active'
     ] ;
 }
