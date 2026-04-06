@@ -4,10 +4,12 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import { getAuthData } from '../../store/authStore';
 import toast, { Toaster } from 'react-hot-toast';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 import Nav2 from "@/components/Nav2";
 import Footer from "@/components/Footer";
 
 const ProductsPage = () => {
+  const router = useRouter();
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -27,6 +29,7 @@ const ProductsPage = () => {
   const [hasMore, setHasMore] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [filteredCount, setFilteredCount] = useState(0);
+  const [storeId, setStoreId] = useState(null);
   
   // Bulk selection states
   const [selectedItems, setSelectedItems] = useState(new Set());
@@ -62,6 +65,27 @@ const ProductsPage = () => {
     return trimmed.length === 0 ? '' : trimmed;
   };
 
+  // ========== FETCH USER STORE ==========
+  const fetchUserStore = async (userId, token) => {
+    try {
+      const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000/api';
+      const response = await fetch(`${BASE_URL}/store/${userId}`, {
+        headers: {
+          "Authorization": `Bearer ${token}`,
+        },
+      });
+      const data = await response.json();
+      if (data?.data && data.data.length > 0) {
+        setStoreId(data.data[0].id);
+        return data.data[0].id;
+      }
+      return null;
+    } catch (error) {
+      console.error("Error fetching store:", error);
+      return null;
+    }
+  };
+
   // ========== CART FUNCTIONS ==========
   const addToCart = (product, quantityToAdd = 1) => {
     setCart((prev) => {
@@ -77,7 +101,9 @@ const ProductsPage = () => {
         ...product,
         quantity: quantityToAdd,
         title: product.name,
-        price: product.selling_price || product.price
+        price: product.selling_price || product.price,
+        unit_id: product.unit_id || 1,
+        stock_id: product.id,
       }];
     });
   };
@@ -157,7 +183,6 @@ const ProductsPage = () => {
       return;
     }
 
-    // Check for duplicates in cart
     const duplicates = [];
     const newProducts = [];
     
@@ -175,7 +200,6 @@ const ProductsPage = () => {
       setPendingBulkProducts(newProducts);
       setShowDuplicateDialog(true);
     } else {
-      // No duplicates, add all directly
       selectedProductsList.forEach(product => {
         addToCart(product, 1);
       });
@@ -188,13 +212,11 @@ const ProductsPage = () => {
 
   const handleDuplicateDecision = (addToExisting) => {
     if (addToExisting) {
-      // Add +1 to each duplicate product
       duplicateProductsList.forEach(product => {
         addToCart(product, 1);
       });
     }
     
-    // Add new products
     pendingBulkProducts.forEach(product => {
       addToCart(product, 1);
     });
@@ -204,7 +226,6 @@ const ProductsPage = () => {
     setPopup(true);
     setTimeout(() => setPopup(false), 2000);
     
-    // Clear selection and dialog
     setSelectedItems(new Set());
     setShowDuplicateDialog(false);
     setDuplicateProductsList([]);
@@ -220,28 +241,8 @@ const ProductsPage = () => {
     setShowCheckout(false);
   };
 
-  const saveOrderToLocalStorage = (orderData) => {
-    try {
-      const existingOrders = JSON.parse(localStorage.getItem('userOrders') || '[]');
-      const newOrder = {
-        id: `ORD-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`,
-        orderDate: new Date().toISOString(),
-        status: "Pending",
-        total: orderData.total,
-        paymentMethod: orderData.paymentMethod,
-        items: orderData.items,
-        shippingAddress: orderData.shippingAddress,
-      };
-      existingOrders.unshift(newOrder);
-      localStorage.setItem('userOrders', JSON.stringify(existingOrders));
-      return newOrder;
-    } catch (error) {
-      console.error('Error saving order:', error);
-      return null;
-    }
-  };
-
-  const handlePlaceOrder = (e) => {
+  // ========== REAL ORDER PLACEMENT WITH API ==========
+  const handlePlaceOrder = async (e) => {
     e.preventDefault();
 
     if (!formData.fullName || !formData.email || !formData.phone || !formData.address || !formData.city || !formData.state || !formData.pincode) {
@@ -251,177 +252,204 @@ const ProductsPage = () => {
       return;
     }
 
-    const orderData = {
-      total: getCartTotal(),
-      paymentMethod: formData.paymentMethod,
-      items: cart.map(item => ({
-        id: item.id,
-        name: item.title,
-        quantity: item.quantity,
-        price: item.price,
-      })),
-      shippingAddress: {
-        fullName: formData.fullName,
-        email: formData.email,
-        phone: formData.phone,
-        address: formData.address,
-        city: formData.city,
-        state: formData.state,
-        pincode: formData.pincode
-      }
-    };
-
-    const savedOrder = saveOrderToLocalStorage(orderData);
-
-    if (savedOrder) {
-      setOrderPlaced(true);
-      setShowCheckout(false);
-      setShowCart(false);
-      setPopupMessage("🎉 Order placed successfully!");
+    if (cart.length === 0) {
+      setPopupMessage("Your cart is empty!");
       setPopup(true);
-      setCart([]);
-      setFormData({
-        fullName: "",
-        email: "",
-        phone: "",
-        address: "",
-        city: "",
-        state: "",
-        pincode: "",
-        paymentMethod: "cod"
+      setTimeout(() => setPopup(false), 2000);
+      return;
+    }
+
+    try {
+      const { user, token } = getAuthData();
+      
+      if (!user || !user.id) {
+        toast.error("Please login to place order");
+        router.push('/login');
+        return;
+      }
+
+      if (!storeId) {
+        toast.error("Store not found. Please contact support.");
+        return;
+      }
+
+      const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000/api';
+      
+      const orderData = {
+        user_id: user.id,
+        store_id: storeId,
+        customer_name: formData.fullName,
+        customer_phone: formData.phone,
+        product_id: cart.map(item => item.id),
+        quantity: cart.map(item => item.quantity),
+        unit_id: cart.map(item => item.unit_id || 1),
+      };
+
+      console.log("Placing order:", orderData);
+
+      const response = await fetch(`${BASE_URL}/orders/store`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
+        body: JSON.stringify(orderData),
       });
-      setTimeout(() => {
-        setOrderPlaced(false);
-        setPopup(false);
-      }, 3000);
-    } else {
-      setPopupMessage("Error placing order. Please try again!");
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setOrderPlaced(true);
+        setShowCheckout(false);
+        setShowCart(false);
+        setPopupMessage("🎉 Order placed successfully!");
+        setPopup(true);
+        setCart([]);
+        setFormData({
+          fullName: "",
+          email: "",
+          phone: "",
+          address: "",
+          city: "",
+          state: "",
+          pincode: "",
+          paymentMethod: "cod"
+        });
+        setTimeout(() => {
+          setOrderPlaced(false);
+          setPopup(false);
+        }, 3000);
+      } else {
+        throw new Error(data.message || "Order failed");
+      }
+    } catch (error) {
+      console.error("Order error:", error);
+      setPopupMessage(error.message || "Error placing order. Please try again!");
       setPopup(true);
       setTimeout(() => setPopup(false), 2000);
     }
   };
 
-// ========== FETCH PRODUCTS FROM API ==========
-const fetchProducts = async () => {
-  try {
-    setLoading(true);
-    console.log("=== Starting to fetch products ===");
-
-    // ✅ FIX 1: Check if we're on client side
-    if (typeof window === 'undefined') {
-      console.log("Server side - skipping fetch");
-      setLoading(false);
-      return;
-    }
-
-    // ✅ FIX 2: Safely get auth data with try-catch
-    let user = null;
-    let token = null;
-    
+  // ========== FETCH PRODUCTS FROM API ==========
+  const fetchProducts = async () => {
     try {
-      const authData = getAuthData();
-      user = authData?.user;
-      token = localStorage.getItem("token");
+      setLoading(true);
+      console.log("=== Starting to fetch products ===");
+
+      if (typeof window === 'undefined') {
+        console.log("Server side - skipping fetch");
+        setLoading(false);
+        return;
+      }
+
+      let user = null;
+      let token = null;
+      
+      try {
+        const authData = getAuthData();
+        user = authData?.user;
+        token = localStorage.getItem("token");
+      } catch (error) {
+        console.error("Error getting auth data:", error);
+        toast.error("Please login again");
+        setLoading(false);
+        return;
+      }
+
+      if (!user || !user.id) {
+        console.error("No user found - redirecting to login");
+        toast.error("Please login to view products");
+        setLoading(false);
+        return;
+      }
+
+      const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000/api';
+      let endpoint = `${BASE_URL}/restaurant-all-products/${user.id}`;
+      
+      if (search) {
+        endpoint += `?search=${encodeURIComponent(search)}`;
+      }
+
+      console.log("Fetching from:", endpoint);
+
+      const response = await fetch(endpoint, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
+      });
+
+      const data = await response.json();
+      console.log("API Response:", data);
+
+      let productsArray = [];
+
+      if (data?.products?.data && Array.isArray(data.products.data)) {
+        productsArray = data.products.data;
+      }
+      else if (data?.data && Array.isArray(data.data)) {
+        productsArray = data.data;
+      }
+      else if (Array.isArray(data)) {
+        productsArray = data;
+      }
+      else {
+        console.error("Unknown response structure");
+        toast.error("Unable to parse products");
+        setProducts([]);
+        setLoading(false);
+        return;
+      }
+
+      // if (productsArray.length === 0) {
+      //   console.warn("No products found");
+      //   toast("No products available");
+      //   setProducts([]);
+      //   setLoading(false);
+      //   return;
+      // }
+
+      const transformedProducts = productsArray.map(product => {
+        const rawName = product.name || "Unnamed Product";
+        const rawDescription = product.description || `High quality ${rawName}`;
+
+        return {
+          id: product.id,
+          name: toTitleCase(cleanText(rawName)),
+          title: toTitleCase(cleanText(rawName)),
+          selling_price: parseFloat(product.selling_price) || 0,
+          purchase_price: parseFloat(product.purchase_price) || 0,
+          price: parseFloat(product.selling_price) || 0,
+          category: toTitleCase(cleanText(product.category?.name || "General")),
+          category_id: product.category_id,
+          brand: toTitleCase(cleanText(product.brand?.name || "Unknown")),
+          brand_id: product.brand_id,
+          unit: toTitleCase(cleanText(product.unit?.name || "Piece")),
+          unit_id: product.unit_id,
+          unit_amount: product.unit_amount,
+          is_active: product.is_active === 1 || product.is_active === true,
+          inStock: product.is_active === 1 || product.is_active === true,
+          gst_percentage: parseFloat(product.gst_percentage) || 0,
+          discount_percentage: parseFloat(product.discount_percentage) || 0,
+          description: cleanText(rawDescription),
+          rating: 4,
+          img: product.image || "/image/placeholder.png",
+          sku: product.sku,
+        };
+      });
+
+      console.log("Transformed products for UI:", transformedProducts);
+      setProducts(transformedProducts);
+
     } catch (error) {
-      console.error("Error getting auth data:", error);
-      toast.error("Please login again");
-      setLoading(false);
-      return;
-    }
-
-    // ✅ FIX 3: Check if user exists
-    if (!user || !user.id) {
-      console.error("No user found - redirecting to login");
-      toast.error("Please login to view products");
-      setLoading(false);
-      // Optional: redirect to login
-      // router.push('/login');
-      return;
-    }
-
-    const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000/api';
-    const endpoint = `${BASE_URL}/restaurant-all-products/${user.id}`;
-
-    console.log("Fetching from:", endpoint);
-
-    const response = await fetch(endpoint, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${token}`,
-      },
-    });
-
-    const data = await response.json();
-    console.log("API Response:", data);
-
-    let productsArray = [];
-
-    if (data?.products?.data && Array.isArray(data.products.data)) {
-      productsArray = data.products.data;
-    }
-    else if (data?.data && Array.isArray(data.data)) {
-      productsArray = data.data;
-    }
-    else if (Array.isArray(data)) {
-      productsArray = data;
-    }
-    else {
-      console.error("Unknown response structure");
-      toast.error("Unable to parse products");
+      console.error("Fetch error:", error);
+      toast.error("Failed to load products");
       setProducts([]);
+    } finally {
       setLoading(false);
-      return;
     }
-
-    if (productsArray.length === 0) {
-      console.warn("No products found");
-      toast("No products available");
-      setProducts([]);
-      setLoading(false);
-      return;
-    }
-
-    const transformedProducts = productsArray.map(product => {
-      const rawName = product.name || "Unnamed Product";
-      const rawDescription = product.description || `High quality ${rawName}`;
-
-      return {
-        id: product.id,
-        name: toTitleCase(cleanText(rawName)),
-        title: toTitleCase(cleanText(rawName)),
-        selling_price: parseFloat(product.selling_price) || 0,
-        purchase_price: parseFloat(product.purchase_price) || 0,
-        price: parseFloat(product.selling_price) || 0,
-        category: toTitleCase(cleanText(product.category?.name || "General")),
-        category_id: product.category_id,
-        brand: toTitleCase(cleanText(product.brand?.name || "Unknown")),
-        brand_id: product.brand_id,
-        unit: toTitleCase(cleanText(product.unit?.name || "Piece")),
-        unit_id: product.unit_id,
-        unit_amount: product.unit_amount,
-        is_active: product.is_active === 1 || product.is_active === true,
-        inStock: product.is_active === 1 || product.is_active === true,
-        gst_percentage: parseFloat(product.gst_percentage) || 0,
-        discount_percentage: parseFloat(product.discount_percentage) || 0,
-        description: cleanText(rawDescription),
-        rating: 4,
-        img: product.image || "/image/placeholder.png",
-        sku: product.sku,
-      };
-    });
-
-    console.log("Transformed products for UI:", transformedProducts);
-    setProducts(transformedProducts);
-
-  } catch (error) {
-    console.error("Fetch error:", error);
-    toast.error("Failed to load products");
-    setProducts([]);
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
   // ========== GET UNIQUE CATEGORIES ==========
   const getCategories = useCallback(() => {
@@ -461,16 +489,22 @@ const fetchProducts = async () => {
 
   // ========== LOAD PRODUCTS ON MOUNT ==========
   useEffect(() => {
-    const { user } = getAuthData();
-    console.log("Logged in user:", user);
+    const loadData = async () => {
+      const { user, token } = getAuthData();
+      console.log("Logged in user:", user);
 
-    if (!user || !user.id) {
-      setLoading(false);
-      toast.error("User not authenticated");
-      return;
-    }
+      if (!user || !user.id) {
+        setLoading(false);
+        toast.error("User not authenticated");
+        router.push('/login');
+        return;
+      }
 
-    fetchProducts();
+      await fetchProducts();
+      await fetchUserStore(user.id, token);
+    };
+
+    loadData();
   }, []);
 
   // ========== UPDATE DISPLAYED PRODUCTS ==========
@@ -480,7 +514,7 @@ const fetchProducts = async () => {
       setDisplayedProducts(filtered.slice(0, PRODUCTS_PER_PAGE));
       setPage(1);
       setHasMore(filtered.length > PRODUCTS_PER_PAGE);
-      setSelectedItems(new Set()); // Clear selection when filters change
+      setSelectedItems(new Set());
     }
   }, [products, search, category, maxPrice, sort, applyFiltersAndSort]);
 
@@ -548,7 +582,7 @@ const fetchProducts = async () => {
         <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white flex justify-center items-center">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-            <p className="text-gray-600 text-lg"> <b> <strong> You have to wait for ashmit's approval ✋🚫 </strong></b> </p>
+            <p className="text-gray-600 text-lg">WAIT ASHMIT IS BRINGING THE PRODUCTS ....will take a min</p>
           </div>
         </div>
         <Footer />
@@ -901,6 +935,7 @@ const fetchProducts = async () => {
                   alt={selectedProduct.name}
                   fill
                   className="object-contain"
+                  onError={handleImageError}
                 />
               </div>
               <div>
@@ -1226,6 +1261,13 @@ const fetchProducts = async () => {
                       </label>
                     </div>
                   </div>
+                  
+                  <button
+                    type="submit"
+                    className="w-full bg-gradient-to-r from-green-600 to-emerald-600 text-white py-3 rounded-lg hover:from-green-700 hover:to-emerald-700 transition shadow-lg font-medium"
+                  >
+                    Place Order • ₹{getCartTotal()}
+                  </button>
                 </form>
               </div>
             )}
@@ -1233,36 +1275,13 @@ const fetchProducts = async () => {
         </div>
 
         <div className="p-4 border-t bg-gray-50 absolute bottom-0 w-full flex-shrink-0">
-          {!showCheckout ? (
-            cart.length > 0 && (
-              <>
-                <div className="flex justify-between mb-3">
-                  <span className="font-semibold text-black">Subtotal:</span>
-                  <span className="font-bold text-lg text-black">₹{getCartTotal()}</span>
-                </div>
-                <button
-                  onClick={() => setShowCheckout(true)}
-                  className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-3 rounded-lg hover:from-indigo-700 hover:to-purple-700 transition shadow-lg"
-                >
-                  Proceed to Checkout
-                </button>
-              </>
-            )
-          ) : (
-            <div className="flex gap-3">
-              <button
-                onClick={backToCart}
-                className="flex-1 px-4 py-3 border-2 border-gray-300 rounded-lg hover:border-indigo-600 hover:text-indigo-600 transition font-medium text-black"
-              >
-                Back
-              </button>
-              <button
-                onClick={handlePlaceOrder}
-                className="flex-1 px-4 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg hover:from-green-700 hover:to-emerald-700 transition shadow-lg font-medium"
-              >
-                Place Order • ₹{getCartTotal()}
-              </button>
-            </div>
+          {!showCheckout && cart.length > 0 && (
+            <button
+              onClick={() => setShowCheckout(true)}
+              className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-3 rounded-lg hover:from-indigo-700 hover:to-purple-700 transition shadow-lg"
+            >
+              Proceed to Checkout
+            </button>
           )}
         </div>
       </div>
@@ -1275,8 +1294,17 @@ const fetchProducts = async () => {
             <h2 className="text-2xl font-bold mb-2 text-black">Order Placed Successfully!</h2>
             <p className="text-gray-600 mb-6">Thank you for shopping with us!</p>
             <button
+              onClick={() => {
+                setOrderPlaced(false);
+                router.push('/orders');
+              }}
+              className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 mr-3"
+            >
+              View Orders
+            </button>
+            <button
               onClick={() => setOrderPlaced(false)}
-              className="px-6 py-3 bg-blue-600 text-white rounded-lg"
+              className="px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
             >
               Continue Shopping
             </button>
