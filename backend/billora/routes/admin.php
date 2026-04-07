@@ -84,5 +84,8 @@ Route::middleware(['web', 'admin.auth'])->prefix('admin')->group(function () {
        Route::get('/', [BusinessTypeController::class, 'index'])->name('admin.business-types.index');
        Route::get('/create', [BusinessTypeController::class, 'create'])->name('admin.business-types.create');
        Route::post('/store', [BusinessTypeController::class, 'store'])->name('admin.business-types.store');
+       Route::get('/edit/{id}', [BusinessTypeController::class, 'edit'])->name('admin.business-types.edit');
+       Route::post('/update/{id}', [BusinessTypeController::class, 'update'])->name('admin.business-types.update');
+       Route::delete('/delete/{id}', [BusinessTypeController::class, 'delete'])->name('admin.business-types.delete');
     });
 });

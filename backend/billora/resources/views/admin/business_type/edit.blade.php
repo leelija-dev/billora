@@ -601,7 +601,7 @@
 
         <!-- Form Container - Full Width -->
         <div class="form-container">
-            <form id="planForm" action="{{ route('admin.roles.store') }}" method="POST"
+            <form id="planForm" action="{{ route('admin.business-types.update', $business_type->id) }}"  method="POST"
                 enctype="multipart/form-data" novalidate>
                 @csrf
 
@@ -610,7 +610,7 @@
                     <!-- Plan Name -->
                     <div class="form-group">
                         <label class="form-label">
-                            Business Name <span>*</span>
+                            Business Type <span>*</span>
                         </label>
                         <div class="input-wrapper">
                             <span class="input-icon">
@@ -620,11 +620,12 @@
                                 </svg>
                             </span>
                             <input type="text" name="name" class="form-input with-icon" placeholder="Enter business name "
-                                value="{{ old('name') }}" required>
-                            @error('name')
-                                <span class="text-danger">{{ $message }}</span>
-                            @enderror
+                                value="{{ $business_type->name }}" required>
+                            
                         </div>
+                        @error('name')
+                                <span class="text-red" style="color: red">{{ $message }}</span>
+                        @enderror
                     </div>
 
                 </div>
@@ -640,9 +641,8 @@
                     <div class="permissions-grid">
                         @foreach ($inputPermissions as $permission)
                             <label class="permission-card">
-                                <input type="checkbox" name="permissions[]" value="{{ $permission->name }}"
-                                    {{ in_array($permission->name, old('permissions', [])) ? 'checked' : '' }}>
-
+                                 <input type="checkbox" name="permissions[]" value="{{ $permission->id }}"
+                                    {{ in_array($permission->id, old('permissions', $selectedPermissions ?? [])) ? 'checked' : '' }}>
                                 <span class="permission-title">
                                     {{ ucfirst($permission->name) }}
                                 </span>
@@ -654,7 +654,24 @@
                         <span class="text-danger">{{ $message }}</span>
                     @enderror
                 </div>
+                <div class="form-group mt-2">
+                    <div class="toggle-group">
+                        <div>
+                            <div class="toggle-label">Active Status</div>
+                        </div>
+                        <label class="switch">
+                            <input type="hidden" name="is_active" value="0">
+                            <input type="checkbox" name="is_active" value="1"
+                                {{ isset($business_type) && $business_type->is_active ? 'checked' : '' }}>
 
+                            <span class="slider"></span>
+                        </label>
+
+                    </div>
+                    @error('is_active')
+                        <span class="text-danger" style="color: red">{{ $message }}</span>
+                    @enderror
+                </div>
                 <div class="form-actions">
                     <a href="{{ route('admin.roles.index') }}"><button type="button"
                             class="btn btn-secondary">Cancel</button></a>
@@ -663,7 +680,7 @@
                             <path
                                 d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm4-10H5V5h11v4z" />
                         </svg>
-                        Create Role
+                        Save
                     </button>
                 </div>
             </form>
