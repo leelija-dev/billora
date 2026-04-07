@@ -3,9 +3,11 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\admin\AuthController;
 use App\Http\Controllers\admin\superadmin\AdminMailController;
 use App\Http\Controllers\admin\superadmin\AdminUserController;
+use App\Http\Controllers\admin\superadmin\BusinessTypeController;
 use App\Http\Controllers\admin\superadmin\CustomerController;
 use App\Http\Controllers\admin\superadmin\PlansController;
 use App\Http\Controllers\admin\superadmin\PlanPermissionController;
+use App\Http\Controllers\admin\superadmin\RolesController;
 use App\Http\Controllers\admin\superadmin\SuperAdminPermissionController;
 use App\Models\AdminMailHistory;
 use App\Models\SuperAdminPermission;
@@ -69,5 +71,21 @@ Route::middleware(['web', 'admin.auth'])->prefix('admin')->group(function () {
         Route::get('/', [SuperAdminPermissionController::class, 'index'])->name('admin.permissions.index');
         Route::get('/create', [SuperAdminPermissionController::class, 'create'])->name('admin.permissions.create');
         Route::post('/store', [SuperAdminPermissionController::class, 'store'])->name('admin.permissions.store');
+    });
+    Route::prefix('role')->group(function (){
+        Route::get('/',[RolesController::class ,'index'])->name('admin.roles.index');
+        Route::get('/create', [RolesController::class, 'create'])->name('admin.roles.create');
+        Route::post('/store', [RolesController::class, 'store'])->name('admin.roles.store');
+        Route::get('/edit/{id}', [RolesController::class, 'edit'])->name('admin.roles.edit');
+        Route::post('/update/{id}', [RolesController::class, 'update'])->name('admin.roles.update');
+        Route::delete('/delete/{id}', [RolesController::class, 'delete'])->name('admin.roles.delete');
+    });
+    Route::prefix('business-types')->group(function () {
+       Route::get('/', [BusinessTypeController::class, 'index'])->name('admin.business-types.index');
+       Route::get('/create', [BusinessTypeController::class, 'create'])->name('admin.business-types.create');
+       Route::post('/store', [BusinessTypeController::class, 'store'])->name('admin.business-types.store');
+       Route::get('/edit/{id}', [BusinessTypeController::class, 'edit'])->name('admin.business-types.edit');
+       Route::post('/update/{id}', [BusinessTypeController::class, 'update'])->name('admin.business-types.update');
+       Route::delete('/delete/{id}', [BusinessTypeController::class, 'delete'])->name('admin.business-types.delete');
     });
 });

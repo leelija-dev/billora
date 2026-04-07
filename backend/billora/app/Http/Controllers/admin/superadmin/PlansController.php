@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\admin\superadmin;
 
 use App\Http\Controllers\Controller;
+use App\Models\BusinessType;
+use App\Models\PlanBusinessType;
 use Illuminate\Http\Request;
 use App\Models\Plans;
 use App\Models\PlanPermission;
@@ -52,7 +54,8 @@ class PlansController extends Controller
     {
         $this->checkAdminAuth();
         $permissions = PlanPermission::all();
-        return view('admin.plans.create', compact('permissions'));
+        $business_types = BusinessType::where('is_active', 1)->get();
+        return view('admin.plans.create', compact('permissions', 'business_types'));
     }
     public function store(Request $request)
     {
@@ -68,6 +71,7 @@ class PlansController extends Controller
             'duration_days' => 'required',
             'currency'      => 'nullable',
             'permissions'    => 'nullable|array',
+            'business_types' => 'required|array'
         ]);
         $admin = Auth::guard('admin')->user();
 
@@ -81,6 +85,12 @@ class PlansController extends Controller
                     PlanPermissionDetails::create([
                         'plan_id' => $plan->id,
                         'permission_id' => $permission
+                    ]);
+                }
+                foreach ($data['business_types'] as $business_type) {
+                    PlanBusinessType::create([
+                        'plan_id' => $plan->id,
+                        'business_type_id' => $business_type
                     ]);
                 }
             }
@@ -98,13 +108,14 @@ class PlansController extends Controller
 
         // all permissions list
         $permissions = PlanPermission::all();
-
+        $business_types = BusinessType::where('is_active', 1)->get();
+        $selected_business_types = PlanBusinessType::where('plan_id', $plan->id)->pluck('business_type_id')->toArray();
         // get saved permission IDs
         $planPermissions = PlanPermissionDetails::where('plan_id', $plan->id)
             ->pluck('permission_id')
             ->toArray();
 
-        return view('admin.plans.edit', compact('plan', 'permissions', 'planPermissions'));
+        return view('admin.plans.edit', compact('plan', 'permissions', 'planPermissions', 'business_types', 'selected_business_types'));
     }
     public function update(Request $request, $id)
     {
@@ -119,6 +130,7 @@ class PlansController extends Controller
             'duration_days' => 'required',
             'currency'      => 'nullable',
             'permissions'   => 'nullable|array',
+            'business_types' => 'required|array'
         ]);
 
         try {
@@ -129,7 +141,7 @@ class PlansController extends Controller
 
             // Selected permissions from form
             $newPermissions = $request->permissions ?? [];
-
+            $newBusinessTypes = $request->business_types ?? [];
             // Existing permissions in DB
             $oldPermissions = PlanPermissionDetails::where('plan_id', $plan->id)
                 ->pluck('permission_id')
@@ -151,6 +163,30 @@ class PlansController extends Controller
                 PlanPermissionDetails::create([
                     'plan_id' => $plan->id,
                     'permission_id' => $permission
+                ]);
+            }
+            //update business types
+            // Existing business types
+            $oldBusinessTypes = PlanBusinessType::where('plan_id', $plan->id)
+                ->pluck('business_type_id')
+                ->toArray();
+
+            // DELETE unchecked
+            $toDeleteBusiness = array_diff($oldBusinessTypes, $newBusinessTypes);
+
+            if (!empty($toDeleteBusiness)) {
+                PlanBusinessType::where('plan_id', $plan->id)
+                    ->whereIn('business_type_id', $toDeleteBusiness)
+                    ->delete();
+            }
+
+            // INSERT new
+            $toInsertBusiness = array_diff($newBusinessTypes, $oldBusinessTypes);
+
+            foreach ($toInsertBusiness as $typeId) {
+                PlanBusinessType::create([
+                    'plan_id' => $plan->id,
+                    'business_type_id' => $typeId
                 ]);
             }
 
@@ -213,12 +249,13 @@ class PlansController extends Controller
 
         return view('admin.plans.edit', compact('plan', 'permissions', 'planPermissions'));
     }
-    public function purchaseHistory(){
+    public function purchaseHistory()
+    {
         $planPurchaseHistory =  PlanPurchaseHistory::latest()->paginate(10);
         $totalplanHistory = PlanPurchaseHistory::count();
         $successPayment = PlanPurchaseHistory::where('payment_status', 'success')->count();
         $planExpire = PlanPurchaseHistory::where('payment_status', 'pending')->count();
         $cancelledPayment = PlanPurchaseHistory::where('payment_status', 'failed')->count();
-        return view('admin.plans.plan-purchase-history', compact('planPurchaseHistory','totalplanHistory','successPayment','planExpire','cancelledPayment'));
+        return view('admin.plans.plan-purchase-history', compact('planPurchaseHistory', 'totalplanHistory', 'successPayment', 'planExpire', 'cancelledPayment'));
     }
 }

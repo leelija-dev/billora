@@ -632,7 +632,24 @@
                             @enderror
                         </div>
                     </div>
+                    <div class="form-group">
+                        <label class="form-label">
+                            Business Types <span>*</span>
+                        </label>
 
+                        <select name="business_types[]" class="form-select" multiple required id="businessTypes">
+                            @foreach ($business_types as $type)
+                                <option value="{{ $type->id }}"
+                                    {{ in_array($type->id, old('business_types', [])) ? 'selected' : '' }}>
+                                    {{ $type->name }}
+                                </option>
+                            @endforeach
+                        </select>
+
+                        @error('business_types')
+                            <span class="text-danger" style="color:red;">{{ $message }}</span>
+                        @enderror
+                    </div>
                     <!-- Price and Currency -->
                     <div class="form-group">
                         <label class="form-label">
@@ -819,6 +836,8 @@
 
     <!-- Summernote JS -->
     <script src="https://cdn.jsdelivr.net/npm/summernote@0.8.20/dist/summernote-lite.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <script>
         function addFeature() {
             const container = document.getElementById('features-container');
@@ -929,4 +948,12 @@
 
         });
     </script>
+    <script>
+    $(document).ready(function() {
+        $('#businessTypes').select2({
+            placeholder: "Select Business Types",
+            allowClear: true
+        });
+    });
+</script>
 @endsection

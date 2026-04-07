@@ -5,6 +5,7 @@ namespace App\Http\Controllers\admin;
 use App\Http\Controllers\Controller;
 use App\Models\Customers;
 use App\Models\PaymentHistory;
+use App\Models\PlanBusinessType;
 use App\Models\PlanPurchaseHistory;
 use App\Models\Plans;
 use Illuminate\Http\Request;
@@ -19,6 +20,7 @@ class PaymentController extends Controller
         $request->validate([
             'amount' => 'required|numeric|min:1',
             'plan_id' => 'required|exists:plans,id',
+            'business_type_id' => 'required',
             'customer_id' => 'required|exists:customers,id',
         ]);
         $customer = Customers::find($request->customer_id);
@@ -129,6 +131,7 @@ class PaymentController extends Controller
     // Safe fetch
     $customer = Customers::find($planPurchase->user_id);
     $plan = Plans::find($planPurchase->plan_id);
+    $bussiness_type = PlanBusinessType::where('plan_id',$plan->id)->first();
 
     // Prevent duplicate
     if ($planPurchase->payment_status === 'success') {
@@ -156,6 +159,7 @@ class PaymentController extends Controller
         //customer plan activate
         $customer->update([
             'plan_id' => $plan->id,
+            'business_type_id' => $bussiness_type->business_type_id,
             'is_active' => true
         ]);
         // Generate mail

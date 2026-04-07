@@ -1,5 +1,5 @@
 @extends('admin.main-layout')
-@section('title','All Plans')
+@section('title','All Roles')
 @section('content')
     <style>
         .fade-in {
@@ -33,18 +33,18 @@
                 <div class="px-3 py-4">
                     <div class="flex justify-between items-center">
                         <div>
-                            <h1 class="text-2xl font-bold text-gray-800">Permission Management</h1>
+                            <h1 class="text-2xl font-bold text-gray-800">Role Management</h1>
                         </div>
                         
                         <!-- Actions -->
                         <div class="flex items-center space-x-3">
                             <!-- Search -->
                             <div class="relative">
-                                <form method="GET" action="{{ route('admin.plans.index') }}">
+                                <form method="GET" action="#">
                                     <input type="text" 
                                         name="search"
                                         value="{{ request('search') }}"
-                                        placeholder="Search plans..." 
+                                        placeholder="Search roles..." 
                                         class="pl-9 pr-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-transparent w-56">
                                     <i data-feather="search" class="absolute left-2.5 top-2 w-3.5 h-3.5 text-gray-400"></i>
                                     
@@ -58,16 +58,12 @@
                                     @endif
                                 </form>
                             </div>
-                            <a href="#" ><button
-                                    class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg flex items-center transition duration-200">
-                                <i data-feather="trash" class="w-4 h-4 mr-2"></i>
-                                Trashed permissions
-                            </button></a>
+                            
                             <!-- Add Plan Button -->
-                           <a href="{{route('admin.permissions.create')}}" ><button
+                           <a href="{{route('admin.roles.create')}}" ><button
                                     class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center transition duration-200">
                                 <i data-feather="plus" class="w-4 h-4 mr-2"></i>
-                                Add permission
+                                Add Role
                             </button></a>
                         </div>
                     </div>
@@ -80,68 +76,11 @@
                     {{ session('success') }}
                 </div>
             @endif
-
-            <!-- Stats Cards -->
-            <div class="px-6 py-6">
-                <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
-                    <div class="bg-white rounded-lg shadow p-6 border-l-4 border-blue-500">
-                        <div class="flex items-center justify-between">
-                            <div>
-                                <p class="text-sm text-blue-600"><strong>Total Permissions</strong></p>
-                                <p class="text-2xl font-bold text-blue-600">{{ $totalPermissions ?? 0 }}</p>
-                            </div>
-                            <div class="p-3 bg-blue-100 rounded-full">
-                                <i data-feather="layers" class="w-6 h-6 text-blue-600"></i>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="bg-white rounded-lg shadow p-6 border-l-4 border-green-500">
-                        <div class="flex items-center justify-between">
-                            <div>
-                                <p class="text-sm text-green-600"><strong>Active Permissions</strong></p>
-                                <p class="text-2xl font-bold text-green-600">{{ $activePermissions ?? 0 }}</p>
-                            </div>
-                            <div class="p-3 bg-green-100 rounded-full">
-                                <i data-feather="check-circle" class="w-6 h-6 text-green-600"></i>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="bg-white rounded-lg shadow p-6 border-l-4 border-yellow-500">
-                        <div class="flex items-center justify-between">
-                            <div>
-                                <p class="text-sm text-yellow-600"> <strong>Inactive Permissions </strong></p>
-                                <p class="text-2xl font-bold text-yellow-600">{{ $inactivePermissions ?? 0 }}</p>
-                            </div>
-                            <div class="p-3 bg-orange-100 rounded-full">
-                                <i data-feather="pause-circle" class="w-6 h-6 text-orange-600"></i>
-                            </div>
-                        </div>
-                    </div>
-
-                    <a href="{{route('admin.plans.deleted')}}"> 
-                        <div class="bg-white rounded-lg shadow p-6 border-l-4 border-red-500">
-                        
-                            <div class="flex items-center justify-between">
-                                <div>
-                                    <p class="text-sm text-red-600"><strong> Deleted Permissions</strong></p>
-                                    <p class="text-2xl font-bold text-red-600">{{ $deletedPlans ?? '0' }}</p>
-                                </div>
-                                <div class="p-3 bg-red-100 rounded-full">
-                                    <i data-feather="trash-2" class="w-6 h-6 text-red-600"></i>
-                                </div>
-                            </div>
-                        </div>
-                    </a>
-                </div>
-            </div>
-
             <!-- Plans Table -->
-            <div class="px-6 pb-6">
+            <div class="px-6 pb-6 mt-4">
                 <div class="bg-white rounded-lg shadow">
                     <div class="px-6 py-4 border-b border-gray-200">
-                        <h2 class="text-lg font-semibold text-gray-800">All Permissions</h2>
+                        <h2 class="text-lg font-semibold text-gray-800">All Roles</h2>
                     </div>
                     
                     <div class="overflow-x-auto">
@@ -149,34 +88,34 @@
                             <thead class="bg-gray-50 border-b border-gray-200">
                                 <tr>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sl. No</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Permission Name</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role Name</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created At</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                                 </tr>
                             </thead>
                             <tbody class="bg-white divide-y divide-gray-200">
                                
-                                @forelse ($permissions as $permission)
+                                @forelse ($roles as $role)
                                     <tr class="hover:bg-gray-50 transition duration-150">
                                        
                                         <td class="px-6 py-4 whitespace-nowrap">
-                                           {{ $loop->iteration + ($permissions->currentPage() - 1) * $permissions->perPage() }}
+                                           {{ $loop->iteration + ($roles->currentPage() - 1) * $roles->perPage() }}
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap">
-                                            {{ $permission->name  ?? ''}}
+                                            {{ $role->name  ?? ''}}
                                         </td>
                                         
                                         <td class="px-6 py-4">
-                                            {{ $permission->created_at->format('M d, Y h:i A') }}
+                                            {{ $role->created_at->format('M d, Y h:i A') }}
                                         </td>
                                     
                                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                            <a href="{{ route('admin.plans.edit', $permission->id) }}"> 
+                                            <a href="{{ route('admin.roles.edit', $role->id) }}"> 
                                                 <button  class="text-blue-600 hover:text-blue-900 mr-3">
                                                     <i data-feather="edit-2" class="w-4 h-4"></i>
                                                 </button>
                                             </a>
-                                            <button onclick="deletePlan({{ $permission->id }})" 
+                                            <button onclick="deletePlan({{ $role->id }})" 
                                                 class="text-red-600 hover:text-red-900">
                                                 <i data-feather="trash-2" class="w-4 h-4"></i>
                                             </button>
@@ -187,7 +126,7 @@
                                         <td colspan="7" class="px-6 py-12 text-center">
                                             <div class="text-center">
                                                 <i data-feather="inbox" class="mx-auto h-12 w-12 text-gray-400"></i>
-                                                <h3 class="mt-2 text-sm font-medium text-gray-900">No permissions found!</h3>
+                                                <h3 class="mt-2 text-sm font-medium text-gray-900">No roles found!</h3>
                                                                                                 
                                             </div>
                                         </td>
@@ -198,7 +137,7 @@
                         </table>
                     </div>
                     <div class="p-4">
-                        {{ $permissions->links('pagination::tailwind') }}
+                        {{ $roles->links('pagination::tailwind') }}
                     </div>
                 </div>
             </div>
@@ -258,7 +197,7 @@ function deletePlan(id) {
 
     Swal.fire({
         title: 'Are you sure?',
-        text: "This plan will be deleted!",id,
+        text: "This role will be deleted!",
         icon: 'warning',
         showCancelButton: true,
         confirmButtonColor: '#dc2626',
@@ -271,7 +210,7 @@ function deletePlan(id) {
 
             const form = document.createElement('form');
             form.method = 'POST';
-            form.action = `{{ route('admin.plans.delete', ':id') }}`.replace(':id', id);
+            form.action = `{{ route('admin.roles.delete', ':id') }}`.replace(':id', id);
 
             // CSRF
             const csrf = document.createElement('input');
