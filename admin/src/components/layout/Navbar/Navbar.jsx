@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../../store/authStore';
 import { useUIStore } from '../../../store/uiStore';
+import { useNotificationStore } from '../../../store/notificationStore';
 import {
   FiMenu,
   FiSun,
@@ -23,22 +24,24 @@ const Navbar = () => {
   const navigate = useNavigate();
   const { user, company, logout } = useAuthStore();
   const { theme, toggleTheme, toggleSidebar, sidebarOpen, isMobile } = useUIStore();
+  const { notifications, planExpireReminder, initializeNotifications, updateNotification } = useNotificationStore();
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [showMobileSearch, setShowMobileSearch] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [searchFocused, setSearchFocused] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [notifications, setNotifications] = useState([
-    { id: 1, title: 'New order received', description: 'Order #12345 from John Doe', time: '5 min ago', read: false, type: 'order' },
-    { id: 2, title: 'Low stock alert', description: 'Product XYZ is running low', time: '1 hour ago', read: false, type: 'warning' },
-    { id: 3, title: 'Payment received', description: '$500 from ABC Corp', time: '2 hours ago', read: true, type: 'payment' },
-    { id: 4, title: 'New user registered', description: 'Sarah Smith joined', time: '1 day ago', read: true, type: 'user' },
-  ]);
 
   const userMenuRef = useRef(null);
   const notificationsRef = useRef(null);
   const mobileSearchRef = useRef(null);
+
+  // Initialize notifications on component mount
+  useEffect(() => {
+    if (user?.id) {
+      initializeNotifications(user.id);
+    }
+  }, [user?.id, initializeNotifications]);
 
   // Handle click outside
   useEffect(() => {
@@ -85,12 +88,6 @@ const Navbar = () => {
     navigate('/login');
   };
 
-  const unreadCount = notifications.filter(n => !n.read).length;
-
-  const markAllAsRead = () => {
-    setNotifications(notifications.map(n => ({ ...n, read: true })));
-  };
-
   const getNotificationIcon = (type) => {
     switch(type) {
       case 'order': return '🛒';
@@ -101,11 +98,38 @@ const Navbar = () => {
     }
   };
 
+  // Create combined notifications list
+  const allNotifications = [
+    ...(planExpireReminder ? [{
+      id: 'plan-expiry',
+      title: 'Plan Expiry Reminder',
+      description: planExpireReminder.message || 'Your subscription is expiring soon',
+      time: planExpireReminder.days_left ? `${planExpireReminder.days_left} days left` : 'Soon',
+      read: false,
+      type: 'warning'
+    }] : [])
+  ];
+
   // Filter notifications based on search
-  const filteredNotifications = notifications.filter(n => 
+  const filteredNotifications = allNotifications.filter(n => 
     n.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
     n.description.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  const unreadCount = allNotifications.filter(n => !n.read).length;
+
+  const markAllAsRead = () => {
+    allNotifications.forEach(notification => {
+      if (!notification.read) {
+        if (notification.id === 'plan-expiry') {
+          // Handle plan expiry notification (mark as read locally)
+          updateNotification({ ...notification, read: true });
+        } else {
+          updateNotification({ ...notification, read: true });
+        }
+      }
+    });
+  };
 
   return (
     <>

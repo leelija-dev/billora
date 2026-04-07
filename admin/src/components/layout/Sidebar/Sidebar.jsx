@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
+import { useAuthStore } from '../../../store/authStore';
+import { useNotificationStore } from '../../../store/notificationStore';
 import { useUIStore } from '../../../store/uiStore';
 import { usePermissionStore } from '../../../store/permissionStore';
 import {
@@ -28,8 +30,17 @@ import { TbRuler2 } from "react-icons/tb";
 const Sidebar = () => {
   const { sidebarOpen, toggleSidebar, isMobile, setIsMobile } = useUIStore();
   const { canAccess } = usePermissionStore();
+  const { user } = useAuthStore();
+  const { planExpireReminder, initializeNotifications } = useNotificationStore();
   const location = useLocation();
   const [hoveredItem, setHoveredItem] = useState(null);
+
+  // Initialize notifications on component mount
+  useEffect(() => {
+    if (user?.id) {
+      initializeNotifications(user.id);
+    }
+  }, [user?.id, initializeNotifications]);
 
   useEffect(() => {
     const checkMobile = () => {
@@ -56,12 +67,12 @@ const Sidebar = () => {
     { path: '/brands', name: 'Brands', icon: FiTag, badge: null },
     { path: '/units', name: 'Units', icon: TbRuler2, badge: null },
     { path: '/stores', name: 'Stores', icon: FaStore, badge: null },
-    { path: '/stock', name: 'Stock', icon: FiArchive, badge: 'Low Stock', permission: 'stock-management' },
-    { path: '/orders', name: 'Orders', icon: FiShoppingBag, badge: '12', permission: 'hide-with-stock' },
+    { path: '/stock', name: 'Stock', icon: FiArchive, badge: null, permission: 'stock-management' },
+    { path: '/orders', name: 'Orders', icon: FiShoppingBag, badge: null, permission: 'hide-with-stock' },
     { path: '/customers', name: 'Customers', icon: FiUsers, badge: null },
-    { path: '/invoices', name: 'Invoices', icon: FiFileText, badge: '3' },
+    { path: '/invoices', name: 'Invoices', icon: FiFileText, badge: null },
     { path: '/reports', name: 'Reports', icon: FiBarChart2, badge: null },
-    { path: '/billing', name: 'Plans', icon: FiCreditCard, badge: null },
+    { path: '/billing', name: 'Plans', icon: FiCreditCard, badge: planExpireReminder ? '⚠️' : null },
     { path: '/settings', name: 'Settings', icon: FiSettings, badge: null },
   ];
 
@@ -199,7 +210,13 @@ const Sidebar = () => {
                     
                     {/* Notification badge for icon */}
                     {item.badge && !sidebarOpen && (
-                      <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full ring-2 ring-white dark:ring-gray-800" />
+                      <span className={`absolute -top-1 -right-1 w-2 h-2 ${
+                        item.badge === 'Low Stock' 
+                          ? 'bg-yellow-500' 
+                          : item.badge === '⚠️' 
+                            ? 'bg-orange-500'
+                            : 'bg-red-500'
+                      } rounded-full ring-2 ring-white dark:ring-gray-800`} />
                     )}
                   </motion.div>
 
