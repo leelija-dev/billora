@@ -10,6 +10,8 @@ use App\Models\Brand;
 use App\Models\Categories;
 use App\Models\Stocks;
 use App\Models\Customers;
+use App\Models\ProductImages;
+use App\Models\ProductVariant;
 use App\Models\Store;
 use Illuminate\Support\Facades\Auth;
 use Google\Client;
@@ -24,6 +26,10 @@ use BaconQrCode\Renderer\ImageRenderer;
 use BaconQrCode\Renderer\RendererStyle\RendererStyle;
 use BaconQrCode\Renderer\Image\SvgImageBackEnd;
 use BaconQrCode\Writer;
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\DB;
+use Milon\Barcode\Facades\DNS1DFacade as DNS1D;
+
 class ProductsController extends Controller
 {
     public function index(Request $request)
@@ -36,7 +42,7 @@ class ProductsController extends Controller
                 ]);
             }
             $user = Auth::user()->id;
-            $product = Products::where('user_id', $user)->where('is_active', true)->paginate(15);
+            $product = Products::with('variants', 'images')->where('user_id', $user)->where('is_active', true)->paginate(15);
             if ($request->has('search')) {
                 $product = Products::where('user_id', $user)->where('name', 'like', '%' . $request->search . '%')
                     ->orWhere('sku', 'like', '%' . $request->search . '%')
@@ -101,7 +107,7 @@ class ProductsController extends Controller
         }
     }
 
-    private function uploadToDrive($file,$folderId)
+    private function uploadToDrive($file, $folderId)
     {
         $client = new Client();
         $client->setClientId(env('GOOGLE_CLIENT_ID'));
@@ -109,9 +115,14 @@ class ProductsController extends Controller
         $client->refreshToken(env('GOOGLE_REFRESH_TOKEN'));
 
         $service = new Drive($client);
+        $name = method_exists($file, 'getClientOriginalName')
+        ? $file->getClientOriginalName()
+        : basename($file->getPathname());
+
 
         $fileMetadata = new DriveFile([
-            'name' => time() . '_' . $file->getClientOriginalName(),
+            // 'name' => time() . '_' . $file->getClientOriginalName(),
+            'name' => time() . '_' . $name,
             'parents' => [$folderId]
         ]);
 
@@ -134,73 +145,107 @@ class ProductsController extends Controller
 
         return "https://drive.google.com/uc?export=view&id=" . $fileId;
     }
- private function generateQrAndUpload($product)
-{
-    try {
-        $qrData = "ID:{$product->id}";
-        // OR better:
-        // $qrData = env('FRONTEND_URL') . "/product/" . $product->id;
-
-        $renderer = new ImageRenderer(
-            new RendererStyle(100),
-            new SvgImageBackEnd()
-        );
-
-        $writer = new Writer($renderer);
-
-        // Generate QR as string (NO FILE)
-        $qrContent = $writer->writeString($qrData);
-
-        return $this->uploadStringToDrive(
-            $qrContent,
-            'qr_' . $product->id . '_' . time() . '.svg',
-            env('GOOGLE_QR_FOLDER_ID')
-        );
-
-    } catch (\Exception $e) {
-        Log::error('QR Error: ' . $e->getMessage());
-        return null;
-    }
-}
-
-private function uploadStringToDrive($content, $fileName, $folderId)
-{
-    $client = new Client();
-    $client->setClientId(env('GOOGLE_CLIENT_ID'));
-    $client->setClientSecret(env('GOOGLE_CLIENT_SECRET'));
-    $client->refreshToken(env('GOOGLE_REFRESH_TOKEN'));
-
-    $service = new Drive($client);
-
-    $fileMetadata = new DriveFile([
-        'name' => $fileName,
-        'parents' => [$folderId]
-    ]);
-
-    $uploadedFile = $service->files->create($fileMetadata, [
-        'data' => $content,
-        'mimeType' => 'image/svg+xml',
-        'uploadType' => 'multipart',
-        'fields' => 'id'
-    ]);
-
-    $fileId = $uploadedFile->id;
-
-    // Make public
-    $permission = new Permission([
-        'type' => 'anyone',
-        'role' => 'reader'
-    ]);
-
-    $service->permissions->create($fileId, $permission);
-
-    return "https://drive.google.com/uc?export=view&id=" . $fileId;
-}
-    public function store(Request $request)
+    private function generateQrAndUpload($product)
     {
         try {
+            $qrData = "ID:{$product->id}";
+            // OR better:
+            // $qrData = env('FRONTEND_URL') . "/product/" . $product->id;
+
+            $renderer = new ImageRenderer(
+                new RendererStyle(100),
+                new SvgImageBackEnd()
+            );
+
+            $writer = new Writer($renderer);
+
+            // Generate QR as string (NO FILE)
+            $qrContent = $writer->writeString($qrData);
+
+            return $this->uploadStringToDrive(
+                $qrContent,
+                'qr_' . $product->id . '_' . time() . '.svg',
+                env('GOOGLE_QR_FOLDER_ID')
+            );
+        } catch (\Exception $e) {
+            Log::error('QR Error: ' . $e->getMessage());
+            return null;
+        }
+    }
+
+    private function uploadStringToDrive($content, $fileName, $folderId)
+    {
+        $client = new Client();
+        $client->setClientId(env('GOOGLE_CLIENT_ID'));
+        $client->setClientSecret(env('GOOGLE_CLIENT_SECRET'));
+        $client->refreshToken(env('GOOGLE_REFRESH_TOKEN'));
+
+        $service = new Drive($client);
+
+        $fileMetadata = new DriveFile([
+            'name' => $fileName,
+            'parents' => [$folderId]
+        ]);
+
+        $uploadedFile = $service->files->create($fileMetadata, [
+            'data' => $content,
+            'mimeType' => 'image/svg+xml',
+            'uploadType' => 'multipart',
+            'fields' => 'id'
+        ]);
+
+        $fileId = $uploadedFile->id;
+
+        // Make public
+        $permission = new Permission([
+            'type' => 'anyone',
+            'role' => 'reader'
+        ]);
+
+        $service->permissions->create($fileId, $permission);
+
+        return "https://drive.google.com/uc?export=view&id=" . $fileId;
+    }
+    private function generateBarcodeAndUpload($product)
+    {
+        // generate base64 barcode
+        $barcodeBase64 = DNS1D::getBarcodePNG((string)$product->id, 'C128');
+
+        // convert base64 → binary
+        $imageData = base64_decode($barcodeBase64);
+
+        // create temp file (memory-based)
+        $tempFile = tmpfile();
+        $tempPath = stream_get_meta_data($tempFile)['uri'];
+
+        file_put_contents($tempPath, $imageData);
+
+        // convert to Laravel File
+        $file = new \Illuminate\Http\File($tempPath);
+
+        // upload to Google Drive
+        $barcodeUrl = $this->uploadToDrive(
+            $file,
+            env('GOOGLE_BAR_CODE_FOLDER_ID')
+        );
+
+        // close temp file (auto deletes)
+        fclose($tempFile);
+
+        return $barcodeUrl;
+    }
+    public function store(Request $request)
+    {
+        DB::beginTransaction();
+        try {
             $user = Auth::user()->id;
-            
+          $variants = $request->input('variants');
+
+        // if not array → remove it completely
+        if (!is_array($variants)) {
+            $request->request->remove('variants');
+            $variants = [];
+        }
             $data = $request->validate([
                 // 'sku'                   => 'required|unique:products',
                 'user_id'               => 'nullable',
@@ -217,7 +262,46 @@ private function uploadStringToDrive($content, $fileName, $folderId)
                 'description'           => 'nullable',
                 'is_active'             => 'required',
                 'image'                 => 'nullable',
-                'qr_code'               => 'nullable'
+                'qr_code'               => 'nullable',
+                //new columns
+                'conversion_factor'    => 'nullable',
+                'minimum_stock_quantity' => 'nullable',
+                'maximum_stock_quantity' => 'nullable',
+                'current_stock' => 'nullable',
+                'mrp' => 'nullable',
+                'wholesale_price' => 'nullable',
+                'gst_hsn_code'  => 'nullable',
+                'discount_amount' => 'nullable',
+                'cess_percentage' => 'nullable',
+                'attributes' => 'nullable',
+                'medicine_type' => 'nullable',
+                'other_medicine_type' => 'nullable',
+                'expiry_date' => 'nullable',
+                'batch_number' => 'nullable',
+                'manufacturer_name' => 'nullable',
+                'prescription_required' => 'nullable',
+                'schedule_type' => 'nullable',
+                'salt_composition' => 'nullable',
+                'perishable' => 'nullable',
+                'organic_certified' => 'nullable',
+                'harvest_date' => 'nullable',
+                'storage_instructions' => 'nullable',
+                'short_description' => 'nullable',
+                'is_featured' => 'nullable',
+                'is_returnable' => 'nullable',
+                'is_refundable' => 'nullable',
+                'warranty_months' => 'nullable',
+                'warehouse_location' => 'nullable',
+                'supplier_id' => 'nullable',
+                'updated_by' => 'nullable',
+                'images.*'              => 'nullable|image',
+                // Variants
+                'variants'              => 'sometimes|array',
+                'variants.*.size'       => 'nullable',
+                'variants.*.color'      => 'nullable',
+                'variants.*.material'   => 'nullable',
+                'variants.*.gender'     => 'nullable',
+
             ]);
             if (!Auth::check()) {
                 return response()->json([
@@ -225,39 +309,110 @@ private function uploadStringToDrive($content, $fileName, $folderId)
                     'message' => 'Authentication required. Please login first.'
                 ]);
             }
-           //  Upload Image → images folder
-        if ($request->hasFile('image')) {
-            $data['image'] = $this->uploadToDrive(
-                $request->file('image'),
-                env('GOOGLE_IMAGE_FOLDER_ID')
-            );
-        }
+            //  Upload main Image → image folder
+            if ($request->hasFile('image')) {
+                $data['image'] = $this->uploadToDrive(
+                    $request->file('image'),
+                    env('GOOGLE_IMAGE_FOLDER_ID')
+                );
+            }
 
-        //  Upload QR → qr_codes folder
-        // if ($request->hasFile('qr_code')) {
-        //     $data['qr_code'] = $this->uploadToDrive(
-        //         $request->file('qr_code'),
-        //         env('GOOGLE_QR_FOLDER_ID')
-        //     );
-        // }
+            //  Upload QR → qr_codes folder
+            // if ($request->hasFile('qr_code')) {
+            //     $data['qr_code'] = $this->uploadToDrive(
+            //         $request->file('qr_code'),
+            //         env('GOOGLE_QR_FOLDER_ID')
+            //     );
+            // }
+            $data['slug'] = Str::slug($data['name']); // generate unique slug
             $data['user_id'] = $user;
             $data['created_by'] = $user;
             $product = Products::create($data);
             $qrUrl = $this->generateQrAndUpload($product);
-
+            // BARCODE (no local file)
+            $barcodeUrl = $this->generateBarcodeAndUpload($product);
+            // $product->update(['barcode' => $barcodeUrl]);
             //  Save QR in DB
             $product->update([
-                'qr_code' => $qrUrl
+                'qr_code' => $qrUrl,
+                'barcode' => $barcodeUrl
             ]);
+            // multi images upload
+            if ($request->hasFile('images')) {
+                foreach ($request->file('images') as $img) {
+
+                    $imageUrl = $this->uploadToDrive(
+                        $img,
+                        env('GOOGLE_IMAGE_FOLDER_ID')
+                    );
+
+                    ProductImages::create([
+                        'user_id'    => $user,
+                        'product_id' => $product->id,
+                        'image'      => $imageUrl,
+                        'created_by' => $user,
+                    ]);
+                }
+            }
+            //             if ($request->has('variants') && is_string($request->variants)) {
+            //     $request->merge([
+            //         'variants' => json_decode($request->variants, true)
+            //     ]);
+            // }
+            //product variants
+            // $variants = $request->input('variants');
+            //  CLEAN INVALID VARIANTS INPUT
+if ($request->has('variants')) {
+
+    $variants = $request->input('variants');
+
+    // if variants is not array → remove it completely
+    if (!is_array($variants)) {
+        $request->request->remove('variants');
+    }
+}
+        if (!empty($variants) && is_array($variants)) {
+
+            foreach ($variants as $variant) {
+
+                if (!is_array($variant)) {
+                    continue;
+                }
+
+                if (
+                    empty($variant['size']) &&
+                    empty($variant['color']) &&
+                    empty($variant['material']) &&
+                    empty($variant['gender'])
+                ) {
+                    continue;
+                }
+
+                ProductVariant::create([
+                    'user_id'    => $user,
+                    'product_id' => $product->id,
+                    'size'       => $variant['size'] ?? null,
+                    'color'      => $variant['color'] ?? null,
+                    'material'   => $variant['material'] ?? null,
+                    'gender'     => $variant['gender'] ?? null,
+                    'created_by' => $user,
+                ]);
+            }
+        }
+
+            DB::commit();
             return response()->json([
                 'status' => true,
                 'message' => 'Product Created Successfully',
                 'data' => $product
             ]);
         } catch (\Exception $e) {
+            DB::rollBack();
             return response()->json([
                 'status' => false,
-                'message' => $e->getMessage()
+                'message' => $e->getMessage(),
+                'line' => $e->getLine(),
+                'file' => $e->getFile(),
             ]);
         }
     }
@@ -271,7 +426,7 @@ private function uploadStringToDrive($content, $fileName, $folderId)
                 ]);
             }
             $user = Auth::user()->id;
-            $product = Products::where('user_id', $user)->where('id', $id)->first();
+            $product = Products::with('variants', 'images')->where('user_id', $user)->where('id', $id)->first();
             return response()->json([
                 'status' => true,
                 'message' => 'Single product',
@@ -280,32 +435,33 @@ private function uploadStringToDrive($content, $fileName, $folderId)
         } catch (\Exception $e) {
             return response()->json([
                 'status' => false,
-                'message' => $e->getMessage()
+                'message' => $e->getMessage(),
             ]);
         }
     }
-    private function getFileIdFromUrl($url) 
-{
-    parse_str(parse_url($url, PHP_URL_QUERY), $params);
-    return $params['id'] ?? null;
-}
-private function deleteFromDrive($fileId)
-{
-    $client = new \Google\Client();
-    $client->setClientId(env('GOOGLE_CLIENT_ID'));
-    $client->setClientSecret(env('GOOGLE_CLIENT_SECRET'));
-    $client->refreshToken(env('GOOGLE_REFRESH_TOKEN'));
-
-    $service = new \Google\Service\Drive($client);
-
-    try {
-        $service->files->delete($fileId);
-    } catch (\Exception $e) {
-        // ignore if already deleted
+    private function getFileIdFromUrl($url)
+    {
+        parse_str(parse_url($url, PHP_URL_QUERY), $params);
+        return $params['id'] ?? null;
     }
-}
+    private function deleteFromDrive($fileId)
+    {
+        $client = new \Google\Client();
+        $client->setClientId(env('GOOGLE_CLIENT_ID'));
+        $client->setClientSecret(env('GOOGLE_CLIENT_SECRET'));
+        $client->refreshToken(env('GOOGLE_REFRESH_TOKEN'));
+
+        $service = new \Google\Service\Drive($client);
+
+        try {
+            $service->files->delete($fileId);
+        } catch (\Exception $e) {
+            // ignore if already deleted
+        }
+    }
     public function update($id, Request $request)
     {   // update product
+        DB::beginTransaction();
         try {
             if (!Auth::check()) {
                 return response()->json([
@@ -335,9 +491,48 @@ private function deleteFromDrive($fileId)
                 'discount_percentage'   => 'nullable',
                 'description'           => 'nullable',
                 'is_active'             => 'required',
+                //new columns
+                'conversion_factor'    => 'nullable',
+                'minimum_stock_quantity' => 'nullable',
+                'maximum_stock_quantity' => 'nullable',
+                'current_stock' => 'nullable',
+                'mrp' => 'nullable',
+                'wholesale_price' => 'nullable',
+                'gst_hsn_code'  => 'nullable',
+                'discount_amount' => 'nullable',
+                'cess_percentage' => 'nullable',
+                'attributes' => 'nullable',
+                'medicine_type' => 'nullable',
+                'other_medicine_type' => 'nullable',
+                'expiry_date' => 'nullable',
+                'batch_number' => 'nullable',
+                'manufacturer_name' => 'nullable',
+                'prescription_required' => 'nullable',
+                'schedule_type' => 'nullable',
+                'salt_composition' => 'nullable',
+                'perishable' => 'nullable',
+                'organic_certified' => 'nullable',
+                'harvest_date' => 'nullable',
+                'storage_instructions' => 'nullable',
+                'short_description' => 'nullable',
+                'is_featured' => 'nullable',
+                'is_returnable' => 'nullable',
+                'is_refundable' => 'nullable',
+                'warranty_months' => 'nullable',
+                'warehouse_location' => 'nullable',
+                'supplier_id' => 'nullable',
+                'updated_by' => 'nullable',
+                'images.*'              => 'nullable|image',
+                // Variants
+                'variants'              => 'nullable|array',
+                'variants.*.size'       => 'nullable|string',
+                'variants.*.color'      => 'nullable|string',
+                'variants.*.material'   => 'nullable|string',
+                'variants.*.gender'     => 'nullable|string',
+
             ]);
-            if($product){
-                    if ($request->hasFile('image')) {
+            if ($product) {
+                if ($request->hasFile('image')) {
 
                     // delete old image
                     if ($product->image) {
@@ -371,15 +566,77 @@ private function deleteFromDrive($fileId)
                         env('GOOGLE_QR_FOLDER_ID')
                     );
                 }
-
             }
             $product->update($data);
+            //update multiple images
+            if ($request->hasFile('images')) {
+
+                //  Delete old images from DB + Drive
+                $oldImages = ProductImages::where('product_id', $product->id)->get();
+
+                foreach ($oldImages as $img) {
+                    if ($img->image) {
+                        $fileId = $this->getFileIdFromUrl($img->image);
+                        if ($fileId) {
+                            $this->deleteFromDrive($fileId);
+                        }
+                    }
+                    $img->delete();
+                }
+
+                //  Insert new images
+                foreach ($request->file('images') as $image) {
+
+                    $imageUrl = $this->uploadToDrive(
+                        $image,
+                        env('GOOGLE_IMAGE_FOLDER_ID')
+                    );
+
+                    ProductImages::create([
+                        'user_id'    => $user,
+                        'product_id' => $product->id,
+                        'image'      => $imageUrl,
+                        'created_by' => $user,
+                    ]);
+                }
+            }
+            //update variants
+            if ($request->has('variants')) {
+
+                // Delete old variants
+                ProductVariant::where('product_id', $product->id)->delete();
+
+                // Insert new variants
+                foreach ($request->variants as $variant) {
+
+                    if (
+                        empty($variant['size']) &&
+                        empty($variant['color']) &&
+                        empty($variant['material']) &&
+                        empty($variant['gender'])
+                    ) {
+                        continue;
+                    }
+
+                    ProductVariant::create([
+                        'user_id'    => $user,
+                        'product_id' => $product->id,
+                        'size'       => $variant['size'] ?? null,
+                        'color'      => $variant['color'] ?? null,
+                        'material'   => $variant['material'] ?? null,
+                        'gender'     => $variant['gender'] ?? null,
+                        'created_by' => $user,
+                    ]);
+                }
+            }
+            DB::commit();
             return response()->json([
                 'status' => true,
                 'message' => 'Product Updated Successfully',
                 'data' => $product
             ]);
         } catch (\Exception $e) {
+            DB::rollBack();
             return response()->json([
                 'status' => false,
                 'message' => $e->getMessage()
@@ -392,7 +649,7 @@ private function deleteFromDrive($fileId)
             if (!Auth::check()) {
                 return response()->json([
                     'status' => false,
-                    'message' => 'Authentication required. Please login first.'
+                    'message' => 'Authentication .required Please login first.'
                 ]);
             }
             $user = Auth::user()->id;
@@ -468,16 +725,16 @@ private function deleteFromDrive($fileId)
                 ]);
             }
             $product = Products::withTrashed()->where('user_id', $user)->where('id', $id)->first();
-            if($product){
-                if($product->image){
+            if ($product) {
+                if ($product->image) {
                     $fileId = $this->getFileIdFromUrl($product->image);
-                    if($fileId){
+                    if ($fileId) {
                         $this->deleteFromDrive($fileId);
                     }
                 }
-                if($product->qr_code){
+                if ($product->qr_code) {
                     $fileId = $this->getFileIdFromUrl($product->qr_code);
-                    if($fileId){
+                    if ($fileId) {
                         $this->deleteFromDrive($fileId);
                     }
                 }

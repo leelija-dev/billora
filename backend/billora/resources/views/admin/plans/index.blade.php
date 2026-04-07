@@ -1,12 +1,6 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Billora - Plans Management</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/feather-icons"></script>
-    <meta name="csrf-token" content="{{ csrf_token() }}">
+@extends('admin.main-layout')
+@section('title','All Plans')
+@section('content')
     <style>
         .fade-in {
             animation: fadeIn 0.3s ease-in;
@@ -25,12 +19,12 @@
             }
         }
     </style>
-</head>
 
-<body class="bg-gray-50">
+
+
     <div class="flex h-screen">
         <!-- Include Sidebar -->
-        @include('admin.sidebar')
+        {{-- @include('admin.sidebar') --}}
         
         <!-- Main Content -->
         <div class="main-content flex-1 overflow-auto">
@@ -183,7 +177,16 @@
                                             </div>
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap">
-                                            <span class="text-sm font-semibold text-gray-900">{{config('app.app_currency')}}{{ number_format($plan->price, 2) }}</span>
+                                            
+                                                <span class="text-sm font-semibold text-gray-900">
+                                                    @if($plan->currency == 'USD')
+                                                     ${{ number_format($plan->price, 2) }}
+                                                    @elseif($plan->currency == 'INR')
+                                                     ₹{{ number_format($plan->price, 2) }}
+                                                    @else
+                                                     ₹{{ number_format($plan->price, 2) }}
+                                                    @endif
+                                                </span>
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap">
                                             <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
@@ -345,5 +348,4 @@ function deletePlan(id) {
     });
 }
 </script>
-</body>
-</html>
+@endsection

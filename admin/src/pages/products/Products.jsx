@@ -22,6 +22,7 @@ import {
 } from 'react-icons/fi'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useProductStore } from '../../store/productStore'
+import { stockAPI } from '../../services/stockService'
 import Button from '../../components/common/Button/Button'
 import Input from '../../components/common/Input/Input'
 import Table from '../../components/common/Table/Table'
@@ -58,17 +59,35 @@ const Products = () => {
   const [refreshing, setRefreshing] = useState(false)
   const [formSubmitting, setFormSubmitting] = useState(false)
   const [initialLoading, setInitialLoading] = useState(true)
+  const [stocks, setStocks] = useState([])
+  const [stocksLoading, setStocksLoading] = useState(false)
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         await fetchProducts()
+        const stocksResponse = await stockAPI.getAll()
+        console.log(' Stock API Response:', stocksResponse)
+        // Extract stocks array from nested response
+        const stocksData = stocksResponse.data?.data?.data || stocksResponse.data?.data || []
+        console.log(' Extracted stocks:', stocksData)
+        setStocks(stocksData)
+      } catch (error) {
+        console.error(' Error fetching stocks:', error)
+        setStocks([])
       } finally {
         setInitialLoading(false)
       }
     }
     fetchData()
   }, [])
+
+  // Function to get stock for a specific product
+  const getProductStock = (productId) => {
+    if (!Array.isArray(stocks)) return 0
+    const stock = stocks.find(s => s.product_id === productId)
+    return stock ? parseFloat(stock.quantity) || 0 : 0
+  }
 
   useEffect(() => {
     const debounceTimer = setTimeout(() => {
@@ -232,33 +251,39 @@ const Products = () => {
     {
       header: 'Stock',
       accessor: 'stock',
-      cell: (value, row) => (
-        <div className="flex items-center space-x-2">
-          <div className="w-16 h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-            <motion.div
-              initial={{ width: 0 }}
-              animate={{ width: `${(value / row.maxStock) * 100}%` }}
-              transition={{ duration: 0.5 }}
-              className={`h-full rounded-full ${
-                value <= row.lowStockThreshold 
-                  ? 'bg-red-500' 
-                  : value <= row.lowStockThreshold * 2
-                  ? 'bg-yellow-500'
-                  : 'bg-green-500'
-              }`}
-            />
+      cell: (_, row) => {
+        const stockQuantity = getProductStock(row.id)
+        const maxStock = 100 // You can adjust this based on your needs
+        const lowStockThreshold = 10 // You can adjust this based on your needs
+        
+        return (
+          <div className="flex items-center space-x-2">
+            <div className="w-16 h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+              <motion.div
+                initial={{ width: 0 }}
+                animate={{ width: `${Math.min((stockQuantity / maxStock) * 100, 100)}%` }}
+                transition={{ duration: 0.5 }}
+                className={`h-full rounded-full ${
+                  stockQuantity <= lowStockThreshold 
+                    ? 'bg-red-500' 
+                    : stockQuantity <= lowStockThreshold * 2
+                    ? 'bg-yellow-500'
+                    : 'bg-green-500'
+                }`}
+              />
+            </div>
+            <span className={`text-sm font-medium ${
+              stockQuantity <= lowStockThreshold 
+                ? 'text-red-600 dark:text-red-400' 
+                : stockQuantity <= lowStockThreshold * 2
+                ? 'text-yellow-600 dark:text-yellow-400'
+                : 'text-gray-900 dark:text-white'
+            }`}>
+              {stockQuantity}
+            </span>
           </div>
-          <span className={`text-sm font-medium ${
-            value <= row.lowStockThreshold 
-              ? 'text-red-600 dark:text-red-400' 
-              : value <= row.lowStockThreshold * 2
-              ? 'text-yellow-600 dark:text-yellow-400'
-              : 'text-gray-900 dark:text-white'
-          }`}>
-            {value}
-          </span>
-        </div>
-      ),
+        )
+      },
     },
     {
       header: 'Status',

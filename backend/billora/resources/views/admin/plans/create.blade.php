@@ -1,10 +1,7 @@
-<!DOCTYPE html>
-<html lang="en">
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Billora - Create New Plan</title>
+    @extends('admin.main-layout')
+    @section('title', 'Create New Plan')
+    @section('content')
     <style>
         * {
             margin: 0;
@@ -586,10 +583,8 @@
     gap: 25px;
 }
     </style>
-</head>
 
-<body>
-    @include('admin.sidebar')
+    {{-- @include('admin.sidebar') --}}
     <!-- Main Content - Full Width -->
     <div class="main-content">
 
@@ -637,7 +632,24 @@
                             @enderror
                         </div>
                     </div>
+                    <div class="form-group">
+                        <label class="form-label">
+                            Business Types <span>*</span>
+                        </label>
 
+                        <select name="business_types[]" class="form-select" multiple required id="businessTypes">
+                            @foreach ($business_types as $type)
+                                <option value="{{ $type->id }}"
+                                    {{ in_array($type->id, old('business_types', [])) ? 'selected' : '' }}>
+                                    {{ $type->name }}
+                                </option>
+                            @endforeach
+                        </select>
+
+                        @error('business_types')
+                            <span class="text-danger" style="color:red;">{{ $message }}</span>
+                        @enderror
+                    </div>
                     <!-- Price and Currency -->
                     <div class="form-group">
                         <label class="form-label">
@@ -659,6 +671,36 @@
                         </div>
 
                     </div>
+                     <div class="form-group">
+                        <label class="form-label">
+                            GST (%)<span>*</span>
+                        </label>
+                        <div >
+                            
+                            <input type="number" name="gst" class="form-input currency-input"
+                                placeholder="Enter GST percentage" step="0.01" min="0" value="{{ old('gst') }}"
+                                required>
+                            @error('gst')
+                                <span class="text-danger">{{ $message }}</span>
+                            @enderror
+
+                        </div>
+                     </div>
+                     <div class="form-group">
+                        <label class="form-label">
+                            Discount (%)<span>*</span>
+                        </label>
+                        <div >
+                            
+                            <input type="number" name="discount" class="form-input currency-input"
+                                placeholder="Enter discount percentage" step="0.01" min="0" value="{{ old('discount') }}"
+                                required>
+                            @error('discount')
+                                <span class="text-danger">{{ $message }}</span>
+                            @enderror
+
+                        </div>
+                     </div>
 
                     <!-- Duration Days -->
                     <div class="form-group">
@@ -794,6 +836,8 @@
 
     <!-- Summernote JS -->
     <script src="https://cdn.jsdelivr.net/npm/summernote@0.8.20/dist/summernote-lite.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <script>
         function addFeature() {
             const container = document.getElementById('features-container');
@@ -904,6 +948,12 @@
 
         });
     </script>
-</body>
-
-</html>
+    <script>
+    $(document).ready(function() {
+        $('#businessTypes').select2({
+            placeholder: "Select Business Types",
+            allowClear: true
+        });
+    });
+</script>
+@endsection

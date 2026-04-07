@@ -1,10 +1,9 @@
-<!DOCTYPE html>
-<html lang="en">
+@extends('admin.main-layout')
+@section('title','All Customers')
+@section('content')
 
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Billora - Customer Management</title>
+   
     <style>
         * {
             margin: 0;
@@ -19,34 +18,7 @@
             display: flex;
         }
 
-        /* Sidebar */
-        /* .sidebar {
-            width: 280px;
-            background: white;
-            border-right: 1px solid #eef2f6;
-            position: fixed;
-            top: 0;
-            left: 0;
-            bottom: 0;
-            z-index: 1001;
-            padding: 32px 0;
-        }
-
-        .sidebar-header {
-            padding: 0 24px;
-            margin-bottom: 40px;
-        }
-
-        .sidebar-header h2 {
-            font-size: 24px;
-            font-weight: 700;
-            color: #111827;
-            letter-spacing: -0.5px;
-        }
-
-        .sidebar-header span {
-            color: #2563EB;
-        } */
+       
 
         .nav-menu {
             list-style: none;
@@ -588,97 +560,9 @@
             }
         }
     </style>
-</head>
 
-<body>
-    @include('admin.sidebar')
     <div class="card" style="bg:white;">
         <div class="main-content">
-
-            <!-- Page Header -->
-            {{-- <div class="page-header">
-            <div class="header-left">
-                <h1>Customer Management</h1>
-                <p>Manage your customers and their information <span>Total: {{ count($customers) }} customers</span></p>
-            </div>
-            <div class="header-right">
-                <div class="search-box">
-                    <svg viewBox="0 0 24 24">
-                        <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
-                    </svg>
-                    <input type="text" placeholder="Search customers..." id="searchInput">
-                </div>
-                
-            </div>
-        </div> --}}
-
-            <!-- Stats Cards -->
-            {{-- <div class="stats-grid"> --}}
-            {{-- @php
-                $activeCount = count(array_filter($customers, function($c) { return $c['status'] === 'active'; }));
-                $pendingCount = count(array_filter($customers, function($c) { return $c['status'] === 'pending'; }));
-                $totalRevenue = array_sum(array_map(function($c) { 
-                    return (float) str_replace(['$', ','], '', $c['revenue']); 
-                }, $customers));
-            @endphp --}}
-
-            {{-- <div class="stat-card">
-                <div class="stat-info">
-                    <h3>Total Customers</h3>
-                    <div class="stat-number">{{ count($customers) }}</div>
-                </div>
-                <div class="stat-icon">
-                    <svg viewBox="0 0 24 24">
-                        <path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-1 .05 1.16.84 2 1.87 2 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/>
-                    </svg>
-                </div>
-            </div>
-            
-            <div class="stat-card">
-                <div class="stat-info">
-                    <h3>Active</h3>
-                    <div class="stat-number"></div>
-                </div>
-                <div class="stat-icon">
-                    <svg viewBox="0 0 24 24">
-                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
-                    </svg>
-                </div>
-            </div>
-            
-            <div class="stat-card">
-                <div class="stat-info">
-                    <h3>Pending</h3>
-                    <div class="stat-number"></div>
-                </div>
-                <div class="stat-icon">
-                    <svg viewBox="0 0 24 24">
-                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
-                    </svg>
-                </div>
-            </div>
-            
-            <div class="stat-card">
-                <div class="stat-info">
-                    <h3>Revenue</h3>
-                    <div class="stat-number"></div>
-                </div>
-                <div class="stat-icon">
-                    <svg viewBox="0 0 24 24">
-                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1.5 15h-3v-2h3v2zm3-6.5c-.29.39-.71.73-1.26 1.01-.41.21-.75.47-.98.74-.22.27-.34.57-.34.95v.3h-3v-.3c0-.66.18-1.26.54-1.78.36-.52.89-.93 1.59-1.23.42-.18.73-.39.92-.62.19-.23.28-.48.28-.77 0-.3-.12-.56-.35-.78-.23-.22-.55-.33-.94-.33-.4 0-.73.12-.97.35-.24.23-.39.53-.45.9l-2.92-.37c.09-.7.4-1.3.91-1.78.51-.48 1.22-.73 2.1-.73.96 0 1.75.25 2.35.75.6.5.9 1.13.9 1.91 0 .53-.17 1-.51 1.42z"/>
-                    </svg>
-                </div>
-            </div>
-        </div> --}}
-
-            <!-- Tabs -->
-            {{-- <div class="tabs-section">
-            <button class="tab-btn active">All</button>
-            <button class="tab-btn">Active</button>
-            <button class="tab-btn">Pending</button>
-            <button class="tab-btn">Inactive</button>
-        </div> --}}
-
             <!-- Customers Table -->
             <div class="table-container">
                 <div class="flex items-center justify-between m-4">
@@ -689,7 +573,7 @@
                     <!-- Center: Buttons -->
                     <div class="flex items-center gap-2 ">
                         <button onclick="clearSelection()" class="px-3 py-2 bg-red-500 text-white rounded text-sm">
-                            All Unchecked
+                            Clear all checked
                         </button>
                         {{-- 
                         <a href="{{route('admin.customers.customer-mail')}}"><button class="px-3 py-2 bg-blue-500 text-white rounded text-sm">
@@ -713,8 +597,29 @@
                                 class="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
                                 0
                             </span>
+
+                            
                         </button>
-                    </div>
+                       <form action="{{ route('admin.customers.index') }}" method="GET">
+
+                        <select name="status"
+                            onchange="this.form.submit()"
+                            class="px-3 py-2 border rounded text-sm">
+
+                            <option value="">All Customers</option>
+
+                            <option value="1" {{ request('status') == '1' ? 'selected' : '' }}>
+                                Active Customers
+                            </option>
+
+                            <option value="0" {{ request('status') == '0' ? 'selected' : '' }}>
+                                Inactive Customers
+                            </option>
+
+                        </select>
+
+                    </form>
+                                        </div>
 
                     <!-- Right: Search -->
                     <div class="flex items-center border rounded px-2">
@@ -722,9 +627,10 @@
                             <path
                                 d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zM9.5 14C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z" />
                         </svg>
-
-                        <input type="text" placeholder="Search customers..." id="searchInput"
+                        <form action="{{ route('admin.customers.index') }}" method="GET">
+                        <input type="text" name="search" placeholder="Search customers..."  value="{{ request('search') }}" {{-- id="searchInput" --}}
                             class="outline-none px-8 py-3 text-sm">
+                        </form>
                     </div>
 
                 </div>
@@ -825,29 +731,6 @@
                     {{ $customers->links('pagination::tailwind') }}
                 </div>
             </div>
-
-
-            <!-- Pagination -->
-            {{-- <div class="pagination">
-            <div class="pagination-info">
-                Showing <strong>1</strong> to <strong>2</strong> of <strong>{{ count($customers) }}</strong> customers
-            </div>
-            <div class="pagination-controls">
-                <button class="page-btn prev disabled">
-                    <svg viewBox="0 0 24 24">
-                        <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
-                    </svg>
-                    Previous
-                </button>
-                <button class="page-btn active">1</button>
-                <button class="page-btn next disabled">
-                    Next
-                    <svg viewBox="0 0 24 24">
-                        <path d="M8.59 16.59L10 18l6-6-6-6-1.41 1.41L13.17 12z"/>
-                    </svg>
-                </button>
-            </div>
-        </div> --}}
         </div>
     </div>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -929,50 +812,9 @@
                 updateSelectedCount();
             });
 
-            updateSelectedCount(); // initial count
+            updateSelectedCount(); 
 
-            const searchInput = document.getElementById('searchInput');
-
-            searchInput.addEventListener('keyup', function() {
-
-                let search = this.value.toLowerCase();
-                let rows = document.querySelectorAll('.customers-table tbody tr');
-
-                rows.forEach(row => {
-
-                    let name = row.querySelector('.customer-name')?.textContent.toLowerCase() || '';
-                    let email = row.querySelector('.customer-email')?.textContent.toLowerCase() ||
-                        '';
-                    let is_active_value = row.querySelector('.is_active span')?.innerText
-                        .toLowerCase().trim() || '';
-
-                    let searchValue = search.toLowerCase();
-
-                    // Convert search → match DB meaning
-                    let matchStatus = false;
-
-                    if (searchValue === 'active') {
-                        matchStatus = is_active_value === 'active';
-                    } else if (searchValue === 'inactive') {
-                        matchStatus = is_active_value === 'inactive';
-                    } else {
-                        matchStatus = is_active_value.includes(searchValue);
-                    }
-
-                    // Final condition
-                    if (
-                        name.includes(searchValue) ||
-                        email.includes(searchValue) ||
-                        matchStatus
-                    ) {
-                        row.style.display = '';
-                    } else {
-                        row.style.display = 'none';
-                    }
-
-                });
-
-            });
+            
 
         });
 
@@ -988,58 +830,41 @@
         /* =========================
            SEND MAIL
         ========================= */
-        function handleSendMail() {
+       function handleSendMail() {
 
-            let selected = JSON.parse(localStorage.getItem('selectedCustomers')) || [];
-            let isAll = localStorage.getItem('isAllSelected') === 'true';
+    let selected = JSON.parse(localStorage.getItem('selectedCustomers')) || [];
+    let isAll = localStorage.getItem('isAllSelected') === 'true';
 
-            if (!isAll && selected.length === 0) {
-                Swal.fire({
-                    icon: 'warning',
-                    title: 'No Customer Selected',
-                    text: 'Please select at least one customer!',
-                });
-                return;
-            }
-
-            let url = "{{ route('admin.customers.customer-mail') }}";
-
-            if (isAll) {
-                url += "?all=true";
-            } else {
-                url += "?ids=" + selected.join(',');
-            }
-
-            window.location.href = url;
-        }
-    </script>
-    {{-- <script>
-document.addEventListener("DOMContentLoaded", function () {
-
-    const searchInput = document.getElementById('searchInput');
-
-    searchInput.addEventListener('keyup', function () {
-
-        let search = this.value.toLowerCase();
-        let rows = document.querySelectorAll('.customers-table tbody tr');
-
-        rows.forEach(row => {
-
-            let name = row.querySelector('.customer-name')?.textContent.toLowerCase() || '';
-            let email = row.querySelector('.customer-email')?.textContent.toLowerCase() || '';
-
-            if (name.includes(search) || email.includes(search)) {
-                row.style.display = '';
-            } else {
-                row.style.display = 'none';
-            }
-
+    if (!isAll && selected.length === 0) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'No Customer Selected',
+            text: 'Please select at least one customer!',
         });
+        return;
+    }
 
-    });
+    let url = "{{ route('admin.customers.customer-mail') }}";
 
-});
-</script> --}}
-</body>
+    //  GET search from URL (BEST METHOD)
+    let params = new URLSearchParams(window.location.search);
+    let search = params.get('search');
+    let status = params.get('status');
+    if (isAll) {
+        url += "?all=true";
 
-</html>
+        if (search) {
+            url += "&search=" + encodeURIComponent(search);
+        }else if (status) {
+            url += "&status=" + encodeURIComponent(status);
+        }
+
+    } else {
+        url += "?ids=" + selected.join(',');
+    }
+
+    window.location.href = url;
+}
+    </script>
+    
+@endsection

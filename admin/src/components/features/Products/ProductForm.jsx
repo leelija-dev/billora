@@ -8,6 +8,7 @@ import Input from '../../common/Input/Input'
 import Button from '../../common/Button/Button'
 import Select from '../../common/Select/Select'
 import toast from 'react-hot-toast'
+import { FiUpload, FiX, FiImage } from 'react-icons/fi'
 
 const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
   const { user } = useAuthStore()
@@ -15,14 +16,20 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
   const { categories, fetchCategories } = useCategories()
   const { units, fetchUnits } = useUnits()
 
+  // State for image upload
+  const [selectedImage, setSelectedImage] = useState(null)
+  const [imagePreview, setImagePreview] = useState(null)
+
   const {
     register,
     handleSubmit,
     formState: { errors },
     setValue,
     reset,
+    watch,
   } = useForm({
     defaultValues: {
+      user_id: user?.id || '',
       name: '',
       sku: '',
       brand_id: '',
@@ -35,6 +42,8 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
       discount_percentage: '',
       description: '',
       is_active: true,
+      created_by: user?.id || '',
+      image: '',
     }
   })
 
@@ -87,11 +96,46 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
     }
   }, [product, setValue, brands, categories, units])
 
+  // Image handling functions
+  const handleImageChange = (e) => {
+    const file = e.target.files[0]
+    if (file) {
+      // Validate file size (10MB limit)
+      if (file.size > 10 * 1024 * 1024) {
+        toast.error('Image size must be less than 10MB')
+        return
+      }
+
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        toast.error('Please select an image file')
+        return
+      }
+
+      setSelectedImage(file)
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        setImagePreview(reader.result)
+        setValue('image', file)
+      }
+      reader.readAsDataURL(file)
+    }
+  }
+
+  const removeImage = () => {
+    setSelectedImage(null)
+    setImagePreview(null)
+    setValue('image', '')
+  }
+
   const onFormSubmit = (data) => {
     const productData = {
       ...data,
       user_id: user.id, // Hidden field - current user ID
       created_by: user.id,
+      image: selectedImage, // Include the image file
+      // Convert is_active boolean to integer (1 or 0) for backend compatibility
+      is_active: data.is_active ? 1 : 0,
     }
     onSubmit(productData)
   }
@@ -103,8 +147,58 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
       exit={{ opacity: 0, y: -20 }}
       className="space-y-6"
     >
-      {/* Hidden user_id field */}
+      {/* Hidden user_id and created_by fields */}
       <input type="hidden" {...register('user_id')} value={user.id} />
+      <input type="hidden" {...register('created_by')} value={user.id} />
+
+      {/* Image Upload Section */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Product Image
+          </label>
+          <div className="flex items-center space-x-4">
+            <div className="flex-1">
+              <div className="relative border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-4 hover:border-primary-500 transition-colors">
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                  onChange={handleImageChange}
+                />
+                <div className="text-center">
+                  {imagePreview ? (
+                    <div className="relative">
+                      <img 
+                        src={imagePreview} 
+                        alt="Product preview" 
+                        className="mx-auto h-32 w-32 object-cover rounded-lg"
+                      />
+                      <button
+                        type="button"
+                        onClick={removeImage}
+                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+                      >
+                        <FiX className="w-3 h-3" />
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center">
+                      <FiImage className="w-12 h-12 text-gray-400 mb-2" />
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                        Click to upload product image
+                      </p>
+                      <p className="text-xs text-gray-500 dark:text-gray-500">
+                        PNG, JPG, GIF up to 10MB
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Input

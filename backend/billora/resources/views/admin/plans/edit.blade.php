@@ -1,10 +1,6 @@
-<!DOCTYPE html>
-<html lang="en">
-
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Billora - Edit Plan</title>
+@extends('admin.main-layout')
+@section('title', 'Edit Plan')
+@section('content')
     <style>
         * {
             margin: 0;
@@ -534,50 +530,48 @@
                 justify-content: center;
             }
         }
+
         /* Permissions Grid */
-.permissions-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr); /* Left & Right */
-    gap: 15px;
-}
+        .permissions-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            /* Left & Right */
+            gap: 15px;
+        }
 
-/* Permission Card */
-.permission-card {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    background: white;
-    border: 1px solid #e2e8f0;
-    padding: 12px 16px;
-    border-radius: 12px;
-    cursor: pointer;
-    transition: all 0.2s ease;
-}
+        /* Permission Card */
+        .permission-card {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: white;
+            border: 1px solid #e2e8f0;
+            padding: 12px 16px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
 
-.permission-card:hover {
-    border-color: #2563EB;
-    background: #f0f7ff;
-}
+        .permission-card:hover {
+            border-color: #2563EB;
+            background: #f0f7ff;
+        }
 
-/* Checkbox */
-.permission-card input[type="checkbox"] {
-    width: 18px;
-    height: 18px;
-    accent-color: #2563EB;
-    cursor: pointer;
-}
+        /* Checkbox */
+        .permission-card input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            accent-color: #2563EB;
+            cursor: pointer;
+        }
 
-/* Text */
-.permission-title {
-    font-size: 14px;
-    font-weight: 500;
-    color: #1e293b;
-}
+        /* Text */
+        .permission-title {
+            font-size: 14px;
+            font-weight: 500;
+            color: #1e293b;
+        }
     </style>
-</head>
-
-<body>
-    @include('admin.sidebar')
     <!-- Main Content - Full Width -->
     <div class="main-content">
 
@@ -624,7 +618,24 @@
                             @enderror
                         </div>
                     </div>
+                    <div class="form-group">
+                        <label class="form-label">
+                            Business Types <span>*</span>
+                        </label>
 
+                        <select name="business_types[]" class="form-select" multiple required id="businessTypes">
+                            @foreach ($business_types as $type)
+                                <option value="{{ $type->id }}"
+                                    {{ in_array($type->id, old('business_types', $selected_business_types ?? [])) ? 'selected' : '' }}>
+                                    {{ $type->name }}
+                                </option>
+                            @endforeach
+                        </select>
+
+                        @error('business_types')
+                            <span class="text-danger" style="color:red;">{{ $message }}</span>
+                        @enderror
+                    </div>
                     <!-- Price and Currency -->
                     <div class="form-group">
                         <label class="form-label">
@@ -644,7 +655,36 @@
                             @enderror
                         </div>
                     </div>
+                    <div class="form-group">
+                        <label class="form-label">
+                            GST (%)<span>*</span>
+                        </label>
+                        <div>
 
+                            <input type="number" name="gst" class="form-input currency-input"
+                                placeholder="Enter GST percentage" step="0.01" min="0"
+                                value="{{ $plan->gst ?? '0' }}" required>
+                            @error('gst')
+                                <span class="text-danger">{{ $message }}</span>
+                            @enderror
+
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">
+                            Discount (%)<span>*</span>
+                        </label>
+                        <div>
+
+                            <input type="number" name="discount" class="form-input currency-input"
+                                placeholder="Enter discount percentage" step="0.01" min="0"
+                                value="{{ $plan->discount ?? '0' }}" required>
+                            @error('discount')
+                                <span class="text-danger">{{ $message }}</span>
+                            @enderror
+
+                        </div>
+                    </div>
                     <!-- Duration Days -->
                     <div class="form-group">
                         <label class="form-label">
@@ -721,8 +761,7 @@
                                 <div class="feature-icon">✔</div>
                                 <input type="text" name="features[]" class="feature-input"
                                     placeholder="Enter a feature">
-                                <button type="button" class="remove-feature"
-                                    onclick="removeFeature(this)">❌</button>
+                                <button type="button" class="remove-feature" onclick="removeFeature(this)">❌</button>
                             </div>
                         @endif
                     </div>
@@ -775,7 +814,8 @@
 
                 <!-- Form Actions -->
                 <div class="form-actions">
-                    <a href="{{route('admin.plans.index')}}"><button type="button" class="btn btn-secondary">Cancel</button></a>
+                    <a href="{{ route('admin.plans.index') }}"><button type="button"
+                            class="btn btn-secondary">Cancel</button></a>
                     <button type="submit" class="btn btn-primary">
                         <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: white;">
                             <path
@@ -795,6 +835,8 @@
 
     <!-- Summernote JS -->
     <script src="https://cdn.jsdelivr.net/npm/summernote@0.8.20/dist/summernote-lite.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <script>
         function addFeature() {
             const container = document.getElementById('features-container');
@@ -905,6 +947,12 @@
 
         });
     </script>
-</body>
-
-</html>
+    <script>
+        $(document).ready(function() {
+            $('#businessTypes').select2({
+                placeholder: "Select Business Types",
+                allowClear: true
+            });
+        });
+    </script>
+@endsection

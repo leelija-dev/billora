@@ -136,15 +136,16 @@ const Brands = () => {
 
   const handleEditBrand = async (brand) => {
     try {
-      const brandData = await getBrand(brand.id)
-      setSelectedBrand(brandData.data || brand)
-      setShowEditForm(true)
-      setShowAddForm(false)
-    } catch (error) {
-      console.error('Failed to fetch brand data:', error)
+      console.log('🏷️ Editing brand:', brand)
+      console.log('🏷️ Brand ID:', brand.id)
+      console.log('🏷️ Brand name:', brand.name)
+      console.log('🏷️ Brand is_active:', brand.is_active)
+      // Set the brand data directly from the table row
       setSelectedBrand(brand)
       setShowEditForm(true)
       setShowAddForm(false)
+    } catch (error) {
+      console.error('Failed to set brand for editing:', error)
     }
   }
 

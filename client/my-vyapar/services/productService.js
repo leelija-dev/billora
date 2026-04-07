@@ -1,54 +1,59 @@
 // services/productService.js
-import { apiRequest } from '../utils/api';
-import { getAuthData } from '../store/authStore';
+import { apiRequest } from "../utils/api";
+import { getAuthData } from "../store/authStore";
 
-// Helper to get current logged-in user's ID
 const getUserId = () => {
-  const { user } = getAuthData(); // user object stored at login/registration
-  if (!user || !user.id) throw new Error("User not authenticated");
+  const { user } = getAuthData();
+  if (!user || !user.id) {
+    throw new Error("User not authenticated");
+  }
   return user.id;
 };
 
-// Get all products (optional search)
-export const getProducts = async (search = '') => {
-  const userId = getUserId();
-  let endpoint = `restaurant-all-products/${userId}`;
-  if (search) endpoint += `?search=${encodeURIComponent(search)}`;
-  return await apiRequest(endpoint, 'GET');
+// Get all products
+export const getProducts = async () => {
+  try {
+    const userId = getUserId();
+    const response = await apiRequest(`/restaurant-all-products/${userId}`);
+    
+    let productsArray = [];
+    if (response?.products?.data && Array.isArray(response.products.data)) {
+      productsArray = response.products.data;
+    } else if (response?.data && Array.isArray(response.data)) {
+      productsArray = response.data;
+    } else if (Array.isArray(response)) {
+      productsArray = response;
+    }
+    
+    return productsArray;
+  } catch (error) {
+    console.error("Error in getProducts:", error);
+    throw error;
+  }
 };
 
-// Get single product by ID
-export const getProductById = async (id) => {
-  const userId = getUserId();
-  return await apiRequest(`restaurant-all-products/${userId}/${id}`, 'GET');
+// Get user's store
+export const getUserStore = async () => {
+  try {
+    const userId = getUserId();
+    const response = await apiRequest(`/store/${userId}`);
+    if (response?.data && response.data.length > 0) {
+      return response.data[0].id;
+    }
+    return null;
+  } catch (error) {
+    console.error("Error fetching store:", error);
+    return null;
+  }
 };
 
-// Create a new product
-export const createProduct = async (productData) => {
-  const userId = getUserId();
-  return await apiRequest(`restaurant-all-products/${userId}/store`, 'POST', productData);
+// Place order
+export const placeOrder = async (orderData) => {
+  return await apiRequest("/orders/store", "POST", orderData);
 };
 
-// Update existing product
-export const updateProduct = async (id, productData) => {
-  const userId = getUserId();
-  return await apiRequest(`restaurant-all-products/${userId}/${id}`, 'PUT', productData);
-};
-
-// Delete product
-export const deleteProduct = async (id) => {
-  const userId = getUserId();
-  return await apiRequest(`restaurant-all-products/${userId}/${id}`, 'DELETE');
-};
-
-// Restore soft-deleted product
-export const restoreProduct = async (id) => {
-  const userId = getUserId();
-  return await apiRequest(`restaurant-all-products/${userId}/${id}`, 'PATCH');
-};
-
-// Force delete product
-export const forceDeleteProduct = async (id) => {
-  const userId = getUserId();
-  return await apiRequest(`restaurant-all-products/${userId}/${id}/force`, 'DELETE');
+export default {
+  getProducts,
+  getUserStore,
+  placeOrder,
 };

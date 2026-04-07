@@ -151,7 +151,7 @@ const Sidebar = () => {
         </div>
 
         {/* Navigation */}
-        <nav className="mt-6 px-3 space-y-1 overflow-y-auto max-h-[calc(100vh-180px)] scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600">
+        <nav className="mt-6 px-3 space-y-1 overflow-y-auto max-h-[calc(100vh-180px)] scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 pb-20">
           {filteredMenuItems.map((item, index) => {
             const Icon = item.icon;
             const isActive = location.pathname === item.path;

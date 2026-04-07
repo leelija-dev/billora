@@ -1,12 +1,6 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Billora - Plans Management</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/feather-icons"></script>
-    <meta name="csrf-token" content="{{ csrf_token() }}">
+@extends('admin.main-layout')
+@section('title','Admin Users')
+@section('content')
     <style>
         .fade-in {
             animation: fadeIn 0.3s ease-in;
@@ -25,12 +19,12 @@
             }
         }
     </style>
-</head>
 
-<body class="bg-gray-50">
+
+
     <div class="flex h-screen">
         <!-- Include Sidebar -->
-        @include('admin.sidebar')
+        
         
         <!-- Main Content -->
         <div class="main-content flex-1 overflow-auto">
@@ -52,7 +46,7 @@
                                 Trashed User
                             </button></a>
                             <!-- Add Plan Button -->
-                           <a href="#" ><button
+                           <a href="{{route('admin.admin-users.create')}}" ><button
                                     class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center transition duration-200">
                                 <i data-feather="plus" class="w-4 h-4 mr-2"></i>
                                 Add User
@@ -128,6 +122,7 @@
                                     <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">User Name</th>
                                     <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
                                     <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                                    <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
                                     <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Last login</th>
                                     <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
                                     <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
@@ -151,6 +146,13 @@
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap">
                                                 {{ $user->lname ?? '' }} {{ $user->fname ?? '' }}
+                                        </td>
+                                        <td class="px-6 py-4">
+                                           @foreach ($user->roles as $role)
+                                                        {{ $role->name }}@if (!$loop->last)
+                                                            ,
+                                                        @endif
+                                            @endforeach
                                         </td>
                                         <td class="px-6 py-4">
                                             {{ $user->last_login_at->format('d-m-Y h:i A') ?? '' }}
@@ -284,5 +286,4 @@ function deletePlan(id) {
     });
 }
 </script>
-</body>
-</html>
+@endsection
