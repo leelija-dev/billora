@@ -23,11 +23,17 @@ const OrderSummary = () => {
   const [purchaseHistory, setPurchaseHistory] = useState([]);
   const [debugInfo, setDebugInfo] = useState(null);
   const [loggedInUser, setLoggedInUser] = useState(null);
+  const [apiError, setApiError] = useState(null);
 
   // Load user data from localStorage/session
   useEffect(() => {
     const getUserData = () => {
-      const userStr = localStorage.getItem('user') || sessionStorage.getItem('user');
+      // Try multiple possible storage keys
+      const userStr = localStorage.getItem('user') || 
+                     sessionStorage.getItem('user') ||
+                     localStorage.getItem('user_data') ||
+                     sessionStorage.getItem('user_data');
+      
       if (userStr) {
         try {
           const user = JSON.parse(userStr);
@@ -41,6 +47,15 @@ const OrderSummary = () => {
         } catch (e) {
           console.error("Error parsing user data:", e);
         }
+      } else {
+        console.warn("No user data found in localStorage/sessionStorage");
+        // Try to get from authStore
+        try {
+          const authToken = localStorage.getItem('auth_token');
+          if (authToken) {
+            console.log("Auth token found but no user data");
+          }
+        } catch(e) {}
       }
     };
     
@@ -52,9 +67,15 @@ const OrderSummary = () => {
     const loadPlanData = () => {
       const planData = localStorage.getItem('selectedPlan');
       if (planData) {
-        const parsedPlan = JSON.parse(planData);
-        setSelectedPlan(parsedPlan);
-        console.log("Loaded plan:", parsedPlan);
+        try {
+          const parsedPlan = JSON.parse(planData);
+          setSelectedPlan(parsedPlan);
+          console.log("Loaded plan:", parsedPlan);
+        } catch (e) {
+          console.error("Error parsing plan data:", e);
+          toast.error('Invalid plan data. Redirecting to pricing...');
+          setTimeout(() => router.push('/pricing'), 2000);
+        }
       } else {
         toast.error('No plan selected. Redirecting to pricing...');
         setTimeout(() => router.push('/pricing'), 2000);
@@ -64,7 +85,9 @@ const OrderSummary = () => {
     const loadPurchaseHistory = () => {
       const history = localStorage.getItem('purchaseHistory');
       if (history) {
-        setPurchaseHistory(JSON.parse(history));
+        try {
+          setPurchaseHistory(JSON.parse(history));
+        } catch(e) {}
       }
     };
 
@@ -106,7 +129,39 @@ const OrderSummary = () => {
     });
   };
 
+  // Direct API call as fallback if store action fails
+  const createOrderDirect = async (payload) => {
+    try {
+      const token = localStorage.getItem('auth_token') || localStorage.getItem('token');
+      const response = await fetch('http://localhost:8000/api/create-order', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': token ? `Bearer ${token}` : '',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify(payload)
+      });
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`HTTP ${response.status}: ${errorText}`);
+      }
+      
+      const data = await response.json();
+      console.log("Direct API response:", data);
+      return data;
+    } catch (error) {
+      console.error("Direct API call failed:", error);
+      throw error;
+    }
+  };
+
   const handlePayment = async () => {
+    // Reset errors
+    setApiError(null);
+    setDebugInfo(null);
+    
     if (!selectedPlan) {
       toast.error('No plan selected!');
       return;
@@ -140,8 +195,27 @@ const OrderSummary = () => {
       return;
     }
 
-    if (!loggedInUser || !loggedInUser.id) {
+    // Get user ID from multiple possible sources
+    let userId = null;
+    if (loggedInUser && loggedInUser.id) {
+      userId = loggedInUser.id;
+    } else {
+      // Try to get from localStorage
+      try {
+        const userStr = localStorage.getItem('user');
+        if (userStr) {
+          const user = JSON.parse(userStr);
+          userId = user.id;
+        }
+      } catch(e) {}
+    }
+    
+    if (!userId) {
       toast.error("User not logged in properly. Please login again.");
+      setTimeout(() => {
+        localStorage.setItem('redirectAfterLogin', '/order-summary');
+        router.push('/login');
+      }, 2000);
       return;
     }
 
@@ -154,7 +228,7 @@ const OrderSummary = () => {
       const basePrice = parseFloat(selectedPlan.price.replace(/,/g, ''));
       
       // Create valid customer ID (alphanumeric only)
-      let customerId = String(loggedInUser.id);
+      let customerId = String(userId);
       if (customerId.length < 3) {
         customerId = customerId.padStart(3, '0');
       }
@@ -163,6 +237,7 @@ const OrderSummary = () => {
       const orderId = `ORD${timestamp}${Math.floor(Math.random() * 10000)}`;
       
       console.log("=== PAYMENT DEBUG INFO ===");
+      console.log("User ID:", userId);
       console.log("Customer ID:", customerId);
       console.log("Order ID:", orderId);
       console.log("Amount:", totalAmount);
@@ -178,7 +253,7 @@ const OrderSummary = () => {
         customer_name: customerName,
         customer_email: customerEmail,
         customer_phone: customerPhone,
-        db_user_id: loggedInUser?.id || null,
+        db_user_id: userId,
         plan_id: selectedPlan.id,
         plan_name: selectedPlan.name,
         plan_billing_cycle: selectedPlan.billingCycle,
@@ -196,57 +271,89 @@ const OrderSummary = () => {
       console.log("📤 Sending payload to backend:", JSON.stringify(payload, null, 2));
       setDebugInfo({ type: 'sending', payload });
 
-      // Call your API through the store
-      const response = await createOrderAction(payload);
+      let response;
       
-      console.log("📥 Backend response:", response);
+      // Try store action first
+      try {
+        console.log("Attempting to create order via store action...");
+        response = await createOrderAction(payload);
+        console.log("Store action response:", response);
+      } catch (storeError) {
+        console.error("Store action failed:", storeError);
+        console.log("Falling back to direct API call...");
+        
+        // Fallback to direct API call
+        response = await createOrderDirect(payload);
+      }
+      
+      console.log("📥 Final response:", response);
       setDebugInfo({ type: 'response', response });
 
       toast.dismiss(loadingToast);
 
+      // Check for payment session ID in different response formats
+      let paymentSessionId = null;
+      
       if (response && response.payment_session_id) {
-        toast.success('Order created! Redirecting to payment...');
-        
-        const Cashfree = await loadCashfreeSDK();
-        const cashfree = new Cashfree({
-          mode: process.env.NEXT_PUBLIC_CASHFREE_MODE === 'production' ? 'production' : 'sandbox',
-        });
-        
-        // Open payment in new window or same window
-        const paymentResult = await cashfree.checkout({
-          paymentSessionId: response.payment_session_id,
-          redirectTarget: "_self" // Use "_blank" to open in new tab if preferred
-        });
-        
-        console.log("Payment checkout initiated:", paymentResult);
-        
-        const orderInfo = {
-          orderId: orderId,
-          paymentSessionId: response.payment_session_id,
-          customerEmail: customerEmail,
-          customerPhone: customerPhone,
-          totalAmount: totalAmount,
-          planName: selectedPlan.name,
-          userId: loggedInUser?.id,
-          timestamp: Date.now()
-        };
-        localStorage.setItem('pendingPayment', JSON.stringify(orderInfo));
-        
-      } else {
-        throw new Error(response?.message || response?.error || 'Failed to create payment session');
+        paymentSessionId = response.payment_session_id;
+      } else if (response && response.data && response.data.payment_session_id) {
+        paymentSessionId = response.data.payment_session_id;
+      } else if (response && response.sessionId) {
+        paymentSessionId = response.sessionId;
+      } else if (typeof response === 'string') {
+        // If response is a string, try to parse it
+        try {
+          const parsed = JSON.parse(response);
+          paymentSessionId = parsed.payment_session_id || parsed.sessionId;
+        } catch(e) {}
       }
+      
+      if (!paymentSessionId) {
+        console.error("No payment session ID found in response:", response);
+        throw new Error(response?.message || response?.error || 'Failed to create payment session - No session ID returned');
+      }
+      
+      toast.success('Order created! Redirecting to payment...');
+      
+      const Cashfree = await loadCashfreeSDK(); 
+      const cashfree = new Cashfree({
+        mode: process.env.NEXT_PUBLIC_CASHFREE_MODE === 'production' ? 'production' : 'sandbox',
+      });
+      
+      // Open payment checkout
+      const paymentResult = await cashfree.checkout({
+        paymentSessionId: paymentSessionId,
+        redirectTarget: "_self"
+      });
+      
+      console.log("Payment checkout initiated:", paymentResult);
+      
+      const orderInfo = {
+        orderId: orderId,
+        paymentSessionId: paymentSessionId,
+        customerEmail: customerEmail,
+        customerPhone: customerPhone,
+        totalAmount: totalAmount,
+        planName: selectedPlan.name,
+        userId: userId,
+        timestamp: Date.now()
+      };
+      localStorage.setItem('pendingPayment', JSON.stringify(orderInfo));
       
     } catch (error) {
       toast.dismiss(loadingToast);
       console.error('Payment error details:', error);
+      setApiError(error.message);
       setDebugInfo({ type: 'error', error: error.message, fullError: error });
       
       // Show more specific error message
       let errorMessage = 'Payment failed. Please try again.';
-      if (error.message.includes('customer id')) {
+      if (error.message.includes('customer id') || error.message.includes('customer_id')) {
         errorMessage = 'Invalid customer ID. Please ensure you are logged in properly.';
       } else if (error.message.includes('API')) {
         errorMessage = 'Payment service error. Please try again later.';
+      } else if (error.message.includes('session')) {
+        errorMessage = 'Failed to create payment session. Please try again.';
       } else if (error.message) {
         errorMessage = error.message;
       }
@@ -261,12 +368,15 @@ const OrderSummary = () => {
 
   if (!selectedPlan) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#f0f4ff] to-[#e8eef9]">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading order details...</p>
+      <>
+        <Navbar />
+        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#f0f4ff] to-[#e8eef9]">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500 mx-auto mb-4"></div>
+            <p className="text-gray-600">Loading order details...</p>
+          </div>
         </div>
-      </div>
+      </>
     );
   }
 
@@ -448,11 +558,10 @@ const OrderSummary = () => {
                   </div>
                 </div>
 
-                {(storeError || debugInfo?.type === 'error') && (
+                {(apiError || storeError) && (
                   <div className="mt-2 p-3 bg-red-50 rounded-lg">
-                    <p className="text-xs text-red-600 text-center">
-                      {storeError || debugInfo?.error}
-                    </p>
+                    <p className="text-xs text-red-600 text-center font-medium">Error: {apiError || storeError}</p>
+                    <p className="text-xs text-red-500 text-center mt-1">Please try again or contact support</p>
                   </div>
                 )}
 

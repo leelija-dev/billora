@@ -6,7 +6,7 @@ import Footer from "@/components/Footer";
 import SectionTitle from "../../components/SectionTitle";
 import Container from "../../components/Container";
 import { getPlans } from '@/services/pricingService';
-import { useRouter } from 'next/navigation'; // Add this import
+import { useRouter } from 'next/navigation';
 
 const Pricing = () => {
   const [billingCycle, setBillingCycle] = useState('monthly');
@@ -15,8 +15,28 @@ const Pricing = () => {
   const [error, setError] = useState(null);
   const [subscribing, setSubscribing] = useState(null);
   const [subscribeMessage, setSubscribeMessage] = useState(null);
+  const [isLoggedIn, setIsLoggedIn] = useState(false); // Add login state
+  const [showLoginModal, setShowLoginModal] = useState(false); // For login prompt modal
+  const [pendingPlan, setPendingPlan] = useState(null); // Store plan details for after login
   const cardRefs = useRef([]);
-  const router = useRouter(); // Initialize router
+  const router = useRouter();
+
+  // Check if user is logged in
+  useEffect(() => {
+    const checkLoginStatus = () => {
+      // Check for auth token in localStorage or your auth mechanism
+      const token = localStorage.getItem('auth_token') || localStorage.getItem('token');
+      const userData = localStorage.getItem('user_data');
+      
+      setIsLoggedIn(!!(token || userData));
+    };
+    
+    checkLoginStatus();
+    
+    // Optional: Listen for storage changes (if login happens in another tab)
+    window.addEventListener('storage', checkLoginStatus);
+    return () => window.removeEventListener('storage', checkLoginStatus);
+  }, []);
 
   // Fetch plans from Laravel API - SHOW ALL PLANS
   useEffect(() => {
@@ -68,22 +88,60 @@ const Pricing = () => {
     fetchPlans();
   }, []);
 
-  // Handle subscription - Navigate to order summary instead of direct subscription
+  // Handle subscription - Check login first
   const handleSubscribe = (planId, planName, planPrice) => {
-    // Store selected plan details in localStorage or sessionStorage
     const selectedPlan = {
       id: planId,
       name: planName,
       billingCycle: billingCycle,
       price: billingCycle === 'monthly' ? planPrice.monthly : planPrice.yearly,
-      originalPrice: billingCycle === 'monthly' ? planPrice.monthly : (parseInt(planPrice.yearly) * 1.2).toFixed(0), // Calculate original for discount display
+      originalPrice: billingCycle === 'monthly' ? planPrice.monthly : (parseInt(planPrice.yearly) * 1.2).toFixed(0),
     };
     
-    localStorage.setItem('selectedPlan', JSON.stringify(selectedPlan));
+    if (!isLoggedIn) {
+      // Store pending plan and show login modal
+      setPendingPlan(selectedPlan);
+      setShowLoginModal(true);
+      return;
+    }
     
-    // Navigate to order summary page
+    // User is logged in, proceed to order summary
+    proceedToOrderSummary(selectedPlan);
+  };
+
+  const proceedToOrderSummary = (selectedPlan) => {
+    localStorage.setItem('selectedPlan', JSON.stringify(selectedPlan));
     router.push('/order-summary');
   };
+
+  // Handle login redirect
+  const handleLoginRedirect = () => {
+    // Store the current page and pending plan to return after login
+    localStorage.setItem('redirectAfterLogin', '/pricing');
+    if (pendingPlan) {
+      localStorage.setItem('pendingPlan', JSON.stringify(pendingPlan));
+    }
+    router.push('/login');
+  };
+
+  // Handle after login - check for pending plan
+  useEffect(() => {
+    const checkPendingPlanAfterLogin = () => {
+      const pendingPlanStr = localStorage.getItem('pendingPlan');
+      const isLoggedInNow = !!(localStorage.getItem('auth_token') || localStorage.getItem('token') || localStorage.getItem('user_data'));
+      
+      if (isLoggedInNow && pendingPlanStr) {
+        const pendingPlanData = JSON.parse(pendingPlanStr);
+        // Clear pending plan from storage
+        localStorage.removeItem('pendingPlan');
+        localStorage.removeItem('redirectAfterLogin');
+        // Proceed to order summary
+        proceedToOrderSummary(pendingPlanData);
+      }
+    };
+    
+    checkPendingPlanAfterLogin();
+  }, [router]);
 
   useEffect(() => {
     const observerOptions = { threshold: 0.1, rootMargin: '0px' };
@@ -102,6 +160,48 @@ const Pricing = () => {
     return () => observer.disconnect();
   }, [plans]);
 
+  // Login Modal Component
+  const LoginModal = () => {
+    if (!showLoginModal) return null;
+    
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4" onClick={() => setShowLoginModal(false)}>
+        <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
+          <div className="text-center mb-6">
+            <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg className="w-8 h-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+              </svg>
+            </div>
+            <h3 className="text-xl font-bold text-gray-900 mb-2">Login Required</h3>
+            <p className="text-gray-600">
+              Please login to continue with your subscription
+            </p>
+            {pendingPlan && (
+              <p className="text-sm text-purple-600 mt-2 font-medium">
+                Plan: {pendingPlan.name} • ₹{pendingPlan.price}/{pendingPlan.billingCycle === 'monthly' ? 'month' : 'year'}
+              </p>
+            )}
+          </div>
+          <div className="space-y-3">
+            <button
+              onClick={handleLoginRedirect}
+              className="w-full py-3 bg-gradient-to-r from-purple-600 to-purple-500 text-white rounded-xl font-semibold hover:from-purple-700 hover:to-purple-600 transition-all duration-300"
+            >
+              Login Now
+            </button>
+            <button
+              onClick={() => setShowLoginModal(false)}
+              className="w-full py-3 bg-gray-100 text-gray-700 rounded-xl font-semibold hover:bg-gray-200 transition-all duration-300"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   if (loading) {
     return (
       <>
@@ -113,6 +213,7 @@ const Pricing = () => {
           </div>
         </div>
         <Footer />
+        <LoginModal />
       </>
     );
   }
@@ -135,6 +236,7 @@ const Pricing = () => {
           </div>
         </div>
         <Footer />
+        <LoginModal />
       </>
     );
   }
@@ -151,6 +253,7 @@ const Pricing = () => {
           </div>
         </div>
         <Footer />
+        <LoginModal />
       </>
     );
   }
@@ -292,10 +395,17 @@ const Pricing = () => {
             })}
           </div>
 
-          {/* View Cart / Order Summary Link - ADDED */}
+          {/* View Cart / Order Summary Link */}
           <div className="text-center mb-8">
             <button
-              onClick={() => router.push('/order-summary')}
+              onClick={() => {
+                if (!isLoggedIn) {
+                  setShowLoginModal(true);
+                  setPendingPlan(null);
+                } else {
+                  router.push('/order-summary');
+                }
+              }}
               className="inline-flex items-center gap-3 px-6 py-3 bg-white border-2 border-gray-300 rounded-xl hover:border-purple-500 hover:shadow-lg transition-all duration-300 group"
             >
               <svg className="w-5 h-5 text-gray-600 group-hover:text-purple-600 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -340,6 +450,9 @@ const Pricing = () => {
         </Container>
       </div>
       <Footer />
+
+      {/* Login Modal */}
+      <LoginModal />
 
       <style jsx>{`
         .card-visible {

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { FcGoogle } from "react-icons/fc";
 import { FaEye, FaEyeSlash, FaHome } from "react-icons/fa";
 import { loginUser } from "../../services/authService";
@@ -20,6 +20,26 @@ const Login = () => {
   const [passwordError, setPasswordError] = useState("");
   const router = useRouter();
   const searchParams = useSearchParams();
+
+  // Check for pending plan on component mount
+  useEffect(() => {
+    const pendingPlan = localStorage.getItem('pendingPlan');
+    const redirectUrl = searchParams.get("redirect");
+    
+    if (pendingPlan && !redirectUrl) {
+      // Show a toast notification that a plan was waiting
+      const planData = JSON.parse(pendingPlan);
+      toast.success(`Complete your ${planData.name} plan purchase!`, {
+        duration: 4000,
+        position: "top-center",
+        icon: '🎯',
+        style: {
+          background: '#8b5cf6',
+          color: '#fff',
+        },
+      });
+    }
+  }, [searchParams]);
 
   // Validation functions
   const validateEmail = (value) => {
@@ -109,11 +129,8 @@ const Login = () => {
         },
       });
       
-      // ✅ Redirect to previous page or pricing
-      const redirect = searchParams.get("redirect") || "/pricing";
-      setTimeout(() => {
-        router.push(redirect);
-      }, 1500);
+      // ✅ Handle redirect after login
+      await handleRedirectAfterLogin();
       
     } catch (error) {
       // Dismiss loading toast
@@ -144,6 +161,55 @@ const Login = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  // New function to handle redirect logic
+  const handleRedirectAfterLogin = async () => {
+    // First check for pending plan (from pricing page)
+    const pendingPlan = localStorage.getItem('pendingPlan');
+    const redirectFromQuery = searchParams.get("redirect");
+    
+    // Priority 1: Direct redirect from query parameter (from pricing page)
+    if (redirectFromQuery) {
+      // Clear any pending plan since we're redirecting directly
+      localStorage.removeItem('pendingPlan');
+      localStorage.removeItem('redirectAfterLogin');
+      router.push(redirectFromQuery);
+      return;
+    }
+    
+    // Priority 2: Check for pending plan (from pricing page without redirect param)
+    if (pendingPlan) {
+      const planData = JSON.parse(pendingPlan);
+      
+      // Show a success toast with plan info
+      toast.success(`Proceeding to ${planData.name} plan checkout!`, {
+        duration: 2000,
+        position: "top-center",
+      });
+      
+      // Small delay to ensure toast is seen
+      setTimeout(() => {
+        // Clear the pending plan from localStorage
+        localStorage.removeItem('pendingPlan');
+        localStorage.removeItem('redirectAfterLogin');
+        
+        // Navigate to order summary with the plan
+        router.push('/order-summary');
+      }, 500);
+      return;
+    }
+    
+    // Priority 3: Check for generic redirect after login
+    const redirectAfterLogin = localStorage.getItem('redirectAfterLogin');
+    if (redirectAfterLogin) {
+      localStorage.removeItem('redirectAfterLogin');
+      router.push(redirectAfterLogin);
+      return;
+    }
+    
+    // Priority 4: Default redirect to pricing page
+    router.push("/pricing");
   };
 
   // Real-time validation handlers
@@ -212,6 +278,22 @@ const Login = () => {
           <h1 className="text-center text-[#2d236b] my-6 text-3xl font-bold max-sm:text-2xl">
             LOG IN
           </h1>
+
+          {/* Show pending plan info if exists */}
+          {(() => {
+            const pendingPlan = typeof window !== 'undefined' ? localStorage.getItem('pendingPlan') : null;
+            if (pendingPlan) {
+              const planData = JSON.parse(pendingPlan);
+              return (
+                <div className="mb-4 p-3 bg-purple-50 border border-purple-200 rounded-xl">
+                  <p className="text-sm text-purple-800 text-center">
+                    🎯 Complete your <strong>{planData.name}</strong> plan purchase after login
+                  </p>
+                </div>
+              );
+            }
+            return null;
+          })()}
 
           {/* Server Error Message - Keep for backup but toast will handle main notifications */}
           {error && (
@@ -294,7 +376,12 @@ const Login = () => {
             <p>
               Don't have an account?{" "}
               <span 
-                onClick={() => router.push("/register")}
+                onClick={() => {
+                  // Preserve redirect params when going to register
+                  const redirect = searchParams.get("redirect");
+                  const registerUrl = redirect ? `/register?redirect=${encodeURIComponent(redirect)}` : "/register";
+                  router.push(registerUrl);
+                }}
                 className="text-[#3b82f6] font-bold cursor-pointer hover:underline"
               >
                 SIGN UP
