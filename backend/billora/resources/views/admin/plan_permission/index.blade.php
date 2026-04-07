@@ -674,20 +674,10 @@
                                     </div>
                                 </div>
                             </td>
-                            <td class="text-center">{{ $permission->slug }}</td>
+                            <td class="text-center">{{ $permission->slug  ?? ''}}</td>
                             <td class="text-center">{{ $permission->description }}</td>
                             <td class="text-center">
-                                @if ($permission->is_active == 1)
-                                    <span
-                                        class="inline-flex items-center px-2 py-1 text-xs font-semibold text-green-700 bg-green-100 rounded-full">
-                                        Active
-                                    </span>
-                                @else
-                                    <span
-                                        class="inline-flex items-center px-2 py-1 text-xs font-semibold text-red-700 bg-red-100 rounded-full">
-                                        Inactive
-                                    </span>
-                                @endif
+                                
                             </td>
                             <td class="text-center">
                                 {{ $permission->created_at->format('M d, Y h:i A') }}

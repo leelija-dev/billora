@@ -30,4 +30,5 @@ class AdminUser extends Authenticatable
     protected $casts = [
         'last_login_at' => 'datetime',
     ];
+    
 }

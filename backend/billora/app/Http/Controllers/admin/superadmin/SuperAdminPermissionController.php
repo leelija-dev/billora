@@ -3,16 +3,16 @@
 namespace App\Http\Controllers\admin\superadmin;
 
 use App\Http\Controllers\Controller;
-use App\Models\SuperAdminPermission;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Spatie\Permission\Models\Permission; 
 class SuperAdminPermissionController extends Controller
 {
     public function index(){
-        $permissions = SuperAdminPermission::paginate(10);
-        $totalPermissions = SuperAdminPermission::count();
-        $activePermissions = SuperAdminPermission::where('is_active',1)->count();
-        $inactivePermissions = SuperAdminPermission::where('is_active',0)->count();
+        $permissions = Permission::paginate(10);
+        $totalPermissions = Permission::count();
+        $activePermissions = Permission::count();
+        $inactivePermissions = Permission::count();
 
         return view('admin.admin_permission.index',compact('permissions','totalPermissions','activePermissions','inactivePermissions'));
     }
@@ -22,15 +22,13 @@ class SuperAdminPermissionController extends Controller
     public function store(Request $request){
         $permission = $request->validate([
             'name' => 'required', 
-            'is_active' => 'required',
         ]);
 
         $permission['slug']=Str::slug($permission['name']);
 
-        SuperAdminPermission::create([
+        Permission::create([
             'name' => $permission['name'],
-            'slug' => $permission['slug'],
-            'is_active' => $permission['is_active'],
+            'guard_name' => 'admin',
         ]);
         return redirect()->route('admin.permissions.index')->with('success','Permission Created Successfully');
     }

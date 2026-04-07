@@ -6,6 +6,7 @@ use App\Http\Controllers\admin\superadmin\AdminUserController;
 use App\Http\Controllers\admin\superadmin\CustomerController;
 use App\Http\Controllers\admin\superadmin\PlansController;
 use App\Http\Controllers\admin\superadmin\PlanPermissionController;
+use App\Http\Controllers\admin\superadmin\RolesController;
 use App\Http\Controllers\admin\superadmin\SuperAdminPermissionController;
 use App\Models\AdminMailHistory;
 use App\Models\SuperAdminPermission;
@@ -69,5 +70,13 @@ Route::middleware(['web', 'admin.auth'])->prefix('admin')->group(function () {
         Route::get('/', [SuperAdminPermissionController::class, 'index'])->name('admin.permissions.index');
         Route::get('/create', [SuperAdminPermissionController::class, 'create'])->name('admin.permissions.create');
         Route::post('/store', [SuperAdminPermissionController::class, 'store'])->name('admin.permissions.store');
+    });
+    Route::prefix('role')->group(function (){
+        Route::get('/',[RolesController::class ,'index'])->name('admin.roles.index');
+        Route::get('/create', [RolesController::class, 'create'])->name('admin.roles.create');
+        Route::post('/store', [RolesController::class, 'store'])->name('admin.roles.store');
+        Route::get('/edit/{id}', [RolesController::class, 'edit'])->name('admin.roles.edit');
+        Route::post('/update/{id}', [RolesController::class, 'update'])->name('admin.roles.update');
+        Route::delete('/delete/{id}', [RolesController::class, 'delete'])->name('admin.roles.delete');
     });
 });
