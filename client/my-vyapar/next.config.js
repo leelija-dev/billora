@@ -5,7 +5,6 @@ const nextConfig = {
   },
   images: {
     remotePatterns: [
-      // Allow images from your local API server
       {
         protocol: 'http',
         hostname: 'localhost',
@@ -18,10 +17,15 @@ const nextConfig = {
         port: '8000',
         pathname: '/**',
       },
-      // Fallback for placeholder images
       {
         protocol: 'https',
         hostname: 'via.placeholder.com',
+        port: '',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'images.unsplash.com',
         port: '',
         pathname: '/**',
       },

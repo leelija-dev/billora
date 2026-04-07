@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { getAuthData } from '../../store/authStore';
+import { getProducts, getUserStore, placeOrder } from '../../services/productService';
 import toast, { Toaster } from 'react-hot-toast';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
@@ -37,14 +38,16 @@ const ProductsPage = () => {
   const [duplicateProductsList, setDuplicateProductsList] = useState([]);
   const [pendingBulkProducts, setPendingBulkProducts] = useState([]);
 
+  // Single product direct checkout states
+  const [singleCheckoutProduct, setSingleCheckoutProduct] = useState(null);
+  const [singleCheckoutQuantity, setSingleCheckoutQuantity] = useState(1);
+  const [showSingleCheckout, setShowSingleCheckout] = useState(false);
+  const [showSingleDuplicateDialog, setShowSingleDuplicateDialog] = useState(false);
+
+  // Simplified form data
   const [formData, setFormData] = useState({
     fullName: "",
-    email: "",
     phone: "",
-    address: "",
-    city: "",
-    state: "",
-    pincode: "",
     paymentMethod: "cod"
   });
 
@@ -65,26 +68,55 @@ const ProductsPage = () => {
     return trimmed.length === 0 ? '' : trimmed;
   };
 
-  // ========== FETCH USER STORE ==========
-  const fetchUserStore = async (userId, token) => {
-    try {
-      const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000/api';
-      const response = await fetch(`${BASE_URL}/store/${userId}`, {
-        headers: {
-          "Authorization": `Bearer ${token}`,
-        },
-      });
-      const data = await response.json();
-      if (data?.data && data.data.length > 0) {
-        setStoreId(data.data[0].id);
-        return data.data[0].id;
+  // ========== SESSION STORAGE FOR CART PERSISTENCE ==========
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const savedCart = sessionStorage.getItem('cart');
+      if (savedCart) {
+        try {
+          const parsedCart = JSON.parse(savedCart);
+          setCart(parsedCart);
+          console.log("Cart loaded from sessionStorage:", parsedCart);
+        } catch (error) {
+          console.error("Error loading cart:", error);
+        }
       }
-      return null;
-    } catch (error) {
-      console.error("Error fetching store:", error);
-      return null;
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      if (cart.length > 0) {
+        sessionStorage.setItem('cart', JSON.stringify(cart));
+      } else {
+        sessionStorage.removeItem('cart');
+      }
+    }
+  }, [cart]);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const savedSelectedItems = sessionStorage.getItem('selectedItems');
+      if (savedSelectedItems) {
+        try {
+          const parsedSelectedItems = JSON.parse(savedSelectedItems);
+          setSelectedItems(new Set(parsedSelectedItems));
+        } catch (error) {
+          console.error("Error loading selected items:", error);
+        }
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      if (selectedItems.size > 0) {
+        sessionStorage.setItem('selectedItems', JSON.stringify(Array.from(selectedItems)));
+      } else {
+        sessionStorage.removeItem('selectedItems');
+      }
+    }
+  }, [selectedItems]);
 
   // ========== CART FUNCTIONS ==========
   const addToCart = (product, quantityToAdd = 1) => {
@@ -111,6 +143,13 @@ const ProductsPage = () => {
   const removeFromCart = (productId) => {
     setCart(prev => prev.filter(item => item.id !== productId));
     setPopupMessage("Item removed from cart");
+    setPopup(true);
+    setTimeout(() => setPopup(false), 1500);
+  };
+
+  const clearAllCart = () => {
+    setCart([]);
+    setPopupMessage("Cart cleared successfully!");
     setPopup(true);
     setTimeout(() => setPopup(false), 1500);
   };
@@ -142,6 +181,104 @@ const ProductsPage = () => {
     return item ? item.quantity : 0;
   };
 
+  // ========== SINGLE PRODUCT DIRECT CHECKOUT FUNCTIONS ==========
+  const handleBuyNow = (product) => {
+    if (!product.inStock) {
+      setPopupMessage("Product is out of stock!");
+      setPopup(true);
+      setTimeout(() => setPopup(false), 2000);
+      return;
+    }
+
+    const existingInCart = cart.find(item => item.id === product.id);
+    if (existingInCart) {
+      setSingleCheckoutProduct(product);
+      setShowSingleDuplicateDialog(true);
+    } else {
+      openSingleCheckout(product, 1);
+    }
+  };
+
+  const openSingleCheckout = (product, quantity) => {
+    setSingleCheckoutProduct(product);
+    setSingleCheckoutQuantity(quantity);
+    setShowSingleCheckout(true);
+    setShowCart(false);
+  };
+
+  const handleSingleCheckoutQuantityChange = (newQuantity) => {
+    if (newQuantity < 1) return;
+    setSingleCheckoutQuantity(newQuantity);
+  };
+
+  const handleSingleProductPlaceOrder = async (e) => {
+    e.preventDefault();
+
+    if (!formData.fullName || !formData.phone) {
+      setPopupMessage("Please fill all fields!");
+      setPopup(true);
+      setTimeout(() => setPopup(false), 2000);
+      return;
+    }
+
+    if (!singleCheckoutProduct) {
+      setPopupMessage("No product selected!");
+      setPopup(true);
+      setTimeout(() => setPopup(false), 2000);
+      return;
+    }
+
+    try {
+      const { user } = getAuthData();
+      
+      if (!user || !user.id) {
+        toast.error("Please login to place order");
+        router.push('/login');
+        return;
+      }
+
+      if (!storeId) {
+        toast.error("Store not found. Please contact support.");
+        return;
+      }
+
+      const orderData = {
+        user_id: user.id,
+        store_id: storeId,
+        customer_name: formData.fullName,
+        customer_phone: formData.phone,
+        product_id: [singleCheckoutProduct.id],
+        quantity: [singleCheckoutQuantity],
+        unit_id: [singleCheckoutProduct.unit_id || 1],
+      };
+
+      const response = await placeOrder(orderData);
+
+      if (response) {
+        setOrderPlaced(true);
+        setShowSingleCheckout(false);
+        setPopupMessage("🎉 Order placed successfully!");
+        setPopup(true);
+        setSingleCheckoutProduct(null);
+        setSingleCheckoutQuantity(1);
+        setFormData({
+          fullName: "",
+          phone: "",
+          paymentMethod: "cod"
+        });
+        setTimeout(() => {
+          setOrderPlaced(false);
+          setPopup(false);
+        }, 3000);
+      }
+    } catch (error) {
+      console.error("Order error:", error);
+      setPopupMessage(error.message || "Error placing order. Please try again!");
+      setPopup(true);
+      setTimeout(() => setPopup(false), 2000);
+    }
+  };
+
   // ========== BULK SELECTION FUNCTIONS ==========
   const toggleSelectItem = (productId) => {
     setSelectedItems(prev => {
@@ -153,15 +290,6 @@ const ProductsPage = () => {
       }
       return newSet;
     });
-  };
-
-  const toggleSelectAll = () => {
-    if (selectedItems.size === displayedProducts.length) {
-      setSelectedItems(new Set());
-    } else {
-      const allIds = displayedProducts.map(p => p.id);
-      setSelectedItems(new Set(allIds));
-    }
   };
 
   const clearSelection = () => {
@@ -241,11 +369,11 @@ const ProductsPage = () => {
     setShowCheckout(false);
   };
 
-  // ========== REAL ORDER PLACEMENT WITH API ==========
+  // ========== ORDER PLACEMENT USING SERVICE ==========
   const handlePlaceOrder = async (e) => {
     e.preventDefault();
 
-    if (!formData.fullName || !formData.email || !formData.phone || !formData.address || !formData.city || !formData.state || !formData.pincode) {
+    if (!formData.fullName || !formData.phone) {
       setPopupMessage("Please fill all fields!");
       setPopup(true);
       setTimeout(() => setPopup(false), 2000);
@@ -260,7 +388,7 @@ const ProductsPage = () => {
     }
 
     try {
-      const { user, token } = getAuthData();
+      const { user } = getAuthData();
       
       if (!user || !user.id) {
         toast.error("Please login to place order");
@@ -273,8 +401,6 @@ const ProductsPage = () => {
         return;
       }
 
-      const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000/api';
-      
       const orderData = {
         user_id: user.id,
         store_id: storeId,
@@ -285,20 +411,9 @@ const ProductsPage = () => {
         unit_id: cart.map(item => item.unit_id || 1),
       };
 
-      console.log("Placing order:", orderData);
+      const response = await placeOrder(orderData);
 
-      const response = await fetch(`${BASE_URL}/orders/store`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`,
-        },
-        body: JSON.stringify(orderData),
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
+      if (response) {
         setOrderPlaced(true);
         setShowCheckout(false);
         setShowCart(false);
@@ -307,20 +422,13 @@ const ProductsPage = () => {
         setCart([]);
         setFormData({
           fullName: "",
-          email: "",
           phone: "",
-          address: "",
-          city: "",
-          state: "",
-          pincode: "",
           paymentMethod: "cod"
         });
         setTimeout(() => {
           setOrderPlaced(false);
           setPopup(false);
         }, 3000);
-      } else {
-        throw new Error(data.message || "Order failed");
       }
     } catch (error) {
       console.error("Order error:", error);
@@ -330,87 +438,13 @@ const ProductsPage = () => {
     }
   };
 
-  // ========== FETCH PRODUCTS FROM API ==========
-  const fetchProducts = async () => {
+  // ========== FETCH PRODUCTS USING SERVICE ==========
+  const fetchProductsData = async () => {
     try {
       setLoading(true);
-      console.log("=== Starting to fetch products ===");
-
-      if (typeof window === 'undefined') {
-        console.log("Server side - skipping fetch");
-        setLoading(false);
-        return;
-      }
-
-      let user = null;
-      let token = null;
+      const productsData = await getProducts();
       
-      try {
-        const authData = getAuthData();
-        user = authData?.user;
-        token = localStorage.getItem("token");
-      } catch (error) {
-        console.error("Error getting auth data:", error);
-        toast.error("Please login again");
-        setLoading(false);
-        return;
-      }
-
-      if (!user || !user.id) {
-        console.error("No user found - redirecting to login");
-        toast.error("Please login to view products");
-        setLoading(false);
-        return;
-      }
-
-      const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000/api';
-      let endpoint = `${BASE_URL}/restaurant-all-products/${user.id}`;
-      
-      if (search) {
-        endpoint += `?search=${encodeURIComponent(search)}`;
-      }
-
-      console.log("Fetching from:", endpoint);
-
-      const response = await fetch(endpoint, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`,
-        },
-      });
-
-      const data = await response.json();
-      console.log("API Response:", data);
-
-      let productsArray = [];
-
-      if (data?.products?.data && Array.isArray(data.products.data)) {
-        productsArray = data.products.data;
-      }
-      else if (data?.data && Array.isArray(data.data)) {
-        productsArray = data.data;
-      }
-      else if (Array.isArray(data)) {
-        productsArray = data;
-      }
-      else {
-        console.error("Unknown response structure");
-        toast.error("Unable to parse products");
-        setProducts([]);
-        setLoading(false);
-        return;
-      }
-
-      // if (productsArray.length === 0) {
-      //   console.warn("No products found");
-      //   toast("No products available");
-      //   setProducts([]);
-      //   setLoading(false);
-      //   return;
-      // }
-
-      const transformedProducts = productsArray.map(product => {
+      const transformedProducts = productsData.map(product => {
         const rawName = product.name || "Unnamed Product";
         const rawDescription = product.description || `High quality ${rawName}`;
 
@@ -439,15 +473,27 @@ const ProductsPage = () => {
         };
       });
 
-      console.log("Transformed products for UI:", transformedProducts);
       setProducts(transformedProducts);
-
     } catch (error) {
       console.error("Fetch error:", error);
       toast.error("Failed to load products");
       setProducts([]);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // ========== FETCH USER STORE USING SERVICE ==========
+  const fetchStoreData = async () => {
+    try {
+      const store = await getUserStore();
+      if (store) {
+        setStoreId(store);
+      }
+      return store;
+    } catch (error) {
+      console.error("Error fetching store:", error);
+      return null;
     }
   };
 
@@ -490,18 +536,17 @@ const ProductsPage = () => {
   // ========== LOAD PRODUCTS ON MOUNT ==========
   useEffect(() => {
     const loadData = async () => {
-      const { user, token } = getAuthData();
-      console.log("Logged in user:", user);
+      const { user } = getAuthData();
 
       if (!user || !user.id) {
         setLoading(false);
-        toast.error("User not authenticated");
+        toast.error("Please login to view products");
         router.push('/login');
         return;
       }
 
-      await fetchProducts();
-      await fetchUserStore(user.id, token);
+      await fetchProductsData();
+      await fetchStoreData();
     };
 
     loadData();
@@ -514,7 +559,6 @@ const ProductsPage = () => {
       setDisplayedProducts(filtered.slice(0, PRODUCTS_PER_PAGE));
       setPage(1);
       setHasMore(filtered.length > PRODUCTS_PER_PAGE);
-      setSelectedItems(new Set());
     }
   }, [products, search, category, maxPrice, sort, applyFiltersAndSort]);
 
@@ -575,6 +619,13 @@ const ProductsPage = () => {
     e.currentTarget.src = "/image/placeholder.png";
   };
 
+  const clearSearch = () => {
+    setSearch("");
+  };
+
+  const visibleSelectedCount = displayedProducts.filter(p => selectedItems.has(p.id)).length;
+  const crossCategoryCount = selectedItems.size - visibleSelectedCount;
+
   if (loading) {
     return (
       <>
@@ -582,7 +633,7 @@ const ProductsPage = () => {
         <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white flex justify-center items-center">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-            <p className="text-gray-600 text-lg">WAIT ASHMIT IS BRINGING THE PRODUCTS ....will take a min</p>
+            <p className="text-gray-600 text-lg">Loading products...</p>
           </div>
         </div>
         <Footer />
@@ -595,12 +646,22 @@ const ProductsPage = () => {
       <Nav2 />
       <Toaster position="top-right" />
 
-      {/* Floating Cart Button */}
-      <div className="fixed top-25 right-8 z-40">
+      {/* Floating Action Buttons */}
+      <div className="fixed top-25 right-8 z-40 flex items-center gap-3">
+        {selectedItems.size > 0 && (
+          <button
+            onClick={handleBulkAddToCart}
+            className="bg-green-600 text-white px-5 py-3 rounded-full shadow-lg hover:bg-green-700 transition flex items-center gap-2 font-semibold"
+          >
+            📦 Bulk Cart ({selectedItems.size})
+          </button>
+        )}
+        
         <button
           onClick={() => {
             setShowCart(true);
             setShowCheckout(false);
+            setShowSingleCheckout(false);
           }}
           className="bg-blue-600 text-white p-3 rounded-full shadow-lg hover:bg-blue-700 transition relative"
         >
@@ -624,17 +685,8 @@ const ProductsPage = () => {
           </p>
         )}
 
-        {/* Bulk Action Bar */}
         <div className="max-w-7xl mx-auto mb-6 flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            {displayedProducts.length > 0 && (
-              <button
-                onClick={toggleSelectAll}
-                className="px-4 py-2 text-sm bg-gray-200 hover:bg-gray-300 rounded-lg transition text-black"
-              >
-                {selectedItems.size === displayedProducts.length ? "Deselect All" : "Select All"}
-              </button>
-            )}
             {selectedItems.size > 0 && (
               <button
                 onClick={clearSelection}
@@ -643,32 +695,38 @@ const ProductsPage = () => {
                 Clear ({selectedItems.size})
               </button>
             )}
+            {crossCategoryCount > 0 && (
+              <span className="text-xs bg-orange-100 text-orange-700 px-2 py-1 rounded-full">
+                +{crossCategoryCount} from other {crossCategoryCount === 1 ? 'category' : 'categories'}
+              </span>
+            )}
           </div>
-          
-          {selectedItems.size > 0 && (
-            <button
-              onClick={handleBulkAddToCart}
-              className="px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition font-semibold shadow-md flex items-center gap-2"
-            >
-              🛒 Add Selected ({selectedItems.size}) to Cart
-            </button>
-          )}
         </div>
 
         {/* Search Bar */}
         <div className="max-w-xl mx-auto mb-10">
-          <div className="flex gap-2">
-            <input
-              type="text"
-              placeholder="Search products..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="flex-1 px-4 py-3 border rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 outline-none bg-white text-black"
-            />
+          <div className="relative flex gap-2">
+            <div className="relative flex-1">
+              <input
+                type="text"
+                placeholder="Search products..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="w-full px-4 py-3 pr-10 border rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 outline-none bg-white text-black"
+              />
+              {search && (
+                <button
+                  onClick={clearSearch}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition"
+                >
+                  ✕
+                </button>
+              )}
+            </div>
             <button
               onClick={() => {
                 setLoading(true);
-                fetchProducts();
+                fetchProductsData();
               }}
               className="px-6 py-3 bg-green-600 text-white rounded-xl hover:bg-green-700 transition"
             >
@@ -695,7 +753,6 @@ const ProductsPage = () => {
               </button>
             </div>
 
-            {/* Category Filter */}
             <div>
               <h3 className="font-semibold mb-3 flex items-center gap-2 text-gray-700">📦 Categories</h3>
               <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
@@ -721,7 +778,6 @@ const ProductsPage = () => {
               </div>
             </div>
 
-            {/* Price Filter */}
             <div>
               <h3 className="font-semibold mb-3 flex items-center gap-2 text-gray-700">💰 Max Price</h3>
               <input
@@ -738,7 +794,6 @@ const ProductsPage = () => {
               </div>
             </div>
 
-            {/* Sort Options */}
             <div>
               <h3 className="font-semibold mb-3 flex items-center gap-2 text-gray-700">🔃 Sort By</h3>
               <select
@@ -758,9 +813,9 @@ const ProductsPage = () => {
             {products.length === 0 ? (
               <div className="text-center py-12">
                 <div className="text-6xl mb-4">📦</div>
-                <p className="text-gray-500 text-lg">No products found in database</p>
+                <p className="text-gray-500 text-lg">No products found</p>
                 <button
-                  onClick={() => fetchProducts()}
+                  onClick={() => fetchProductsData()}
                   className="mt-4 px-6 py-2 bg-blue-600 text-white rounded-lg"
                 >
                   Retry Loading
@@ -778,9 +833,16 @@ const ProductsPage = () => {
                       <div
                         key={product.id}
                         ref={index === displayedProducts.length - 1 ? lastProductRef : null}
-                        className={`bg-white rounded-2xl shadow-md hover:shadow-xl transition p-4 sm:p-6 relative group border-2 ${isSelected ? 'border-blue-500 bg-blue-50' : 'border-transparent'}`}
+                        className={`bg-white rounded-2xl shadow-md hover:shadow-xl transition p-4 sm:p-6 relative group border-2 flex flex-col h-full ${isSelected ? 'border-blue-500 bg-blue-50' : 'border-transparent'}`}
                       >
-                        {/* Checkbox - Top Right */}
+                        {product.discount_percentage > 0 && (
+                          <div className="absolute top-[-15px] left-[-15px] z-20 w-[85px] h-[85px] rounded-full bg-gradient-to-br from-[#ff0055] to-[#ff5e00] text-white flex flex-col items-center justify-center font-bold shadow-xl border-4 border-white transform -rotate-[8deg]">
+                            <span className="text-[10px] uppercase tracking-wider opacity-90">Save</span>
+                            <span className="text-2xl leading-none font-black">{product.discount_percentage}%</span>
+                            <span className="text-[8px] uppercase font-normal">Limited</span>
+                          </div>
+                        )}
+
                         <div className="absolute top-3 right-3 z-10">
                           <input
                             type="checkbox"
@@ -792,7 +854,7 @@ const ProductsPage = () => {
                           />
                         </div>
 
-                        <div onClick={() => openProduct(product)} className="cursor-pointer">
+                        <div onClick={() => openProduct(product)} className="cursor-pointer flex-shrink-0">
                           <div className="relative h-40 mb-4">
                             <Image
                               src={product.img}
@@ -802,18 +864,15 @@ const ProductsPage = () => {
                               onError={handleImageError}
                             />
                           </div>
+                        </div>
 
-                          <div className="absolute top-3 right-12 text-gray-400 hover:text-red-500 text-xl cursor-pointer" onClick={(e) => e.stopPropagation()}>
-                            ♡
-                          </div>
-
+                        <div className="flex-1">
                           <h2 className="font-bold text-lg text-black mt-1 break-words whitespace-normal leading-tight">{product.name || 'Unnamed Product'}</h2>
-                          <p className="text-sm text-gray-600 mt-1 break-words whitespace-normal" style={{ minHeight: '2.4rem' }}>{product.description || 'No description available'}</p>
+                          <p className="text-sm text-gray-600 mt-1 break-words whitespace-normal">{product.description || 'No description available'}</p>
                           <p className="text-xs text-gray-500 mt-1 break-words">Category: {product.category || 'General'}</p>
                           <p className="text-xs text-gray-400 break-words">{product.brand || 'Unknown'} • {product.unit || 'Piece'}</p>
                           <p className="text-yellow-500 text-sm mt-1">{"⭐".repeat(product.rating)}</p>
                           <p className="text-xl font-bold text-blue-600 mt-2">₹{productPrice.toLocaleString()}</p>
-
                           <p className={`text-xs mt-1 ${product.inStock ? 'text-green-600' : 'text-red-600'}`}>
                             {product.inStock ? '✅ In Stock' : '❌ Out of Stock'}
                           </p>
@@ -822,42 +881,64 @@ const ProductsPage = () => {
                         <div className="flex flex-row gap-3 w-full mt-3">
                           {product.inStock ? (
                             quantity === 0 ? (
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  addToCart(product, 1);
-                                  setPopupMessage(`${product.name} added to cart!`);
-                                  setPopup(true);
-                                  setTimeout(() => setPopup(false), 2000);
-                                }}
-                                className="flex-1 py-3 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition"
-                              >
-                                Add to Cart
-                              </button>
+                              <>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    addToCart(product, 1);
+                                    setPopupMessage(`${product.name} added to cart!`);
+                                    setPopup(true);
+                                    setTimeout(() => setPopup(false), 2000);
+                                  }}
+                                  className="flex-1 py-3 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition"
+                                >
+                                  Add to Cart
+                                </button>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleBuyNow(product);
+                                  }}
+                                  className="px-6 py-3 rounded-lg bg-orange-600 text-white hover:bg-orange-700 transition font-semibold"
+                                >
+                                  Buy Now →
+                                </button>
+                              </>
                             ) : (
-                              <div className="flex-1 flex items-center justify-between border rounded-lg overflow-hidden">
+                              <>
+                                <div className="flex-1 flex items-center justify-between border rounded-lg overflow-hidden">
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      updateQuantity(product.id, quantity - 1);
+                                    }}
+                                    className="w-12 h-12 flex items-center justify-center bg-gray-100 hover:bg-gray-200 text-xl font-bold transition text-black"
+                                  >
+                                    −
+                                  </button>
+                                  <span className="flex-1 text-center font-semibold text-lg text-black">
+                                    {quantity}
+                                  </span>
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      updateQuantity(product.id, quantity + 1);
+                                    }}
+                                    className="w-12 h-12 flex items-center justify-center bg-gray-100 hover:bg-gray-200 text-xl font-bold transition text-black"
+                                  >
+                                    +
+                                  </button>
+                                </div>
                                 <button
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    updateQuantity(product.id, quantity - 1);
+                                    handleBuyNow(product);
                                   }}
-                                  className="w-12 h-12 flex items-center justify-center bg-gray-100 hover:bg-gray-200 text-xl font-bold transition text-black"
+                                  className="px-6 py-3 rounded-lg bg-orange-600 text-white hover:bg-orange-700 transition font-semibold"
                                 >
-                                  −
+                                  Buy Now →
                                 </button>
-                                <span className="flex-1 text-center font-semibold text-lg text-black">
-                                  {quantity}
-                                </span>
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    updateQuantity(product.id, quantity + 1);
-                                  }}
-                                  className="w-12 h-12 flex items-center justify-center bg-gray-100 hover:bg-gray-200 text-xl font-bold transition text-black"
-                                >
-                                  +
-                                </button>
-                              </div>
+                              </>
                             )
                           ) : (
                             <button disabled className="flex-1 py-3 rounded-lg bg-gray-300 text-gray-500 cursor-not-allowed">
@@ -888,7 +969,190 @@ const ProductsPage = () => {
         </div>
       </div>
 
-      {/* Duplicate Products Dialog */}
+      {/* Single Product Duplicate Dialog */}
+      {showSingleDuplicateDialog && singleCheckoutProduct && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[200] p-4">
+          <div className="bg-white rounded-2xl p-6 max-w-md w-full">
+            <h3 className="text-xl font-bold mb-4 text-black">⚠️ Product Already in Cart</h3>
+            <p className="text-gray-600 mb-3">{singleCheckoutProduct.name} is already in your cart.</p>
+            <p className="text-gray-600 mb-6">What would you like to do?</p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  setShowSingleDuplicateDialog(false);
+                  openSingleCheckout(singleCheckoutProduct, 1);
+                }}
+                className="flex-1 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+              >
+                Continue Checkout
+              </button>
+              <button
+                onClick={() => {
+                  setShowSingleDuplicateDialog(false);
+                  setSingleCheckoutProduct(null);
+                }}
+                className="flex-1 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Single Product Direct Checkout Sidebar */}
+      {showSingleCheckout && singleCheckoutProduct && (
+        <div className="fixed top-0 right-0 h-full w-full sm:w-96 bg-white shadow-2xl z-50 transform transition-transform duration-500 ease-out translate-x-0">
+          <div className="relative p-6 pt-20 bg-gradient-to-r from-orange-600 to-red-600 text-white flex-shrink-0 min-h-[140px]">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-white opacity-10 rounded-full -mr-8 -mt-8"></div>
+            <div className="absolute bottom-0 left-0 w-24 h-24 bg-white opacity-10 rounded-full -ml-8 -mb-8"></div>
+
+            <div className="flex justify-between items-start relative">
+              <h2 className="text-xl font-bold flex items-center gap-3">
+                <span className="text-2xl">⚡</span>
+                <span>Quick Checkout</span>
+              </h2>
+              <button
+                onClick={() => {
+                  setShowSingleCheckout(false);
+                  setSingleCheckoutProduct(null);
+                  setSingleCheckoutQuantity(1);
+                }}
+                className="w-10 h-10 flex items-center justify-center rounded-full bg-white/20 hover:bg-white/30 transition backdrop-blur-sm text-white hover:scale-110 flex-shrink-0"
+              >
+                <span className="text-xl">✕</span>
+              </button>
+            </div>
+          </div>
+
+          <div className="overflow-y-auto" style={{ height: 'calc(100vh - 140px)' }}>
+            <div className="p-6 space-y-6">
+              <div className="bg-gradient-to-br from-orange-50 to-white p-5 rounded-xl border border-orange-100 shadow-sm">
+                <h3 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                  <span className="w-1 h-5 bg-orange-600 rounded-full"></span>
+                  Order Summary
+                </h3>
+                
+                <div className="flex gap-4 items-center mb-4">
+                  <div className="relative w-16 h-16 bg-white rounded-xl overflow-hidden shadow-sm border border-gray-200">
+                    <img
+                      src={singleCheckoutProduct.img || "/image/placeholder.png"}
+                      alt={singleCheckoutProduct.name}
+                      className="w-full h-full object-contain p-1"
+                      onError={handleImageError}
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-semibold text-gray-800">{singleCheckoutProduct.name}</p>
+                    <p className="text-sm text-gray-500">₹{singleCheckoutProduct.price} per piece</p>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between py-3 border-t border-orange-100">
+                  <span className="text-gray-600">Quantity</span>
+                  <div className="flex items-center gap-3">
+                    <button
+                      onClick={() => handleSingleCheckoutQuantityChange(singleCheckoutQuantity - 1)}
+                      className="w-8 h-8 flex items-center justify-center bg-gray-100 rounded-lg hover:bg-gray-200 text-xl font-bold text-black"
+                    >
+                      −
+                    </button>
+                    <span className="text-lg font-semibold w-8 text-center text-black">
+                      {singleCheckoutQuantity}
+                    </span>
+                    <button
+                      onClick={() => handleSingleCheckoutQuantityChange(singleCheckoutQuantity + 1)}
+                      className="w-8 h-8 flex items-center justify-center bg-gray-100 rounded-lg hover:bg-gray-200 text-xl font-bold text-black"
+                    >
+                      +
+                    </button>
+                  </div>
+                </div>
+
+                <div className="border-t border-orange-100 mt-4 pt-4 flex justify-between items-center">
+                  <span className="font-semibold text-gray-700">Total Amount</span>
+                  <span className="text-xl font-bold text-orange-600">
+                    ₹{(singleCheckoutProduct.price * singleCheckoutQuantity).toLocaleString()}
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
+                  <span className="text-green-600">📦</span>
+                </div>
+                <h3 className="font-semibold text-gray-800">Delivery Information</h3>
+              </div>
+
+              <form onSubmit={handleSingleProductPlaceOrder} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium mb-1 text-black">Full Name *</label>
+                  <input
+                    type="text"
+                    name="fullName"
+                    value={formData.fullName}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 outline-none text-black"
+                    placeholder="John Doe"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-1 text-black">Phone *</label>
+                  <input
+                    type="tel"
+                    name="phone"
+                    value={formData.phone}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 outline-none text-black"
+                    placeholder="9876543210"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-2 text-black">Payment Method *</label>
+                  <div className="space-y-2">
+                    <label className="flex items-center gap-2 p-3 border rounded-lg cursor-pointer hover:bg-gray-50">
+                      <input
+                        type="radio"
+                        name="paymentMethod"
+                        value="cod"
+                        checked={formData.paymentMethod === "cod"}
+                        onChange={handleInputChange}
+                        className="w-4 h-4"
+                      />
+                      <span className="flex-1 text-black">Cash on Delivery (COD)</span>
+                      <span className="text-green-600 text-sm">✓ Pay when you receive</span>
+                    </label>
+                    <label className="flex items-center gap-2 p-3 border rounded-lg cursor-pointer hover:bg-gray-50 opacity-50">
+                      <input
+                        type="radio"
+                        name="paymentMethod"
+                        value="online"
+                        disabled
+                        className="w-4 h-4"
+                      />
+                      <span className="flex-1 text-black">Online Payment</span>
+                      <span className="text-gray-500 text-sm">Coming soon</span>
+                    </label>
+                  </div>
+                </div>
+                
+                <button
+                  type="submit"
+                  className="w-full bg-gradient-to-r from-orange-600 to-red-600 text-white py-3 rounded-lg hover:from-orange-700 hover:to-red-700 transition shadow-lg font-medium"
+                >
+                  Place Order • ₹{(singleCheckoutProduct.price * singleCheckoutQuantity).toLocaleString()}
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Duplicate Products Dialog for Bulk */}
       {showDuplicateDialog && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[200] p-4">
           <div className="bg-white rounded-2xl p-6 max-w-md w-full">
@@ -929,14 +1193,23 @@ const ProductsPage = () => {
               ✕
             </button>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5 sm:gap-6">
-              <div className="relative h-52 sm:h-64 md:h-80">
-                <Image
-                  src={selectedProduct.img}
-                  alt={selectedProduct.name}
-                  fill
-                  className="object-contain"
-                  onError={handleImageError}
-                />
+              <div className="relative">
+                <div className="relative h-52 sm:h-64 md:h-80">
+                  {selectedProduct?.discount_percentage > 0 && (
+                    <div className="absolute top-[-10px] left-[-10px] z-20 w-[80px] h-[80px] rounded-full bg-gradient-to-br from-[#ff0055] to-[#ff5e00] text-white flex flex-col items-center justify-center font-bold shadow-xl border-4 border-white transform -rotate-[8deg]">
+                      <span className="text-[8px] uppercase tracking-wider opacity-90">Save</span>
+                      <span className="text-xl leading-none font-black">{selectedProduct.discount_percentage}%</span>
+                      <span className="text-[7px] uppercase font-normal">Limited</span>
+                    </div>
+                  )}
+                  <Image
+                    src={selectedProduct.img}
+                    alt={selectedProduct.name}
+                    fill
+                    className="object-contain"
+                    onError={handleImageError}
+                  />
+                </div>
               </div>
               <div>
                 <h2 className="text-xl sm:text-2xl md:text-3xl font-bold mb-2 text-black">{selectedProduct.name}</h2>
@@ -958,24 +1231,46 @@ const ProductsPage = () => {
                 <div className="flex flex-col sm:flex-row gap-3 w-full">
                   {selectedProduct.inStock ? (
                     getProductQuantity(selectedProduct.id) === 0 ? (
-                      <button
-                        onClick={() => {
-                          addToCart(selectedProduct, 1);
-                          closeModal();
-                          setPopupMessage(`${selectedProduct.name} added to cart!`);
-                          setPopup(true);
-                          setTimeout(() => setPopup(false), 2000);
-                        }}
-                        className="flex-1 py-3 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition"
-                      >
-                        Add to Cart
-                      </button>
+                      <>
+                        <button
+                          onClick={() => {
+                            addToCart(selectedProduct, 1);
+                            closeModal();
+                            setPopupMessage(`${selectedProduct.name} added to cart!`);
+                            setPopup(true);
+                            setTimeout(() => setPopup(false), 2000);
+                          }}
+                          className="flex-1 py-3 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition"
+                        >
+                          Add to Cart
+                        </button>
+                        <button
+                          onClick={() => {
+                            closeModal();
+                            handleBuyNow(selectedProduct);
+                          }}
+                          className="px-6 py-3 rounded-lg bg-orange-600 text-white hover:bg-orange-700 transition font-semibold"
+                        >
+                          Buy Now →
+                        </button>
+                      </>
                     ) : (
-                      <div className="flex-1 flex items-center justify-between border rounded-lg overflow-hidden">
-                        <button onClick={() => updateQuantity(selectedProduct.id, getProductQuantity(selectedProduct.id) - 1)} className="w-12 h-12 bg-gray-100 hover:bg-gray-200 text-xl text-black">−</button>
-                        <span className="flex-1 text-center font-semibold text-lg text-black">{getProductQuantity(selectedProduct.id)}</span>
-                        <button onClick={() => updateQuantity(selectedProduct.id, getProductQuantity(selectedProduct.id) + 1)} className="w-12 h-12 bg-gray-100 hover:bg-gray-200 text-xl text-black">+</button>
-                      </div>
+                      <>
+                        <div className="flex-1 flex items-center justify-between border rounded-lg overflow-hidden">
+                          <button onClick={() => updateQuantity(selectedProduct.id, getProductQuantity(selectedProduct.id) - 1)} className="w-12 h-12 bg-gray-100 hover:bg-gray-200 text-xl text-black">−</button>
+                          <span className="flex-1 text-center font-semibold text-lg text-black">{getProductQuantity(selectedProduct.id)}</span>
+                          <button onClick={() => updateQuantity(selectedProduct.id, getProductQuantity(selectedProduct.id) + 1)} className="w-12 h-12 bg-gray-100 hover:bg-gray-200 text-xl text-black">+</button>
+                        </div>
+                        <button
+                          onClick={() => {
+                            closeModal();
+                            handleBuyNow(selectedProduct);
+                          }}
+                          className="px-6 py-3 rounded-lg bg-orange-600 text-white hover:bg-orange-700 transition font-semibold"
+                        >
+                          Buy Now →
+                        </button>
+                      </>
                     )
                   ) : (
                     <button disabled className="flex-1 py-3 rounded-lg bg-gray-300 text-gray-500">Out of Stock</button>
@@ -992,7 +1287,7 @@ const ProductsPage = () => {
         className={`fixed top-0 right-0 h-full w-full sm:w-96 bg-white shadow-2xl z-50 transform transition-transform duration-500 ease-out ${showCart ? "translate-x-0" : "translate-x-full"
           }`}
       >
-        <div className="relative p-6 bg-gradient-to-r from-indigo-600 to-purple-600 text-white flex-shrink-0 min-h-[120px]">
+        <div className="relative p-6 pt-20 bg-gradient-to-r from-indigo-600 to-purple-600 text-white flex-shrink-0 min-h-[140px]">
           <div className="absolute top-0 right-0 w-32 h-32 bg-white opacity-10 rounded-full -mr-8 -mt-8"></div>
           <div className="absolute bottom-0 left-0 w-24 h-24 bg-white opacity-10 rounded-full -ml-8 -mb-8"></div>
 
@@ -1024,7 +1319,7 @@ const ProductsPage = () => {
 
         <div
           className="overflow-y-auto"
-          style={{ height: showCheckout ? 'calc(100vh - 180px)' : 'calc(100vh - 140px)' }}
+          style={{ height: showCheckout ? 'calc(100vh - 140px)' : 'calc(100vh - 140px)' }}
         >
           <div className="p-6 space-y-4">
             {!showCheckout ? (
@@ -1039,6 +1334,16 @@ const ProductsPage = () => {
                   <span className="text-xl group-hover:-translate-x-1 transition-transform">←</span>
                   <span>Continue Shopping</span>
                 </button>
+
+                {/* Clear Cart Button */}
+                {cart.length > 0 && (
+                  <button
+                    onClick={clearAllCart}
+                    className="w-full py-3 rounded-lg bg-red-500 text-white font-semibold hover:bg-red-600 transition mb-4 flex items-center justify-center gap-2"
+                  >
+                    🗑️ Clear All Items ({cart.length})
+                  </button>
+                )}
 
                 {cart.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-12 px-4">
@@ -1154,83 +1459,17 @@ const ProductsPage = () => {
                     />
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium mb-1 text-black">Email *</label>
-                      <input
-                        type="email"
-                        name="email"
-                        value={formData.email}
-                        onChange={handleInputChange}
-                        className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-black"
-                        placeholder="john@example.com"
-                        required
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium mb-1 text-black">Phone *</label>
-                      <input
-                        type="tel"
-                        name="phone"
-                        value={formData.phone}
-                        onChange={handleInputChange}
-                        className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-black"
-                        placeholder="9876543210"
-                        required
-                      />
-                    </div>
-                  </div>
-
                   <div>
-                    <label className="block text-sm font-medium mb-1 text-black">Address *</label>
+                    <label className="block text-sm font-medium mb-1 text-black">Phone *</label>
                     <input
-                      type="text"
-                      name="address"
-                      value={formData.address}
+                      type="tel"
+                      name="phone"
+                      value={formData.phone}
                       onChange={handleInputChange}
                       className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-black"
-                      placeholder="123 Main St, Apartment 4B"
+                      placeholder="9876543210"
                       required
                     />
-                  </div>
-
-                  <div className="grid grid-cols-3 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium mb-1 text-black">City *</label>
-                      <input
-                        type="text"
-                        name="city"
-                        value={formData.city}
-                        onChange={handleInputChange}
-                        className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-black"
-                        placeholder="Mumbai"
-                        required
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium mb-1 text-black">State *</label>
-                      <input
-                        type="text"
-                        name="state"
-                        value={formData.state}
-                        onChange={handleInputChange}
-                        className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-black"
-                        placeholder="Maharashtra"
-                        required
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium mb-1 text-black">Pincode *</label>
-                      <input
-                        type="text"
-                        name="pincode"
-                        value={formData.pincode}
-                        onChange={handleInputChange}
-                        className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-black"
-                        placeholder="400001"
-                        required
-                      />
-                    </div>
                   </div>
 
                   <div>
@@ -1269,6 +1508,15 @@ const ProductsPage = () => {
                     Place Order • ₹{getCartTotal()}
                   </button>
                 </form>
+
+                <button
+                  onClick={() => {
+                    setShowCheckout(false);
+                  }}
+                  className="w-full py-3 rounded-lg bg-gray-200 text-gray-700 font-semibold hover:bg-gray-300 transition mt-4"
+                >
+                  ← Back to Cart
+                </button>
               </div>
             )}
           </div>
