@@ -1,5 +1,5 @@
 @extends('admin.main-layout')
-@section('title', 'Edit Plan')
+@section('title', 'Create New Role')
 @section('content')
     <style>
         * {
@@ -98,11 +98,11 @@
             display: grid;
             grid-template-columns: repeat(2, 1fr);
             gap: 20px;
-            margin-bottom: 20px;
+            align-items: start;
         }
 
         .form-group {
-            margin-bottom: 18px;
+            margin-bottom: 0;
         }
 
         .form-group.full-width {
@@ -473,13 +473,13 @@
         }
 
         .btn-secondary {
-            background: #f1f5f9;
-            color: #475569;
+            background: #f80303;
+            color: #f5f5f5;
         }
 
         .btn-secondary:hover {
-            background: #e2e8f0;
-            color: #1e293b;
+            background: #f75d5d;
+            color: #f1f1f1;
         }
 
         /* Helper text */
@@ -571,6 +571,17 @@
             font-weight: 500;
             color: #1e293b;
         }
+
+        @media (max-width: 768px) {
+            .permissions-grid {
+                grid-template-columns: 1fr;
+                /* Single column on mobile */
+            }
+        }
+
+        .form-grid {
+            gap: 25px;
+        }
     </style>
     <!-- Main Content - Full Width -->
     <div class="main-content">
@@ -578,30 +589,28 @@
         <!-- Page Header -->
         <div class="page-header">
             <div class="header-left">
-                <h1>Edit Plan</h1>
+                <h1>Create New Bussiness Type</h1>
             </div>
-            <a href="{{ route('admin.plans.index') }}" class="back-btn">
+            <a href="{{ route('admin.business-types.index') }}" class="back-btn">
                 <svg viewBox="0 0 24 24">
                     <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z" />
                 </svg>
-                Back to Plans
+                Back  to Bussiness Types
             </a>
         </div>
 
         <!-- Form Container - Full Width -->
         <div class="form-container">
-            <form id="planForm" action="{{ route('admin.plans.update', $plan->id) }}" method="POST"
+            <form id="planForm" action="{{ route('admin.business-types.update', $business_type->id) }}"  method="POST"
                 enctype="multipart/form-data" novalidate>
                 @csrf
 
-                <!-- Plan Details -->
-                <div class="form-title">Plan Details</div>
 
-                <div class="form-grid">
+                <div class="">
                     <!-- Plan Name -->
                     <div class="form-group">
                         <label class="form-label">
-                            Plan Name <span>*</span>
+                            Business Type <span>*</span>
                         </label>
                         <div class="input-wrapper">
                             <span class="input-icon">
@@ -610,198 +619,50 @@
                                         d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2z" />
                                 </svg>
                             </span>
-                            <input type="text" name="name" class="form-input with-icon"
-                                placeholder="Enter plan name (e.g., Basic, Premium)" value="{{ $plan->name ?? '' }}"
-                                required>
-                            @error('name')
-                                <span class="text-danger" style="color: red;">{{ $message }}</span>
-                            @enderror
+                            <input type="text" name="name" class="form-input with-icon" placeholder="Enter business name "
+                                value="{{ $business_type->name }}" required>
+                            
                         </div>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">
-                            Business Types <span>*</span>
-                        </label>
-
-                        <select name="business_types[]" class="form-select" multiple required id="businessTypes">
-                            @foreach ($business_types as $type)
-                                <option value="{{ $type->id }}"
-                                    {{ in_array($type->id, old('business_types', $selected_business_types ?? [])) ? 'selected' : '' }}>
-                                    {{ $type->name }}
-                                </option>
-                            @endforeach
-                        </select>
-
-                        @error('business_types')
-                            <span class="text-danger" style="color:red;">{{ $message }}</span>
+                        @error('name')
+                                <span class="text-red" style="color: red">{{ $message }}</span>
                         @enderror
                     </div>
-                    <!-- Price and Currency -->
-                    <div class="form-group">
-                        <label class="form-label">
-                            Price <span>*</span>
-                        </label>
-                        <div class="currency-group">
-                            <select name="currency" class="currency-select">
-                                <option value="INR" {{ $plan->currency == 'INR' ? 'selected' : '' }}>INR ₹</option>
-                                <option value="USD" {{ $plan->currency == 'USD' ? 'selected' : '' }}>USD $</option>
 
-                            </select>
-                            <input type="number" name="price" class="form-input currency-input"
-                                placeholder="Enter plan price" step="0.01" min="0"
-                                value="{{ $plan->price ?? '' }}" required>
-                            @error('price')
-                                <span class="text-danger" style="color: red;">{{ $message }}</span>
-                            @enderror
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">
-                            GST (%)<span>*</span>
-                        </label>
-                        <div>
-
-                            <input type="number" name="gst" class="form-input currency-input"
-                                placeholder="Enter GST percentage" step="0.01" min="0"
-                                value="{{ $plan->gst ?? '0' }}" required>
-                            @error('gst')
-                                <span class="text-danger">{{ $message }}</span>
-                            @enderror
-
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">
-                            Discount (%)<span>*</span>
-                        </label>
-                        <div>
-
-                            <input type="number" name="discount" class="form-input currency-input"
-                                placeholder="Enter discount percentage" step="0.01" min="0"
-                                value="{{ $plan->discount ?? '0' }}" required>
-                            @error('discount')
-                                <span class="text-danger">{{ $message }}</span>
-                            @enderror
-
-                        </div>
-                    </div>
-                    <!-- Duration Days -->
-                    <div class="form-group">
-                        <label class="form-label">
-                            Duration (Day) <span>*</span>
-                        </label>
-                        <div class="input-wrapper">
-                            <span class="input-icon">
-                                <svg viewBox="0 0 24 24">
-                                    <path
-                                        d="M9 11H7v2h2v-2zm4 0h-2v2h2v-2zm4 0h-2v2h2v-2zm2-7h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2z" />
-                                </svg>
-                            </span>
-                            <input type="number" name="duration_days" class="form-input with-icon"
-                                placeholder="Enter plan duration in days" min="0"
-                                value="{{ $plan->duration_days ?? '' }}" required>
-                            @error('duration_days')
-                                <span class="text-danger" style="color: red;">{{ $message }}</span>
-                            @enderror
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Plan Description</label>
-                        <textarea name="description" id="description" class="form-textarea" style="height: 800px;"
-                            placeholder="Enter plan description">
-                            {{ $plan->description ?? '' }}
-                        </textarea>
-                        @error('description')
-                            <span class="text-danger" style="color: red;">{{ $message }}</span>
-                        @enderror
-                    </div>
                 </div>
-
-                <!-- Description -->
-                {{-- <div class="form-title" style="margin-top: 10px;">Description</div> --}}
-
-
-                <!-- Features -->
-                <div class="form-title" style="margin-top: 10px;">Features</div>
-                <div class="features-section">
-                    <div class="features-header">
-                        <h3>Plan Features</h3>
-                        <button type="button" class="add-feature-btn" onclick="addFeature()">
-                            <svg viewBox="0 0 24 24">
-                                <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" />
-                            </svg>
-                            Add Feature
-                        </button>
+                <div class="form-group full-width mt-2">
+                    <label class="form-label">
+                        Input Permissions <span>*</span>
+                    </label>
+                    <div style="margin-bottom: 10px;">
+                        <label>
+                            <input type="checkbox" id="selectAll"> Select All
+                        </label>
                     </div>
-                    <div id="features-container">
-                        @if (isset($plan) && $plan->features && count($plan->features))
-
-                            @foreach ($plan->features as $feature)
-                                <div class="feature-item">
-                                    <div class="feature-icon">
-                                        <svg viewBox="0 0 24 24">
-                                            <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
-                                        </svg>
-                                    </div>
-
-                                    <input type="text" name="features[]" class="feature-input"
-                                        value="{{ $feature }}" placeholder="Enter a feature">
-
-                                    <button type="button" class="remove-feature" onclick="removeFeature(this)">
-                                        <svg viewBox="0 0 24 24">
-                                            <path
-                                                d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
-                                        </svg>
-                                    </button>
-                                </div>
-                            @endforeach
-                        @else
-                            <!-- Default empty -->
-                            <div class="feature-item">
-                                <div class="feature-icon">✔</div>
-                                <input type="text" name="features[]" class="feature-input"
-                                    placeholder="Enter a feature">
-                                <button type="button" class="remove-feature" onclick="removeFeature(this)">❌</button>
-                            </div>
-                        @endif
-                    </div>
-                </div>
-                <div class="form-title" style="margin-top: 10px;">Permissions</div>
-                <div class="features-section">
-                    <div class="features-header">
-                        <h3>Select Permissions</h3>
-                    </div>
-
                     <div class="permissions-grid">
-                        @foreach ($permissions as $permission)
+                        @foreach ($inputPermissions as $permission)
                             <label class="permission-card">
-                                <input type="checkbox" name="permissions[]" value="{{ $permission->id }}"
-                                    {{ in_array($permission->id, old('permissions', $planPermissions)) ? 'checked' : '' }}>
-
-                                <div class="permission-content">
-                                    <span class="permission-title">
-                                        {{ $permission->permission_name }}
-                                    </span>
-                                </div>
+                                 <input type="checkbox" name="permissions[]" value="{{ $permission->id }}"
+                                    {{ in_array($permission->id, old('permissions', $selectedPermissions ?? [])) ? 'checked' : '' }}>
+                                <span class="permission-title">
+                                    {{ ucfirst($permission->name) }}
+                                </span>
                             </label>
                         @endforeach
                     </div>
+
                     @error('permissions')
-                        <span class="text-danger" style="color: red;">{{ $message }}</span>
+                        <span class="text-danger">{{ $message }}</span>
                     @enderror
                 </div>
-
-                <!-- Status Toggle -->
-                <div class="form-group">
+                <div class="form-group mt-2">
                     <div class="toggle-group">
                         <div>
                             <div class="toggle-label">Active Status</div>
-                            <div class="toggle-desc">Make this plan available for customers</div>
                         </div>
                         <label class="switch">
                             <input type="hidden" name="is_active" value="0">
                             <input type="checkbox" name="is_active" value="1"
-                                {{ isset($plan) && $plan->is_active ? 'checked' : '' }}>
+                                {{ isset($business_type) && $business_type->is_active ? 'checked' : '' }}>
 
                             <span class="slider"></span>
                         </label>
@@ -811,148 +672,24 @@
                         <span class="text-danger" style="color: red">{{ $message }}</span>
                     @enderror
                 </div>
-
-                <!-- Form Actions -->
                 <div class="form-actions">
-                    <a href="{{ route('admin.plans.index') }}"><button type="button"
+                    <a href="{{ route('admin.roles.index') }}"><button type="button"
                             class="btn btn-secondary">Cancel</button></a>
                     <button type="submit" class="btn btn-primary">
                         <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: white;">
                             <path
                                 d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm4-10H5V5h11v4z" />
                         </svg>
-                        Save Plan
+                        Save
                     </button>
                 </div>
             </form>
         </div>
     </div>
-    <!-- Summernote CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/summernote@0.8.20/dist/summernote-lite.min.css" rel="stylesheet">
-
-    <!-- jQuery (Required) -->
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-
-    <!-- Summernote JS -->
-    <script src="https://cdn.jsdelivr.net/npm/summernote@0.8.20/dist/summernote-lite.min.js"></script>
-    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <script>
-        function addFeature() {
-            const container = document.getElementById('features-container');
-            const featureItem = document.createElement('div');
-            featureItem.className = 'feature-item';
-            featureItem.innerHTML = `
-                <div class="feature-icon">
-                    <svg viewBox="0 0 24 24">
-                        <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
-                    </svg>
-                </div>
-                <input type="text" name="features[]" class="feature-input" placeholder="Enter a feature">
-                <button type="button" class="remove-feature" onclick="removeFeature(this)">
-                    <svg viewBox="0 0 24 24">
-                        <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
-                    </svg>
-                </button>
-            `;
-            container.appendChild(featureItem);
-        }
-
-        function removeFeature(button) {
-            const featureItem = button.closest('.feature-item');
-            const container = document.getElementById('features-container');
-
-            if (container.children.length > 1) {
-                featureItem.remove();
-            } else {
-                alert('You need at least one feature');
-            }
-        }
-    </script>
-    <script>
-        $(document).ready(function() {
-            $('#description').summernote({
-                height: 200,
-            });
-
-        });
-    </script>
-    <script>
-        document.addEventListener("DOMContentLoaded", function() {
-
-            document.getElementById('planForm').addEventListener('submit', function(e) {
-
-                let isValid = true;
-
-                let name = document.querySelector('input[name="name"]');
-                let price = document.querySelector('input[name="price"]');
-                let duration = document.querySelector('input[name="duration_days"]');
-                let features = document.querySelectorAll('input[name="features[]"]');
-
-                // Summernote content
-                // let description = $('#description').summernote('code');
-
-                // Remove old errors
-                document.querySelectorAll('.js-error').forEach(el => el.remove());
-
-                function showError(input, message) {
-                    let error = document.createElement('span');
-                    error.className = 'js-error';
-                    error.style.color = 'red';
-                    error.style.fontSize = '12px';
-                    error.innerText = message;
-
-                    let parent = input.closest('.form-group') || input.closest('.feature-item');
-                    parent.appendChild(error);
-
-                    isValid = false;
-                }
-
-                // Name
-                if (!name.value.trim()) {
-                    showError(name, "Plan name cannot be blank!");
-                }
-
-                // Price
-                if (!price.value || price.value <= 0) {
-                    showError(price, "Enter valid price!");
-                }
-
-                // Duration
-                if (!duration.value || duration.value <= 0) {
-                    showError(duration, "Enter valid duration!");
-                }
-
-                // Features
-                let validFeature = false;
-                features.forEach(f => {
-                    if (f.value.trim() !== "") validFeature = true;
-                });
-
-                // if (!validFeature) {
-                //     showError(features[0], "At least one feature is required");
-                // }
-
-                // Description (optional but better)
-                // if (description.trim() === "" || description === "<p><br></p>") {
-                //     showError(document.getElementById('description'), "Description is required");
-                // }
-
-                // Stop submit
-                if (!isValid) {
-                    e.preventDefault();
-                }
-
-            });
-
-        });
-    </script>
-    <script>
-        $(document).ready(function() {
-            $('#businessTypes').select2({
-                placeholder: "Select Business Types",
-                allowClear: true
-            });
-        });
-    </script>
+    document.getElementById('selectAll').addEventListener('click', function () {
+        let checkboxes = document.querySelectorAll('input[name="permissions[]"]');
+        checkboxes.forEach(cb => cb.checked = this.checked);
+    });
+</script>
 @endsection
