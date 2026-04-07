@@ -7,9 +7,12 @@ use Illuminate\Http\Request;
 use App\Models\Products;
 use App\Models\Unit;
 use App\Models\Brand;
+use App\Models\BusinessPermission;
 use App\Models\Categories;
 use App\Models\Stocks;
 use App\Models\Customers;
+use App\Models\InputPermission;
+use App\Models\PlanBusinessType;
 use App\Models\ProductImages;
 use App\Models\ProductVariant;
 use App\Models\Store;
@@ -92,12 +95,27 @@ class ProductsController extends Controller
             $brand = Brand::where('user_id', $id)->get();
             $category = Categories::where('user_id', $id)->get();
             $unit = Unit::where('user_id', $id)->get();
+            if($customer->plan_id == null || $customer->plan_id == 0  || $customer->is_active == false){
+                return response()->json([
+                    'status' => false,
+                    'message' => 'You do not have any active plan. Please upgrade your plan.'
+                ]);
+            }elseif($customer->is_active == 0){
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Your plan is expired. Please upgrade your plan.'  
+                ]);
+            }
+            // $inputPermission = PlanBusinessType::where('business_type_id',$customer->business_type_id)->where('plan_id',$customer->plan_id)->first();
+            $inputPermission = BusinessPermission::with('input_permission')->where('business_type_id', $customer->business_type_id)->get();
+
             return response()->json([
                 'status' => true,
                 'message' => 'Product Create',
                 'brand' => $brand,
                 'category' => $category,
-                'unit' => $unit
+                'unit' => $unit,
+                'inputPermission'=>$inputPermission
             ]);
         } catch (\Exception $e) {
             return response()->json([
