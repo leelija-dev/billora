@@ -1,7 +1,7 @@
 // utils/api.js
 const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000/api';
 // utils/api.js
-const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000/api';
+// const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000/api';
 
 export const apiRequest = async (endpoint, method = "GET", body = null) => {
   try {
@@ -14,7 +14,11 @@ export const apiRequest = async (endpoint, method = "GET", body = null) => {
 
     const res = await fetch(fullUrl, {
       method,
-      headers,
+      headers: {
+        "Content-Type": "application/json",
+        "Accept": "application/json", 
+        ...(token && { Authorization: `Bearer ${token}` }),
+      },
       body: body ? JSON.stringify(body) : null,
     });
 
