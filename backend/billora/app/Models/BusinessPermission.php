@@ -16,7 +16,7 @@ class BusinessPermission extends Model
         
     }
     public function input_permission(){
-        return $this->belongsTo(InputPermission::class);
+        return $this->belongsTo(InputPermission::class ,'input_permission_id');
         
     }
 }

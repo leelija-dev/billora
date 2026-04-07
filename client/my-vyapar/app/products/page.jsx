@@ -1028,7 +1028,7 @@ const ProductsPage = () => {
           <div className="overflow-y-auto" style={{ height: 'calc(100vh - 140px)' }}>
             <div className="p-6 space-y-6">
               <div className="bg-gradient-to-br from-orange-50 to-white p-5 rounded-xl border border-orange-100 shadow-sm">
-                <h3 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                <h3 className="font-semibold text-gray-  mb-4 flex items-center gap-2">
                   <span className="w-1 h-5 bg-orange-600 rounded-full"></span>
                   Order Summary
                 </h3>

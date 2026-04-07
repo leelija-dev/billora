@@ -31,7 +31,8 @@ protected $fillable=[
         'pincode',
         'created_by',
         'plan_id',
-        'is_active'
+        'is_active',
+        'business_type_id'
 ];
 protected $hidden = [
         'password',

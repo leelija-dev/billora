@@ -9,10 +9,10 @@ const Testimonials = () => {
   const [isHovered, setIsHovered] = useState(false);
 
   const testimonials = [
-    { name: 'Amit Patel', role: 'Owner', company: 'Patel & Sons', avatar: '👨', review: 'Vyapar has revolutionized our billing process. The GST compliance features are saved us countless hours.', yearsWithUs: '3+ years', location: 'Mumbai' },
-    { name: 'Neha Gupta', role: 'Founder', company: 'Gupta Fashion', avatar: '👩‍💼', review: 'The reporting features are comprehensive. Filing GST returns has never been easier.', yearsWithUs: '2+ years', location: 'Delhi' },
-    { name: 'Rajesh Kumar', role: 'Director', company: 'Kumar Electronics', avatar: '👤', review: 'Inventory tracking is extremely smooth and reliable. This software transformed our workflow.', yearsWithUs: '4+ years', location: 'Bangalore' },
-    { name: 'Suresh Sharma', role: 'Owner', company: 'Sharma Traders', avatar: '👨‍💼', review: 'Billing is extremely fast and easy. The interface is intuitive and saves us time.', yearsWithUs: '2+ years', location: 'Jaipur' },
+    { name: 'Jayanta Barman', role: 'Team Leader', company: 'Leelija Web Solutions', review: 'Vyapar has revolutionized our billing process. The GST compliance features are saved us countless hours.', yearsWithUs: '3+ years', location: 'Kolkata' },
+    { name: 'Sahel Qureshi', role: 'Frontend Developer', company: 'Leelija Web Solutions'  , review: 'The reporting features are comprehensive. Filing GST returns has never been easier.', yearsWithUs: '2+ years', location: 'Kolkata' },
+    { name: 'Lakshman Pal', role: ' LARAVEL , DJANGO , PYTHON Developer', company: 'Leelija Web Solutions'  , review: 'Inventory tracking is extremely smooth and reliable. This software transformed our workflow.', yearsWithUs: '4+ years', location: 'Kolkata' },
+    { name: 'Susmita Ghosh', role: 'Backend Developer', company: 'Leelija Web Solutions'  , review: 'Billing is extremely fast and easy. The interface is intuitive and saves us time.', yearsWithUs: '2+ years', location: 'Kolkata' },
   ];
 
   useEffect(() => {
