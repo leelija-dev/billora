@@ -34,7 +34,8 @@ Route::prefix('users')->group(function () {
 
    Route::post('/register', [CustomerController::class, 'store']);
    Route::post('/login', [CustomerController::class, 'login']);
-   
+   Route::middleware('auth:sanctum')->get('/edit/{id}', [CustomerController::class, 'edit']);
+   Route::middleware('auth:sanctum')->put('/update/{id}', [CustomerController::class, 'update']);
    // Route::get
    //    Route::post('/logout', [CustomerController::class, 'logout']);
    Route::middleware('auth:sanctum')->post('/logout', [CustomerController::class, 'logout']);
