@@ -3,6 +3,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\admin\AuthController;
 use App\Http\Controllers\admin\superadmin\AdminMailController;
 use App\Http\Controllers\admin\superadmin\AdminUserController;
+use App\Http\Controllers\admin\superadmin\BusinessTypeController;
 use App\Http\Controllers\admin\superadmin\CustomerController;
 use App\Http\Controllers\admin\superadmin\PlansController;
 use App\Http\Controllers\admin\superadmin\PlanPermissionController;
@@ -78,5 +79,10 @@ Route::middleware(['web', 'admin.auth'])->prefix('admin')->group(function () {
         Route::get('/edit/{id}', [RolesController::class, 'edit'])->name('admin.roles.edit');
         Route::post('/update/{id}', [RolesController::class, 'update'])->name('admin.roles.update');
         Route::delete('/delete/{id}', [RolesController::class, 'delete'])->name('admin.roles.delete');
+    });
+    Route::prefix('business-types')->group(function () {
+       Route::get('/', [BusinessTypeController::class, 'index'])->name('admin.business-types.index');
+       Route::get('/create', [BusinessTypeController::class, 'create'])->name('admin.business-types.create');
+       Route::post('/store', [BusinessTypeController::class, 'store'])->name('admin.business-types.store');
     });
 });

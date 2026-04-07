@@ -43,6 +43,11 @@
                     <i data-feather="users"></i>
                     <span class="ml-3">Customers</span>
                 </a>
+                <a href="{{ route('admin.business-types.index') }}"
+                    class="flex items-center px-4 py-3 {{ request()->routeIs('admin.business-types.index', 'admin.business-types.create', 'admin.business-types.edit') ? 'bg-blue-100 text-blue-600 font-semibold' : 'hover:bg-blue-100' }}">
+                    <i data-feather="users"></i>
+                    <span class="ml-3">Business Types</span>
+                </a>
 
                 <a href="{{ route('admin.plans.index') }}"
                     class="flex items-center px-4 py-3 {{ request()->routeIs('admin.plans.index', 'admin.plans.create', 'admin.plans.edit', 'admin.plans.deleted') ? 'bg-blue-100 text-blue-600 font-semibold' : 'hover:bg-blue-100' }}">
