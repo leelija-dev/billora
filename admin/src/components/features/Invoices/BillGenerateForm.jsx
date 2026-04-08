@@ -139,21 +139,6 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
     }
   }, [customers, stores, formData.customer_id, formData.store_id])
 
-  // Click outside handlers
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (!event.target.closest('.customer-dropdown')) {
-        setShowCustomerDropdown(false)
-      }
-      if (!event.target.closest('.store-dropdown')) {
-        setShowStoreDropdown(false)
-      }
-    }
-
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [])
-
   const fetchInitialData = async () => {
     setLoading(true)
     try {
@@ -190,6 +175,16 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
       setProducts(productsList.length > 0 ? productsList : mockProducts)
       setUnits(unitsList.length > 0 ? unitsList : mockUnits)
       
+      // Auto-select first store if no store is selected
+      if (storesList.length > 0 && !formData.store_id) {
+        const firstStoreId = storesList[0].id
+        console.log('🏪 Auto-selecting first store:', firstStoreId)
+        setFormData(prev => ({
+          ...prev,
+          store_id: firstStoreId
+        }))
+      }
+      
       const finalCustomers = customersList.length > 0 ? customersList : mockCustomers
       const finalStores = storesList.length > 0 ? storesList : mockStores
       const finalProducts = productsList.length > 0 ? productsList : mockProducts
@@ -219,54 +214,75 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
 
   const handleAddItem = async (product) => {
     try {
-      // Fetch stock data for this product to get real price
-      const stockResponse = await stockAPI.getAll(product.name || product.product_name)
-      console.log('Stock API response:', stockResponse)
+      // Check if product already exists in items
+      const existingItemIndex = formData.items.findIndex(item => item.product_id === product.id)
       
-      // Extract stock data from the nested structure
-      const stockList = stockResponse.data?.data?.data || stockResponse.data?.data || []
-      console.log('Stock list:', stockList)
-      
-      const stockItem = stockList.find(stock => stock.product_id === product.id)
-      console.log('Found stock item:', stockItem)
-      
-      const unit = units.find(u => u.id === product.unit_id)
-      
-      // Use product data for GST and discount, stock data for price if available
-      const sellingPrice = stockItem?.selling_price || product.selling_price || product.price || 0
-      const purchasePrice = stockItem?.purchase_price || product.purchase_price || product.cost || 0
-      const gst = parseFloat(product.gst_percentage) || parseFloat(stockItem?.gst_percentage) || parseFloat(product.gst) || 0
-      const discount = parseFloat(product.discount_percentage) || parseFloat(stockItem?.discount) || parseFloat(product.discount) || 0
-      const stockQuantity = stockItem?.quantity || 0
-      const stockId = stockItem?.id || null
-      
-      console.log('Product pricing - Selling:', sellingPrice, 'GST:', gst, 'Discount:', discount, 'Stock:', stockQuantity, 'Stock ID:', stockId)
-      
-      const newItem = {
-        product_id: product.id,
-        product_name: product.name || product.product_name,
-        product_code: product.sku || product.code || product.product_code,
-        quantity: 1,
-        item_count: 1,
-        unit_id: product.unit_id,
-        unit_name: unit?.short_name || unit?.name || 'pcs',
-        price: parseFloat(sellingPrice) || 0,
-        purchase_price: parseFloat(purchasePrice) || 0,
-        gst: gst,
-        discount: discount,
-        total_price: parseFloat(sellingPrice) || 0,
-        status: 'completed',
-        stock_quantity: stockQuantity,
-        stock_id: stockId // Add stock_id field
+      if (existingItemIndex !== -1) {
+        // Product exists, update quantity
+        const updatedItems = [...formData.items]
+        updatedItems[existingItemIndex] = {
+          ...updatedItems[existingItemIndex],
+          quantity: updatedItems[existingItemIndex].quantity + 1,
+          item_count: updatedItems[existingItemIndex].item_count + 1
+        }
+        
+        setFormData(prev => ({
+          ...prev,
+          items: updatedItems
+        }))
+        
+        console.log('🔄 Updated existing product quantity:', updatedItems[existingItemIndex])
+      } else {
+        // New product, add to list
+        // Fetch stock data for this product to get real price
+        const stockResponse = await stockAPI.getAll(product.name || product.product_name)
+        console.log('Stock API response:', stockResponse)
+        
+        // Extract stock data from the nested structure
+        const stockList = stockResponse.data?.data?.data || stockResponse.data?.data || []
+        console.log('Stock list:', stockList)
+        
+        const stockItem = stockList.find(stock => stock.product_id === product.id)
+        console.log('Found stock item:', stockItem)
+        
+        const unit = units.find(u => u.id === product.unit_id)
+        
+        // Use product data for GST and discount, stock data for price if available
+        const sellingPrice = stockItem?.selling_price || product.selling_price || product.price || 0
+        const purchasePrice = stockItem?.purchase_price || product.purchase_price || product.cost || 0
+        const gst = parseFloat(product.gst_percentage) || parseFloat(stockItem?.gst_percentage) || parseFloat(product.gst) || 0
+        const discount = parseFloat(product.discount_percentage) || parseFloat(stockItem?.discount) || parseFloat(product.discount) || 0
+        const stockQuantity = stockItem?.quantity || 0
+        const stockId = stockItem?.id || null
+        
+        console.log('Product pricing - Selling:', sellingPrice, 'GST:', gst, 'Discount:', discount, 'Stock:', stockQuantity, 'Stock ID:', stockId)
+        
+        const newItem = {
+          product_id: product.id,
+          product_name: product.name || product.product_name,
+          product_code: product.sku || product.code || product.product_code,
+          quantity: 1,
+          item_count: 1,
+          unit_id: product.unit_id,
+          unit_name: unit?.short_name || unit?.name || 'pcs',
+          price: parseFloat(sellingPrice) || 0,
+          purchase_price: parseFloat(purchasePrice) || 0,
+          gst: gst,
+          discount: discount,
+          total_price: parseFloat(sellingPrice) || 0,
+          status: 'completed',
+          stock_quantity: stockQuantity,
+          stock_id: stockId // Add stock_id field
+        }
+        
+        setFormData(prev => ({
+          ...prev,
+          items: [...prev.items, newItem]
+        }))
+        
+        setShowProductList(false)
+        setProductSearch('')
       }
-      
-      setFormData(prev => ({
-        ...prev,
-        items: [...prev.items, newItem]
-      }))
-      
-      setShowProductList(false)
-      setProductSearch('')
     } catch (error) {
       console.error('Failed to fetch stock data:', error)
       // Fallback to product data if stock fetch fails
@@ -859,8 +875,6 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
               </AnimatePresence>
               </div>
 
-              
-
               {formData.items.length > 0 && (
                 <div className="mt-4">
                   <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -898,193 +912,193 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
       </div>
 
       {/* Invoice Items Table */}
-<div className="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-4">
-  <div className="flex items-center justify-between mb-4">
-    <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center">
-      <FiShoppingCart className="w-4 h-4 mr-2" />
-      Invoice Items ({formData.items.length})
-    </h3>
-  </div>
-  
-  {formData.items.length === 0 ? (
-    <EmptyState
-      icon={FiPackage}
-      title="No items added"
-      description="Search and add products to create your invoice"
-    />
-  ) : (
-    <div className="overflow-x-auto">
-      <table className="w-full min-w-[800px]">
-        <thead>
-          <tr className="border-b border-gray-200 dark:border-gray-600">
-            <th className="text-left text-xs font-medium text-gray-500 dark:text-gray-400 pb-3">Product</th>
-            <th className="text-center text-xs font-medium text-gray-500 dark:text-gray-400 pb-3 w-[100px]">Qty</th>
-            <th className="text-center text-xs font-medium text-gray-500 dark:text-gray-400 pb-3 w-[100px]">Price</th>
-            <th className="text-center text-xs font-medium text-gray-500 dark:text-gray-400 pb-3 w-[100px]">GST %</th>
-            <th className="text-center text-xs font-medium text-gray-500 dark:text-gray-400 pb-3 w-[100px]">Discount %</th>
-            <th className="text-center text-xs font-medium text-gray-500 dark:text-gray-400 pb-3 w-[100px]">Total</th>
-            <th className="text-center text-xs font-medium text-gray-500 dark:text-gray-400 pb-3 w-[60px]"></th>
-          </tr>
-        </thead>
-        <tbody>
-          {formData.items.map((item, index) => (
-            <motion.tr
-              key={index}
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: 20 }}
-              className="border-b border-gray-100 dark:border-gray-700 last:border-b-0"
-            >
-              <td className="py-3">
-                <div className="space-y-1">
-                  <p className="font-medium text-gray-900 dark:text-white text-sm">{item.product_name}</p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">{item.product_code}</p>
-                  <p className="text-xs text-gray-400 dark:text-gray-500">{item.unit_name}</p>
-                  {item.stock_quantity !== undefined && (
-                    <p className="text-xs text-blue-600 dark:text-blue-400">Stock: {item.stock_quantity}</p>
-                  )}
-                  {item.stock_quantity > 0 && (
-                    <p className="text-xs text-gray-500">Max: {item.stock_quantity}</p>
-                  )}
-                </div>
-               </td>
-              <td className="py-3">
-                <div className="flex items-center justify-center space-x-1">
-                  <button
-                    type="button"
-                    onClick={() => handleDecrementQuantity(index)}
-                    disabled={parseFloat(item.quantity) <= 1}
-                    className="p-1 text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-600 rounded disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                    title="Decrease quantity"
+      <div className="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-4">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center">
+            <FiShoppingCart className="w-4 h-4 mr-2" />
+            Invoice Items ({formData.items.length})
+          </h3>
+        </div>
+        
+        {formData.items.length === 0 ? (
+          <EmptyState
+            icon={FiPackage}
+            title="No items added"
+            description="Search and add products to create your invoice"
+          />
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[800px]">
+              <thead>
+                <tr className="border-b border-gray-200 dark:border-gray-600">
+                  <th className="text-left text-xs font-medium text-gray-500 dark:text-gray-400 pb-3">Product</th>
+                  <th className="text-center text-xs font-medium text-gray-500 dark:text-gray-400 pb-3 w-[100px]">Qty</th>
+                  <th className="text-center text-xs font-medium text-gray-500 dark:text-gray-400 pb-3 w-[100px]">Price</th>
+                  <th className="text-center text-xs font-medium text-gray-500 dark:text-gray-400 pb-3 w-[100px]">GST %</th>
+                  <th className="text-center text-xs font-medium text-gray-500 dark:text-gray-400 pb-3 w-[100px]">Discount %</th>
+                  <th className="text-center text-xs font-medium text-gray-500 dark:text-gray-400 pb-3 w-[100px]">Total</th>
+                  <th className="text-center text-xs font-medium text-gray-500 dark:text-gray-400 pb-3 w-[60px]"></th>
+                </tr>
+              </thead>
+              <tbody>
+                {formData.items.map((item, index) => (
+                  <motion.tr
+                    key={index}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: 20 }}
+                    className="border-b border-gray-100 dark:border-gray-700 last:border-b-0"
                   >
-                    <FiMinus className="w-3 h-3" />
-                  </button>
-                  <Input
-                    type="text"
-                    min="1"
-                    max={item.stock_quantity > 0 ? item.stock_quantity : undefined}
-                    value={item.quantity.toString()}
-                    onChange={(e) => handleUpdateItem(index, 'quantity', e.target.value)}
-                    className={`w-14 text-sm text-center ${
-                      item.stock_quantity > 0 && item.quantity > item.stock_quantity 
-                        ? 'border-red-500 bg-red-50' 
-                        : ''
-                    }`}
-                    title={item.stock_quantity > 0 ? `Max available: ${item.stock_quantity}` : 'No stock limit'}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => handleIncrementQuantity(index)}
-                    disabled={item.stock_quantity > 0 && parseFloat(item.quantity) >= item.stock_quantity}
-                    className="p-1 text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-600 rounded disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                    title="Increase quantity"
-                  >
-                    <FiPlus className="w-3 h-3" />
-                  </button>
-                </div>
-               </td>
-              <td className="py-3">
-                <div className="flex justify-center">
-                  <Input
-                    type="text"
-                    min="0"
-                    step="0.01"
-                    value={item.price.toString()}
-                    onChange={(e) => handleUpdateItem(index, 'price', e.target.value)}
-                    className="w-20 text-sm text-center"
-                  />
-                </div>
-               </td>
-              <td className="py-3">
-                <div className="flex items-center justify-center space-x-1">
-                  <button
-                    type="button"
-                    onClick={() => handleDecrementGst(index)}
-                    disabled={parseFloat(item.gst) <= 0}
-                    className="p-1 text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-600 rounded disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                    title="Decrease GST"
-                  >
-                    <FiMinus className="w-3 h-3" />
-                  </button>
-                  <Input
-                    type="text"
-                    min="0"
-                    max="100"
-                    step="0.01"
-                    value={item.gst.toString()}
-                    onChange={(e) => handleUpdateItem(index, 'gst', e.target.value)}
-                    className="w-14 text-sm text-center"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => handleIncrementGst(index)}
-                    disabled={parseFloat(item.gst) >= 100}
-                    className="p-1 text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-600 rounded disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                    title="Increase GST"
-                  >
-                    <FiPlus className="w-3 h-3" />
-                  </button>
-                </div>
-               </td>
-              <td className="py-3">
-                <div className="flex items-center justify-center space-x-1">
-                  <button
-                    type="button"
-                    onClick={() => handleDecrementDiscount(index)}
-                    disabled={parseFloat(item.discount) <= 0}
-                    className="p-1 text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-600 rounded disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                    title="Decrease Discount"
-                  >
-                    <FiMinus className="w-3 h-3" />
-                  </button>
-                  <Input
-                    type="text"
-                    min="0"
-                    max="100"
-                    step="0.01"
-                    value={item.discount.toString()}
-                    onChange={(e) => handleUpdateItem(index, 'discount', e.target.value)}
-                    className="w-14 text-sm text-center"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => handleIncrementDiscount(index)}
-                    disabled={parseFloat(item.discount) >= 100}
-                    className="p-1 text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-600 rounded disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                    title="Increase Discount"
-                  >
-                    <FiPlus className="w-3 h-3" />
-                  </button>
-                </div>
-               </td>
-              <td className="py-3">
-                <div className="flex justify-center">
-                  <Input
-                    type="text"
-                    value={item.total_price.toFixed(2)}
-                    readOnly
-                    className="w-20 text-sm text-center bg-gray-50 dark:bg-gray-500"
-                  />
-                </div>
-               </td>
-              <td className="py-3">
-                <div className="flex justify-center">
-                  <button
-                    type="button"
-                    onClick={() => handleRemoveItem(index)}
-                    className="p-2 text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20 rounded-lg transition-colors"
-                  >
-                    <FiTrash2 className="w-4 h-4" />
-                  </button>
-                </div>
-               </td>
-            </motion.tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  )}
-</div>
+                    <td className="py-3">
+                      <div className="space-y-1">
+                        <p className="font-medium text-gray-900 dark:text-white text-sm">{item.product_name}</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">{item.product_code}</p>
+                        <p className="text-xs text-gray-400 dark:text-gray-500">{item.unit_name}</p>
+                        {item.stock_quantity !== undefined && (
+                          <p className="text-xs text-blue-600 dark:text-blue-400">Stock: {item.stock_quantity}</p>
+                        )}
+                        {item.stock_quantity > 0 && (
+                          <p className="text-xs text-gray-500">Max: {item.stock_quantity}</p>
+                        )}
+                      </div>
+                    </td>
+                    <td className="py-3">
+                      <div className="flex items-center justify-center space-x-1">
+                        <button
+                          type="button"
+                          onClick={() => handleDecrementQuantity(index)}
+                          disabled={parseFloat(item.quantity) <= 1}
+                          className="p-1 text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-600 rounded disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                          title="Decrease quantity"
+                        >
+                          <FiMinus className="w-3 h-3" />
+                        </button>
+                        <Input
+                          type="text"
+                          min="1"
+                          max={item.stock_quantity > 0 ? item.stock_quantity : undefined}
+                          value={item.quantity.toString()}
+                          onChange={(e) => handleUpdateItem(index, 'quantity', e.target.value)}
+                          className={`w-14 text-sm text-center ${
+                            item.stock_quantity > 0 && item.quantity > item.stock_quantity 
+                              ? 'border-red-500 bg-red-50' 
+                              : ''
+                          }`}
+                          title={item.stock_quantity > 0 ? `Max available: ${item.stock_quantity}` : 'No stock limit'}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => handleIncrementQuantity(index)}
+                          disabled={item.stock_quantity > 0 && parseFloat(item.quantity) >= item.stock_quantity}
+                          className="p-1 text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-600 rounded disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                          title="Increase quantity"
+                        >
+                          <FiPlus className="w-3 h-3" />
+                        </button>
+                      </div>
+                    </td>
+                    <td className="py-3">
+                      <div className="flex justify-center">
+                        <Input
+                          type="text"
+                          min="0"
+                          step="0.01"
+                          value={item.price.toString()}
+                          onChange={(e) => handleUpdateItem(index, 'price', e.target.value)}
+                          className="w-20 text-sm text-center"
+                        />
+                      </div>
+                    </td>
+                    <td className="py-3">
+                      <div className="flex items-center justify-center space-x-1">
+                        <button
+                          type="button"
+                          onClick={() => handleDecrementGst(index)}
+                          disabled={parseFloat(item.gst) <= 0}
+                          className="p-1 text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-600 rounded disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                          title="Decrease GST"
+                        >
+                          <FiMinus className="w-3 h-3" />
+                        </button>
+                        <Input
+                          type="text"
+                          min="0"
+                          max="100"
+                          step="0.01"
+                          value={item.gst.toString()}
+                          onChange={(e) => handleUpdateItem(index, 'gst', e.target.value)}
+                          className="w-14 text-sm text-center"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => handleIncrementGst(index)}
+                          disabled={parseFloat(item.gst) >= 100}
+                          className="p-1 text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-600 rounded disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                          title="Increase GST"
+                        >
+                          <FiPlus className="w-3 h-3" />
+                        </button>
+                      </div>
+                    </td>
+                    <td className="py-3">
+                      <div className="flex items-center justify-center space-x-1">
+                        <button
+                          type="button"
+                          onClick={() => handleDecrementDiscount(index)}
+                          disabled={parseFloat(item.discount) <= 0}
+                          className="p-1 text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-600 rounded disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                          title="Decrease Discount"
+                        >
+                          <FiMinus className="w-3 h-3" />
+                        </button>
+                        <Input
+                          type="text"
+                          min="0"
+                          max="100"
+                          step="0.01"
+                          value={item.discount.toString()}
+                          onChange={(e) => handleUpdateItem(index, 'discount', e.target.value)}
+                          className="w-14 text-sm text-center"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => handleIncrementDiscount(index)}
+                          disabled={parseFloat(item.discount) >= 100}
+                          className="p-1 text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-600 rounded disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                          title="Increase Discount"
+                        >
+                          <FiPlus className="w-3 h-3" />
+                        </button>
+                      </div>
+                    </td>
+                    <td className="py-3">
+                      <div className="flex justify-center">
+                        <Input
+                          type="text"
+                          value={item.total_price.toFixed(2)}
+                          readOnly
+                          className="w-20 text-sm text-center bg-gray-50 dark:bg-gray-500"
+                        />
+                      </div>
+                    </td>
+                    <td className="py-3">
+                      <div className="flex justify-center">
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveItem(index)}
+                          className="p-2 text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                        >
+                          <FiTrash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </motion.tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
 
       {/* Payment Options Section */}
       {formData.items.length > 0 && (
