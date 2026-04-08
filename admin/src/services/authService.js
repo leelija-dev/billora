@@ -5,7 +5,13 @@ export const authService = {
     try {
       console.log(' Attempting login with credentials:', { email: credentials.email });
       const response = await apiClient.post('/users/login', credentials);
-      console.log(' Login successful:', response.data);
+      console.log(' Login response:', response.data);
+      
+      // Check if login was actually successful
+      if (!response.data.status) {
+        throw response.data; // Throw the response data as error if status is false
+      }
+      
       return response;
     } catch (error) {
       console.error(' Login failed:', error);
@@ -54,7 +60,7 @@ export const authService = {
     }
   },
 
-  getCurrentUser: async () => {
+  me: async () => {
     try {
       console.log(' Fetching current user');
       const response = await apiClient.get('/auth/me/');
@@ -66,10 +72,22 @@ export const authService = {
     }
   },
 
+  getUserById: async (userId) => {
+    try {
+      console.log(' Fetching user by ID:', userId);
+      const response = await apiClient.get(`/users/edit/${userId}`);
+      console.log(' User fetched by ID:', response.data);
+      return response;
+    } catch (error) {
+      console.error(' Failed to fetch user by ID:', error);
+      throw error.response?.data || error.message;
+    }
+  },
+
   updateProfile: async (userData) => {
     try {
       console.log(' Updating profile with data:', userData);
-      const response = await apiClient.put('/auth/profile/', userData);
+      const response = await apiClient.put(`/users/update/${userData.id}`, userData);
       console.log(' Profile updated successfully:', response.data);
       return response;
     } catch (error) {
@@ -81,7 +99,7 @@ export const authService = {
   changePassword: async (passwordData) => {
     try {
       console.log(' Attempting password change');
-      const response = await apiClient.post('/auth/change-password/', passwordData);
+      const response = await apiClient.put(`/users/update-password/${passwordData.id}`, passwordData);
       console.log(' Password changed successfully');
       return response;
     } catch (error) {

@@ -17,6 +17,7 @@ use App\Http\Controllers\admin\CartsController;
 use App\Http\Controllers\admin\ReportController;
 use App\Http\Controllers\admin\PlanPurchaseHistoryController;
 use App\Http\Controllers\admin\PaymentController;
+use App\Http\Controllers\admin\BusinessTypeController;
 use App\Http\Controllers\admin\UserOrdersController;
 use App\Http\Controllers\PlanExpiryController;
 use App\Models\User;
@@ -36,6 +37,7 @@ Route::prefix('users')->group(function () {
    Route::post('/login', [CustomerController::class, 'login']);
    Route::middleware('auth:sanctum')->get('/edit/{id}', [CustomerController::class, 'edit']);
    Route::middleware('auth:sanctum')->put('/update/{id}', [CustomerController::class, 'update']);
+   Route::middleware('auth:sanctum')->put('/update-password/{id}', [CustomerController::class, 'updatePassword']);
    // Route::get
    //    Route::post('/logout', [CustomerController::class, 'logout']);
    Route::middleware('auth:sanctum')->post('/logout', [CustomerController::class, 'logout']);
@@ -70,6 +72,7 @@ Route::middleware('auth:sanctum')->prefix('stocks')->group(function () {
    Route::put('/{id}', [StocksController::class, 'update']);
    Route::delete('/{id}', [StocksController::class, 'destroy']);
    Route::post('/add-stock/{id}', [StocksController::class, 'addStock']);
+   Route::get('/stock-alert', [StocksController::class, 'stockalert']);
 });
 //units
 Route::middleware('auth:sanctum')->prefix('units')->group(function () {
@@ -149,7 +152,7 @@ Route::prefix('plans')->group(function (){
    Route::get('/', [PlanController::class, 'index']);
    Route::post('/store',[PlanController::class, 'store']);
    Route::get('/trashed', [PlanController::class, 'trashed']);
-
+   Route::get('/search', [PlanController::class, 'search']);
    Route::get('/{id}', [PlanController::class, 'edit']);
    Route::put('/{id}', [PlanController::class, 'update']);
    Route::delete('/{id}', [PlanController::class, 'delete']);
@@ -200,4 +203,8 @@ Route::prefix('restaurant-all-products')->group(function () {
 Route::prefix('orders')->group(function () { 
    Route::post('/store', [UserOrdersController::class, 'store']);
 
+});
+
+Route::prefix('business-type')->group(function (){
+   Route::get('/', [BusinessTypeController::class, 'index']);
 });

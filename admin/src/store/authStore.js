@@ -66,8 +66,8 @@ export const useAuthStore = create(
           const { setUser: setPermissionUser, fetchUserPermissions } = usePermissionStore.getState()
           setPermissionUser(user)
           
-          // Fetch user permissions
-          if (user.plan_id) {
+          // Fetch user permissions only if user exists and has plan_id
+          if (user && user.plan_id) {
             fetchUserPermissions(user.id)
           }
           
