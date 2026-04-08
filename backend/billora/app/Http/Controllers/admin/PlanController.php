@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\PlanBusinessType;
 use App\Models\PlanPermission;
 use Illuminate\Http\Request;
 use App\Models\Plans;
@@ -176,4 +177,36 @@ class PlanController extends Controller
             ]);
         }
     }
+
+   public function search(Request $request)
+{
+    try {
+        $search = $request->search;
+
+        if ($search == 'all') {
+            $plans = Plans::with('permissions', 'business_types.businessType')
+                ->where('is_active', true)
+                ->get();
+        } else {
+            $plans = Plans::with('permissions', 'business_types.businessType')
+                ->where('is_active', true)
+                ->whereHas('business_types', function ($q) use ($search) {
+                    $q->where('business_type_id', $search);
+                })
+                ->get();
+        }
+
+        return response()->json([
+            'status' => true,
+            'message' => 'All Plan List',
+            'data' => $plans
+        ]);
+
+    } catch (\Exception $e) {
+        return response()->json([
+            'status' => false,
+            'message' => $e->getMessage()
+        ]);
+    }
+}
 }

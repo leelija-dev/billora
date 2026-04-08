@@ -400,4 +400,22 @@ class StocksController extends Controller
             ]);
         }
     }
+
+    public function stockalert($id){
+        $user =  Auth::user()->id;
+        if(!Auth::check()){
+            return response()->json([
+                'status' => false,
+                'message' => 'Authentication required. Please login first.'
+            ]);
+        }
+        if($id != $user){
+            return response()->json([
+                'status' => false,
+                'message' => ' Invalid user.You do not have permission to access stock management!'
+            ]);
+        }
+        $customer =  Customers::findOrFail($user);
+        
+    }
 }
