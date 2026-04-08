@@ -481,7 +481,7 @@ const Stores = () => {
           )}
 
           {/* Add Store Button or Back Button */}
-          {!showAddForm && !showEditForm ? (
+          {!showAddForm && !showEditForm && safeStores.length === 0 ? (
             <motion.div
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
@@ -500,13 +500,7 @@ const Stores = () => {
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: 20 }}
             >
-              <Button
-                variant="outline"
-                onClick={handleCancelForm}
-                icon={FiArrowLeft}
-              >
-                Back to Stores
-              </Button>
+             
             </motion.div>
           )}
         </div>
@@ -839,7 +833,7 @@ const Stores = () => {
                 title="No stores yet"
                 description={searchTerm ? "No stores match your search criteria" : "Get started by adding your first store to manage your business locations"}
                 action={
-                  !searchTerm && (
+                  !searchTerm && safeStores.length === 0 && (
                     <Button 
                       onClick={handleAddStore}
                       icon={FiPlus}
