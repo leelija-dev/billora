@@ -180,6 +180,55 @@ public function update(Request $request, $id){
         ]);
     }
 }
+public function updatePassword($id,Request $request)   // update password
+{
+    try {
+        // Check Auth
+        if (!Auth::check()) {
+            return response()->json([
+                'status' => false,
+                'message' => 'User not authenticated'
+            ], 401);
+        }
+        if($id != Auth::user()->id){
+            return response()->json([
+                'status' => false,
+                'message' => 'Unauthorized user'
+            ]);
+        }
+
+        // Validate input
+        $request->validate([
+            'current_password' => 'required',
+            'new_password'     => 'required',
+        ]);
+
+        $user = Auth::user();
+
+        // Check current password
+        if (!Hash::check($request->current_password, $user->password)) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Current password is incorrect'
+            ]);
+        }
+
+        // Update password
+        $user->password = Hash::make($request->new_password);
+        $user->save();
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Password updated successfully'
+        ]);
+
+    } catch (\Exception $e) {
+        return response()->json([
+            'status' => false,
+            'message' => $e->getMessage()
+        ]);
+    }
+}
 public function login(Request $request)  //postman
 {
     $request->validate([
