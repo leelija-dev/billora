@@ -77,7 +77,16 @@ export const productsAPI = {
       if (productData.gst_hsn_code) formData.append('gst_hsn_code', productData.gst_hsn_code);
       if (productData.discount_amount) formData.append('discount_amount', productData.discount_amount);
       if (productData.cess_percentage) formData.append('cess_percentage', productData.cess_percentage);
-      if (productData.attributes) formData.append('attributes', productData.attributes);
+      
+      // Handle attributes field - convert to JSON string if it's an object
+      if (productData.attributes) {
+        if (typeof productData.attributes === 'object') {
+          formData.append('attributes', JSON.stringify(productData.attributes));
+        } else {
+          formData.append('attributes', productData.attributes);
+        }
+      }
+      
       if (productData.medicine_type) formData.append('medicine_type', productData.medicine_type);
       if (productData.other_medicine_type) formData.append('other_medicine_type', productData.other_medicine_type);
       if (productData.expiry_date) formData.append('expiry_date', productData.expiry_date);

@@ -205,12 +205,28 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
 
   // Form submission
   const onFormSubmit = (data) => {
+    let processedAttributes = null;
+    
+    // Handle attributes field - convert to JSON if provided
+    if (data.attributes && data.attributes.trim()) {
+      try {
+        // Try to parse as JSON
+        processedAttributes = JSON.parse(data.attributes.trim());
+      } catch (error) {
+        // If not valid JSON, show error and stop submission
+        toast.error('Attributes must be in valid JSON format');
+        return;
+      }
+    }
+
     const productData = {
       ...data,
       user_id: user.id,
       created_by: user.id,
       images: selectedImages,
       variants: variants,
+      // Set processed attributes (will be null if empty)
+      attributes: processedAttributes,
       // Convert boolean fields to integers for backend
       is_active: data.is_active ? 1 : 0,
       prescription_required: data.prescription_required ? 1 : 0,
@@ -438,12 +454,20 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {renderField('attributes', (
-              <Input
-                label="Attributes"
-                placeholder="Enter product attributes"
-                error={errors.attributes?.message}
-                {...register('attributes')}
-              />
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Attributes (JSON Format)
+                </label>
+                <textarea
+                  rows={3}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                  placeholder='Enter attributes in JSON format: {"color": "red", "size": "large"}'
+                  {...register('attributes')}
+                />
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  Example: {"{\"color\": \"red\", \"size\": \"large\", \"material\": \"cotton\"}"}
+                </p>
+              </div>
             ))}
           </div>
         </div>
