@@ -1,11 +1,12 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { FcGoogle } from "react-icons/fc";
 import { FaEye, FaEyeSlash, FaHome } from "react-icons/fa";
 import { loginUser } from "../../services/authService";
 import { saveAuthData } from "../../store/authStore";
 import { useRouter, useSearchParams } from "next/navigation";
+import toast, { Toaster } from 'react-hot-toast';
 
 const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -19,6 +20,26 @@ const Login = () => {
   const [passwordError, setPasswordError] = useState("");
   const router = useRouter();
   const searchParams = useSearchParams();
+
+  // Check for pending plan on component mount
+  useEffect(() => {
+    const pendingPlan = localStorage.getItem('pendingPlan');
+    const redirectUrl = searchParams.get("redirect");
+    
+    if (pendingPlan && !redirectUrl) {
+      // Show a toast notification that a plan was waiting
+      const planData = JSON.parse(pendingPlan);
+      toast.success(`Complete your ${planData.name} plan purchase!`, {
+        duration: 4000,
+        position: "top-center",
+        icon: '🎯',
+        style: {
+          background: '#8b5cf6',
+          color: '#fff',
+        },
+      });
+    }
+  }, [searchParams]);
 
   // Validation functions
   const validateEmail = (value) => {
@@ -62,10 +83,14 @@ const Login = () => {
     
     // Validate form before submitting
     if (!validateForm()) {
+      toast.error("Please fix the validation errors");
       return;
     }
     
     setLoading(true);
+    
+    // Show loading toast
+    const loadingToast = toast.loading("Logging in...");
     
     try {
       const res = await loginUser({ email, password });
@@ -91,28 +116,100 @@ const Login = () => {
       // ✅ Dispatch custom event to update navbar
       window.dispatchEvent(new Event("userLoggedIn"));
       
-      // ✅ Show success message
-      alert("Login Successful ✅");
+      // ✅ Dismiss loading toast and show success
+      toast.dismiss(loadingToast);
+      toast.success("Login Successful! ✅", {
+        duration: 3000,
+        position: "top-center",
+        icon: '🎉',
+        style: {
+          background: '#4caf50',
+          color: '#fff',
+          fontWeight: 'bold',
+        },
+      });
       
-      // ✅ Redirect to previous page or pricing
-      const redirect = searchParams.get("redirect") || "/pricing";
-      router.push(redirect);
+      // ✅ Handle redirect after login
+      await handleRedirectAfterLogin();
       
     } catch (error) {
+      // Dismiss loading toast
+      toast.dismiss(loadingToast);
+      
+      let errorMessage = "";
       if (error.message.includes("No account")) {
-        setError("❌ No account found with this email. Please register first.");
+        errorMessage = "❌ No account found with this email. Please register first.";
       } else if (error.message.includes("password")) {
-        setError("❌ Invalid password. Please try again.");
+        errorMessage = "❌ Invalid password. Please try again.";
       } else if (error.message.includes("verify")) {
-        setError("📧 Please verify your email before logging in. Check your inbox.");
+        errorMessage = "📧 Please verify your email before logging in. Check your inbox.";
       } else if (error.message.includes("Failed to fetch")) {
-        setError("Cannot connect to server. Please make sure the backend is running.");
+        errorMessage = "Cannot connect to server. Please make sure the backend is running.";
       } else {
-        setError(error.message || "❌ Login failed. Please try again.");
+        errorMessage = error.message || "❌ Login failed. Please try again.";
       }
+      
+      setError(errorMessage);
+      toast.error(errorMessage, {
+        duration: 4000,
+        position: "top-center",
+        style: {
+          background: '#f44336',
+          color: '#fff',
+        },
+      });
     } finally {
       setLoading(false);
     }
+  };
+
+  // New function to handle redirect logic
+  const handleRedirectAfterLogin = async () => {
+    // First check for pending plan (from pricing page)
+    const pendingPlan = localStorage.getItem('pendingPlan');
+    const redirectFromQuery = searchParams.get("redirect");
+    
+    // Priority 1: Direct redirect from query parameter (from pricing page)
+    if (redirectFromQuery) {
+      // Clear any pending plan since we're redirecting directly
+      localStorage.removeItem('pendingPlan');
+      localStorage.removeItem('redirectAfterLogin');
+      router.push(redirectFromQuery);
+      return;
+    }
+    
+    // Priority 2: Check for pending plan (from pricing page without redirect param)
+    if (pendingPlan) {
+      const planData = JSON.parse(pendingPlan);
+      
+      // Show a success toast with plan info
+      toast.success(`Proceeding to ${planData.name} plan checkout!`, {
+        duration: 2000,
+        position: "top-center",
+      });
+      
+      // Small delay to ensure toast is seen
+      setTimeout(() => {
+        // Clear the pending plan from localStorage
+        localStorage.removeItem('pendingPlan');
+        localStorage.removeItem('redirectAfterLogin');
+        
+        // Navigate to order summary with the plan
+        router.push('/order-summary');
+      }, 500);
+      return;
+    }
+    
+    // Priority 3: Check for generic redirect after login
+    const redirectAfterLogin = localStorage.getItem('redirectAfterLogin');
+    if (redirectAfterLogin) {
+      localStorage.removeItem('redirectAfterLogin');
+      router.push(redirectAfterLogin);
+      return;
+    }
+    
+    // Priority 4: Default redirect to pricing page
+    router.push("/pricing");
   };
 
   // Real-time validation handlers
@@ -132,6 +229,39 @@ const Login = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#ece9f1] to-[#dfe3f8] flex flex-col">
+      {/* Add Toaster component */}
+      <Toaster 
+        position="top-center"
+        reverseOrder={false}
+        gutter={8}
+        containerClassName=""
+        containerStyle={{}}
+        toastOptions={{
+          // Define default options
+          className: '',
+          duration: 3000,
+          style: {
+            background: '#363636',
+            color: '#fff',
+            padding: '16px',
+            borderRadius: '12px',
+          },
+          success: {
+            duration: 3000,
+            iconTheme: {
+              primary: '#4caf50',
+              secondary: '#fff',
+            },
+          },
+          error: {
+            duration: 4000,
+            iconTheme: {
+              primary: '#f44336',
+              secondary: '#fff',
+            },
+          },
+        }}
+      />
       
       <div className="flex-1 flex justify-center items-center font-sans relative py-8">
         {/* Back to Home Button */}
@@ -149,7 +279,23 @@ const Login = () => {
             LOG IN
           </h1>
 
-          {/* Server Error Message */}
+          {/* Show pending plan info if exists */}
+          {(() => {
+            const pendingPlan = typeof window !== 'undefined' ? localStorage.getItem('pendingPlan') : null;
+            if (pendingPlan) {
+              const planData = JSON.parse(pendingPlan);
+              return (
+                <div className="mb-4 p-3 bg-purple-50 border border-purple-200 rounded-xl">
+                  <p className="text-sm text-purple-800 text-center">
+                    🎯 Complete your <strong>{planData.name}</strong> plan purchase after login
+                  </p>
+                </div>
+              );
+            }
+            return null;
+          })()}
+
+          {/* Server Error Message - Keep for backup but toast will handle main notifications */}
           {error && (
             <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-xl mb-4 text-sm">
               {error}
@@ -230,7 +376,12 @@ const Login = () => {
             <p>
               Don't have an account?{" "}
               <span 
-                onClick={() => router.push("/register")}
+                onClick={() => {
+                  // Preserve redirect params when going to register
+                  const redirect = searchParams.get("redirect");
+                  const registerUrl = redirect ? `/register?redirect=${encodeURIComponent(redirect)}` : "/register";
+                  router.push(registerUrl);
+                }}
                 className="text-[#3b82f6] font-bold cursor-pointer hover:underline"
               >
                 SIGN UP

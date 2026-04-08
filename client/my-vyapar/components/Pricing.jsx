@@ -12,6 +12,7 @@ const Pricing = () => {
   const [plans, setPlans] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [selectedBusinessType, setSelectedBusinessType] = useState({}); // Store selected business type per plan
   const cardRefs = useRef([]);
   const router = useRouter();
 
@@ -32,6 +33,14 @@ const Pricing = () => {
 
             const monthlyPrice = parseFloat(plan.price);
             const yearlyPrice = monthlyPrice * 10;
+            
+            // Calculate discounted prices if discount exists
+            const discount = plan.discount || 0;
+            const monthlyDiscountedPrice = monthlyPrice - (monthlyPrice * discount / 100);
+            const yearlyDiscountedPrice = yearlyPrice - (yearlyPrice * discount / 100);
+            
+            // Calculate GST (default 18% if not provided)
+            const gstRate = plan.gst || 18;
 
             return {
               id: plan.id,
@@ -40,6 +49,13 @@ const Pricing = () => {
                 monthly: monthlyPrice.toLocaleString('en-IN'),
                 yearly: yearlyPrice.toLocaleString('en-IN')
               },
+              discountedPrice: {
+                monthly: monthlyDiscountedPrice.toLocaleString('en-IN'),
+                yearly: yearlyDiscountedPrice.toLocaleString('en-IN')
+              },
+              discount: discount,
+              gst: gstRate,
+              businessTypes: plan.business_types || [], // Array of business types from backend
               description: plan.description
                 ? plan.description.replace(/<[^>]*>?/gm, "")
                 : "",
@@ -51,6 +67,16 @@ const Pricing = () => {
           });
 
           setPlans(transformedPlans);
+          
+          // Initialize selected business type for each plan
+          const initialBusinessTypes = {};
+          transformedPlans.forEach(plan => {
+            if (plan.businessTypes && plan.businessTypes.length > 0) {
+              initialBusinessTypes[plan.id] = plan.businessTypes[0];
+            }
+          });
+          setSelectedBusinessType(initialBusinessTypes);
+          
         } else {
           setError(data.message || "Failed to fetch plans");
         }
@@ -65,20 +91,83 @@ const Pricing = () => {
     fetchPlans();
   }, []);
 
+  // Handle business type change
+  const handleBusinessTypeChange = (planId, businessType) => {
+    setSelectedBusinessType(prev => ({
+      ...prev,
+      [planId]: businessType
+    }));
+  };
+
+  // Get current price based on billing cycle, discount, and business type
+  const getCurrentPrice = (plan, businessType = null) => {
+    if (billingCycle === 'monthly') {
+      // If business type has custom pricing, use that
+      if (businessType && businessType.custom_price) {
+        return businessType.custom_price.toLocaleString('en-IN');
+      }
+      // Otherwise use discounted price if available
+      return plan.discount > 0 ? plan.discountedPrice.monthly : plan.price.monthly;
+    } else {
+      if (businessType && businessType.custom_price) {
+        return (businessType.custom_price * 10).toLocaleString('en-IN');
+      }
+      return plan.discount > 0 ? plan.discountedPrice.yearly : plan.price.yearly;
+    }
+  };
+
+  // Get numeric price value for calculations
+  const getNumericPrice = (plan, businessType = null) => {
+    if (billingCycle === 'monthly') {
+      if (businessType && businessType.custom_price) {
+        return businessType.custom_price;
+      }
+      return plan.discount > 0 ? parseFloat(plan.discountedPrice.monthly.replace(/,/g, '')) : parseFloat(plan.price.monthly.replace(/,/g, ''));
+    } else {
+      if (businessType && businessType.custom_price) {
+        return businessType.custom_price * 10;
+      }
+      return plan.discount > 0 ? parseFloat(plan.discountedPrice.yearly.replace(/,/g, '')) : parseFloat(plan.price.yearly.replace(/,/g, ''));
+    }
+  };
+
   // Handle subscription click
-const handleSubscribe = (planId) => {
-  const token = localStorage.getItem("token"); // ya jo bhi auth use kar rahe ho
+  const handleSubscribe = (planId) => {
+    const selectedPlan = plans.find(p => p.id === planId);
+    const businessType = selectedBusinessType[planId];
+    const currentPrice = getNumericPrice(selectedPlan, businessType);
+    const gstAmount = currentPrice * (selectedPlan.gst / 100);
+    const totalAmount = currentPrice + gstAmount;
+    
+    const subscriptionData = {
+      planId: planId,
+      planName: selectedPlan.name,
+      billingCycle: billingCycle,
+      price: currentPrice,
+      discount: selectedPlan.discount,
+      gst: selectedPlan.gst,
+      gstAmount: gstAmount,
+      totalAmount: totalAmount,
+      businessType: businessType,
+      originalPrice: billingCycle === 'monthly' 
+        ? parseFloat(selectedPlan.price.monthly.replace(/,/g, ''))
+        : parseFloat(selectedPlan.price.yearly.replace(/,/g, ''))
+    };
+    
+    const token = localStorage.getItem("token");
+    const targetUrl = `/pricing?plan=${planId}&cycle=${billingCycle}`;
+    
+    // Store subscription data in localStorage to use on the next page
+    localStorage.setItem('selectedSubscription', JSON.stringify(subscriptionData));
 
-  const targetUrl = `/pricing?plan=${planId}&cycle=${billingCycle}`;
-
-  if (token) {
-    // ✅ user logged in
-    router.push(targetUrl);
-  } else {
-    // ❌ user not logged in → login page with redirect
-    router.push(`/login?redirect=${encodeURIComponent(targetUrl)}`);
-  }
-};
+    if (token) {
+      // User logged in
+      router.push(targetUrl);
+    } else {
+      // User not logged in → login page with redirect
+      router.push(`/login?redirect=${encodeURIComponent(targetUrl)}`);
+    }
+  };
 
   useEffect(() => {
     const observerOptions = { threshold: 0.1, rootMargin: '0px' };
@@ -167,73 +256,152 @@ const handleSubscribe = (planId) => {
 
         {/* Pricing Cards Grid - Fixed for tablet view */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8 mb-16 items-stretch px-4">
-          {plans.slice(0, 3).map((plan, index) => (
-            <div
-              key={plan.id || index}
-              ref={(el) => (cardRefs.current[index] = el)}
-              className={`
-                bg-white rounded-2xl p-8 shadow-lg relative transition-all duration-500 border flex flex-col 
-                opacity-0 translate-y-10 hover:-translate-y-2 hover:shadow-2xl
-                ${plan.popular 
-                  ? 'border-2 border-purple-500 shadow-purple-100 lg:scale-105 z-20' 
-                  : 'border-gray-200 hover:border-gray-300 z-10'
-                }
-                ${index === 2 && 'md:col-span-2 lg:col-span-1 md:max-w-md lg:max-w-none mx-auto lg:mx-0'}
-              `}
-              style={{
-                width: '100%'
-              }}
-            >
-              {plan.popular && (
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-gradient-to-r from-purple-600 to-purple-500 text-white px-4 py-1 rounded-full text-xs font-bold uppercase tracking-wider shadow-lg">
-                  Most Popular
+          {plans.slice(0, 3).map((plan, index) => {
+            const currentBusinessType = selectedBusinessType[plan.id];
+            const currentPrice = getCurrentPrice(plan, currentBusinessType);
+            const numericPrice = getNumericPrice(plan, currentBusinessType);
+            const gstAmount = numericPrice * (plan.gst / 100);
+            const totalAmount = numericPrice + gstAmount;
+            
+            return (
+              <div
+                key={plan.id || index}
+                ref={(el) => (cardRefs.current[index] = el)}
+                className={`
+                  bg-white rounded-2xl p-8 shadow-lg relative transition-all duration-500 border flex flex-col 
+                  opacity-0 translate-y-10 hover:-translate-y-2 hover:shadow-2xl
+                  ${plan.popular 
+                    ? 'border-2 border-purple-500 shadow-purple-100 lg:scale-105 z-20' 
+                    : 'border-gray-200 hover:border-gray-300 z-10'
+                  }
+                  ${index === 2 && 'md:col-span-2 lg:col-span-1 md:max-w-md lg:max-w-none mx-auto lg:mx-0'}
+                `}
+                style={{
+                  width: '100%'
+                }}
+              >
+                {plan.popular && (
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-gradient-to-r from-purple-600 to-purple-500 text-white px-4 py-1 rounded-full text-xs font-bold uppercase tracking-wider shadow-lg">
+                    Most Popular
+                  </div>
+                )}
+
+                <div className="text-center mb-8 pb-6 border-b border-gray-100">
+                  <h3 className="text-2xl font-bold text-gray-900 mb-3">{plan.name}</h3>
+                  
+                  {/* Price Display with Discount */}
+                  <div className="mb-4">
+                    {plan.discount > 0 && (
+                      <div className="inline-flex items-center gap-2 bg-red-50 px-3 py-1 rounded-full mb-3">
+                        <span className="text-red-600 text-xs font-bold">{plan.discount}% OFF</span>
+                        <span className="text-gray-400 line-through text-sm">
+                          ₹{billingCycle === 'monthly' ? plan.price.monthly : plan.price.yearly}
+                        </span>
+                      </div>
+                    )}
+                    
+                    <div className="flex items-baseline justify-center gap-1">
+                      <span className="text-2xl font-semibold text-gray-500">₹</span>
+                      <span className="text-5xl font-bold" style={{ color: plan.color }}>
+                        {currentPrice}
+                      </span>
+                      <span className="text-gray-400 text-base font-medium">/{billingCycle === 'monthly' ? 'month' : 'year'}</span>
+                    </div>
+                    
+                    {plan.gst > 0 && (
+                      <p className="text-xs text-gray-500 mt-2">
+                        +{plan.gst}% GST applicable
+                      </p>
+                    )}
+                    
+                    {plan.discount > 0 && (
+                      <p className="text-xs text-green-600 mt-1 font-medium">
+                        You save {plan.discount}% with this plan!
+                      </p>
+                    )}
+                  </div>
+                  
+                  <p className="text-sm text-gray-600 font-medium">{plan.description}</p>
                 </div>
-              )}
 
-              <div className="text-center mb-8 pb-6 border-b border-gray-100">
-                <h3 className="text-2xl font-bold text-gray-900 mb-3">{plan.name}</h3>
-                <div className="flex items-baseline justify-center gap-1 mb-2">
-                  <span className="text-2xl font-semibold text-gray-500">₹</span>
-                  <span className="text-5xl font-bold" style={{ color: plan.color }}>
-                    {billingCycle === 'monthly' ? plan.price.monthly : plan.price.yearly}
-                  </span>
-                  <span className="text-gray-400 text-base font-medium">/{billingCycle === 'monthly' ? 'month' : 'year'}</span>
+                {/* Business Type Dropdown */}
+                {plan.businessTypes && plan.businessTypes.length > 0 && (
+                  <div className="mb-6">
+                    <label className="block text-xs font-bold text-gray-500 mb-2 uppercase tracking-wider">
+                      Business Type
+                    </label>
+                    <select
+                      value={currentBusinessType?.id || ''}
+                      onChange={(e) => {
+                        const selected = plan.businessTypes.find(bt => bt.id === parseInt(e.target.value));
+                        if (selected) handleBusinessTypeChange(plan.id, selected);
+                      }}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm"
+                    >
+                      {plan.businessTypes.map((businessType) => (
+                        <option key={businessType.id} value={businessType.id}>
+                          {businessType.name}
+                          {businessType.custom_price && ` (₹${businessType.custom_price.toLocaleString('en-IN')}/month)`}
+                        </option>
+                      ))}
+                    </select>
+                    {currentBusinessType?.description && (
+                      <p className="text-xs text-gray-500 mt-1">{currentBusinessType.description}</p>
+                    )}
+                  </div>
+                )}
+
+                <div className="flex-1 mb-8">
+                  <h4 className="text-xs font-bold text-gray-500 mb-5 uppercase tracking-wider">What's included</h4>
+                  <ul className="space-y-3.5">
+                    {plan.features.map((feature, idx) => (
+                      <li key={idx} className="flex items-start gap-3 text-sm text-gray-700">
+                        <svg className="w-5 h-5 flex-shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none">
+                          <path d="M20 6L9 17L4 12" stroke={plan.color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                        <span className="leading-relaxed">{feature}</span>
+                      </li>
+                    ))}
+                  </ul>
                 </div>
-                <p className="text-sm text-gray-600 font-medium">{plan.description}</p>
-              </div>
 
-              <div className="flex-1 mb-8">
-                <h4 className="text-xs font-bold text-gray-500 mb-5 uppercase tracking-wider">What's included</h4>
-                <ul className="space-y-3.5">
-                  {plan.features.map((feature, idx) => (
-                    <li key={idx} className="flex items-start gap-3 text-sm text-gray-700">
-                      <svg className="w-5 h-5 flex-shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none">
-                        <path d="M20 6L9 17L4 12" stroke={plan.color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-                      </svg>
-                      <span className="leading-relaxed">{feature}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
+                {/* Price Summary with GST */}
+                {/* <div className="mb-4 p-3 bg-gray-50 rounded-lg">
+                  <div className="flex justify-between text-sm mb-1">
+                    <span className="text-gray-600">Plan Price:</span>
+                    <span className="font-semibold">₹{currentPrice}</span>
+                  </div>
+                  {plan.gst > 0 && (
+                    <div className="flex justify-between text-sm mb-1">
+                      <span className="text-gray-600">GST ({plan.gst}%):</span>
+                      <span className="font-semibold">₹{gstAmount.toFixed(2)}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between text-sm pt-1 border-t border-gray-200 mt-1">
+                    <span className="font-bold text-gray-800">Total Amount:</span>
+                    <span className="font-bold text-purple-600">₹{totalAmount.toFixed(2)}</span>
+                  </div>
+                </div> */}
 
-              <div className="mt-auto pt-4">
-                <button
-                  onClick={() => handleSubscribe(plan.id)}
-                  className={`w-full py-3.5 rounded-xl text-base font-semibold transition-all duration-300 hover:shadow-lg active:scale-95
-                    ${plan.popular 
-                      ? 'bg-gradient-to-r from-purple-600 to-purple-500 text-white hover:from-purple-700 hover:to-purple-600' 
-                      : 'bg-white border-2 hover:bg-gray-50'
-                    }`}
-                  style={{
-                    color: plan.popular ? 'white' : plan.color,
-                    borderColor: plan.popular ? 'transparent' : plan.color
-                  }}
-                >
-                  {plan.buttonText}
-                </button>
+                <div className="mt-auto pt-4">
+                  <button
+                    onClick={() => handleSubscribe(plan.id)}
+                    className={`w-full py-3.5 rounded-xl text-base font-semibold transition-all duration-300 hover:shadow-lg active:scale-95
+                      ${plan.popular 
+                        ? 'bg-gradient-to-r from-purple-600 to-purple-500 text-white hover:from-purple-700 hover:to-purple-600' 
+                        : 'bg-white border-2 hover:bg-gray-50'
+                      }`}
+                    style={{
+                      color: plan.popular ? 'white' : plan.color,
+                      borderColor: plan.popular ? 'transparent' : plan.color
+                    }}
+                  >
+                    {plan.buttonText}
+                  </button>
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         {/* Bottom Section */}

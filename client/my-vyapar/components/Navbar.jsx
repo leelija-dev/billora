@@ -627,15 +627,17 @@ const Navbar = () => {
                   onClick={() => setShowUserMenu(!showUserMenu)}
                   className="flex items-center gap-2 px-2 py-1.5 rounded-full hover:bg-gray-100 transition-all duration-200"
                 >
-                  <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 flex items-center justify-center text-white font-semibold text-sm shadow-md">
-                    {userInitial}
+                  <div className="relative">
+                    {/* Avatar with gradient background */}
+                    <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 flex items-center justify-center text-white font-semibold text-sm shadow-md">
+                      {userInitial}
+                    </div>
+                    {/* Active Green Dot */}
+                    <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-white shadow-sm animate-pulse"></span>
                   </div>
                   <div className="hidden xl:block text-left">
                     <div className="text-sm font-medium text-gray-700 max-w-[120px] truncate">
                       {userName}
-                    </div>
-                    <div className="text-xs text-gray-500 max-w-[120px] truncate">
-                      {userEmail}
                     </div>
                   </div>
                   <FiChevronDown className={`text-gray-400 transition-transform duration-200 hidden sm:block ${showUserMenu ? 'rotate-180' : ''}`} size={14} />
@@ -646,8 +648,12 @@ const Navbar = () => {
                   <div className="absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden z-50">
                     <div className="px-4 py-3 border-b border-gray-100 bg-gray-50">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 flex items-center justify-center text-white font-semibold">
-                          {userInitial}
+                        <div className="relative">
+                          <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 flex items-center justify-center text-white font-semibold">
+                            {userInitial}
+                          </div>
+                          {/* Active Green Dot for dropdown */}
+                          <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-white shadow-sm"></span>
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium text-gray-900 truncate">
@@ -766,8 +772,12 @@ const Navbar = () => {
           {isLoggedIn && (
             <div className="p-4 border-b border-gray-100 bg-gradient-to-r from-blue-50 to-indigo-50">
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold text-lg">
-                  {userInitial}
+                <div className="relative">
+                  <div className="w-12 h-12 rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold text-lg">
+                    {userInitial}
+                  </div>
+                  {/* Active Green Dot for mobile */}
+                  <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white shadow-sm animate-pulse"></span>
                 </div>
                 <div className="flex-1">
                   <p className="text-sm font-semibold text-gray-900">{userName}</p>
