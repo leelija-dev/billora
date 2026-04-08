@@ -15,16 +15,16 @@ const Pricing = () => {
   const [error, setError] = useState(null);
   const [subscribing, setSubscribing] = useState(null);
   const [subscribeMessage, setSubscribeMessage] = useState(null);
-  const [isLoggedIn, setIsLoggedIn] = useState(false); // Add login state
-  const [showLoginModal, setShowLoginModal] = useState(false); // For login prompt modal
-  const [pendingPlan, setPendingPlan] = useState(null); // Store plan details for after login
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [pendingPlan, setPendingPlan] = useState(null);
+  const [selectedBusinessType, setSelectedBusinessType] = useState({}); // Store selected business type per plan
   const cardRefs = useRef([]);
   const router = useRouter();
 
   // Check if user is logged in
   useEffect(() => {
     const checkLoginStatus = () => {
-      // Check for auth token in localStorage or your auth mechanism
       const token = localStorage.getItem('auth_token') || localStorage.getItem('token');
       const userData = localStorage.getItem('user_data');
       
@@ -33,7 +33,6 @@ const Pricing = () => {
     
     checkLoginStatus();
     
-    // Optional: Listen for storage changes (if login happens in another tab)
     window.addEventListener('storage', checkLoginStatus);
     return () => window.removeEventListener('storage', checkLoginStatus);
   }, []);
@@ -48,14 +47,24 @@ const Pricing = () => {
   
         if (data.status === true && data.data) {
           const allPlans = data.data;
-          const limitedPlans = allPlans; // show ALL plans
-  
+          const limitedPlans = allPlans;
+
           const transformedPlans = limitedPlans.map((plan, index) => {
             const features = plan.features || [];
   
             const monthlyPrice = parseFloat(plan.price);
             const yearlyPrice = monthlyPrice * 10;
-  
+            
+            // Calculate discounted prices if discount exists
+            const discount = plan.discount || 0;
+            const monthlyDiscountedPrice = monthlyPrice - (monthlyPrice * discount / 100);
+            const yearlyDiscountedPrice = yearlyPrice - (yearlyPrice * discount / 100);
+            
+            // Calculate GST (assuming 18% GST)
+            const gstRate = plan.gst || 18; // Default to 18% if not provided
+            const monthlyPriceWithGST = monthlyDiscountedPrice + (monthlyDiscountedPrice * gstRate / 100);
+            const yearlyPriceWithGST = yearlyDiscountedPrice + (yearlyDiscountedPrice * gstRate / 100);
+
             return {
               id: plan.id,
               name: plan.name,
@@ -63,6 +72,17 @@ const Pricing = () => {
                 monthly: monthlyPrice.toLocaleString('en-IN'),
                 yearly: yearlyPrice.toLocaleString('en-IN')
               },
+              discountedPrice: {
+                monthly: monthlyDiscountedPrice.toLocaleString('en-IN'),
+                yearly: yearlyDiscountedPrice.toLocaleString('en-IN')
+              },
+              priceWithGST: {
+                monthly: monthlyPriceWithGST.toLocaleString('en-IN'),
+                yearly: yearlyPriceWithGST.toLocaleString('en-IN')
+              },
+              discount: discount,
+              gst: gstRate,
+              businessTypes: plan.business_types || [], // Array of business types from backend
               description: plan.description
                 ? plan.description.replace(/<[^>]*>?/gm, "")
                 : "",
@@ -74,6 +94,16 @@ const Pricing = () => {
           });
   
           setPlans(transformedPlans);
+          
+          // Initialize selected business type for each plan
+          const initialBusinessTypes = {};
+          transformedPlans.forEach(plan => {
+            if (plan.businessTypes && plan.businessTypes.length > 0) {
+              initialBusinessTypes[plan.id] = plan.businessTypes[0];
+            }
+          });
+          setSelectedBusinessType(initialBusinessTypes);
+          
         } else {
           setError(data.message || "Failed to fetch plans");
         }
@@ -88,24 +118,57 @@ const Pricing = () => {
     fetchPlans();
   }, []);
 
-  // Handle subscription - Check login first
-  const handleSubscribe = (planId, planName, planPrice) => {
+  // Handle business type change
+  const handleBusinessTypeChange = (planId, businessType) => {
+    setSelectedBusinessType(prev => ({
+      ...prev,
+      [planId]: businessType
+    }));
+  };
+
+  // Get current price based on billing cycle, discount, and business type
+  const getCurrentPrice = (plan, businessType = null) => {
+    if (billingCycle === 'monthly') {
+      // If business type has custom pricing, use that
+      if (businessType && businessType.custom_price) {
+        return businessType.custom_price.toLocaleString('en-IN');
+      }
+      // Otherwise use discounted price if available
+      return plan.discount > 0 ? plan.discountedPrice.monthly : plan.price.monthly;
+    } else {
+      if (businessType && businessType.custom_price) {
+        return (businessType.custom_price * 10).toLocaleString('en-IN');
+      }
+      return plan.discount > 0 ? plan.discountedPrice.yearly : plan.price.yearly;
+    }
+  };
+
+  // Handle subscription
+  const handleSubscribe = (planId, planName, planPrice, planDiscount, planGST, businessType) => {
+    const currentPrice = billingCycle === 'monthly' 
+      ? (planDiscount > 0 ? planPrice.monthly : planPrice.monthly)
+      : (planDiscount > 0 ? planPrice.yearly : planPrice.yearly);
+    
     const selectedPlan = {
       id: planId,
       name: planName,
       billingCycle: billingCycle,
-      price: billingCycle === 'monthly' ? planPrice.monthly : planPrice.yearly,
-      originalPrice: billingCycle === 'monthly' ? planPrice.monthly : (parseInt(planPrice.yearly) * 1.2).toFixed(0),
+      price: currentPrice,
+      originalPrice: billingCycle === 'monthly' ? planPrice.monthly : planPrice.yearly,
+      discount: planDiscount,
+      gst: planGST,
+      businessType: businessType,
+      finalPrice: billingCycle === 'monthly' 
+        ? (parseFloat(currentPrice.replace(/,/g, '')) + (parseFloat(currentPrice.replace(/,/g, '')) * planGST / 100)).toFixed(0)
+        : (parseFloat(currentPrice.replace(/,/g, '')) + (parseFloat(currentPrice.replace(/,/g, '')) * planGST / 100)).toFixed(0)
     };
     
     if (!isLoggedIn) {
-      // Store pending plan and show login modal
       setPendingPlan(selectedPlan);
       setShowLoginModal(true);
       return;
     }
     
-    // User is logged in, proceed to order summary
     proceedToOrderSummary(selectedPlan);
   };
 
@@ -114,9 +177,7 @@ const Pricing = () => {
     router.push('/order-summary');
   };
 
-  // Handle login redirect
   const handleLoginRedirect = () => {
-    // Store the current page and pending plan to return after login
     localStorage.setItem('redirectAfterLogin', '/pricing');
     if (pendingPlan) {
       localStorage.setItem('pendingPlan', JSON.stringify(pendingPlan));
@@ -124,7 +185,6 @@ const Pricing = () => {
     router.push('/login');
   };
 
-  // Handle after login - check for pending plan
   useEffect(() => {
     const checkPendingPlanAfterLogin = () => {
       const pendingPlanStr = localStorage.getItem('pendingPlan');
@@ -132,10 +192,8 @@ const Pricing = () => {
       
       if (isLoggedInNow && pendingPlanStr) {
         const pendingPlanData = JSON.parse(pendingPlanStr);
-        // Clear pending plan from storage
         localStorage.removeItem('pendingPlan');
         localStorage.removeItem('redirectAfterLogin');
-        // Proceed to order summary
         proceedToOrderSummary(pendingPlanData);
       }
     };
@@ -264,7 +322,6 @@ const Pricing = () => {
       <div className="py-20 bg-gradient-to-br from-[#f8fafc] to-[#f1f5f9] min-h-screen font-['Inter',system-ui,-apple-system,sans-serif]">
         <Container size="default">
           
-          {/* Success/Error Message */}
           {subscribeMessage && (
             <div className={`fixed top-24 right-4 z-50 p-4 rounded-lg shadow-lg max-w-md animate-slide-in ${
               subscribeMessage.type === 'success' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
@@ -273,7 +330,6 @@ const Pricing = () => {
             </div>
           )}
 
-          {/* Header Section */}
           <div className="text-center mb-12">
             <SectionTitle title="Simple, Transparent Pricing" />
             <p className="text-[#475569] text-lg max-w-[600px] mx-auto mt-4 font-medium">
@@ -281,7 +337,6 @@ const Pricing = () => {
             </p>
           </div>
 
-          {/* Billing Toggle - Clean and Modern */}
           <div className="flex justify-center items-center mb-12">
             <div className="relative bg-white p-1 rounded-full shadow-md border border-gray-200 inline-flex">
               <button
@@ -303,7 +358,6 @@ const Pricing = () => {
                   Save 20%
                 </span>
               </button>
-              {/* Sliding Background */}
               <div 
                 className={`absolute top-1 bottom-1 w-[calc(50%-4px)] bg-gradient-to-r from-blue-600 to-blue-500 rounded-full transition-all duration-300 ease-out ${
                   billingCycle === 'monthly' ? 'left-1' : 'left-[calc(50%-2px)]'
@@ -312,10 +366,11 @@ const Pricing = () => {
             </div>
           </div>
 
-          {/* Pricing Cards Grid - SHOW ALL PLANS */}
           <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-${Math.min(plans.length, 3)} gap-8 mb-16 items-stretch px-4`}>
             {plans.map((plan, index) => {
-              const isPopular = index === 1; // Make second plan popular
+              const isPopular = index === 1;
+              const currentBusinessType = selectedBusinessType[plan.id];
+              const currentPrice = getCurrentPrice(plan, currentBusinessType);
               
               return (
                 <div
@@ -335,18 +390,68 @@ const Pricing = () => {
 
                   <div className="text-center mb-8 pb-6 border-b border-gray-100">
                     <h3 className="text-2xl font-bold text-gray-900 mb-3">{plan.name}</h3>
-                    <div className="flex items-baseline justify-center gap-1 mb-2">
-                      <span className="text-2xl font-semibold text-gray-500">₹</span>
-                      <span className="text-5xl font-bold" style={{ color: isPopular ? '#8b5cf6' : '#000000' }}>
-                        {billingCycle === 'monthly' ? plan.price.monthly : plan.price.yearly}
-                      </span>
-                      <span className="text-gray-400 text-base font-medium">/{billingCycle === 'monthly' ? 'month' : 'year'}</span>
+                    
+                    {/* Price Display with Discount and GST */}
+                    <div className="mb-4">
+                      {plan.discount > 0 && (
+                        <div className="inline-flex items-center gap-2 bg-red-50 px-3 py-1 rounded-full mb-3">
+                          <span className="text-red-600 text-xs font-bold">{plan.discount}% OFF</span>
+                          <span className="text-gray-400 line-through text-sm">
+                            ₹{billingCycle === 'monthly' ? plan.price.monthly : plan.price.yearly}
+                          </span>
+                        </div>
+                      )}
+                      
+                      <div className="flex items-baseline justify-center gap-1">
+                        <span className="text-2xl font-semibold text-gray-500">₹</span>
+                        <span className="text-5xl font-bold" style={{ color: isPopular ? '#8b5cf6' : '#000000' }}>
+                          {currentPrice}
+                        </span>
+                        <span className="text-gray-400 text-base font-medium">/{billingCycle === 'monthly' ? 'month' : 'year'}</span>
+                      </div>
+                      
+                      {plan.gst > 0 && (
+                        <p className="text-xs text-gray-500 mt-2">
+                          +{plan.gst}% GST applicable
+                        </p>
+                      )}
+                      
+                      {plan.discount > 0 && (
+                        <p className="text-xs text-green-600 mt-1 font-medium">
+                          You save {plan.discount}% with this plan!
+                        </p>
+                      )}
                     </div>
+                    
                     <p className="text-sm text-gray-600 font-medium">{plan.description}</p>
-                    {plan.duration_days && (
-                      <p className="text-xs text-gray-400 mt-2">{plan.duration_days} days validity</p>
-                    )}
                   </div>
+
+                  {/* Business Type Dropdown */}
+                  {plan.businessTypes && plan.businessTypes.length > 0 && (
+                    <div className="mb-6">
+                      <label className="block text-xs font-bold text-gray-500 mb-2 uppercase tracking-wider">
+                        Business Type
+                      </label>
+                      <select
+                        value={currentBusinessType?.id || ''}
+                        onChange={(e) => {
+                          const selected = plan.businessTypes.find(bt => bt.id === parseInt(e.target.value));
+                          if (selected) handleBusinessTypeChange(plan.id, selected);
+                        }}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm"
+                      >
+                        {plan.businessTypes.map((businessType) => (
+                          <option key={businessType.id} value={businessType.id}>
+                            {businessType.name}
+                            {businessType.custom_price && ` (₹${businessType.custom_price.toLocaleString('en-IN')})`}
+                          </option>
+                        ))}
+                      </select>
+                      {currentBusinessType?.description && (
+                        <p className="text-xs text-gray-500 mt-1">{currentBusinessType.description}</p>
+                      )}
+                    </div>
+                  )}
 
                   <div className="flex-1 mb-8">
                     <h4 className="text-xs font-bold text-gray-500 mb-5 uppercase tracking-wider">What's included</h4>
@@ -362,9 +467,38 @@ const Pricing = () => {
                     </ul>
                   </div>
 
+                  {/* Price Summary with GST */}
+                  {/* <div className="mb-4 p-3 bg-gray-50 rounded-lg">
+                    <div className="flex justify-between text-sm mb-1">
+                      <span className="text-gray-600">Plan Price:</span>
+                      <span className="font-semibold">₹{currentPrice}</span>
+                    </div>
+                    {plan.gst > 0 && (
+                      <div className="flex justify-between text-sm mb-1">
+                        <span className="text-gray-600">GST ({plan.gst}%):</span>
+                        <span className="font-semibold">
+                          ₹{(parseFloat(currentPrice.replace(/,/g, '')) * plan.gst / 100).toFixed(2)}
+                        </span>
+                      </div>
+                    )}
+                    <div className="flex justify-between text-sm pt-1 border-t border-gray-200 mt-1">
+                      <span className="font-bold text-gray-800">Total Amount:</span>
+                      <span className="font-bold text-purple-600">
+                        ₹{(parseFloat(currentPrice.replace(/,/g, '')) + (parseFloat(currentPrice.replace(/,/g, '')) * plan.gst / 100)).toFixed(2)}
+                      </span>
+                    </div>
+                  </div> */}
+
                   <div className="mt-auto pt-4">
                     <button
-                      onClick={() => handleSubscribe(plan.id, plan.name, plan.price)}
+                      onClick={() => handleSubscribe(
+                        plan.id, 
+                        plan.name, 
+                        { monthly: plan.price.monthly, yearly: plan.price.yearly },
+                        plan.discount,
+                        plan.gst,
+                        currentBusinessType
+                      )}
                       disabled={subscribing === plan.id}
                       className={`w-full py-3.5 rounded-xl text-base font-semibold transition-all duration-300 hover:shadow-lg active:scale-95
                         ${isPopular 
@@ -395,7 +529,6 @@ const Pricing = () => {
             })}
           </div>
 
-          {/* View Cart / Order Summary Link */}
           <div className="text-center mb-8">
             <button
               onClick={() => {
@@ -420,7 +553,6 @@ const Pricing = () => {
             </button>
           </div>
 
-          {/* Bottom Section */}
           <div className="flex flex-col md:flex-row items-center justify-between gap-6 px-4 border-t border-gray-200 pt-12">
             <div className="hidden lg:block w-[150px]" />
 
@@ -450,8 +582,6 @@ const Pricing = () => {
         </Container>
       </div>
       <Footer />
-
-      {/* Login Modal */}
       <LoginModal />
 
       <style jsx>{`

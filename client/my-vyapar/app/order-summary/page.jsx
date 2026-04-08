@@ -18,21 +18,28 @@ const OrderSummary = () => {
   const [customerName, setCustomerName] = useState("");
   const [customerEmail, setCustomerEmail] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");  
+  const [businessTypeId, setBusinessTypeId] = useState(""); // Add business type
   const [showOptional, setShowOptional] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [purchaseHistory, setPurchaseHistory] = useState([]);
-  const [debugInfo, setDebugInfo] = useState(null);
   const [loggedInUser, setLoggedInUser] = useState(null);
-  const [apiError, setApiError] = useState(null);
+
+  // Business type options (adjust based on your backend requirements)
+  const businessTypes = [
+    { id: "1", name: "Individual / Sole Proprietorship" },
+    { id: "2", name: "Partnership" },
+    { id: "3", name: "Private Limited Company" },
+    { id: "4", name: "Public Limited Company" },
+    { id: "5", name: "LLP (Limited Liability Partnership)" },
+    { id: "6", name: "Trust / NGO / Society" },
+    { id: "7", name: "Others" }
+  ];
 
   // Load user data from localStorage/session
   useEffect(() => {
     const getUserData = () => {
-      // Try multiple possible storage keys
       const userStr = localStorage.getItem('user') || 
                      sessionStorage.getItem('user') ||
-                     localStorage.getItem('user_data') ||
-                     sessionStorage.getItem('user_data');
+                     localStorage.getItem('user_data');
       
       if (userStr) {
         try {
@@ -43,19 +50,10 @@ const OrderSummary = () => {
           if (user.email) setCustomerEmail(user.email);
           if (user.phone) setCustomerPhone(user.phone);
           
-          console.log("Logged-in user loaded:", user);
+          console.log("✅ Logged-in user loaded:", user);
         } catch (e) {
           console.error("Error parsing user data:", e);
         }
-      } else {
-        console.warn("No user data found in localStorage/sessionStorage");
-        // Try to get from authStore
-        try {
-          const authToken = localStorage.getItem('auth_token');
-          if (authToken) {
-            console.log("Auth token found but no user data");
-          }
-        } catch(e) {}
       }
     };
     
@@ -70,29 +68,19 @@ const OrderSummary = () => {
         try {
           const parsedPlan = JSON.parse(planData);
           setSelectedPlan(parsedPlan);
-          console.log("Loaded plan:", parsedPlan);
+          console.log("✅ Loaded plan:", parsedPlan);
         } catch (e) {
-          console.error("Error parsing plan data:", e);
-          toast.error('Invalid plan data. Redirecting to pricing...');
-          setTimeout(() => router.push('/pricing'), 2000);
+          console.error("Error parsing plan:", e);
+          toast.error('Invalid plan data');
+          router.push('/pricing');
         }
       } else {
-        toast.error('No plan selected. Redirecting to pricing...');
-        setTimeout(() => router.push('/pricing'), 2000);
-      }
-    };
-
-    const loadPurchaseHistory = () => {
-      const history = localStorage.getItem('purchaseHistory');
-      if (history) {
-        try {
-          setPurchaseHistory(JSON.parse(history));
-        } catch(e) {}
+        toast.error('No plan selected');
+        router.push('/pricing');
       }
     };
 
     loadPlanData();
-    loadPurchaseHistory();
   }, [router]);
 
   const calculateGST = () => {
@@ -129,57 +117,31 @@ const OrderSummary = () => {
     });
   };
 
-  // Direct API call as fallback if store action fails
-  const createOrderDirect = async (payload) => {
-    try {
-      const token = localStorage.getItem('auth_token') || localStorage.getItem('token');
-      const response = await fetch('http://localhost:8000/api/create-order', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': token ? `Bearer ${token}` : '',
-          'Accept': 'application/json'
-        },
-        body: JSON.stringify(payload)
-      });
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`HTTP ${response.status}: ${errorText}`);
-      }
-      
-      const data = await response.json();
-      console.log("Direct API response:", data);
-      return data;
-    } catch (error) {
-      console.error("Direct API call failed:", error);
-      throw error;
-    }
-  };
-
   const handlePayment = async () => {
-    // Reset errors
-    setApiError(null);
-    setDebugInfo(null);
-    
     if (!selectedPlan) {
       toast.error('No plan selected!');
       return;
     }
 
-    // Validate required customer details
-    if (!customerName || !customerName.trim()) {
+    // Validate required fields
+    if (!customerName?.trim()) {
       toast.error('Please enter your full name');
       return;
     }
 
-    if (!customerEmail || !customerEmail.trim()) {
+    if (!customerEmail?.trim()) {
       toast.error('Please enter your email address');
       return;
     }
 
-    if (!customerPhone || !customerPhone.trim()) { 
+    if (!customerPhone?.trim()) {
       toast.error('Please enter your phone number');
+      return;
+    }
+
+    // Validate business type if company name is provided (or make it required)
+    if (companyName && !businessTypeId) {
+      toast.error('Please select business type for your company');
       return;
     }
 
@@ -195,27 +157,19 @@ const OrderSummary = () => {
       return;
     }
 
-    // Get user ID from multiple possible sources
-    let userId = null;
-    if (loggedInUser && loggedInUser.id) {
-      userId = loggedInUser.id;
-    } else {
-      // Try to get from localStorage
-      try {
-        const userStr = localStorage.getItem('user');
-        if (userStr) {
-          const user = JSON.parse(userStr);
-          userId = user.id;
-        }
-      } catch(e) {}
-    }
-    
+    // Get user ID
+    let userId = loggedInUser?.id || 
+                 (() => {
+                   try {
+                     const userStr = localStorage.getItem('user');
+                     return userStr ? JSON.parse(userStr).id : null;
+                   } catch(e) { return null; }
+                 })();
+
     if (!userId) {
-      toast.error("User not logged in properly. Please login again.");
-      setTimeout(() => {
-        localStorage.setItem('redirectAfterLogin', '/order-summary');
-        router.push('/login');
-      }, 2000);
+      toast.error("Please login again");
+      localStorage.setItem('redirectAfterLogin', '/order-summary');
+      setTimeout(() => router.push('/login'), 2000);
       return;
     }
 
@@ -227,32 +181,25 @@ const OrderSummary = () => {
       const gstAmount = calculateGST();
       const basePrice = parseFloat(selectedPlan.price.replace(/,/g, ''));
       
-      // Create valid customer ID (alphanumeric only)
-      let customerId = String(userId);
-      if (customerId.length < 3) {
-        customerId = customerId.padStart(3, '0');
+      // Generate order ID
+      const timestamp = Date.now();
+      const randomStr = Math.random().toString(36).substring(2, 8).toUpperCase();
+      const orderId = `ORD${timestamp}${randomStr}`;
+      
+      // Create customer ID (must be alphanumeric)
+      let customerId = `CUST${userId}`;
+      if (customerId.length < 6) {
+        customerId = customerId.padEnd(6, '0');
       }
       
-      const timestamp = Date.now();
-      const orderId = `ORD${timestamp}${Math.floor(Math.random() * 10000)}`;
-      
-      console.log("=== PAYMENT DEBUG INFO ===");
-      console.log("User ID:", userId);
-      console.log("Customer ID:", customerId);
-      console.log("Order ID:", orderId);
-      console.log("Amount:", totalAmount);
-      console.log("Customer Email:", customerEmail);
-      console.log("Customer Phone:", customerPhone);
-      console.log("==========================");
-
       const payload = {
         customer_id: customerId,
         order_id: orderId,
         amount: Number(totalAmount.toFixed(2)),
         currency: "INR",
-        customer_name: customerName,
-        customer_email: customerEmail,
-        customer_phone: customerPhone,
+        customer_name: customerName.trim(),
+        customer_email: customerEmail.trim(),
+        customer_phone: customerPhone.trim(),
         db_user_id: userId,
         plan_id: selectedPlan.id,
         plan_name: selectedPlan.name,
@@ -264,70 +211,64 @@ const OrderSummary = () => {
         company_name: companyName || null,
         gst_number: gstNumber || null,
         billing_address: billingAddress || null,
+        business_type_id: businessTypeId || null, // Add business type ID
         return_url: `${window.location.origin}/payment-status`,
         notify_url: `${window.location.origin}/api/cashfree/webhook`
       };
 
-      console.log("📤 Sending payload to backend:", JSON.stringify(payload, null, 2));
-      setDebugInfo({ type: 'sending', payload });
-
-      let response;
+      console.log("📤 Sending payload:", payload);
       
-      // Try store action first
-      try {
-        console.log("Attempting to create order via store action...");
-        response = await createOrderAction(payload);
-        console.log("Store action response:", response);
-      } catch (storeError) {
-        console.error("Store action failed:", storeError);
-        console.log("Falling back to direct API call...");
-        
-        // Fallback to direct API call
-        response = await createOrderDirect(payload);
-      }
+      // Call the store action
+      const response = await createOrderAction(payload);
       
-      console.log("📥 Final response:", response);
-      setDebugInfo({ type: 'response', response });
-
+      console.log("📥 Full response from createOrderAction:", response);
+      
       toast.dismiss(loadingToast);
 
-      // Check for payment session ID in different response formats
+      // Extract payment session ID from different possible response formats
       let paymentSessionId = null;
       
-      if (response && response.payment_session_id) {
+      if (response?.payment_session_id) {
         paymentSessionId = response.payment_session_id;
-      } else if (response && response.data && response.data.payment_session_id) {
+      } else if (response?.data?.payment_session_id) {
         paymentSessionId = response.data.payment_session_id;
-      } else if (response && response.sessionId) {
+      } else if (response?.sessionId) {
         paymentSessionId = response.sessionId;
       } else if (typeof response === 'string') {
-        // If response is a string, try to parse it
         try {
           const parsed = JSON.parse(response);
           paymentSessionId = parsed.payment_session_id || parsed.sessionId;
         } catch(e) {}
       }
       
+      if (!paymentSessionId && response && typeof response === 'string' && response.length > 20) {
+        paymentSessionId = response;
+      }
+      
+      console.log("🔑 Extracted paymentSessionId:", paymentSessionId);
+      
       if (!paymentSessionId) {
-        console.error("No payment session ID found in response:", response);
-        throw new Error(response?.message || response?.error || 'Failed to create payment session - No session ID returned');
+        console.error("Response structure:", JSON.stringify(response, null, 2));
+        throw new Error(response?.message || response?.error || 'Payment session ID not found in response');
       }
       
       toast.success('Order created! Redirecting to payment...');
       
-      const Cashfree = await loadCashfreeSDK(); 
+      // Load and initialize Cashfree
+      const Cashfree = await loadCashfreeSDK();
       const cashfree = new Cashfree({
         mode: process.env.NEXT_PUBLIC_CASHFREE_MODE === 'production' ? 'production' : 'sandbox',
       });
       
-      // Open payment checkout
+      // Open checkout
       const paymentResult = await cashfree.checkout({
         paymentSessionId: paymentSessionId,
         redirectTarget: "_self"
       });
       
-      console.log("Payment checkout initiated:", paymentResult);
+      console.log("Payment checkout result:", paymentResult);
       
+      // Store payment info for reference
       const orderInfo = {
         orderId: orderId,
         paymentSessionId: paymentSessionId,
@@ -342,25 +283,20 @@ const OrderSummary = () => {
       
     } catch (error) {
       toast.dismiss(loadingToast);
-      console.error('Payment error details:', error);
-      setApiError(error.message);
-      setDebugInfo({ type: 'error', error: error.message, fullError: error });
+      console.error('❌ Payment error:', error);
       
-      // Show more specific error message
       let errorMessage = 'Payment failed. Please try again.';
-      if (error.message.includes('customer id') || error.message.includes('customer_id')) {
-        errorMessage = 'Invalid customer ID. Please ensure you are logged in properly.';
-      } else if (error.message.includes('API')) {
-        errorMessage = 'Payment service error. Please try again later.';
-      } else if (error.message.includes('session')) {
-        errorMessage = 'Failed to create payment session. Please try again.';
+      if (error.message?.includes('business_type_id')) {
+        errorMessage = 'Business type is required. Please select your business type.';
+      } else if (error.message?.includes('customer')) {
+        errorMessage = 'Customer validation failed. Please check your details.';
+      } else if (error.message?.includes('session')) {
+        errorMessage = 'Unable to create payment session. Please try again.';
       } else if (error.message) {
         errorMessage = error.message;
       }
       
-      toast.error(errorMessage, {
-        duration: 5000,
-      });
+      toast.error(errorMessage, { duration: 5000 });
     } finally {
       setIsProcessing(false);
     }
@@ -370,7 +306,7 @@ const OrderSummary = () => {
     return (
       <>
         <Navbar />
-        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#f0f4ff] to-[#e8eef9]">
+        <div className="min-h-screen flex items-center justify-center">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500 mx-auto mb-4"></div>
             <p className="text-gray-600">Loading order details...</p>
@@ -387,6 +323,7 @@ const OrderSummary = () => {
 
       <div className="container mx-auto px-4 py-8 max-w-7xl">
         <div className="grid lg:grid-cols-3 gap-8">
+          {/* Left Column - Order Details */}
           <div className="lg:col-span-2 space-y-6">
             <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
               <div className="bg-gradient-to-r from-[#2d236b] to-[#5b5bd6] px-6 py-4">
@@ -425,11 +362,7 @@ const OrderSummary = () => {
                     <FaUser className="text-[#5b5bd6]" />
                     Customer Details <span className="text-red-500 text-sm">*Required</span>
                   </h3>
-                  {loggedInUser && (
-                    <div className="mb-3 p-2 bg-green-50 rounded-lg text-xs text-green-700">
-                      ✓ Logged in as user ID: {loggedInUser.id}
-                    </div>
-                  )}
+                  
                   <div className="space-y-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -471,6 +404,7 @@ const OrderSummary = () => {
                   </div>
                 </div>
 
+                {/* Business Details Section */}
                 <div className="mt-6">
                   <button
                     onClick={() => setShowOptional(!showOptional)}
@@ -478,7 +412,7 @@ const OrderSummary = () => {
                   >
                     <span className="font-semibold text-gray-700 flex items-center gap-2">
                       <FaBuilding className="text-[#5b5bd6]" />
-                      Add Business Details (Optional)
+                      Add Business Details
                     </span>
                     <span className="text-[#5b5bd6]">{showOptional ? "−" : "+"}</span>
                   </button>
@@ -497,6 +431,29 @@ const OrderSummary = () => {
                           className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#5b5bd6] focus:border-transparent outline-none transition-all"
                         />
                       </div>
+                      
+                      {/* Business Type Dropdown */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Business Type {companyName && <span className="text-red-500">*</span>}
+                        </label>
+                        <select
+                          value={businessTypeId}
+                          onChange={(e) => setBusinessTypeId(e.target.value)}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#5b5bd6] focus:border-transparent outline-none transition-all bg-white"
+                        >
+                          <option value="">Select Business Type</option>
+                          {businessTypes.map((type) => (
+                            <option key={type.id} value={type.id}>
+                              {type.name}
+                            </option>
+                          ))}
+                        </select>
+                        {companyName && !businessTypeId && (
+                          <p className="text-red-500 text-xs mt-1">Please select business type</p>
+                        )}
+                      </div>
+                      
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
                           GST Number
@@ -509,6 +466,7 @@ const OrderSummary = () => {
                           className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#5b5bd6] focus:border-transparent outline-none transition-all"
                         />
                       </div>
+                      
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
                           Billing Address
@@ -528,6 +486,7 @@ const OrderSummary = () => {
             </div>
           </div>
 
+          {/* Right Column - Payment Summary */}
           <div className="lg:col-span-1">
             <div className="bg-white rounded-2xl shadow-lg sticky top-24">
               <div className="p-6 border-b border-gray-100">
@@ -538,77 +497,49 @@ const OrderSummary = () => {
               </div>
               
               <div className="p-6 space-y-4">
-                <div className="space-y-3">
+                <div className="flex justify-between">
+                  <span className="text-gray-600">{selectedPlan.name}</span>
+                  <span className="font-semibold">₹{selectedPlan.price}</span>
+                </div>
+                
+                <div className="flex justify-between">
+                  <span className="text-gray-600">GST (18%)</span>
+                  <span className="font-semibold">₹{calculateGST().toFixed(2)}</span>
+                </div>
+                
+                <div className="border-t pt-3 mt-3">
                   <div className="flex justify-between items-center">
-                    <span className="text-gray-600">{selectedPlan.name}</span>
-                    <span className="font-semibold text-gray-800">₹{selectedPlan.price}</span>
-                  </div>
-                  
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-600">GST (18%)</span>
-                    <span className="font-semibold text-gray-800">₹{calculateGST().toFixed(2)}</span>
-                  </div>
-                  
-                  <div className="flex justify-between items-center border-t border-dashed border-gray-200 pt-3 mt-3">
                     <span className="text-lg font-bold text-gray-800">Total Amount</span>
-                    <div className="text-right">
-                      <span className="text-2xl font-bold text-[#5b5bd6]">₹{calculateTotal().toFixed(2)}</span>
-                      <p className="text-xs text-gray-500 mt-1">Inclusive of all taxes</p>
-                    </div>
+                    <span className="text-2xl font-bold text-[#5b5bd6]">₹{calculateTotal().toFixed(2)}</span>
                   </div>
+                  <p className="text-xs text-gray-500 mt-1 text-right">Inclusive of all taxes</p>
                 </div>
 
-                {(apiError || storeError) && (
-                  <div className="mt-2 p-3 bg-red-50 rounded-lg">
-                    <p className="text-xs text-red-600 text-center font-medium">Error: {apiError || storeError}</p>
-                    <p className="text-xs text-red-500 text-center mt-1">Please try again or contact support</p>
-                  </div>
-                )}
-
-                {debugInfo && process.env.NODE_ENV === 'development' && (
-                  <div className="mt-2 p-2 bg-gray-100 rounded-lg text-xs overflow-auto max-h-60">
-                    <p className="font-mono text-gray-600 font-bold mb-1">Debug Info:</p>
-                    <pre className="font-mono text-gray-600 whitespace-pre-wrap">
-                      {JSON.stringify(debugInfo, null, 2)}
-                    </pre>
+                {storeError && (
+                  <div className="p-3 bg-red-50 rounded-lg">
+                    <p className="text-xs text-red-600 text-center">{storeError}</p>
                   </div>
                 )}
 
                 <button
                   onClick={handlePayment}
                   disabled={isProcessing || storeLoading}
-                  className={`w-full mt-6 py-4 bg-gradient-to-r from-[#5b5bd6] to-[#3b82f6] text-white font-bold rounded-xl hover:shadow-xl hover:scale-105 transition-all duration-300 transform ${
+                  className={`w-full mt-6 py-4 bg-gradient-to-r from-[#5b5bd6] to-[#3b82f6] text-white font-bold rounded-xl hover:shadow-xl hover:scale-105 transition-all duration-300 ${
                     (isProcessing || storeLoading) ? 'opacity-50 cursor-not-allowed' : ''
                   }`}
                 >
-                  {(isProcessing || storeLoading) ? (
+                  {isProcessing || storeLoading ? (
                     <span className="flex items-center justify-center gap-2">
-                      <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                      </svg>
-                      {storeLoading ? 'Creating Order...' : 'Processing Payment...'}
+                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                      {storeLoading ? 'Creating Order...' : 'Processing...'}
                     </span>
                   ) : (
                     `Pay ₹${calculateTotal().toFixed(2)} Securely`
                   )}
                 </button>
 
-                <div className="mt-6 pt-4 border-t border-gray-100">
-                  <p className="text-xs text-gray-500 text-center mb-3">Secure Payments via Cashfree</p>
-                  <div className="flex justify-center gap-3 flex-wrap">
-                    {["💳 Credit Card", "🏦 Debit Card", "📱 UPI", "🏦 Net Banking", "💰 Wallet"].map((method, idx) => (
-                      <span key={idx} className="text-xs opacity-75 px-2 py-1 bg-gray-50 rounded-full">
-                        {method}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="mt-4 p-3 bg-green-50 rounded-lg text-center">
-                  <p className="text-xs text-green-700">
-                    🔒 100% Secure Transaction • Powered by Cashfree • 7-Day Money Back Guarantee
-                  </p>
+                <div className="mt-4 text-center">
+                  <p className="text-xs text-gray-500">🔒 Secured by Cashfree</p>
                 </div>
               </div>
             </div>
