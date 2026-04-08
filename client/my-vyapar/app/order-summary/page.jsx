@@ -24,6 +24,7 @@ const OrderSummary = () => {
   const [loggedInUser, setLoggedInUser] = useState(null);
   const [businessTypes, setBusinessTypes] = useState([]);
   const [loadingBusinessTypes, setLoadingBusinessTypes] = useState(false);
+  const [customerId, setCustomerId] = useState(null);
 
   // Fetch business types from backend
   useEffect(() => {
@@ -82,6 +83,8 @@ const OrderSummary = () => {
           if (user.email) setCustomerEmail(user.email);
           if (user.phone) setCustomerPhone(user.phone);
           if (user.mobile) setCustomerPhone(user.mobile);
+          if (user.customer_id) setCustomerId(user.customer_id);
+          if (user.id) setCustomerId(user.id);
           
           console.log("✅ Logged-in user loaded:", user);
         } catch (e) {
@@ -198,17 +201,11 @@ const OrderSummary = () => {
       return;
     }
 
-    // Get user ID
-    let userId = loggedInUser?.id || 
-                 (() => {
-                   try {
-                     const userStr = localStorage.getItem('user');
-                     return userStr ? JSON.parse(userStr).id : null;
-                   } catch(e) { return null; }
-                 })();
-
-    if (!userId) {
-      toast.error("Please login again");
+    // Get customer ID
+    let customerIdValue = customerId || loggedInUser?.customer_id || loggedInUser?.id;
+    
+    if (!customerIdValue) {
+      toast.error("Customer not found. Please login again.");
       localStorage.setItem('redirectAfterLogin', '/order-summary');
       setTimeout(() => router.push('/login'), 2000);
       return;
@@ -219,7 +216,6 @@ const OrderSummary = () => {
 
     try {
       const totalAmount = calculateTotal();
-      const gstAmount = calculateGST();
       const basePrice = Number(selectedPlan.price);
       
       // Generate order ID
@@ -230,49 +226,48 @@ const OrderSummary = () => {
       // Get selected business type name
       const selectedBusinessType = businessTypes.find(bt => String(bt.id) === String(businessTypeId));
       
-      // Clean phone number (remove any non-digit characters)
+      // Clean phone number
       const cleanCustomerPhone = customerPhone.replace(/\D/g, '');
       
-      // Create payload - Make sure ALL required fields are present
+      // IMPORTANT: customer_id needs to be string for Cashfree, but your backend expects number
+      // Send as string to satisfy Cashfree, backend should handle conversion
       const payload = {
-        // Customer details - THESE ARE CRITICAL FOR CASHFREE
-        customer_id: String(userId),
-        customer_name: customerName.trim().substring(0, 50),
-        customer_email: customerEmail.trim().toLowerCase(),
-        customer_phone: cleanCustomerPhone, // Must be 10 digits
-        customer_phone_code: "+91", // Add country code for India
+        // Required fields
+        amount: Number(totalAmount.toFixed(2)),
+        plan_id: selectedPlan.id,
+        business_type_id: parseInt(businessTypeId),
+        customer_id: String(customerIdValue), // Send as STRING for Cashfree
         
-        // Order details
-        order_id: orderId,
-        amount: Number(totalAmount.toFixed(2)), // Use order_amount for Cashfree
-        order_currency: "INR",
-        order_note: `${selectedPlan.name} - ${selectedPlan.billingCycle} subscription`,
+        // Additional fields
+        // order_id: orderId,
+        // customer_name: customerName.trim().substring(0, 50),
+        // customer_email: customerEmail.trim().toLowerCase(),
+        customer_phone: cleanCustomerPhone,
         
         // Plan details
-        plan_id: selectedPlan.id,
-        plan_name: selectedPlan.name,
-        plan_billing_cycle: selectedPlan.billingCycle,
-        plan_price: basePrice,
-        plan_original_price: selectedPlan.originalPrice || null,
-        plan_discount: selectedPlan.discount || 0,
+        // plan_name: selectedPlan.name,
+        // plan_billing_cycle: selectedPlan.billingCycle,
+        // plan_price: basePrice,
+        // plan_original_price: selectedPlan.originalPrice || null,
+        // plan_discount: selectedPlan.discount || 0,
         
         // Tax details
-        gst_rate: selectedPlan.gst || 18,
-        gst_amount: Number(gstAmount.toFixed(2)),
+        // gst_rate: selectedPlan.gst || 18,
+        // gst_amount: Number(calculateGST().toFixed(2)),
         
         // Business details
-        company_name: companyName || null,
-        gst_number: gstNumber || null,
-        billing_address: billingAddress || null,
-        business_type_id: businessTypeId,
-        business_type_name: selectedBusinessType?.name || null,
+        // company_name: companyName || null,
+        // gst_number: gstNumber || null,
+        // billing_address: billingAddress || null,
+        // business_type_name: selectedBusinessType?.name || null,
         
         // Return URLs
-        return_url: `${window.location.origin}/payment-status`,
-        notify_url: `${window.location.origin}/api/cashfree/webhook`
+        // return_url: `${window.location.origin}/payment-status`,
+        // notify_url: `${window.location.origin}/api/cashfree/webhook`
       };
 
       console.log("📤 Sending payload to backend:", JSON.stringify(payload, null, 2));
+      console.log("📞 Customer ID being sent (as string):", String(customerIdValue));
       console.log("📞 Customer phone being sent:", cleanCustomerPhone);
       
       // Call the store action
@@ -327,14 +322,14 @@ const OrderSummary = () => {
       
       // Store payment info for reference
       const orderInfo = {
-        orderId: orderId,
-        paymentSessionId: paymentSessionId,
-        customerEmail: customerEmail,
-        customerPhone: cleanCustomerPhone,
+        // orderId: orderId,
+        // paymentSessionId: paymentSessionId,
+        // customerEmail: customerEmail,
+        // customerPhone: cleanCustomerPhone,
         totalAmount: totalAmount,
         planName: selectedPlan.name,
-        userId: userId,
-        timestamp: Date.now()
+        customerId: customerIdValue,
+        // timestamp: Date.now()
       };
       localStorage.setItem('pendingPayment', JSON.stringify(orderInfo));
       
@@ -343,14 +338,14 @@ const OrderSummary = () => {
       console.error('❌ Payment error:', error);
       
       let errorMessage = 'Payment failed. Please try again.';
-      if (error.message?.includes('customer_phone')) {
-        errorMessage = 'Phone number is required. Please enter a valid 10-digit mobile number.';
-      } else if (error.message?.includes('customer')) {
-        errorMessage = 'Invalid customer details. Please check your information.';
-      } else if (error.message?.includes('amount')) {
-        errorMessage = 'Invalid amount. Please try again.';
+      if (error.message?.includes('customer_id')) {
+        errorMessage = 'Invalid customer ID format. Please try again.';
+      } else if (error.message?.includes('plan_id')) {
+        errorMessage = 'Invalid plan selected. Please try again.';
       } else if (error.message?.includes('business_type_id')) {
         errorMessage = 'Business type is required. Please select your business type.';
+      } else if (error.message?.includes('amount')) {
+        errorMessage = 'Invalid amount. Please try again.';
       } else if (error.message) {
         errorMessage = error.message;
       }
