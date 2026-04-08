@@ -2,23 +2,30 @@
 import React, { useState, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { motion } from 'framer-motion'
-import { useBrands, useCategories, useUnits } from '../../../hooks/useAPI'
 import { useAuthStore } from '../../../store/authStore'
+import { productsAPI } from '../../../services/productsService'
 import Input from '../../common/Input/Input'
 import Button from '../../common/Button/Button'
 import Select from '../../common/Select/Select'
 import toast from 'react-hot-toast'
-import { FiUpload, FiX, FiImage } from 'react-icons/fi'
+import { FiUpload, FiX, FiImage, FiPlus, FiTrash2 } from 'react-icons/fi'
 
 const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
   const { user } = useAuthStore()
-  const { brands, fetchBrands } = useBrands()
-  const { categories, fetchCategories } = useCategories()
-  const { units, fetchUnits } = useUnits()
-
-  // State for image upload
-  const [selectedImage, setSelectedImage] = useState(null)
-  const [imagePreview, setImagePreview] = useState(null)
+  
+  // State for create page data
+  const [createPageData, setCreatePageData] = useState({
+    brands: [],
+    categories: [],
+    units: [],
+    inputPermissions: []
+  })
+  const [loadingData, setLoadingData] = useState(false)
+  
+  // State for images and variants
+  const [selectedImages, setSelectedImages] = useState([])
+  const [imagePreviews, setImagePreviews] = useState([])
+  const [variants, setVariants] = useState([])
 
   const {
     register,
@@ -43,101 +50,185 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
       description: '',
       is_active: true,
       created_by: user?.id || '',
-      image: '',
+      // Additional fields
+      conversion_factor: '',
+      minimum_stock_quantity: '',
+      maximum_stock_quantity: '',
+      current_stock: '',
+      mrp: '',
+      wholesale_price: '',
+      gst_hsn_code: '',
+      discount_amount: '',
+      cess_percentage: '',
+      attributes: '',
+      medicine_type: '',
+      other_medicine_type: '',
+      expiry_date: '',
+      batch_number: '',
+      manufacturer_name: '',
+      prescription_required: false,
+      schedule_type: '',
+      salt_composition: '',
+      perishable: false,
+      organic_certified: false,
+      harvest_date: '',
+      storage_instructions: '',
+      short_description: '',
+      is_featured: false,
+      is_returnable: false,
+      is_refundable: false,
+      warranty_months: '',
+      warehouse_location: '',
+      supplier_id: '',
+      updated_by: user?.id || '',
     }
   })
 
+  // Fetch create page data on mount
   useEffect(() => {
-    // Fetch dropdown data
-    fetchBrands()
-    fetchCategories()
-    fetchUnits()
-  }, [])
+    if (user?.id) {
+      fetchCreatePageData()
+    }
+  }, [user?.id])
 
-  useEffect(() => {
-    if (product) {
-      console.log(' ProductForm - Product prop changed:', product)
-      console.log(' ProductForm - Brands:', brands)
-      console.log(' ProductForm - Categories:', categories)
-      console.log(' ProductForm - Units:', units)
+  // Fetch create page data
+  const fetchCreatePageData = async () => {
+    setLoadingData(true)
+    try {
+      const response = await productsAPI.getCreatePage(user.id)
+      const data = response.data
       
-      // Wait for dropdown data to be loaded before setting values
-      if (brands && brands.length > 0 && categories && categories.length > 0 && units && units.length > 0) {
-        console.log(' ProductForm - Setting form values...')
-        
-        // Set form values for editing using setValue instead of reset
-        setValue('name', product.name || '')
-        setValue('sku', product.sku || '')
-        setValue('brand_id', product.brand_id || '')
-        setValue('category_id', product.category_id || '')
-        setValue('unit_amount', product.unit_amount || '')
-        setValue('unit_id', product.unit_id || '')
-        setValue('selling_price', product.selling_price || '')
-        setValue('purchase_price', product.purchase_price || '')
-        setValue('gst_percentage', product.gst_percentage || '')
-        setValue('discount_percentage', product.discount_percentage || '')
-        setValue('description', product.description || '')
-        setValue('is_active', product.is_active !== undefined ? product.is_active : true)
-        
-        console.log(' ProductForm - Form values set successfully')
-      } else {
-        console.log(' ProductForm - Waiting for dropdown data...')
-        // Set text fields immediately, but wait for dropdowns
-        setValue('name', product.name || '')
-        setValue('sku', product.sku || '')
-        setValue('unit_amount', product.unit_amount || '')
-        setValue('selling_price', product.selling_price || '')
-        setValue('purchase_price', product.purchase_price || '')
-        setValue('gst_percentage', product.gst_percentage || '')
-        setValue('discount_percentage', product.discount_percentage || '')
-        setValue('description', product.description || '')
-        setValue('is_active', product.is_active !== undefined ? product.is_active : true)
+      setCreatePageData({
+        brands: data.brand || [],
+        categories: data.category || [],
+        units: data.unit || [],
+        inputPermissions: data.inputPermission || []
+      })
+      
+      console.log('Create page data loaded:', data)
+    } catch (error) {
+      console.error('Failed to fetch create page data:', error)
+      toast.error('Failed to load form data')
+    } finally {
+      setLoadingData(false)
+    }
+  }
+
+  // Set form values when editing
+  useEffect(() => {
+    if (product && createPageData.brands.length > 0) {
+      // Set all form values for editing
+      Object.keys(product).forEach(key => {
+        if (key !== 'images' && key !== 'variants') {
+          setValue(key, product[key] || '')
+        }
+      })
+      
+      // Handle images
+      if (product.images && Array.isArray(product.images)) {
+        setSelectedImages(product.images)
+        setImagePreviews(product.images.map(img => img.url || img))
+      }
+      
+      // Handle variants
+      if (product.variants && Array.isArray(product.variants)) {
+        setVariants(product.variants)
       }
     }
-  }, [product, setValue, brands, categories, units])
+  }, [product, createPageData.brands, setValue])
+
+  // Check if user has permission for a specific field
+  const hasPermission = (fieldSlug) => {
+    return createPageData.inputPermissions.some(permission => 
+      permission.input_permission?.slug === fieldSlug
+    )
+  }
+
+  // Dynamic field rendering based on permissions
+  const renderField = (fieldSlug, component) => {
+    if (!hasPermission(fieldSlug)) return null
+    return component
+  }
 
   // Image handling functions
   const handleImageChange = (e) => {
-    const file = e.target.files[0]
-    if (file) {
-      // Validate file size (10MB limit)
+    const files = Array.from(e.target.files)
+    if (files.length === 0) return
+
+    // Validate file size and type
+    const validFiles = files.filter(file => {
       if (file.size > 10 * 1024 * 1024) {
-        toast.error('Image size must be less than 10MB')
-        return
+        toast.error(`Image ${file.name} size must be less than 10MB`)
+        return false
       }
-
-      // Validate file type
       if (!file.type.startsWith('image/')) {
-        toast.error('Please select an image file')
-        return
+        toast.error(`File ${file.name} must be an image`)
+        return false
       }
+      return true
+    })
 
-      setSelectedImage(file)
+    if (validFiles.length === 0) return
+
+    const newImages = [...selectedImages, ...validFiles]
+    setSelectedImages(newImages)
+
+    // Create previews for new files
+    validFiles.forEach(file => {
       const reader = new FileReader()
       reader.onloadend = () => {
-        setImagePreview(reader.result)
-        setValue('image', file)
+        setImagePreviews(prev => [...prev, reader.result])
       }
       reader.readAsDataURL(file)
-    }
+    })
   }
 
-  const removeImage = () => {
-    setSelectedImage(null)
-    setImagePreview(null)
-    setValue('image', '')
+  const removeImage = (index) => {
+    setSelectedImages(prev => prev.filter((_, i) => i !== index))
+    setImagePreviews(prev => prev.filter((_, i) => i !== index))
   }
 
+  // Variant handling
+  const addVariant = () => {
+    setVariants(prev => [...prev, { size: '', color: '', material: '', gender: '' }])
+  }
+
+  const updateVariant = (index, field, value) => {
+    setVariants(prev => prev.map((variant, i) => 
+      i === index ? { ...variant, [field]: value } : variant
+    ))
+  }
+
+  const removeVariant = (index) => {
+    setVariants(prev => prev.filter((_, i) => i !== index))
+  }
+
+  // Form submission
   const onFormSubmit = (data) => {
     const productData = {
       ...data,
-      user_id: user.id, // Hidden field - current user ID
+      user_id: user.id,
       created_by: user.id,
-      image: selectedImage, // Include the image file
-      // Convert is_active boolean to integer (1 or 0) for backend compatibility
+      images: selectedImages,
+      variants: variants,
+      // Convert boolean fields to integers for backend
       is_active: data.is_active ? 1 : 0,
+      prescription_required: data.prescription_required ? 1 : 0,
+      perishable: data.perishable ? 1 : 0,
+      organic_certified: data.organic_certified ? 1 : 0,
+      is_featured: data.is_featured ? 1 : 0,
+      is_returnable: data.is_returnable ? 1 : 0,
+      is_refundable: data.is_refundable ? 1 : 0,
     }
     onSubmit(productData)
+  }
+
+  if (loadingData) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="text-gray-600 dark:text-gray-400">Loading form data...</div>
+      </div>
+    )
   }
 
   return (
@@ -152,49 +243,43 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
       <input type="hidden" {...register('created_by')} value={user.id} />
 
       {/* Image Upload Section */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            Product Image
-          </label>
-          <div className="flex items-center space-x-4">
-            <div className="flex-1">
-              <div className="relative border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-4 hover:border-primary-500 transition-colors">
-                <input
-                  type="file"
-                  accept="image/*"
-                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                  onChange={handleImageChange}
-                />
-                <div className="text-center">
-                  {imagePreview ? (
-                    <div className="relative">
-                      <img 
-                        src={imagePreview} 
-                        alt="Product preview" 
-                        className="mx-auto h-32 w-32 object-cover rounded-lg"
-                      />
-                      <button
-                        type="button"
-                        onClick={removeImage}
-                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
-                      >
-                        <FiX className="w-3 h-3" />
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="flex flex-col items-center">
-                      <FiImage className="w-12 h-12 text-gray-400 mb-2" />
-                      <p className="text-sm text-gray-600 dark:text-gray-400">
-                        Click to upload product image
-                      </p>
-                      <p className="text-xs text-gray-500 dark:text-gray-500">
-                        PNG, JPG, GIF up to 10MB
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </div>
+      <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm">
+        <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">Product Images</h3>
+        
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {imagePreviews.map((preview, index) => (
+            <div key={index} className="relative">
+              <img 
+                src={preview} 
+                alt={`Product image ${index + 1}`} 
+                className="w-full h-32 object-cover rounded-lg"
+              />
+              <button
+                type="button"
+                onClick={() => removeImage(index)}
+                className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+              >
+                <FiX className="w-3 h-3" />
+              </button>
+            </div>
+          ))}
+          
+          <div className="relative border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-4 hover:border-primary-500 transition-colors">
+            <input
+              type="file"
+              accept="image/*"
+              multiple
+              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+              onChange={handleImageChange}
+            />
+            <div className="text-center">
+              <FiUpload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                Click to upload images
+              </p>
+              <p className="text-xs text-gray-500 dark:text-gray-500">
+                PNG, JPG, GIF up to 10MB each
+              </p>
             </div>
           </div>
         </div>
@@ -221,7 +306,7 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
           label="Brand"
           options={[
             { value: '', label: 'Select Brand' },
-            ...(brands?.map(brand => ({
+            ...(createPageData.brands?.map(brand => ({
               value: brand.id,
               label: brand.name,
             })) || [])
@@ -234,7 +319,7 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
           label="Category"
           options={[
             { value: '', label: 'Select Category' },
-            ...(categories?.map(category => ({
+            ...(createPageData.categories?.map(category => ({
               value: category.id,
               label: category.name,
             })) || [])
@@ -261,7 +346,7 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
           label="Unit"
           options={[
             { value: '', label: 'Select Unit' },
-            ...(units?.map(unit => ({
+            ...(createPageData.units?.map(unit => ({
               value: unit.id,
               label: `${unit.name} (${unit.code})`,
             })) || [])
@@ -343,6 +428,449 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
           </span>
         </label>
       </div>
+
+      {/* Dynamic Fields Based on Permissions */}
+      
+      {/* Product Attributes */}
+      {hasPermission('attributes') && (
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm">
+          <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">Product Attributes</h3>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {renderField('attributes', (
+              <Input
+                label="Attributes"
+                placeholder="Enter product attributes"
+                error={errors.attributes?.message}
+                {...register('attributes')}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Stock Information */}
+      {(hasPermission('conversion_factor') || hasPermission('minimum_stock_quantity') || hasPermission('maximum_stock_quantity') || hasPermission('current_stock') || hasPermission('warehouse_location')) && (
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm">
+          <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">Stock Information</h3>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {renderField('conversion_factor', (
+              <Input
+                label="Conversion Factor"
+                type="number"
+                step="0.01"
+                placeholder="Enter conversion factor"
+                error={errors.conversion_factor?.message}
+                {...register('conversion_factor', { valueAsNumber: true })}
+              />
+            ))}
+
+            {renderField('minimum_stock_quantity', (
+              <Input
+                label="Minimum Stock Quantity"
+                type="number"
+                step="1"
+                placeholder="Enter minimum stock quantity"
+                error={errors.minimum_stock_quantity?.message}
+                {...register('minimum_stock_quantity', { valueAsNumber: true })}
+              />
+            ))}
+
+            {renderField('maximum_stock_quantity', (
+              <Input
+                label="Maximum Stock Quantity"
+                type="number"
+                step="1"
+                placeholder="Enter maximum stock quantity"
+                error={errors.maximum_stock_quantity?.message}
+                {...register('maximum_stock_quantity', { valueAsNumber: true })}
+              />
+            ))}
+
+            {renderField('current_stock', (
+              <Input
+                label="Current Stock"
+                type="number"
+                step="1"
+                placeholder="Enter current stock"
+                error={errors.current_stock?.message}
+                {...register('current_stock', { valueAsNumber: true })}
+              />
+            ))}
+
+            {renderField('warehouse_location', (
+              <Input
+                label="Warehouse Location"
+                placeholder="Enter warehouse location"
+                error={errors.warehouse_location?.message}
+                {...register('warehouse_location')}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Additional Pricing */}
+      {(hasPermission('mrp') || hasPermission('wholesale_price') || hasPermission('discount_amount') || hasPermission('cess_percentage')) && (
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm">
+          <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">Additional Pricing</h3>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {renderField('mrp', (
+              <Input
+                label="MRP (Maximum Retail Price)"
+                type="number"
+                step="0.01"
+                placeholder="Enter MRP"
+                error={errors.mrp?.message}
+                {...register('mrp', { valueAsNumber: true })}
+              />
+            ))}
+
+            {renderField('wholesale_price', (
+              <Input
+                label="Wholesale Price"
+                type="number"
+                step="0.01"
+                placeholder="Enter wholesale price"
+                error={errors.wholesale_price?.message}
+                {...register('wholesale_price', { valueAsNumber: true })}
+              />
+            ))}
+
+            {renderField('discount_amount', (
+              <Input
+                label="Discount Amount"
+                type="number"
+                step="0.01"
+                placeholder="Enter discount amount"
+                error={errors.discount_amount?.message}
+                {...register('discount_amount', { valueAsNumber: true })}
+              />
+            ))}
+
+            {renderField('cess_percentage', (
+              <Input
+                label="CESS Percentage"
+                type="number"
+                step="0.01"
+                placeholder="Enter CESS percentage"
+                error={errors.cess_percentage?.message}
+                {...register('cess_percentage', { valueAsNumber: true })}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Tax Information */}
+      {hasPermission('gst-hsn-code') && (
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm">
+          <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">Tax Information</h3>
+          
+          <Input
+            label="GST HSN Code"
+            placeholder="Enter GST HSN code"
+            error={errors.gst_hsn_code?.message}
+            {...register('gst_hsn_code')}
+          />
+        </div>
+      )}
+
+      {/* Medicine Specific Fields */}
+      {(hasPermission('medicine-type') || hasPermission('other-medicine-type') || hasPermission('expiry-date') || hasPermission('batch-number') || hasPermission('manufacturer-name') || hasPermission('prescription-required') || hasPermission('schedule-type') || hasPermission('salt-composition')) && (
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm">
+          <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">Medicine Information</h3>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {renderField('medicine_type', (
+              <Input
+                label="Medicine Type"
+                placeholder="Enter medicine type"
+                error={errors.medicine_type?.message}
+                {...register('medicine_type')}
+              />
+            ))}
+
+            {renderField('other_medicine_type', (
+              <Input
+                label="Other Medicine Type"
+                placeholder="Enter other medicine type"
+                error={errors.other_medicine_type?.message}
+                {...register('other_medicine_type')}
+              />
+            ))}
+
+            {renderField('expiry_date', (
+              <Input
+                label="Expiry Date"
+                type="date"
+                error={errors.expiry_date?.message}
+                {...register('expiry_date')}
+              />
+            ))}
+
+            {renderField('batch_number', (
+              <Input
+                label="Batch Number"
+                placeholder="Enter batch number"
+                error={errors.batch_number?.message}
+                {...register('batch_number')}
+              />
+            ))}
+
+            {renderField('manufacturer_name', (
+              <Input
+                label="Manufacturer Name"
+                placeholder="Enter manufacturer name"
+                error={errors.manufacturer_name?.message}
+                {...register('manufacturer_name')}
+              />
+            ))}
+
+            {renderField('prescription_required', (
+              <div className="flex items-center">
+                <input
+                  type="checkbox"
+                  className="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50 mr-2"
+                  {...register('prescription_required')}
+                />
+                <label className="text-sm text-gray-600 dark:text-gray-400">
+                  Prescription Required
+                </label>
+              </div>
+            ))}
+
+            {renderField('schedule_type', (
+              <Input
+                label="Schedule Type"
+                placeholder="Enter schedule type"
+                error={errors.schedule_type?.message}
+                {...register('schedule_type')}
+              />
+            ))}
+
+            {renderField('salt_composition', (
+              <Input
+                label="Salt Composition"
+                placeholder="Enter salt composition"
+                error={errors.salt_composition?.message}
+                {...register('salt_composition')}
+              />
+            ))}
+
+            {renderField('warranty_months', (
+              <Input
+                label="Warranty Months"
+                type="number"
+                placeholder="Enter warranty months"
+                error={errors.warranty_months?.message}
+                {...register('warranty_months', { valueAsNumber: true })}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Agricultural/Perishable Fields */}
+      {(hasPermission('perishable') || hasPermission('organic-certified') || hasPermission('harvest-date') || hasPermission('storage-instructions')) && (
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm">
+          <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">Agricultural Information</h3>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {renderField('perishable', (
+              <div className="flex items-center">
+                <input
+                  type="checkbox"
+                  className="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50 mr-2"
+                  {...register('perishable')}
+                />
+                <label className="text-sm text-gray-600 dark:text-gray-400">
+                  Perishable
+                </label>
+              </div>
+            ))}
+
+            {renderField('organic_certified', (
+              <div className="flex items-center">
+                <input
+                  type="checkbox"
+                  className="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50 mr-2"
+                  {...register('organic_certified')}
+                />
+                <label className="text-sm text-gray-600 dark:text-gray-400">
+                  Organic Certified
+                </label>
+              </div>
+            ))}
+
+            {renderField('harvest_date', (
+              <Input
+                label="Harvest Date"
+                type="date"
+                error={errors.harvest_date?.message}
+                {...register('harvest_date')}
+              />
+            ))}
+
+            {renderField('storage_instructions', (
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Storage Instructions
+                </label>
+                <textarea
+                  rows={3}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                  placeholder="Enter storage instructions"
+                  {...register('storage_instructions')}
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Variants Section */}
+      {(hasPermission('size') || hasPermission('color') || hasPermission('material') || hasPermission('gender')) && (
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Product Variants</h3>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={addVariant}
+              className="flex items-center"
+            >
+              <FiPlus className="w-4 h-4 mr-2" />
+              Add Variant
+            </Button>
+          </div>
+          
+          <div className="space-y-4">
+            {variants.map((variant, index) => (
+              <div key={index} className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+                {renderField('size', (
+                  <Input
+                    label="Size"
+                    placeholder="Enter size"
+                    value={variant.size}
+                    onChange={(e) => updateVariant(index, 'size', e.target.value)}
+                  />
+                ))}
+                
+                {renderField('color', (
+                  <Input
+                    label="Color"
+                    placeholder="Enter color"
+                    value={variant.color}
+                    onChange={(e) => updateVariant(index, 'color', e.target.value)}
+                  />
+                ))}
+                
+                {renderField('material', (
+                  <Input
+                    label="Material"
+                    placeholder="Enter material"
+                    value={variant.material}
+                    onChange={(e) => updateVariant(index, 'material', e.target.value)}
+                  />
+                ))}
+                
+                {renderField('gender', (
+                  <Select
+                    label="Gender"
+                    options={[
+                      { value: '', label: 'Select Gender' },
+                      { value: 'male', label: 'Male' },
+                      { value: 'female', label: 'Female' },
+                      { value: 'unisex', label: 'Unisex' },
+                    ]}
+                    value={variant.gender}
+                    onChange={(e) => updateVariant(index, 'gender', e.target.value)}
+                  />
+                ))}
+                
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => removeVariant(index)}
+                  className="text-red-600 hover:text-red-700"
+                >
+                  <FiTrash2 className="w-4 h-4" />
+                </Button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Additional Description */}
+      {hasPermission('short_description') && (
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm">
+          <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">Additional Description</h3>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Short Description
+            </label>
+            <textarea
+              rows={2}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+              placeholder="Enter short description"
+              {...register('short_description')}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Additional Options */}
+      {(hasPermission('is_featured') || hasPermission('is_returnable') || hasPermission('is_refundable')) && (
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm">
+          <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">Additional Options</h3>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {renderField('is_featured', (
+              <div className="flex items-center">
+                <input
+                  type="checkbox"
+                  className="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50 mr-2"
+                  {...register('is_featured')}
+                />
+                <label className="text-sm text-gray-600 dark:text-gray-400">
+                  Featured Product
+                </label>
+              </div>
+            ))}
+
+            {renderField('is_returnable', (
+              <div className="flex items-center">
+                <input
+                  type="checkbox"
+                  className="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50 mr-2"
+                  {...register('is_returnable')}
+                />
+                <label className="text-sm text-gray-600 dark:text-gray-400">
+                  Returnable
+                </label>
+              </div>
+            ))}
+
+            {renderField('is_refundable', (
+              <div className="flex items-center">
+                <input
+                  type="checkbox"
+                  className="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50 mr-2"
+                  {...register('is_refundable')}
+                />
+                <label className="text-sm text-gray-600 dark:text-gray-400">
+                  Refundable
+                </label>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="flex justify-end space-x-4">
         <Button
