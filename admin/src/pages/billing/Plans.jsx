@@ -701,7 +701,7 @@ const Plans = () => {
                           initial={{ opacity: 0, x: 20 }}
                           animate={{ opacity: 1, x: 0 }}
                           transition={{ delay: 0.2 }}
-                          className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6"
+                          className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 h-fit"
                         >
                           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
                             Current Plan

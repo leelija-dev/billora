@@ -107,7 +107,128 @@ class CustomerController extends Controller
 //         'user' => $user
 //     ]);
 // }
+public function edit($id){
+    try{
+        if (!Auth::check()) {
+            return response()->json([
+                'status' => false,
+                'message' => 'User not authenticated',
+                'id'=>$id,
+                
+            ]);
+        }
+        $user = Auth::user()->id;
+        if($id != $user){
+            return response()->json([
+                'status' => false,
+                'message' => 'Unauthorized user'
+            ]);
+        }
+        $customer = Customers::findOrFail($id);
+        return response()->json([
+            'status' => true,
+            'message' => 'User Details',
+            'data' => $customer
+        ]);
+    }catch(\Exception $e){
+        return response()->json([
+            'status' => false,
+            'message' => $e->getMessage()
+        ]);
+    }
+}
+public function update(Request $request, $id){
+    $user = Auth::user()->id;
+    if($id != $user){
+        return response()->json([
+            'status' => false,
+            'message' => 'Unauthorized user'
+        ]);
+    }
+    try{
+        $data = $request->validate([
+            'name'          => 'nullable|string',
+            // 'email'         => 'required|email',
+            'phone'         => 'nullable',
+            'company_name'  => 'nullable',
+            'gst_number'    => 'nullable',
+            'address'       => 'nullable',
+            'city'          => 'nullable',
+            'state'         => 'nullable',
+            'country'       => 'nullable',
+            'pincode'       => 'nullable',
+            // 'created_by'    => 'nullable'
 
+        ]);
+        $customer = Customers::findOrFail($id);
+        if(!$customer){
+            return response()->json([
+                'status' => false,
+                'message' => 'User not found'
+            ]);
+        }
+        $customer->update($data);
+        return response()->json([
+            'status' => true,
+            'message' => 'User Updated Successfully',
+            'data' => $customer
+        ]);
+    }catch(\Exception $e){
+        return response()->json([
+            'status' => false,
+            'message' => $e->getMessage()
+        ]);
+    }
+}
+public function updatePassword($id,Request $request)   // update password
+{
+    try {
+        // Check Auth
+        if (!Auth::check()) {
+            return response()->json([
+                'status' => false,
+                'message' => 'User not authenticated'
+            ], 401);
+        }
+        if($id != Auth::user()->id){
+            return response()->json([
+                'status' => false,
+                'message' => 'Unauthorized user'
+            ]);
+        }
+
+        // Validate input
+        $request->validate([
+            'current_password' => 'required',
+            'new_password'     => 'required',
+        ]);
+
+        $user = Auth::user();
+
+        // Check current password
+        if (!Hash::check($request->current_password, $user->password)) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Current password is incorrect'
+            ]);
+        }
+
+        // Update password
+        $user->password = Hash::make($request->new_password);
+        $user->save();
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Password updated successfully'
+        ]);
+
+    } catch (\Exception $e) {
+        return response()->json([
+            'status' => false,
+            'message' => $e->getMessage()
+        ]);
+    }
+}
 public function login(Request $request)  //postman
 {
     $request->validate([

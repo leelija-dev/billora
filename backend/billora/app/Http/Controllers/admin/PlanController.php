@@ -13,7 +13,7 @@ class PlanController extends Controller
 {
     public function index()
     {
-        $data = Plans::with('permissions')->where('is_active', true)->get();
+        $data = Plans::with('permissions','business_types.businessType')->where('is_active', true)->get();
         return response()->json([
             'status' => true,
             'message' => 'Plan List',

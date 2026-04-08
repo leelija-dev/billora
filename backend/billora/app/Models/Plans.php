@@ -50,4 +50,8 @@ class Plans extends Model
             'permission_id'
         );
     }
+    public function business_types()
+    {
+        return $this->hasMany(PlanBusinessType::class , 'plan_id');
+    }
 }
