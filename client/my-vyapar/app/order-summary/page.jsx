@@ -18,21 +18,53 @@ const OrderSummary = () => {
   const [customerName, setCustomerName] = useState("");
   const [customerEmail, setCustomerEmail] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");  
-  const [businessTypeId, setBusinessTypeId] = useState(""); // Add business type
+  const [businessTypeId, setBusinessTypeId] = useState("");
   const [showOptional, setShowOptional] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [loggedInUser, setLoggedInUser] = useState(null);
+  const [businessTypes, setBusinessTypes] = useState([]);
+  const [loadingBusinessTypes, setLoadingBusinessTypes] = useState(false);
 
-  // Business type options (adjust based on your backend requirements)
-  const businessTypes = [
-    { id: "1", name: "Individual / Sole Proprietorship" },
-    { id: "2", name: "Partnership" },
-    { id: "3", name: "Private Limited Company" },
-    { id: "4", name: "Public Limited Company" },
-    { id: "5", name: "LLP (Limited Liability Partnership)" },
-    { id: "6", name: "Trust / NGO / Society" },
-    { id: "7", name: "Others" }
-  ];
+  // Fetch business types from backend
+  useEffect(() => {
+    const fetchBusinessTypes = async () => {
+      try {
+        setLoadingBusinessTypes(true);
+        const token = localStorage.getItem('token') || localStorage.getItem('auth_token');
+        
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/business-types`, {
+          headers: {
+            'Authorization': token ? `Bearer ${token}` : '',
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          if (data.status && data.data) {
+            setBusinessTypes(data.data);
+          } else if (Array.isArray(data)) {
+            setBusinessTypes(data);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching business types:', error);
+        setBusinessTypes([
+          { id: "1", name: "Individual / Sole Proprietorship" },
+          { id: "2", name: "Partnership" },
+          { id: "3", name: "Private Limited Company" },
+          { id: "4", name: "Public Limited Company" },
+          { id: "5", name: "LLP (Limited Liability Partnership)" },
+          { id: "6", name: "Trust / NGO / Society" },
+          { id: "7", name: "Others" }
+        ]);
+      } finally {
+        setLoadingBusinessTypes(false);
+      }
+    };
+    
+    fetchBusinessTypes();
+  }, []);
 
   // Load user data from localStorage/session
   useEffect(() => {
@@ -49,6 +81,7 @@ const OrderSummary = () => {
           if (user.name) setCustomerName(user.name);
           if (user.email) setCustomerEmail(user.email);
           if (user.phone) setCustomerPhone(user.phone);
+          if (user.mobile) setCustomerPhone(user.mobile);
           
           console.log("✅ Logged-in user loaded:", user);
         } catch (e) {
@@ -82,16 +115,24 @@ const OrderSummary = () => {
 
     loadPlanData();
   }, [router]);
+  
+  // Auto set businessTypeId from selected plan
+  useEffect(() => {
+    if (selectedPlan?.businessType?.id) {
+      setBusinessTypeId(String(selectedPlan.businessType.id));
+    }
+  }, [selectedPlan]);
 
   const calculateGST = () => {
     if (!selectedPlan) return 0;
-    const price = parseFloat(selectedPlan.price.replace(/,/g, ''));
-    return (price * 18) / 100;
+    const price = Number(selectedPlan.price);
+    const gstRate = selectedPlan.gst || 18;
+    return (price * gstRate) / 100;
   };
 
   const calculateTotal = () => {
     if (!selectedPlan) return 0;
-    const price = parseFloat(selectedPlan.price.replace(/,/g, ''));
+    const price = Number(selectedPlan.price);
     return price + calculateGST();
   };
 
@@ -139,9 +180,8 @@ const OrderSummary = () => {
       return;
     }
 
-    // Validate business type if company name is provided (or make it required)
-    if (companyName && !businessTypeId) {
-      toast.error('Please select business type for your company');
+    if (!businessTypeId) {
+      toast.error('Business type is required');
       return;
     }
 
@@ -152,7 +192,8 @@ const OrderSummary = () => {
     }
 
     const phoneRegex = /^\d{10}$/;
-    if (!phoneRegex.test(customerPhone)) {
+    const cleanPhone = customerPhone.replace(/\D/g, '');
+    if (!phoneRegex.test(cleanPhone)) {
       toast.error('Please enter a valid 10-digit phone number');
       return;
     }
@@ -179,44 +220,60 @@ const OrderSummary = () => {
     try {
       const totalAmount = calculateTotal();
       const gstAmount = calculateGST();
-      const basePrice = parseFloat(selectedPlan.price.replace(/,/g, ''));
+      const basePrice = Number(selectedPlan.price);
       
       // Generate order ID
       const timestamp = Date.now();
-      const randomStr = Math.random().toString(36).substring(2, 8).toUpperCase();
+      const randomStr = Math.random().toString(36).substring(2, 10).toUpperCase();
       const orderId = `ORD${timestamp}${randomStr}`;
       
-      // Create customer ID (must be alphanumeric)
-      let customerId = `CUST${userId}`;
-      if (customerId.length < 6) {
-        customerId = customerId.padEnd(6, '0');
-      }
+      // Get selected business type name
+      const selectedBusinessType = businessTypes.find(bt => String(bt.id) === String(businessTypeId));
       
+      // Clean phone number (remove any non-digit characters)
+      const cleanCustomerPhone = customerPhone.replace(/\D/g, '');
+      
+      // Create payload - Make sure ALL required fields are present
       const payload = {
-        customer_id: customerId,
+        // Customer details - THESE ARE CRITICAL FOR CASHFREE
+        customer_id: String(userId),
+        customer_name: customerName.trim().substring(0, 50),
+        customer_email: customerEmail.trim().toLowerCase(),
+        customer_phone: cleanCustomerPhone, // Must be 10 digits
+        customer_phone_code: "+91", // Add country code for India
+        
+        // Order details
         order_id: orderId,
-        amount: Number(totalAmount.toFixed(2)),
-        currency: "INR",
-        customer_name: customerName.trim(),
-        customer_email: customerEmail.trim(),
-        customer_phone: customerPhone.trim(),
-        db_user_id: userId,
+        amount: Number(totalAmount.toFixed(2)), // Use order_amount for Cashfree
+        order_currency: "INR",
+        order_note: `${selectedPlan.name} - ${selectedPlan.billingCycle} subscription`,
+        
+        // Plan details
         plan_id: selectedPlan.id,
         plan_name: selectedPlan.name,
         plan_billing_cycle: selectedPlan.billingCycle,
         plan_price: basePrice,
         plan_original_price: selectedPlan.originalPrice || null,
-        gst_rate: 18,
+        plan_discount: selectedPlan.discount || 0,
+        
+        // Tax details
+        gst_rate: selectedPlan.gst || 18,
         gst_amount: Number(gstAmount.toFixed(2)),
+        
+        // Business details
         company_name: companyName || null,
         gst_number: gstNumber || null,
         billing_address: billingAddress || null,
-        business_type_id: businessTypeId || null, // Add business type ID
+        business_type_id: businessTypeId,
+        business_type_name: selectedBusinessType?.name || null,
+        
+        // Return URLs
         return_url: `${window.location.origin}/payment-status`,
         notify_url: `${window.location.origin}/api/cashfree/webhook`
       };
 
-      console.log("📤 Sending payload:", payload);
+      console.log("📤 Sending payload to backend:", JSON.stringify(payload, null, 2));
+      console.log("📞 Customer phone being sent:", cleanCustomerPhone);
       
       // Call the store action
       const response = await createOrderAction(payload);
@@ -225,7 +282,7 @@ const OrderSummary = () => {
       
       toast.dismiss(loadingToast);
 
-      // Extract payment session ID from different possible response formats
+      // Extract payment session ID from response
       let paymentSessionId = null;
       
       if (response?.payment_session_id) {
@@ -241,7 +298,7 @@ const OrderSummary = () => {
         } catch(e) {}
       }
       
-      if (!paymentSessionId && response && typeof response === 'string' && response.length > 20) {
+      if (!paymentSessionId && response && typeof response === 'string' && response.length > 10) {
         paymentSessionId = response;
       }
       
@@ -273,7 +330,7 @@ const OrderSummary = () => {
         orderId: orderId,
         paymentSessionId: paymentSessionId,
         customerEmail: customerEmail,
-        customerPhone: customerPhone,
+        customerPhone: cleanCustomerPhone,
         totalAmount: totalAmount,
         planName: selectedPlan.name,
         userId: userId,
@@ -286,12 +343,14 @@ const OrderSummary = () => {
       console.error('❌ Payment error:', error);
       
       let errorMessage = 'Payment failed. Please try again.';
-      if (error.message?.includes('business_type_id')) {
-        errorMessage = 'Business type is required. Please select your business type.';
+      if (error.message?.includes('customer_phone')) {
+        errorMessage = 'Phone number is required. Please enter a valid 10-digit mobile number.';
       } else if (error.message?.includes('customer')) {
-        errorMessage = 'Customer validation failed. Please check your details.';
-      } else if (error.message?.includes('session')) {
-        errorMessage = 'Unable to create payment session. Please try again.';
+        errorMessage = 'Invalid customer details. Please check your information.';
+      } else if (error.message?.includes('amount')) {
+        errorMessage = 'Invalid amount. Please try again.';
+      } else if (error.message?.includes('business_type_id')) {
+        errorMessage = 'Business type is required. Please select your business type.';
       } else if (error.message) {
         errorMessage = error.message;
       }
@@ -347,12 +406,20 @@ const OrderSummary = () => {
                       <p className="text-sm text-gray-500 mt-2">
                         📅 {selectedPlan.billingCycle === 'monthly' ? 'Monthly Billing' : 'Yearly Billing'}
                       </p>
+                      {selectedPlan.businessType && (
+                        <p className="text-xs text-purple-600 mt-1">
+                          🏢 Business Type: {selectedPlan.businessType.name}
+                        </p>
+                      )}
                     </div>
                     <div className="text-right">
-                      {selectedPlan.originalPrice && (
+                      {selectedPlan.originalPrice && selectedPlan.originalPrice > selectedPlan.price && (
                         <p className="text-gray-400 line-through text-sm">₹{selectedPlan.originalPrice}</p>
                       )}
                       <p className="text-3xl font-bold text-[#5b5bd6]">₹{selectedPlan.price}</p>
+                      {selectedPlan.discount > 0 && (
+                        <p className="text-xs text-green-600 mt-1">✨ {selectedPlan.discount}% OFF</p>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -400,6 +467,7 @@ const OrderSummary = () => {
                         maxLength="10"
                         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#5b5bd6] focus:border-transparent outline-none transition-all"
                       />
+                      <p className="text-xs text-gray-500 mt-1">Enter 10-digit mobile number (e.g., 9876543210)</p>
                     </div>
                   </div>
                 </div>
@@ -435,23 +503,21 @@ const OrderSummary = () => {
                       {/* Business Type Dropdown */}
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Business Type {companyName && <span className="text-red-500">*</span>}
+                          Business Type <span className="text-red-500">*</span>
                         </label>
                         <select
                           value={businessTypeId}
                           onChange={(e) => setBusinessTypeId(e.target.value)}
                           className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#5b5bd6] focus:border-transparent outline-none transition-all bg-white"
+                          disabled={loadingBusinessTypes}
                         >
-                          <option value="">Select Business Type</option>
+                          <option value="">{loadingBusinessTypes ? 'Loading...' : 'Select Business Type'}</option>
                           {businessTypes.map((type) => (
                             <option key={type.id} value={type.id}>
                               {type.name}
                             </option>
                           ))}
                         </select>
-                        {companyName && !businessTypeId && (
-                          <p className="text-red-500 text-xs mt-1">Please select business type</p>
-                        )}
                       </div>
                       
                       <div>
@@ -465,6 +531,7 @@ const OrderSummary = () => {
                           placeholder="Enter GST number"
                           className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#5b5bd6] focus:border-transparent outline-none transition-all"
                         />
+                        <p className="text-xs text-gray-500 mt-1">Optional - Required for GST invoice</p>
                       </div>
                       
                       <div>
@@ -503,7 +570,7 @@ const OrderSummary = () => {
                 </div>
                 
                 <div className="flex justify-between">
-                  <span className="text-gray-600">GST (18%)</span>
+                  <span className="text-gray-600">GST ({selectedPlan.gst || 18}%)</span>
                   <span className="font-semibold">₹{calculateGST().toFixed(2)}</span>
                 </div>
                 
