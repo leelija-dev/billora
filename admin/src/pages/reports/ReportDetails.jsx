@@ -41,65 +41,47 @@ const ReportDetails = () => {
       setError(null)
       
       try {
-        // First get all reports to find the specific one
+        // Get reports data
         const response = await reportsAPI.getReports()
-        console.log('✅ Reports API Response:', response)
+        console.log('Reports API Response:', response)
         
-        let reportsData = []
+        // Handle aggregate report data
+        const reportData = response.data?.data || response.data || {}
         
-        if (response.data?.data?.salesItem_details && Array.isArray(response.data.data.salesItem_details)) {
-          reportsData = response.data.data.salesItem_details
-        } else if (response.data?.salesItem_details && Array.isArray(response.data.salesItem_details)) {
-          reportsData = response.data.salesItem_details
+        // Create a report object from aggregate data
+        const aggregateReport = {
+          id: 'summary',
+          created_at: new Date().toISOString(),
+          total_sales_items: reportData.total_sales_items || 0,
+          total_sales_amount: reportData.total_sales_amount || 0,
+          total_due: reportData.total_due || 0,
+          customer_dues: reportData.customer_dues || [],
+          salesItem_details: reportData.salesItem_details || [],
+          filter: reportData.filter || {},
+          user_id: reportData.user_id || user?.id,
+          // Add fields that the UI expects
+          customer_name: 'Aggregate Report',
+          store_name: 'All Stores',
+          customer_id: null,
+          store_id: null,
+          status: 'completed',
+          total_amount: Math.abs(parseFloat(reportData.total_sales_amount || 0)),
+          paid_amount: Math.abs(parseFloat(reportData.total_sales_amount || 0)) + Math.abs(parseFloat(reportData.total_due || 0)),
+          total_items: reportData.total_sales_items || 0,
+          invoice_items: reportData.salesItem_details || []
         }
         
-        // Find the specific report by ID
-        const foundReport = reportsData.find(r => r.id.toString() === id)
-        
-        if (foundReport) {
-          // Enrich with customer and store details
-          try {
-            const [customerResponse, storeResponse] = await Promise.all([
-              apiClient.get(`/customer/show/${foundReport.customer_id}`),
-              apiClient.get(`/store/${foundReport.store_id}`)
-            ])
-            
-            const customer = customerResponse.data?.data || customerResponse.data || {}
-            const store = storeResponse.data?.data?.data || storeResponse.data?.data || []
-            const storeData = store[0] || {}
-            
-            const enrichedReport = {
-              ...foundReport,
-              customer: customer,
-              store: storeData,
-              customer_name: customer.name || `Customer #${foundReport.customer_id}`,
-              store_name: storeData.name || `Store #${foundReport.store_id}`
-            }
-            
-            setReport(enrichedReport)
-          } catch (error) {
-            console.error('Failed to fetch customer/store details:', error)
-            setReport({
-              ...foundReport,
-              customer_name: `Customer #${foundReport.customer_id}`,
-              store_name: `Store #${foundReport.store_id}`
-            })
-          }
-        } else {
-          setError('Report not found')
-        }
+        setReport(aggregateReport)
       } catch (error) {
-        console.error('❌ Failed to fetch report details:', error)
+        console.error('Failed to fetch report details:', error)
         setError(error.response?.data?.message || 'Failed to fetch report details')
       } finally {
         setLoading(false)
       }
     }
 
-    if (id) {
-      fetchReportDetails()
-    }
-  }, [id])
+    fetchReportDetails()
+  }, [user?.id])
 
   // Export report in different formats
   const handleExport = (format) => {

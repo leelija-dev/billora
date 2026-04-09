@@ -12,7 +12,8 @@ const Pricing = () => {
   const [plans, setPlans] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [selectedBusinessType, setSelectedBusinessType] = useState({}); // Store selected business type per plan
+  const [selectedBusinessType, setSelectedBusinessType] = useState(null);
+  const [allBusinessTypes, setAllBusinessTypes] = useState([]);
   const cardRefs = useRef([]);
   const router = useRouter();
 
@@ -23,10 +24,50 @@ const Pricing = () => {
         setLoading(true);
 
         const data = await getPlans();
+        
+        console.log('Full API Response:', data); // Debug log
 
         if (data.status === true && data.data) {
           const allPlans = data.data;
+          console.log('All Plans:', allPlans); // Debug log
+          
+          // Check if business_types exists in plans
+          allPlans.forEach((plan, idx) => {
+            console.log(`Plan ${idx} - ${plan.name}:`, {
+              hasBusinessTypes: !!plan.business_types,
+              businessTypes: plan.business_types,
+              discount: plan.discount,
+              gst: plan.gst
+            });
+          });
+          
           const limitedPlans = allPlans.slice(0, 3);
+
+          // Extract all unique business types from all plans
+          const businessTypesMap = new Map();
+          
+          limitedPlans.forEach(plan => {
+            if (plan.business_types && Array.isArray(plan.business_types) && plan.business_types.length > 0) {
+              console.log(`Business types for ${plan.name}:`, plan.business_types);
+              plan.business_types.forEach(bt => {
+                if (!businessTypesMap.has(bt.id)) {
+                  businessTypesMap.set(bt.id, bt);
+                }
+              });
+            } else {
+              console.log(`No business types found for plan: ${plan.name}`);
+            }
+          });
+          
+          const uniqueBusinessTypes = Array.from(businessTypesMap.values());
+          console.log('Unique Business Types:', uniqueBusinessTypes);
+          setAllBusinessTypes(uniqueBusinessTypes);
+          
+          // Set default selected business type (first one if available)
+          if (uniqueBusinessTypes.length > 0 && !selectedBusinessType) {
+            setSelectedBusinessType(uniqueBusinessTypes[0]);
+            console.log('Default selected business type:', uniqueBusinessTypes[0]);
+          }
 
           const transformedPlans = limitedPlans.map((plan, index) => {
             const features = plan.features || [];
@@ -42,20 +83,36 @@ const Pricing = () => {
             // Calculate GST (default 18% if not provided)
             const gstRate = plan.gst || 18;
 
+            // Create a map of business type ID to custom price
+            const businessTypePrices = {};
+            if (plan.business_types && Array.isArray(plan.business_types)) {
+              plan.business_types.forEach(bt => {
+                businessTypePrices[bt.id] = bt.custom_price || null;
+              });
+            }
+
             return {
               id: plan.id,
               name: plan.name,
               price: {
+                monthly: monthlyPrice,
+                yearly: yearlyPrice
+              },
+              displayPrice: {
                 monthly: monthlyPrice.toLocaleString('en-IN'),
                 yearly: yearlyPrice.toLocaleString('en-IN')
               },
               discountedPrice: {
+                monthly: monthlyDiscountedPrice,
+                yearly: yearlyDiscountedPrice
+              },
+              displayDiscountedPrice: {
                 monthly: monthlyDiscountedPrice.toLocaleString('en-IN'),
                 yearly: yearlyDiscountedPrice.toLocaleString('en-IN')
               },
               discount: discount,
               gst: gstRate,
-              businessTypes: plan.business_types || [], // Array of business types from backend
+              businessTypePrices: businessTypePrices,
               description: plan.description
                 ? plan.description.replace(/<[^>]*>?/gm, "")
                 : "",
@@ -66,17 +123,8 @@ const Pricing = () => {
             };
           });
 
+          console.log('Transformed Plans:', transformedPlans);
           setPlans(transformedPlans);
-          
-          // Initialize selected business type for each plan
-          const initialBusinessTypes = {};
-          transformedPlans.forEach(plan => {
-            if (plan.businessTypes && plan.businessTypes.length > 0) {
-              initialBusinessTypes[plan.id] = plan.businessTypes[0];
-            }
-          });
-          setSelectedBusinessType(initialBusinessTypes);
-          
         } else {
           setError(data.message || "Failed to fetch plans");
         }
@@ -91,80 +139,90 @@ const Pricing = () => {
     fetchPlans();
   }, []);
 
-  // Handle business type change
-  const handleBusinessTypeChange = (planId, businessType) => {
-    setSelectedBusinessType(prev => ({
-      ...prev,
-      [planId]: businessType
-    }));
+  // Get current price based on billing cycle, discount, and selected business type
+  const getCurrentPrice = (plan) => {
+    let basePrice;
+    
+    // Check if selected business type has custom pricing
+    if (selectedBusinessType && plan.businessTypePrices[selectedBusinessType.id]) {
+      basePrice = plan.businessTypePrices[selectedBusinessType.id];
+      
+      // Apply yearly multiplier if needed
+      if (billingCycle === 'yearly') {
+        basePrice = basePrice * 10;
+      }
+      
+      return {
+        price: basePrice,
+        displayPrice: basePrice.toLocaleString('en-IN'),
+        hasCustomPrice: true
+      };
+    }
+    
+    // Use regular pricing with discount
+    if (plan.discount > 0) {
+      basePrice = billingCycle === 'monthly' 
+        ? plan.discountedPrice.monthly 
+        : plan.discountedPrice.yearly;
+    } else {
+      basePrice = billingCycle === 'monthly' 
+        ? plan.price.monthly 
+        : plan.price.yearly;
+    }
+    
+    return {
+      price: basePrice,
+      displayPrice: basePrice.toLocaleString('en-IN'),
+      hasCustomPrice: false
+    };
   };
 
-  // Get current price based on billing cycle, discount, and business type
-  const getCurrentPrice = (plan, businessType = null) => {
-    if (billingCycle === 'monthly') {
-      // If business type has custom pricing, use that
-      if (businessType && businessType.custom_price) {
-        return businessType.custom_price.toLocaleString('en-IN');
-      }
-      // Otherwise use discounted price if available
-      return plan.discount > 0 ? plan.discountedPrice.monthly : plan.price.monthly;
-    } else {
-      if (businessType && businessType.custom_price) {
-        return (businessType.custom_price * 10).toLocaleString('en-IN');
-      }
-      return plan.discount > 0 ? plan.discountedPrice.yearly : plan.price.yearly;
+  // Get original price for comparison
+  const getOriginalPrice = (plan) => {
+    if (selectedBusinessType && plan.businessTypePrices[selectedBusinessType.id]) {
+      const customPrice = plan.businessTypePrices[selectedBusinessType.id];
+      return {
+        price: billingCycle === 'yearly' ? customPrice * 10 : customPrice,
+        displayPrice: (billingCycle === 'yearly' ? customPrice * 10 : customPrice).toLocaleString('en-IN')
+      };
     }
-  };
-
-  // Get numeric price value for calculations
-  const getNumericPrice = (plan, businessType = null) => {
-    if (billingCycle === 'monthly') {
-      if (businessType && businessType.custom_price) {
-        return businessType.custom_price;
-      }
-      return plan.discount > 0 ? parseFloat(plan.discountedPrice.monthly.replace(/,/g, '')) : parseFloat(plan.price.monthly.replace(/,/g, ''));
-    } else {
-      if (businessType && businessType.custom_price) {
-        return businessType.custom_price * 10;
-      }
-      return plan.discount > 0 ? parseFloat(plan.discountedPrice.yearly.replace(/,/g, '')) : parseFloat(plan.price.yearly.replace(/,/g, ''));
-    }
+    
+    return {
+      price: billingCycle === 'monthly' ? plan.price.monthly : plan.price.yearly,
+      displayPrice: billingCycle === 'monthly' ? plan.displayPrice.monthly : plan.displayPrice.yearly
+    };
   };
 
   // Handle subscription click
   const handleSubscribe = (planId) => {
     const selectedPlan = plans.find(p => p.id === planId);
-    const businessType = selectedBusinessType[planId];
-    const currentPrice = getNumericPrice(selectedPlan, businessType);
-    const gstAmount = currentPrice * (selectedPlan.gst / 100);
-    const totalAmount = currentPrice + gstAmount;
+    const currentPriceData = getCurrentPrice(selectedPlan);
+    const originalPriceData = getOriginalPrice(selectedPlan);
+    const gstAmount = currentPriceData.price * (selectedPlan.gst / 100);
+    const totalAmount = currentPriceData.price + gstAmount;
     
     const subscriptionData = {
       planId: planId,
       planName: selectedPlan.name,
       billingCycle: billingCycle,
-      price: currentPrice,
+      price: currentPriceData.price,
       discount: selectedPlan.discount,
       gst: selectedPlan.gst,
       gstAmount: gstAmount,
       totalAmount: totalAmount,
-      businessType: businessType,
-      originalPrice: billingCycle === 'monthly' 
-        ? parseFloat(selectedPlan.price.monthly.replace(/,/g, ''))
-        : parseFloat(selectedPlan.price.yearly.replace(/,/g, ''))
+      businessType: selectedBusinessType,
+      originalPrice: originalPriceData.price,
+      hasCustomPrice: currentPriceData.hasCustomPrice
     };
     
     const token = localStorage.getItem("token");
     const targetUrl = `/pricing?plan=${planId}&cycle=${billingCycle}`;
     
-    // Store subscription data in localStorage to use on the next page
     localStorage.setItem('selectedSubscription', JSON.stringify(subscriptionData));
 
     if (token) {
-      // User logged in
       router.push(targetUrl);
     } else {
-      // User not logged in → login page with redirect
       router.push(`/login?redirect=${encodeURIComponent(targetUrl)}`);
     }
   };
@@ -213,7 +271,7 @@ const Pricing = () => {
   }
 
   return (
-    <div className="py-10 sm:py-20 bg-gradient-to-br from-[#f8fafc] to-[#f1f5f9] min-h-[1vh] font-['Inter',system-ui,-apple-system,sans-serif] overflow-x-hidden">
+    <div className="py-10 sm:py-20 bg-gradient-to-br from-[#f8fafc] to-[#f1f5f9] min-h-screen font-['Inter',system-ui,-apple-system,sans-serif] overflow-x-hidden">
       <Container size="default">
         {/* Header Section */}
         <div className="text-center mb-12 px-4">
@@ -223,8 +281,9 @@ const Pricing = () => {
           </p>
         </div>
 
-        {/* Billing Toggle - Clean and Modern */}
-        <div className="flex justify-center items-center mb-12">
+        {/* Business Type Dropdown and Billing Toggle */}
+        <div className="flex flex-col md:flex-row justify-center items-center gap-6 mb-12">
+          {/* Billing Toggle */}
           <div className="relative bg-white p-1 rounded-full shadow-md border border-gray-200 inline-flex">
             <button
               className={`relative px-6 sm:px-8 py-2.5 sm:py-3 rounded-full text-sm sm:text-base font-semibold transition-all duration-300 z-10 ${
@@ -245,23 +304,75 @@ const Pricing = () => {
                 Save 20%
               </span>
             </button>
-            {/* Sliding Background */}
             <div 
               className={`absolute top-1 bottom-1 w-[calc(50%-4px)] bg-gradient-to-r from-blue-600 to-blue-500 rounded-full transition-all duration-300 ease-out ${
                 billingCycle === 'monthly' ? 'left-1' : 'left-[calc(50%-2px)]'
               }`}
             />
           </div>
+
+          {/* Business Type Dropdown - Always visible if there are business types */}
+          {allBusinessTypes.length > 0 ? (
+            <div className="flex items-center gap-3 bg-white px-4 py-2 rounded-full shadow-md border border-gray-200">
+              <div className="flex items-center gap-2">
+                <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                </svg>
+                <span className="text-sm font-medium text-gray-700">Business Type:</span>
+              </div>
+              <select
+                value={selectedBusinessType?.id || ''}
+                onChange={(e) => {
+                  const selected = allBusinessTypes.find(bt => bt.id === parseInt(e.target.value));
+                  setSelectedBusinessType(selected);
+                  console.log('Selected business type:', selected);
+                }}
+                className="px-3 py-1.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm bg-white"
+              >
+                {allBusinessTypes.map((businessType) => (
+                  <option key={businessType.id} value={businessType.id}>
+                    {businessType.name}
+                  </option>
+                ))}
+              </select>
+              {selectedBusinessType?.description && (
+                <span className="text-xs text-gray-500 hidden md:inline-block">
+                  {selectedBusinessType.description}
+                </span>
+              )}
+            </div>
+          ) : (
+            /* Show message if no business types found */
+            <div className="flex items-center gap-3 bg-yellow-50 px-4 py-2 rounded-full shadow-md border border-yellow-200">
+              <svg className="w-5 h-5 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span className="text-sm text-yellow-700">
+                No business types available
+              </span>
+            </div>
+          )}
         </div>
 
-        {/* Pricing Cards Grid - Fixed for tablet view */}
+        {/* Debug Info - Remove in production */}
+        {/* {process.env.NODE_ENV === 'development' && (
+          <div className="mb-4 p-4 bg-gray-100 rounded-lg text-xs">
+            <p><strong>Debug Info:</strong></p>
+            <p>Business Types Count: {allBusinessTypes.length}</p>
+            <p>Selected Business Type: {selectedBusinessType?.name || 'None'}</p>
+            <p>Plans Count: {plans.length}</p>
+          </div>
+        )} */}
+
+        {/* Pricing Cards Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8 mb-16 items-stretch px-4">
           {plans.slice(0, 3).map((plan, index) => {
-            const currentBusinessType = selectedBusinessType[plan.id];
-            const currentPrice = getCurrentPrice(plan, currentBusinessType);
-            const numericPrice = getNumericPrice(plan, currentBusinessType);
-            const gstAmount = numericPrice * (plan.gst / 100);
-            const totalAmount = numericPrice + gstAmount;
+            const currentPriceData = getCurrentPrice(plan);
+            const originalPriceData = getOriginalPrice(plan);
+            const hasDiscount = plan.discount > 0 || currentPriceData.hasCustomPrice;
+            const gstAmount = currentPriceData.price * (plan.gst / 100);
+            const totalAmount = currentPriceData.price + gstAmount;
+            const isCustomPriceLower = currentPriceData.hasCustomPrice && currentPriceData.price < originalPriceData.price;
             
             return (
               <div
@@ -289,13 +400,23 @@ const Pricing = () => {
                 <div className="text-center mb-8 pb-6 border-b border-gray-100">
                   <h3 className="text-2xl font-bold text-gray-900 mb-3">{plan.name}</h3>
                   
-                  {/* Price Display with Discount */}
+                  {/* Price Display with Discount/Custom Price Badge */}
                   <div className="mb-4">
-                    {plan.discount > 0 && (
+                    {(plan.discount > 0 || isCustomPriceLower) && (
                       <div className="inline-flex items-center gap-2 bg-red-50 px-3 py-1 rounded-full mb-3">
-                        <span className="text-red-600 text-xs font-bold">{plan.discount}% OFF</span>
+                        <span className="text-red-600 text-xs font-bold">
+                          {isCustomPriceLower ? 'Special Price' : `${plan.discount}% OFF`}
+                        </span>
                         <span className="text-gray-400 line-through text-sm">
-                          ₹{billingCycle === 'monthly' ? plan.price.monthly : plan.price.yearly}
+                          ₹{originalPriceData.displayPrice}
+                        </span>
+                      </div>
+                    )}
+                    
+                    {currentPriceData.hasCustomPrice && (
+                      <div className="inline-flex items-center gap-2 bg-green-50 px-3 py-1 rounded-full mb-3 ml-2">
+                        <span className="text-green-600 text-xs font-bold">
+                          {selectedBusinessType?.name} Special
                         </span>
                       </div>
                     )}
@@ -303,7 +424,7 @@ const Pricing = () => {
                     <div className="flex items-baseline justify-center gap-1">
                       <span className="text-2xl font-semibold text-gray-500">₹</span>
                       <span className="text-5xl font-bold" style={{ color: plan.color }}>
-                        {currentPrice}
+                        {currentPriceData.displayPrice}
                       </span>
                       <span className="text-gray-400 text-base font-medium">/{billingCycle === 'monthly' ? 'month' : 'year'}</span>
                     </div>
@@ -314,42 +435,15 @@ const Pricing = () => {
                       </p>
                     )}
                     
-                    {plan.discount > 0 && (
+                    {(plan.discount > 0 || isCustomPriceLower) && (
                       <p className="text-xs text-green-600 mt-1 font-medium">
-                        You save {plan.discount}% with this plan!
+                        You save ₹{(originalPriceData.price - currentPriceData.price).toLocaleString('en-IN')}!
                       </p>
                     )}
                   </div>
                   
                   <p className="text-sm text-gray-600 font-medium">{plan.description}</p>
                 </div>
-
-                {/* Business Type Dropdown */}
-                {plan.businessTypes && plan.businessTypes.length > 0 && (
-                  <div className="mb-6">
-                    <label className="block text-xs font-bold text-gray-500 mb-2 uppercase tracking-wider">
-                      Business Type
-                    </label>
-                    <select
-                      value={currentBusinessType?.id || ''}
-                      onChange={(e) => {
-                        const selected = plan.businessTypes.find(bt => bt.id === parseInt(e.target.value));
-                        if (selected) handleBusinessTypeChange(plan.id, selected);
-                      }}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm"
-                    >
-                      {plan.businessTypes.map((businessType) => (
-                        <option key={businessType.id} value={businessType.id}>
-                          {businessType.name}
-                          {businessType.custom_price && ` (₹${businessType.custom_price.toLocaleString('en-IN')}/month)`}
-                        </option>
-                      ))}
-                    </select>
-                    {currentBusinessType?.description && (
-                      <p className="text-xs text-gray-500 mt-1">{currentBusinessType.description}</p>
-                    )}
-                  </div>
-                )}
 
                 <div className="flex-1 mb-8">
                   <h4 className="text-xs font-bold text-gray-500 mb-5 uppercase tracking-wider">What's included</h4>
@@ -366,10 +460,10 @@ const Pricing = () => {
                 </div>
 
                 {/* Price Summary with GST */}
-                {/* <div className="mb-4 p-3 bg-gray-50 rounded-lg">
+                <div className="mb-4 p-3 bg-gray-50 rounded-lg">
                   <div className="flex justify-between text-sm mb-1">
                     <span className="text-gray-600">Plan Price:</span>
-                    <span className="font-semibold">₹{currentPrice}</span>
+                    <span className="font-semibold">₹{currentPriceData.displayPrice}</span>
                   </div>
                   {plan.gst > 0 && (
                     <div className="flex justify-between text-sm mb-1">
@@ -381,7 +475,7 @@ const Pricing = () => {
                     <span className="font-bold text-gray-800">Total Amount:</span>
                     <span className="font-bold text-purple-600">₹{totalAmount.toFixed(2)}</span>
                   </div>
-                </div> */}
+                </div>
 
                 <div className="mt-auto pt-4">
                   <button
@@ -473,7 +567,7 @@ const Pricing = () => {
             z-index: 20;
           }
           
-          /* Prevent overlap on all cards */
+          /* Prevent overlap on all cards */ 
           .grid > div {
             margin-bottom: 0;
             height: fit-content;
