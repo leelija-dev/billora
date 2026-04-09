@@ -67,6 +67,7 @@ const Sidebar = () => {
     { path: '/brands', name: 'Brands', icon: FiTag, badge: null },
     { path: '/units', name: 'Units', icon: TbRuler2, badge: null },
     { path: '/stores', name: 'Stores', icon: FaStore, badge: null },
+    { path: '/packages', name: 'Packages', icon: FiBox, badge: null },
     { path: '/stock', name: 'Stock', icon: FiArchive, badge: null, permission: 'stock-management' },
     { path: '/orders', name: 'Orders', icon: FiShoppingBag, badge: null, permission: 'hide-with-stock' },
     { path: '/customers', name: 'Customers', icon: FiUsers, badge: null },
