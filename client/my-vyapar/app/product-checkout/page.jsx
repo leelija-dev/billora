@@ -5,13 +5,13 @@ import { FaCheckCircle, FaRupeeSign, FaUser, FaShoppingCart } from "react-icons/
 import { useRouter } from "next/navigation";
 import toast, { Toaster } from 'react-hot-toast';
 import Navbar from "@/components/Navbar";
-import { usePaymentStore } from "@/store/paymentStore";
-import Image from "next/image";
+import { createProductOrder } from "@/services/productPaymentService";
 
 const ProductCheckout = () => {
   const router = useRouter();
-  const { createOrderAction, loading: storeLoading, error: storeError } = usePaymentStore();
   
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
   const [cartItems, setCartItems] = useState([]);
   const [totalAmount, setTotalAmount] = useState(0);
   const [customerName, setCustomerName] = useState("");
@@ -21,31 +21,49 @@ const ProductCheckout = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [loggedInUser, setLoggedInUser] = useState(null);
   const [customerId, setCustomerId] = useState(null);
+  const [storeId, setStoreId] = useState(null);
 
   // Load cart and user data
   useEffect(() => {
-    // Load cart from sessionStorage
-    const savedCart = sessionStorage.getItem('cart');
-    if (savedCart) {
+    // Load checkout data from localStorage (from products page)
+    const savedCheckout = localStorage.getItem('checkoutData');
+    if (savedCheckout) {
       try {
-        const parsedCart = JSON.parse(savedCart);
-        setCartItems(parsedCart);
+        const checkoutData = JSON.parse(savedCheckout);
+        setCartItems(checkoutData.cart);
+        setTotalAmount(checkoutData.totalAmount);
+        setCustomerName(checkoutData.customerName || "");
+        setCustomerPhone(checkoutData.customerPhone || "");
         
-        // Calculate total
-        const total = parsedCart.reduce((sum, item) => {
-          return sum + ((item.selling_price || item.price) * item.quantity);
-        }, 0);
-        setTotalAmount(total);
-        
-        console.log("📦 Cart loaded:", parsedCart);
+        // Clear it after loading
+        localStorage.removeItem('checkoutData');
+        console.log("📦 Checkout data loaded:", checkoutData);
       } catch (error) {
-        console.error("Error loading cart:", error);
-        toast.error('Failed to load cart');
+        console.error("Error loading checkout data:", error);
+        toast.error('Failed to load checkout data');
         router.push('/products');
       }
     } else {
-      toast.error('Your cart is empty');
-      router.push('/products');
+      // Fallback to sessionStorage
+      const savedCart = sessionStorage.getItem('cart');
+      if (savedCart) {
+        try {
+          const parsedCart = JSON.parse(savedCart);
+          setCartItems(parsedCart);
+          const total = parsedCart.reduce((sum, item) => {
+            return sum + ((item.selling_price || item.price) * item.quantity);
+          }, 0);
+          setTotalAmount(total);
+          console.log("📦 Cart loaded from sessionStorage:", parsedCart);
+        } catch (error) {
+          console.error("Error loading cart:", error);
+          toast.error('Failed to load cart');
+          router.push('/products');
+        }
+      } else {
+        toast.error('Your cart is empty');
+        router.push('/products');
+      }
     }
 
     // Load user data
@@ -59,10 +77,10 @@ const ProductCheckout = () => {
           const user = JSON.parse(userStr);
           setLoggedInUser(user);
           
-          if (user.name) setCustomerName(user.name);
+          if (user.name) setCustomerName(prev => prev || user.name);
           if (user.email) setCustomerEmail(user.email);
-          if (user.phone) setCustomerPhone(user.phone);
-          if (user.mobile) setCustomerPhone(user.mobile);
+          if (user.phone) setCustomerPhone(prev => prev || user.phone);
+          if (user.mobile) setCustomerPhone(prev => prev || user.mobile);
           if (user.customer_id) setCustomerId(user.customer_id);
           if (user.id) setCustomerId(user.id);
           
@@ -74,224 +92,137 @@ const ProductCheckout = () => {
     };
     
     getUserData();
+
+    // Fetch store ID with fallback
+    const fetchStore = async () => {
+      try {
+        const { getUserStore } = await import('../../services/productService');
+        const store = await getUserStore();
+        
+        console.log("🔍 Store data received:", store);
+        
+        if (store) {
+          // Handle different response formats
+          const storeIdValue = store.id || store.store_id || store;
+          setStoreId(storeIdValue);
+          console.log("✅ Store ID set to:", storeIdValue);
+        } else {
+          // Try to get from localStorage as fallback
+          const storedStoreId = localStorage.getItem('store_id');
+          if (storedStoreId) {
+            setStoreId(JSON.parse(storedStoreId));
+            console.log("✅ Store ID from localStorage:", storedStoreId);
+          } else {
+            // Default fallback - you may need to change this value
+            const defaultStoreId = 1;
+            setStoreId(defaultStoreId);
+            console.log("⚠️ Using default store ID:", defaultStoreId);
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching store:", error);
+        // Fallback to default store ID
+        const defaultStoreId = 1;
+        setStoreId(defaultStoreId);
+        console.log("⚠️ Error fallback - using default store ID:", defaultStoreId);
+      }
+    };
+    fetchStore();
   }, [router]);
 
-  const loadCashfreeSDK = () => {
-    return new Promise((resolve, reject) => {
-      if (window.Cashfree) {
-        resolve(window.Cashfree);
-        return;
-      }
+  const handlePayment = async () => {
+    // Validate required fields
+    if (!customerName?.trim()) {
+      toast.error('Please enter your full name');
+      return;
+    }
 
-      const script = document.createElement('script');
-      script.src = 'https://sdk.cashfree.com/js/v3/cashfree.js';
-      script.async = true;
-      script.onload = () => {
-        if (window.Cashfree) {
-          resolve(window.Cashfree);
-        } else {
-          reject(new Error('Cashfree SDK failed to load'));
-        }
+    if (!customerPhone?.trim()) {
+      toast.error('Please enter your phone number');
+      return;
+    }
+
+    if (cartItems.length === 0) {
+      toast.error('Your cart is empty');
+      return;
+    }
+
+    const phoneRegex = /^\d{10}$/;
+    const cleanPhone = customerPhone.replace(/\D/g, '');
+    if (!phoneRegex.test(cleanPhone)) {
+      toast.error('Please enter a valid 10-digit phone number');
+      return;
+    }
+
+    // Get customer ID
+    let customerIdValue = customerId || loggedInUser?.customer_id || loggedInUser?.id;
+    
+    if (!customerIdValue) {
+      toast.error("Customer not found. Please login again.");
+      localStorage.setItem('redirectAfterLogin', '/product-checkout');
+      setTimeout(() => router.push('/login'), 2000);
+      return;
+    }
+
+    // Use default store ID if not available
+    const finalStoreId = storeId || 1;
+    console.log("🏪 Using store ID:", finalStoreId);
+
+    setIsProcessing(true);
+    setLoading(true);
+    const loadingToast = toast.loading('Creating order...');
+
+    try {
+      // Prepare payload matching backend requirements
+      const payload = {
+        user_id: Number(customerIdValue),
+        store_id: finalStoreId,
+        customer_name: customerName.trim(),
+        customer_phone: cleanPhone,
+        product_id: cartItems.map(item => item.id),
+        quantity: cartItems.map(item => item.quantity),
+        unit_id: cartItems.map(item => item.unit_id || 1),
       };
-      script.onerror = () => reject(new Error('Failed to load Cashfree SDK'));
-      document.body.appendChild(script);
-    });
+
+      console.log("📤 Sending to backend:", payload);
+      
+      const response = await createProductOrder(payload);
+      
+      console.log("📥 Response:", response);
+      
+      toast.dismiss(loadingToast);
+
+      if (response.status === true || response.success === true) {
+        toast.success('Order placed successfully!');
+        
+        // Clear cart
+        sessionStorage.removeItem('cart');
+        localStorage.removeItem('checkoutData');
+        
+        // Redirect to orders page
+        setTimeout(() => router.push('/orders'), 2000);
+      } else {
+        throw new Error(response.message || 'Failed to create order');
+      }
+      
+    } catch (error) {
+      toast.dismiss(loadingToast);
+      console.error('❌ Order error:', error);
+      
+      // Show more detailed error message
+      let errorMsg = error.message || 'Failed to create order. Please try again.';
+      if (errorMsg.includes('store_id')) {
+        errorMsg = 'Store configuration error. Please contact support.';
+      } else if (errorMsg.includes('user_id')) {
+        errorMsg = 'Please login again to continue.';
+      }
+      
+      toast.error(errorMsg);
+    } finally {
+      setIsProcessing(false);
+      setLoading(false);
+    }
   };
-
-const handlePayment = async () => {
-  if (!selectedPlan) {
-    toast.error('No plan selected!');
-    return;
-  }
-
-  // Validate required fields
-  if (!customerName?.trim()) {
-    toast.error('Please enter your full name');
-    return;
-  }
-
-  if (!customerEmail?.trim()) {
-    toast.error('Please enter your email address');
-    return;
-  }
-
-  if (!customerPhone?.trim()) {
-    toast.error('Please enter your phone number');
-    return;
-  }
-
-  if (!businessTypeId) {
-    toast.error('Business type is required');
-    return;
-  }
-
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (!emailRegex.test(customerEmail)) {
-    toast.error('Please enter a valid email address');
-    return;
-  }
-
-  const phoneRegex = /^\d{10}$/;
-  const cleanPhone = customerPhone.replace(/\D/g, '');
-  if (!phoneRegex.test(cleanPhone)) {
-    toast.error('Please enter a valid 10-digit phone number');
-    return;
-  }
-
-  // Get customer ID
-  let customerIdValue = customerId || loggedInUser?.customer_id || loggedInUser?.id;
-  
-  if (!customerIdValue) {
-    toast.error("Customer not found. Please login again.");
-    localStorage.setItem('redirectAfterLogin', '/order-summary');
-    setTimeout(() => router.push('/login'), 2000);
-    return;
-  }
-
-  setIsProcessing(true);
-  const loadingToast = toast.loading('Creating order...');
-
-  try {
-    const totalAmount = calculateTotal();
-    const basePrice = Number(selectedPlan.price);
-    
-    // Generate order ID
-    const timestamp = Date.now();
-    const randomStr = Math.random().toString(36).substring(2, 10).toUpperCase();
-    const orderId = `ORD${timestamp}${randomStr}`;
-    
-    // Get selected business type name
-    const selectedBusinessType = businessTypes.find(bt => String(bt.id) === String(businessTypeId));
-    
-    // Clean phone number
-    const cleanCustomerPhone = customerPhone.replace(/\D/g, '');
-    
-    // IMPORTANT: UNCOMMENT ALL REQUIRED FIELDS
-    const payload = {
-      // Required fields
-      amount: Number(totalAmount.toFixed(2)),
-      plan_id: selectedPlan.id,  // ✅ UNCOMMENT THIS - Required!
-      business_type_id: parseInt(businessTypeId),
-      customer_id: String(customerIdValue),
-      
-      // Additional fields - UNCOMMENT THESE TOO
-      order_id: orderId,
-      customer_name: customerName.trim().substring(0, 50),
-      customer_email: customerEmail.trim().toLowerCase(),
-      customer_phone: cleanCustomerPhone,
-      
-      // Plan details
-      plan_name: selectedPlan.name,
-      plan_billing_cycle: selectedPlan.billingCycle,
-      plan_price: basePrice,
-      plan_original_price: selectedPlan.originalPrice || null,
-      plan_discount: selectedPlan.discount || 0,
-      
-      // Tax details
-      gst_rate: selectedPlan.gst || 18,
-      gst_amount: Number(calculateGST().toFixed(2)),
-      
-      // Business details
-      company_name: companyName || null,
-      gst_number: gstNumber || null,
-      billing_address: billingAddress || null,
-      business_type_name: selectedBusinessType?.name || null,
-      
-      // Return URLs
-      return_url: `${window.location.origin}/payment-status`,
-      notify_url: `${window.location.origin}/api/cashfree/webhook`
-    };
-
-    console.log("📤 Sending payload to backend:", JSON.stringify(payload, null, 2));
-    console.log("📞 Customer ID being sent (as string):", String(customerIdValue));
-    console.log("📞 Customer phone being sent:", cleanCustomerPhone);
-    console.log("📦 Plan ID being sent:", selectedPlan.id);
-    
-    // Call the store action
-    const response = await createOrderAction(payload);
-    
-    console.log("📥 Full response from createOrderAction:", response);
-    
-    toast.dismiss(loadingToast);
-
-    // Extract payment session ID from response
-    let paymentSessionId = null;
-    
-    if (response?.payment_session_id) {
-      paymentSessionId = response.payment_session_id;
-    } else if (response?.data?.payment_session_id) {
-      paymentSessionId = response.data.payment_session_id;
-    } else if (response?.sessionId) {
-      paymentSessionId = response.sessionId;
-    } else if (typeof response === 'string') {
-      try {
-        const parsed = JSON.parse(response);
-        paymentSessionId = parsed.payment_session_id || parsed.sessionId;
-      } catch(e) {}
-    }
-    
-    if (!paymentSessionId && response && typeof response === 'string' && response.length > 10) {
-      paymentSessionId = response;
-    }
-    
-    console.log("🔑 Extracted paymentSessionId:", paymentSessionId);
-    
-    if (!paymentSessionId) {
-      console.error("Response structure:", JSON.stringify(response, null, 2));
-      throw new Error(response?.message || response?.error || 'Payment session ID not found in response');
-    }
-    
-    toast.success('Order created! Redirecting to payment...');
-    
-    // Load and initialize Cashfree
-    const Cashfree = await loadCashfreeSDK();
-    const cashfree = new Cashfree({
-      mode: process.env.NEXT_PUBLIC_CASHFREE_MODE === 'production' ? 'production' : 'sandbox',
-    });
-    
-    // Open checkout
-    const paymentResult = await cashfree.checkout({
-      paymentSessionId: paymentSessionId,
-      redirectTarget: "_self"
-    });
-    
-    console.log("Payment checkout result:", paymentResult);
-    
-    // Store payment info for reference
-    const orderInfo = {
-      orderId: orderId,
-      paymentSessionId: paymentSessionId,
-      customerEmail: customerEmail,
-      customerPhone: cleanCustomerPhone,
-      totalAmount: totalAmount,
-      planName: selectedPlan.name,
-      customerId: customerIdValue,
-      timestamp: Date.now()
-    };
-    localStorage.setItem('pendingPayment', JSON.stringify(orderInfo));
-    
-  } catch (error) {
-    toast.dismiss(loadingToast);
-    console.error('❌ Payment error:', error);
-    
-    let errorMessage = 'Payment failed. Please try again.';
-    if (error.message?.includes('customer_id')) {
-      errorMessage = 'Invalid customer ID format. Please try again.';
-    } else if (error.message?.includes('plan_id')) {
-      errorMessage = 'Invalid plan selected. Please try again.';
-    } else if (error.message?.includes('business_type_id')) {
-      errorMessage = 'Business type is required. Please select your business type.';
-    } else if (error.message?.includes('amount')) {
-      errorMessage = 'Invalid amount. Please try again.';
-    } else if (error.message) {
-      errorMessage = error.message;
-    }
-    
-    toast.error(errorMessage, { duration: 5000 });
-  } finally {
-    setIsProcessing(false);
-  }
-};
 
   if (cartItems.length === 0) {
     return (
@@ -344,6 +275,7 @@ const handlePayment = async () => {
                           src={item.img || "/image/placeholder.png"}
                           alt={item.name}
                           className="w-full h-full object-contain p-1"
+                          onError={(e) => { e.target.src = "/image/placeholder.png"; }}
                         />
                       </div>
                       <div className="flex-1">
@@ -377,12 +309,13 @@ const handlePayment = async () => {
                         onChange={(e) => setCustomerName(e.target.value)}
                         placeholder="Enter your full name"
                         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#5b5bd6] focus:border-transparent outline-none transition-all"
+                        required
                       />
                     </div>
                     
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Email Address *
+                        Email Address (Optional)
                       </label>
                       <input
                         type="email"
@@ -404,6 +337,7 @@ const handlePayment = async () => {
                         placeholder="Enter 10-digit mobile number"
                         maxLength="10"
                         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#5b5bd6] focus:border-transparent outline-none transition-all"
+                        required
                       />
                       <p className="text-xs text-gray-500 mt-1">Enter 10-digit mobile number (e.g., 9876543210)</p>
                     </div>
@@ -455,32 +389,31 @@ const handlePayment = async () => {
                   <p className="text-xs text-gray-500 mt-1 text-right">Inclusive of all taxes</p>
                 </div>
 
-                {storeError && (
+                {error && (
                   <div className="p-3 bg-red-50 rounded-lg">
-                    <p className="text-xs text-red-600 text-center">{storeError}</p>
+                    <p className="text-xs text-red-600 text-center">{error}</p>
                   </div>
                 )}
 
                 <button
                   onClick={handlePayment}
-                  disabled={isProcessing || storeLoading}
+                  disabled={isProcessing || loading}
                   className={`w-full mt-6 py-4 bg-gradient-to-r from-[#5b5bd6] to-[#3b82f6] text-white font-bold rounded-xl hover:shadow-xl hover:scale-105 transition-all duration-300 ${
-                    (isProcessing || storeLoading) ? 'opacity-50 cursor-not-allowed' : ''
+                    (isProcessing || loading) ? 'opacity-50 cursor-not-allowed' : ''
                   }`}
                 >
-                  {isProcessing || storeLoading ? (
+                  {isProcessing || loading ? (
                     <span className="flex items-center justify-center gap-2">
                       <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                      {storeLoading ? 'Creating Order...' : 'Processing...'}
+                      Processing...
                     </span>
                   ) : (
-                    `Pay ₹${totalAmount.toLocaleString()} Securely`
+                    `Place Order • ₹${totalAmount.toLocaleString()}`
                   )}
                 </button>
 
                 <div className="mt-4 text-center">
-                  <p className="text-xs text-gray-500">🔒 Secured by Cashfree</p>
-                  <p className="text-xs text-gray-400 mt-2">UPI | Cards | NetBanking | Wallets</p>
+                  <p className="text-xs text-gray-500">🔒 Cash on Delivery available</p>
                 </div>
               </div>
             </div>
