@@ -3,6 +3,12 @@ import { stocksAPI } from '../services'
 import { useProductStore } from './productStore'
 import toast from 'react-hot-toast'
 
+// Cache for stocks data
+const stockCache = new Map()
+const CACHE_EXPIRY = 5 * 60 * 1000 // 5 minutes
+const REQUEST_COOLDOWN = 2000 // 2 seconds
+let lastFetchTime = 0
+
 export const useInventoryStore = create((set, get) => ({
   stocks: [],
   totalStocks: 0,
@@ -15,7 +21,34 @@ export const useInventoryStore = create((set, get) => ({
     unit_id: '',
   },
 
-  fetchStocks: async (page = 1, search = '') => {
+  fetchStocks: async (page = 1, search = '', forceRefresh = false) => {
+    const now = Date.now()
+    const cacheKey = `stocks_${page}_${search || ''}`
+    
+    // Check cache first (unless force refresh)
+    if (!forceRefresh && stockCache.has(cacheKey)) {
+      const cached = stockCache.get(cacheKey)
+      if (now - cached.timestamp < CACHE_EXPIRY) {
+        console.log('Stock Store - Using cached data for:', cacheKey)
+        set({
+          stocks: cached.stocks,
+          totalStocks: cached.totalStocks,
+          currentPage: page,
+          loading: false,
+        })
+        return cached.stocks
+      } else {
+        stockCache.delete(cacheKey)
+      }
+    }
+    
+    // Prevent duplicate requests within cooldown period (unless force refresh)
+    if (!forceRefresh && now - lastFetchTime < REQUEST_COOLDOWN) {
+      console.log('Stock Store - Request cooldown active, skipping duplicate fetch')
+      return
+    }
+    
+    lastFetchTime = now
     set({ loading: true })
     try {
       const response = await stocksAPI.getAll(search)
@@ -43,9 +76,16 @@ export const useInventoryStore = create((set, get) => ({
           ...stock,
           product_name: product?.name || `Product ${stock.product_id}`,
           product_sku: product?.sku || '',
-          unit_id: product?.unit_id || stock.unit_id,
+          unit_id: stock.unit_id,
           // We'll map unit_name in the component where we have access to units
         }
+      })
+      
+      // Cache the results
+      stockCache.set(cacheKey, {
+        stocks: enrichedStocks,
+        totalStocks: total,
+        timestamp: now
       })
       
       console.log('Stock Store - Processed Data:', {
@@ -75,31 +115,65 @@ export const useInventoryStore = create((set, get) => ({
   },
 
   createStock: async (stockData) => {
+    console.log('Create Stock - Starting with data:', stockData)
     set({ loading: true })
     try {
       const response = await stocksAPI.create(stockData)
       const apiData = response.data
-      const stock = apiData.data || apiData
+      console.log('Create Stock - API Response:', response)
+      
+      // Handle different response formats
+      let newStock = null
+      if (apiData.data) {
+        if (Array.isArray(apiData.data)) {
+          // Backend returns array of all stocks - find the newly created one
+          // The new stock should be the one with matching product_id and quantity
+          const createdStock = apiData.data.find(stock => 
+            stock.product_id == stockData.product_id && 
+            stock.quantity == stockData.quantity
+          )
+          if (createdStock) {
+            newStock = createdStock
+          } else {
+            // Fallback: use the first stock if we can't find the exact match
+            newStock = apiData.data[0]
+          }
+        } else {
+          // Single stock object
+          newStock = apiData.data
+        }
+      } else {
+        // Fallback to entire response
+        newStock = apiData
+      }
+
+      console.log('Create Stock - Processed stock data:', newStock)
 
       // Get products data to enrich stock information
       const productStore = useProductStore.getState()
       const products = productStore.products || []
       
       // Enrich the new stock with product information
-      const product = products.find(p => p.id === stock.product_id)
+      const product = products.find(p => p.id === newStock?.product_id)
       const enrichedStock = {
-        ...stock,
-        product_name: product?.name || `Product ${stock.product_id}`,
+        ...newStock,
+        product_name: product?.name || `Product ${newStock?.product_id}`,
         product_sku: product?.sku || '',
-        unit_id: stock.unit_id || product?.unit_id,
+        unit_id: newStock?.unit_id,
         // Unit name will be mapped in the component
       }
+
+      console.log('Create Stock - Enriched stock:', enrichedStock)
 
       set((state) => ({
         stocks: [enrichedStock, ...state.stocks],
         totalStocks: state.totalStocks + 1,
         loading: false,
       }))
+      
+      // Clear cache to force refresh on next fetch
+      get().clearCache()
+      
       toast.success('Stock created successfully')
       return { success: true }
     } catch (error) {
@@ -133,7 +207,7 @@ export const useInventoryStore = create((set, get) => ({
         ...stock,
         product_name: product?.name || `Product ${stock.product_id}`,
         product_sku: product?.sku || '',
-        unit_id: stock.unit_id || product?.unit_id,
+        unit_id: stock.unit_id,
         // Ensure quantity is a number for consistency
         quantity: parseFloat(stock.quantity) || stock.quantity,
         // Unit name will be mapped in the component
@@ -163,6 +237,12 @@ export const useInventoryStore = create((set, get) => ({
         }
       })
       
+      // Clear cache to force refresh on next fetch
+      get().clearCache()
+      
+      // Fetch fresh data after update
+      get().fetchStocks()
+      
       toast.success('Stock updated successfully')
       return { success: true }
     } catch (error) {
@@ -175,11 +255,11 @@ export const useInventoryStore = create((set, get) => ({
   },
 
   deleteStock: async (id, userId) => {
-    console.log('🗑️ Inventory Store - Starting delete for stock ID:', id, 'User ID:', userId)
+    console.log(' Inventory Store - Starting delete for stock ID:', id, 'User ID:', userId)
     set({ loading: true })
     try {
       const response = await stocksAPI.delete(id, userId)
-      console.log('🗑️ Inventory Store - Delete API response:', response)
+      console.log(' Inventory Store - Delete API response:', response)
       
       // Check if the delete was successful
       if (response.data?.status === false) {
@@ -189,12 +269,12 @@ export const useInventoryStore = create((set, get) => ({
       set((state) => {
         const currentStocks = state.stocks
         const filteredStocks = currentStocks.filter(s => s.id !== id)
-        console.log('🗑️ Inventory Store - Before deletion:', {
+        console.log(' Inventory Store - Before deletion:', {
           totalStocks: currentStocks.length,
           stockIdToDelete: id,
           foundStock: currentStocks.some(s => s.id === id)
         })
-        console.log('🗑️ Inventory Store - After deletion:', {
+        console.log(' Inventory Store - After deletion:', {
           totalStocks: filteredStocks.length,
           stockRemoved: !filteredStocks.some(s => s.id === id)
         })
@@ -205,11 +285,15 @@ export const useInventoryStore = create((set, get) => ({
           loading: false,
         }
       })
+      
+      // Clear cache to force refresh on next fetch
+      get().clearCache()
+      
       toast.success('Stock deleted successfully')
       return { success: true }
     } catch (error) {
-      console.error('🗑️ Inventory Store - Delete Error:', error)
-      console.error('🗑️ Inventory Store - Delete Error Response:', error.response?.data)
+      console.error(' Inventory Store - Delete Error:', error)
+      console.error(' Inventory Store - Delete Error Response:', error.response?.data)
       toast.error(`Failed to delete stock: ${error.response?.data?.message || error.message}`)
       set({ loading: false })
       return { success: false, error: error.response?.data }
@@ -233,7 +317,7 @@ export const useInventoryStore = create((set, get) => ({
         ...stock,
         product_name: product?.name || `Product ${stock.product_id}`,
         product_sku: product?.sku || '',
-        unit_id: stock.unit_id || product?.unit_id,
+        unit_id: stock.unit_id,
         // Unit name will be mapped in the component
       }
 
@@ -241,6 +325,10 @@ export const useInventoryStore = create((set, get) => ({
         stocks: state.stocks.map(s => s.id === id ? enrichedStock : s),
         loading: false,
       }))
+      
+      // Clear cache to force refresh on next fetch
+      get().clearCache()
+      
       toast.success('Stock quantity updated successfully')
       return { success: true }
     } catch (error) {
@@ -253,6 +341,18 @@ export const useInventoryStore = create((set, get) => ({
 
   setFilters: (filters) => {
     set({ filters: { ...get().filters, ...filters } })
-    get().fetchStocks(1)
+    // Don't automatically fetch here - let the component handle it
+  },
+
+  clearCache: () => {
+    console.log('Stock Store - Clearing cache before:', stockCache.size, 'entries')
+    stockCache.forEach((value, key) => {
+      console.log('Clearing cache key:', key, 'timestamp:', value.timestamp)
+    })
+    stockCache.clear()
+    console.log('Stock Store - Cache cleared after:', stockCache.size, 'entries')
+    
+    // Also reset last fetch time to allow immediate next request
+    lastFetchTime = 0
   },
 }))

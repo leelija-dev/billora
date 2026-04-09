@@ -14,6 +14,11 @@ import { mockStores } from '../../../services/mockData/mockStores'
 import { mockProducts } from '../../../services/mockData/mockProducts'
 import { mockUnits } from '../../../services/mockData/mockUnits'
 
+// Cache for bill generate data
+let billGenerateCache = null
+let lastFetchTime = null
+const CACHE_EXPIRY = 30 * 1000 // 30 seconds
+
 const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting }) => {
   const { user } = useAuthStore()
   
@@ -63,6 +68,111 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
   
   // Enhanced product search state
   const [filteredProducts, setFilteredProducts] = useState([])
+
+  // Check if we have valid cached data
+  const isCacheValid = () => {
+    return billGenerateCache && lastFetchTime && (Date.now() - lastFetchTime) < CACHE_EXPIRY
+  }
+
+  const fetchInitialData = async () => {
+    // Use cached data if available and valid
+    if (isCacheValid()) {
+      console.log('Using cached bill generate data')
+      const data = billGenerateCache
+      
+      const customersList = data.customers || data.bill_customer || data.customer || []
+      const storesList = data.stores || data.store || []
+      const productsList = data.products || data.product || []
+      const unitsList = data.units || data.unit || []
+      
+      setCustomers(customersList.length > 0 ? customersList : mockCustomers)
+      setStores(storesList.length > 0 ? storesList : mockStores)
+      setProducts(productsList.length > 0 ? productsList : mockProducts)
+      setUnits(unitsList.length > 0 ? unitsList : mockUnits)
+      
+      // Auto-select first store if no store is selected
+      if (storesList.length > 0 && !formData.store_id) {
+        const firstStoreId = storesList[0].id
+        setFormData(prev => ({
+          ...prev,
+          store_id: firstStoreId
+        }))
+      }
+      
+      return
+    }
+
+    setLoading(true)
+    try {
+      const response = await invoiceAPI.getBillGenerateData()
+      console.log('Full API response:', response)
+      console.log('Response data:', response.data)
+      
+      // Try different possible response structures
+      let data = {}
+      if (response.data) {
+        if (response.data.data) {
+          data = response.data.data
+        } else {
+          data = response.data
+        }
+      }
+      
+      console.log('Final data object:', data)
+      
+      // Cache the data
+      billGenerateCache = data
+      lastFetchTime = Date.now()
+      
+      // Extract customers with possible different field names
+      const customersList = data.customers || data.bill_customer || data.customer || []
+      const storesList = data.stores || data.store || []
+      const productsList = data.products || data.product || []
+      const unitsList = data.units || data.unit || []
+      
+      console.log('Customers raw:', customersList)
+      console.log('Stores raw:', storesList)
+      console.log('Products raw:', productsList)
+      console.log('Units raw:', unitsList)
+      
+      // Use API data if available, otherwise fall back to mock data
+      setCustomers(customersList.length > 0 ? customersList : mockCustomers)
+      setStores(storesList.length > 0 ? storesList : mockStores)
+      setProducts(productsList.length > 0 ? productsList : mockProducts)
+      setUnits(unitsList.length > 0 ? unitsList : mockUnits)
+      
+      // Auto-select first store if no store is selected
+      if (storesList.length > 0 && !formData.store_id) {
+        const firstStoreId = storesList[0].id
+        console.log('Auto-selecting first store:', firstStoreId)
+        setFormData(prev => ({
+          ...prev,
+          store_id: firstStoreId
+        }))
+      }
+      
+      const finalCustomers = customersList.length > 0 ? customersList : mockCustomers
+      const finalStores = storesList.length > 0 ? storesList : mockStores
+      const finalProducts = productsList.length > 0 ? productsList : mockProducts
+      const finalUnits = unitsList.length > 0 ? unitsList : mockUnits
+      
+      console.log('Final counts - Customers:', finalCustomers.length, 'Stores:', finalStores.length, 'Products:', finalProducts.length, 'Units:', finalUnits.length)
+      console.log('Using API data for customers, stores, products and mock data for units')
+      
+    } catch (error) {
+      console.error('Failed to fetch bill generate data:', error)
+      console.error('Error details:', error.response)
+      
+      // Fall back to mock data on error
+      setCustomers(mockCustomers)
+      setStores(mockStores)
+      setProducts(mockProducts)
+      setUnits(mockUnits)
+      console.log('Using mock data due to API error')
+    } finally {
+      setLoading(false)
+    }
+  }
 
   useEffect(() => {
     fetchInitialData()
@@ -138,79 +248,6 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
       }
     }
   }, [customers, stores, formData.customer_id, formData.store_id])
-
-  const fetchInitialData = async () => {
-    setLoading(true)
-    try {
-      const response = await invoiceAPI.getBillGenerateData()
-      console.log('Full API response:', response)
-      console.log('Response data:', response.data)
-      
-      // Try different possible response structures
-      let data = {}
-      if (response.data) {
-        if (response.data.data) {
-          data = response.data.data
-        } else {
-          data = response.data
-        }
-      }
-      
-      console.log('Final data object:', data)
-      
-      // Extract customers with possible different field names
-      const customersList = data.customers || data.bill_customer || data.customer || []
-      const storesList = data.stores || data.store || []
-      const productsList = data.products || data.product || []
-      const unitsList = data.units || data.unit || []
-      
-      console.log('Customers raw:', customersList)
-      console.log('Stores raw:', storesList)
-      console.log('Products raw:', productsList)
-      console.log('Units raw:', unitsList)
-      
-      // Use API data if available, otherwise fall back to mock data
-      setCustomers(customersList.length > 0 ? customersList : mockCustomers)
-      setStores(storesList.length > 0 ? storesList : mockStores)
-      setProducts(productsList.length > 0 ? productsList : mockProducts)
-      setUnits(unitsList.length > 0 ? unitsList : mockUnits)
-      
-      // Auto-select first store if no store is selected
-      if (storesList.length > 0 && !formData.store_id) {
-        const firstStoreId = storesList[0].id
-        console.log('🏪 Auto-selecting first store:', firstStoreId)
-        setFormData(prev => ({
-          ...prev,
-          store_id: firstStoreId
-        }))
-      }
-      
-      const finalCustomers = customersList.length > 0 ? customersList : mockCustomers
-      const finalStores = storesList.length > 0 ? storesList : mockStores
-      const finalProducts = productsList.length > 0 ? productsList : mockProducts
-      const finalUnits = unitsList.length > 0 ? unitsList : mockUnits
-      
-      console.log('Final counts - Customers:', finalCustomers.length, 'Stores:', finalStores.length, 'Products:', finalProducts.length, 'Units:', finalUnits.length)
-      console.log('Using API data for customers, stores, products and mock data for units')
-      
-    } catch (error) {
-      console.error('Failed to fetch bill generate data:', error)
-      console.error('Error details:', error.response)
-      
-      // Use mock data as fallback when API fails
-      console.log('API failed, using mock data fallback')
-      setCustomers(mockCustomers)
-      setStores(mockStores)
-      setProducts(mockProducts)
-      setUnits(mockUnits)
-      
-      console.log('Mock data counts - Customers:', mockCustomers.length, 'Stores:', mockStores.length, 'Products:', mockProducts.length, 'Units:', mockUnits.length)
-      
-      setError(`API failed, using mock data. Error: ${error.message}`)
-    } finally {
-      setLoading(false)
-    }
-  }
 
   const handleAddItem = async (product) => {
     try {

@@ -496,8 +496,11 @@ const Pricing = () => {
                       </div>
                     )}
 
-                    <div className="text-center mb-8 pb-6 border-b border-gray-100">
-                      <h3 className="text-2xl font-bold text-gray-900 mb-3">{plan.name}</h3>
+                <div className="text-center mb-8 pb-6 border-b border-gray-100">
+  <h3 className="text-2xl font-bold text-gray-900 mb-3">
+    {plan.name.charAt(0).toUpperCase() + plan.name.slice(1).toLowerCase()}
+  </h3>
+
                       
                       <div className="mb-4">
                         {(plan.discount > 0 || currentPriceData.hasCustomPrice) && (
@@ -516,7 +519,7 @@ const Pricing = () => {
                           <span className="text-5xl font-bold" style={{ color: isPopular ? '#8b5cf6' : '#000000' }}>
                             {currentPriceData.displayPrice}
                           </span>
-                          <span className="text-gray-400 text-base font-medium">/{billingCycle === 'monthly' ? 'month' : 'year'}</span>
+                          <span className="text-gray-400 text-base font-medium">/{billingCycle === 'days' ? 'days' : 'days'}</span>
                         </div>
                         
                         {(plan.discount > 0 || currentPriceData.hasCustomPrice) && (
@@ -530,7 +533,7 @@ const Pricing = () => {
                     </div>
 
                     <div className="flex-1 mb-8">
-                      <h4 className="text-xs font-bold text-gray-500 mb-5 uppercase tracking-wider">What's included</h4>
+                      <h4 className="text-xs font-bold text-gray-500 mb-5 uppercase tracking-wider"> included Features :</h4>
                       <ul className="space-y-3.5">
                         {plan.features.map((feature, idx) => (
                           <li key={idx} className="flex items-start gap-3 text-sm text-gray-700">

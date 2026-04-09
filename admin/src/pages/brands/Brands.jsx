@@ -114,19 +114,16 @@ const Brands = () => {
       }
     }
     fetchData()
-  }, [currentUserId])
+  }, []) // Remove fetchBrands from dependency array
 
   useEffect(() => {
     const debounceTimer = setTimeout(() => {
       setFilters({ search: searchTerm })
-      // Refresh brands when search term changes and not in form mode
-      if (!showAddForm && !showEditForm) {
-        fetchBrands()
-      }
+      // Remove manual fetch here - let setFilters handle it
     }, 500)
 
     return () => clearTimeout(debounceTimer)
-  }, [searchTerm, setFilters, fetchBrands, showAddForm, showEditForm])
+  }, [searchTerm]) // Remove setFilters, fetchBrands, and other dependencies
 
   const handleAddBrand = () => {
     setShowAddForm(true)
@@ -165,8 +162,17 @@ const Brands = () => {
         await createBrand(brandData)
         console.log('✅ Brand created successfully')
       }
-      // Hide the form
+      
+      // Hide form - the store already updates local state immediately
       handleCancelForm()
+      
+      // Force a small re-render by updating a dummy state
+      setTimeout(() => {
+        // This ensures the UI reflects the changes
+        const { brands } = useBrandStore.getState()
+        console.log('📊 Brands after operation:', brands)
+      }, 100)
+      
     } catch (error) {
       console.error(`Error ${showEditForm ? 'updating' : 'creating'} brand:`, error)
     } finally {
@@ -177,6 +183,12 @@ const Brands = () => {
   const handleDelete = async (id) => {
     if (window.confirm('Are you sure you want to delete this brand?')) {
       await deleteBrand(id)
+      
+      // Force a small re-render to ensure UI reflects changes
+      setTimeout(() => {
+        const { brands } = useBrandStore.getState()
+        console.log('📊 Brands after deletion:', brands)
+      }, 100)
     }
   }
 
@@ -187,6 +199,12 @@ const Brands = () => {
       }
       setSelectedBrands([])
       setShowDeleteConfirm(false)
+      
+      // Force a small re-render to ensure UI reflects changes
+      setTimeout(() => {
+        const { brands } = useBrandStore.getState()
+        console.log('📊 Brands after bulk deletion:', brands)
+      }, 100)
     }
   }
 
@@ -330,33 +348,7 @@ const Brands = () => {
             <FiTrash2 className="w-4 h-4" />
           </motion.button>
           
-          <div className="relative group">
-            <motion.button
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.9 }}
-              className="p-2 text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700 rounded-lg transition-colors"
-            >
-              <FiMoreVertical className="w-4 h-4" />
-            </motion.button>
-            
-            {/* Quick actions dropdown */}
-            <div className="absolute right-0 mt-1 w-48 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10">
-              <div className="p-1">
-                <button className="w-full px-3 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg flex items-center space-x-2">
-                  <FiEye className="w-4 h-4" />
-                  <span>View details</span>
-                </button>
-                <button className="w-full px-3 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg flex items-center space-x-2">
-                  <FiCopy className="w-4 h-4" />
-                  <span>Duplicate</span>
-                </button>
-                <button className="w-full px-3 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg flex items-center space-x-2">
-                  <FiArchive className="w-4 h-4" />
-                  <span>Archive</span>
-                </button>
-              </div>
-            </div>
-          </div>
+          
         </div>
       ),
     },

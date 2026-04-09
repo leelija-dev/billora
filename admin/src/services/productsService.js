@@ -122,9 +122,14 @@ export const productsAPI = {
         formData.append('qr_code', productData.qr_code);
       }
       
-      // Handle variants (array)
+      // Handle variants (array) - send as individual objects for proper parsing
       if (productData.variants && Array.isArray(productData.variants)) {
-        formData.append('variants', JSON.stringify(productData.variants));
+        productData.variants.forEach((variant, index) => {
+          if (variant.size) formData.append(`variants[${index}][size]`, variant.size);
+          if (variant.color) formData.append(`variants[${index}][color]`, variant.color);
+          if (variant.material) formData.append(`variants[${index}][material]`, variant.material);
+          if (variant.gender) formData.append(`variants[${index}][gender]`, variant.gender);
+        });
       }
       
       const response = await apiClient.post('/products/store', formData, {
@@ -143,51 +148,53 @@ export const productsAPI = {
   // Update product
   update: async (id, productData) => {
     try {
-      console.log(`📦 Updating product ${id} with data:`, productData);
+      console.log(`Updating product ${id} with data:`, productData);
       
-      // Create FormData for file upload
-      const formData = new FormData();
+      // Clean the data to handle database constraints and remove fields that shouldn't be sent in update
+      const cleanedData = { ...productData };
       
-      // Add all product fields to FormData
-      if (productData.user_id) formData.append('user_id', productData.user_id);
-      if (productData.name) formData.append('name', productData.name);
-      if (productData.brand_id) formData.append('brand_id', productData.brand_id);
-      if (productData.category_id) formData.append('category_id', productData.category_id);
-      if (productData.unit_amount) formData.append('unit_amount', productData.unit_amount);
-      if (productData.unit_id) formData.append('unit_id', productData.unit_id);
-      if (productData.selling_price) formData.append('selling_price', productData.selling_price);
-      if (productData.purchase_price) formData.append('purchase_price', productData.purchase_price);
-      if (productData.gst_percentage) formData.append('gst_percentage', productData.gst_percentage);
-      if (productData.discount_percentage) formData.append('discount_percentage', productData.discount_percentage);
-      if (productData.description) formData.append('description', productData.description);
-      if (productData.created_by) formData.append('created_by', productData.created_by);
+      // Remove fields that shouldn't be sent in update (images, variants arrays, etc.)
+      delete cleanedData.images;
+      delete cleanedData.variants;
+      delete cleanedData.created_at;
+      delete cleanedData.updated_at;
+      delete cleanedData.deleted_at;
+      delete cleanedData.lowStock;
+      delete cleanedData.lowStockThreshold;
+      delete cleanedData.maxStock;
+      delete cleanedData.stock;
+      delete cleanedData.slug;
       
-      // Add image file if present
-      if (productData.image) {
-        formData.append('image', productData.image);
+      // Handle warranty_months - if empty or null, don't send it
+      if (!cleanedData.warranty_months || cleanedData.warranty_months === '') {
+        delete cleanedData.warranty_months;
       }
       
-      // Add QR code image file if present
-      if (productData.qr_code) {
-        formData.append('qr_code', productData.qr_code);
-      }
+      // Handle other nullable fields that might cause constraint violations
+      const nullableFields = [
+        'conversion_factor', 'minimum_stock_quantity', 'maximum_stock_quantity', 'current_stock',
+        'mrp', 'wholesale_price', 'gst_hsn_code', 'discount_amount', 'cess_percentage',
+        'medicine_type', 'other_medicine_type', 'expiry_date', 'batch_number', 'manufacturer_name',
+        'schedule_type', 'salt_composition', 'harvest_date', 'storage_instructions',
+        'short_description', 'warehouse_location', 'supplier_id', 'updated_by'
+      ];
       
-      // Set is_active default to true if not provided
-      if (productData.is_active !== undefined) {
-        formData.append('is_active', true);
-      } else {
-        formData.append('is_active', productData.is_active);
-      }
+      nullableFields.forEach(field => {
+        if (!cleanedData[field] || cleanedData[field] === '') {
+          delete cleanedData[field];
+        }
+      });
       
-      const response = await apiClient.put(`/products/${id}`, formData, {
+      // For update, send JSON data instead of FormData (no file uploads needed for update)
+      const response = await apiClient.put(`/products/${id}`, cleanedData, {
         headers: {
-          'Content-Type': 'multipart/form-data',
+          'Content-Type': 'application/json',
         },
       });
-      console.log('📦 Product updated successfully:', response.data);
+      console.log('Product updated successfully:', response.data);
       return response;
     } catch (error) {
-      console.error(`❌ Failed to update product ${id}:`, error);
+      console.error(`Failed to update product ${id}:`, error);
       throw error.response?.data || error.message;
     }
   },

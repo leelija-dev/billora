@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { 
@@ -28,6 +28,28 @@ import EmptyState from '../../components/common/EmptyState/EmptyState'
 import Select from '../../components/common/Select/Select'
 import CustomerForm from '../../components/features/Customers/CustomerForm'
 
+// Cache for customer details
+const customerDetailsCache = new Map()
+const paymentHistoryCache = new Map()
+const CACHE_EXPIRY = 5 * 60 * 1000 // 5 minutes
+
+const isCacheValid = (cacheEntry) => {
+  return cacheEntry && (Date.now() - cacheEntry.timestamp) < CACHE_EXPIRY
+}
+
+const getCachedData = (cache, key) => {
+  const entry = cache.get(key)
+  if (isCacheValid(entry)) {
+    return entry.data
+  }
+  cache.delete(key)
+  return null
+}
+
+const setCachedData = (cache, key, data) => {
+  cache.set(key, { data, timestamp: Date.now() })
+}
+
 const CustomerDetails = () => {
   const { id } = useParams()
   const navigate = useNavigate()
@@ -45,14 +67,32 @@ const CustomerDetails = () => {
     start_date: '',
     end_date: ''
   })
+  
+  // Refs to track previous values
+  const prevIdRef = useRef(id)
+  const prevFiltersRef = useRef(filters)
 
   // Fetch customer details
   useEffect(() => {
     const fetchCustomerDetails = async () => {
+      // Check cache first
+      const cacheKey = `customer_${id}`
+      const cached = getCachedData(customerDetailsCache, cacheKey)
+      if (cached) {
+        console.log('Using cached customer details')
+        setCustomer(cached)
+        setLoading(false)
+        return
+      }
+
       try {
         setLoading(true)
         const response = await customerAPI.getById(id)
-        setCustomer(response.data?.data || response.data)
+        const customerData = response.data?.data || response.data
+        
+        // Cache the result
+        setCachedData(customerDetailsCache, cacheKey, customerData)
+        setCustomer(customerData)
       } catch (error) {
         console.error('Failed to fetch customer details:', error)
       } finally {
@@ -60,29 +100,54 @@ const CustomerDetails = () => {
       }
     }
 
-    fetchCustomerDetails()
+    // Only fetch if ID actually changed
+    if (id !== prevIdRef.current) {
+      prevIdRef.current = id
+      fetchCustomerDetails()
+    }
   }, [id])
 
-  // Fetch payment history
+  // Fetch payment history with caching
   useEffect(() => {
-    fetchPaymentHistory()
-  }, [id, filters])
+    const fetchPaymentHistory = async () => {
+      // Check cache first
+      const cacheKey = `payment_history_${id}_${JSON.stringify(filters)}`
+      const cached = getCachedData(paymentHistoryCache, cacheKey)
+      if (cached) {
+        console.log('Using cached payment history')
+        setPaymentHistory(cached)
+        setPaymentLoading(false)
+        return
+      }
 
-  const fetchPaymentHistory = async () => {
-    try {
-      setPaymentLoading(true)
-      const params = new URLSearchParams()
-      if (filters.start_date) params.append('start_date', filters.start_date)
-      if (filters.end_date) params.append('end_date', filters.end_date)
-      
-      const response = await customerAPI.getPaymentHistory(id, params.toString())
-      setPaymentHistory(response.data?.bill_payment_history || [])
-    } catch (error) {
-      console.error('Failed to fetch payment history:', error)
-    } finally {
-      setPaymentLoading(false)
+      try {
+        setPaymentLoading(true)
+        const params = new URLSearchParams()
+        if (filters.start_date) params.append('start_date', filters.start_date)
+        if (filters.end_date) params.append('end_date', filters.end_date)
+        
+        const response = await customerAPI.getPaymentHistory(id, params.toString())
+        const historyData = response.data?.bill_payment_history || []
+        
+        // Cache the result
+        setCachedData(paymentHistoryCache, cacheKey, historyData)
+        setPaymentHistory(historyData)
+      } catch (error) {
+        console.error('Failed to fetch payment history:', error)
+      } finally {
+        setPaymentLoading(false)
+      }
     }
-  }
+
+    // Only fetch if filters actually changed
+    const currentFilters = JSON.stringify(filters)
+    const prevFilters = JSON.stringify(prevFiltersRef.current)
+    
+    if (id !== prevIdRef.current || currentFilters !== prevFilters) {
+      prevFiltersRef.current = { ...filters }
+      fetchPaymentHistory()
+    }
+  }, [id, filters.start_date, filters.end_date])
 
   const handleEditCustomer = async (customerData) => {
     try {
