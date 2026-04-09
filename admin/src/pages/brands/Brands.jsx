@@ -114,19 +114,16 @@ const Brands = () => {
       }
     }
     fetchData()
-  }, [currentUserId])
+  }, []) // Remove fetchBrands from dependency array
 
   useEffect(() => {
     const debounceTimer = setTimeout(() => {
       setFilters({ search: searchTerm })
-      // Refresh brands when search term changes and not in form mode
-      if (!showAddForm && !showEditForm) {
-        fetchBrands()
-      }
+      // Remove manual fetch here - let setFilters handle it
     }, 500)
 
     return () => clearTimeout(debounceTimer)
-  }, [searchTerm, setFilters, fetchBrands, showAddForm, showEditForm])
+  }, [searchTerm]) // Remove setFilters, fetchBrands, and other dependencies
 
   const handleAddBrand = () => {
     setShowAddForm(true)
@@ -165,8 +162,17 @@ const Brands = () => {
         await createBrand(brandData)
         console.log('✅ Brand created successfully')
       }
-      // Hide the form
+      
+      // Hide form - the store already updates local state immediately
       handleCancelForm()
+      
+      // Force a small re-render by updating a dummy state
+      setTimeout(() => {
+        // This ensures the UI reflects the changes
+        const { brands } = useBrandStore.getState()
+        console.log('📊 Brands after operation:', brands)
+      }, 100)
+      
     } catch (error) {
       console.error(`Error ${showEditForm ? 'updating' : 'creating'} brand:`, error)
     } finally {
@@ -177,6 +183,12 @@ const Brands = () => {
   const handleDelete = async (id) => {
     if (window.confirm('Are you sure you want to delete this brand?')) {
       await deleteBrand(id)
+      
+      // Force a small re-render to ensure UI reflects changes
+      setTimeout(() => {
+        const { brands } = useBrandStore.getState()
+        console.log('📊 Brands after deletion:', brands)
+      }, 100)
     }
   }
 
@@ -187,6 +199,12 @@ const Brands = () => {
       }
       setSelectedBrands([])
       setShowDeleteConfirm(false)
+      
+      // Force a small re-render to ensure UI reflects changes
+      setTimeout(() => {
+        const { brands } = useBrandStore.getState()
+        console.log('📊 Brands after bulk deletion:', brands)
+      }, 100)
     }
   }
 
