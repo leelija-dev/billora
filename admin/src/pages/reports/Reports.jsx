@@ -1108,6 +1108,43 @@ const handleExportToPDF = () => {
     },
   ]
 
+  const StatCard = ({ title, value, icon: Icon, color, subtitle, delay }) => (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay }}
+      whileHover={{ y: -2, scale: 1.02 }}
+      className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 relative overflow-hidden group cursor-pointer"
+    >
+      <div className={`absolute top-0 right-0 w-20 h-20 bg-gradient-to-br ${color} opacity-10 rounded-full -mr-6 -mt-6 group-hover:scale-150 transition-transform duration-500`} />
+      <div className="relative">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-sm text-gray-600 dark:text-gray-400">{title}</p>
+            <motion.p 
+              initial={{ scale: 1 }}
+              animate={{ scale: [1, 1.1, 1] }}
+              transition={{ duration: 0.5, delay: delay + 0.3 }}
+              className="text-2xl font-bold text-gray-900 dark:text-white mt-2"
+            >
+              {value}
+            </motion.p>
+            {subtitle && (
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{subtitle}</p>
+            )}
+          </div>
+          <motion.div 
+            whileHover={{ rotate: 15, scale: 1.1 }}
+            transition={{ type: "spring", stiffness: 300 }}
+            className={`p-3 rounded-xl bg-gradient-to-br ${color} shadow-lg`}
+          >
+            <Icon className="w-5 h-5 text-white" />
+          </motion.div>
+        </div>
+      </div>
+    </motion.div>
+  )
+
   return (
     <motion.div 
       initial={{ opacity: 0 }}
@@ -1247,74 +1284,40 @@ const handleExportToPDF = () => {
       <AnimatePresence>
         {!loading && filteredReports.length > 0 && (
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6"
+            key="stats"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6"
           >
-            <motion.div 
-              whileHover={{ y: -4 }}
-              className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl shadow-lg p-6 text-white relative overflow-hidden group"
-            >
-              <div className="absolute inset-0 bg-white/10 transform -skew-x-12 -translate-x-full group-hover:translate-x-0 transition-transform duration-500" />
-              <div className="flex items-center justify-between relative z-10">
-                <div>
-                  <p className="text-blue-100 text-sm font-medium">Total Revenue</p>
-                  <p className="text-3xl font-bold mt-2">
-                    ₹{stats.revenue.toFixed(2)}
-                  </p>
-                </div>
-                <FiDollarSign className="w-10 h-10 text-blue-200 opacity-80" />
-              </div>
-            </motion.div>
-
-            <motion.div 
-              whileHover={{ y: -4 }}
-              className="bg-gradient-to-br from-green-500 to-green-600 rounded-2xl shadow-lg p-6 text-white relative overflow-hidden group"
-            >
-              <div className="absolute inset-0 bg-white/10 transform -skew-x-12 -translate-x-full group-hover:translate-x-0 transition-transform duration-500" />
-              <div className="flex items-center justify-between relative z-10">
-                <div>
-                  <p className="text-green-100 text-sm font-medium">Total Orders</p>
-                  <p className="text-3xl font-bold mt-2">
-                    {stats.orders}
-                  </p>
-                </div>
-                <FiPackage className="w-10 h-10 text-green-200 opacity-80" />
-              </div>
-            </motion.div>
-
-            <motion.div 
-              whileHover={{ y: -4 }}
-              className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl shadow-lg p-6 text-white relative overflow-hidden group"
-            >
-              <div className="absolute inset-0 bg-white/10 transform -skew-x-12 -translate-x-full group-hover:translate-x-0 transition-transform duration-500" />
-              <div className="flex items-center justify-between relative z-10">
-                <div>
-                  <p className="text-purple-100 text-sm font-medium">Products Sold</p>
-                  <p className="text-3xl font-bold mt-2">
-                    {stats.products}
-                  </p>
-                </div>
-                <FiBarChart2 className="w-10 h-10 text-purple-200 opacity-80" />
-              </div>
-            </motion.div>
-
-            <motion.div 
-              whileHover={{ y: -4 }}
-              className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-2xl shadow-lg p-6 text-white relative overflow-hidden group"
-            >
-              <div className="absolute inset-0 bg-white/10 transform -skew-x-12 -translate-x-full group-hover:translate-x-0 transition-transform duration-500" />
-              <div className="flex items-center justify-between relative z-10">
-                <div>
-                  <p className="text-orange-100 text-sm font-medium">Avg. Order Value</p>
-                  <p className="text-3xl font-bold mt-2">
-                    ₹{stats.averageOrder.toFixed(2)}
-                  </p>
-                </div>
-                <FiTrendingUp className="w-10 h-10 text-orange-200 opacity-80" />
-              </div>
-            </motion.div>
+            <StatCard
+              title="Total Revenue"
+              value={`Rs.${stats.revenue.toFixed(2)}`}
+              icon={FiDollarSign}
+              color="from-blue-500 to-cyan-500"
+              delay={0.1}
+            />
+            <StatCard
+              title="Total Orders"
+              value={stats.orders}
+              icon={FiPackage}
+              color="from-green-500 to-emerald-500"
+              delay={0.2}
+            />
+            <StatCard
+              title="Products Sold"
+              value={stats.products}
+              icon={FiBarChart2}
+              color="from-purple-500 to-indigo-500"
+              delay={0.3}
+            />
+            <StatCard
+              title="Avg Order Value"
+              value={`Rs.${stats.averageOrder.toFixed(2)}`}
+              icon={FiTrendingUp}
+              color="from-orange-500 to-red-500"
+              delay={0.4}
+            />
           </motion.div>
         )}
       </AnimatePresence>
