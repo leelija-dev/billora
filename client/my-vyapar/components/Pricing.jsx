@@ -460,7 +460,7 @@ const Pricing = () => {
                 </div>
 
                 {/* Price Summary with GST */}
-                <div className="mb-4 p-3 bg-gray-50 rounded-lg">
+                {/* <div className="mb-4 p-3 bg-gray-50 rounded-lg">
                   <div className="flex justify-between text-sm mb-1">
                     <span className="text-gray-600">Plan Price:</span>
                     <span className="font-semibold">₹{currentPriceData.displayPrice}</span>
@@ -475,7 +475,7 @@ const Pricing = () => {
                     <span className="font-bold text-gray-800">Total Amount:</span>
                     <span className="font-bold text-purple-600">₹{totalAmount.toFixed(2)}</span>
                   </div>
-                </div>
+                </div> */}
 
                 <div className="mt-auto pt-4">
                   <button

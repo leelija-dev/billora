@@ -15,7 +15,6 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   
-  // Validation error states
   const [emailError, setEmailError] = useState("");
   const [passwordError, setPasswordError] = useState("");
   const router = useRouter();
@@ -26,8 +25,10 @@ const Login = () => {
     const pendingPlan = localStorage.getItem('pendingPlan');
     const redirectUrl = searchParams.get("redirect");
     
+    console.log("Login page loaded - Pending plan:", pendingPlan);
+    console.log("Login page loaded - Redirect URL:", redirectUrl);
+    
     if (pendingPlan && !redirectUrl) {
-      // Show a toast notification that a plan was waiting
       const planData = JSON.parse(pendingPlan);
       toast.success(`Complete your ${planData.name} plan purchase!`, {
         duration: 4000,
@@ -41,7 +42,6 @@ const Login = () => {
     }
   }, [searchParams]);
 
-  // Validation functions
   const validateEmail = (value) => {
     if (!value.trim()) {
       setEmailError("Email is required");
@@ -78,18 +78,14 @@ const Login = () => {
   const handleLogin = async (e) => {
     e.preventDefault();
     
-    // Clear previous errors
     setError("");
     
-    // Validate form before submitting
     if (!validateForm()) {
       toast.error("Please fix the validation errors");
       return;
     }
     
     setLoading(true);
-    
-    // Show loading toast
     const loadingToast = toast.loading("Logging in...");
     
     try {
@@ -110,13 +106,9 @@ const Login = () => {
       const userData = res.user || res.data?.user || res;
       const token = res.token || res.data?.token || null;
       
-      // ✅ Save auth data to localStorage
       saveAuthData(userData, token);
-      
-      // ✅ Dispatch custom event to update navbar
       window.dispatchEvent(new Event("userLoggedIn"));
       
-      // ✅ Dismiss loading toast and show success
       toast.dismiss(loadingToast);
       toast.success("Login Successful! ✅", {
         duration: 3000,
@@ -129,11 +121,10 @@ const Login = () => {
         },
       });
       
-      // ✅ Handle redirect after login
+      // Handle redirect after login
       await handleRedirectAfterLogin();
       
     } catch (error) {
-      // Dismiss loading toast
       toast.dismiss(loadingToast);
       
       let errorMessage = "";
@@ -163,56 +154,67 @@ const Login = () => {
     }
   };
 
-  // New function to handle redirect logic
   const handleRedirectAfterLogin = async () => {
-    // First check for pending plan (from pricing page)
+    // IMPORTANT: Check pendingPlan FIRST (highest priority)
     const pendingPlan = localStorage.getItem('pendingPlan');
     const redirectFromQuery = searchParams.get("redirect");
+    const redirectAfterLogin = localStorage.getItem('redirectAfterLogin');
     
-    // Priority 1: Direct redirect from query parameter (from pricing page)
+    console.log("Redirect priorities - Pending Plan:", pendingPlan);
+    console.log("Redirect priorities - From Query:", redirectFromQuery);
+    console.log("Redirect priorities - After Login:", redirectAfterLogin);
+    
+    // Priority 1: Pending plan from pricing page (MOST IMPORTANT)
+    if (pendingPlan) {
+      try {
+        const planData = JSON.parse(pendingPlan);
+        console.log("Found pending plan, redirecting to order summary:", planData);
+        
+        toast.success(`Proceeding to ${planData.name} plan checkout!`, {
+          duration: 2000,
+          position: "top-center",
+        });
+        
+        // Small delay to ensure toast is seen
+        setTimeout(() => {
+          // Clear ALL redirect-related items EXCEPT pending plan
+          localStorage.removeItem('redirectAfterLogin');
+          // Don't remove pendingPlan here - it will be used in order summary
+          // But we need to keep it for the order summary page
+          
+          // Navigate to order summary
+          router.push('/order-summary');
+        }, 500);
+        return;
+      } catch (error) {
+        console.error("Error parsing pending plan:", error);
+        localStorage.removeItem('pendingPlan');
+        // Continue to next priority if pending plan is invalid
+      }
+    }
+    
+    // Priority 2: Direct redirect from query parameter
     if (redirectFromQuery) {
-      // Clear any pending plan since we're redirecting directly
+      console.log("Redirecting to query param URL:", redirectFromQuery);
       localStorage.removeItem('pendingPlan');
       localStorage.removeItem('redirectAfterLogin');
       router.push(redirectFromQuery);
       return;
     }
     
-    // Priority 2: Check for pending plan (from pricing page without redirect param)
-    if (pendingPlan) {
-      const planData = JSON.parse(pendingPlan);
-      
-      // Show a success toast with plan info
-      toast.success(`Proceeding to ${planData.name} plan checkout!`, {
-        duration: 2000,
-        position: "top-center",
-      });
-      
-      // Small delay to ensure toast is seen
-      setTimeout(() => {
-        // Clear the pending plan from localStorage
-        localStorage.removeItem('pendingPlan');
-        localStorage.removeItem('redirectAfterLogin');
-        
-        // Navigate to order summary with the plan
-        router.push('/order-summary');
-      }, 500);
-      return;
-    }
-    
-    // Priority 3: Check for generic redirect after login
-    const redirectAfterLogin = localStorage.getItem('redirectAfterLogin');
+    // Priority 3: Generic redirect after login
     if (redirectAfterLogin) {
+      console.log("Redirecting to after login URL:", redirectAfterLogin);
       localStorage.removeItem('redirectAfterLogin');
       router.push(redirectAfterLogin);
       return;
     }
     
     // Priority 4: Default redirect to pricing page
+    console.log("No redirect found, going to pricing page");
     router.push("/pricing");
   };
 
-  // Real-time validation handlers
   const handleEmailChange = (e) => {
     const value = e.target.value;
     setEmail(value);
@@ -229,7 +231,6 @@ const Login = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#ece9f1] to-[#dfe3f8] flex flex-col">
-      {/* Add Toaster component */}
       <Toaster 
         position="top-center"
         reverseOrder={false}
@@ -237,7 +238,6 @@ const Login = () => {
         containerClassName=""
         containerStyle={{}}
         toastOptions={{
-          // Define default options
           className: '',
           duration: 3000,
           style: {
@@ -264,7 +264,6 @@ const Login = () => {
       />
       
       <div className="flex-1 flex justify-center items-center font-sans relative py-8">
-        {/* Back to Home Button */}
         <button
           onClick={() => router.push("/")}
           className="absolute top-6 left-6 flex items-center gap-2 px-4 py-2 bg-white rounded-lg shadow-md hover:shadow-lg transition-all duration-300 hover:scale-105 text-[#2d236b] font-medium z-10"
@@ -279,30 +278,31 @@ const Login = () => {
             LOG IN
           </h1>
 
-          {/* Show pending plan info if exists */}
           {(() => {
             const pendingPlan = typeof window !== 'undefined' ? localStorage.getItem('pendingPlan') : null;
             if (pendingPlan) {
-              const planData = JSON.parse(pendingPlan);
-              return (
-                <div className="mb-4 p-3 bg-purple-50 border border-purple-200 rounded-xl">
-                  <p className="text-sm text-purple-800 text-center">
-                    🎯 Complete your <strong>{planData.name}</strong> plan purchase after login
-                  </p>
-                </div>
-              );
+              try {
+                const planData = JSON.parse(pendingPlan);
+                return (
+                  <div className="mb-4 p-3 bg-purple-50 border border-purple-200 rounded-xl">
+                    <p className="text-sm text-purple-800 text-center">
+                      🎯 Complete your <strong>{planData.name}</strong> plan purchase after login
+                    </p>
+                  </div>
+                );
+              } catch(e) {
+                return null;
+              }
             }
             return null;
           })()}
 
-          {/* Server Error Message - Keep for backup but toast will handle main notifications */}
           {error && (
             <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-xl mb-4 text-sm">
               {error}
             </div>
           )}
 
-          {/* Social Buttons */}
           <div className="flex gap-5 mb-6">
             <button 
               type="button"
@@ -313,7 +313,6 @@ const Login = () => {
             </button>
           </div>
 
-          {/* Email Field */}
           <div className="flex flex-col mb-5">
             <label className="mb-1.5 text-sm text-gray-700 font-medium">Email Address *</label>
             <input 
@@ -333,7 +332,6 @@ const Login = () => {
             )}
           </div>
 
-          {/* Password Field */}
           <div className="flex flex-col mb-3 relative">
             <label className="mb-1.5 text-sm text-gray-700 font-medium">Password *</label>
             <input
@@ -377,9 +375,17 @@ const Login = () => {
               Don't have an account?{" "}
               <span 
                 onClick={() => {
-                  // Preserve redirect params when going to register
                   const redirect = searchParams.get("redirect");
-                  const registerUrl = redirect ? `/register?redirect=${encodeURIComponent(redirect)}` : "/register";
+                  // Preserve pending plan info when going to register
+                  const pendingPlan = localStorage.getItem('pendingPlan');
+                  let registerUrl = "/register";
+                  
+                  if (redirect) {
+                    registerUrl = `/register?redirect=${encodeURIComponent(redirect)}`;
+                  } else if (pendingPlan) {
+                    registerUrl = `/register?redirect=${encodeURIComponent('/order-summary')}`;
+                  }
+                  
                   router.push(registerUrl);
                 }}
                 className="text-[#3b82f6] font-bold cursor-pointer hover:underline"
