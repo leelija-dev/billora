@@ -31,6 +31,10 @@ import { customerAPI } from '../../services/customerService'
 import { storeAPI } from '../../services/storeService'
 import { productsAPI } from '../../services/productsService'
 
+// Cache for product data
+const productCache = new Map()
+const CACHE_EXPIRY = 5 * 60 * 1000
+
 const Invoices = () => {
   const navigate = useNavigate()
   const { canAccess } = usePermissionStore()
@@ -164,48 +168,64 @@ const Invoices = () => {
 
   const handlePrintA4 = async (invoice) => {
     try {
-      const [customerResponse, storeResponse] = await Promise.all([
-        customerAPI.getById(invoice.customer_id),
-        storeAPI.getByUserId(invoice.user_id)
-      ])
-
-      const customerData = customerResponse.data?.data || {}
-      const storesArray = storeResponse.data?.data?.data || storeResponse.data?.data || []
-      const storeData = storesArray.find(store => store.id === invoice.store_id) || storesArray[0] || {}
+      // Use cached data from invoice store instead of making new API calls
+      let customerData = invoice.customer || {}
+      let storeData = invoice.store || {}
+      
+      // Only fetch if data is missing from cache
+      if (!customerData.name && invoice.customer_id) {
+        const customerResponse = await customerAPI.getById(invoice.customer_id)
+        customerData = customerResponse.data?.data || {}
+      }
+      
+      if (!storeData.name && invoice.store_id) {
+        const storeResponse = await storeAPI.getByUserId(invoice.user_id)
+        const storesArray = storeResponse.data?.data?.data || storeResponse.data?.data || []
+        storeData = storesArray.find(store => store.id === invoice.store_id) || storesArray[0] || {}
+      }
 
       const invoiceItems = invoice.invoice_items || invoice.items || []
       let enhancedItems = []
       
       if (invoiceItems.length > 0) {
-        const productPromises = invoiceItems.map(item => 
-          productsAPI.getById(item.product_id)
-            .then(productResponse => {
-              const productData = productResponse.data?.data || productResponse.data || {}
-              return {
-                ...item,
-                product_name: productData.name || item.product_name || item.name || `Product #${item.product_id || item.id || 'Unknown'}`,
-                price: parseFloat(item.price || productData.selling_price || 0),
-                quantity: parseFloat(item.quantity || item.item_count || 1),
-                total_price: parseFloat(item.total_price || item.total || 0),
-                gst: parseFloat(item.gst || productData.gst_percentage || 0),
-                discount: parseFloat(item.discount || productData.discount_percentage || 0)
-              }
-            })
-            .catch(error => {
-              console.error(`Failed to fetch product ${item.product_id}:`, error)
-              return {
-                ...item,
-                product_name: item.product_name || item.name || `Product #${item.product_id || item.id || 'Unknown'}`,
-                price: parseFloat(item.price || 0),
-                quantity: parseFloat(item.quantity || item.item_count || 1),
-                total_price: parseFloat(item.total_price || item.total || 0),
-                gst: parseFloat(item.gst || 0),
-                discount: parseFloat(item.discount || 0)
-              }
-            })
-        )
+        // Batch fetch products with caching
+        const uniqueProductIds = [...new Set(invoiceItems.map(item => item.product_id).filter(Boolean))]
         
-        enhancedItems = await Promise.all(productPromises)
+        const productPromises = uniqueProductIds.map(async (productId) => {
+          const cached = productCache.get(productId)
+          if (cached && (Date.now() - cached.timestamp) < CACHE_EXPIRY) {
+            return { id: productId, data: cached.data }
+          }
+          
+          try {
+            const productResponse = await productsAPI.getById(productId)
+            const productData = productResponse.data?.data || productResponse.data || {}
+            productCache.set(productId, { data: productData, timestamp: Date.now() })
+            return { id: productId, data: productData }
+          } catch (error) {
+            console.error(`Failed to fetch product ${productId}:`, error)
+            return { id: productId, data: null }
+          }
+        })
+        
+        const productResults = await Promise.all(productPromises)
+        const productMap = productResults.reduce((acc, { id, data }) => {
+          acc[id] = data
+          return acc
+        }, {})
+        
+        enhancedItems = invoiceItems.map(item => {
+          const productData = productMap[item.product_id] || {}
+          return {
+            ...item,
+            product_name: productData.name || item.product_name || item.name || `Product #${item.product_id || item.id || 'Unknown'}`,
+            price: parseFloat(item.price || productData.selling_price || 0),
+            quantity: parseFloat(item.quantity || item.item_count || 1),
+            total_price: parseFloat(item.total_price || item.total || 0),
+            gst: parseFloat(item.gst || productData.gst_percentage || 0),
+            discount: parseFloat(item.discount || productData.discount_percentage || 0)
+          }
+        })
       } else {
         enhancedItems = [{
           id: 1,
@@ -243,48 +263,64 @@ const Invoices = () => {
 
   const handlePrintThermal = async (invoice) => {
     try {
-      const [customerResponse, storeResponse] = await Promise.all([
-        customerAPI.getById(invoice.customer_id),
-        storeAPI.getByUserId(invoice.user_id)
-      ])
-
-      const customerData = customerResponse.data?.data || {}
-      const storesArray = storeResponse.data?.data?.data || storeResponse.data?.data || []
-      const storeData = storesArray.find(store => store.id === invoice.store_id) || storesArray[0] || {}
+      // Use cached data from invoice store instead of making new API calls
+      let customerData = invoice.customer || {}
+      let storeData = invoice.store || {}
+      
+      // Only fetch if data is missing from cache
+      if (!customerData.name && invoice.customer_id) {
+        const customerResponse = await customerAPI.getById(invoice.customer_id)
+        customerData = customerResponse.data?.data || {}
+      }
+      
+      if (!storeData.name && invoice.store_id) {
+        const storeResponse = await storeAPI.getByUserId(invoice.user_id)
+        const storesArray = storeResponse.data?.data?.data || storeResponse.data?.data || []
+        storeData = storesArray.find(store => store.id === invoice.store_id) || storesArray[0] || {}
+      }
 
       const invoiceItems = invoice.invoice_items || invoice.items || []
       let enhancedItems = []
       
       if (invoiceItems.length > 0) {
-        const productPromises = invoiceItems.map(item => 
-          productsAPI.getById(item.product_id)
-            .then(productResponse => {
-              const productData = productResponse.data?.data || productResponse.data || {}
-              return {
-                ...item,
-                product_name: productData.name || item.product_name || item.name || `Product #${item.product_id || item.id || 'Unknown'}`,
-                price: parseFloat(item.price || productData.selling_price || 0),
-                quantity: parseFloat(item.quantity || item.item_count || 1),
-                total_price: parseFloat(item.total_price || item.total || 0),
-                gst: parseFloat(item.gst || productData.gst_percentage || 0),
-                discount: parseFloat(item.discount || productData.discount_percentage || 0)
-              }
-            })
-            .catch(error => {
-              console.error(`Failed to fetch product ${item.product_id} for thermal:`, error)
-              return {
-                ...item,
-                product_name: item.product_name || item.name || `Product #${item.product_id || item.id || 'Unknown'}`,
-                price: parseFloat(item.price || 0),
-                quantity: parseFloat(item.quantity || item.item_count || 1),
-                total_price: parseFloat(item.total_price || item.total || 0),
-                gst: parseFloat(item.gst || 0),
-                discount: parseFloat(item.discount || 0)
-              }
-            })
-        )
+        // Batch fetch products with caching
+        const uniqueProductIds = [...new Set(invoiceItems.map(item => item.product_id).filter(Boolean))]
         
-        enhancedItems = await Promise.all(productPromises)
+        const productPromises = uniqueProductIds.map(async (productId) => {
+          const cached = productCache.get(productId)
+          if (cached && (Date.now() - cached.timestamp) < CACHE_EXPIRY) {
+            return { id: productId, data: cached.data }
+          }
+          
+          try {
+            const productResponse = await productsAPI.getById(productId)
+            const productData = productResponse.data?.data || productResponse.data || {}
+            productCache.set(productId, { data: productData, timestamp: Date.now() })
+            return { id: productId, data: productData }
+          } catch (error) {
+            console.error(`Failed to fetch product ${productId}:`, error)
+            return { id: productId, data: null }
+          }
+        })
+        
+        const productResults = await Promise.all(productPromises)
+        const productMap = productResults.reduce((acc, { id, data }) => {
+          acc[id] = data
+          return acc
+        }, {})
+        
+        enhancedItems = invoiceItems.map(item => {
+          const productData = productMap[item.product_id] || {}
+          return {
+            ...item,
+            product_name: productData.name || item.product_name || item.name || `Product #${item.product_id || item.id || 'Unknown'}`,
+            price: parseFloat(item.price || productData.selling_price || 0),
+            quantity: parseFloat(item.quantity || item.item_count || 1),
+            total_price: parseFloat(item.total_price || item.total || 0),
+            gst: parseFloat(item.gst || productData.gst_percentage || 0),
+            discount: parseFloat(item.discount || productData.discount_percentage || 0)
+          }
+        })
       } else {
         enhancedItems = [{
           id: 1,
