@@ -618,7 +618,7 @@
         <!-- Page Header -->
         <div class="page-header">
             <div class="header-left">
-                <h1>Create New Admin User</h1>
+                <h1>Update Admin User Password</h1>
             </div>
             <a href="{{ route('admin.admin-users.index') }}" class="back-btn">
                 <svg viewBox="0 0 24 24">
@@ -630,7 +630,7 @@
 
         <!-- Form Container - Full Width -->
         <div class="form-container">
-            <form id="planForm" action="{{ route('admin.admin-users.store') }}" method="POST"
+            <form id="planForm" action="{{ route('admin.admin-users.update-password') }}" method="POST"
                 enctype="multipart/form-data" novalidate>
                 @csrf
                 <div class="form-grid">
@@ -639,18 +639,18 @@
                     <div>
                         <!-- User Name -->
                         <div class="form-group mt-2">
-                            <label class="form-label">User Name <span>*</span></label>
-                            <input type="text" name="name" class="form-input" value="{{ old('name') }}" placeholder="Enter name">
-                            @error('name')
+                            <label class="form-label">Current Password<span>*</span></label>
+                            <input type="text" name="current_password" class="form-input"  placeholder="Enter current password">
+                            @error('current_password')
                                 <span class="text-danger" style="color: red;">{{ $message }}</span>
                             @enderror
                         </div>
 
                         <!-- Email -->
                         <div class="form-group mt-2">
-                            <label class="form-label">Email <span>*</span></label>
-                            <input type="text" name="email" value="{{old('email')}}" class="form-input" placeholder="Enter email">
-                            @error('email')
+                            <label class="form-label">New Password <span>*</span></label>
+                            <input type="text" name="new_password" value="{{old('new_password')}}" class="form-input" placeholder="Enter New Pass">
+                            @error('new_password')
                                 <span class="text-danger" style="color: red;">{{ $message }}</span>
                             @enderror
                         </div>

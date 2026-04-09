@@ -139,4 +139,23 @@ class AdminUserController extends Controller
         return redirect()->route('admin.admin-users.index')
             ->with('success', 'Admin User Updated Successfully');
     }
+    public function updatePassword($id,Request $request){
+        $admin = AdminUser::findOrFail($id);
+        $data = $request->validate([
+            'current_password' => 'required',
+            'new_password'     => 'required',
+        ]);
+        if(!Hash::check($data['current_password'], $admin->password)){
+            return response()->json([
+                'status' => false,
+                'message' => 'Current password is incorrect'
+            ]);
+        }
+        $admin->password = Hash::make($data['new_password']);
+        $admin->save();
+        return response()->json([
+            'status' => true,
+            'message' => 'Password Updated Successfully'
+        ]);
+    }
 }
