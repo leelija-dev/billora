@@ -77,7 +77,7 @@ const Customers = () => {
       }
     }
     fetchData()
-  }, [fetchCustomers])
+  }, [])
 
   useEffect(() => {
     const debounceTimer = setTimeout(() => {
@@ -85,7 +85,7 @@ const Customers = () => {
     }, 500)
 
     return () => clearTimeout(debounceTimer)
-  }, [searchTerm, setFilters])
+  }, [searchTerm])
 
   // Calculate stats with safeCustomers
   const stats = {

@@ -3,6 +3,28 @@ import { customerAPI } from '../services'
 import toast from 'react-hot-toast'
 import { useAuthStore } from './authStore'
 
+// Cache for customer data
+const customerCache = new Map()
+const paymentHistoryCache = new Map()
+const CACHE_EXPIRY = 5 * 60 * 1000 // 5 minutes
+
+const isCacheValid = (cacheEntry) => {
+  return cacheEntry && (Date.now() - cacheEntry.timestamp) < CACHE_EXPIRY
+}
+
+const getCachedData = (cacheKey) => {
+  const entry = customerCache.get(cacheKey)
+  if (isCacheValid(entry)) {
+    return entry.data
+  }
+  customerCache.delete(cacheKey)
+  return null
+}
+
+const setCachedData = (cacheKey, data) => {
+  customerCache.set(cacheKey, { data, timestamp: Date.now() })
+}
+
 export const useCustomerStore = create((set, get) => ({
   customers: [],
   totalCustomers: 0,
@@ -13,9 +35,39 @@ export const useCustomerStore = create((set, get) => ({
     search: '',
     status: '',
   },
+  
+  // Cache state
+  lastFetchTime: null,
+  cacheKey: null,
 
   fetchCustomers: async (page = 1, search = '') => {
-    set({ loading: true })
+    const cacheKey = JSON.stringify({ page, search })
+    const currentState = get()
+    
+    // Avoid duplicate requests if same data was fetched recently
+    if (currentState.cacheKey === cacheKey && 
+        currentState.lastFetchTime && 
+        (Date.now() - currentState.lastFetchTime) < 2000) {
+      console.log('Using cached customer data, skipping duplicate request')
+      return
+    }
+
+    // Check cache first
+    const cached = getCachedData(cacheKey)
+    if (cached) {
+      console.log('Using cached customer data')
+      set({
+        customers: cached.customers,
+        totalCustomers: cached.total,
+        currentPage: page,
+        loading: false,
+        cacheKey,
+        lastFetchTime: Date.now()
+      })
+      return
+    }
+
+    set({ loading: true, cacheKey })
     try {
       const { user } = useAuthStore.getState()
       if (!user?.id) {
@@ -26,8 +78,7 @@ export const useCustomerStore = create((set, get) => ({
       
       console.log('Full API response:', response)
       
-      // Extract customers array from the nested structure
-      // Based on logs: response.data.data.data is the array
+      // Extract customers array from nested structure
       let customersArray = []
       let total = 0
       
@@ -39,7 +90,7 @@ export const useCustomerStore = create((set, get) => ({
       // Handle response.data.data (if it's directly an array)
       else if (response?.data?.data && Array.isArray(response.data.data)) {
         customersArray = response.data.data
-        total = customersArray.length
+        total = response.data.data.total || customersArray.length
       }
       // Handle response.data (if it's an array)
       else if (Array.isArray(response?.data)) {
@@ -61,15 +112,24 @@ export const useCustomerStore = create((set, get) => ({
       // Ensure we have an array
       if (!Array.isArray(customersArray)) {
         customersArray = []
+        total = 0
       }
       
       console.log('Extracted customers array:', customersArray)
+      
+      // Cache the results
+      const cacheData = {
+        customers: customersArray,
+        total: total
+      }
+      setCachedData(cacheKey, cacheData)
       
       set({
         customers: customersArray,
         totalCustomers: total,
         currentPage: page,
         loading: false,
+        lastFetchTime: Date.now()
       })
     } catch (error) {
       console.error('Failed to fetch customers:', error)
@@ -106,6 +166,10 @@ export const useCustomerStore = create((set, get) => ({
         totalCustomers: (state.totalCustomers || 0) + 1,
         loading: false,
       }))
+      
+      // Clear cache to ensure fresh data on next fetch
+      get().clearCache()
+      
       toast.success('Customer created successfully')
       return { success: true }
     } catch (error) {
@@ -140,6 +204,14 @@ export const useCustomerStore = create((set, get) => ({
           : [],
         loading: false,
       }))
+      
+      // Clear cache to ensure fresh data on next fetch
+      get().clearCache()
+      
+      // Invalidate cache for the updated customer
+      const cacheKey = JSON.stringify({ page: 1, search: '' })
+      customerCache.delete(cacheKey)
+      
       toast.success('Customer updated successfully')
       return { success: true }
     } catch (error) {
@@ -149,7 +221,6 @@ export const useCustomerStore = create((set, get) => ({
       return { success: false, error: error.response?.data }
     }
   },
-
   deleteCustomer: async (id) => {
     set({ loading: true })
     try {
@@ -161,6 +232,14 @@ export const useCustomerStore = create((set, get) => ({
         totalCustomers: Math.max(0, (state.totalCustomers || 0) - 1),
         loading: false,
       }))
+      
+      // Clear cache to ensure fresh data on next fetch
+      get().clearCache()
+      
+      // Invalidate cache for the deleted customer
+      const cacheKey = JSON.stringify({ page: 1, search: '' })
+      customerCache.delete(cacheKey)
+      
       toast.success('Customer deleted successfully')
       return { success: true }
     } catch (error) {
@@ -289,8 +368,27 @@ export const useCustomerStore = create((set, get) => ({
     }
   },
 
+  // Clear cache data
+  clearCache: () => {
+    customerCache.clear()
+    paymentHistoryCache.clear()
+    console.log('Customer cache cleared')
+  },
+
   setFilters: (filters) => {
-    set({ filters: { ...get().filters, ...filters } })
-    get().fetchCustomers(1, filters.search)
+    const currentState = get()
+    const newFilters = { ...currentState.filters, ...filters }
+    
+    // Only fetch if search actually changed
+    if (newFilters.search !== currentState.filters.search) {
+      set({ filters: newFilters })
+      
+      // Debounce the API call
+      setTimeout(() => {
+        get().fetchCustomers(1, newFilters.search)
+      }, 300)
+    } else {
+      set({ filters: newFilters })
+    }
   },
 }))
