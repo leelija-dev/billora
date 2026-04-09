@@ -391,43 +391,7 @@ const Customers = () => {
           >
             <FiTrash2 className="w-4 h-4" />
           </motion.button>
-          <div className="relative group">
-            <motion.button
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.95 }}
-              className="p-2 text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700 rounded-lg transition-colors"
-            >
-              <FiMoreVertical className="w-4 h-4" />
-            </motion.button>
-            
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 0, scale: 0.9 }}
-              whileHover={{ opacity: 1, scale: 1 }}
-              className="absolute right-0 mt-1 w-48 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10"
-            >
-              <div className="p-1">
-                <motion.button 
-                  whileHover={{ x: 2 }}
-                  onClick={() => window.location.href = `mailto:${row?.email}`}
-                  className="w-full px-3 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg flex items-center space-x-2"
-                >
-                  <FiMail className="w-4 h-4" />
-                  <span>Send Email</span>
-                </motion.button>
-                {row?.phone && (
-                  <motion.button 
-                    whileHover={{ x: 2 }}
-                    onClick={() => window.location.href = `tel:${row.phone}`}
-                    className="w-full px-3 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg flex items-center space-x-2"
-                  >
-                    <FiPhone className="w-4 h-4" />
-                    <span>Call Customer</span>
-                  </motion.button>
-                )}
-              </div>
-            </motion.div>
-          </div>
+          
         </div>
       ),
     },
