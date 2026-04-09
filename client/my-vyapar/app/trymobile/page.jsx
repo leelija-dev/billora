@@ -1,180 +1,118 @@
-// trymobile/page.jsx
 "use client";
 
-import Link from "next/link";
-import Image from "next/image";
-import Navbar from "../../components/Navbar";
-import Footer from "../../components/Footer";
+import React from "react";
+import { motion, useScroll, useTransform, useSpring } from "framer-motion";
 
-export default function TryMobileAppPage() {
-  const features = [
-    { icon: "📱", title: "Mobile Billing", desc: "Create invoices on the go" },
-    { icon: "📊", title: "Real-time Dashboard", desc: "Track business anytime" },
-    { icon: "🔄", title: "Sync Across Devices", desc: "Seamless data sync" },
-    { icon: "🔒", title: "Secure Backup", desc: "Auto cloud backup" },
-  ];
+export default function AppMicronHero() {
+  const { scrollY } = useScroll();
+  const smoothY = useSpring(scrollY, { stiffness: 100, damping: 30 });
+
+  // Parallax Offsets
+  const sheetY = useTransform(smoothY, [0, 1000], [0, -100]);
+  const wingLY = useTransform(smoothY, [0, 1000], [0, -250]);
+  const wingRY = useTransform(smoothY, [0, 1000], [0, 150]);
+  const phoneTilt = useTransform(smoothY, [0, 1000], [0, 10]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 relative overflow-hidden">
-      <Navbar />
+    <div className="relative min-h-[200vh] bg-[#0f0f0f] text-white overflow-hidden font-sans">
+      
+      {/* ===== GEOMETRIC BACKGROUND ENGINE ===== */}
+      <div className="fixed inset-0 pointer-events-none -z-10">
+        {/* Dark Angled Sheet */}
+        <motion.div 
+          style={{ y: sheetY, rotate: -12 }}
+          className="absolute -top-[10%] -right-[10%] w-[85%] h-[120%] bg-[#1a1a1a] rounded-[120px] shadow-[0_40px_100px_rgba(0,0,0,0.8)]"
+        />
 
-      {/* Background Blur Effects */}
-      <div className="absolute top-20 left-10 w-72 h-72 bg-blue-200 opacity-30 rounded-full blur-3xl"></div>
-      <div className="absolute bottom-10 right-10 w-72 h-72 bg-purple-200 opacity-30 rounded-full blur-3xl"></div>
+        {/* Purple Wing Left */}
+        <motion.div 
+          style={{ y: wingLY, rotate: -25 }}
+          className="absolute top-[20%] -left-[10%] w-[550px] h-[500px] bg-[#8b66ff] rounded-[80px] shadow-[0_0_80px_rgba(139,102,255,0.4)] opacity-90"
+        />
 
-      {/* Main Content */}
-      <div className="py-8 sm:py-12 md:py-16 px-4 sm:px-6 lg:px-8 relative">
-        <div className="max-w-7xl mx-auto">
-
-          {/* Header */}
-          <div className="text-center mb-8 sm:mb-12 md:mb-16 animate-fadeIn">
-            <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 mb-3 sm:mb-4">
-              Try{" "}
-              <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                Mobile App
-              </span>
-            </h1>
-            <p className="text-sm sm:text-base md:text-lg lg:text-xl text-gray-600 max-w-3xl mx-auto px-2">
-              Manage your business anytime, anywhere with Vyapar mobile app
-            </p>
-          </div>
-
-          {/* App Showcase */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 md:gap-12 items-center mb-12 md:mb-20">
-
-            {/* Phone Mockups - Overlapping */}
-            <div className="relative h-[500px] sm:h-[600px] md:h-[700px] flex items-center justify-center md:justify-center mx-auto"> 
-
-              {/* Large Phone (Background) */}
-              <div className="absolute left-1/2 -translate-x-1/2 w-[180px] sm:w-[220px] md:w-[260px] h-[360px] sm:h-[440px] md:h-[520px] bg-gray-800 rounded-[30px] sm:rounded-[35px] md:rounded-[40px] p-1.5 sm:p-2 shadow-xl sm:shadow-2xl animate-float z-0">
-                <div className="w-full h-full bg-gray-900 rounded-[28px] sm:rounded-[33px] md:rounded-[36px] overflow-hidden relative">
-                  <Image
-                    src="/image/phone1.png"
-                    alt="Mobile App Dashboard"
-                    fill
-                    className="object-cover"
-                    priority
-                  />
-                </div>
-              </div>
-
-              {/* Small Phone (Foreground - Overlapping) */}
-              <div className="absolute left-1/2 -translate-x-1/2 top-12 sm:top-16 md:top-20 w-[140px] sm:w-[170px] md:w-[200px] h-[280px] sm:h-[340px] md:h-[400px] bg-gray-800 rounded-[24px] sm:rounded-[28px] md:rounded-[32px] p-1.5 sm:p-2 shadow-xl sm:shadow-2xl animate-floatSlow z-10">
-                <div className="w-full h-full bg-gray-900 rounded-[22px] sm:rounded-[26px] md:rounded-[28px] overflow-hidden relative">
-                  <Image
-                    src="/image/phone1.png"
-                    alt="Mobile App Interface"
-                    fill
-                    className="object-cover"
-                    priority
-                  />
-                </div>
-              </div>
-
-            </div>
-
-            {/* Features */}
-            <div className="space-y-4 sm:space-y-6 md:space-y-8">
-              {features.map((feature, idx) => (
-                <div
-                  key={idx}
-                  className="flex items-start gap-3 sm:gap-4 p-4 sm:p-5 md:p-6 bg-white rounded-xl sm:rounded-2xl shadow-md sm:shadow-lg hover:shadow-lg sm:hover:shadow-2xl transition-all hover:-translate-y-1 border border-gray-100"
-                >
-                  <span className="text-2xl sm:text-3xl md:text-4xl flex-shrink-0">{feature.icon}</span>
-                  <div className="min-w-0">
-                    <h3 className="text-base sm:text-lg md:text-xl font-semibold text-gray-900 mb-1 sm:mb-2">
-                      {feature.title}
-                    </h3>
-                    <p className="text-xs sm:text-sm md:text-base text-gray-600">{feature.desc}</p>
-                  </div>
-                </div>
-              ))}
-
-              {/* Download Buttons */}
-              <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 pt-4 sm:pt-6">
-                <button className="w-full sm:flex-1 bg-gradient-to-r from-blue-600 to-purple-600 text-white px-4 sm:px-6 py-2.5 sm:py-3 rounded-full font-semibold text-sm sm:text-base shadow-lg hover:scale-105 transition-all active:scale-95">
-                  Download Android
-                </button>
-                <button className="w-full sm:flex-1 bg-black text-white px-4 sm:px-6 py-2.5 sm:py-3 rounded-full font-semibold text-sm sm:text-base hover:bg-gray-800 transition-all active:scale-95 hover:scale-105">
-                  Download iOS
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* QR Code Section */}
-          <div className="bg-white rounded-2xl sm:rounded-3xl p-6 sm:p-10 md:p-12 text-center shadow-lg sm:shadow-xl border border-gray-100">
-            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-2 sm:mb-4">
-              Scan to Download
-            </h2>
-            <p className="text-sm sm:text-base md:text-lg text-gray-600 mb-6 sm:mb-8 px-2">
-              Get the app directly on your phone
-            </p>
-
-            <div className="flex justify-center gap-4 sm:gap-6 md:gap-8 flex-wrap">
-
-              <div className="p-4 sm:p-6 bg-gray-100 rounded-xl sm:rounded-2xl hover:shadow-lg transition hover:-translate-y-1">
-                <div className="w-24 h-24 sm:w-28 sm:h-28 md:w-32 md:h-32 bg-white rounded-lg sm:rounded-xl shadow-inner flex items-center justify-center">
-                  <span className="text-2xl sm:text-3xl md:text-4xl">📱</span>
-                </div>
-                <p className="mt-2 sm:mt-3 font-semibold text-sm sm:text-base">Android</p>
-              </div>
-
-              <div className="p-4 sm:p-6 bg-gray-100 rounded-xl sm:rounded-2xl hover:shadow-lg transition hover:-translate-y-1">
-                <div className="w-24 h-24 sm:w-28 sm:h-28 md:w-32 md:h-32 bg-white rounded-lg sm:rounded-xl shadow-inner flex items-center justify-center">
-                  <span className="text-2xl sm:text-3xl md:text-4xl">🍎</span>
-                </div>
-                <p className="mt-2 sm:mt-3 font-semibold text-sm sm:text-base">iOS</p>
-              </div>
-
-            </div>
-          </div>
-
-        </div>
+        {/* Purple Wing Right */}
+        <motion.div 
+          style={{ y: wingRY, rotate: 15 }}
+          className="absolute top-[40%] -right-[12%] w-[400px] h-[500px] bg-[#8b66ff] rounded-[100px] shadow-[0_0_80px_rgba(139,102,255,0.4)]"
+        />
       </div>
 
-      {/* Animations */}
-      <style jsx>{`
-        @keyframes float {
-          0% { transform: translate(-50%, 0px); }
-          50% { transform: translate(-50%, -15px); }
-          100% { transform: translate(-50%, 0px); }
-        }
+      {/* ===== HEADER ===== */}
+      <header className="fixed top-0 w-full flex justify-between items-center px-[8%] py-10 z-50">
+        <div className="text-xl font-black uppercase tracking-widest">
+          APP<span className="text-[#8b66ff]">micron</span>
+        </div>
+        <nav className="hidden md:flex gap-8 text-[11px] font-bold uppercase tracking-widest opacity-70">
+          {["Features", "About", "Services", "Pricing", "Testimonials", "News"].map((item) => (
+            <a key={item} href="#" className="hover:text-[#8b66ff] transition-colors">{item}</a>
+          ))}
+        </nav>
+      </header>
 
-        @keyframes floatSlow {
-          0% { transform: translateY(0px); }
-          50% { transform: translateY(-20px); }
-          100% { transform: translateY(0px); }
-        }
+      {/* ===== HERO CONTENT ===== */}
+      <main className="relative pt-48 px-[10%] grid lg:grid-cols-2 items-center gap-12">
+        <motion.div 
+          initial={{ opacity: 0, x: -30 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.8 }}
+        >
+          <h4 className="text-[12px] font-bold uppercase tracking-[0.3em] text-[#8b66ff] mb-4">Introducing</h4>
+          <h1 className="text-6xl md:text-7xl font-black uppercase tracking-tight leading-[0.9] mb-8">
+            Appmicron
+          </h1>
+          <p className="text-gray-400 max-w-sm leading-relaxed mb-10">
+            Ut non quam risus. Praesent venenatis aliquam rhoncus. Mauris sit amet rhoncus risus, vel ullamcorper leo.
+          </p>
+          <button className="px-12 py-4 border-2 border-white rounded-xl font-bold uppercase tracking-widest hover:bg-white hover:text-black transition-all duration-300">
+            Explore
+          </button>
+        </motion.div>
 
-        @keyframes fadeIn {
-          from { opacity:0; transform: translateY(20px);}
-          to { opacity:1; transform: translateY(0);}
-        }
+        {/* Phone Visual */}
+        <motion.div 
+          style={{ rotateY: -15, rotateX: 5, rotateZ: phoneTilt }}
+          className="relative flex justify-center perspective-1000"
+        >
+          <div className="w-[300px] h-[600px] bg-[#8b66ff] rounded-[50px] border-[14px] border-[#252525] shadow-[50px_50px_100px_rgba(0,0,0,0.6)] relative overflow-hidden">
+            {/* Glass Card UI Overlay */}
+            <div className="absolute top-24 left-1/2 -translate-x-1/2 w-[240px] bg-white rounded-3xl overflow-hidden shadow-2xl">
+              <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=400" alt="Avatar" className="w-full h-44 object-cover" />
+              <div className="p-6 text-center text-black">
+                <h3 className="font-bold text-lg">Debora Adele</h3>
+                <p className="text-[10px] text-gray-500 mb-4">Artist, NYC</p>
+                <div className="flex justify-between text-[10px] font-bold mb-6">
+                   <div>1986<br/><span className="font-normal opacity-50">Likes</span></div>
+                   <div>2548<br/><span className="font-normal opacity-50">Followers</span></div>
+                   <div>1476<br/><span className="font-normal opacity-50">Following</span></div>
+                </div>
+                <button className="w-full py-3 bg-[#48cfad] text-white rounded-lg font-bold text-[10px] uppercase">Chat</button>
+              </div>
+            </div>
+          </div>
+        </motion.div>
+      </main>
 
-        .animate-float {
-          animation: float 4s ease-in-out infinite;
-        }
-
-        .animate-floatSlow {
-          animation: floatSlow 3.5s ease-in-out infinite;
-        }
-
-        .animate-fadeIn {
-          animation: fadeIn 1s ease forwards;
-        }
-
-        @media (max-width: 640px) {
-          .animate-float {
-            animation: float 4s ease-in-out infinite;
-          }
-          .animate-floatSlow {
-            animation: floatSlow 3.5s ease-in-out infinite;
-          }
-        }
-      `}</style>
-
-      <Footer />
+      {/* ===== FEATURES FOOTER ===== */}
+      <section className="relative mt-32 px-[10%] grid md:grid-cols-4 gap-8 pb-20">
+        {[
+          { title: "Account Convert", icon: "👤" },
+          { title: "Allarm Bell", icon: "⏰" },
+          { title: "Android", icon: "🤖" },
+          { title: "iOS", icon: "🍎" }
+        ].map((item, idx) => (
+          <motion.div 
+            key={idx}
+            whileHover={{ y: -10 }}
+            className="p-8 rounded-[30px_30px_80px_30px] bg-white/5 backdrop-blur-md border border-white/10"
+          >
+            <div className="w-12 h-12 bg-[#8b66ff] rounded-full flex items-center justify-center text-xl mb-6 shadow-[0_0_20px_rgba(139,102,255,0.5)]">
+              {item.icon}
+            </div>
+            <h3 className="font-bold mb-2">{item.title}</h3>
+            <p className="text-[10px] text-gray-500 leading-relaxed">Maecenas ante sapien, semper nec ullamcorper a, tristique ac dolor.</p>
+          </motion.div>
+        ))}
+      </section>
     </div>
   );
 }
