@@ -10,6 +10,7 @@ use App\Http\Controllers\admin\superadmin\PlanPermissionController;
 use App\Http\Controllers\admin\superadmin\RolesController;
 use App\Http\Controllers\admin\superadmin\SuperAdminPermissionController;
 use App\Models\AdminMailHistory;
+use App\Models\AdminUser;
 use App\Models\SuperAdminPermission;
 
 Route::middleware(['web', 'admin.guest'])->prefix('admin')->group(function () {
@@ -65,6 +66,9 @@ Route::middleware(['web', 'admin.auth'])->prefix('admin')->group(function () {
     Route::prefix('admin-users')->group(function (){
         Route::get('/', [AdminUserController::class, 'index'])->name('admin.admin-users.index');
         Route::get('/create', [AdminUserController::class, 'create'])->name('admin.admin-users.create');
+        Route::post('/store', [AdminUserController::class, 'store'])->name('admin.admin-users.store');
+        Route::get('/edit/{id}',[AdminUserController::class, 'edit'])->name('admin.admin-users.edit');
+        Route::post('/update/{id}',[AdminUserController::class, 'update'])->name('admin.admin-users.update');
 
     });
     Route::prefix('permissions')->group(function (){
