@@ -14,6 +14,7 @@ import Categories from '../pages/categories/Categories'
 import Brands from '../pages/brands/Brands'
 import Units from '../pages/units/Units'
 import Stores from '../pages/stores/Stores'
+import Packages from '../pages/packages/Packages'
 import Inventory from '../pages/inventory/Inventory'
 import Orders from '../pages/orders/Orders'
 import Customers from '../pages/customers/Customers'
@@ -49,6 +50,7 @@ const AppRoutes = () => {
           <Route path="/brands" element={<Brands />} />
           <Route path="/units" element={<Units />} />
           <Route path="/stores" element={<Stores />} />
+          <Route path="/packages" element={<Packages />} />
           <Route path="/stock" element={<ProtectedRoute feature="stock-management"><Inventory /></ProtectedRoute>} />
           <Route path="/orders" element={<ProtectedRoute feature="hide-with-stock"><Orders /></ProtectedRoute>} />
           <Route path="/customers" element={<Customers />} />
