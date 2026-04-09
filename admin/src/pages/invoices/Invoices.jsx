@@ -389,16 +389,20 @@ const Invoices = () => {
   const safeInvoices = Array.isArray(invoices) ? invoices : []
   
   const stats = {
-    total: safeInvoices?.length || 0,
+    total: totalInvoices || safeInvoices?.length || 0,
     completed: safeInvoices?.filter(i => i.status === 'completed').length || 0,
-    paid: safeInvoices?.filter(i => i.status === 'paid' || i.status === 'completed').length || 0,
+    paid: safeInvoices?.filter(i => (i.status === 'paid' || i.status === 'completed') && (parseFloat(i.paid_amount) || 0) > 0).length || 0,
+    nonPaid: safeInvoices?.filter(i => (parseFloat(i.paid_amount) || 0) === 0).length || 0,
     unpaid: safeInvoices?.filter(i => i.status === 'unpaid').length || 0,
     overdue: safeInvoices?.filter(i => i.status === 'overdue').length || 0,
     totalAmount: safeInvoices?.reduce((sum, i) => sum + (parseFloat(i.total_amount) || 0), 0) || 0,
-    paidAmount: safeInvoices?.filter(i => i.status === 'paid' || i.status === 'completed')
+    paidAmount: safeInvoices?.filter(i => (i.status === 'paid' || i.status === 'completed') && (parseFloat(i.paid_amount) || 0) > 0)
       .reduce((sum, i) => sum + (parseFloat(i.paid_amount) || 0), 0) || 0,
-    unpaidAmount: safeInvoices?.filter(i => i.status === 'unpaid' || i.status === 'overdue')
-      .reduce((sum, i) => sum + (parseFloat(i.total_amount) || 0), 0) || 0,
+    unpaidAmount: safeInvoices?.reduce((sum, i) => {
+      const total = parseFloat(i.total_amount) || 0
+      const paid = parseFloat(i.paid_amount) || 0
+      return sum + (total - paid)
+    }, 0) || 0,
   }
 
   const StatCard = ({ title, value, icon: Icon, color, subtitle, delay }) => (
@@ -505,11 +509,11 @@ const Invoices = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6 gap-6"
+            className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6"
           >
             {initialLoading ? (
               // Loading skeleton for stats cards
-              Array.from({ length: 6 }).map((_, index) => (
+              Array.from({ length: 4 }).map((_, index) => (
                 <motion.div 
                   key={index}
                   initial={{ opacity: 0, y: 20 }}
@@ -542,25 +546,12 @@ const Invoices = () => {
                   delay={0.2}
                 />
                 <StatCard
-                  title="Unpaid"
-                  value={stats.unpaid}
-                  icon={FiClock}
-                  color="from-yellow-500 to-orange-500"
-                  delay={0.3}
-                />
-                <StatCard
-                  title="Overdue"
-                  value={stats.overdue}
+                  title="Non Paid"
+                  value={stats.nonPaid}
                   icon={FiAlertCircle}
-                  color="from-red-500 to-pink-500"
-                  delay={0.4}
-                />
-                <StatCard
-                  title="Total Amount"
-                  value={`₹${stats.totalAmount.toFixed(2)}`}
-                  icon={FiDollarSign}
-                  color="from-purple-500 to-indigo-500"
-                  delay={0.5}
+                  color="from-yellow-500 to-orange-500"
+                  subtitle={`${((stats.nonPaid / stats.total) * 100 || 0).toFixed(1)}% of total`}
+                  delay={0.3}
                 />
                 <StatCard
                   title="Outstanding"
@@ -568,7 +559,7 @@ const Invoices = () => {
                   icon={FiDollarSign}
                   color="from-red-500 to-orange-500"
                   subtitle={`${((stats.unpaidAmount / stats.totalAmount) * 100 || 0).toFixed(1)}% of total`}
-                  delay={0.6}
+                  delay={0.4}
                 />
               </>
             )}
