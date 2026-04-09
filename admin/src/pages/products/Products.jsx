@@ -62,6 +62,13 @@ const Products = () => {
   const [stocks, setStocks] = useState([])
   const [stocksLoading, setStocksLoading] = useState(false)
 
+  // Function to get stock for a specific product
+  const getProductStock = (productId) => {
+    if (!Array.isArray(stocks)) return 0
+    const stock = stocks.find(s => s.product_id === productId)
+    return stock ? parseFloat(stock.quantity) || 0 : 0
+  }
+
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -81,13 +88,6 @@ const Products = () => {
     }
     fetchData()
   }, [])
-
-  // Function to get stock for a specific product
-  const getProductStock = (productId) => {
-    if (!Array.isArray(stocks)) return 0
-    const stock = stocks.find(s => s.product_id === productId)
-    return stock ? parseFloat(stock.quantity) || 0 : 0
-  }
 
   useEffect(() => {
     const debounceTimer = setTimeout(() => {
