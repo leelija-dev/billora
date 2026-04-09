@@ -107,7 +107,6 @@ const Stores = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        console.log(' Fetching stores for user:', currentUserId)
         console.log('🔄 Fetching stores for user:', currentUserId)
         await fetchStores(currentUserId)
         console.log('✅ Stores fetched successfully')
@@ -118,19 +117,15 @@ const Stores = () => {
       }
     }
     fetchData()
-  }, [currentUserId])
+  }, [])
 
   useEffect(() => {
     const debounceTimer = setTimeout(() => {
       setFilters({ search: searchTerm })
-      // Refresh stores when search term changes and not in form mode
-      if (!showAddForm && !showEditForm) {
-        fetchStores(currentUserId)
-      }
     }, 500)
 
     return () => clearTimeout(debounceTimer)
-  }, [searchTerm, setFilters, currentUserId, fetchStores, showAddForm, showEditForm])
+  }, [searchTerm])
 
   const handleAddStore = () => {
     setShowAddForm(true)
