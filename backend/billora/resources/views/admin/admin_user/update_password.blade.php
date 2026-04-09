@@ -611,14 +611,23 @@
         }
     </style>
 
-    {{-- @include('admin.sidebar') --}}
+
     <!-- Main Content - Full Width -->
     <div class="main-content">
 
         <!-- Page Header -->
         <div class="page-header">
             <div class="header-left">
-                <h1>Update Admin User Password</h1>
+                <h1 class="page-title">Update Password</h1>
+
+                <div class="user-info">
+                    <p class="user-name">
+                        {{ $user->fname ?? '' }} {{ $user->lname ?? '' }}
+                    </p>
+                    <p class="user-email">
+                        {{ $user->email ?? '' }}
+                    </p>
+                </div>
             </div>
             <a href="{{ route('admin.admin-users.index') }}" class="back-btn">
                 <svg viewBox="0 0 24 24">
@@ -630,111 +639,91 @@
 
         <!-- Form Container - Full Width -->
         <div class="form-container">
-            <form id="planForm" action="{{ route('admin.admin-users.update-password') }}" method="POST"
+            <form id="planForm" action="{{ route('admin.admin-users.update-password', $user->id) }}" method="POST"
                 enctype="multipart/form-data" novalidate>
                 @csrf
                 <div class="form-grid">
 
-                    <!-- LEFT SIDE -->
-                    <div>
-                        <!-- User Name -->
-                        <div class="form-group mt-2">
-                            <label class="form-label">Current Password<span>*</span></label>
-                            <input type="text" name="current_password" class="form-input"  placeholder="Enter current password">
-                            @error('current_password')
-                                <span class="text-danger" style="color: red;">{{ $message }}</span>
-                            @enderror
+                    <!-- Current Password -->
+                    <div class="form-group mt-2">
+                        <label class="form-label">Current Password <span>*</span></label>
+                        <div class="input-wrapper">
+                            <input type="password" id="current_password" name="current_password" class="form-input"
+                                placeholder="Enter current password">
+                            <span class="toggle-password" onclick="togglePassword('current_password', this)">
+                                <i data-feather="eye"></i>
+                            </span>
                         </div>
-
-                        <!-- Email -->
-                        <div class="form-group mt-2">
-                            <label class="form-label">New Password <span>*</span></label>
-                            <input type="text" name="new_password" value="{{old('new_password')}}" class="form-input" placeholder="Enter New Pass">
-                            @error('new_password')
-                                <span class="text-danger" style="color: red;">{{ $message }}</span>
-                            @enderror
-                        </div>
-                        <!-- Image -->
-                        <div class="form-group mt-2">
-                            <label class="form-label">Image</label>
-                            <input type="file" name="image" class="form-input" placeholder="Enter email">
-                            @error('image')
-                                <span class="text-danger" style="color: red;">{{ $message }}</span>
-                            @enderror
-                        </div>
-
-                    </div>
-
-                    <!-- RIGHT SIDE -->
-                    <div>
-                        <div class="form-group mt-2">
-                            <label class="form-label">Confirm Password <span>*</span></label>
-                            <input type="text" name="fname" value="{{old('fname')}}" class="form-input" placeholder="Enter first name">
-                            @error('fname')
-                                <span class="text-danger" style="color: red;">{{ $message }}</span>
-                            @enderror
-                        </div>
-                        <div class="form-group mt-2">
-                            <label class="form-label">Last Name <span>*</span></label>
-                            <input type="text" name="lname" value="{{old('lname')}}" class="form-input" placeholder="Enter last name">
-                            @error('lname')
-                                <span class="text-danger" style="color: red;">{{ $message }}</span>
-                            @enderror
-                        </div>
-                        <div class="form-group mt-2">
-                            <label class="form-label">Password <span>*</span></label>
-                            <div class="input-wrapper">
-                                <input type="password" id="password" name="password" class="form-input"
-                                    placeholder="Enter password">
-
-                                <span class="toggle-password" onclick="togglePassword(this)">
-                                    <i data-feather="eye"></i>
-                                </span>
-                            </div>
-                        </div>
-
-                        @error('password')
+                        @error('current_password')
                             <span class="text-danger" style="color: red;">{{ $message }}</span>
                         @enderror
                     </div>
 
+                    <!-- New Password -->
+                    <div class="form-group mt-2">
+                        <label class="form-label">New Password <span>*</span></label>
+                        <div class="input-wrapper">
+                            <input type="password" id="new_password" name="new_password" class="form-input"
+                                placeholder="New Password">
+                            <span class="toggle-password" onclick="togglePassword('new_password', this)">
+                                <i data-feather="eye"></i>
+                            </span>
+                        </div>
+                        @error('new_password')
+                            <span class="text-danger" style="color: red;">{{ $message }}</span>
+                        @enderror
+                    </div>
+
+                    <!-- Confirm Password -->
+                    <div class="form-group mt-2">
+                        <label class="form-label">Confirm Password <span>*</span></label>
+                        <div class="input-wrapper">
+                            <input type="password" id="confirm_password" name="confirm_password" class="form-input"
+                                placeholder="Confirm Password">
+                            <span class="toggle-password" onclick="togglePassword('confirm_password', this)">
+                                <i data-feather="eye"></i>
+                            </span>
+                        </div>
+
+                        <!-- Live Match Message -->
+                        <span id="password-match" style="font-size:12px;"></span>
+
+                        @error('confirm_password')
+                            <span class="text-danger" style="color: red;">{{ $message }}</span>
+                        @enderror
+                    </div>
+
+
+
                 </div>
-        </div>
-       
 
-        </div>
 
-        <!-- BUTTONS -->
-        <div class="form-actions">
-            <button type="submit" class="btn btn-primary">Create</button>
+                <!-- BUTTONS -->
+                <div class="form-actions">
+
+                    <!-- Cancel Button -->
+                    <a href="{{ route('admin.admin-users.index') }}" class="btn btn-secondary">
+                        Cancel
+                    </a>
+
+                    <!-- Submit Button -->
+                    <button type="submit" class="btn btn-primary">
+                        Update
+                    </button>
+
+                </div>
+            </form>
         </div>
-        </form>
     </div>
-    </div>
-    <!-- Summernote CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/summernote@0.8.20/dist/summernote-lite.min.css" rel="stylesheet">
 
-    <!-- jQuery (Required) -->
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-
-    <!-- Summernote JS -->
-    <script src="https://cdn.jsdelivr.net/npm/summernote@0.8.20/dist/summernote-lite.min.js"></script>
-
-    {{-- <script>
-        $(document).ready(function() {
-            $('#description').summernote({
-                height: 150,
-            });
-
-        });
-    </script> --}}
     <script src="https://unpkg.com/feather-icons"></script>
+
     <script>
         feather.replace();
-    </script>
-    <script>
-        function togglePassword(el) {
-            let input = document.getElementById("password");
+
+        // 👁 Toggle Password
+        function togglePassword(id, el) {
+            let input = document.getElementById(id);
 
             if (input.type === "password") {
                 input.type = "text";
@@ -744,8 +733,28 @@
                 el.innerHTML = '<i data-feather="eye"></i>';
             }
 
-            feather.replace(); // refresh icon
+            feather.replace();
         }
+
+        //  Live Confirm Password Check
+        const newPassword = document.getElementById("new_password");
+        const confirmPassword = document.getElementById("confirm_password");
+        const message = document.getElementById("password-match");
+
+        confirmPassword.addEventListener("keyup", function() {
+            if (confirmPassword.value === "") {
+                message.innerHTML = "";
+                return;
+            }
+
+            if (newPassword.value === confirmPassword.value) {
+                message.innerHTML = "Password matched";
+                message.style.color = "green";
+            } else {
+                message.innerHTML = "Password not matched";
+                message.style.color = "red";
+            }
+        });
     </script>
-    
+
 @endsection
