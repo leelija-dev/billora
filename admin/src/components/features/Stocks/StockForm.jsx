@@ -21,8 +21,17 @@ const StockForm = ({ stock, onSubmit, onCancel, isSubmitting, products, units })
 
   useEffect(() => {
     if (stock) {
+      console.log('📝 StockForm - Stock prop received:', stock)
       // Set form values for editing
       reset({
+        product_id: stock.product_id,
+        quantity: stock.quantity,
+        selling_price: stock.selling_price,
+        purchase_price: stock.purchase_price,
+        unit_id: stock.unit_id,
+        product_package_id: stock.product_package_id,
+      })
+      console.log('📝 StockForm - Form values set after reset:', {
         product_id: stock.product_id,
         quantity: stock.quantity,
         selling_price: stock.selling_price,
@@ -117,7 +126,13 @@ const StockForm = ({ stock, onSubmit, onCancel, isSubmitting, products, units })
             })) || [])
           ]}
           error={errors.unit_id?.message}
-          {...register('unit_id')}
+          {...register('unit_id', { 
+            required: 'Unit is required',
+            valueAsNumber: true 
+          })}
+          onChange={(e) => {
+            setValue('unit_id', e.target.value)
+          }}
         />
 
         <Select
