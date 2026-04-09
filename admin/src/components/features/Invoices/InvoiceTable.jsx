@@ -267,11 +267,36 @@ const InvoiceTable = ({
           <p className="font-semibold text-gray-900 dark:text-white">
             ₹{parseFloat(value || 0).toFixed(2)}
           </p>
-          <p className="text-xs text-gray-500 dark:text-gray-400">
-            Paid: ₹{parseFloat(row.paid_amount || 0).toFixed(2)}
+        </div>
+      ),
+    },
+    {
+      header: 'Paid Amount',
+      accessor: 'paid_amount',
+      cell: (value, row) => (
+        <div>
+          <p className="font-medium text-green-600 dark:text-green-400">
+            ₹{parseFloat(value || 0).toFixed(2)}
           </p>
         </div>
       ),
+    },
+    {
+      header: 'Due Amount',
+      accessor: 'due_amount',
+      cell: (value, row) => {
+        const totalAmount = parseFloat(row.total_amount || 0)
+        const paidAmount = parseFloat(row.paid_amount || 0)
+        const dueAmount = totalAmount - paidAmount
+        
+        return (
+          <div>
+            <p className={`font-medium ${dueAmount > 0 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>
+              ₹{dueAmount.toFixed(2)}
+            </p>
+          </div>
+        )
+      },
     },
     {
       header: 'Items',
@@ -314,16 +339,6 @@ const InvoiceTable = ({
             title="View Invoice"
           >
             <FiEye className="w-4 h-4" />
-          </motion.button>
-          
-          <motion.button
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => onEdit(row)}
-            className="p-1.5 text-yellow-600 hover:bg-yellow-50 dark:text-yellow-400 dark:hover:bg-yellow-900/20 rounded-lg transition-colors"
-            title="Edit Invoice"
-          >
-            <FiEdit2 className="w-4 h-4" />
           </motion.button>
 
           {/* Print Button with Dropdown */}
