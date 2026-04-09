@@ -66,6 +66,33 @@ const Invoices = () => {
   const [showBillGenerate, setShowBillGenerate] = useState(false)
   const [initialLoading, setInitialLoading] = useState(true)
   const [pageLoading, setPageLoading] = useState(false)
+  const [isResizing, setIsResizing] = useState(false)
+
+  // Handle resize events to prevent unnecessary API calls
+  useEffect(() => {
+    let resizeTimeout
+    
+    const handleResizeStart = () => {
+      setIsResizing(true)
+      clearTimeout(resizeTimeout)
+    }
+    
+    const handleResizeEnd = () => {
+      clearTimeout(resizeTimeout)
+      resizeTimeout = setTimeout(() => {
+        setIsResizing(false)
+      }, 150) // Wait for resize to finish
+    }
+    
+    window.addEventListener('resize', handleResizeStart)
+    window.addEventListener('resize', handleResizeEnd)
+    
+    return () => {
+      window.removeEventListener('resize', handleResizeStart)
+      window.removeEventListener('resize', handleResizeEnd)
+      clearTimeout(resizeTimeout)
+    }
+  }, [])
 
   useEffect(() => {
     const fetchData = async () => {
@@ -80,11 +107,13 @@ const Invoices = () => {
 
   useEffect(() => {
     const debounceTimer = setTimeout(() => {
-      setFilters({ search: searchTerm })
+      if (!isResizing) {
+        setFilters({ search: searchTerm })
+      }
     }, 500)
 
     return () => clearTimeout(debounceTimer)
-  }, [searchTerm, setFilters])
+  }, [searchTerm])
 
   const handlePageChange = (page) => {
     setPageLoading(true)

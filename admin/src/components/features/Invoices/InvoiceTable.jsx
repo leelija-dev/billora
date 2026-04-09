@@ -29,11 +29,48 @@ const InvoiceTable = ({
   const [printDropdown, setPrintDropdown] = useState(null)
   const [stores, setStores] = useState({})
   const [storesLoading, setStoresLoading] = useState(true)
+  const [isResizing, setIsResizing] = useState(false)
   const dropdownRef = useRef(null)
+  
+  // Cache for store data
+  const storeCacheRef = useRef(new Map())
+  const lastFetchTimeRef = useRef(null)
+  
+  // Handle resize events to prevent unnecessary API calls
+  useEffect(() => {
+    let resizeTimeout
+    
+    const handleResizeStart = () => {
+      setIsResizing(true)
+      clearTimeout(resizeTimeout)
+    }
+    
+    const handleResizeEnd = () => {
+      clearTimeout(resizeTimeout)
+      resizeTimeout = setTimeout(() => {
+        setIsResizing(false)
+      }, 150) // Wait for resize to finish
+    }
+    
+    window.addEventListener('resize', handleResizeStart)
+    window.addEventListener('resize', handleResizeEnd)
+    
+    return () => {
+      window.removeEventListener('resize', handleResizeStart)
+      window.removeEventListener('resize', handleResizeEnd)
+      clearTimeout(resizeTimeout)
+    }
+  }, [])
 
-  // Fetch store data when invoices change
+  // Fetch store data when invoices change (with caching and resize protection)
   useEffect(() => {
     const fetchStoreData = async () => {
+      // Skip if currently resizing
+      if (isResizing) {
+        console.log('Skipping store fetch during resize')
+        return
+      }
+      
       const storeIds = [...new Set(invoices?.map(invoice => invoice.store_id).filter(Boolean))]
       
       if (storeIds.length === 0) {
@@ -41,7 +78,26 @@ const InvoiceTable = ({
         return
       }
 
+      // Check cache first
+      const cacheKey = storeIds.sort().join(',')
+      const now = Date.now()
+      const cached = storeCacheRef.current.get(cacheKey)
+      
+      if (cached && (now - cached.timestamp) < 10000) { // 10 seconds cache
+        console.log('Using cached store data')
+        setStores(cached.data)
+        setStoresLoading(false)
+        return
+      }
+
+      // Prevent duplicate requests within 2 seconds
+      if (lastFetchTimeRef.current && (now - lastFetchTimeRef.current) < 2000) {
+        console.log('Skipping duplicate store request')
+        return
+      }
+
       setStoresLoading(true)
+      lastFetchTimeRef.current = now
       
       try {
         // Group invoices by user_id to fetch stores efficiently
@@ -62,7 +118,7 @@ const InvoiceTable = ({
             const response = await storeAPI.getByUserId(userId)
             const storesArray = response.data?.data?.data || response.data?.data || []
             
-            // Find the specific stores we need
+            // Find specific stores we need
             const relevantStores = storesArray.filter(store => storeIdsForUser.includes(store.id))
             
             return relevantStores.reduce((acc, store) => {
@@ -78,6 +134,12 @@ const InvoiceTable = ({
         const storeResults = await Promise.all(storePromises)
         const allStores = storeResults.reduce((acc, stores) => ({ ...acc, ...stores }), {})
         
+        // Cache the results
+        storeCacheRef.current.set(cacheKey, {
+          data: allStores,
+          timestamp: now
+        })
+        
         console.log('🏪 Fetched stores:', allStores)
         setStores(allStores)
         setStoresLoading(false)
@@ -87,10 +149,10 @@ const InvoiceTable = ({
       }
     }
 
-    if (invoices && invoices.length > 0) {
+    if (invoices && invoices.length > 0 && !isResizing) {
       fetchStoreData()
     }
-  }, [invoices])
+  }, [invoices, isResizing])
 
   // Close dropdown when clicking outside
   useEffect(() => {
