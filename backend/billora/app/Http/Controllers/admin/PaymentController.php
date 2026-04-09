@@ -22,6 +22,7 @@ class PaymentController extends Controller
             'plan_id' => 'required|exists:plans,id',
             'business_type_id' => 'required',
             'customer_id' => 'required|exists:customers,id',
+            'customer_phone'=>'required',
         ]);
         $customer = Customers::find($request->customer_id);
         $orderId = 'order_' . uniqid();
@@ -39,10 +40,11 @@ class PaymentController extends Controller
             "customer_details" => [
                 "customer_id" => $request->customer_id,
                 "customer_email" => $customer->email,
-                "customer_phone" => $customer->phone
+                "customer_phone" => $request->customer_phone
             ],
             "order_meta" => [
-                "return_url" => url('/payment-success?order_id={order_id}')
+                // "return_url" => url('/payment-success?order_id={order_id}'),
+                "return_url" => url('/api/cashfree/verify/{order_id}')
             ]
         ]);
 
@@ -66,6 +68,7 @@ class PaymentController extends Controller
             'transaction_id' => $orderId,
             'status' => 'PENDING'
         ]);
+        $customer->update(['phone' => $request->customer_phone]);
 
         // Store Plan (temporary state)
         $planPurchase = PlanPurchaseHistory::create([
@@ -96,7 +99,19 @@ class PaymentController extends Controller
             'data' => $data
         ]);
     }
+public function paymentSuccess(Request $request)
+{
+    $orderId = $request->query('order_id');
 
+    if (!$orderId) {
+        return response()->json([
+            'success' => false,
+            'message' => 'order_id missing'
+        ], 422);
+    }
+
+    return $this->verifyPayment($orderId);
+}
     // VERIFY PAYMENT
     public function verifyPayment($order_id)
 {
@@ -189,11 +204,13 @@ class PaymentController extends Controller
                     ->subject("Your plan {$plan->name} is activated!");
         });
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Payment successful',
-            'data' => $data
-        ]);
+        // return response()->json([
+        //     'success' => true,
+        //     'message' => 'Payment successful',
+        //     'data' => $data
+        // ]);
+        $redirectUrl = rtrim(env('FRONTEND_LOGIN_URL', 'http://localhost:3000'), '/') . '/dashboard';
+        return redirect()->away($redirectUrl);
     }
 
     //  PENDING

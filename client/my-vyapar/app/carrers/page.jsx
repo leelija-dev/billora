@@ -1,226 +1,222 @@
-// carrers/page.jsx
+// join-team/page.jsx
 "use client";
 
-import Link from 'next/link';
-import React, { useState } from 'react';
-import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
+import { useState } from "react";
+import Navbar from "../../components/Navbar";
+import Footer from "../../components/Footer";
 
-export default function CareersPage() {
-  const [selectedDept, setSelectedDept] = useState('all');
+export default function JoinTeamPage() {
+  const [activeTab, setActiveTab] = useState("openings");
 
-  const jobs = [
+  const openings = [
     {
-      title: 'Senior Full Stack Developer',
-      dept: 'engineering',
-      location: 'Bangalore',
-      type: 'Full-time',
-      experience: '5+ years',
-      icon: '👨‍💻',
-      featured: true
+      title: "Senior Full Stack Developer",
+      type: "Full-time",
+      location: "Remote / Bangalore",
+      experience: "5+ years",
+      description: "Looking for an experienced developer with expertise in React, Node.js, and cloud technologies.",
+      tags: ["React", "Node.js", "AWS", "MongoDB"]
     },
     {
-      title: 'Product Manager',
-      dept: 'product',
-      location: 'Mumbai',
-      type: 'Full-time',
-      experience: '4+ years',
-      icon: '📱',
-      featured: false
+      title: "Product Manager",
+      type: "Full-time",
+      location: "Mumbai",
+      experience: "4+ years",
+      description: "Lead product development for our SaaS platform. Experience in B2B products preferred.",
+      tags: ["Product Strategy", "Agile", "SaaS", "Analytics"]
     },
     {
-      title: 'UI/UX Designer',
-      dept: 'design',
-      location: 'Remote',
-      type: 'Full-time',
-      experience: '3+ years',
-      icon: '🎨',
-      featured: false
+      title: "UX/UI Designer",
+      type: "Full-time",
+      location: "Remote",
+      experience: "3+ years",
+      description: "Create beautiful and intuitive interfaces for our multi-business platform.",
+      tags: ["Figma", "User Research", "Prototyping", "Design Systems"]
     },
     {
-      title: 'Customer Success Manager',
-      dept: 'support',
-      location: 'Delhi',
-      type: 'Full-time',
-      experience: '2+ years',
-      icon: '🤝',
-      featured: false
+      title: "Sales Executive",
+      type: "Full-time",
+      location: "Multiple Locations",
+      experience: "2+ years",
+      description: "Drive growth by acquiring new businesses across India.",
+      tags: ["B2B Sales", "CRM", "Negotiation", "Hindi/English"]
     },
     {
-      title: 'DevOps Engineer',
-      dept: 'engineering',
-      location: 'Bangalore',
-      type: 'Full-time',
-      experience: '4+ years',
-      icon: '⚙️',
-      featured: false
+      title: "Customer Success Specialist",
+      type: "Full-time",
+      location: "Remote",
+      experience: "1+ years",
+      description: "Help our clients succeed with Billora platform.",
+      tags: ["Communication", "Problem Solving", "Tech Savvy", "Patience"]
     },
     {
-      title: 'Marketing Specialist',
-      dept: 'marketing',
-      location: 'Mumbai',
-      type: 'Full-time',
-      experience: '3+ years',
-      icon: '📢',
-      featured: false
+      title: "Marketing Intern",
+      type: "Internship",
+      location: "Bangalore",
+      experience: "Fresher",
+      description: "Learn and grow with our marketing team. Create content and manage social media.",
+      tags: ["Content Writing", "Social Media", "SEO", "Creativity"]
     }
   ];
 
-  const departments = [
-    { id: 'all', name: 'All Departments' },
-    { id: 'engineering', name: 'Engineering' },
-    { id: 'product', name: 'Product' },
-    { id: 'design', name: 'Design' },
-    { id: 'marketing', name: 'Marketing' },
-    { id: 'support', name: 'Customer Support' },
+  const benefits = [
+    { icon: "🏠", title: "Remote First", desc: "Work from anywhere" },
+    { icon: "💰", title: "Competitive Salary", desc: "Best in industry" },
+    { icon: "📈", title: "ESOPs", desc: "Own the company" },
+    { icon: "🏥", title: "Health Insurance", desc: "For you and family" },
+    { icon: "🎓", title: "Learning Budget", desc: "$1000/year for courses" },
+    { icon: "🌴", title: "Unlimited PTO", desc: "Take time when needed" },
   ];
 
-  const filteredJobs = selectedDept === 'all'
-    ? jobs
-    : jobs.filter(job => job.dept === selectedDept);
-
-  const perks = [
-    { icon: '💰', title: 'Competitive Salary', desc: 'Best in industry compensation' },
-    { icon: '🏥', title: 'Health Insurance', desc: 'Coverage for you and family' },
-    { icon: '🏠', title: 'Remote Friendly', desc: 'Work from anywhere' },
-    { icon: '📚', title: 'Learning Budget', desc: 'Annual education allowance' },
-    { icon: '⚡', title: 'Stock Options', desc: 'ESOPs for all employees' },
-    { icon: '🎉', title: 'Fun Culture', desc: 'Regular team outings & events' },
+  const values = [
+    { title: "Customer First", desc: "Everything we do is for our customers" },
+    { title: "Innovation", desc: "Constantly improve and innovate" },
+    { title: "Integrity", desc: "Do the right thing, always" },
+    { title: "Teamwork", desc: "Together we achieve more" },
   ];
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white">
       <Navbar />
-      
-     
 
-      {/* Hero */}
-      <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white py-24 px-4">
-        <div className="max-w-7xl mx-auto text-center">
-          <h1 className="text-5xl md:text-6xl font-bold mb-6">Join Our Team</h1>
-          <p className="text-xl md:text-2xl max-w-3xl mx-auto opacity-90">
-            Build the future of business management with us
+      {/* Hero Section */}
+      <div className="relative bg-gradient-to-r from-blue-600 to-purple-600 text-white overflow-hidden">
+        <div className="absolute inset-0 bg-black opacity-20"></div>
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-white opacity-10 rounded-full blur-3xl"></div>
+        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-white opacity-10 rounded-full blur-3xl"></div>
+        
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-20 md:py-24 text-center">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold mb-4">
+            Join Our Team
+          </h1>
+          <p className="text-lg sm:text-xl md:text-2xl text-blue-100 max-w-3xl mx-auto">
+            Help us empower millions of small businesses across India
           </p>
-          <div className="mt-10 flex gap-4 justify-center">
-            <Link
-              href="#openings"
-              className="bg-white text-blue-600 px-8 py-3 rounded-full font-semibold hover:shadow-xl transition-all hover:-translate-y-1"
+          <div className="mt-8 flex justify-center gap-4">
+            <button 
+              onClick={() => document.getElementById('openings')?.scrollIntoView({ behavior: 'smooth' })}
+              className="bg-white text-blue-600 px-6 py-3 rounded-full font-semibold hover:shadow-lg transition"
             >
               View Openings
-            </Link>
+            </button>
+            <button className="border-2 border-white text-white px-6 py-3 rounded-full font-semibold hover:bg-white hover:text-blue-600 transition">
+              Learn More
+            </button>
           </div>
         </div>
       </div>
 
-      {/* Stats Section */}
-      <div className="max-w-7xl mx-auto px-4 -mt-16 relative z-20">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 bg-white rounded-2xl shadow-2xl p-8">
-          {[
-            { value: '200+', label: 'Team Members' },
-            { value: '10M+', label: 'Users' },
-            { value: '4.9', label: 'Rating' },
-            { value: '6', label: 'Offices' },
-          ].map((stat, idx) => (
-            <div key={idx} className="text-center">
-              <div className="text-3xl md:text-4xl font-bold text-blue-600 mb-2">{stat.value}</div>
-              <div className="text-gray-600 text-sm">{stat.label}</div>
+      {/* Stats */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-8 mb-12">
+        <div className="bg-white rounded-2xl shadow-xl p-6 grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
+          <div>
+            <div className="text-3xl font-bold text-blue-600">50+</div>
+            <div className="text-gray-600">Team Members</div>
+          </div>
+          <div>
+            <div className="text-3xl font-bold text-blue-600">10+</div>
+            <div className="text-gray-600">Open Roles</div>
+          </div>
+          <div>
+            <div className="text-3xl font-bold text-blue-600">4.8</div>
+            <div className="text-gray-600">Glassdoor Rating</div>
+          </div>
+          <div>
+            <div className="text-3xl font-bold text-blue-600">100%</div>
+            <div className="text-gray-600">Remote Friendly</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Values Section */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <h2 className="text-2xl sm:text-3xl font-bold text-center text-gray-900 mb-12">
+          Our Core Values
+        </h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          {values.map((value, idx) => (
+            <div key={idx} className="bg-white p-6 rounded-xl shadow-md hover:shadow-lg transition">
+              <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-4">
+                <span className="text-2xl">⭐</span>
+              </div>
+              <h3 className="text-xl font-semibold mb-2">{value.title}</h3>
+              <p className="text-gray-600">{value.desc}</p>
             </div>
           ))}
         </div>
       </div>
 
-      {/* Perks */}
-      <div className="max-w-7xl mx-auto px-4 py-24">
-        <div className="text-center mb-16">
-          <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">Why Join Vyapar?</h2>
-          <p className="text-gray-600 text-lg max-w-2xl mx-auto">
-            We take care of our team like family with comprehensive benefits and a culture that celebrates success
-          </p>
-        </div>
-
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {perks.map((perk, idx) => (
-            <div
-              key={idx}
-              className="group p-6 bg-gray-50 rounded-2xl hover:shadow-xl transition-all hover:-translate-y-2 cursor-default border border-gray-100"
-            >
-              <span className="text-4xl mb-4 block">{perk.icon}</span>
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">{perk.title}</h3>
-              <p className="text-gray-600">{perk.desc}</p>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Open Positions */}
-      <div id="openings" className="bg-gray-50 py-24 px-4 scroll-mt-20">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">Open Positions</h2>
-            <p className="text-gray-600 text-lg">Find your perfect role and make an impact</p>
-          </div>
-
-          {/* Department Filter */}
-          <div className="flex flex-wrap gap-2 justify-center mb-12">
-            {departments.map(dept => (
-              <button
-                key={dept.id}
-                onClick={() => setSelectedDept(dept.id)}
-                className={`px-6 py-2 rounded-full font-medium transition-all ${
-                  selectedDept === dept.id
-                    ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg scale-105'
-                    : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'
-                }`}
-              >
-                {dept.name}
-              </button>
-            ))}
-          </div>
-
-          {/* Jobs Grid */}
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredJobs.map((job, idx) => (
-              <div
-                key={idx}
-                className={`bg-white p-6 rounded-2xl shadow-lg hover:shadow-2xl transition-all hover:-translate-y-2 border ${
-                  job.featured ? 'border-blue-500 ring-2 ring-blue-200' : 'border-gray-100'
-                }`}
-              >
-                <div className="flex justify-between items-start mb-4">
-                  <span className="text-4xl">{job.icon}</span>
-                  {job.featured && (
-                    <span className="bg-blue-100 text-blue-600 text-xs font-semibold px-3 py-1 rounded-full">
-                      Featured
-                    </span>
-                  )}
+      {/* Benefits */}
+      <div className="bg-gray-50 py-12">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <h2 className="text-2xl sm:text-3xl font-bold text-center text-gray-900 mb-12">
+            Benefits & Perks
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {benefits.map((benefit, idx) => (
+              <div key={idx} className="bg-white p-6 rounded-xl shadow-md hover:shadow-lg transition group">
+                <div className="text-4xl mb-3 group-hover:scale-110 transition-transform inline-block">
+                  {benefit.icon}
                 </div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-3">{job.title}</h3>
-                <div className="space-y-2 mb-6">
-                  <p className="text-gray-600 flex items-center gap-2">
-                    <span>📍</span> {job.location}
-                  </p>
-                  <p className="text-gray-600 flex items-center gap-2">
-                    <span>⏰</span> {job.type} · {job.experience}
-                  </p>
-                </div>
-                <button className="block w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 rounded-full font-semibold hover:from-blue-700 hover:to-purple-700 transition-all text-center">
-                  Apply Now
-                </button>
+                <h3 className="text-lg font-semibold mb-1">{benefit.title}</h3>
+                <p className="text-gray-600 text-sm">{benefit.desc}</p>
               </div>
             ))}
           </div>
         </div>
       </div>
 
-      {/* CTA */}
-      <div className="max-w-7xl mx-auto px-4 py-24 text-center">
-        <div className="bg-gradient-to-r from-gray-900 to-gray-800 rounded-3xl p-16 text-white">
-          <h2 className="text-3xl md:text-4xl font-bold mb-4">Don't see your role?</h2>
-          <p className="text-xl opacity-90 mb-8 max-w-2xl mx-auto">
-            We're always looking for talented individuals. Send us your resume and we'll keep you in mind for future opportunities.
+      {/* Openings Section */}
+      <div id="openings" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <h2 className="text-2xl sm:text-3xl font-bold text-center text-gray-900 mb-4">
+          Current Openings
+        </h2>
+        <p className="text-center text-gray-600 mb-12">
+          Join us in our mission to transform small businesses
+        </p>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {openings.map((job, idx) => (
+            <div key={idx} className="bg-white rounded-xl shadow-md hover:shadow-xl transition-all p-6 border border-gray-100">
+              <div className="flex justify-between items-start mb-3">
+                <h3 className="text-xl font-semibold text-gray-900">{job.title}</h3>
+                <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                  job.type === 'Internship' ? 'bg-green-100 text-green-600' : 'bg-blue-100 text-blue-600'
+                }`}>
+                  {job.type}
+                </span>
+              </div>
+              <div className="flex gap-4 mb-3 text-sm text-gray-500">
+                <span>📍 {job.location}</span>
+                <span>💼 {job.experience}</span>
+              </div>
+              <p className="text-gray-600 mb-4">{job.description}</p>
+              <div className="flex flex-wrap gap-2 mb-4">
+                {job.tags.map((tag, tagIdx) => (
+                  <span key={tagIdx} className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded">
+                    {tag}
+                  </span>
+                ))}
+              </div>
+              <button className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-2 rounded-lg font-semibold hover:opacity-90 transition">
+                Apply Now →
+              </button>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* CTA Section */}
+      <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white py-12 mt-12">
+        <div className="max-w-4xl mx-auto text-center px-4">
+          <h2 className="text-2xl sm:text-3xl font-bold mb-4">
+            Don't see the right role?
+          </h2>
+          <p className="text-blue-100 mb-6">
+            We're always looking for talented people. Send us your resume and we'll reach out when something matches.
           </p>
-          <button className="bg-white text-gray-900 px-8 py-3 rounded-full font-semibold hover:shadow-xl transition-all hover:-translate-y-1">
-            Send Open Application
+          <button className="bg-white text-blue-600 px-8 py-3 rounded-full font-semibold hover:shadow-lg transition">
+            Submit General Application
           </button>
         </div>
       </div>

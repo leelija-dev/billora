@@ -11,6 +11,7 @@ import { useRouter } from 'next/navigation';
 const Pricing = () => {
   const [billingCycle, setBillingCycle] = useState('monthly');
   const [plans, setPlans] = useState([]);
+  const [filteredPlans, setFilteredPlans] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [subscribing, setSubscribing] = useState(null);
@@ -18,7 +19,8 @@ const Pricing = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [pendingPlan, setPendingPlan] = useState(null);
-  const [selectedBusinessType, setSelectedBusinessType] = useState({}); // Store selected business type per plan
+  const [selectedBusinessType, setSelectedBusinessType] = useState('all');
+  const [allBusinessTypes, setAllBusinessTypes] = useState([]);
   const cardRefs = useRef([]);
   const router = useRouter();
 
@@ -44,45 +46,76 @@ const Pricing = () => {
         setLoading(true);
   
         const data = await getPlans();
+        
+        console.log('API Response:', data);
   
         if (data.status === true && data.data) {
           const allPlans = data.data;
-          const limitedPlans = allPlans;
+          
+          // Extract all unique business types from all plans
+          const businessTypesMap = new Map();
+          
+          allPlans.forEach(plan => {
+            if (plan.business_types && Array.isArray(plan.business_types) && plan.business_types.length > 0) {
+              plan.business_types.forEach(bt => {
+                if (bt.business_type && !businessTypesMap.has(bt.business_type.id)) {
+                  businessTypesMap.set(bt.business_type.id, bt.business_type);
+                }
+              });
+            }
+          });
+          
+          const uniqueBusinessTypes = Array.from(businessTypesMap.values());
+          console.log('Unique Business Types:', uniqueBusinessTypes);
+          setAllBusinessTypes(uniqueBusinessTypes);
 
-          const transformedPlans = limitedPlans.map((plan, index) => {
+          const transformedPlans = allPlans.map((plan, index) => {
             const features = plan.features || [];
   
             const monthlyPrice = parseFloat(plan.price);
             const yearlyPrice = monthlyPrice * 10;
             
-            // Calculate discounted prices if discount exists
-            const discount = plan.discount || 0;
+            const discount = parseFloat(plan.discount) || 0;
             const monthlyDiscountedPrice = monthlyPrice - (monthlyPrice * discount / 100);
             const yearlyDiscountedPrice = yearlyPrice - (yearlyPrice * discount / 100);
             
-            // Calculate GST (assuming 18% GST)
-            const gstRate = plan.gst || 18; // Default to 18% if not provided
-            const monthlyPriceWithGST = monthlyDiscountedPrice + (monthlyDiscountedPrice * gstRate / 100);
-            const yearlyPriceWithGST = yearlyDiscountedPrice + (yearlyDiscountedPrice * gstRate / 100);
+            const gstRate = parseFloat(plan.gst) || 0;
+
+            // Transform business types to a simpler format
+            const transformedBusinessTypes = (plan.business_types || []).map(bt => ({
+              id: bt.business_type?.id || bt.id,
+              name: bt.business_type?.name || bt.name,
+              plan_id: bt.plan_id,
+              business_type_id: bt.business_type_id,
+              custom_price: bt.custom_price || null
+            }));
+
+            // Check which business types this plan supports
+            const supportedBusinessTypeIds = transformedBusinessTypes.map(bt => bt.id);
 
             return {
               id: plan.id,
               name: plan.name,
               price: {
+                monthly: monthlyPrice,
+                yearly: yearlyPrice
+              },
+              displayPrice: {
                 monthly: monthlyPrice.toLocaleString('en-IN'),
                 yearly: yearlyPrice.toLocaleString('en-IN')
               },
               discountedPrice: {
+                monthly: monthlyDiscountedPrice,
+                yearly: yearlyDiscountedPrice
+              },
+              displayDiscountedPrice: {
                 monthly: monthlyDiscountedPrice.toLocaleString('en-IN'),
                 yearly: yearlyDiscountedPrice.toLocaleString('en-IN')
               },
-              priceWithGST: {
-                monthly: monthlyPriceWithGST.toLocaleString('en-IN'),
-                yearly: yearlyPriceWithGST.toLocaleString('en-IN')
-              },
               discount: discount,
               gst: gstRate,
-              businessTypes: plan.business_types || [], // Array of business types from backend
+              businessTypes: transformedBusinessTypes,
+              supportedBusinessTypeIds: supportedBusinessTypeIds,
               description: plan.description
                 ? plan.description.replace(/<[^>]*>?/gm, "")
                 : "",
@@ -93,16 +126,9 @@ const Pricing = () => {
             };
           });
   
+          console.log('Transformed Plans:', transformedPlans);
           setPlans(transformedPlans);
-          
-          // Initialize selected business type for each plan
-          const initialBusinessTypes = {};
-          transformedPlans.forEach(plan => {
-            if (plan.businessTypes && plan.businessTypes.length > 0) {
-              initialBusinessTypes[plan.id] = plan.businessTypes[0];
-            }
-          });
-          setSelectedBusinessType(initialBusinessTypes);
+          setFilteredPlans(transformedPlans);
           
         } else {
           setError(data.message || "Failed to fetch plans");
@@ -118,49 +144,103 @@ const Pricing = () => {
     fetchPlans();
   }, []);
 
-  // Handle business type change
-  const handleBusinessTypeChange = (planId, businessType) => {
-    setSelectedBusinessType(prev => ({
-      ...prev,
-      [planId]: businessType
-    }));
+  // Filter plans based on selected business type
+  useEffect(() => {
+    if (selectedBusinessType === 'all') {
+      setFilteredPlans(plans);
+    } else {
+      const filtered = plans.filter(plan => 
+        plan.supportedBusinessTypeIds.includes(parseInt(selectedBusinessType))
+      );
+      setFilteredPlans(filtered);
+    }
+  }, [selectedBusinessType, plans]);
+
+  // Get current price based on billing cycle, discount, and selected business type
+  const getCurrentPrice = (plan) => {
+    let basePrice;
+    
+    // If a specific business type is selected (not 'all'), check for custom pricing
+    if (selectedBusinessType !== 'all') {
+      const businessTypeForPlan = plan.businessTypes.find(
+        bt => bt.id === parseInt(selectedBusinessType)
+      );
+      
+      if (businessTypeForPlan && businessTypeForPlan.custom_price) {
+        basePrice = businessTypeForPlan.custom_price;
+        if (billingCycle === 'yearly') {
+          basePrice = basePrice * 10;
+        }
+        return {
+          price: basePrice,
+          displayPrice: basePrice.toLocaleString('en-IN'),
+          hasCustomPrice: true
+        };
+      }
+    }
+    
+    // Use regular pricing with discount
+    if (plan.discount > 0) {
+      basePrice = billingCycle === 'monthly' 
+        ? plan.discountedPrice.monthly 
+        : plan.discountedPrice.yearly;
+    } else {
+      basePrice = billingCycle === 'monthly' 
+        ? plan.price.monthly 
+        : plan.price.yearly;
+    }
+    
+    return {
+      price: basePrice,
+      displayPrice: basePrice.toLocaleString('en-IN'),
+      hasCustomPrice: false
+    };
   };
 
-  // Get current price based on billing cycle, discount, and business type
-  const getCurrentPrice = (plan, businessType = null) => {
-    if (billingCycle === 'monthly') {
-      // If business type has custom pricing, use that
-      if (businessType && businessType.custom_price) {
-        return businessType.custom_price.toLocaleString('en-IN');
+  // Get original price for comparison
+  const getOriginalPrice = (plan) => {
+    if (selectedBusinessType !== 'all') {
+      const businessTypeForPlan = plan.businessTypes.find(
+        bt => bt.id === parseInt(selectedBusinessType)
+      );
+      
+      if (businessTypeForPlan && businessTypeForPlan.custom_price) {
+        const customPrice = businessTypeForPlan.custom_price;
+        return {
+          price: billingCycle === 'yearly' ? customPrice * 10 : customPrice,
+          displayPrice: (billingCycle === 'yearly' ? customPrice * 10 : customPrice).toLocaleString('en-IN')
+        };
       }
-      // Otherwise use discounted price if available
-      return plan.discount > 0 ? plan.discountedPrice.monthly : plan.price.monthly;
-    } else {
-      if (businessType && businessType.custom_price) {
-        return (businessType.custom_price * 10).toLocaleString('en-IN');
-      }
-      return plan.discount > 0 ? plan.discountedPrice.yearly : plan.price.yearly;
     }
+    
+    return {
+      price: billingCycle === 'monthly' ? plan.price.monthly : plan.price.yearly,
+      displayPrice: billingCycle === 'monthly' ? plan.displayPrice.monthly : plan.displayPrice.yearly
+    };
   };
 
   // Handle subscription
-  const handleSubscribe = (planId, planName, planPrice, planDiscount, planGST, businessType) => {
-    const currentPrice = billingCycle === 'monthly' 
-      ? (planDiscount > 0 ? planPrice.monthly : planPrice.monthly)
-      : (planDiscount > 0 ? planPrice.yearly : planPrice.yearly);
+  const handleSubscribe = (plan) => {
+    const currentPriceData = getCurrentPrice(plan);
+    const originalPriceData = getOriginalPrice(plan);
+    const gstAmount = currentPriceData.price * (plan.gst / 100);
+    const totalAmount = currentPriceData.price + gstAmount;
     
     const selectedPlan = {
-      id: planId,
-      name: planName,
+      id: plan.id,
+      name: plan.name,
       billingCycle: billingCycle,
-      price: currentPrice,
-      originalPrice: billingCycle === 'monthly' ? planPrice.monthly : planPrice.yearly,
-      discount: planDiscount,
-      gst: planGST,
-      businessType: businessType,
-      finalPrice: billingCycle === 'monthly' 
-        ? (parseFloat(currentPrice.replace(/,/g, '')) + (parseFloat(currentPrice.replace(/,/g, '')) * planGST / 100)).toFixed(0)
-        : (parseFloat(currentPrice.replace(/,/g, '')) + (parseFloat(currentPrice.replace(/,/g, '')) * planGST / 100)).toFixed(0)
+      price: currentPriceData.price,
+      displayPrice: currentPriceData.displayPrice,
+      originalPrice: originalPriceData.price,
+      discount: plan.discount,
+      gst: plan.gst,
+      gstAmount: gstAmount,
+      totalAmount: totalAmount,
+       businessType: selectedBusinessType !== 'all' 
+    ? allBusinessTypes.find(bt => bt.id === parseInt(selectedBusinessType)) 
+    : plan.businessTypes?.[0] || null, // 👈 DEFAULT FIX
+      hasCustomPrice: currentPriceData.hasCustomPrice
     };
     
     if (!isLoggedIn) {
@@ -216,7 +296,7 @@ const Pricing = () => {
     });
 
     return () => observer.disconnect();
-  }, [plans]);
+  }, [filteredPlans]);
 
   // Login Modal Component
   const LoginModal = () => {
@@ -237,7 +317,7 @@ const Pricing = () => {
             </p>
             {pendingPlan && (
               <p className="text-sm text-purple-600 mt-2 font-medium">
-                Plan: {pendingPlan.name} • ₹{pendingPlan.price}/{pendingPlan.billingCycle === 'monthly' ? 'month' : 'year'}
+                Plan: {pendingPlan.name} • ₹{pendingPlan.displayPrice}/{pendingPlan.billingCycle === 'monthly' ? 'month' : 'year'}
               </p>
             )}
           </div>
@@ -299,23 +379,6 @@ const Pricing = () => {
     );
   }
 
-  if (plans.length === 0) {
-    return (
-      <>
-        <Navbar />
-        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#f8fafc] to-[#f1f5f9]">
-          <div className="text-center">
-            <div className="text-gray-400 text-6xl mb-4">📦</div>
-            <h3 className="text-xl font-bold text-gray-800 mb-2">No Plans Available</h3>
-            <p className="text-gray-600">Please check back later for pricing plans.</p>
-          </div>
-        </div>
-        <Footer />
-        <LoginModal />
-      </>
-    );
-  }
-
   return (
     <>
       <Navbar />
@@ -330,6 +393,7 @@ const Pricing = () => {
             </div>
           )}
 
+          {/* Header Section */}
           <div className="text-center mb-12">
             <SectionTitle title="Simple, Transparent Pricing" />
             <p className="text-[#475569] text-lg max-w-[600px] mx-auto mt-4 font-medium">
@@ -337,7 +401,33 @@ const Pricing = () => {
             </p>
           </div>
 
-          <div className="flex justify-center items-center mb-12">
+          {/* Filters Section */}
+          <div className="flex flex-col md:flex-row justify-center items-center gap-6 mb-12">
+            {/* Business Type Dropdown */}
+            <div className="flex items-center gap-3 bg-white px-5 py-2.5 rounded-full shadow-md border border-gray-200">
+              <div className="flex items-center gap-2">
+                <div className="bg-gradient-to-r from-purple-500 to-purple-600 p-1.5 rounded-full">
+                  <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                  </svg>
+                </div>
+                <span className="text-sm font-semibold text-gray-700">Business Type:</span>
+              </div>
+              <select
+                value={selectedBusinessType}
+                onChange={(e) => setSelectedBusinessType(e.target.value)}
+                className="px-3 py-1.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm bg-white cursor-pointer"
+              >
+                <option value="all">🌐 All</option>
+                {allBusinessTypes.map((businessType) => (
+                  <option key={businessType.id} value={businessType.id}>
+                    🏢 {businessType.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Billing Toggle */}
             <div className="relative bg-white p-1 rounded-full shadow-md border border-gray-200 inline-flex">
               <button
                 className={`relative px-6 sm:px-8 py-2.5 sm:py-3 rounded-full text-sm sm:text-base font-semibold transition-all duration-300 z-10 ${
@@ -366,168 +456,129 @@ const Pricing = () => {
             </div>
           </div>
 
-          <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-${Math.min(plans.length, 3)} gap-8 mb-16 items-stretch px-4`}>
-            {plans.map((plan, index) => {
-              const isPopular = index === 1;
-              const currentBusinessType = selectedBusinessType[plan.id];
-              const currentPrice = getCurrentPrice(plan, currentBusinessType);
-              
-              return (
-                <div
-                  key={plan.id}
-                  ref={(el) => (cardRefs.current[index] = el)}
-                  className={`bg-white rounded-2xl p-8 shadow-lg relative transition-all duration-500 border flex flex-col opacity-0 translate-y-10 hover:-translate-y-2 hover:shadow-2xl
-                    ${isPopular 
-                      ? 'border-2 border-purple-500 shadow-purple-100 scale-100 lg:scale-105 z-20' 
-                      : 'border-gray-200 hover:border-gray-300 z-10'
-                    }`}
-                >
-                  {isPopular && (
-                    <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-gradient-to-r from-purple-600 to-purple-500 text-white px-4 py-1 rounded-full text-xs font-bold uppercase tracking-wider shadow-lg">
-                      Most Popular
-                    </div>
-                  )}
+          {/* Results Count */}
+          <div className="text-center mb-6">
+            <p className="text-sm text-gray-500">
+              Showing {filteredPlans.length} {filteredPlans.length === 1 ? 'plan' : 'plans'} 
+              {selectedBusinessType !== 'all' && ` for ${allBusinessTypes.find(bt => bt.id === parseInt(selectedBusinessType))?.name}`}
+            </p>
+          </div>
 
-                  <div className="text-center mb-8 pb-6 border-b border-gray-100">
-                    <h3 className="text-2xl font-bold text-gray-900 mb-3">{plan.name}</h3>
-                    
-                    {/* Price Display with Discount and GST */}
-                    <div className="mb-4">
-                      {plan.discount > 0 && (
-                        <div className="inline-flex items-center gap-2 bg-red-50 px-3 py-1 rounded-full mb-3">
-                          <span className="text-red-600 text-xs font-bold">{plan.discount}% OFF</span>
-                          <span className="text-gray-400 line-through text-sm">
-                            ₹{billingCycle === 'monthly' ? plan.price.monthly : plan.price.yearly}
-                          </span>
-                        </div>
-                      )}
-                      
-                      <div className="flex items-baseline justify-center gap-1">
-                        <span className="text-2xl font-semibold text-gray-500">₹</span>
-                        <span className="text-5xl font-bold" style={{ color: isPopular ? '#8b5cf6' : '#000000' }}>
-                          {currentPrice}
-                        </span>
-                        <span className="text-gray-400 text-base font-medium">/{billingCycle === 'monthly' ? 'month' : 'year'}</span>
-                      </div>
-                      
-                      {plan.gst > 0 && (
-                        <p className="text-xs text-gray-500 mt-2">
-                          +{plan.gst}% GST applicable
-                        </p>
-                      )}
-                      
-                      {plan.discount > 0 && (
-                        <p className="text-xs text-green-600 mt-1 font-medium">
-                          You save {plan.discount}% with this plan!
-                        </p>
-                      )}
-                    </div>
-                    
-                    <p className="text-sm text-gray-600 font-medium">{plan.description}</p>
-                  </div>
-
-                  {/* Business Type Dropdown */}
-                  {plan.businessTypes && plan.businessTypes.length > 0 && (
-                    <div className="mb-6">
-                      <label className="block text-xs font-bold text-gray-500 mb-2 uppercase tracking-wider">
-                        Business Type
-                      </label>
-                      <select
-                        value={currentBusinessType?.id || ''}
-                        onChange={(e) => {
-                          const selected = plan.businessTypes.find(bt => bt.id === parseInt(e.target.value));
-                          if (selected) handleBusinessTypeChange(plan.id, selected);
-                        }}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm"
-                      >
-                        {plan.businessTypes.map((businessType) => (
-                          <option key={businessType.id} value={businessType.id}>
-                            {businessType.name}
-                            {businessType.custom_price && ` (₹${businessType.custom_price.toLocaleString('en-IN')})`}
-                          </option>
-                        ))}
-                      </select>
-                      {currentBusinessType?.description && (
-                        <p className="text-xs text-gray-500 mt-1">{currentBusinessType.description}</p>
-                      )}
-                    </div>
-                  )}
-
-                  <div className="flex-1 mb-8">
-                    <h4 className="text-xs font-bold text-gray-500 mb-5 uppercase tracking-wider">What's included</h4>
-                    <ul className="space-y-3.5">
-                      {plan.features.map((feature, idx) => (
-                        <li key={idx} className="flex items-start gap-3 text-sm text-gray-700">
-                          <svg className="w-5 h-5 flex-shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none">
-                            <path d="M20 6L9 17L4 12" stroke={isPopular ? '#8b5cf6' : '#000000'} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-                          </svg>
-                          <span className="leading-relaxed">{feature}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-
-                  {/* Price Summary with GST */}
-                  {/* <div className="mb-4 p-3 bg-gray-50 rounded-lg">
-                    <div className="flex justify-between text-sm mb-1">
-                      <span className="text-gray-600">Plan Price:</span>
-                      <span className="font-semibold">₹{currentPrice}</span>
-                    </div>
-                    {plan.gst > 0 && (
-                      <div className="flex justify-between text-sm mb-1">
-                        <span className="text-gray-600">GST ({plan.gst}%):</span>
-                        <span className="font-semibold">
-                          ₹{(parseFloat(currentPrice.replace(/,/g, '')) * plan.gst / 100).toFixed(2)}
-                        </span>
+          {/* Pricing Cards Grid */}
+          {filteredPlans.length === 0 ? (
+            <div className="text-center py-20">
+              <div className="text-6xl mb-4">🔍</div>
+              <h3 className="text-xl font-bold text-gray-800 mb-2">No Plans Found</h3>
+              <p className="text-gray-600">No plans available for this business type. Please try another selection.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-16 items-stretch px-4">
+              {filteredPlans.map((plan, index) => {
+                const isPopular = plan.popular;
+                const currentPriceData = getCurrentPrice(plan);
+                const originalPriceData = getOriginalPrice(plan);
+                const gstAmount = currentPriceData.price * (plan.gst / 100);
+                const totalAmount = currentPriceData.price + gstAmount;
+                
+                return (
+                  <div
+                    key={plan.id}
+                    ref={(el) => (cardRefs.current[index] = el)}
+                    className={`bg-white rounded-2xl p-8 shadow-lg relative transition-all duration-500 border flex flex-col opacity-0 translate-y-10 hover:-translate-y-2 hover:shadow-2xl
+                      ${isPopular 
+                        ? 'border-2 border-purple-500 shadow-purple-100 scale-100 lg:scale-105 z-20 pt-10' 
+                        : 'border-gray-200 hover:border-gray-300 z-10'
+                      }`}
+                  >
+                    {isPopular && (
+                      <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-gradient-to-r from-purple-600 to-purple-500 text-white px-4 py-1 rounded-full text-xs font-bold uppercase tracking-wider shadow-lg whitespace-nowrap">
+                        Most Popular
                       </div>
                     )}
-                    <div className="flex justify-between text-sm pt-1 border-t border-gray-200 mt-1">
-                      <span className="font-bold text-gray-800">Total Amount:</span>
-                      <span className="font-bold text-purple-600">
-                        ₹{(parseFloat(currentPrice.replace(/,/g, '')) + (parseFloat(currentPrice.replace(/,/g, '')) * plan.gst / 100)).toFixed(2)}
-                      </span>
-                    </div>
-                  </div> */}
 
-                  <div className="mt-auto pt-4">
-                    <button
-                      onClick={() => handleSubscribe(
-                        plan.id, 
-                        plan.name, 
-                        { monthly: plan.price.monthly, yearly: plan.price.yearly },
-                        plan.discount,
-                        plan.gst,
-                        currentBusinessType
-                      )}
-                      disabled={subscribing === plan.id}
-                      className={`w-full py-3.5 rounded-xl text-base font-semibold transition-all duration-300 hover:shadow-lg active:scale-95
-                        ${isPopular 
-                          ? 'bg-gradient-to-r from-purple-600 to-purple-500 text-white hover:from-purple-700 hover:to-purple-600' 
-                          : 'bg-white border-2 hover:bg-gray-50'
-                        }
-                        ${subscribing === plan.id ? 'opacity-50 cursor-not-allowed' : ''}`}
-                      style={{
-                        color: isPopular ? 'white' : '#000000',
-                        borderColor: isPopular ? 'transparent' : '#000000'
-                      }}
-                    >
-                      {subscribing === plan.id ? (
-                        <span className="flex items-center justify-center gap-2">
-                          <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
-                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                          </svg>
-                          Processing...
-                        </span>
-                      ) : (
-                        plan.buttonText
-                      )}
-                    </button>
+                <div className="text-center mb-8 pb-6 border-b border-gray-100">
+  <h3 className="text-2xl font-bold text-gray-900 mb-3">
+    {plan.name.charAt(0).toUpperCase() + plan.name.slice(1).toLowerCase()}
+  </h3>
+
+                      
+                      <div className="mb-4">
+                        {(plan.discount > 0 || currentPriceData.hasCustomPrice) && (
+                          <div className="inline-flex items-center gap-2 bg-red-50 px-3 py-1 rounded-full mb-3">
+                            <span className="text-red-600 text-xs font-bold">
+                              {currentPriceData.hasCustomPrice ? `Special Price` : `${plan.discount}% OFF`}
+                            </span>
+                            <span className="text-gray-400 line-through text-sm">
+                              ₹{originalPriceData.displayPrice}
+                            </span>
+                          </div>
+                        )}
+                        
+                        <div className="flex items-baseline justify-center gap-1">
+                          <span className="text-2xl font-semibold text-gray-500">₹</span>
+                          <span className="text-5xl font-bold" style={{ color: isPopular ? '#8b5cf6' : '#000000' }}>
+                            {currentPriceData.displayPrice}
+                          </span>
+                          <span className="text-gray-400 text-base font-medium">/{billingCycle === 'days' ? 'days' : 'days'}</span>
+                        </div>
+                        
+                        {(plan.discount > 0 || currentPriceData.hasCustomPrice) && (
+                          <p className="text-xs text-green-600 mt-1 font-medium">
+                            🎉 You save ₹{(originalPriceData.price - currentPriceData.price).toLocaleString('en-IN')}!
+                          </p>
+                        )}
+                      </div>
+                      
+                      <p className="text-sm text-gray-600 font-medium">{plan.description}</p>
+                    </div>
+
+                    <div className="flex-1 mb-8">
+                      <h4 className="text-xs font-bold text-gray-500 mb-5 uppercase tracking-wider"> included Features :</h4>
+                      <ul className="space-y-3.5">
+                        {plan.features.map((feature, idx) => (
+                          <li key={idx} className="flex items-start gap-3 text-sm text-gray-700">
+                            <svg className="w-5 h-5 flex-shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none">
+                              <path d="M20 6L9 17L4 12" stroke={isPopular ? '#8b5cf6' : '#000000'} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                            </svg>
+                            <span className="leading-relaxed">{feature}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+
+                    <div className="mt-auto pt-4">
+                      <button
+                        onClick={() => handleSubscribe(plan)}
+                        disabled={subscribing === plan.id}
+                        className={`w-full py-3.5 rounded-xl text-base font-semibold transition-all duration-300 hover:shadow-lg active:scale-95
+                          ${isPopular 
+                            ? 'bg-gradient-to-r from-purple-600 to-purple-500 text-white hover:from-purple-700 hover:to-purple-600' 
+                            : 'bg-white border-2 hover:bg-gray-50'
+                          }
+                          ${subscribing === plan.id ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        style={{
+                          color: isPopular ? 'white' : '#000000',
+                          borderColor: isPopular ? 'transparent' : '#000000'
+                        }}
+                      >
+                        {subscribing === plan.id ? (
+                          <span className="flex items-center justify-center gap-2">
+                            <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                            </svg>
+                            Processing...
+                          </span>
+                        ) : (
+                          plan.buttonText
+                        )}
+                      </button>
+                    </div>
                   </div>
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
+          )}
 
           <div className="text-center mb-8">
             <button
