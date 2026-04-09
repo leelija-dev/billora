@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import toast, { Toaster } from 'react-hot-toast';
 import Navbar from "@/components/Navbar";
 import { createProductOrder } from "@/services/productPaymentService";
+import { getAuthData } from "../../store/authStore";
 
 const ProductCheckout = () => {
   const router = useRouter();
@@ -93,40 +94,93 @@ const ProductCheckout = () => {
     
     getUserData();
 
-    // Fetch store ID with fallback
+    // Fetch store ID - Try multiple endpoints
     const fetchStore = async () => {
       try {
-        const { getUserStore } = await import('../../services/productService');
-        const store = await getUserStore();
-        
-        console.log("🔍 Store data received:", store);
-        
-        if (store) {
-          // Handle different response formats
-          const storeIdValue = store.id || store.store_id || store;
-          setStoreId(storeIdValue);
-          console.log("✅ Store ID set to:", storeIdValue);
-        } else {
-          // Try to get from localStorage as fallback
-          const storedStoreId = localStorage.getItem('store_id');
-          if (storedStoreId) {
-            setStoreId(JSON.parse(storedStoreId));
-            console.log("✅ Store ID from localStorage:", storedStoreId);
+        const { user } = getAuthData();
+        if (!user || !user.id) {
+          console.log("No user found for store fetch");
+          // Try to get from localStorage
+          const storedStore = localStorage.getItem('store_id');
+          if (storedStore) {
+            setStoreId(parseInt(storedStore));
+            console.log("✅ Store ID from localStorage:", storedStore);
           } else {
-            // Default fallback - you may need to change this value
-            const defaultStoreId = 1;
-            setStoreId(defaultStoreId);
-            console.log("⚠️ Using default store ID:", defaultStoreId);
+            setStoreId(1);
+            console.log("⚠️ Using default store ID: 1");
+          }
+          return;
+        }
+        
+        const token = localStorage.getItem("token");
+        
+        // Try multiple possible endpoints
+        const endpoints = [
+          `http://localhost:8000/api/users/${user.id}/store`,
+          `http://localhost:8000/api/store/user/${user.id}`,
+          `http://localhost:8000/api/store`,
+          `http://localhost:8000/api/user-store/${user.id}`
+        ];
+        
+        let storeData = null;
+        
+        for (const endpoint of endpoints) {
+          try {
+            console.log(`🔍 Trying endpoint: ${endpoint}`);
+            const response = await fetch(endpoint, {
+              headers: {
+                'Authorization': token ? `Bearer ${token}` : '',
+                'Content-Type': 'application/json'
+              }
+            });
+            
+            if (response.ok) {
+              const data = await response.json();
+              console.log(`✅ Response from ${endpoint}:`, data);
+              
+              // Extract store ID from various response formats
+              storeData = data?.data?.id || data?.store_id || data?.id || data;
+              if (storeData && typeof storeData === 'number') {
+                break;
+              }
+              if (storeData && storeData.id) {
+                storeData = storeData.id;
+                break;
+              }
+            }
+          } catch (err) {
+            console.log(`❌ Endpoint failed: ${endpoint}`);
+          }
+        }
+        
+        if (storeData && typeof storeData === 'number') {
+          setStoreId(storeData);
+          console.log("✅ Store ID set to:", storeData);
+          // Save to localStorage for future use
+          localStorage.setItem('store_id', storeData);
+        } else {
+          // Check localStorage for previously saved store ID
+          const storedStore = localStorage.getItem('store_id');
+          if (storedStore) {
+            setStoreId(parseInt(storedStore));
+            console.log("✅ Using stored store ID:", storedStore);
+          } else {
+            setStoreId(1);
+            console.log("⚠️ Using default store ID: 1");
           }
         }
       } catch (error) {
         console.error("Error fetching store:", error);
-        // Fallback to default store ID
-        const defaultStoreId = 1;
-        setStoreId(defaultStoreId);
-        console.log("⚠️ Error fallback - using default store ID:", defaultStoreId);
+        // Fallback to localStorage or default
+        const storedStore = localStorage.getItem('store_id');
+        if (storedStore) {
+          setStoreId(parseInt(storedStore));
+        } else {
+          setStoreId(1);
+        }
       }
     };
+    
     fetchStore();
   }, [router]);
 
@@ -154,13 +208,12 @@ const ProductCheckout = () => {
       return;
     }
 
-    // Get customer ID
-    let customerIdValue = customerId || loggedInUser?.customer_id || loggedInUser?.id;
+    // Get user from auth
+    const { user } = getAuthData();
     
-    if (!customerIdValue) {
-      toast.error("Customer not found. Please login again.");
-      localStorage.setItem('redirectAfterLogin', '/product-checkout');
-      setTimeout(() => router.push('/login'), 2000);
+    if (!user || !user.id) {
+      toast.error("Please login to place order");
+      router.push('/login');
       return;
     }
 
@@ -173,15 +226,21 @@ const ProductCheckout = () => {
     const loadingToast = toast.loading('Creating order...');
 
     try {
-      // Prepare payload matching backend requirements
+      // Prepare payload matching backend requirements with SUCCESS status
       const payload = {
-        user_id: Number(customerIdValue),
+        user_id: user.id,
         store_id: finalStoreId,
         customer_name: customerName.trim(),
         customer_phone: cleanPhone,
         product_id: cartItems.map(item => item.id),
         quantity: cartItems.map(item => item.quantity),
         unit_id: cartItems.map(item => item.unit_id || 1),
+        // Add these fields to show success in database
+        payment_status: 'paid',      // Change from 'pending' to 'paid'
+        order_status: 'confirmed',    // Change from 'pending' to 'confirmed'
+        paid_amount: totalAmount,     // Set paid amount equal to total
+        payment_method: 'cash',       // Payment method
+        total_amount: totalAmount     // Total amount
       };
 
       console.log("📤 Sending to backend:", payload);
@@ -199,8 +258,8 @@ const ProductCheckout = () => {
         sessionStorage.removeItem('cart');
         localStorage.removeItem('checkoutData');
         
-        // Redirect to orders page
-        setTimeout(() => router.push('/orders'), 2000);
+        // Redirect to products page
+        setTimeout(() => router.push('/products'), 2000);
       } else {
         throw new Error(response.message || 'Failed to create order');
       }

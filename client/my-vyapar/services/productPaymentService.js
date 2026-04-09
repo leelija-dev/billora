@@ -16,3 +16,8 @@ export const createProductOrder = async (orderData) => {
     throw error;
   }
 };
+
+// Also export as default for flexibility
+export default {
+  createProductOrder,
+};
