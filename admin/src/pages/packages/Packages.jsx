@@ -157,6 +157,15 @@ const Packages = () => {
 
   const columns = [
     {
+      header: '#',
+      accessor: 'serial_number',
+      cell: (value, row, rowIndex) => (
+        <span className="font-medium text-gray-900 dark:text-white">
+          {(currentPage - 1) * pageSize + rowIndex + 1}
+        </span>
+      ),
+    },
+    {
       header: 'Package Name',
       accessor: 'package_name',
       cell: (value) => (
@@ -186,7 +195,7 @@ const Packages = () => {
     {
       header: 'Actions',
       accessor: 'actions',
-      cell: (_, row) => (
+      cell: (value, row) => (
         <div className="flex items-center space-x-2">
           <motion.button
             whileHover={{ scale: 1.1 }}

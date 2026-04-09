@@ -211,7 +211,7 @@ Route::prefix('business-type')->group(function (){
 });
 Route::middleware('auth:sanctum')->prefix('packages-cost')->group(function () {
    Route::get('/{id}', [PackageCostController::class, 'index']);
-   Route::post('/store', [PackageCostController::class, 'store']);
+   Route::post('/store/{id}', [PackageCostController::class, 'store']);
    Route::get('/edit/{id}', [PackageCostController::class, 'edit']);
    Route::put('/update/{id}', [PackageCostController::class, 'update']);
    Route::delete('/delete/{id}', [PackageCostController::class, 'delete']);
