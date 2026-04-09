@@ -35,39 +35,52 @@ const InvoiceTable = ({
   // Cache for store data
   const storeCacheRef = useRef(new Map())
   const lastFetchTimeRef = useRef(null)
+  const resizeTimeoutRef = useRef(null)
+  const isFetchingRef = useRef(false)
+  
+  // Global resize lock - prevent ALL API calls during resize
+  const globalResizeLockRef = useRef(false)
   
   // Handle resize events to prevent unnecessary API calls
   useEffect(() => {
-    let resizeTimeout
+    let resizeDebounce
     
-    const handleResizeStart = () => {
+    const handleResize = () => {
+      // Set global lock immediately
+      globalResizeLockRef.current = true
+      
+      // Clear any existing timeout
+      if (resizeTimeoutRef.current) {
+        clearTimeout(resizeTimeoutRef.current)
+      }
+      
       setIsResizing(true)
-      clearTimeout(resizeTimeout)
-    }
-    
-    const handleResizeEnd = () => {
-      clearTimeout(resizeTimeout)
-      resizeTimeout = setTimeout(() => {
+      
+      // Set a longer debounce to ensure resize is completely finished
+      resizeTimeoutRef.current = setTimeout(() => {
         setIsResizing(false)
-      }, 150) // Wait for resize to finish
+        globalResizeLockRef.current = false // Release lock after resize
+        console.log('Resize finished, API calls unlocked')
+      }, 500) // Increased to 500ms for better protection
     }
     
-    window.addEventListener('resize', handleResizeStart)
-    window.addEventListener('resize', handleResizeEnd)
+    window.addEventListener('resize', handleResize, { passive: true })
     
     return () => {
-      window.removeEventListener('resize', handleResizeStart)
-      window.removeEventListener('resize', handleResizeEnd)
-      clearTimeout(resizeTimeout)
+      window.removeEventListener('resize', handleResize, { passive: true })
+      if (resizeTimeoutRef.current) {
+        clearTimeout(resizeTimeoutRef.current)
+      }
+      globalResizeLockRef.current = false // Ensure lock is released
     }
   }, [])
 
-  // Fetch store data when invoices change (with caching and resize protection)
+  // Fetch store data when invoices change (with enhanced caching and resize protection)
   useEffect(() => {
     const fetchStoreData = async () => {
-      // Skip if currently resizing
-      if (isResizing) {
-        console.log('Skipping store fetch during resize')
+      // Multiple layers of protection
+      if (isResizing || globalResizeLockRef.current || isFetchingRef.current) {
+        console.log('Skipping store fetch - resize locked or already fetching')
         return
       }
       
@@ -78,24 +91,27 @@ const InvoiceTable = ({
         return
       }
 
-      // Check cache first
+      // Enhanced cache key with timestamp to ensure uniqueness
       const cacheKey = storeIds.sort().join(',')
       const now = Date.now()
       const cached = storeCacheRef.current.get(cacheKey)
       
-      if (cached && (now - cached.timestamp) < 10000) { // 10 seconds cache
-        console.log('Using cached store data')
+      // Increased cache duration to 60 seconds (1 minute)
+      if (cached && (now - cached.timestamp) < 60000) {
+        console.log('Using cached store data (60s cache)')
         setStores(cached.data)
         setStoresLoading(false)
         return
       }
 
-      // Prevent duplicate requests within 2 seconds
-      if (lastFetchTimeRef.current && (now - lastFetchTimeRef.current) < 2000) {
-        console.log('Skipping duplicate store request')
+      // Prevent duplicate requests within 10 seconds (much longer cooldown)
+      if (lastFetchTimeRef.current && (now - lastFetchTimeRef.current) < 10000) {
+        console.log('Skipping duplicate store request (10s cooldown)')
         return
       }
 
+      // Set fetching lock
+      isFetchingRef.current = true
       setStoresLoading(true)
       lastFetchTimeRef.current = now
       
@@ -134,22 +150,26 @@ const InvoiceTable = ({
         const storeResults = await Promise.all(storePromises)
         const allStores = storeResults.reduce((acc, stores) => ({ ...acc, ...stores }), {})
         
-        // Cache the results
+        // Cache the results with longer duration
         storeCacheRef.current.set(cacheKey, {
           data: allStores,
           timestamp: now
         })
         
-        console.log('🏪 Fetched stores:', allStores)
+        console.log('🏪 Fetched stores (new data):', allStores)
         setStores(allStores)
         setStoresLoading(false)
       } catch (error) {
         console.error('Failed to fetch store data:', error)
         setStoresLoading(false)
+      } finally {
+        // Always release the fetching lock
+        isFetchingRef.current = false
       }
     }
 
-    if (invoices && invoices.length > 0 && !isResizing) {
+    // Only fetch if we have invoices and no locks are active
+    if (invoices && invoices.length > 0 && !isResizing && !globalResizeLockRef.current) {
       fetchStoreData()
     }
   }, [invoices, isResizing])
