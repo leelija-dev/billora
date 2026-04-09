@@ -26,6 +26,11 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
   const [selectedImages, setSelectedImages] = useState([])
   const [imagePreviews, setImagePreviews] = useState([])
   const [variants, setVariants] = useState([])
+  
+  // State for dynamic attributes
+  const [attributes, setAttributes] = useState([
+    { key: '', value: '' }
+  ])
 
   const {
     register,
@@ -119,7 +124,7 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
     if (product && createPageData.brands.length > 0) {
       // Set all form values for editing
       Object.keys(product).forEach(key => {
-        if (key !== 'images' && key !== 'variants') {
+        if (key !== 'images' && key !== 'variants' && key !== 'attributes') {
           setValue(key, product[key] || '')
         }
       })
@@ -133,6 +138,15 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
       // Handle variants
       if (product.variants && Array.isArray(product.variants)) {
         setVariants(product.variants)
+      }
+      
+      // Handle attributes
+      if (product.attributes && typeof product.attributes === 'object') {
+        const attrsArray = Object.entries(product.attributes).map(([key, value]) => ({
+          key,
+          value: String(value)
+        }))
+        setAttributes(attrsArray.length > 0 ? attrsArray : [{ key: '', value: '' }])
       }
     }
   }, [product, createPageData.brands, setValue])
@@ -203,21 +217,30 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
     setVariants(prev => prev.filter((_, i) => i !== index))
   }
 
+  // Attribute handling functions
+  const addAttribute = () => {
+    setAttributes(prev => [...prev, { key: '', value: '' }])
+  }
+
+  const updateAttribute = (index, field, value) => {
+    setAttributes(prev => prev.map((attr, i) => 
+      i === index ? { ...attr, [field]: value } : attr
+    ))
+  }
+
+  const removeAttribute = (index) => {
+    setAttributes(prev => prev.filter((_, i) => i !== index))
+  }
+
   // Form submission
   const onFormSubmit = (data) => {
-    let processedAttributes = null;
-    
-    // Handle attributes field - convert to JSON if provided
-    if (data.attributes && data.attributes.trim()) {
-      try {
-        // Try to parse as JSON
-        processedAttributes = JSON.parse(data.attributes.trim());
-      } catch (error) {
-        // If not valid JSON, show error and stop submission
-        toast.error('Attributes must be in valid JSON format');
-        return;
-      }
-    }
+    // Convert attributes array to JSON object
+    const attributesObject = attributes
+      .filter(attr => attr.key.trim() !== '')
+      .reduce((acc, attr) => {
+        acc[attr.key.trim()] = attr.value.trim()
+        return acc
+      }, {})
 
     const productData = {
       ...data,
@@ -225,8 +248,8 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
       created_by: user.id,
       images: selectedImages,
       variants: variants,
-      // Set processed attributes (will be null if empty)
-      attributes: processedAttributes,
+      // Set attributes as JSON object (will be empty if no attributes)
+      attributes: Object.keys(attributesObject).length > 0 ? attributesObject : null,
       // Convert boolean fields to integers for backend
       is_active: data.is_active ? 1 : 0,
       prescription_required: data.prescription_required ? 1 : 0,
@@ -259,28 +282,41 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
       <input type="hidden" {...register('created_by')} value={user.id} />
 
       {/* Image Upload Section */}
-      <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm">
-        <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">Product Images</h3>
+      <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h3 className="text-xl font-bold text-gray-900 dark:text-white">Product Images</h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Upload high-quality product images</p>
+          </div>
+          {imagePreviews.length > 0 && (
+            <span className="text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded-full">
+              {imagePreviews.length} images
+            </span>
+          )}
+        </div>
         
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {imagePreviews.map((preview, index) => (
-            <div key={index} className="relative">
-              <img 
-                src={preview} 
-                alt={`Product image ${index + 1}`} 
-                className="w-full h-32 object-cover rounded-lg"
-              />
+            <div key={index} className="relative group">
+              <div className="aspect-square rounded-lg overflow-hidden border-2 border-gray-200 dark:border-gray-600 transition-all duration-200 group-hover:border-blue-300 dark:group-hover:border-blue-500">
+                <img 
+                  src={preview} 
+                  alt={`Product image ${index + 1}`} 
+                  className="w-full h-full object-cover"
+                />
+              </div>
               <button
                 type="button"
                 onClick={() => removeImage(index)}
-                className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+                className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1.5 hover:bg-red-600 transition-all duration-200 shadow-lg group-hover:scale-110"
+                title="Remove image"
               >
                 <FiX className="w-3 h-3" />
               </button>
             </div>
           ))}
           
-          <div className="relative border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-4 hover:border-primary-500 transition-colors">
+          <div className="relative border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl p-4 hover:border-blue-400 dark:hover:border-blue-500 transition-all duration-200 group cursor-pointer">
             <input
               type="file"
               accept="image/*"
@@ -289,187 +325,325 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
               onChange={handleImageChange}
             />
             <div className="text-center">
-              <FiUpload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                Click to upload images
+              <div className="w-12 h-12 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-3 group-hover:bg-blue-100 dark:group-hover:bg-blue-900/50 transition-all duration-200">
+                <FiUpload className="w-6 h-6 text-gray-400 group-hover:text-blue-500 transition-all duration-200" />
+              </div>
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-300 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-all duration-200">
+                Upload Images
               </p>
-              <p className="text-xs text-gray-500 dark:text-gray-500">
-                PNG, JPG, GIF up to 10MB each
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                PNG, JPG, GIF up to 10MB
               </p>
             </div>
           </div>
         </div>
       </div>
       
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Input
-          label="Product Name"
-          placeholder="Enter product name"
-          error={errors.name?.message}
-          {...register('name', { required: 'Product name is required' })}
-        />
+      {/* Basic Product Information */}
+      <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h3 className="text-xl font-bold text-gray-900 dark:text-white">Basic Information</h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Core product details and identifiers</p>
+          </div>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="space-y-6">
+            <Input
+              label="Product Name"
+              placeholder="Enter product name"
+              error={errors.name?.message}
+              {...register('name', { required: 'Product name is required' })}
+              className="transition-all duration-200 focus:ring-2 focus:ring-blue-500"
+            />
 
-        <Input
-          label="Product Code (SKU)"
-          placeholder="Enter product code"
-          error={errors.sku?.message}
-          {...register('sku', { required: 'Product code is required' })}
-        />
+            <Input
+              label="Product Code (SKU)"
+              placeholder="Enter product code"
+              error={errors.sku?.message}
+              {...register('sku', { required: 'Product code is required' })}
+              className="transition-all duration-200 focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+          
+          <div className="space-y-6">
+            <Select
+              label="Brand"
+              options={[
+                { value: '', label: 'Select Brand' },
+                ...(createPageData.brands?.map(brand => ({
+                  value: brand.id,
+                  label: brand.name,
+                })) || [])
+              ]}
+              error={errors.brand_id?.message}
+              {...register('brand_id', { required: 'Brand is required' })}
+              className="transition-all duration-200 focus:ring-2 focus:ring-blue-500"
+            />
+
+            <Select
+              label="Category"
+              options={[
+                { value: '', label: 'Select Category' },
+                ...(createPageData.categories?.map(category => ({
+                  value: category.id,
+                  label: category.name,
+                })) || [])
+              ]}
+              error={errors.category_id?.message}
+              {...register('category_id', { required: 'Category is required' })}
+              className="transition-all duration-200 focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Select
-          label="Brand"
-          options={[
-            { value: '', label: 'Select Brand' },
-            ...(createPageData.brands?.map(brand => ({
-              value: brand.id,
-              label: brand.name,
-            })) || [])
-          ]}
-          error={errors.brand_id?.message}
-          {...register('brand_id', { required: 'Brand is required' })}
-        />
+      {/* Pricing Information */}
+      <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h3 className="text-xl font-bold text-gray-900 dark:text-white">Pricing Information</h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Set product prices and tax details</p>
+          </div>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="space-y-6">
+            <Input
+              label="Unit Amount"
+              type="number"
+              step="0.01"
+              placeholder="Enter unit amount"
+              error={errors.unit_amount?.message}
+              {...register('unit_amount', { 
+                required: 'Unit amount is required',
+                valueAsNumber: true 
+              })}
+              className="transition-all duration-200 focus:ring-2 focus:ring-blue-500"
+            />
 
-        <Select
-          label="Category"
-          options={[
-            { value: '', label: 'Select Category' },
-            ...(createPageData.categories?.map(category => ({
-              value: category.id,
-              label: category.name,
-            })) || [])
-          ]}
-          error={errors.category_id?.message}
-          {...register('category_id', { required: 'Category is required' })}
-        />
+            <Input
+              label="Selling Price"
+              type="number"
+              step="0.01"
+              placeholder="Enter selling price"
+              error={errors.selling_price?.message}
+              {...register('selling_price', { 
+                valueAsNumber: true 
+              })}
+              className="transition-all duration-200 focus:ring-2 focus:ring-blue-500"
+            />
+
+            <Input
+              label="GST Percentage"
+              type="number"
+              step="0.01"
+              placeholder="Enter GST percentage"
+              error={errors.gst_percentage?.message}
+              {...register('gst_percentage', { 
+                valueAsNumber: true 
+              })}
+              className="transition-all duration-200 focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+          
+          <div className="space-y-6">
+            <Select
+              label="Unit"
+              options={[
+                { value: '', label: 'Select Unit' },
+                ...(createPageData.units?.map(unit => ({
+                  value: unit.id,
+                  label: `${unit.name} (${unit.code})`,
+                })) || [])
+              ]}
+              error={errors.unit_id?.message}
+              {...register('unit_id', { required: 'Unit is required' })}
+              className="transition-all duration-200 focus:ring-2 focus:ring-blue-500"
+            />
+
+            <Input
+              label="Purchase Price"
+              type="number"
+              step="0.01"
+              placeholder="Enter purchase price"
+              error={errors.purchase_price?.message}
+              {...register('purchase_price', { 
+                valueAsNumber: true 
+              })}
+              className="transition-all duration-200 focus:ring-2 focus:ring-blue-500"
+            />
+
+            <Input
+              label="Discount Percentage"
+              type="number"
+              step="0.01"
+              placeholder="Enter discount percentage"
+              error={errors.discount_percentage?.message}
+              {...register('discount_percentage', { 
+                valueAsNumber: true 
+              })}
+              className="transition-all duration-200 focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Input
-          label="Unit Amount"
-          type="number"
-          step="0.01"
-          placeholder="Enter unit amount"
-          error={errors.unit_amount?.message}
-          {...register('unit_amount', { 
-            required: 'Unit amount is required',
-            valueAsNumber: true 
-          })}
-        />
+      {/* Product Description */}
+      <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h3 className="text-xl font-bold text-gray-900 dark:text-white">Product Description</h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Detailed product information</p>
+          </div>
+        </div>
+        
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Description
+            </label>
+            <textarea
+              rows={4}
+              className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white transition-all duration-200 resize-none"
+              placeholder="Enter detailed product description..."
+              {...register('description')}
+            />
+          </div>
 
-        <Select
-          label="Unit"
-          options={[
-            { value: '', label: 'Select Unit' },
-            ...(createPageData.units?.map(unit => ({
-              value: unit.id,
-              label: `${unit.name} (${unit.code})`,
-            })) || [])
-          ]}
-          error={errors.unit_id?.message}
-          {...register('unit_id', { required: 'Unit is required' })}
-        />
+          <div className="flex items-center p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-600">
+            <input
+              type="checkbox"
+              className="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50 mr-3 w-4 h-4"
+              {...register('is_active')}
+            />
+            <div>
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                Active Product
+              </span>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                Enable this product for sales and display
+              </p>
+            </div>
+          </div>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Input
-          label="Selling Price"
-          type="number"
-          step="0.01"
-          placeholder="Enter selling price"
-          error={errors.selling_price?.message}
-          {...register('selling_price', { 
-            valueAsNumber: true 
-          })}
-        />
-
-        <Input
-          label="Purchase Price"
-          type="number"
-          step="0.01"
-          placeholder="Enter purchase price"
-          error={errors.purchase_price?.message}
-          {...register('purchase_price', { 
-            valueAsNumber: true 
-          })}
-        />
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Input
-          label="GST Percentage"
-          type="number"
-          step="0.01"
-          placeholder="Enter GST percentage"
-          error={errors.gst_percentage?.message}
-          {...register('gst_percentage', { 
-            valueAsNumber: true 
-          })}
-        />
-
-        <Input
-          label="Discount Percentage"
-          type="number"
-          step="0.01"
-          placeholder="Enter discount percentage"
-          error={errors.discount_percentage?.message}
-          {...register('discount_percentage', { 
-            valueAsNumber: true 
-          })}
-        />
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-          Description
-        </label>
-        <textarea
-          rows={3}
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-          placeholder="Enter product description"
-          {...register('description')}
-        />
-      </div>
-
-      <div>
-        <label className="flex items-center">
-          <input
-            type="checkbox"
-            className="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
-            {...register('is_active')}
-          />
-          <span className="ml-2 text-sm text-gray-600 dark:text-gray-400">
-            Active
-          </span>
-        </label>
-      </div>
-
-      {/* Dynamic Fields Based on Permissions */}
-      
       {/* Product Attributes */}
       {hasPermission('attributes') && (
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm">
-          <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">Product Attributes</h3>
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white">Product Attributes</h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Add custom key-value pairs for product specifications</p>
+            </div>
+            <div className="flex items-center space-x-2">
+              <span className="text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded-full">
+                {attributes.filter(attr => attr.key.trim() !== '').length} active
+              </span>
+            </div>
+          </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {renderField('attributes', (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Attributes (JSON Format)
-                </label>
-                <textarea
-                  rows={3}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-                  placeholder='Enter attributes in JSON format: {"color": "red", "size": "large"}'
-                  {...register('attributes')}
-                />
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                  Example: {"{\"color\": \"red\", \"size\": \"large\", \"material\": \"cotton\"}"}
-                </p>
+          {/* Display existing attributes */}
+          <div className="space-y-4 mb-6">
+            {attributes.map((attr, index) => (
+              <div key={index} className="relative group">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-start">
+                  <div className="flex-1">
+                    <Input
+                      label="Attribute Key"
+                      placeholder="e.g., color, size, material"
+                      value={attr.key}
+                      onChange={(e) => updateAttribute(index, 'key', e.target.value)}
+                      className="transition-all duration-200 focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <Input
+                      label="Attribute Value"
+                      placeholder="e.g., red, large, cotton"
+                      value={attr.value}
+                      onChange={(e) => updateAttribute(index, 'value', e.target.value)}
+                      className="transition-all duration-200 focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div className="flex items-end h-full">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => removeAttribute(index)}
+                      className="text-red-500 min-h-[42px] hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all duration-200 group-hover:opacity-100 opacity-60"
+                      title="Remove attribute"
+                    >
+                      <FiTrash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+                {index < attributes.length - 1 && (
+                  <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-gray-200 dark:via-gray-600 to-transparent transform translate-y-2"></div>
+                )}
               </div>
             ))}
           </div>
+          
+          {/* Add new attribute button */}
+          <div className="flex items-center justify-between pt-4 border-t border-gray-200 dark:border-gray-700">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={addAttribute}
+              className="flex items-center space-x-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all duration-200 border-blue-200 dark:border-blue-700"
+            >
+              <FiPlus className="w-4 h-4" />
+              <span>Add Attribute</span>
+            </Button>
+            
+            {attributes.length > 1 && (
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => setAttributes([{ key: '', value: '' }])}
+                className="text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700 transition-all duration-200"
+              >
+                Clear All
+              </Button>
+            )}
+          </div>
+          
+          {/* JSON Preview */}
+          {attributes.some(attr => attr.key.trim() !== '') && (
+            <div className="mt-6 p-4 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-700/50 dark:to-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-600">
+              <div className="flex items-center justify-between mb-3">
+                <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center">
+                  <svg className="w-4 h-4 mr-2 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+                  </svg>
+                  JSON Output Preview
+                </h4>
+                <span className="text-xs text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-800 px-2 py-1 rounded border border-gray-200 dark:border-gray-600">
+                  {Object.keys(attributes.filter(attr => attr.key.trim() !== '').reduce((acc, attr) => {
+                    acc[attr.key.trim()] = attr.value.trim()
+                    return acc
+                  }, {})).length} properties
+                </span>
+              </div>
+              <div className="bg-white dark:bg-gray-900 p-3 rounded border border-gray-200 dark:border-gray-600 overflow-x-auto">
+                <pre className="text-xs font-mono text-gray-700 dark:text-gray-300 leading-relaxed">
+                  {JSON.stringify(
+                    attributes
+                      .filter(attr => attr.key.trim() !== '')
+                      .reduce((acc, attr) => {
+                        acc[attr.key.trim()] = attr.value.trim()
+                        return acc
+                      }, {}),
+                    null,
+                    2
+                  )}
+                </pre>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -896,23 +1070,50 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
         </div>
       )}
 
-      <div className="flex justify-end space-x-4">
-        <Button
-          type="button"
-          variant="outline"
-          onClick={onCancel}
-          disabled={isSubmitting}
-        >
-          Cancel
-        </Button>
-        <Button
-          type="button"
-          variant="primary"
-          onClick={handleSubmit(onFormSubmit)}
-          isLoading={isSubmitting}
-        >
-          {product ? 'Update Product' : 'Create Product'}
-        </Button>
+      {/* Form Actions */}
+      <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Ready to Save?</h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Review your product details before submitting</p>
+          </div>
+          <div className="flex items-center space-x-3">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onCancel}
+              disabled={isSubmitting}
+              className="px-6 py-2.5 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200"
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="primary"
+              onClick={handleSubmit(onFormSubmit)}
+              isLoading={isSubmitting}
+              disabled={isSubmitting}
+              className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium shadow-lg hover:shadow-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isSubmitting ? (
+                <span className="flex items-center">
+                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  {product ? 'Updating...' : 'Creating...'}
+                </span>
+              ) : (
+                <span className="flex items-center">
+                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  {product ? 'Update Product' : 'Create Product'}
+                </span>
+              )}
+            </Button>
+          </div>
+        </div>
       </div>
     </motion.div>
   )

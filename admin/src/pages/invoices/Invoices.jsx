@@ -4,7 +4,6 @@ import {
   FiSearch, 
   FiFilter, 
   FiFileText, 
-  FiEdit2, 
   FiTrash2, 
   FiCheckCircle,
   FiArrowLeft,
@@ -25,7 +24,6 @@ import Pagination from '../../components/common/Pagination/Pagination'
 import EmptyState from '../../components/common/EmptyState/EmptyState'
 import Select from '../../components/common/Select/Select'
 import InvoiceTable from '../../components/features/Invoices/InvoiceTable'
-import InvoiceForm from '../../components/features/Invoices/InvoiceForm'
 import InvoiceModal from '../../components/features/Invoices/InvoiceModal'
 import BillGenerateForm from '../../components/features/Invoices/BillGenerateForm'
 import { printA4Invoice, printThermalInvoice } from '../../templates/PrintUtils'
@@ -45,7 +43,6 @@ const Invoices = () => {
     filters,
     fetchInvoices,
     createInvoice,
-    updateInvoice,
     deleteInvoice,
     fetchBillGenerateData,
     setFilters,
@@ -54,12 +51,11 @@ const Invoices = () => {
   // Check if user has stock management permission
   const hasStockPermission = canAccess('stock-management')
 
-  const [formMode, setFormMode] = useState(null) // 'add', 'edit', or null
   const [searchTerm, setSearchTerm] = useState(filters.search || '')
+  const [showAddForm, setShowAddForm] = useState(false)
   const [showFilters, setShowFilters] = useState(false)
   const [showViewModal, setShowViewModal] = useState(false)
   const [selectedInvoice, setSelectedInvoice] = useState(null)
-  const [editInvoice, setEditInvoice] = useState(null)
   const [formSubmitting, setFormSubmitting] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [invoiceToDelete, setInvoiceToDelete] = useState(null)
@@ -104,18 +100,11 @@ const Invoices = () => {
   }
 
   const handleAddClick = () => {
-    setFormMode('add')
-    setEditInvoice(null)
-  }
-
-  const handleEditClick = (invoice) => {
-    setEditInvoice(invoice)
-    setFormMode('edit')
+    setShowAddForm(true)
   }
 
   const handleCancelForm = () => {
-    setFormMode(null)
-    setEditInvoice(null)
+    setShowAddForm(false)
   }
 
   const handleDeleteClick = (invoice) => {
@@ -154,28 +143,11 @@ const Invoices = () => {
     try {
       const res = await createInvoice(data)
       if (res?.success) {
-        setFormMode(null)
+        setShowAddForm(false)
         await fetchInvoices(currentPage)
       }
     } catch (error) {
       console.error('Failed to create invoice:', error)
-    } finally {
-      setFormSubmitting(false)
-    }
-  }
-
-  const handleEditSubmit = async (data) => {
-    if (!editInvoice?.id) return
-    setFormSubmitting(true)
-    try {
-      const res = await updateInvoice(editInvoice.id, data)
-      if (res?.success) {
-        setFormMode(null)
-        setEditInvoice(null)
-        await fetchInvoices(currentPage)
-      }
-    } catch (error) {
-      console.error('Failed to update invoice:', error)
     } finally {
       setFormSubmitting(false)
     }
@@ -420,8 +392,8 @@ const Invoices = () => {
           </h1>
           <p className="text-gray-600 dark:text-gray-400 mt-2 flex items-center">
             <FiFileText className="w-4 h-4 mr-2" />
-            {formMode ? (
-              <span>{formMode === 'add' ? 'Create New Invoice' : 'Edit Invoice'}</span>
+            {showAddForm ? (
+              <span>Create New Invoice</span>
             ) : (
               <span>Manage and track your invoices</span>
             )}
@@ -429,7 +401,7 @@ const Invoices = () => {
         </div>
         
         <div className="flex items-center space-x-3">
-          {formMode ? (
+          {showAddForm ? (
             <motion.div
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
@@ -462,7 +434,7 @@ const Invoices = () => {
 
       {/* Stats Cards - Hide when form is shown */}
       <AnimatePresence mode="wait">
-        {!formMode && (
+        {!showAddForm && (
           <motion.div
             key="stats"
             initial={{ opacity: 0 }}
@@ -541,7 +513,7 @@ const Invoices = () => {
 
       {/* Invoice Form */}
       <AnimatePresence mode="wait">
-        {formMode && (
+        {showAddForm && (
           <motion.div
             key="form"
             initial={{ opacity: 0, y: 20 }}
@@ -550,31 +522,20 @@ const Invoices = () => {
             transition={{ duration: 0.3 }}
             className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6"
           >
-            {formMode === 'add' ? (
-              <BillGenerateForm
-                mode={formMode}
-                onSubmit={handleAddSubmit}
-                onCancel={handleCancelForm}
-                isSubmitting={formSubmitting}
-                hasStockPermission={hasStockPermission}
-              />
-            ) : (
-              <InvoiceForm
-                initialData={editInvoice}
-                mode={formMode}
-                onSubmit={handleEditSubmit}
-                onCancel={handleCancelForm}
-                isSubmitting={formSubmitting}
-                hasStockPermission={hasStockPermission}
-              />
-            )}
+            <BillGenerateForm
+              mode="add"
+              onSubmit={handleAddSubmit}
+              onCancel={handleCancelForm}
+              isSubmitting={formSubmitting}
+              hasStockPermission={hasStockPermission}
+            />
           </motion.div>
         )}
       </AnimatePresence>
 
       {/* Filters - Hide when form is shown */}
       <AnimatePresence mode="wait">
-        {!formMode && (
+        {!showAddForm && (
           <motion.div
             key="filters"
             initial={{ y: 20, opacity: 0 }}
@@ -713,7 +674,7 @@ const Invoices = () => {
 
       {/* Invoices Table - Hide when form is shown */}
       <AnimatePresence mode="wait">
-        {!formMode && (
+        {!showAddForm && (
           <motion.div
             key="table"
             initial={{ y: 20, opacity: 0 }}
@@ -763,7 +724,6 @@ const Invoices = () => {
                     loading={loading}
                     onView={handleView}
                     onDownload={handleDownload}
-                    onEdit={handleEditClick}
                     onMarkPaid={handleMarkPaid}
                     onPrintA4={handlePrintA4}
                     onPrintThermal={handlePrintThermal}
