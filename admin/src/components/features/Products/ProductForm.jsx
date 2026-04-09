@@ -129,24 +129,52 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
         }
       })
       
+      // Set variants in form state
+      if (product.variants && Array.isArray(product.variants)) {
+        setVariants(product.variants)
+        // Also set variants in form values for react-hook-form
+        setValue('variants', product.variants)
+      } else {
+        setVariants([])
+        setValue('variants', [])
+      }
+      
+      // Set attributes in form state
+      if (product.attributes) {
+        let parsedAttributes = product.attributes;
+        
+        // Parse attributes if it's a JSON string
+        if (typeof product.attributes === 'string') {
+          try {
+            parsedAttributes = JSON.parse(product.attributes);
+          } catch (error) {
+            console.error('Error parsing attributes JSON:', error);
+            parsedAttributes = {};
+          }
+        }
+        
+        // Convert to array format for form display
+        if (typeof parsedAttributes === 'object' && parsedAttributes !== null) {
+          const attrsArray = Object.entries(parsedAttributes).map(([key, value]) => ({
+            key,
+            value: String(value)
+          }))
+          setAttributes(attrsArray.length > 0 ? attrsArray : [{ key: '', value: '' }])
+          // Also set attributes in form values for react-hook-form
+          setValue('attributes', parsedAttributes)
+        } else {
+          setAttributes([{ key: '', value: '' }])
+          setValue('attributes', {})
+        }
+      } else {
+        setAttributes([{ key: '', value: '' }])
+        setValue('attributes', {})
+      }
+      
       // Handle images
       if (product.images && Array.isArray(product.images)) {
         setSelectedImages(product.images)
         setImagePreviews(product.images.map(img => img.url || img))
-      }
-      
-      // Handle variants
-      if (product.variants && Array.isArray(product.variants)) {
-        setVariants(product.variants)
-      }
-      
-      // Handle attributes
-      if (product.attributes && typeof product.attributes === 'object') {
-        const attrsArray = Object.entries(product.attributes).map(([key, value]) => ({
-          key,
-          value: String(value)
-        }))
-        setAttributes(attrsArray.length > 0 ? attrsArray : [{ key: '', value: '' }])
       }
     }
   }, [product, createPageData.brands, setValue])

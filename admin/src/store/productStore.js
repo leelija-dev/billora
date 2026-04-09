@@ -186,9 +186,19 @@ export const useProductStore = create((set, get) => ({
     try {
       const response = await productsAPI.update(id, productData)
       
+      // Check if API response is successful
+      if (response.data?.status === false) {
+        // API returned validation errors
+        const errorMessage = response.data?.message || 'Failed to update product'
+        console.error('Product update validation error:', response.data)
+        toast.error(errorMessage)
+        set({ loading: false })
+        return { success: false, error: response.data }
+      }
+      
       // Extract actual product data from response structure
       const updatedProduct = response.data?.data || response.data || response
-      console.log(' Product updated successfully:', updatedProduct)
+      console.log('Product updated successfully:', updatedProduct)
       
       // Get current state before clearing cache
       const currentState = get()
