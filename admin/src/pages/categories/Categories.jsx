@@ -76,18 +76,15 @@ const Categories = () => {
       }
     }
     fetchData()
-  }, []) // Remove fetchCategories from dependency array
+  }, [fetchCategories]) 
 
   useEffect(() => {
     const debounceTimer = setTimeout(() => {
       setFilters({ search: searchTerm })
-      if (!showAddForm && !showEditForm) {
-        fetchCategories()
-      }
     }, 500)
 
     return () => clearTimeout(debounceTimer)
-  }, [searchTerm, setFilters, showAddForm, showEditForm, fetchCategories])
+  }, [searchTerm, setFilters]) 
 
   const handleAddClick = () => {
     setShowAddForm(true)
