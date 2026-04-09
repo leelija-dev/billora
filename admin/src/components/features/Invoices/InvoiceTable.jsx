@@ -29,11 +29,61 @@ const InvoiceTable = ({
   const [printDropdown, setPrintDropdown] = useState(null)
   const [stores, setStores] = useState({})
   const [storesLoading, setStoresLoading] = useState(true)
+  const [isResizing, setIsResizing] = useState(false)
   const dropdownRef = useRef(null)
+  
+  // Cache for store data
+  const storeCacheRef = useRef(new Map())
+  const lastFetchTimeRef = useRef(null)
+  const resizeTimeoutRef = useRef(null)
+  const isFetchingRef = useRef(false)
+  
+  // Global resize lock - prevent ALL API calls during resize
+  const globalResizeLockRef = useRef(false)
+  
+  // Handle resize events to prevent unnecessary API calls
+  useEffect(() => {
+    let resizeDebounce
+    
+    const handleResize = () => {
+      // Set global lock immediately
+      globalResizeLockRef.current = true
+      
+      // Clear any existing timeout
+      if (resizeTimeoutRef.current) {
+        clearTimeout(resizeTimeoutRef.current)
+      }
+      
+      setIsResizing(true)
+      
+      // Set a longer debounce to ensure resize is completely finished
+      resizeTimeoutRef.current = setTimeout(() => {
+        setIsResizing(false)
+        globalResizeLockRef.current = false // Release lock after resize
+        console.log('Resize finished, API calls unlocked')
+      }, 500) // Increased to 500ms for better protection
+    }
+    
+    window.addEventListener('resize', handleResize, { passive: true })
+    
+    return () => {
+      window.removeEventListener('resize', handleResize, { passive: true })
+      if (resizeTimeoutRef.current) {
+        clearTimeout(resizeTimeoutRef.current)
+      }
+      globalResizeLockRef.current = false // Ensure lock is released
+    }
+  }, [])
 
-  // Fetch store data when invoices change
+  // Fetch store data when invoices change (with enhanced caching and resize protection)
   useEffect(() => {
     const fetchStoreData = async () => {
+      // Multiple layers of protection
+      if (isResizing || globalResizeLockRef.current || isFetchingRef.current) {
+        console.log('Skipping store fetch - resize locked or already fetching')
+        return
+      }
+      
       const storeIds = [...new Set(invoices?.map(invoice => invoice.store_id).filter(Boolean))]
       
       if (storeIds.length === 0) {
@@ -41,7 +91,29 @@ const InvoiceTable = ({
         return
       }
 
+      // Enhanced cache key with timestamp to ensure uniqueness
+      const cacheKey = storeIds.sort().join(',')
+      const now = Date.now()
+      const cached = storeCacheRef.current.get(cacheKey)
+      
+      // Increased cache duration to 60 seconds (1 minute)
+      if (cached && (now - cached.timestamp) < 60000) {
+        console.log('Using cached store data (60s cache)')
+        setStores(cached.data)
+        setStoresLoading(false)
+        return
+      }
+
+      // Prevent duplicate requests within 10 seconds (much longer cooldown)
+      if (lastFetchTimeRef.current && (now - lastFetchTimeRef.current) < 10000) {
+        console.log('Skipping duplicate store request (10s cooldown)')
+        return
+      }
+
+      // Set fetching lock
+      isFetchingRef.current = true
       setStoresLoading(true)
+      lastFetchTimeRef.current = now
       
       try {
         // Group invoices by user_id to fetch stores efficiently
@@ -62,7 +134,7 @@ const InvoiceTable = ({
             const response = await storeAPI.getByUserId(userId)
             const storesArray = response.data?.data?.data || response.data?.data || []
             
-            // Find the specific stores we need
+            // Find specific stores we need
             const relevantStores = storesArray.filter(store => storeIdsForUser.includes(store.id))
             
             return relevantStores.reduce((acc, store) => {
@@ -78,19 +150,29 @@ const InvoiceTable = ({
         const storeResults = await Promise.all(storePromises)
         const allStores = storeResults.reduce((acc, stores) => ({ ...acc, ...stores }), {})
         
-        console.log('🏪 Fetched stores:', allStores)
+        // Cache the results with longer duration
+        storeCacheRef.current.set(cacheKey, {
+          data: allStores,
+          timestamp: now
+        })
+        
+        console.log('🏪 Fetched stores (new data):', allStores)
         setStores(allStores)
         setStoresLoading(false)
       } catch (error) {
         console.error('Failed to fetch store data:', error)
         setStoresLoading(false)
+      } finally {
+        // Always release the fetching lock
+        isFetchingRef.current = false
       }
     }
 
-    if (invoices && invoices.length > 0) {
+    // Only fetch if we have invoices and no locks are active
+    if (invoices && invoices.length > 0 && !isResizing && !globalResizeLockRef.current) {
       fetchStoreData()
     }
-  }, [invoices])
+  }, [invoices, isResizing])
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -185,11 +267,36 @@ const InvoiceTable = ({
           <p className="font-semibold text-gray-900 dark:text-white">
             ₹{parseFloat(value || 0).toFixed(2)}
           </p>
-          <p className="text-xs text-gray-500 dark:text-gray-400">
-            Paid: ₹{parseFloat(row.paid_amount || 0).toFixed(2)}
+        </div>
+      ),
+    },
+    {
+      header: 'Paid Amount',
+      accessor: 'paid_amount',
+      cell: (value, row) => (
+        <div>
+          <p className="font-medium text-green-600 dark:text-green-400">
+            ₹{parseFloat(value || 0).toFixed(2)}
           </p>
         </div>
       ),
+    },
+    {
+      header: 'Due Amount',
+      accessor: 'due_amount',
+      cell: (value, row) => {
+        const totalAmount = parseFloat(row.total_amount || 0)
+        const paidAmount = parseFloat(row.paid_amount || 0)
+        const dueAmount = totalAmount - paidAmount
+        
+        return (
+          <div>
+            <p className={`font-medium ${dueAmount > 0 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>
+              ₹{dueAmount.toFixed(2)}
+            </p>
+          </div>
+        )
+      },
     },
     {
       header: 'Items',
@@ -232,16 +339,6 @@ const InvoiceTable = ({
             title="View Invoice"
           >
             <FiEye className="w-4 h-4" />
-          </motion.button>
-          
-          <motion.button
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => onEdit(row)}
-            className="p-1.5 text-yellow-600 hover:bg-yellow-50 dark:text-yellow-400 dark:hover:bg-yellow-900/20 rounded-lg transition-colors"
-            title="Edit Invoice"
-          >
-            <FiEdit2 className="w-4 h-4" />
           </motion.button>
 
           {/* Print Button with Dropdown */}

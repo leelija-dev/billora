@@ -93,6 +93,9 @@ class InvoiceController extends Controller
             "store_id"      => 'required|exists:store,id',
             "paid_amount"   => 'required|numeric|min:0',
             "created_by"    => 'required',
+            "package_name"  => 'nullable',
+            "package_price" => 'nullable|numeric|min:0',
+            "package_size"  => 'nullable',
         ]);
 
         DB::beginTransaction();
@@ -157,7 +160,10 @@ class InvoiceController extends Controller
                 'total_items'   => $totalItems,
                 'paid_amount'   => $request->paid_amount,
                 'created_by'    => $request->created_by,
-                'status'        => 'completed'
+                'status'        => 'completed',
+                "package_name"  => $request->package_name,
+                "package_price" => $request->package_price,
+                "package_size"  => $request->package_size,
             ]);
 
             // Store invoice items

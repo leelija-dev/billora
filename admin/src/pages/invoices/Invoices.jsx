@@ -4,7 +4,6 @@ import {
   FiSearch, 
   FiFilter, 
   FiFileText, 
-  FiEdit2, 
   FiTrash2, 
   FiCheckCircle,
   FiArrowLeft,
@@ -25,13 +24,16 @@ import Pagination from '../../components/common/Pagination/Pagination'
 import EmptyState from '../../components/common/EmptyState/EmptyState'
 import Select from '../../components/common/Select/Select'
 import InvoiceTable from '../../components/features/Invoices/InvoiceTable'
-import InvoiceForm from '../../components/features/Invoices/InvoiceForm'
 import InvoiceModal from '../../components/features/Invoices/InvoiceModal'
 import BillGenerateForm from '../../components/features/Invoices/BillGenerateForm'
 import { printA4Invoice, printThermalInvoice } from '../../templates/PrintUtils'
 import { customerAPI } from '../../services/customerService'
 import { storeAPI } from '../../services/storeService'
 import { productsAPI } from '../../services/productsService'
+
+// Cache for product data
+const productCache = new Map()
+const CACHE_EXPIRY = 5 * 60 * 1000
 
 const Invoices = () => {
   const navigate = useNavigate()
@@ -45,7 +47,6 @@ const Invoices = () => {
     filters,
     fetchInvoices,
     createInvoice,
-    updateInvoice,
     deleteInvoice,
     fetchBillGenerateData,
     setFilters,
@@ -54,18 +55,44 @@ const Invoices = () => {
   // Check if user has stock management permission
   const hasStockPermission = canAccess('stock-management')
 
-  const [formMode, setFormMode] = useState(null) // 'add', 'edit', or null
   const [searchTerm, setSearchTerm] = useState(filters.search || '')
+  const [showAddForm, setShowAddForm] = useState(false)
   const [showFilters, setShowFilters] = useState(false)
   const [showViewModal, setShowViewModal] = useState(false)
   const [selectedInvoice, setSelectedInvoice] = useState(null)
-  const [editInvoice, setEditInvoice] = useState(null)
   const [formSubmitting, setFormSubmitting] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [invoiceToDelete, setInvoiceToDelete] = useState(null)
   const [showBillGenerate, setShowBillGenerate] = useState(false)
   const [initialLoading, setInitialLoading] = useState(true)
   const [pageLoading, setPageLoading] = useState(false)
+  const [isResizing, setIsResizing] = useState(false)
+
+  // Handle resize events to prevent unnecessary API calls
+  useEffect(() => {
+    let resizeTimeout
+    
+    const handleResizeStart = () => {
+      setIsResizing(true)
+      clearTimeout(resizeTimeout)
+    }
+    
+    const handleResizeEnd = () => {
+      clearTimeout(resizeTimeout)
+      resizeTimeout = setTimeout(() => {
+        setIsResizing(false)
+      }, 150) // Wait for resize to finish
+    }
+    
+    window.addEventListener('resize', handleResizeStart)
+    window.addEventListener('resize', handleResizeEnd)
+    
+    return () => {
+      window.removeEventListener('resize', handleResizeStart)
+      window.removeEventListener('resize', handleResizeEnd)
+      clearTimeout(resizeTimeout)
+    }
+  }, [])
 
   useEffect(() => {
     const fetchData = async () => {
@@ -80,11 +107,13 @@ const Invoices = () => {
 
   useEffect(() => {
     const debounceTimer = setTimeout(() => {
-      setFilters({ search: searchTerm })
+      if (!isResizing) {
+        setFilters({ search: searchTerm })
+      }
     }, 500)
 
     return () => clearTimeout(debounceTimer)
-  }, [searchTerm, setFilters])
+  }, [searchTerm])
 
   const handlePageChange = (page) => {
     setPageLoading(true)
@@ -104,18 +133,11 @@ const Invoices = () => {
   }
 
   const handleAddClick = () => {
-    setFormMode('add')
-    setEditInvoice(null)
-  }
-
-  const handleEditClick = (invoice) => {
-    setEditInvoice(invoice)
-    setFormMode('edit')
+    setShowAddForm(true)
   }
 
   const handleCancelForm = () => {
-    setFormMode(null)
-    setEditInvoice(null)
+    setShowAddForm(false)
   }
 
   const handleDeleteClick = (invoice) => {
@@ -154,28 +176,11 @@ const Invoices = () => {
     try {
       const res = await createInvoice(data)
       if (res?.success) {
-        setFormMode(null)
+        setShowAddForm(false)
         await fetchInvoices(currentPage)
       }
     } catch (error) {
       console.error('Failed to create invoice:', error)
-    } finally {
-      setFormSubmitting(false)
-    }
-  }
-
-  const handleEditSubmit = async (data) => {
-    if (!editInvoice?.id) return
-    setFormSubmitting(true)
-    try {
-      const res = await updateInvoice(editInvoice.id, data)
-      if (res?.success) {
-        setFormMode(null)
-        setEditInvoice(null)
-        await fetchInvoices(currentPage)
-      }
-    } catch (error) {
-      console.error('Failed to update invoice:', error)
     } finally {
       setFormSubmitting(false)
     }
@@ -192,48 +197,64 @@ const Invoices = () => {
 
   const handlePrintA4 = async (invoice) => {
     try {
-      const [customerResponse, storeResponse] = await Promise.all([
-        customerAPI.getById(invoice.customer_id),
-        storeAPI.getByUserId(invoice.user_id)
-      ])
-
-      const customerData = customerResponse.data?.data || {}
-      const storesArray = storeResponse.data?.data?.data || storeResponse.data?.data || []
-      const storeData = storesArray.find(store => store.id === invoice.store_id) || storesArray[0] || {}
+      // Use cached data from invoice store instead of making new API calls
+      let customerData = invoice.customer || {}
+      let storeData = invoice.store || {}
+      
+      // Only fetch if data is missing from cache
+      if (!customerData.name && invoice.customer_id) {
+        const customerResponse = await customerAPI.getById(invoice.customer_id)
+        customerData = customerResponse.data?.data || {}
+      }
+      
+      if (!storeData.name && invoice.store_id) {
+        const storeResponse = await storeAPI.getByUserId(invoice.user_id)
+        const storesArray = storeResponse.data?.data?.data || storeResponse.data?.data || []
+        storeData = storesArray.find(store => store.id === invoice.store_id) || storesArray[0] || {}
+      }
 
       const invoiceItems = invoice.invoice_items || invoice.items || []
       let enhancedItems = []
       
       if (invoiceItems.length > 0) {
-        const productPromises = invoiceItems.map(item => 
-          productsAPI.getById(item.product_id)
-            .then(productResponse => {
-              const productData = productResponse.data?.data || productResponse.data || {}
-              return {
-                ...item,
-                product_name: productData.name || item.product_name || item.name || `Product #${item.product_id || item.id || 'Unknown'}`,
-                price: parseFloat(item.price || productData.selling_price || 0),
-                quantity: parseFloat(item.quantity || item.item_count || 1),
-                total_price: parseFloat(item.total_price || item.total || 0),
-                gst: parseFloat(item.gst || productData.gst_percentage || 0),
-                discount: parseFloat(item.discount || productData.discount_percentage || 0)
-              }
-            })
-            .catch(error => {
-              console.error(`Failed to fetch product ${item.product_id}:`, error)
-              return {
-                ...item,
-                product_name: item.product_name || item.name || `Product #${item.product_id || item.id || 'Unknown'}`,
-                price: parseFloat(item.price || 0),
-                quantity: parseFloat(item.quantity || item.item_count || 1),
-                total_price: parseFloat(item.total_price || item.total || 0),
-                gst: parseFloat(item.gst || 0),
-                discount: parseFloat(item.discount || 0)
-              }
-            })
-        )
+        // Batch fetch products with caching
+        const uniqueProductIds = [...new Set(invoiceItems.map(item => item.product_id).filter(Boolean))]
         
-        enhancedItems = await Promise.all(productPromises)
+        const productPromises = uniqueProductIds.map(async (productId) => {
+          const cached = productCache.get(productId)
+          if (cached && (Date.now() - cached.timestamp) < CACHE_EXPIRY) {
+            return { id: productId, data: cached.data }
+          }
+          
+          try {
+            const productResponse = await productsAPI.getById(productId)
+            const productData = productResponse.data?.data || productResponse.data || {}
+            productCache.set(productId, { data: productData, timestamp: Date.now() })
+            return { id: productId, data: productData }
+          } catch (error) {
+            console.error(`Failed to fetch product ${productId}:`, error)
+            return { id: productId, data: null }
+          }
+        })
+        
+        const productResults = await Promise.all(productPromises)
+        const productMap = productResults.reduce((acc, { id, data }) => {
+          acc[id] = data
+          return acc
+        }, {})
+        
+        enhancedItems = invoiceItems.map(item => {
+          const productData = productMap[item.product_id] || {}
+          return {
+            ...item,
+            product_name: productData.name || item.product_name || item.name || `Product #${item.product_id || item.id || 'Unknown'}`,
+            price: parseFloat(item.price || productData.selling_price || 0),
+            quantity: parseFloat(item.quantity || item.item_count || 1),
+            total_price: parseFloat(item.total_price || item.total || 0),
+            gst: parseFloat(item.gst || productData.gst_percentage || 0),
+            discount: parseFloat(item.discount || productData.discount_percentage || 0)
+          }
+        })
       } else {
         enhancedItems = [{
           id: 1,
@@ -271,48 +292,64 @@ const Invoices = () => {
 
   const handlePrintThermal = async (invoice) => {
     try {
-      const [customerResponse, storeResponse] = await Promise.all([
-        customerAPI.getById(invoice.customer_id),
-        storeAPI.getByUserId(invoice.user_id)
-      ])
-
-      const customerData = customerResponse.data?.data || {}
-      const storesArray = storeResponse.data?.data?.data || storeResponse.data?.data || []
-      const storeData = storesArray.find(store => store.id === invoice.store_id) || storesArray[0] || {}
+      // Use cached data from invoice store instead of making new API calls
+      let customerData = invoice.customer || {}
+      let storeData = invoice.store || {}
+      
+      // Only fetch if data is missing from cache
+      if (!customerData.name && invoice.customer_id) {
+        const customerResponse = await customerAPI.getById(invoice.customer_id)
+        customerData = customerResponse.data?.data || {}
+      }
+      
+      if (!storeData.name && invoice.store_id) {
+        const storeResponse = await storeAPI.getByUserId(invoice.user_id)
+        const storesArray = storeResponse.data?.data?.data || storeResponse.data?.data || []
+        storeData = storesArray.find(store => store.id === invoice.store_id) || storesArray[0] || {}
+      }
 
       const invoiceItems = invoice.invoice_items || invoice.items || []
       let enhancedItems = []
       
       if (invoiceItems.length > 0) {
-        const productPromises = invoiceItems.map(item => 
-          productsAPI.getById(item.product_id)
-            .then(productResponse => {
-              const productData = productResponse.data?.data || productResponse.data || {}
-              return {
-                ...item,
-                product_name: productData.name || item.product_name || item.name || `Product #${item.product_id || item.id || 'Unknown'}`,
-                price: parseFloat(item.price || productData.selling_price || 0),
-                quantity: parseFloat(item.quantity || item.item_count || 1),
-                total_price: parseFloat(item.total_price || item.total || 0),
-                gst: parseFloat(item.gst || productData.gst_percentage || 0),
-                discount: parseFloat(item.discount || productData.discount_percentage || 0)
-              }
-            })
-            .catch(error => {
-              console.error(`Failed to fetch product ${item.product_id} for thermal:`, error)
-              return {
-                ...item,
-                product_name: item.product_name || item.name || `Product #${item.product_id || item.id || 'Unknown'}`,
-                price: parseFloat(item.price || 0),
-                quantity: parseFloat(item.quantity || item.item_count || 1),
-                total_price: parseFloat(item.total_price || item.total || 0),
-                gst: parseFloat(item.gst || 0),
-                discount: parseFloat(item.discount || 0)
-              }
-            })
-        )
+        // Batch fetch products with caching
+        const uniqueProductIds = [...new Set(invoiceItems.map(item => item.product_id).filter(Boolean))]
         
-        enhancedItems = await Promise.all(productPromises)
+        const productPromises = uniqueProductIds.map(async (productId) => {
+          const cached = productCache.get(productId)
+          if (cached && (Date.now() - cached.timestamp) < CACHE_EXPIRY) {
+            return { id: productId, data: cached.data }
+          }
+          
+          try {
+            const productResponse = await productsAPI.getById(productId)
+            const productData = productResponse.data?.data || productResponse.data || {}
+            productCache.set(productId, { data: productData, timestamp: Date.now() })
+            return { id: productId, data: productData }
+          } catch (error) {
+            console.error(`Failed to fetch product ${productId}:`, error)
+            return { id: productId, data: null }
+          }
+        })
+        
+        const productResults = await Promise.all(productPromises)
+        const productMap = productResults.reduce((acc, { id, data }) => {
+          acc[id] = data
+          return acc
+        }, {})
+        
+        enhancedItems = invoiceItems.map(item => {
+          const productData = productMap[item.product_id] || {}
+          return {
+            ...item,
+            product_name: productData.name || item.product_name || item.name || `Product #${item.product_id || item.id || 'Unknown'}`,
+            price: parseFloat(item.price || productData.selling_price || 0),
+            quantity: parseFloat(item.quantity || item.item_count || 1),
+            total_price: parseFloat(item.total_price || item.total || 0),
+            gst: parseFloat(item.gst || productData.gst_percentage || 0),
+            discount: parseFloat(item.discount || productData.discount_percentage || 0)
+          }
+        })
       } else {
         enhancedItems = [{
           id: 1,
@@ -352,16 +389,20 @@ const Invoices = () => {
   const safeInvoices = Array.isArray(invoices) ? invoices : []
   
   const stats = {
-    total: safeInvoices?.length || 0,
+    total: totalInvoices || safeInvoices?.length || 0,
     completed: safeInvoices?.filter(i => i.status === 'completed').length || 0,
-    paid: safeInvoices?.filter(i => i.status === 'paid' || i.status === 'completed').length || 0,
+    paid: safeInvoices?.filter(i => (i.status === 'paid' || i.status === 'completed') && (parseFloat(i.paid_amount) || 0) > 0).length || 0,
+    nonPaid: safeInvoices?.filter(i => (parseFloat(i.paid_amount) || 0) === 0).length || 0,
     unpaid: safeInvoices?.filter(i => i.status === 'unpaid').length || 0,
     overdue: safeInvoices?.filter(i => i.status === 'overdue').length || 0,
     totalAmount: safeInvoices?.reduce((sum, i) => sum + (parseFloat(i.total_amount) || 0), 0) || 0,
-    paidAmount: safeInvoices?.filter(i => i.status === 'paid' || i.status === 'completed')
+    paidAmount: safeInvoices?.filter(i => (i.status === 'paid' || i.status === 'completed') && (parseFloat(i.paid_amount) || 0) > 0)
       .reduce((sum, i) => sum + (parseFloat(i.paid_amount) || 0), 0) || 0,
-    unpaidAmount: safeInvoices?.filter(i => i.status === 'unpaid' || i.status === 'overdue')
-      .reduce((sum, i) => sum + (parseFloat(i.total_amount) || 0), 0) || 0,
+    unpaidAmount: safeInvoices?.reduce((sum, i) => {
+      const total = parseFloat(i.total_amount) || 0
+      const paid = parseFloat(i.paid_amount) || 0
+      return sum + (total - paid)
+    }, 0) || 0,
   }
 
   const StatCard = ({ title, value, icon: Icon, color, subtitle, delay }) => (
@@ -420,8 +461,8 @@ const Invoices = () => {
           </h1>
           <p className="text-gray-600 dark:text-gray-400 mt-2 flex items-center">
             <FiFileText className="w-4 h-4 mr-2" />
-            {formMode ? (
-              <span>{formMode === 'add' ? 'Create New Invoice' : 'Edit Invoice'}</span>
+            {showAddForm ? (
+              <span>Create New Invoice</span>
             ) : (
               <span>Manage and track your invoices</span>
             )}
@@ -429,7 +470,7 @@ const Invoices = () => {
         </div>
         
         <div className="flex items-center space-x-3">
-          {formMode ? (
+          {showAddForm ? (
             <motion.div
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
@@ -462,17 +503,17 @@ const Invoices = () => {
 
       {/* Stats Cards - Hide when form is shown */}
       <AnimatePresence mode="wait">
-        {!formMode && (
+        {!showAddForm && (
           <motion.div
             key="stats"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6 gap-6"
+            className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6"
           >
             {initialLoading ? (
               // Loading skeleton for stats cards
-              Array.from({ length: 6 }).map((_, index) => (
+              Array.from({ length: 4 }).map((_, index) => (
                 <motion.div 
                   key={index}
                   initial={{ opacity: 0, y: 20 }}
@@ -505,25 +546,12 @@ const Invoices = () => {
                   delay={0.2}
                 />
                 <StatCard
-                  title="Unpaid"
-                  value={stats.unpaid}
-                  icon={FiClock}
-                  color="from-yellow-500 to-orange-500"
-                  delay={0.3}
-                />
-                <StatCard
-                  title="Overdue"
-                  value={stats.overdue}
+                  title="Non Paid"
+                  value={stats.nonPaid}
                   icon={FiAlertCircle}
-                  color="from-red-500 to-pink-500"
-                  delay={0.4}
-                />
-                <StatCard
-                  title="Total Amount"
-                  value={`₹${stats.totalAmount.toFixed(2)}`}
-                  icon={FiDollarSign}
-                  color="from-purple-500 to-indigo-500"
-                  delay={0.5}
+                  color="from-yellow-500 to-orange-500"
+                  subtitle={`${((stats.nonPaid / stats.total) * 100 || 0).toFixed(1)}% of total`}
+                  delay={0.3}
                 />
                 <StatCard
                   title="Outstanding"
@@ -531,7 +559,7 @@ const Invoices = () => {
                   icon={FiDollarSign}
                   color="from-red-500 to-orange-500"
                   subtitle={`${((stats.unpaidAmount / stats.totalAmount) * 100 || 0).toFixed(1)}% of total`}
-                  delay={0.6}
+                  delay={0.4}
                 />
               </>
             )}
@@ -541,7 +569,7 @@ const Invoices = () => {
 
       {/* Invoice Form */}
       <AnimatePresence mode="wait">
-        {formMode && (
+        {showAddForm && (
           <motion.div
             key="form"
             initial={{ opacity: 0, y: 20 }}
@@ -550,31 +578,20 @@ const Invoices = () => {
             transition={{ duration: 0.3 }}
             className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6"
           >
-            {formMode === 'add' ? (
-              <BillGenerateForm
-                mode={formMode}
-                onSubmit={handleAddSubmit}
-                onCancel={handleCancelForm}
-                isSubmitting={formSubmitting}
-                hasStockPermission={hasStockPermission}
-              />
-            ) : (
-              <InvoiceForm
-                initialData={editInvoice}
-                mode={formMode}
-                onSubmit={handleEditSubmit}
-                onCancel={handleCancelForm}
-                isSubmitting={formSubmitting}
-                hasStockPermission={hasStockPermission}
-              />
-            )}
+            <BillGenerateForm
+              mode="add"
+              onSubmit={handleAddSubmit}
+              onCancel={handleCancelForm}
+              isSubmitting={formSubmitting}
+              hasStockPermission={hasStockPermission}
+            />
           </motion.div>
         )}
       </AnimatePresence>
 
       {/* Filters - Hide when form is shown */}
       <AnimatePresence mode="wait">
-        {!formMode && (
+        {!showAddForm && (
           <motion.div
             key="filters"
             initial={{ y: 20, opacity: 0 }}
@@ -713,7 +730,7 @@ const Invoices = () => {
 
       {/* Invoices Table - Hide when form is shown */}
       <AnimatePresence mode="wait">
-        {!formMode && (
+        {!showAddForm && (
           <motion.div
             key="table"
             initial={{ y: 20, opacity: 0 }}
@@ -763,7 +780,6 @@ const Invoices = () => {
                     loading={loading}
                     onView={handleView}
                     onDownload={handleDownload}
-                    onEdit={handleEditClick}
                     onMarkPaid={handleMarkPaid}
                     onPrintA4={handlePrintA4}
                     onPrintThermal={handlePrintThermal}

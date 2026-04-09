@@ -73,7 +73,7 @@ const Units = () => {
     }, 500)
 
     return () => clearTimeout(debounceTimer)
-  }, [searchTerm, setFilters])
+  }, [searchTerm]) // Remove setFilters and other dependencies
 
   const handleAddClick = () => {
     setShowAddForm(true)

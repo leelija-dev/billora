@@ -57,26 +57,29 @@ const Stock = () => {
   const [initialLoading, setInitialLoading] = useState(true)
 
   useEffect(() => {
-    // Fetch products first, then stocks
+    // Fetch products first, then stocks with force refresh
     const fetchData = async () => {
       try {
         await fetchProducts()
         await fetchUnits()
-        await fetchStocks()
+        // Always force refresh to get latest data from backend
+        await fetchStocks(1, '', true)
       } finally {
         setInitialLoading(false)
       }
     }
     fetchData()
-  }, [])
+  }, []) // Remove fetchStocks from dependency array
 
   useEffect(() => {
     const debounceTimer = setTimeout(() => {
       setFilters({ search: searchTerm })
+      // Manually call fetchStocks after setting filters
+      fetchStocks(1, searchTerm, false) // Use cache for search
     }, 500)
 
     return () => clearTimeout(debounceTimer)
-  }, [searchTerm, setFilters])
+  }, [searchTerm]) // Remove setFilters and fetchStocks from dependency array
 
   const handleAddStock = () => {
     setShowAddForm(true)
@@ -99,15 +102,15 @@ const Stock = () => {
       if (showEditForm && selectedStock) {
         await updateStock(selectedStock.id, stockData)
         // Don't refetch all stocks after update - state should already be updated
-        console.log('✅ Stock updated in place, no refetch needed')
+        console.log(' Stock updated in place, no refetch needed')
       } else {
         await createStock({
           ...stockData,
           user_id: user.id,
           created_by: user.id,
         })
-        // Refetch after create to get the new stock with proper ID
-        await fetchStocks()
+        // Don't refetch after create - store already handles state update
+        console.log(' Stock created, no refetch needed - store updated state')
       }
       handleCancelForm()
     } catch (error) {
@@ -147,7 +150,7 @@ const Stock = () => {
 
   const handleRefresh = async () => {
     setRefreshing(true)
-    await fetchStocks()
+    await fetchStocks(1, '', true) // Force refresh to get latest data
     setRefreshing(false)
   }
 

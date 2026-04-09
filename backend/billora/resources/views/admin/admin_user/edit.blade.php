@@ -1,5 +1,5 @@
 @extends('admin.main-layout')
-@section('title', 'Create New Admin User')
+@section('title', 'EditAdmin User')
 @section('content')
     <style>
         * {
@@ -618,7 +618,7 @@
         <!-- Page Header -->
         <div class="page-header">
             <div class="header-left">
-                <h1>Create New Admin User</h1>
+                <h1>Edit Admin User</h1>
             </div>
             <a href="{{ route('admin.admin-users.index') }}" class="back-btn">
                 <svg viewBox="0 0 24 24">
@@ -630,7 +630,7 @@
 
         <!-- Form Container - Full Width -->
         <div class="form-container">
-            <form id="planForm" action="{{ route('admin.admin-users.store') }}" method="POST"
+            <form id="planForm" action="{{ route('admin.admin-users.update', $user->id ?? '') }}" method="POST"
                 enctype="multipart/form-data" novalidate>
                 @csrf
                 <div class="form-grid">
@@ -640,7 +640,8 @@
                         <!-- User Name -->
                         <div class="form-group mt-2">
                             <label class="form-label">User Name <span>*</span></label>
-                            <input type="text" name="name" class="form-input" value="{{ old('name') }}" placeholder="Enter name">
+                            <input type="text" name="name" class="form-input"
+                                value="{{ $user->username ?? old('name') }}" placeholder="Enter name" readonly>
                             @error('name')
                                 <span class="text-danger" style="color: red;">{{ $message }}</span>
                             @enderror
@@ -649,7 +650,8 @@
                         <!-- Email -->
                         <div class="form-group mt-2">
                             <label class="form-label">Email <span>*</span></label>
-                            <input type="text" name="email" value="{{old('email')}}" class="form-input" placeholder="Enter email">
+                            <input type="text" name="email" value="{{ $user->email ?? old('email') }}"
+                                class="form-input" placeholder="Enter email" readonly>
                             @error('email')
                                 <span class="text-danger" style="color: red;">{{ $message }}</span>
                             @enderror
@@ -658,6 +660,7 @@
                         <div class="form-group mt-2">
                             <label class="form-label">Image</label>
                             <input type="file" name="image" class="form-input" placeholder="Enter email">
+                            
                             @error('image')
                                 <span class="text-danger" style="color: red;">{{ $message }}</span>
                             @enderror
@@ -669,14 +672,16 @@
                     <div>
                         <div class="form-group mt-2">
                             <label class="form-label">Fast Name <span>*</span></label>
-                            <input type="text" name="fname" value="{{old('fname')}}" class="form-input" placeholder="Enter first name">
+                            <input type="text" name="fname" value="{{ $user->fname ?? old('fname') }}"
+                                class="form-input" placeholder="Enter first name">
                             @error('fname')
                                 <span class="text-danger" style="color: red;">{{ $message }}</span>
                             @enderror
                         </div>
                         <div class="form-group mt-2">
                             <label class="form-label">Last Name <span>*</span></label>
-                            <input type="text" name="lname" value="{{old('lname')}}" class="form-input" placeholder="Enter last name">
+                            <input type="text" name="lname" value="{{ $user->lname ?? old('lname') }}"
+                                class="form-input" placeholder="Enter last name">
                             @error('lname')
                                 <span class="text-danger" style="color: red;">{{ $message }}</span>
                             @enderror
@@ -703,7 +708,7 @@
         <!-- Description -->
         <div class="form-group mt-2">
             <label class="form-label">Description</label>
-            <textarea class="form-textarea" value="{{old('description')}}" name="description" placeholder="Enter description"></textarea>
+            <textarea class="form-textarea"  name="description" placeholder="Enter description">{{$user->description ?? ''}}</textarea>
             @error('description')
                 <span class="text-danger" style="color: red;">{{ $message }}</span>
             @enderror
@@ -715,11 +720,11 @@
             <div class="roles-grid">
                 @foreach ($assignRoles as $role)
                     <div class="roles-card">
-                        <input type="checkbox" name="roles[]" class="form-check-input" value="{{ $role->name }}" id="roles_{{ $role->id }}">
+                        <input type="checkbox" name="roles[]" class="form-check-input" value="{{ $role->name }}"
+                            id="roles_{{ $role->id }}"  {{ in_array($role->id, $userRoles) ? 'checked' : '' }}>
                         <label for="roles_{{ $role->id }}">{{ ucwords(str_replace('_', ' ', $role->name)) }}</label>
                     </div>
                 @endforeach
-              
             </div>
             @error('roles')
                 <span class="text-danger" style="color: red;">{{ $message }}</span>
@@ -769,5 +774,5 @@
             feather.replace(); // refresh icon
         }
     </script>
-    
+
 @endsection

@@ -62,6 +62,13 @@ const Products = () => {
   const [stocks, setStocks] = useState([])
   const [stocksLoading, setStocksLoading] = useState(false)
 
+  // Function to get stock for a specific product
+  const getProductStock = (productId) => {
+    if (!Array.isArray(stocks)) return 0
+    const stock = stocks.find(s => s.product_id === productId)
+    return stock ? parseFloat(stock.quantity) || 0 : 0
+  }
+
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -81,13 +88,6 @@ const Products = () => {
     }
     fetchData()
   }, [])
-
-  // Function to get stock for a specific product
-  const getProductStock = (productId) => {
-    if (!Array.isArray(stocks)) return 0
-    const stock = stocks.find(s => s.product_id === productId)
-    return stock ? parseFloat(stock.quantity) || 0 : 0
-  }
 
   useEffect(() => {
     const debounceTimer = setTimeout(() => {
@@ -318,33 +318,7 @@ const Products = () => {
           >
             <FiTrash2 className="w-4 h-4" />
           </motion.button>
-          <div className="relative group">
-            <motion.button
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.95 }}
-              className="p-2 text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700 rounded-lg transition-colors"
-            >
-              <FiMoreVertical className="w-4 h-4" />
-            </motion.button>
-            
-            {/* Quick actions dropdown */}
-            <div className="absolute right-0 mt-1 w-48 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10">
-              <div className="p-1">
-                <button className="w-full px-3 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg flex items-center space-x-2">
-                  <FiEye className="w-4 h-4" />
-                  <span>View details</span>
-                </button>
-                <button className="w-full px-3 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg flex items-center space-x-2">
-                  <FiCopy className="w-4 h-4" />
-                  <span>Duplicate</span>
-                </button>
-                <button className="w-full px-3 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg flex items-center space-x-2">
-                  <FiArchive className="w-4 h-4" />
-                  <span>Archive</span>
-                </button>
-              </div>
-            </div>
-          </div>
+          
         </div>
       ),
     },

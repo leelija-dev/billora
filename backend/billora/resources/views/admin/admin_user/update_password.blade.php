@@ -1,5 +1,5 @@
 @extends('admin.main-layout')
-@section('title', 'Create New Admin User')
+@section('title', 'Update Password')
 @section('content')
     <style>
         * {
@@ -668,7 +668,7 @@
                     <!-- RIGHT SIDE -->
                     <div>
                         <div class="form-group mt-2">
-                            <label class="form-label">Fast Name <span>*</span></label>
+                            <label class="form-label">Confirm Password <span>*</span></label>
                             <input type="text" name="fname" value="{{old('fname')}}" class="form-input" placeholder="Enter first name">
                             @error('fname')
                                 <span class="text-danger" style="color: red;">{{ $message }}</span>
@@ -700,30 +700,8 @@
 
                 </div>
         </div>
-        <!-- Description -->
-        <div class="form-group mt-2">
-            <label class="form-label">Description</label>
-            <textarea class="form-textarea" value="{{old('description')}}" name="description" placeholder="Enter description"></textarea>
-            @error('description')
-                <span class="text-danger" style="color: red;">{{ $message }}</span>
-            @enderror
-        </div>
+       
 
-        <!-- Permissions -->
-        <div class="form-group mt-2">
-            <label class="form-label">Assign Role <span>*</span></label>
-            <div class="roles-grid">
-                @foreach ($assignRoles as $role)
-                    <div class="roles-card">
-                        <input type="checkbox" name="roles[]" class="form-check-input" value="{{ $role->name }}" id="roles_{{ $role->id }}">
-                        <label for="roles_{{ $role->id }}">{{ ucwords(str_replace('_', ' ', $role->name)) }}</label>
-                    </div>
-                @endforeach
-              
-            </div>
-            @error('roles')
-                <span class="text-danger" style="color: red;">{{ $message }}</span>
-            @enderror
         </div>
 
         <!-- BUTTONS -->

@@ -18,6 +18,9 @@ class Invoice extends Model
         'paid_amount',
         'created_by',
         'status',
+        'package_name',
+        'package_price',
+        'package_size'
 
     ];
         protected $casts = [
