@@ -640,25 +640,23 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
       }
     }
     
-    // Convert package items to have package_id instead of product_id
-    const itemsWithPackageId = formData.items.map(item => {
-      if (item.is_package) {
-        return {
-          package_id: item.product_id,
-          package_name: item.product_name,
-          package_price: item.price,
-          package_size: item.unit_name,
-          package_quantity: item.quantity,
-          package_total: item.total_price,
-          is_package: true
-        }
-      }
-      return item
-    })
+    // Separate products and packages
+    const productItems = formData.items.filter(item => !item.is_package)
+    const packageItems = formData.items.filter(item => item.is_package)
+
+    // Create packages array for API
+    const packages = packageItems.map(item => ({
+      package_id: item.product_id,
+      package_name: item.product_name,
+      package_price: item.price,
+      package_size: item.unit_name,
+      quantity: item.quantity
+    }))
 
     const submissionData = {
       ...formData,
-      items: itemsWithPackageId, // Send all items including packages with package_id
+      items: productItems, // Only send product items in items array
+      packages: packages, // Send packages in separate packages array
       paid_amount: formData.payment_status === 'paid' ? totals.totalAmount.toString() : 
                   formData.payment_status === 'semi_paid' ? formData.payment_amount.toString() : '0',
       total_amount: totals.totalAmount.toString()

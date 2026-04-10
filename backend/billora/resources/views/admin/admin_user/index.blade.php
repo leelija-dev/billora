@@ -193,9 +193,10 @@
                                             {{ $user->created_at->format('d-m-Y h:i A') }}
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                             <button class="text-blue-600 hover:text-blue-900 mr-3">
+                                             <a href="{{route('admin.admin-users.show-password', $user->id)}}"> <button class="text-blue-600 hover:text-blue-900 mr-3">
                                                     <i data-feather="edit" class="w-4 h-4"></i>
                                                 </button>
+                                             </a>
                                             <a href="{{ route('admin.admin-users.edit', $user->id) }}">
                                                 <button class="text-blue-600 hover:text-blue-900 mr-3">
                                                     <i data-feather="eye" class="w-4 h-4"></i>

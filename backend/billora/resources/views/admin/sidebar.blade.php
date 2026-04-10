@@ -29,7 +29,7 @@
             </div>
 
             <nav class="mt-4 space-y-2">
-
+                {{-- @if() --}}
                 <a href="{{ route('admin.dashboard') }}"
                     class="flex items-center px-4 py-3 
             {{ request()->routeIs('admin.dashboard') ? 'bg-blue-100 text-blue-600 font-semibold' : 'hover:bg-blue-100' }}">
@@ -56,7 +56,7 @@
                 </a>
 
                 <a href="{{ route('admin.plan-permission.index') }}"
-                    class="flex items-center px-4 py-3 {{ request()->routeIs('admin.plan-permission.index','admin.plan-permission.create') ? 'bg-blue-100 text-blue-600 font-semibold' : 'hover:bg-blue-100' }} hover:bg-blue-100">
+                    class="flex items-center px-4 py-3 {{ request()->routeIs('admin.plan-permission.index', 'admin.plan-permission.create') ? 'bg-blue-100 text-blue-600 font-semibold' : 'hover:bg-blue-100' }} hover:bg-blue-100">
                     <i data-feather="file-text" class="w-5 h-5"></i>
                     <span class="ml-3">Plans Permission</span>
                 </a>
@@ -67,64 +67,101 @@
                 </a>
 
                 <a href="{{ route('admin.mail-history') }}"
-                    class="flex items-center px-4 py-3 {{ request()->routeIs('admin.mail-history','admin.mail-history.view') ? 'bg-blue-100 text-blue-600 font-semibold' : 'hover:bg-blue-100' }}">
+                    class="flex items-center px-4 py-3 {{ request()->routeIs('admin.mail-history', 'admin.mail-history.view') ? 'bg-blue-100 text-blue-600 font-semibold' : 'hover:bg-blue-100' }}">
                     <i data-feather="mail"></i>
                     <span class="ml-3">Mail History</span>
                 </a>
 
                 @php
-                    $isUserMenuActive = request()->routeIs('admin.admin-users.*') || request()->routeIs('admin.permissions.index','admin.permissions.create','admin.roles.index','admin.roles.create','admin.roles.edit');
+                    $isUserMenuActive =
+                        request()->routeIs('admin.admin-users.*') ||
+                        request()->routeIs(
+                            'admin.permissions.index',
+                            'admin.permissions.create',
+                            'admin.roles.index',
+                            'admin.roles.create',
+                            'admin.roles.edit',
+                        );
                 @endphp
 
                 <div class="group">
 
                     <!-- Parent -->
-                    <div class="flex items-center justify-between px-4 py-3 cursor-pointer rounded-lg
+                    <div
+                        class="flex items-center justify-between px-4 py-3 cursor-pointer rounded-lg
                         {{ $isUserMenuActive ? 'bg-blue-100 text-blue-600 font-semibold' : 'hover:bg-blue-100' }}">
-                        
+
                         <div class="flex items-center">
                             <i data-feather="users" class="w-5 h-5"></i>
                             <span class="ml-3">User Management</span>
                         </div>
 
-                        <span class="transition-transform 
+                        <span
+                            class="transition-transform 
                             {{ $isUserMenuActive ? 'rotate-180' : 'group-hover:rotate-180' }}">
                             ▾
                         </span>
                     </div>
 
                     <!-- Dropdown -->
-                    <div class="ml-8 mt-1 
+                    <div
+                        class="ml-8 mt-1 
                         {{ $isUserMenuActive ? 'block' : 'hidden group-hover:block' }}">
 
                         <!-- Admin User -->
                         <a href="{{ route('admin.admin-users.index') }}"
                             class="flex items-center px-4 py-2 text-sm rounded-lg 
                             {{ request()->routeIs('admin.admin-users.*') ? 'bg-blue-100 text-blue-600 font-semibold' : 'hover:bg-blue-100' }}">
-                            
+
                             <i data-feather="user" class="w-4 h-4"></i>
                             <span class="ml-2">Admin User</span>
                         </a>
                         <!-- Role -->
-                        <a href="{{route('admin.roles.index')}}"
+                        <a href="{{ route('admin.roles.index') }}"
                             class="flex items-center px-4 py-2 text-sm rounded-lg 
-                            {{ request()->routeIs('admin.roles.index','admin.roles.create','admin.roles.edit') ? 'bg-blue-100 text-blue-600 font-semibold' : 'hover:bg-blue-100' }}">
-                            
-                           <i data-feather="user-check" class="w-4 h-4"></i>
+                            {{ request()->routeIs('admin.roles.index', 'admin.roles.create', 'admin.roles.edit') ? 'bg-blue-100 text-blue-600 font-semibold' : 'hover:bg-blue-100' }}">
+
+                            <i data-feather="user-check" class="w-4 h-4"></i>
                             <span class="ml-2">Role</span>
                         </a>
                         <!-- Permission -->
                         <a href="{{ route('admin.permissions.index') }}"
                             class="flex items-center px-4 py-2 text-sm rounded-lg 
-                            {{ request()->routeIs('admin.permissions.index','admin.permissions.create') ? 'bg-blue-100 text-blue-600 font-semibold' : 'hover:bg-blue-100' }}">
-                            
+                            {{ request()->routeIs('admin.permissions.index', 'admin.permissions.create') ? 'bg-blue-100 text-blue-600 font-semibold' : 'hover:bg-blue-100' }}">
+
                             <i data-feather="lock" class="w-4 h-4"></i>
                             <span class="ml-2">Permission</span>
                         </a>
 
                     </div>
                 </div>
+                <a href="{{ route('admin.plans.index') }}"
+                    class="flex items-center px-4 py-3 {{ request()->routeIs('admin.plans.index', 'admin.plans.create', 'admin.plans.edit', 'admin.plans.deleted') ? 'bg-blue-100 text-blue-600 font-semibold' : 'hover:bg-blue-100' }}">
 
+
+
+                    <div class="flex space-x-3">
+
+                        <!-- Avatar -->
+                        <div
+                            class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-semibold">
+                            {{ strtoupper(substr(Auth::guard('admin')->user()->username, 0, 1)) }}
+                        </div>
+
+                        <!-- User Info -->
+                        <div class="flex flex-col leading-tight">
+
+                            <span class="text-xs text-gray-800">
+                                {{ Auth::guard('admin')->user()->username }}
+                            </span>
+                            <span class="text-xs text-gray-500">
+                                {{ Auth::guard('admin')->user()->email }}
+                            </span>
+
+                        </div>
+
+                    </div>
+                </a>
                 <!-- Logout Link with Form -->
                 <div class="px-4 pb-4">
                     <form action="{{ route('admin.logout') }}" method="POST">
