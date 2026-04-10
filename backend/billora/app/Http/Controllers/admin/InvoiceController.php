@@ -14,6 +14,7 @@ use App\Models\Brand;
 use App\Models\Store;
 use App\Models\BillCustomer;
 use App\Models\BillPaymentHistory;
+use App\Models\PackageInvoice;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 class InvoiceController extends Controller
@@ -93,9 +94,9 @@ class InvoiceController extends Controller
             "store_id"      => 'required|exists:store,id',
             "paid_amount"   => 'required|numeric|min:0',
             "created_by"    => 'required',
-            "package_name"  => 'nullable',
-            "package_price" => 'nullable|numeric|min:0',
-            "package_size"  => 'nullable',
+            // "package_name"  => 'nullable',
+            // "package_price" => 'nullable|numeric|min:0',
+            // "package_size"  => 'nullable',
         ]);
 
         DB::beginTransaction();
@@ -118,6 +119,13 @@ class InvoiceController extends Controller
 
 
             $items = $request->items;
+            $packages = $request->packages;
+            $totalPackagePrice = 0;
+            if(isset($packages)){
+                foreach($packages as $package){
+                    $totalPackagePrice += (float)$package['package_price'] * (int)$package['quantity'];
+                }
+            }
 
             $totalAmount = 0;
             $totalItems = count($items);
@@ -156,14 +164,14 @@ class InvoiceController extends Controller
                 'user_id'       => $request->user_id,
                 'customer_id'   => $request->customer_id,
                 'store_id'      => $request->store_id,
-                'total_amount'  => $totalAmount,
+                'total_amount'  => ($totalAmount + $totalPackagePrice),
                 'total_items'   => $totalItems,
                 'paid_amount'   => $request->paid_amount,
                 'created_by'    => $request->created_by,
                 'status'        => 'completed',
-                "package_name"  => $request->package_name,
-                "package_price" => $request->package_price,
-                "package_size"  => $request->package_size,
+                "package_name"  => null,
+                "package_price" => $totalPackagePrice ?? 0,
+                "package_size"  => null,
             ]);
 
             // Store invoice items
@@ -199,6 +207,20 @@ class InvoiceController extends Controller
                     'status'        => 'completed',
                     'created_by'    => $request->created_by
                 ]);
+            }
+            if(isset($packages)){
+                foreach ($packages as $package) {
+                    PackageInvoice::create([
+                        'user_id'       => $request->user_id,
+                        'invoice_id'    => $invoice->id,
+                        'package_id'    => $package['package_id'] ?? null,
+                        'package_name'  => $package['package_name'] ?? null,
+                        'package_price' => $package['package_price'] ?? 0,
+                        'package_size'  => $package['package_size'] ?? null,
+                        'quantity'      => $package['quantity'] ?? 0,
+                        'created_by'    => $request->created_by ?? null
+                    ]);
+                }
             }
             // payment history
             BillPaymentHistory::create([
@@ -266,7 +288,7 @@ class InvoiceController extends Controller
                     'message' =>'You do not have any active plan. Please upgrade your plan.'
                 ]);
         }
-        $bill = Invoice::with('invoiceItems')
+        $bill = Invoice::with('invoiceItems','packages')
             ->where('user_id', $userId)
             ->where('id', $id)
             ->first();  
@@ -298,7 +320,7 @@ class InvoiceController extends Controller
         $user = Auth::user()->id;
         $search = $request->search;
 
-        $billHistory = Invoice::with(['invoiceItems.product'])
+        $billHistory = Invoice::with(['invoiceItems.product', 'packages'])
             ->where('user_id', $user)
             ->when($search, function ($query) use ($search) {
 
