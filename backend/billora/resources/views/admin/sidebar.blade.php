@@ -1,4 +1,5 @@
 @php
+    $admin = Auth::guard('admin')->user();
 @endphp
 
 <!DOCTYPE html>
@@ -28,11 +29,11 @@
             class="w-64 bg-white  text-black h-screen fixed md:relative transform -translate-x-full md:translate-x-0 transition duration-300 z-50">
 
             <div class="p-4 text-2xl font-bold border-b border-white text-center" style="color:rgb(61, 64, 219);">
-                Billora
+                {{config('app.name')}}
             </div>
 
             <nav class="mt-4 space-y-2">
-                @if(Auth::user()->role_id == 1)
+                @if($admin && $admin->can('view dashboard'))
                 <a href="{{ route('admin.dashboard') }}"
                     class="flex items-center px-4 py-3 
             {{ request()->routeIs('admin.dashboard') ? 'bg-blue-100 text-blue-600 font-semibold' : 'hover:bg-blue-100' }}">
@@ -40,41 +41,49 @@
                     <i data-feather="home"></i>
                     <span class="ml-3">Dashboard</span>
                 </a>
-
-                <a href="{{ route('admin.customers.index') }}"
-                    class="flex items-center px-4 py-3 {{ request()->routeIs('admin.customers.index', 'admin.customers.plans', 'admin.customers.customer-mail') ? 'bg-blue-100 text-blue-600 font-semibold' : 'hover:bg-blue-100' }}">
-                    <i data-feather="users"></i>
-                    <span class="ml-3">Customers</span>
-                </a>
+                @endif
+                @if($admin && $admin->can('view customers'))
+                    <a href="{{ route('admin.customers.index') }}"
+                        class="flex items-center px-4 py-3 {{ request()->routeIs('admin.customers.index', 'admin.customers.plans', 'admin.customers.customer-mail') ? 'bg-blue-100 text-blue-600 font-semibold' : 'hover:bg-blue-100' }}">
+                        <i data-feather="users"></i>
+                        <span class="ml-3">Customers </span>
+                    </a>
+                @endif
+                {{-- @if($admin && $admin->can('view customers')) --}}
                 <a href="{{ route('admin.business-types.index') }}"
                     class="flex items-center px-4 py-3 {{ request()->routeIs('admin.business-types.index', 'admin.business-types.create', 'admin.business-types.edit') ? 'bg-blue-100 text-blue-600 font-semibold' : 'hover:bg-blue-100' }}">
                     <i data-feather="users"></i>
                     <span class="ml-3">Business Types</span>
                 </a>
-
+                {{-- @endif --}}
+                @if($admin && $admin->can('view customers'))
                 <a href="{{ route('admin.plans.index') }}"
                     class="flex items-center px-4 py-3 {{ request()->routeIs('admin.plans.index', 'admin.plans.create', 'admin.plans.edit', 'admin.plans.deleted') ? 'bg-blue-100 text-blue-600 font-semibold' : 'hover:bg-blue-100' }}">
                     <i data-feather="shopping-bag"></i>
                     <span class="ml-3">Plans</span>
                 </a>
-
+                @endif
+                @if($admin && $admin->can('view plan permissions'))
                 <a href="{{ route('admin.plan-permission.index') }}"
                     class="flex items-center px-4 py-3 {{ request()->routeIs('admin.plan-permission.index', 'admin.plan-permission.create') ? 'bg-blue-100 text-blue-600 font-semibold' : 'hover:bg-blue-100' }} hover:bg-blue-100">
                     <i data-feather="file-text" class="w-5 h-5"></i>
                     <span class="ml-3">Plans Permission</span>
                 </a>
+                @endif
+                @if($admin && $admin->can('view plan purchase history'))
                 <a href="{{ route('admin.plans.purchase-history') }}"
                     class="flex items-center px-4 py-3 {{ request()->routeIs('admin.plans.purchase-history') ? 'bg-blue-100 text-blue-600 font-semibold' : 'hover:bg-blue-100' }} hover:bg-blue-100">
                     <i data-feather="shopping-cart"></i>
                     <span class="ml-3">Plans Purchase History</span>
                 </a>
-
+                @endif
+                @if($admin && $admin->can('view mail history'))
                 <a href="{{ route('admin.mail-history') }}"
                     class="flex items-center px-4 py-3 {{ request()->routeIs('admin.mail-history', 'admin.mail-history.view') ? 'bg-blue-100 text-blue-600 font-semibold' : 'hover:bg-blue-100' }}">
                     <i data-feather="mail"></i>
                     <span class="ml-3">Mail History</span>
                 </a>
-
+                @endif
                 @php
                     $isUserMenuActive =
                         request()->routeIs('admin.admin-users.*') ||
@@ -86,7 +95,7 @@
                             'admin.roles.edit',
                         );
                 @endphp
-
+                 @if($admin && $admin->can('view admin users'))
                 <div class="group">
 
                     <!-- Parent -->
@@ -138,6 +147,7 @@
 
                     </div>
                 </div>
+                @endif
                 <a href="{{ route('admin.plans.index') }}"
                     class="flex items-center px-4 py-3 {{ request()->routeIs('admin.plans.index', 'admin.plans.create', 'admin.plans.edit', 'admin.plans.deleted') ? 'bg-blue-100 text-blue-600 font-semibold' : 'hover:bg-blue-100' }}">
 
