@@ -36,6 +36,6 @@ class Invoice extends Model
         return $this->belongsTo(BillCustomer::class, 'customer_id');
     }
 public function packages(){
-    return $this->belongsTo(PackageInvoice::class , 'invoice_id');
+    return $this->belongsTo(PackageInvoice::class , 'id' , 'invoice_id');
 }
 }

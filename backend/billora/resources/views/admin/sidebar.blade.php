@@ -1,3 +1,6 @@
+@php
+@endphp
+
 <!DOCTYPE html>
 <html lang="en">
 
@@ -29,7 +32,7 @@
             </div>
 
             <nav class="mt-4 space-y-2">
-                {{-- @if() --}}
+                @if(Auth::user()->role_id == 1)
                 <a href="{{ route('admin.dashboard') }}"
                     class="flex items-center px-4 py-3 
             {{ request()->routeIs('admin.dashboard') ? 'bg-blue-100 text-blue-600 font-semibold' : 'hover:bg-blue-100' }}">
