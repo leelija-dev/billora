@@ -132,11 +132,40 @@ class AdminUserController extends Controller
             'image'       => $data['image'] ?? $user->image,
         ]);
 
-    
+
         //  Sync roles
         $user->syncRoles($data['roles']);
 
         return redirect()->route('admin.admin-users.index')
             ->with('success', 'Admin User Updated Successfully');
+    }
+    public function showPassword($id){
+        $user = AdminUser::findOrFail($id);
+        return view('admin.admin_user.update_password',compact('user'));
+    }
+
+    public function updatePassword($id, Request $request)
+    {
+        try {
+            $admin = AdminUser::findOrFail($id);
+            $data = $request->validate([
+                'current_password' => 'required',
+                'new_password'     => 'required',
+                'confirm_password' => 'required|same:new_password',
+            ]);
+           
+            if (!Hash::check($data['current_password'], $admin->password)) {
+                return back()->withErrors([
+                    'current_password' => 'Current password is incorrect'
+                ])->withInput();
+            }
+            $admin->password = Hash::make($data['new_password']);
+            $admin->save();
+             return redirect()->route('admin.admin-users.index')->with('success', "Password Updated Successfully");
+           
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', $e->getMessage());
+           
+        }
     }
 }

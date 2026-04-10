@@ -69,6 +69,8 @@ Route::middleware(['web', 'admin.auth'])->prefix('admin')->group(function () {
         Route::post('/store', [AdminUserController::class, 'store'])->name('admin.admin-users.store');
         Route::get('/edit/{id}',[AdminUserController::class, 'edit'])->name('admin.admin-users.edit');
         Route::post('/update/{id}',[AdminUserController::class, 'update'])->name('admin.admin-users.update');
+        Route::get('/update-pssword/{id}',[AdminUserController::class, 'showPassword'])->name('admin.admin-users.show-password');
+        Route::post('/update-password/{id}',[AdminUserController::class, 'updatePassword'])->name('admin.admin-users.update-password');
 
     });
     Route::prefix('permissions')->group(function (){
