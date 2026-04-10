@@ -18,6 +18,7 @@ use App\Http\Controllers\admin\ReportController;
 use App\Http\Controllers\admin\PlanPurchaseHistoryController;
 use App\Http\Controllers\admin\PaymentController;
 use App\Http\Controllers\admin\BusinessTypeController;
+use App\Http\Controllers\admin\ContactUsController;
 use App\Http\Controllers\admin\PackageCostController;
 use App\Http\Controllers\admin\UserOrdersController;
 use App\Http\Controllers\PlanExpiryController;
@@ -215,4 +216,9 @@ Route::middleware('auth:sanctum')->prefix('packages-cost')->group(function () {
    Route::get('/edit/{id}', [PackageCostController::class, 'edit']);
    Route::put('/update/{id}', [PackageCostController::class, 'update']);
    Route::delete('/delete/{id}', [PackageCostController::class, 'delete']);
+});
+
+Route::prefix('contact-us')->group(function () {
+   Route::get('/', [ContactUsController::class, 'index']);
+   Route::post('/store', [ContactUsController::class, 'store']);
 });
