@@ -18,7 +18,7 @@ return new class extends Migration
             $table->unsignedBigInteger('package_id');
             $table->string('package_name')->nullable();
             $table->decimal('package_price', 10, 2)->default(0);
-            $table->decimal('quantity'. 10, 2)->nullable();
+            $table->decimal('quantity', 10, 2)->nullable();
             $table->string('package_size')->nullable();
             $table->unsignedBigInteger('created_by')->nullable();
             $table->timestamps();
