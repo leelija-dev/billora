@@ -50,9 +50,9 @@ const calculateTotalDiscount = (items) => {
 export const generateThermalInvoiceHTML = (invoice) => {
   if (!invoice) return ''
 
-  const subtotal = calculateSubtotal(invoice.items)
-  const totalGST = calculateTotalGST(invoice.items)
-  const totalDiscount = calculateTotalDiscount(invoice.items)
+  const subtotal = calculateSubtotal(invoice.items) + calculateSubtotal(invoice.packages)
+  const totalGST = calculateTotalGST(invoice.items) // Packages have 0 GST
+  const totalDiscount = calculateTotalDiscount(invoice.items) // Packages have 0 discount
   const totalAmount = parseNumber(invoice.total_amount)
   const paidAmount = parseNumber(invoice.paid_amount)
   const changeAmount = paidAmount - totalAmount
@@ -239,10 +239,26 @@ export const generateThermalInvoiceHTML = (invoice) => {
         
         return `
           <div class="item-row">
-            <div class="item-col item-name">Product #${item.product_id}</div>
+            <div class="item-col item-name">${item.product_name || `Product #${item.product_id}`}</div>
             <div class="item-col item-qty">${quantity}</div>
-            <div class="item-col item-price">₹${formatCurrency(itemPrice)}</div>
-            <div class="item-col item-total">₹${formatCurrency(itemTotal)}</div>
+            <div class="item-col item-price">Rs${formatCurrency(itemPrice)}</div>
+            <div class="item-col item-total">Rs${formatCurrency(itemTotal)}</div>
+          </div>
+        `
+      }).join('')}
+
+      <!-- Packages List -->
+      ${invoice.packages?.map((pkg, index) => {
+        const pkgPrice = parseNumber(pkg.price)
+        const pkgTotal = parseNumber(pkg.total_price)
+        const quantity = parseNumber(pkg.quantity)
+        
+        return `
+          <div class="item-row">
+            <div class="item-col item-name">${pkg.package_name || `Package #${pkg.package_id}`}</div>
+            <div class="item-col item-qty">${quantity}</div>
+            <div class="item-col item-price">Rs${formatCurrency(pkgPrice)}</div>
+            <div class="item-col item-total">Rs${formatCurrency(pkgTotal)}</div>
           </div>
         `
       }).join('')}
@@ -254,19 +270,19 @@ export const generateThermalInvoiceHTML = (invoice) => {
       <div class="summary">
         <div class="summary-row">
           <span>Subtotal:</span>
-          <span>₹${formatCurrency(subtotal)}</span>
+          <span>Rs${formatCurrency(subtotal)}</span>
         </div>
         <div class="summary-row">
           <span>GST:</span>
-          <span>₹${formatCurrency(totalGST)}</span>
+          <span>Rs${formatCurrency(totalGST)}</span>
         </div>
         <div class="summary-row">
           <span>Discount:</span>
-          <span style="color: #000;">-₹${formatCurrency(totalDiscount)}</span>
+          <span style="color: #000;">-Rs${formatCurrency(totalDiscount)}</span>
         </div>
         <div class="summary-row total-row">
           <span>TOTAL:</span>
-          <span class="total-amount">₹${formatCurrency(totalAmount)}</span>
+          <span class="total-amount">Rs${formatCurrency(totalAmount)}</span>
         </div>
       </div>
 
@@ -274,12 +290,12 @@ export const generateThermalInvoiceHTML = (invoice) => {
       <div class="payment">
         <div class="payment-row">
           <span>Paid:</span>
-          <span class="paid-amount">₹${formatCurrency(paidAmount)}</span>
+          <span class="paid-amount">Rs${formatCurrency(paidAmount)}</span>
         </div>
         ${changeAmount > 0 ? `
           <div class="payment-row">
             <span>Change:</span>
-            <span class="change-amount">₹${formatCurrency(changeAmount)}</span>
+            <span class="change-amount">Rs${formatCurrency(changeAmount)}</span>
           </div>
         ` : ''}
       </div>
