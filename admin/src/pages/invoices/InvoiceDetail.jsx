@@ -70,44 +70,70 @@ const InvoiceDetail = () => {
             console.log('🏪 Selected store data:', storeData)
             console.log('👤 Processed customer data:', customerData)
             
-            // Now fetch product details for each invoice item
+            // Get items and packages from the new structure
             const invoiceItems = foundInvoice.invoice_items || foundInvoice.items || []
+            const invoicePackages = foundInvoice.packages || []
             console.log('📦 Invoice items before product fetch:', invoiceItems)
+            console.log('📦 Invoice packages:', invoicePackages)
             
-            if (invoiceItems.length > 0) {
-              // Fetch product details for each item
-              const productPromises = invoiceItems.map(item => 
-                productsAPI.getById(item.product_id)
-                  .then(productResponse => {
-                    console.log(`📦 Product ${item.product_id} response:`, productResponse)
-                    const productData = productResponse.data?.data || productResponse.data || {}
-                    return {
-                      ...item,
-                      product_name: productData.name || item.product_name || item.name || `Product #${item.product_id || item.id || 'Unknown'}`,
-                      price: parseFloat(item.price || productData.selling_price || 0),
-                      quantity: parseFloat(item.quantity || item.item_count || 1),
-                      total_price: parseFloat(item.total_price || item.total || 0),
-                      gst: parseFloat(item.gst || productData.gst_percentage || 0),
-                      discount: parseFloat(item.discount || productData.discount_percentage || 0)
-                    }
+            // Combine items and packages for processing
+            const allItems = [...invoiceItems, ...invoicePackages.map(pkg => ({
+              ...pkg,
+              is_package: true
+            }))]
+            
+            if (allItems.length > 0) {
+              // Fetch product details for each item (packages don't need product fetch)
+              const productPromises = allItems.map(item => {
+                if (item.is_package) {
+                  // For packages, return as-is with package data
+                  return Promise.resolve({
+                    ...item,
+                    product_name: item.package_name || item.product_name || `Package #${item.package_id || item.id || 'Unknown'}`,
+                    price: parseFloat(item.package_price || 0),
+                    quantity: parseFloat(item.quantity || 1),
+                    total_price: parseFloat(item.package_total || item.total_price || 0),
+                    gst: 0, // Packages typically don't have GST
+                    discount: 0 // Packages typically don't have discount
                   })
-                  .catch(error => {
-                    console.error(`Failed to fetch product ${item.product_id}:`, error)
-                    // Fallback to original item data if product fetch fails
-                    return {
-                      ...item,
-                      product_name: item.product_name || item.name || `Product #${item.product_id || item.id || 'Unknown'}`,
-                      price: parseFloat(item.price || 0),
-                      quantity: parseFloat(item.quantity || item.item_count || 1),
-                      total_price: parseFloat(item.total_price || item.total || 0),
-                      gst: parseFloat(item.gst || 0),
-                      discount: parseFloat(item.discount || 0)
-                    }
-                  })
-              )
+                } else {
+                  // For products, fetch product details
+                  return productsAPI.getById(item.product_id)
+                    .then(productResponse => {
+                      console.log(`📦 Product ${item.product_id} response:`, productResponse)
+                      const productData = productResponse.data?.data || productResponse.data || {}
+                      return {
+                        ...item,
+                        product_name: productData.name || item.product_name || item.name || `Product #${item.product_id || item.id || 'Unknown'}`,
+                        price: parseFloat(item.price || productData.selling_price || 0),
+                        quantity: parseFloat(item.quantity || item.item_count || 1),
+                        total_price: parseFloat(item.total_price || item.total || 0),
+                        gst: parseFloat(item.gst || productData.gst_percentage || 0),
+                        discount: parseFloat(item.discount || productData.discount_percentage || 0)
+                      }
+                    })
+                    .catch(error => {
+                      console.error(`Failed to fetch product ${item.product_id}:`, error)
+                      // Fallback to original item data if product fetch fails
+                      return {
+                        ...item,
+                        product_name: item.product_name || item.name || `Product #${item.product_id || item.id || 'Unknown'}`,
+                        price: parseFloat(item.price || 0),
+                        quantity: parseFloat(item.quantity || item.item_count || 1),
+                        total_price: parseFloat(item.total_price || item.total || 0),
+                        gst: parseFloat(item.gst || 0),
+                        discount: parseFloat(item.discount || 0)
+                      }
+                    })
+                }
+              })
               
               Promise.all(productPromises).then(enhancedItems => {
                 console.log('📦 Enhanced items with product data:', enhancedItems)
+                
+                // Separate back into items and packages for display
+                const displayItems = enhancedItems.filter(item => !item.is_package)
+                const displayPackages = enhancedItems.filter(item => item.is_package)
                 
                 // Enhance the invoice with real API data
                 const enhancedInvoice = {
@@ -123,7 +149,8 @@ const InvoiceDetail = () => {
                   store_gst: storeData.gst || foundInvoice.store_gst || 'GSTIN123456',
                   store_email: storeData.email || foundInvoice.store_email || 'store@business.com',
                   store_phone: storeData.mobile || storeData.phone || foundInvoice.store_phone || '123-456-7890',
-                  items: enhancedItems
+                  items: displayItems,
+                  packages: displayPackages
                 }
                 console.log('✅ Enhanced invoice with real product data:', enhancedInvoice)
                 setInvoice(enhancedInvoice)
@@ -131,6 +158,26 @@ const InvoiceDetail = () => {
               }).catch(error => {
                 console.error('Failed to fetch product details:', error)
                 // Fallback to original invoice data if product fetch fails
+                const fallbackItems = invoiceItems.map(item =>({
+                  ...item,
+                  product_name: item.product_name || item.name || `Product #${item.product_id || item.id || 'Unknown'}`,
+                  price: parseFloat(item.price || 0),
+                  quantity: parseFloat(item.quantity || item.item_count || 1),
+                  total_price: parseFloat(item.total_price || item.total || 0),
+                  gst: parseFloat(item.gst || 0),
+                  discount: parseFloat(item.discount || 0)
+                }))
+                
+                const fallbackPackages = invoicePackages.map(pkg => ({
+                  ...pkg,
+                  product_name: pkg.package_name || `Package #${pkg.package_id || pkg.id || 'Unknown'}`,
+                  price: parseFloat(pkg.package_price || 0),
+                  quantity: parseFloat(pkg.quantity || 1),
+                  total_price: parseFloat(pkg.package_total || 0),
+                  gst: 0,
+                  discount: 0
+                }))
+                
                 const fallbackInvoice = {
                   ...foundInvoice,
                   invoice_number: foundInvoice.invoice_number || `INV-${foundInvoice.id}`,
@@ -144,21 +191,14 @@ const InvoiceDetail = () => {
                   store_gst: storeData.gst || foundInvoice.store_gst || 'GSTIN123456',
                   store_email: storeData.email || foundInvoice.store_email || 'store@business.com',
                   store_phone: storeData.mobile || storeData.phone || foundInvoice.store_phone || '123-456-7890',
-                  items: invoiceItems.map(item => ({
-                    ...item,
-                    product_name: item.product_name || item.name || `Product #${item.product_id || item.id || 'Unknown'}`,
-                    price: parseFloat(item.price || 0),
-                    quantity: parseFloat(item.quantity || item.item_count || 1),
-                    total_price: parseFloat(item.total_price || item.total || 0),
-                    gst: parseFloat(item.gst || 0),
-                    discount: parseFloat(item.discount || 0)
-                  }))
+                  items: fallbackItems,
+                  packages: fallbackPackages
                 }
                 setInvoice(fallbackInvoice)
                 setLoading(false)
               })
             } else {
-              // No items, use fallback
+              // No items or packages, use fallback
               const fallbackInvoice = {
                 ...foundInvoice,
                 invoice_number: foundInvoice.invoice_number || `INV-${foundInvoice.id}`,
@@ -172,16 +212,8 @@ const InvoiceDetail = () => {
                 store_gst: storeData.gst || foundInvoice.store_gst || 'GSTIN123456',
                 store_email: storeData.email || foundInvoice.store_email || 'store@business.com',
                 store_phone: storeData.mobile || storeData.phone || foundInvoice.store_phone || '123-456-7890',
-                items: [{
-                  id: 1,
-                  product_id: 1,
-                  product_name: 'Product Item',
-                  price: parseFloat(foundInvoice.total_amount || 1000),
-                  quantity: 1,
-                  total_price: parseFloat(foundInvoice.total_amount || 1000),
-                  gst: 18,
-                  discount: 0
-                }]
+                items: [],
+                packages: []
               }
               setInvoice(fallbackInvoice)
               setLoading(false)

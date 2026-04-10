@@ -108,7 +108,13 @@ const RevenueChart = ({ data, height = 320 }) => {
     yaxis: {
       labels: {
         formatter: function (value) {
-          return '$' + (value / 1000).toFixed(1) + 'k'
+          if (value >= 100000) {
+            return 'Rs ' + (value / 100000).toFixed(1) + 'L'
+          } else if (value >= 1000) {
+            return 'Rs ' + (value / 1000).toFixed(1) + 'k'
+          } else {
+            return 'Rs ' + value.toFixed(0)
+          }
         },
         style: {
           colors: '#64748b',
@@ -144,7 +150,7 @@ const RevenueChart = ({ data, height = 320 }) => {
       },
       y: {
         formatter: function (value) {
-          return '$' + value.toLocaleString()
+          return 'Rs ' + value.toLocaleString('en-IN')
         }
       },
       marker: {

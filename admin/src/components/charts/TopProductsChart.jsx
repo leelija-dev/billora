@@ -44,7 +44,13 @@ const TopProductsChart = ({ data, height = 320 }) => {
     dataLabels: {
       enabled: true,
       formatter: function (value) {
-        return '$' + (value / 1000).toFixed(1) + 'k'
+        if (value >= 100000) {
+          return 'Rs ' + (value / 100000).toFixed(1) + 'L'
+        } else if (value >= 1000) {
+          return 'Rs ' + (value / 1000).toFixed(1) + 'k'
+        } else {
+          return 'Rs ' + value.toFixed(0)
+        }
       },
       offsetY: -15,
       style: {
@@ -107,7 +113,13 @@ const TopProductsChart = ({ data, height = 320 }) => {
     yaxis: {
       labels: {
         formatter: function (value) {
-          return '$' + (value / 1000).toFixed(1) + 'k'
+          if (value >= 100000) {
+            return 'Rs ' + (value / 100000).toFixed(1) + 'L'
+          } else if (value >= 1000) {
+            return 'Rs ' + (value / 1000).toFixed(1) + 'k'
+          } else {
+            return 'Rs ' + value.toFixed(0)
+          }
         },
         style: {
           colors: '#64748b',
@@ -138,7 +150,7 @@ const TopProductsChart = ({ data, height = 320 }) => {
       },
       y: {
         formatter: function (value) {
-          return '$' + value.toLocaleString()
+          return 'Rs ' + value.toLocaleString('en-IN')
         }
       },
       custom: function({ series, seriesIndex, dataPointIndex, w }) {
@@ -149,8 +161,8 @@ const TopProductsChart = ({ data, height = 320 }) => {
           <div class="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700">
             <p class="text-sm font-medium text-gray-900 dark:text-white mb-2">${item.name}</p>
             <div class="space-y-1">
-              <p class="text-sm text-primary-600 dark:text-primary-400">Sales: $${parseFloat(item.sales || 0).toLocaleString()}</p>
-              <p class="text-sm text-green-600 dark:text-green-400">Revenue: $${parseFloat(item.revenue || 0).toLocaleString()}</p>
+              <p class="text-sm text-primary-600 dark:text-primary-400">Sales: ${parseFloat(item.sales || 0).toLocaleString('en-IN')}</p>
+              <p class="text-sm text-green-600 dark:text-green-400">Revenue: Rs ${parseFloat(item.revenue || 0).toLocaleString('en-IN')}</p>
               ${item.trend ? `<p class="text-xs text-gray-500 dark:text-gray-400">Trend: ${item.trend}</p>` : ''}
             </div>
           </div>
@@ -196,8 +208,8 @@ const TopProductsChart = ({ data, height = 320 }) => {
   }
 
   const chartSeries = [{
-    name: 'Sales',
-    data: Array.isArray(data) ? data.map(item => parseFloat(item.sales || 0)) : []
+    name: 'Revenue',
+    data: Array.isArray(data) ? data.map(item => parseFloat(item.revenue || 0)) : []
   }]
 
   if (!data || data.length === 0) {
