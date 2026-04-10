@@ -119,12 +119,18 @@ const OrderSummary = () => {
     loadPlanData();
   }, [router]);
   
-  // Auto set businessTypeId from selected plan
+  // Auto set businessTypeId from selected plan (only if present)
   useEffect(() => {
-    if (selectedPlan?.businessType?.id) {
-      setBusinessTypeId(String(selectedPlan.businessType.id));
+    if (selectedPlan?.businessType?.id && businessTypes.length > 0) {
+      const match = businessTypes.find(
+        (bt) => String(bt.id) === String(selectedPlan.businessType.id)
+      );
+
+      if (match) {
+        setBusinessTypeId(String(match.id));
+      }
     }
-  }, [selectedPlan]);
+  }, [selectedPlan, businessTypes]);
 
   const calculateGST = () => {
     if (!selectedPlan) return 0;
@@ -183,11 +189,6 @@ const OrderSummary = () => {
       return;
     }
 
-    if (!businessTypeId) {
-      toast.error('Business type is required');
-      return;
-    }
-
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(customerEmail)) {
       toast.error('Please enter a valid email address');
@@ -223,52 +224,43 @@ const OrderSummary = () => {
       const randomStr = Math.random().toString(36).substring(2, 10).toUpperCase();
       const orderId = `ORD${timestamp}${randomStr}`;
       
-      // Get selected business type name
-      const selectedBusinessType = businessTypes.find(bt => String(bt.id) === String(businessTypeId));
+      // Get selected business type name (if selected)
+      const selectedBusinessType = businessTypeId ? businessTypes.find(bt => String(bt.id) === String(businessTypeId)) : null;
       
       // Clean phone number
       const cleanCustomerPhone = customerPhone.replace(/\D/g, '');
       
-      // IMPORTANT: customer_id needs to be string for Cashfree, but your backend expects number
-      // Send as string to satisfy Cashfree, backend should handle conversion
+      // IMPORTANT: Since backend requires business_type_id, we need to send a default value
+      // Default business type ID (Individual/Sole Proprietorship) - adjust based on your DB
+      const DEFAULT_BUSINESS_TYPE_ID = 1; // Change this to match your default business type ID
+      
+      // Use selected business type ID if provided, otherwise use default
+      const finalBusinessTypeId = businessTypeId ? parseInt(businessTypeId) : DEFAULT_BUSINESS_TYPE_ID;
+      
+      console.log("🏢 Business Type - Selected:", businessTypeId, "Final:", finalBusinessTypeId);
+      
+      // Prepare payload
       const payload = {
         // Required fields
         amount: Number(totalAmount.toFixed(2)),
         plan_id: selectedPlan.id,
-        business_type_id: parseInt(businessTypeId),
-        customer_id: String(customerIdValue), // Send as STRING for Cashfree
+        business_type_id: finalBusinessTypeId, // Always send a value
+        customer_id: String(customerIdValue),
         
-        // Additional fields
-        // order_id: orderId,
-        // customer_name: customerName.trim().substring(0, 50),
-        // customer_email: customerEmail.trim().toLowerCase(),
+        // Optional fields
         customer_phone: cleanCustomerPhone,
-        
-        // Plan details
-        // plan_name: selectedPlan.name,
-        // plan_billing_cycle: selectedPlan.billingCycle,
-        // plan_price: basePrice,
-        // plan_original_price: selectedPlan.originalPrice || null,
-        // plan_discount: selectedPlan.discount || 0,
-        
-        // Tax details
-        // gst_rate: selectedPlan.gst || 18,
-        // gst_amount: Number(calculateGST().toFixed(2)),
-        
-        // Business details
-        // company_name: companyName || null,
-        // gst_number: gstNumber || null,
-        // billing_address: billingAddress || null,
-        // business_type_name: selectedBusinessType?.name || null,
-        
-        // Return URLs
-        // return_url: `${window.location.origin}/payment-status`,
-        // notify_url: `${window.location.origin}/api/cashfree/webhook`
       };
+
+      // Add optional business details if provided
+      if (companyName) payload.company_name = companyName;
+      if (gstNumber) payload.gst_number = gstNumber;
+      if (billingAddress) payload.billing_address = billingAddress;
+      if (selectedBusinessType) payload.business_type_name = selectedBusinessType.name;
 
       console.log("📤 Sending payload to backend:", JSON.stringify(payload, null, 2));
       console.log("📞 Customer ID being sent (as string):", String(customerIdValue));
       console.log("📞 Customer phone being sent:", cleanCustomerPhone);
+      console.log("🏢 Business type ID being sent:", finalBusinessTypeId);
       
       // Call the store action
       const response = await createOrderAction(payload);
@@ -306,11 +298,34 @@ const OrderSummary = () => {
       
       toast.success('Order created! Redirecting to payment...');
       
+      // After successful order creation and before payment redirect,
+      // dispatch event to notify that plan purchase is initiated
+      window.dispatchEvent(new CustomEvent('planPurchaseCompleted', { 
+        detail: { 
+          status: 'initiated', 
+          planPurchased: true,
+          planType: selectedPlan.billingCycle,
+          amount: totalAmount
+        } 
+      }));
+      
       // Load and initialize Cashfree
       const Cashfree = await loadCashfreeSDK();
       const cashfree = new Cashfree({
         mode: process.env.NEXT_PUBLIC_CASHFREE_MODE === 'production' ? 'production' : 'sandbox',
       });
+      
+      // Store order info before redirect
+      const orderInfo = {
+        paymentSessionId: paymentSessionId,
+        customerEmail: customerEmail,
+        customerPhone: cleanCustomerPhone,
+        totalAmount: totalAmount,
+        planName: selectedPlan.name,
+        customerId: customerIdValue,
+        timestamp: Date.now()
+      };
+      localStorage.setItem('pendingPayment', JSON.stringify(orderInfo));
       
       // Open checkout
       const paymentResult = await cashfree.checkout({
@@ -319,19 +334,6 @@ const OrderSummary = () => {
       });
       
       console.log("Payment checkout result:", paymentResult);
-      
-      // Store payment info for reference
-      const orderInfo = {
-        // orderId: orderId,
-        // paymentSessionId: paymentSessionId,
-        // customerEmail: customerEmail,
-        // customerPhone: cleanCustomerPhone,
-        totalAmount: totalAmount,
-        planName: selectedPlan.name,
-        customerId: customerIdValue,
-        // timestamp: Date.now()
-      };
-      localStorage.setItem('pendingPayment', JSON.stringify(orderInfo));
       
     } catch (error) {
       toast.dismiss(loadingToast);
@@ -343,7 +345,7 @@ const OrderSummary = () => {
       } else if (error.message?.includes('plan_id')) {
         errorMessage = 'Invalid plan selected. Please try again.';
       } else if (error.message?.includes('business_type_id')) {
-        errorMessage = 'Business type is required. Please select your business type.';
+        errorMessage = 'Business type is required. Please select a business type.';
       } else if (error.message?.includes('amount')) {
         errorMessage = 'Invalid amount. Please try again.';
       } else if (error.message) {
@@ -467,7 +469,7 @@ const OrderSummary = () => {
                   </div>
                 </div>
 
-                {/* Business Details Section */}
+                {/* Business Details Section - Optional but backend requires it */}
                 <div className="mt-6">
                   <button
                     onClick={() => setShowOptional(!showOptional)}
@@ -475,7 +477,7 @@ const OrderSummary = () => {
                   >
                     <span className="font-semibold text-gray-700 flex items-center gap-2">
                       <FaBuilding className="text-[#5b5bd6]" />
-                      Add Business Details
+                      Add Business Details <span className="text-xs text-gray-500 font-normal">(Recommended)</span>
                     </span>
                     <span className="text-[#5b5bd6]">{showOptional ? "−" : "+"}</span>
                   </button>
@@ -484,7 +486,7 @@ const OrderSummary = () => {
                     <div className="mt-4 p-6 bg-gray-50 rounded-xl space-y-4">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Company Name
+                          Company Name <span className="text-gray-400 text-xs font-normal">(Optional)</span>
                         </label>
                         <input
                           type="text"
@@ -495,10 +497,10 @@ const OrderSummary = () => {
                         />
                       </div>
                       
-                      {/* Business Type Dropdown */}
+                      {/* Business Type Dropdown - Now recommended but will use default if not selected */}
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Business Type <span className="text-red-500">*</span>
+                          Business Type <span className="text-gray-400 text-xs font-normal">(Recommended)</span>
                         </label>
                         <select
                           value={businessTypeId}
@@ -506,18 +508,19 @@ const OrderSummary = () => {
                           className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#5b5bd6] focus:border-transparent outline-none transition-all bg-white"
                           disabled={loadingBusinessTypes}
                         >
-                          <option value="">{loadingBusinessTypes ? 'Loading...' : 'Select Business Type'}</option>
+                          <option value="">Select Business Type (Default will be used if not selected)</option>
                           {businessTypes.map((type) => (
                             <option key={type.id} value={type.id}>
                               {type.name}
                             </option>
                           ))}
                         </select>
+                        <p className="text-xs text-gray-500 mt-1">If not selected, "Individual/Sole Proprietorship" will be used</p>
                       </div>
                       
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                          GST Number
+                          GST Number <span className="text-gray-400 text-xs font-normal">(Optional)</span>
                         </label>
                         <input
                           type="text"
@@ -526,12 +529,12 @@ const OrderSummary = () => {
                           placeholder="Enter GST number"
                           className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#5b5bd6] focus:border-transparent outline-none transition-all"
                         />
-                        <p className="text-xs text-gray-500 mt-1">Optional - Required for GST invoice</p>
+                        <p className="text-xs text-gray-500 mt-1">Required only for GST invoice</p>
                       </div>
                       
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Billing Address
+                          Billing Address <span className="text-gray-400 text-xs font-normal">(Optional)</span>
                         </label>
                         <textarea
                           value={billingAddress}
@@ -543,6 +546,13 @@ const OrderSummary = () => {
                       </div>
                     </div>
                   )}
+                </div>
+
+                {/* Info note */}
+                <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-100">
+                  <p className="text-xs text-blue-700">
+                    ℹ️ <span className="font-semibold">Note:</span> A default business type will be used if you don't select one. You can update this later in your profile.
+                  </p>
                 </div>
               </div>
             </div>

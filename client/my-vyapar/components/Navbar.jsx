@@ -4,7 +4,7 @@ import React, { useState, useEffect, useLayoutEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { FiLogIn, FiLogOut, FiUser, FiSettings, FiChevronDown, FiMenu, FiX } from "react-icons/fi";
+import { FiLogIn, FiLogOut, FiUser, FiSettings, FiChevronDown, FiMenu, FiX, FiGrid } from "react-icons/fi";
 import { logoutUser } from "../services/authService";
 import { getAuthData, clearAuthData, isAuthenticated } from "../store/authStore";
 import toast from 'react-hot-toast';
@@ -18,6 +18,8 @@ const Navbar = () => {
   const [user, setUser] = useState(null);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [hasActivePlan, setHasActivePlan] = useState(false);
+  const [isCheckingPlan, setIsCheckingPlan] = useState(true);
   
   // Slider styles
   const [activeSliderStyle, setActiveSliderStyle] = useState({
@@ -65,6 +67,46 @@ const Navbar = () => {
     return routeMap.hasOwnProperty(path?.replace(/\/$/, ""));
   };
 
+  // Check if user has purchased a plan
+  const checkPlanPurchaseStatus = () => {
+    try {
+      // Check multiple indicators of plan purchase
+      const purchaseCompleted = localStorage.getItem('purchase_completed') === 'true';
+      const planPurchased = localStorage.getItem('plan_purchased') === 'true';
+      const hasActiveSubscription = localStorage.getItem('has_active_subscription') === 'true';
+      
+      // Check for plan purchase with timestamp to ensure it's not expired
+      const purchaseDate = localStorage.getItem('plan_purchase_date');
+      let isPurchaseValid = false;
+      
+      if (purchaseDate) {
+        const purchaseTime = new Date(purchaseDate).getTime();
+        const currentTime = new Date().getTime();
+        const daysSincePurchase = (currentTime - purchaseTime) / (1000 * 60 * 60 * 24);
+        
+        // Consider purchase valid for 365 days (1 year)
+        isPurchaseValid = daysSincePurchase <= 365;
+      }
+      
+      const hasPlan = (purchaseCompleted || planPurchased || hasActiveSubscription) && isPurchaseValid;
+      
+      console.log("🔍 Checking plan status:", { 
+        purchaseCompleted, 
+        planPurchased, 
+        hasActiveSubscription,
+        isPurchaseValid,
+        hasPlan 
+      });
+      
+      setHasActivePlan(hasPlan);
+    } catch (error) {
+      console.error("Error checking plan purchase:", error);
+      setHasActivePlan(false);
+    } finally {
+      setIsCheckingPlan(false);
+    }
+  };
+
   // Check login status from localStorage
   const checkLoginStatus = () => {
     try {
@@ -74,14 +116,20 @@ const Navbar = () => {
       if (authenticated) {
         const { user } = getAuthData();
         setUser(user);
+        // Only check plan status if user is logged in
+        checkPlanPurchaseStatus();
       } else {
         setUser(null);
+        setHasActivePlan(false);
+        setIsCheckingPlan(false);
       }
       return authenticated;
     } catch (error) {
       console.error('Error checking login status:', error);
       setIsLoggedIn(false);
       setUser(null);
+      setHasActivePlan(false);
+      setIsCheckingPlan(false);
       return false;
     }
   };
@@ -154,9 +202,16 @@ const Navbar = () => {
           }
         }
         
+        // Clear all auth and plan data
         clearAuthData();
+        localStorage.removeItem('purchase_completed');
+        localStorage.removeItem('plan_purchased');
+        localStorage.removeItem('plan_purchase_date');
+        localStorage.removeItem('has_active_subscription');
+        
         setIsLoggedIn(false);
         setUser(null);
+        setHasActivePlan(false);
         window.dispatchEvent(new Event("userLoggedOut"));
         
         // Dismiss loading toast and show success
@@ -182,8 +237,14 @@ const Navbar = () => {
         
         // Still clear local data as fallback
         clearAuthData();
+        localStorage.removeItem('purchase_completed');
+        localStorage.removeItem('plan_purchased');
+        localStorage.removeItem('plan_purchase_date');
+        localStorage.removeItem('has_active_subscription');
+        
         setIsLoggedIn(false);
         setUser(null);
+        setHasActivePlan(false);
         router.push("/");
       } finally {
         setIsLoggingOut(false);
@@ -231,11 +292,44 @@ const Navbar = () => {
     checkLoginStatus();
   }, []);
 
-  // Listen for storage changes
+  // Listen for plan purchase completion event
+  useEffect(() => {
+    const handlePlanPurchase = (event) => {
+      console.log("🎉 Plan purchase event received:", event.detail);
+      if (event.detail?.status === 'completed' || event.detail?.planPurchased === true) {
+        // Set all the flags to show dashboard button
+        localStorage.setItem('purchase_completed', 'true');
+        localStorage.setItem('plan_purchased', 'true');
+        localStorage.setItem('plan_purchase_date', new Date().toISOString());
+        localStorage.setItem('has_active_subscription', 'true');
+        
+        setHasActivePlan(true);
+        
+        // Show success message
+        toast.success('Plan activated! Dashboard is now available.', {
+          duration: 5000,
+          position: 'top-right',
+          icon: '🎉',
+        });
+      }
+    };
+
+    window.addEventListener("planPurchaseCompleted", handlePlanPurchase);
+    
+    return () => {
+      window.removeEventListener("planPurchaseCompleted", handlePlanPurchase);
+    };
+  }, []);
+
+  // Listen for storage changes (for cross-tab updates)
   useEffect(() => {
     const handleStorageChange = (e) => {
       if (e.key === "token" || e.key === "user") {
         checkLoginStatus();
+      }
+      // Check if plan purchase status changed in another tab
+      if (e.key === "purchase_completed" || e.key === "plan_purchased") {
+        checkPlanPurchaseStatus();
       }
     };
 
@@ -248,7 +342,10 @@ const Navbar = () => {
   // Listen for custom login/logout events
   useEffect(() => {
     const handleLoginEvent = () => checkLoginStatus();
-    const handleLogoutEvent = () => checkLoginStatus();
+    const handleLogoutEvent = () => {
+      checkLoginStatus();
+      setHasActivePlan(false);
+    };
 
     window.addEventListener("userLoggedIn", handleLoginEvent);
     window.addEventListener("userLoggedOut", handleLogoutEvent);
@@ -612,6 +709,18 @@ const Navbar = () => {
               </ul>
             </div>
             
+            {/* Dashboard Button - Only show when user has active/purchased plan */}
+            {isLoggedIn && hasActivePlan && !isCheckingPlan && (
+              <Link
+                href="/dashboard"
+                onClick={handleExternalClick}
+                className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-full text-sm font-semibold transition-all duration-200 hover:shadow-md hover:scale-105 whitespace-nowrap"
+              >
+                <FiGrid size={16} />
+                <span>Dashboard</span>
+              </Link>
+            )}
+            
             <Link
               href="/bookdemo"
               onClick={handleExternalClick}
@@ -632,13 +741,20 @@ const Navbar = () => {
                     <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 flex items-center justify-center text-white font-semibold text-sm shadow-md">
                       {userInitial}
                     </div>
+                    {/* Premium Badge if has active plan */}
+                    {hasActivePlan && (
+                      <span className="absolute -top-1 -right-1 w-3 h-3 bg-yellow-400 rounded-full border-2 border-white shadow-sm"></span>
+                    )}
                     {/* Active Green Dot */}
-                    <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-white shadow-sm animate-pulse"></span>
+                    <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-white shadow-sm"></span>
                   </div>
                   <div className="hidden xl:block text-left">
                     <div className="text-sm font-medium text-gray-700 max-w-[120px] truncate">
                       {userName}
                     </div>
+                    {hasActivePlan && (
+                      <div className="text-xs text-green-600 font-medium">Premium Plan</div>
+                    )}
                   </div>
                   <FiChevronDown className={`text-gray-400 transition-transform duration-200 hidden sm:block ${showUserMenu ? 'rotate-180' : ''}`} size={14} />
                 </button>
@@ -652,8 +768,9 @@ const Navbar = () => {
                           <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 flex items-center justify-center text-white font-semibold">
                             {userInitial}
                           </div>
-                          {/* Active Green Dot for dropdown */}
-                          <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-white shadow-sm"></span>
+                          {hasActivePlan && (
+                            <span className="absolute -top-1 -right-1 w-3 h-3 bg-yellow-400 rounded-full border-2 border-white"></span>
+                          )}
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium text-gray-900 truncate">
@@ -662,10 +779,27 @@ const Navbar = () => {
                           <p className="text-xs text-gray-500 truncate">
                             {userEmail}
                           </p>
+                          {hasActivePlan && (
+                            <p className="text-xs text-green-600 font-medium mt-0.5">
+                              ✓ Premium Active
+                            </p>
+                          )}
                         </div>
                       </div>
                     </div>
                     <div className="py-2">
+                      {/* Dashboard link in dropdown menu for premium users */}
+                      {hasActivePlan && (
+                        <Link
+                          href="/dashboard"
+                          onClick={() => setShowUserMenu(false)}
+                          className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                        >
+                          <FiGrid size={18} />
+                          <span>Dashboard</span>
+                          <span className="ml-auto text-xs bg-green-100 text-green-600 px-2 py-0.5 rounded-full">Active</span>
+                        </Link>
+                      )}
                       <Link
                         href="/profile"
                         onClick={() => setShowUserMenu(false)}
@@ -776,12 +910,16 @@ const Navbar = () => {
                   <div className="w-12 h-12 rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold text-lg">
                     {userInitial}
                   </div>
-                  {/* Active Green Dot for mobile */}
-                  <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white shadow-sm animate-pulse"></span>
+                  {hasActivePlan && (
+                    <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-yellow-400 rounded-full border-2 border-white"></span>
+                  )}
                 </div>
                 <div className="flex-1">
                   <p className="text-sm font-semibold text-gray-900">{userName}</p>
                   <p className="text-xs text-gray-500 break-all">{userEmail}</p>
+                  {hasActivePlan && (
+                    <p className="text-xs text-green-600 font-medium mt-0.5">✓ Premium Plan Active</p>
+                  )}
                 </div>
               </div>
             </div>
@@ -807,6 +945,18 @@ const Navbar = () => {
 
           {/* Mobile Action Buttons */}
           <div className="p-4 border-t border-gray-100 space-y-2">
+            {/* Dashboard button for mobile - only if has active plan */}
+            {isLoggedIn && hasActivePlan && !isCheckingPlan && (
+              <Link
+                href="/dashboard"
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="flex items-center justify-center gap-2 w-full px-4 py-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-xl text-sm font-semibold transition-all duration-200"
+              >
+                <FiGrid size={18} />
+                <span>Go to Dashboard</span>
+              </Link>
+            )}
+            
             <Link
               href="/bookdemo"
               onClick={() => setIsMobileMenuOpen(false)}
