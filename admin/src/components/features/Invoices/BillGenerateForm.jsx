@@ -39,14 +39,14 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
   const currentUserId = getUserId()
 
   const [formData, setFormData] = useState({
-    user_id: currentUserId, // API requires user_id (register user id)
+    user_id: currentUserId,
     customer_id: '',
     store_id: '',
     paid_amount: 0,
     created_by: currentUserId,
     items: [],
-    payment_status: 'paid', // New field: 'paid', 'semi_paid', 'non_paid'
-    payment_amount: 0 // New field: for semi-paid amount
+    payment_status: 'paid',
+    payment_amount: 0
   })
 
   const [loading, setLoading] = useState(false)
@@ -69,13 +69,20 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
   // Enhanced product search state
   const [filteredProducts, setFilteredProducts] = useState([])
 
+  // Helper function to calculate item total price
+  const calculateItemTotal = (price, quantity, gst, discount) => {
+    const basePrice = price * quantity
+    const gstAmount = basePrice * (gst / 100)
+    const discountAmount = basePrice * (discount / 100)
+    return basePrice + gstAmount - discountAmount
+  }
+
   // Check if we have valid cached data
   const isCacheValid = () => {
     return billGenerateCache && lastFetchTime && (Date.now() - lastFetchTime) < CACHE_EXPIRY
   }
 
   const fetchInitialData = async () => {
-    // Use cached data if available and valid
     if (isCacheValid()) {
       console.log('Using cached bill generate data')
       const data = billGenerateCache
@@ -90,7 +97,6 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
       setProducts(productsList.length > 0 ? productsList : mockProducts)
       setUnits(unitsList.length > 0 ? unitsList : mockUnits)
       
-      // Auto-select first store if no store is selected
       if (storesList.length > 0 && !formData.store_id) {
         const firstStoreId = storesList[0].id
         setFormData(prev => ({
@@ -106,9 +112,7 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
     try {
       const response = await invoiceAPI.getBillGenerateData()
       console.log('Full API response:', response)
-      console.log('Response data:', response.data)
       
-      // Try different possible response structures
       let data = {}
       if (response.data) {
         if (response.data.data) {
@@ -118,57 +122,33 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
         }
       }
       
-      console.log('Final data object:', data)
-      
-      // Cache the data
       billGenerateCache = data
       lastFetchTime = Date.now()
       
-      // Extract customers with possible different field names
       const customersList = data.customers || data.bill_customer || data.customer || []
       const storesList = data.stores || data.store || []
       const productsList = data.products || data.product || []
       const unitsList = data.units || data.unit || []
       
-      console.log('Customers raw:', customersList)
-      console.log('Stores raw:', storesList)
-      console.log('Products raw:', productsList)
-      console.log('Units raw:', unitsList)
-      
-      // Use API data if available, otherwise fall back to mock data
       setCustomers(customersList.length > 0 ? customersList : mockCustomers)
       setStores(storesList.length > 0 ? storesList : mockStores)
       setProducts(productsList.length > 0 ? productsList : mockProducts)
       setUnits(unitsList.length > 0 ? unitsList : mockUnits)
       
-      // Auto-select first store if no store is selected
       if (storesList.length > 0 && !formData.store_id) {
         const firstStoreId = storesList[0].id
-        console.log('Auto-selecting first store:', firstStoreId)
         setFormData(prev => ({
           ...prev,
           store_id: firstStoreId
         }))
       }
       
-      const finalCustomers = customersList.length > 0 ? customersList : mockCustomers
-      const finalStores = storesList.length > 0 ? storesList : mockStores
-      const finalProducts = productsList.length > 0 ? productsList : mockProducts
-      const finalUnits = unitsList.length > 0 ? unitsList : mockUnits
-      
-      console.log('Final counts - Customers:', finalCustomers.length, 'Stores:', finalStores.length, 'Products:', finalProducts.length, 'Units:', finalUnits.length)
-      console.log('Using API data for customers, stores, products and mock data for units')
-      
     } catch (error) {
       console.error('Failed to fetch bill generate data:', error)
-      console.error('Error details:', error.response)
-      
-      // Fall back to mock data on error
       setCustomers(mockCustomers)
       setStores(mockStores)
       setProducts(mockProducts)
       setUnits(mockUnits)
-      console.log('Using mock data due to API error')
     } finally {
       setLoading(false)
     }
@@ -257,10 +237,14 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
       if (existingItemIndex !== -1) {
         // Product exists, update quantity
         const updatedItems = [...formData.items]
+        const newQuantity = updatedItems[existingItemIndex].quantity + 1
+        const item = updatedItems[existingItemIndex]
+        
         updatedItems[existingItemIndex] = {
-          ...updatedItems[existingItemIndex],
-          quantity: updatedItems[existingItemIndex].quantity + 1,
-          item_count: updatedItems[existingItemIndex].item_count + 1
+          ...item,
+          quantity: newQuantity,
+          item_count: newQuantity,
+          total_price: calculateItemTotal(item.price, newQuantity, item.gst, item.discount)
         }
         
         setFormData(prev => ({
@@ -270,46 +254,40 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
         
         console.log('🔄 Updated existing product quantity:', updatedItems[existingItemIndex])
       } else {
-        // New product, add to list
-        // Fetch stock data for this product to get real price
+        // Fetch stock data for this product
         const stockResponse = await stockAPI.getAll(product.name || product.product_name)
-        console.log('Stock API response:', stockResponse)
-        
-        // Extract stock data from the nested structure
         const stockList = stockResponse.data?.data?.data || stockResponse.data?.data || []
-        console.log('Stock list:', stockList)
-        
         const stockItem = stockList.find(stock => stock.product_id === product.id)
-        console.log('Found stock item:', stockItem)
         
         const unit = units.find(u => u.id === product.unit_id)
         
-        // Use product data for GST and discount, stock data for price if available
-        const sellingPrice = stockItem?.selling_price || product.selling_price || product.price || 0
-        const purchasePrice = stockItem?.purchase_price || product.purchase_price || product.cost || 0
+        const sellingPrice = parseFloat(stockItem?.selling_price) || parseFloat(product.selling_price) || parseFloat(product.price) || 0
+        const purchasePrice = parseFloat(stockItem?.purchase_price) || parseFloat(product.purchase_price) || parseFloat(product.cost) || 0
         const gst = parseFloat(product.gst_percentage) || parseFloat(stockItem?.gst_percentage) || parseFloat(product.gst) || 0
         const discount = parseFloat(product.discount_percentage) || parseFloat(stockItem?.discount) || parseFloat(product.discount) || 0
         const stockQuantity = stockItem?.quantity || 0
         const stockId = stockItem?.id || null
         
-        console.log('Product pricing - Selling:', sellingPrice, 'GST:', gst, 'Discount:', discount, 'Stock:', stockQuantity, 'Stock ID:', stockId)
+        // Calculate initial total price
+        const quantity = 1
+        const totalPrice = calculateItemTotal(sellingPrice, quantity, gst, discount)
         
         const newItem = {
           product_id: product.id,
           product_name: product.name || product.product_name,
           product_code: product.sku || product.code || product.product_code,
-          quantity: 1,
-          item_count: 1,
+          quantity: quantity,
+          item_count: quantity,
           unit_id: product.unit_id,
           unit_name: unit?.short_name || unit?.name || 'pcs',
-          price: parseFloat(sellingPrice) || 0,
-          purchase_price: parseFloat(purchasePrice) || 0,
+          price: sellingPrice,
+          purchase_price: purchasePrice,
           gst: gst,
           discount: discount,
-          total_price: parseFloat(sellingPrice) || 0,
+          total_price: totalPrice,
           status: 'completed',
           stock_quantity: stockQuantity,
-          stock_id: stockId // Add stock_id field
+          stock_id: stockId
         }
         
         setFormData(prev => ({
@@ -325,28 +303,29 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
       // Fallback to product data if stock fetch fails
       const unit = units.find(u => u.id === product.unit_id)
       
-      // Use product data for GST and discount
       const sellingPrice = parseFloat(product.selling_price) || parseFloat(product.price) || 0
       const purchasePrice = parseFloat(product.purchase_price) || parseFloat(product.cost) || 0
       const gst = parseFloat(product.gst_percentage) || parseFloat(product.gst) || 0
       const discount = parseFloat(product.discount_percentage) || parseFloat(product.discount) || 0
+      const quantity = 1
+      const totalPrice = calculateItemTotal(sellingPrice, quantity, gst, discount)
       
       const newItem = {
         product_id: product.id,
         product_name: product.name || product.product_name,
         product_code: product.sku || product.code || product.product_code,
-        quantity: 1,
-        item_count: 1,
+        quantity: quantity,
+        item_count: quantity,
         unit_id: product.unit_id,
         unit_name: unit?.short_name || unit?.name || 'pcs',
         price: sellingPrice,
         purchase_price: purchasePrice,
         gst: gst,
         discount: discount,
-        total_price: sellingPrice,
+        total_price: totalPrice,
         status: 'completed',
         stock_quantity: 0,
-        stock_id: null // No stock data available
+        stock_id: null
       }
       
       setFormData(prev => ({
@@ -370,27 +349,26 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
         // Validate against stock quantity
         if (item.stock_quantity > 0 && newQuantity > item.stock_quantity) {
           console.warn(`Cannot add more than available stock. Available: ${item.stock_quantity}, Requested: ${newQuantity}`)
-          // Don't update if it exceeds stock
           return prev
         }
         
         item.quantity = newQuantity
         item.item_count = newQuantity
         
-        // Recalculate total price
-        const basePrice = item.price * item.quantity
-        const gstAmount = basePrice * (item.gst / 100)
-        const discountAmount = basePrice * (item.discount / 100)
-        item.total_price = basePrice + gstAmount - discountAmount
-      } else if (field === 'price' || field === 'gst' || field === 'discount') {
+        // Recalculate total price correctly
+        item.total_price = calculateItemTotal(item.price, item.quantity, item.gst, item.discount)
+      } else if (field === 'price') {
         const numValue = parseFloat(value) || 0
-        item[field] = numValue
-        
-        // Recalculate total price
-        const basePrice = item.price * item.quantity
-        const gstAmount = basePrice * (item.gst / 100)
-        const discountAmount = basePrice * (item.discount / 100)
-        item.total_price = basePrice + gstAmount - discountAmount
+        item.price = numValue
+        item.total_price = calculateItemTotal(item.price, item.quantity, item.gst, item.discount)
+      } else if (field === 'gst') {
+        const numValue = parseFloat(value) || 0
+        item.gst = numValue
+        item.total_price = calculateItemTotal(item.price, item.quantity, item.gst, item.discount)
+      } else if (field === 'discount') {
+        const numValue = parseFloat(value) || 0
+        item.discount = numValue
+        item.total_price = calculateItemTotal(item.price, item.quantity, item.gst, item.discount)
       } else {
         item[field] = value
       }
@@ -454,7 +432,7 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
     const newQuantity = parseFloat(item.quantity) + 1
     
     if (maxValue && newQuantity > maxValue) {
-      return // Don't exceed stock limit
+      return
     }
     
     handleUpdateItem(index, 'quantity', newQuantity)
@@ -507,17 +485,41 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
     }
   }
 
+  // FIXED: Calculate totals correctly - discount first, then GST
   const calculateTotals = () => {
     const subtotal = formData.items.reduce((sum, item) => sum + (item.price * item.quantity), 0)
-    const totalGst = formData.items.reduce((sum, item) => {
-      const basePrice = item.price * item.quantity
-      return sum + (basePrice * (item.gst / 100))
-    }, 0)
     const totalDiscount = formData.items.reduce((sum, item) => {
       const basePrice = item.price * item.quantity
       return sum + (basePrice * (item.discount / 100))
     }, 0)
-    const totalAmount = formData.items.reduce((sum, item) => sum + item.total_price, 0)
+    const totalGst = formData.items.reduce((sum, item) => {
+      const basePrice = item.price * item.quantity
+      const discountedPrice = basePrice - (basePrice * (item.discount / 100))
+      return sum + (discountedPrice * (item.gst / 100))
+    }, 0)
+    
+    // FIXED: Calculate total amount correctly (subtotal - discount + GST on discounted price)
+    const totalAmount = subtotal - totalDiscount + totalGst
+    
+    console.log('📊 Totals Calculation:', {
+      subtotal,
+      totalGst,
+      totalDiscount,
+      totalAmount,
+      itemsCount: formData.items.length,
+      items: formData.items.map(i => ({
+        name: i.product_name,
+        price: i.price,
+        qty: i.quantity,
+        gst: i.gst,
+        discount: i.discount,
+        basePrice: i.price * i.quantity,
+        gstAmount: (i.price * i.quantity) * (i.gst / 100),
+        discountAmount: (i.price * i.quantity) * (i.discount / 100),
+        calculatedTotal: (i.price * i.quantity) + ((i.price * i.quantity) * (i.gst / 100)) - ((i.price * i.quantity) * (i.discount / 100)),
+        storedTotal: i.total_price
+      }))
+    })
     
     return { subtotal, totalGst, totalDiscount, totalAmount }
   }
@@ -540,25 +542,31 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
       return
     }
     
+    const totals = calculateTotals()
+    
     // Validate payment amount for semi-paid
     if (formData.payment_status === 'semi_paid') {
-      const totals = calculateTotals()
       if (!formData.payment_amount || formData.payment_amount <= 0) {
         setError('Please enter a valid payment amount for semi-paid option')
         return
       }
-      if (parseFloat(formData.payment_amount) > totals.totalAmount) {
-        setError('Payment amount cannot exceed total invoice amount')
-        return
-      }
     }
     
-    const totals = calculateTotals()
     const submissionData = {
       ...formData,
       paid_amount: formData.payment_status === 'paid' ? totals.totalAmount.toString() : 
-                  formData.payment_status === 'semi_paid' ? formData.payment_amount.toString() : '0'
+                  formData.payment_status === 'semi_paid' ? formData.payment_amount.toString() : '0',
+      total_amount: totals.totalAmount.toString()
     }
+    
+    console.log('📤 Submitting invoice:', submissionData)
+    console.log('📊 Final Totals:', {
+      subtotal: totals.subtotal,
+      totalGst: totals.totalGst,
+      totalDiscount: totals.totalDiscount,
+      totalAmount: totals.totalAmount,
+      items: formData.items.length
+    })
     
     onSubmit(submissionData)
   }
@@ -580,6 +588,8 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
+
+  const totals = calculateTotals()
 
   if (loading) {
     return (
@@ -654,7 +664,7 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
           <div className="flex items-center">
             <FiAlertCircle className="w-5 h-5 mr-2" />
             <span>
-              Some items exceed available stock. Please adjust quantities or the system will automatically limit them to available stock.
+              Some items exceed available stock. Please adjust quantities.
             </span>
           </div>
         </motion.div>
@@ -787,21 +797,6 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
                   </p>
                 </motion.div>
               )}
-
-              {formData.store_id && (
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="p-3 bg-white dark:bg-gray-600 rounded-lg border border-gray-200 dark:border-gray-500 hidden"
-                >
-                  <p className="font-medium text-gray-900 dark:text-white">
-                    {stores.find(s => s.id === formData.store_id)?.name}
-                  </p>
-                  <p className="text-sm text-gray-500 dark:text-gray-300">
-                    Store ID: #{formData.store_id}
-                  </p>
-                </motion.div>
-              )}
             </div>
           </div>
         </div>
@@ -867,11 +862,6 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
                                     📂 Category: {product.category.name}
                                   </div>
                                 )}
-                                {product.description && (
-                                  <div className="text-xs text-gray-400 dark:text-gray-500 truncate">
-                                    📝 {product.description}
-                                  </div>
-                                )}
                               </div>
                             </div>
                             <div className="text-right ml-4">
@@ -879,14 +869,6 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
                                 ₹{parseFloat(product.selling_price || product.price || 0).toFixed(2)}
                               </div>
                               <div className="text-xs text-gray-500 dark:text-gray-400 space-y-1 mt-2">
-                                <div>
-                                  💰 Cost: ₹{parseFloat(product.purchase_price || product.cost || 0).toFixed(2)}
-                                </div>
-                                {product.stocks && product.stocks.length > 0 && (
-                                  <div>
-                                    📊 Stock: {product.stocks[0].quantity || 'N/A'} {product.unit?.short_name || product.unit?.name || 'pcs'}
-                                  </div>
-                                )}
                                 {product.gst_percentage && (
                                   <div>
                                     📈 GST: {parseFloat(product.gst_percentage).toFixed(1)}%
@@ -994,9 +976,6 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
                         {item.stock_quantity !== undefined && (
                           <p className="text-xs text-blue-600 dark:text-blue-400">Stock: {item.stock_quantity}</p>
                         )}
-                        {item.stock_quantity > 0 && (
-                          <p className="text-xs text-gray-500">Max: {item.stock_quantity}</p>
-                        )}
                       </div>
                     </td>
                     <td className="py-3">
@@ -1006,14 +985,11 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
                           onClick={() => handleDecrementQuantity(index)}
                           disabled={parseFloat(item.quantity) <= 1}
                           className="p-1 text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-600 rounded disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                          title="Decrease quantity"
                         >
                           <FiMinus className="w-3 h-3" />
                         </button>
                         <Input
                           type="text"
-                          min="1"
-                          max={item.stock_quantity > 0 ? item.stock_quantity : undefined}
                           value={item.quantity.toString()}
                           onChange={(e) => handleUpdateItem(index, 'quantity', e.target.value)}
                           className={`w-14 text-sm text-center ${
@@ -1021,14 +997,12 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
                               ? 'border-red-500 bg-red-50' 
                               : ''
                           }`}
-                          title={item.stock_quantity > 0 ? `Max available: ${item.stock_quantity}` : 'No stock limit'}
                         />
                         <button
                           type="button"
                           onClick={() => handleIncrementQuantity(index)}
                           disabled={item.stock_quantity > 0 && parseFloat(item.quantity) >= item.stock_quantity}
                           className="p-1 text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-600 rounded disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                          title="Increase quantity"
                         >
                           <FiPlus className="w-3 h-3" />
                         </button>
@@ -1038,7 +1012,6 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
                       <div className="flex justify-center">
                         <Input
                           type="text"
-                          min="0"
                           step="0.01"
                           value={item.price.toString()}
                           onChange={(e) => handleUpdateItem(index, 'price', e.target.value)}
@@ -1053,14 +1026,11 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
                           onClick={() => handleDecrementGst(index)}
                           disabled={parseFloat(item.gst) <= 0}
                           className="p-1 text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-600 rounded disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                          title="Decrease GST"
                         >
                           <FiMinus className="w-3 h-3" />
                         </button>
                         <Input
                           type="text"
-                          min="0"
-                          max="100"
                           step="0.01"
                           value={item.gst.toString()}
                           onChange={(e) => handleUpdateItem(index, 'gst', e.target.value)}
@@ -1071,7 +1041,6 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
                           onClick={() => handleIncrementGst(index)}
                           disabled={parseFloat(item.gst) >= 100}
                           className="p-1 text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-600 rounded disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                          title="Increase GST"
                         >
                           <FiPlus className="w-3 h-3" />
                         </button>
@@ -1084,14 +1053,11 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
                           onClick={() => handleDecrementDiscount(index)}
                           disabled={parseFloat(item.discount) <= 0}
                           className="p-1 text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-600 rounded disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                          title="Decrease Discount"
                         >
                           <FiMinus className="w-3 h-3" />
                         </button>
                         <Input
                           type="text"
-                          min="0"
-                          max="100"
                           step="0.01"
                           value={item.discount.toString()}
                           onChange={(e) => handleUpdateItem(index, 'discount', e.target.value)}
@@ -1102,7 +1068,6 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
                           onClick={() => handleIncrementDiscount(index)}
                           disabled={parseFloat(item.discount) >= 100}
                           className="p-1 text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-600 rounded disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                          title="Increase Discount"
                         >
                           <FiPlus className="w-3 h-3" />
                         </button>
@@ -1114,7 +1079,7 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
                           type="text"
                           value={item.total_price.toFixed(2)}
                           readOnly
-                          className="w-20 text-sm text-center bg-gray-50 dark:bg-gray-500"
+                          className="w-20 text-sm text-center bg-gray-50 dark:bg-gray-500 font-semibold"
                         />
                       </div>
                     </td>
@@ -1184,10 +1149,10 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
                     value={formData.payment_amount}
                     onChange={(e) => setFormData(prev => ({ ...prev, payment_amount: e.target.value }))}
                     required
-                    max={calculateTotals().totalAmount}
+                    max={totals.totalAmount}
                   />
                   <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                    Remaining amount: ₹{(calculateTotals().totalAmount - (parseFloat(formData.payment_amount) || 0)).toFixed(2)}
+                    Remaining amount: ₹{(totals.totalAmount - (parseFloat(formData.payment_amount) || 0)).toFixed(2)}
                   </p>
                 </motion.div>
               )}
@@ -1201,27 +1166,27 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-600 dark:text-gray-300">Subtotal:</span>
                     <span className="font-medium text-gray-900 dark:text-white">
-                      ₹{calculateTotals().subtotal.toFixed(2)}
+                      ₹{totals.subtotal.toFixed(2)}
                     </span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-600 dark:text-gray-300">GST:</span>
-                    <span className="font-medium text-gray-900 dark:text-white">
-                      ₹{calculateTotals().totalGst.toFixed(2)}
+                    <span className="font-medium text-blue-600 dark:text-blue-400">
+                      +₹{totals.totalGst.toFixed(2)}
                     </span>
                   </div>
-                  {calculateTotals().totalDiscount > 0 && (
+                  {totals.totalDiscount > 0 && (
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-600 dark:text-gray-300">Discount:</span>
                       <span className="font-medium text-green-600 dark:text-green-400">
-                        -₹{calculateTotals().totalDiscount.toFixed(2)}
+                        -₹{totals.totalDiscount.toFixed(2)}
                       </span>
                     </div>
                   )}
                   <div className="flex justify-between text-base font-bold pt-2 border-t border-gray-200 dark:border-gray-500">
                     <span className="text-gray-900 dark:text-white">Total Amount:</span>
                     <span className="text-primary-600 dark:text-primary-400">
-                      ₹{calculateTotals().totalAmount.toFixed(2)}
+                      ₹{totals.totalAmount.toFixed(2)}
                     </span>
                   </div>
                 </div>
@@ -1238,12 +1203,12 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
                 </p>
                 {formData.payment_status === 'paid' && (
                   <p className="text-xs text-gray-500 dark:text-gray-400">
-                    Full payment of ₹{calculateTotals().totalAmount.toFixed(2)}
+                    Full payment of ₹{totals.totalAmount.toFixed(2)}
                   </p>
                 )}
                 {formData.payment_status === 'semi_paid' && (
                   <p className="text-xs text-gray-500 dark:text-gray-400">
-                    Partial payment of ₹{parseFloat(formData.payment_amount || 0).toFixed(2)} / ₹{calculateTotals().totalAmount.toFixed(2)}
+                    Partial payment of ₹{parseFloat(formData.payment_amount || 0).toFixed(2)} / ₹{totals.totalAmount.toFixed(2)}
                   </p>
                 )}
                 {formData.payment_status === 'non_paid' && (
@@ -1254,19 +1219,11 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
               </div>
               <div className="text-right">
                 <p className="text-lg font-bold text-gray-900 dark:text-white">
-                  ₹{formData.payment_status === 'paid' ? calculateTotals().totalAmount.toFixed(2) : 
+                  ₹{formData.payment_status === 'paid' ? totals.totalAmount.toFixed(2) : 
                      formData.payment_status === 'semi_paid' ? parseFloat(formData.payment_amount || 0).toFixed(2) : '0.00'}
                 </p>
                 <p className="text-xs text-gray-500 dark:text-gray-400">
-                  Paid Amount: ₹{
-                    formData.payment_status === 'paid' ? calculateTotals().totalAmount.toFixed(2) : 
-                    formData.payment_status === 'semi_paid' ? parseFloat(formData.payment_amount || 0).toFixed(2) : 
-                    '0.00'
-                  }
-                </p>
-                <p className="text-xs text-gray-500 dark:text-gray-400">
-                  {formData.payment_status === 'paid' ? 'Paid in Full' : 
-                   formData.payment_status === 'semi_paid' ? 'Partial Payment' : 'Unpaid'}
+                  Paid Amount
                 </p>
               </div>
             </div>
