@@ -7,6 +7,8 @@ import Select from '../../common/Select/Select'
 import EmptyState from '../../common/EmptyState/EmptyState'
 import { invoiceAPI } from '../../../services/invoiceService'
 import { stockAPI } from '../../../services/stockService'
+import { packagesAPI } from '../../../services/packagesService'
+import usePackageStore from '../../../store/packageStore'
 import { useAuthStore } from '../../../store/authStore'
 // Import mock data as fallback
 import { mockCustomers } from '../../../services/mockData/mockCustomers'
@@ -21,6 +23,7 @@ const CACHE_EXPIRY = 30 * 1000 // 30 seconds
 
 const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting }) => {
   const { user } = useAuthStore()
+  const { packages, fetchPackages, loading: packagesLoading } = usePackageStore()
   
   // Get current user ID
   const getUserId = () => {
@@ -61,10 +64,15 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
   // Search states for customer and store
   const [customerSearch, setCustomerSearch] = useState('')
   const [storeSearch, setStoreSearch] = useState('')
+  const [packageSearch, setPackageSearch] = useState('')
   const [showCustomerDropdown, setShowCustomerDropdown] = useState(false)
   const [showStoreDropdown, setShowStoreDropdown] = useState(false)
+  const [showPackageDropdown, setShowPackageDropdown] = useState(false)
   const [filteredCustomers, setFilteredCustomers] = useState([])
   const [filteredStores, setFilteredStores] = useState([])
+  const [filteredPackages, setFilteredPackages] = useState([])
+  const [selectedPackage, setSelectedPackage] = useState(null)
+  const [packageQuantity, setPackageQuantity] = useState(1)
   
   // Enhanced product search state
   const [filteredProducts, setFilteredProducts] = useState([])
@@ -156,7 +164,9 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
 
   useEffect(() => {
     fetchInitialData()
-  }, [])
+    // Fetch packages for current user
+    fetchPackages(currentUserId)
+  }, [currentUserId])
 
   // Filter customers based on search
   useEffect(() => {
@@ -212,6 +222,21 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
       setFilteredProducts(filtered)
     }
   }, [productSearch, products])
+
+  // Filter packages based on search
+  useEffect(() => {
+    if (packageSearch.trim() === '') {
+      setFilteredPackages(packages)
+    } else {
+      const searchLower = packageSearch.toLowerCase()
+      const filtered = packages.filter(pkg => 
+        pkg.package_name?.toLowerCase().includes(searchLower) ||
+        pkg.package_size?.toLowerCase().includes(searchLower) ||
+        pkg.package_price?.toString().includes(searchLower)
+      )
+      setFilteredPackages(filtered)
+    }
+  }, [packageSearch, packages])
 
   // Initialize search values when data is loaded
   useEffect(() => {
@@ -414,6 +439,57 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
     setShowStoreDropdown(true)
   }
 
+  // Package selection handlers
+  const handlePackageSelect = (pkg) => {
+    setSelectedPackage(pkg)
+    setPackageSearch(pkg.package_name)
+    setShowPackageDropdown(false)
+    setPackageQuantity(1)
+  }
+
+  const handlePackageSearchChange = (value) => {
+    setPackageSearch(value)
+    setShowPackageDropdown(true)
+  }
+
+  const handleAddPackageToInvoice = () => {
+    if (!selectedPackage || packageQuantity <= 0) {
+      setError('Please select a package and enter a valid quantity')
+      return
+    }
+
+    // Convert package to invoice item
+    const packageItem = {
+      product_id: selectedPackage.id,
+      product_name: selectedPackage.package_name,
+      product_code: `PKG-${selectedPackage.id}`,
+      quantity: packageQuantity,
+      item_count: packageQuantity,
+      unit_id: null,
+      unit_name: selectedPackage.package_size || 'Package',
+      price: parseFloat(selectedPackage.package_price) || 0,
+      gst: 0, // Packages typically don't have GST
+      discount: 0, // Packages typically don't have discount
+      total_price: (parseFloat(selectedPackage.package_price) || 0) * packageQuantity,
+      status: 'completed',
+      stock_quantity: 0,
+      stock_id: null,
+      is_package: true // Mark as package item
+    }
+
+    setFormData(prev => ({
+      ...prev,
+      items: [...prev.items, packageItem]
+    }))
+    
+    // Reset package selection
+    setSelectedPackage(null)
+    setPackageSearch('')
+    setPackageQuantity(1)
+    
+    console.log('Added package to invoice:', packageItem)
+  }
+
   // Get display names for selected customer and store
   const getSelectedCustomerName = () => {
     const customer = customers.find(c => c.id === formData.customer_id)
@@ -471,43 +547,49 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
     const item = formData.items[index]
     const newDiscount = parseFloat(item.discount) + 1
     
-    if (newDiscount <= 100) {
-      handleUpdateItem(index, 'discount', newDiscount)
-    }
-  }
-
-  const handleDecrementDiscount = (index) => {
-    const item = formData.items[index]
-    const newDiscount = parseFloat(item.discount) - 1
-    
     if (newDiscount >= 0) {
       handleUpdateItem(index, 'discount', newDiscount)
     }
   }
 
-  // FIXED: Calculate totals correctly - discount first, then GST
+  // FIXED: Calculate totals correctly - discount first, then GST, then add packages
   const calculateTotals = () => {
-    const subtotal = formData.items.reduce((sum, item) => sum + (item.price * item.quantity), 0)
-    const totalDiscount = formData.items.reduce((sum, item) => {
+    // Separate products and packages
+    const productItems = formData.items.filter(item => !item.is_package)
+    const packageItems = formData.items.filter(item => item.is_package)
+    
+    // Calculate product totals with discount and GST
+    const productSubtotal = productItems.reduce((sum, item) => sum + (item.price * item.quantity), 0)
+    const productDiscount = productItems.reduce((sum, item) => {
       const basePrice = item.price * item.quantity
       return sum + (basePrice * (item.discount / 100))
     }, 0)
-    const totalGst = formData.items.reduce((sum, item) => {
+    const productGst = productItems.reduce((sum, item) => {
       const basePrice = item.price * item.quantity
       const discountedPrice = basePrice - (basePrice * (item.discount / 100))
       return sum + (discountedPrice * (item.gst / 100))
     }, 0)
     
-    // FIXED: Calculate total amount correctly (subtotal - discount + GST on discounted price)
-    const totalAmount = subtotal - totalDiscount + totalGst
+    // Calculate package totals (no discount or GST for packages)
+    const packageTotal = packageItems.reduce((sum, item) => sum + (item.price * item.quantity), 0)
     
-    console.log('📊 Totals Calculation:', {
+    // Final calculation: (product subtotal - product discount + product GST) + package total
+    const subtotal = productSubtotal
+    const totalDiscount = productDiscount
+    const totalGst = productGst
+    const totalAmount = (productSubtotal - productDiscount + productGst) + packageTotal
+    
+    console.log('Calculate Totals:', {
+      productSubtotal,
+      productDiscount,
+      productGst,
+      packageTotal,
       subtotal,
       totalGst,
       totalDiscount,
       totalAmount,
       itemsCount: formData.items.length,
-      items: formData.items.map(i => ({
+      productItems: productItems.map(i => ({
         name: i.product_name,
         price: i.price,
         qty: i.quantity,
@@ -518,9 +600,15 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
         discountAmount: (i.price * i.quantity) * (i.discount / 100),
         calculatedTotal: (i.price * i.quantity) + ((i.price * i.quantity) * (i.gst / 100)) - ((i.price * i.quantity) * (i.discount / 100)),
         storedTotal: i.total_price
+      })),
+      packageItems: packageItems.map(i => ({
+        name: i.product_name,
+        price: i.price,
+        qty: i.quantity,
+        packageTotal: i.price * i.quantity,
+        storedTotal: i.total_price
       }))
     })
-    
     return { subtotal, totalGst, totalDiscount, totalAmount }
   }
 
@@ -552,8 +640,25 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
       }
     }
     
+    // Convert package items to have package_id instead of product_id
+    const itemsWithPackageId = formData.items.map(item => {
+      if (item.is_package) {
+        return {
+          package_id: item.product_id,
+          package_name: item.product_name,
+          package_price: item.price,
+          package_size: item.unit_name,
+          package_quantity: item.quantity,
+          package_total: item.total_price,
+          is_package: true
+        }
+      }
+      return item
+    })
+
     const submissionData = {
       ...formData,
+      items: itemsWithPackageId, // Send all items including packages with package_id
       paid_amount: formData.payment_status === 'paid' ? totals.totalAmount.toString() : 
                   formData.payment_status === 'semi_paid' ? formData.payment_amount.toString() : '0',
       total_amount: totals.totalAmount.toString()
@@ -582,6 +687,9 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
       }
       if (!event.target.closest('.product-dropdown')) {
         setShowProductList(false)
+      }
+      if (!event.target.closest('.package-dropdown')) {
+        setShowPackageDropdown(false)
       }
     }
 
@@ -928,6 +1036,123 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
             </div>
           </div>
         </div>
+
+        {/* Package Selection */}
+        <div className="lg:col-span-1 space-y-4">
+          <div className="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-4">
+            <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4 flex items-center">
+              <FiPackage className="w-4 h-4 mr-2" />
+              Add Packages
+            </h3>
+
+            <div className="space-y-4">
+              {/* Package Searchable Dropdown */}
+              <div className="relative package-dropdown">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Search Packages
+                </label>
+                <div className="relative">
+                  <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                  <Input
+                    type="text"
+                    placeholder="Search packages by name, size, price..."
+                    value={packageSearch}
+                    onChange={(e) => handlePackageSearchChange(e.target.value)}
+                    onFocus={() => setShowPackageDropdown(true)}
+                    className="pl-10"
+                  />
+                </div>
+                
+                {/* Package Dropdown */}
+                {showPackageDropdown && (
+                  <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                    {filteredPackages.length > 0 ? (
+                      filteredPackages.map(pkg => (
+                        <div
+                          key={pkg.id}
+                          onClick={() => handlePackageSelect(pkg)}
+                          className="px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer border-b border-gray-100 dark:border-gray-700 last:border-b-0"
+                        >
+                          <div className="flex justify-between items-start">
+                            <div className="flex-1">
+                              <div className="font-medium text-gray-900 dark:text-white">
+                                {pkg.package_name}
+                              </div>
+                              <div className="text-sm text-gray-500 dark:text-gray-400">
+                                Size: {pkg.package_size || 'Standard'}
+                              </div>
+                            </div>
+                            <div className="text-right ml-4">
+                              <div className="font-semibold text-gray-900 dark:text-white">
+                                ¥{parseFloat(pkg.package_price || 0).toFixed(2)}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="px-4 py-3 text-gray-500 dark:text-gray-400 text-center">
+                        No packages found
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Package Quantity and Add Button */}
+              {selectedPackage && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="p-4 bg-white dark:bg-gray-600 rounded-lg border border-gray-200 dark:border-gray-500"
+                >
+                  <div className="flex justify-between items-start mb-3">
+                    <div>
+                      <h4 className="font-medium text-gray-900 dark:text-white">{selectedPackage.package_name}</h4>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                        Size: {selectedPackage.package_size || 'Standard'}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-lg font-bold text-primary-600 dark:text-primary-400">
+                        ¥{parseFloat(selectedPackage.package_price || 0).toFixed(2)}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-3">
+                    <div className="flex items-center space-x-2">
+                      <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Quantity:</label>
+                      <Input
+                        type="number"
+                        min="1"
+                        value={packageQuantity}
+                        onChange={(e) => setPackageQuantity(parseInt(e.target.value) || 1)}
+                        className="w-20"
+                      />
+                    </div>
+                    <Button
+                      type="button"
+                      variant="primary"
+                      size="sm"
+                      onClick={handleAddPackageToInvoice}
+                      disabled={packageQuantity <= 0}
+                    >
+                      <FiPlus className="w-4 h-4" />
+                      Add to Invoice
+                    </Button>
+                  </div>
+                </motion.div>
+              )}
+
+              {packagesLoading && (
+                <div className="flex items-center justify-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500"></div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
       </div>
 
       {/* Invoice Items Table */}
