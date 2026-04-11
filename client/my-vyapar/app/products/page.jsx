@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { getAuthData } from '../../store/authStore';
 import toast, { Toaster } from 'react-hot-toast';
-import Image from 'next/image';
+// import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 
 const ProductsPage = () => {
@@ -131,61 +131,71 @@ const ProductsPage = () => {
     }
   }, []);
 
-  // ========== HANDLE ORDER FUNCTION ==========
-  const handleOrder = async (orderData) => {
-    try {
-      const token = localStorage.getItem("token");
-      
-      const response = await fetch('http://localhost:8000/api/orders/store', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': token ? `Bearer ${token}` : '',
-        },
-        body: JSON.stringify(orderData)
-      });
-      
-      const res = await response.json();
-      console.log("Order response:", res);
-      
-      if (res.payment_mode === 'online') {
-        const waitForCashfree = setInterval(() => {
-          if (window.Cashfree) {
-            clearInterval(waitForCashfree);
-            const cashfree = new Cashfree({
-              mode: "sandbox"
-            });
+// ========== HANDLE ORDER FUNCTION ==========
+// const handleOrder = async (orderData) => {
+//   try {
+//     const token = localStorage.getItem("token");
+    
+//     console.log("📤 Sending to backend:", orderData);
+    
+//     const response = await fetch('http://localhost:8000/api/orders/store', {
+//       method: 'POST',
+//       headers: {
+//         'Content-Type': 'application/json',
+//         'Authorization': token ? `Bearer ${token}` : '',
+//       },
+//       body: JSON.stringify(orderData)
+//     });
+    
+//     const res = await response.json();
+//     console.log("📥 Order response:", res);
+    
+//     // Check if response is successful
+//     if (res.status === true || res.success === true || res.order_id) {
+//       if (orderData.payment_mode === 'online') {
+//         // Online payment - wait for Cashfree
+//         const waitForCashfree = setInterval(() => {
+//           if (window.Cashfree) {
+//             clearInterval(waitForCashfree);
+//             const cashfree = new Cashfree({
+//               mode: "sandbox"
+//             });
             
-            cashfree.checkout({
-              paymentSessionId: res.payment_session_id,
-              redirectTarget: "_self"
-            });
-          }
-        }, 100);
-      } else {
-        toast.success(res.message || 'Order placed successfully!');
+//             cashfree.checkout({
+//               paymentSessionId: res.payment_session_id,
+//               redirectTarget: "_self"
+//             });
+//           }
+//         }, 100);
+//       } else {
+//         // COD order success
+//         toast.success('Order placed successfully!');
         
-        const orderInfo = {
-          orderId: res.order_id || `ORD${Date.now()}`,
-          totalAmount: getCartTotal(),
-          items: cart.length,
-          timestamp: Date.now()
-        };
-        localStorage.setItem('pendingProductOrder', JSON.stringify(orderInfo));
+//         const orderInfo = {
+//           orderId: res.order_id || `ORD${Date.now()}`,
+//           totalAmount: orderData.total_amount,
+//           items: cart.length,
+//           timestamp: Date.now()
+//         };
+//         localStorage.setItem('pendingProductOrder', JSON.stringify(orderInfo));
         
-        setCart([]);
-        sessionStorage.removeItem('cart');
-        setShowCart(false);
-        setShowCheckout(false);
-        setFormData({ fullName: "", phone: "" });
+//         setCart([]);
+//         sessionStorage.removeItem('cart');
+//         setShowCart(false);
+//         setShowCheckout(false);
+//         setFormData({ fullName: "", phone: "" });
         
-        router.push('/order-success');
-      }
-    } catch (error) {
-      console.error("Order error:", error);
-      toast.error(error.message || "Failed to place order");
-    }
-  };
+//         router.push('/order-success');
+//       }
+//     } else {
+//       // Handle error response
+//       throw new Error(res.message || 'Failed to create order');
+//     }
+//   } catch (error) {
+//     console.error("Order error:", error);
+//     throw error;
+//   }
+// };
 
   // ========== SESSION STORAGE FOR CART PERSISTENCE ==========
   useEffect(() => {
@@ -401,49 +411,52 @@ const ProductsPage = () => {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  // ========== HANDLE PLACE ORDER ==========
-  const handlePlaceOrder = async (e) => {
-    e.preventDefault();
+// ========== HANDLE PLACE ORDER ==========
+const handlePlaceOrder = async (e) => {
+  e.preventDefault();
 
-    if (!formData.fullName || !formData.phone) {
-      setPopupMessage("Please fill all fields!");
-      setPopup(true);
-      setTimeout(() => setPopup(false), 2000);
-      return;
-    }
+  if (!formData.fullName || !formData.phone) {
+    setPopupMessage("Please fill all fields!");
+    setPopup(true);
+    setTimeout(() => setPopup(false), 2000);
+    return;
+  }
 
-    if (cart.length === 0) {
-      setPopupMessage("Your cart is empty!");
-      setPopup(true);
-      setTimeout(() => setPopup(false), 2000);
-      return;
-    }
+  if (cart.length === 0) {
+    setPopupMessage("Your cart is empty!");
+    setPopup(true);
+    setTimeout(() => setPopup(false), 2000);
+    return;
+  }
 
-    const phoneRegex = /^\d{10}$/;
-    const cleanPhone = formData.phone.replace(/\D/g, '');
-    if (!phoneRegex.test(cleanPhone)) {
-      setPopupMessage("Please enter a valid 10-digit phone number");
-      setPopup(true);
-      setTimeout(() => setPopup(false), 2000);
-      return;
-    }
+  const phoneRegex = /^\d{10}$/;
+  const cleanPhone = formData.phone.replace(/\D/g, '');
+  if (!phoneRegex.test(cleanPhone)) {
+    setPopupMessage("Please enter a valid 10-digit phone number");
+    setPopup(true);
+    setTimeout(() => setPopup(false), 2000);
+    return;
+  }
 
-    const { user } = getAuthData();
+  const { user } = getAuthData();
+  
+  if (!user || !user.id) {
+    setPopupMessage("Please login to place order");
+    setPopup(true);
+    setTimeout(() => router.push('/login'), 2000);
+    return;
+  }
+
+  setIsPlacingOrder(true);
+  const loadingToast = toast.loading('Processing...');
+
+  try {
+    const storeId = user.store_id || user.store?.id || 1;
+    const token = localStorage.getItem("token");
     
-    if (!user || !user.id) {
-      setPopupMessage("Please login to place order");
-      setPopup(true);
-      setTimeout(() => router.push('/login'), 2000);
-      return;
-    }
-
-    setIsPlacingOrder(true);
-    const loadingToast = toast.loading('Processing...');
-
-    try {
-      const storeId = user.store_id || user.store?.id || 1;
-      const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
-      
+    if (paymentMethod === 'online') {
+      // ========== ONLINE PAYMENT FLOW ==========
+      // Step 1: Prepare order data for backend
       const orderData = {
         user_id: user.id,
         store_id: storeId,
@@ -452,28 +465,118 @@ const ProductsPage = () => {
         product_id: cart.map(item => item.id),
         quantity: cart.map(item => item.quantity),
         unit_id: cart.map(item => item.unit_id || 1),
-        payment_mode: paymentMethod,
-        total_amount: getCartTotal(),
-        total_items: totalItems
+        payment_mode: 'online'
       };
       
-      console.log("📤 Sending order with calculated total:", getCartTotal());
+      console.log("📤 Creating order for online payment:", orderData);
       
-      await handleOrder(orderData);
+      // Step 2: Call backend to create order and get payment session
+      const response = await fetch('http://localhost:8000/api/orders/store', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': token ? `Bearer ${token}` : '',
+        },
+        body: JSON.stringify(orderData)
+      });
+      
+      const res = await response.json();
+      console.log("📥 Order response:", res);
       
       toast.dismiss(loadingToast);
       
-    } catch (error) {
+      // Step 3: Check if backend returned payment_session_id
+      if (res.payment_session_id) {
+        // Wait for Cashfree SDK
+        const waitForCashfree = setInterval(() => {
+          if (window.Cashfree) {
+            clearInterval(waitForCashfree);
+            const cashfree = new Cashfree({
+              mode: "sandbox"
+            });
+            
+            cashfree.checkout({
+              paymentSessionId: res.payment_session_id,
+              redirectTarget: "_self"
+            });
+          }
+        }, 100);
+        
+        // Set timeout to clear interval if Cashfree doesn't load
+        setTimeout(() => {
+          clearInterval(waitForCashfree);
+          if (!window.Cashfree) {
+            toast.error("Payment gateway not loaded. Please refresh and try again.");
+            setIsPlacingOrder(false);
+          }
+        }, 10000);
+        
+      } else {
+        toast.error(res.message || "Failed to initialize payment");
+        setIsPlacingOrder(false);
+      }
+      
+    } else {
+      // ========== COD PAYMENT FLOW ==========
+      const orderData = {
+        user_id: user.id,
+        store_id: storeId,
+        customer_name: formData.fullName.trim(),
+        customer_phone: cleanPhone,
+        product_id: cart.map(item => item.id),
+        quantity: cart.map(item => item.quantity),
+        unit_id: cart.map(item => item.unit_id || 1)
+      };
+      
+      console.log("📤 COD Order:", orderData);
+      
+      const response = await fetch('http://localhost:8000/api/orders/store', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': token ? `Bearer ${token}` : '',
+        },
+        body: JSON.stringify(orderData)
+      });
+      
+      const res = await response.json();
+      console.log("📥 COD Response:", res);
+      
       toast.dismiss(loadingToast);
-      console.error('❌ Order error:', error);
-      setPopupMessage(error.message || 'Failed to place order. Please try again.');
-      setPopup(true);
-      setTimeout(() => setPopup(false), 3000);
-    } finally {
+      
+      if (response.ok) {
+        toast.success('Order placed successfully!');
+        
+        const orderInfo = {
+          orderId: res.order_id || `ORD${Date.now()}`,
+          totalAmount: getCartTotal(),
+          items: cart.length,
+          timestamp: Date.now()
+        };
+        localStorage.setItem('pendingProductOrder', JSON.stringify(orderInfo));
+        
+        setCart([]);
+        sessionStorage.removeItem('cart');
+        setShowCart(false);
+        setShowCheckout(false);
+        setFormData({ fullName: "", phone: "" });
+        
+        router.push('/order-success');
+      } else {
+        throw new Error(res.message || 'Failed to create order');
+      }
       setIsPlacingOrder(false);
     }
-  };
-
+    
+  } catch (error) {
+    toast.dismiss(loadingToast);
+    console.error('❌ Order error:', error);
+    setPopupMessage(error.message || 'Failed to place order. Please try again.');
+    setPopup(true);
+    setTimeout(() => setPopup(false), 3000);
+    setIsPlacingOrder(false);
+  }
+};
   // ========== FETCH PRODUCTS ==========
   const fetchProductsData = async () => {
     try {
@@ -865,13 +968,12 @@ const ProductsPage = () => {
 
                         <div onClick={() => openProduct(product)} className="cursor-pointer flex-shrink-0">
                           <div className="relative h-40 mb-4">
-                            <Image
-                              src={product.img}
-                              alt={product.name}
-                              fill
-                              className="object-contain"
-                              onError={handleImageError}
-                            />
+                            <img
+  src={product.img || "/image/placeholder.png"}
+  alt={product.name}
+  className="w-full h-full object-contain"
+  onError={handleImageError}
+/>
                           </div>
                         </div>
 
@@ -1041,13 +1143,12 @@ const ProductsPage = () => {
                       <span className="text-[7px] uppercase font-normal">Limited</span>
                     </div>
                   )}
-                  <Image
-                    src={selectedProduct.img}
-                    alt={selectedProduct.name}
-                    fill
-                    className="object-contain"
-                    onError={handleImageError}
-                  />
+                  <img
+  src={selectedProduct.img || "/image/placeholder.png"}
+  alt={selectedProduct.name}
+  className="w-full h-full object-contain"
+  onError={handleImageError}
+/>
                 </div>
               </div>
               <div>
