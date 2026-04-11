@@ -70,44 +70,72 @@ const InvoiceDetail = () => {
             console.log('🏪 Selected store data:', storeData)
             console.log('👤 Processed customer data:', customerData)
             
-            // Now fetch product details for each invoice item
+            // Get items and packages from the new structure
             const invoiceItems = foundInvoice.invoice_items || foundInvoice.items || []
-            console.log('📦 Invoice items before product fetch:', invoiceItems)
+            // Handle packages - could be an array or single object
+            const packagesData = foundInvoice.packages
+            const invoicePackages = Array.isArray(packagesData) ? packagesData : (packagesData ? [packagesData] : [])
+            console.log('Invoice items before product fetch:', invoiceItems)
+            console.log('Invoice packages:', invoicePackages)
             
-            if (invoiceItems.length > 0) {
-              // Fetch product details for each item
-              const productPromises = invoiceItems.map(item => 
-                productsAPI.getById(item.product_id)
-                  .then(productResponse => {
-                    console.log(`📦 Product ${item.product_id} response:`, productResponse)
-                    const productData = productResponse.data?.data || productResponse.data || {}
-                    return {
-                      ...item,
-                      product_name: productData.name || item.product_name || item.name || `Product #${item.product_id || item.id || 'Unknown'}`,
-                      price: parseFloat(item.price || productData.selling_price || 0),
-                      quantity: parseFloat(item.quantity || item.item_count || 1),
-                      total_price: parseFloat(item.total_price || item.total || 0),
-                      gst: parseFloat(item.gst || productData.gst_percentage || 0),
-                      discount: parseFloat(item.discount || productData.discount_percentage || 0)
-                    }
+            // Combine items and packages for processing
+            const allItems = [...invoiceItems, ...invoicePackages.map(pkg => ({
+              ...pkg,
+              is_package: true
+            }))]
+            
+            if (allItems.length > 0) {
+              // Fetch product details for each item (packages don't need product fetch)
+              const productPromises = allItems.map(item => {
+                if (item.is_package) {
+                  // For packages, return as-is with package data
+                  return Promise.resolve({
+                    ...item,
+                    product_name: item.package_name || item.product_name || `Package #${item.package_id || item.id || 'Unknown'}`,
+                    price: parseFloat(item.package_price || 0),
+                    quantity: parseFloat(item.quantity || 1),
+                    total_price: parseFloat(item.package_total || item.total_price || 0),
+                    gst: 0, // Packages typically don't have GST
+                    discount: 0 // Packages typically don't have discount
                   })
-                  .catch(error => {
-                    console.error(`Failed to fetch product ${item.product_id}:`, error)
-                    // Fallback to original item data if product fetch fails
-                    return {
-                      ...item,
-                      product_name: item.product_name || item.name || `Product #${item.product_id || item.id || 'Unknown'}`,
-                      price: parseFloat(item.price || 0),
-                      quantity: parseFloat(item.quantity || item.item_count || 1),
-                      total_price: parseFloat(item.total_price || item.total || 0),
-                      gst: parseFloat(item.gst || 0),
-                      discount: parseFloat(item.discount || 0)
-                    }
-                  })
-              )
+                } else {
+                  // For products, fetch product details
+                  return productsAPI.getById(item.product_id)
+                    .then(productResponse => {
+                      console.log(`📦 Product ${item.product_id} response:`, productResponse)
+                      const productData = productResponse.data?.data || productResponse.data || {}
+                      return {
+                        ...item,
+                        product_name: productData.name || item.product_name || item.name || `Product #${item.product_id || item.id || 'Unknown'}`,
+                        price: parseFloat(item.price || productData.selling_price || 0),
+                        quantity: parseFloat(item.quantity || item.item_count || 1),
+                        total_price: parseFloat(item.total_price || item.total || 0),
+                        gst: parseFloat(item.gst || productData.gst_percentage || 0),
+                        discount: parseFloat(item.discount || productData.discount_percentage || 0)
+                      }
+                    })
+                    .catch(error => {
+                      console.error(`Failed to fetch product ${item.product_id}:`, error)
+                      // Fallback to original item data if product fetch fails
+                      return {
+                        ...item,
+                        product_name: item.product_name || item.name || `Product #${item.product_id || item.id || 'Unknown'}`,
+                        price: parseFloat(item.price || 0),
+                        quantity: parseFloat(item.quantity || item.item_count || 1),
+                        total_price: parseFloat(item.total_price || item.total || 0),
+                        gst: parseFloat(item.gst || 0),
+                        discount: parseFloat(item.discount || 0)
+                      }
+                    })
+                }
+              })
               
               Promise.all(productPromises).then(enhancedItems => {
                 console.log('📦 Enhanced items with product data:', enhancedItems)
+                
+                // Separate back into items and packages for display
+                const displayItems = enhancedItems.filter(item => !item.is_package)
+                const displayPackages = enhancedItems.filter(item => item.is_package)
                 
                 // Enhance the invoice with real API data
                 const enhancedInvoice = {
@@ -123,7 +151,8 @@ const InvoiceDetail = () => {
                   store_gst: storeData.gst || foundInvoice.store_gst || 'GSTIN123456',
                   store_email: storeData.email || foundInvoice.store_email || 'store@business.com',
                   store_phone: storeData.mobile || storeData.phone || foundInvoice.store_phone || '123-456-7890',
-                  items: enhancedItems
+                  items: displayItems,
+                  packages: displayPackages
                 }
                 console.log('✅ Enhanced invoice with real product data:', enhancedInvoice)
                 setInvoice(enhancedInvoice)
@@ -131,6 +160,26 @@ const InvoiceDetail = () => {
               }).catch(error => {
                 console.error('Failed to fetch product details:', error)
                 // Fallback to original invoice data if product fetch fails
+                const fallbackItems = invoiceItems.map(item =>({
+                  ...item,
+                  product_name: item.product_name || item.name || `Product #${item.product_id || item.id || 'Unknown'}`,
+                  price: parseFloat(item.price || 0),
+                  quantity: parseFloat(item.quantity || item.item_count || 1),
+                  total_price: parseFloat(item.total_price || item.total || 0),
+                  gst: parseFloat(item.gst || 0),
+                  discount: parseFloat(item.discount || 0)
+                }))
+                
+                const fallbackPackages = invoicePackages.map(pkg => ({
+                  ...pkg,
+                  product_name: pkg.package_name || `Package #${pkg.package_id || pkg.id || 'Unknown'}`,
+                  price: parseFloat(pkg.package_price || 0),
+                  quantity: parseFloat(pkg.quantity || 1),
+                  total_price: parseFloat(pkg.package_total || 0),
+                  gst: 0,
+                  discount: 0
+                }))
+                
                 const fallbackInvoice = {
                   ...foundInvoice,
                   invoice_number: foundInvoice.invoice_number || `INV-${foundInvoice.id}`,
@@ -144,21 +193,14 @@ const InvoiceDetail = () => {
                   store_gst: storeData.gst || foundInvoice.store_gst || 'GSTIN123456',
                   store_email: storeData.email || foundInvoice.store_email || 'store@business.com',
                   store_phone: storeData.mobile || storeData.phone || foundInvoice.store_phone || '123-456-7890',
-                  items: invoiceItems.map(item => ({
-                    ...item,
-                    product_name: item.product_name || item.name || `Product #${item.product_id || item.id || 'Unknown'}`,
-                    price: parseFloat(item.price || 0),
-                    quantity: parseFloat(item.quantity || item.item_count || 1),
-                    total_price: parseFloat(item.total_price || item.total || 0),
-                    gst: parseFloat(item.gst || 0),
-                    discount: parseFloat(item.discount || 0)
-                  }))
+                  items: fallbackItems,
+                  packages: fallbackPackages
                 }
                 setInvoice(fallbackInvoice)
                 setLoading(false)
               })
             } else {
-              // No items, use fallback
+              // No items or packages, use fallback
               const fallbackInvoice = {
                 ...foundInvoice,
                 invoice_number: foundInvoice.invoice_number || `INV-${foundInvoice.id}`,
@@ -172,16 +214,8 @@ const InvoiceDetail = () => {
                 store_gst: storeData.gst || foundInvoice.store_gst || 'GSTIN123456',
                 store_email: storeData.email || foundInvoice.store_email || 'store@business.com',
                 store_phone: storeData.mobile || storeData.phone || foundInvoice.store_phone || '123-456-7890',
-                items: [{
-                  id: 1,
-                  product_id: 1,
-                  product_name: 'Product Item',
-                  price: parseFloat(foundInvoice.total_amount || 1000),
-                  quantity: 1,
-                  total_price: parseFloat(foundInvoice.total_amount || 1000),
-                  gst: 18,
-                  discount: 0
-                }]
+                items: [],
+                packages: []
               }
               setInvoice(fallbackInvoice)
               setLoading(false)
@@ -460,24 +494,71 @@ const InvoiceDetail = () => {
                     </tr>
                   </thead>
                   <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                    {invoice.items?.map((item, index) => {
-                      const itemPrice = typeof item.price === 'string' ? parseFloat(item.price) : (typeof item.price === 'number' ? item.price : 0);
-                      const itemTotal = typeof item.total_price === 'string' ? parseFloat(item.total_price) : (typeof item.total_price === 'number' ? item.total_price : 0);
-                      const itemGst = typeof item.gst === 'string' ? parseFloat(item.gst) : (typeof item.gst === 'number' ? item.gst : 0);
-                      const itemDiscount = typeof item.discount === 'string' ? parseFloat(item.discount) : (typeof item.discount === 'number' ? item.discount : 0);
-                      
-                      return (
-                        <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{index + 1}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{item.product_name || `Product #${item.product_id}`}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-900 dark:text-white">{item.quantity}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-900 dark:text-white">₹{itemPrice.toFixed(2)}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-900 dark:text-white">{itemGst || 0}%</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-900 dark:text-white">{itemDiscount || 0}%</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-right font-medium text-green-600 dark:text-green-400">₹{itemTotal.toFixed(2)}</td>
+                    {/* Products Section */}
+                    {invoice.items && invoice.items.length > 0 && (
+                      <>
+                        <tr>
+                          <td colSpan="7" className="px-6 py-2 bg-gray-50 dark:bg-gray-700 text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
+                            Products
+                          </td>
                         </tr>
-                      );
-                    })}
+                        {invoice.items?.map((item, index) => {
+                          const itemPrice = typeof item.price === 'string' ? parseFloat(item.price) : (typeof item.price === 'number' ? item.price : 0);
+                          const itemTotal = typeof item.total_price === 'string' ? parseFloat(item.total_price) : (typeof item.total_price === 'number' ? item.total_price : 0);
+                          const itemGst = typeof item.gst === 'string' ? parseFloat(item.gst) : (typeof item.gst === 'number' ? item.gst : 0);
+                          const itemDiscount = typeof item.discount === 'string' ? parseFloat(item.discount) : (typeof item.discount === 'number' ? item.discount : 0);
+                          
+                          return (
+                            <tr key={`product-${index}`} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{index + 1}</td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{item.product_name || `Product #${item.product_id}`}</td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-900 dark:text-white">{item.quantity}</td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-900 dark:text-white">Rs{itemPrice.toFixed(2)}</td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-900 dark:text-white">{itemGst || 0}%</td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-900 dark:text-white">{itemDiscount || 0}%</td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-right font-medium text-green-600 dark:text-green-400">Rs{itemTotal.toFixed(2)}</td>
+                            </tr>
+                          );
+                        })}
+                      </>
+                    )}
+                    
+                    {/* Packages Section */}
+                    {invoice.packages && invoice.packages.length > 0 && (
+                      <>
+                        <tr>
+                          <td colSpan="7" className="px-6 py-2 bg-blue-50 dark:bg-blue-900/20 text-sm font-semibold text-blue-700 dark:text-blue-300 uppercase tracking-wider">
+                            Packages
+                          </td>
+                        </tr>
+                        {invoice.packages?.map((pkg, index) => {
+                          const pkgPrice = typeof pkg.package_price === 'string' ? parseFloat(pkg.package_price) : (typeof pkg.package_price === 'number' ? pkg.package_price : 0);
+                          const pkgQuantity = typeof pkg.quantity === 'string' ? parseFloat(pkg.quantity) : (typeof pkg.quantity === 'number' ? pkg.quantity : 0);
+                          // Calculate total: package_price × quantity
+                          const pkgTotal = pkgPrice * pkgQuantity;
+                          const startIndex = invoice.items?.length || 0;
+                          
+                          return (
+                            <tr key={`package-${index}`} className="hover:bg-blue-50 dark:hover:bg-blue-900/10">
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{startIndex + index + 1}</td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                                <div>
+                                  <span className="font-medium">{pkg.package_name || `Package #${pkg.package_id}`}</span>
+                                  {pkg.package_size && (
+                                    <span className="ml-2 text-xs text-gray-500 dark:text-gray-400">({pkg.package_size})</span>
+                                  )}
+                                </div>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-900 dark:text-white">{pkg.quantity}</td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-900 dark:text-white">Rs{pkgPrice.toFixed(2)}</td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-900 dark:text-white">0%</td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-900 dark:text-white">0%</td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-right font-medium text-blue-600 dark:text-blue-400">Rs{pkgTotal.toFixed(2)}</td>
+                            </tr>
+                          );
+                        })}
+                      </>
+                    )}
                   </tbody>
                 </table>
               </div>

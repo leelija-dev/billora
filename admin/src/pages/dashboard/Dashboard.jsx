@@ -7,6 +7,7 @@ import {
   FiUsers,
   FiTrendingUp,
   FiTrendingDown,
+  FiMinus,
   FiClock,
   FiCalendar,
   FiDownload,
@@ -86,23 +87,44 @@ const Dashboard = () => {
       const response = await dashboardAPI.getOverview(user.id)
       const data = response.data
       const normalizedStats = {
-        revenue: data?.stats?.totalRevenue ?? 0,
-        orders: data?.stats?.totalOrders ?? 0,
-        products: data?.stats?.totalProducts ?? 0,
-        customers: data?.stats?.totalCustomers ?? 0,
-        lowStock: data?.stats?.lowStock ?? 0,
+        revenue: parseFloat(data?.stats?.totalRevenue || 0),
+        orders: parseInt(data?.stats?.totalOrders || 0),
+        products: parseInt(data?.stats?.totalProducts || 0),
+        customers: parseInt(data?.stats?.totalCustomers || 0),
+        lowStock: parseInt(data?.stats?.lowStock || 0),
         revenueChange: data?.stats?.revenueTrend ?? null,
         ordersChange: data?.stats?.ordersTrend ?? null,
         productsChange: data?.stats?.productsTrend ?? null,
         customersChange: data?.stats?.customersTrend ?? null,
       }
 
+      // Process revenue data to ensure proper numeric values
+      const processedRevenueData = (data?.revenueData?.daily || []).map(item => ({
+        date: item.date || '',
+        revenue: parseFloat(item.revenue || 0)
+      }))
+
+      // Process top products data
+      const processedTopProducts = (data?.topProducts || []).map(item => ({
+        id: item.id,
+        name: item.name || '',
+        sales: parseFloat(item.sales || 0),
+        revenue: parseFloat(item.revenue || 0),
+        trend: item.trend || '+0%'
+      }))
+
+      // Process recent orders
+      const processedRecentOrders = (data?.recentOrders || []).map(item => ({
+        ...item,
+        total: parseFloat(item.total || 0)
+      }))
+
       setStats(normalizedStats)
-      setRevenueData(data?.revenueData?.daily || [])
-      setRecentOrders(data?.recentOrders || [])
+      setRevenueData(processedRevenueData)
+      setRecentOrders(processedRecentOrders)
       setSalesDistribution(data?.salesDistribution || [])
       setOrderStatus(data?.orderStatus || {})
-      setTopProducts(data?.topProducts || [])
+      setTopProducts(processedTopProducts)
     } catch (error) {
       console.error('Failed to fetch dashboard data:', error)
       setRevenueData([])
@@ -1177,7 +1199,26 @@ const generateProfessionalPDF = async () => {
 
   const StatCard = ({ title, value, icon: Icon, change, color, delay }) => {
     const isPositive = change > 0
-    const TrendIcon = isPositive ? FiTrendingUp : FiTrendingDown
+    const isNeutral = change === 0
+    const TrendIcon = isNeutral ? FiMinus : (isPositive ? FiTrendingUp : FiTrendingDown)
+
+    // Format revenue values with proper Indian formatting
+    const formatValue = (val, title) => {
+      if (title.includes('Revenue')) {
+        const num = parseFloat(val)
+        if (isNaN(num) || num === 0) {
+          return 'Rs 0'
+        }
+        if (num >= 100000) {
+          return `Rs ${(num / 100000).toFixed(1)}L`
+        } else if (num >= 1000) {
+          return `Rs ${(num / 1000).toFixed(1)}k`
+        } else {
+          return `Rs ${num.toLocaleString('en-IN')}`
+        }
+      }
+      return val
+    }
 
     return (
       <motion.div
@@ -1199,7 +1240,7 @@ const generateProfessionalPDF = async () => {
                 animate={{ scale: 1 }}
                 className="text-3xl font-bold text-gray-900 dark:text-white mt-2 break-all"
               >
-                {value}
+                {formatValue(value, title)}
               </motion.p>
               
               {change !== null && change !== undefined && (
@@ -1209,9 +1250,13 @@ const generateProfessionalPDF = async () => {
                   transition={{ delay: 0.2 }}
                   className="flex items-center mt-3 space-x-1"
                 >
-                  <TrendIcon className={`w-4 h-4 ${isPositive ? 'text-green-500' : 'text-red-500'}`} />
-                  <span className={`text-sm font-medium ${isPositive ? 'text-green-600' : 'text-red-600'}`}>
-                    {Math.abs(change)}%
+                  {!isNeutral && (
+                    <TrendIcon className={`w-4 h-4 ${isPositive ? 'text-green-500' : 'text-red-500'}`} />
+                  )}
+                  <span className={`text-sm font-medium ${
+                    isNeutral ? 'text-gray-500' : (isPositive ? 'text-green-600' : 'text-red-600')
+                  }`}>
+                    {isNeutral ? 'No change' : `${Math.abs(change)}%`}
                   </span>
                   <span className="text-xs text-gray-500 dark:text-gray-400">vs last month</span>
                 </motion.div>
@@ -1444,7 +1489,7 @@ const generateProfessionalPDF = async () => {
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
           <StatCard
             title="Total Revenue"
-            value={`$${Number(stats.revenue || 0).toLocaleString()}`}
+            value={stats.revenue || 0}
             icon={FiDollarSign}
             change={stats.revenueChange}
             color="from-green-500 to-emerald-500"
@@ -1638,7 +1683,7 @@ const generateProfessionalPDF = async () => {
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
-                      ${parseFloat(order.total || 0).toLocaleString()}
+                      Rs {parseFloat(order.total || 0).toLocaleString('en-IN')}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`px-3 py-1 text-xs font-medium rounded-full ${
