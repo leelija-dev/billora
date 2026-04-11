@@ -102,5 +102,6 @@ export default {
   getUserStore,
   placeOrder,
   updatePaymentStatus,
+  // holiday?
   updateOrderStatus
 };
