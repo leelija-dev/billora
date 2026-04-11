@@ -29,7 +29,7 @@ const ProductsPage = () => {
   const [filteredCount, setFilteredCount] = useState(0);
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState("cod");
-  
+
   // Bulk selection states
   const [selectedItems, setSelectedItems] = useState(new Set());
   const [showDuplicateDialog, setShowDuplicateDialog] = useState(false);
@@ -65,12 +65,12 @@ const ProductsPage = () => {
     const sellingPrice = product.selling_price || product.price;
     const discountPercent = product.discount_percentage || 0;
     const gstPercent = product.gst_percentage || 0;
-    
+
     const discountAmount = (sellingPrice * discountPercent) / 100;
     const priceAfterDiscount = sellingPrice - discountAmount;
     const gstAmount = (priceAfterDiscount * gstPercent) / 100;
     const finalPrice = priceAfterDiscount + gstAmount;
-    
+
     return finalPrice;
   };
 
@@ -97,11 +97,11 @@ const ProductsPage = () => {
       const sellingPrice = item.selling_price || item.price;
       const discountPercent = item.discount_percentage || 0;
       const gstPercent = item.gst_percentage || 0;
-      
+
       const discountAmount = (sellingPrice * discountPercent) / 100;
       const priceAfterDiscount = sellingPrice - discountAmount;
       const gstAmount = (priceAfterDiscount * gstPercent) / 100;
-      
+
       return total + (gstAmount * item.quantity);
     }, 0);
   };
@@ -131,71 +131,71 @@ const ProductsPage = () => {
     }
   }, []);
 
-// ========== HANDLE ORDER FUNCTION ==========
-// const handleOrder = async (orderData) => {
-//   try {
-//     const token = localStorage.getItem("token");
-    
-//     console.log("📤 Sending to backend:", orderData);
-    
-//     const response = await fetch('http://localhost:8000/api/orders/store', {
-//       method: 'POST',
-//       headers: {
-//         'Content-Type': 'application/json',
-//         'Authorization': token ? `Bearer ${token}` : '',
-//       },
-//       body: JSON.stringify(orderData)
-//     });
-    
-//     const res = await response.json();
-//     console.log("📥 Order response:", res);
-    
-//     // Check if response is successful
-//     if (res.status === true || res.success === true || res.order_id) {
-//       if (orderData.payment_mode === 'online') {
-//         // Online payment - wait for Cashfree
-//         const waitForCashfree = setInterval(() => {
-//           if (window.Cashfree) {
-//             clearInterval(waitForCashfree);
-//             const cashfree = new Cashfree({
-//               mode: "sandbox"
-//             });
-            
-//             cashfree.checkout({
-//               paymentSessionId: res.payment_session_id,
-//               redirectTarget: "_self"
-//             });
-//           }
-//         }, 100);
-//       } else {
-//         // COD order success
-//         toast.success('Order placed successfully!');
-        
-//         const orderInfo = {
-//           orderId: res.order_id || `ORD${Date.now()}`,
-//           totalAmount: orderData.total_amount,
-//           items: cart.length,
-//           timestamp: Date.now()
-//         };
-//         localStorage.setItem('pendingProductOrder', JSON.stringify(orderInfo));
-        
-//         setCart([]);
-//         sessionStorage.removeItem('cart');
-//         setShowCart(false);
-//         setShowCheckout(false);
-//         setFormData({ fullName: "", phone: "" });
-        
-//         router.push('/order-success');
-//       }
-//     } else {
-//       // Handle error response
-//       throw new Error(res.message || 'Failed to create order');
-//     }
-//   } catch (error) {
-//     console.error("Order error:", error);
-//     throw error;
-//   }
-// };
+  // ========== HANDLE ORDER FUNCTION ==========
+  // const handleOrder = async (orderData) => {
+  //   try {
+  //     const token = localStorage.getItem("token");
+
+  //     console.log("📤 Sending to backend:", orderData);
+
+  //     const response = await fetch('http://localhost:8000/api/orders/store', {
+  //       method: 'POST',
+  //       headers: {
+  //         'Content-Type': 'application/json',
+  //         'Authorization': token ? `Bearer ${token}` : '',
+  //       },
+  //       body: JSON.stringify(orderData)
+  //     });
+
+  //     const res = await response.json();
+  //     console.log("📥 Order response:", res);
+
+  //     // Check if response is successful
+  //     if (res.status === true || res.success === true || res.order_id) {
+  //       if (orderData.payment_mode === 'online') {
+  //         // Online payment - wait for Cashfree
+  //         const waitForCashfree = setInterval(() => {
+  //           if (window.Cashfree) {
+  //             clearInterval(waitForCashfree);
+  //             const cashfree = new Cashfree({
+  //               mode: "sandbox"
+  //             });
+
+  //             cashfree.checkout({
+  //               paymentSessionId: res.payment_session_id,
+  //               redirectTarget: "_self"
+  //             });
+  //           }
+  //         }, 100);
+  //       } else {
+  //         // COD order success
+  //         toast.success('Order placed successfully!');
+
+  //         const orderInfo = {
+  //           orderId: res.order_id || `ORD${Date.now()}`,
+  //           totalAmount: orderData.total_amount,
+  //           items: cart.length,
+  //           timestamp: Date.now()
+  //         };
+  //         localStorage.setItem('pendingProductOrder', JSON.stringify(orderInfo));
+
+  //         setCart([]);
+  //         sessionStorage.removeItem('cart');
+  //         setShowCart(false);
+  //         setShowCheckout(false);
+  //         setFormData({ fullName: "", phone: "" });
+
+  //         router.push('/order-success');
+  //       }
+  //     } else {
+  //       // Handle error response
+  //       throw new Error(res.message || 'Failed to create order');
+  //     }
+  //   } catch (error) {
+  //     console.error("Order error:", error);
+  //     throw error;
+  //   }
+  // };
 
   // ========== SESSION STORAGE FOR CART PERSISTENCE ==========
   useEffect(() => {
@@ -320,7 +320,7 @@ const ProductsPage = () => {
       discount_percentage: product.discount_percentage || 0,
       gst_percentage: product.gst_percentage || 0,
     }]);
-    
+
     setShowCart(true);
     setShowCheckout(true);
   };
@@ -349,7 +349,7 @@ const ProductsPage = () => {
     const selectedProductsList = Array.from(selectedItems)
       .map(id => products.find(p => p.id === id))
       .filter(p => p && p.inStock);
-    
+
     if (selectedProductsList.length === 0) {
       setPopupMessage("No products selected or selected products are out of stock");
       setPopup(true);
@@ -359,7 +359,7 @@ const ProductsPage = () => {
 
     const duplicates = [];
     const newProducts = [];
-    
+
     selectedProductsList.forEach(product => {
       const existingInCart = cart.find(item => item.id === product.id);
       if (existingInCart) {
@@ -390,16 +390,16 @@ const ProductsPage = () => {
         addToCart(product, 1);
       });
     }
-    
+
     pendingBulkProducts.forEach(product => {
       addToCart(product, 1);
     });
-    
+
     const totalAdded = duplicateProductsList.length + pendingBulkProducts.length;
     setPopupMessage(`${totalAdded} item(s) added to cart!`);
     setPopup(true);
     setTimeout(() => setPopup(false), 2000);
-    
+
     setSelectedItems(new Set());
     setShowDuplicateDialog(false);
     setDuplicateProductsList([]);
@@ -411,199 +411,218 @@ const ProductsPage = () => {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-// ========== HANDLE PLACE ORDER ==========
-const handlePlaceOrder = async (e) => {
-  e.preventDefault();
+  // ========== HANDLE PLACE ORDER ==========
+  const handlePlaceOrder = async (e) => {
+    e.preventDefault();
 
-  if (!formData.fullName || !formData.phone) {
-    setPopupMessage("Please fill all fields!");
-    setPopup(true);
-    setTimeout(() => setPopup(false), 2000);
-    return;
-  }
+    if (!formData.fullName || !formData.phone) {
+      setPopupMessage("Please fill all fields!");
+      setPopup(true);
+      setTimeout(() => setPopup(false), 2000);
+      return;
+    }
 
-  if (cart.length === 0) {
-    setPopupMessage("Your cart is empty!");
-    setPopup(true);
-    setTimeout(() => setPopup(false), 2000);
-    return;
-  }
+    if (cart.length === 0) {
+      setPopupMessage("Your cart is empty!");
+      setPopup(true);
+      setTimeout(() => setPopup(false), 2000);
+      return;
+    }
 
-  const phoneRegex = /^\d{10}$/;
-  const cleanPhone = formData.phone.replace(/\D/g, '');
-  if (!phoneRegex.test(cleanPhone)) {
-    setPopupMessage("Please enter a valid 10-digit phone number");
-    setPopup(true);
-    setTimeout(() => setPopup(false), 2000);
-    return;
-  }
+    const phoneRegex = /^\d{10}$/;
+    const cleanPhone = formData.phone.replace(/\D/g, '');
+    if (!phoneRegex.test(cleanPhone)) {
+      setPopupMessage("Please enter a valid 10-digit phone number");
+      setPopup(true);
+      setTimeout(() => setPopup(false), 2000);
+      return;
+    }
 
-  const { user } = getAuthData();
-  
-  if (!user || !user.id) {
-    setPopupMessage("Please login to place order");
-    setPopup(true);
-    setTimeout(() => router.push('/login'), 2000);
-    return;
-  }
+    const { user } = getAuthData();
 
-  setIsPlacingOrder(true);
-  const loadingToast = toast.loading('Processing...');
+    if (!user || !user.id) {
+      setPopupMessage("Please login to place order");
+      setPopup(true);
+      setTimeout(() => router.push('/login'), 2000);
+      return;
+    }
 
-  try {
-    const storeId = user.store_id || user.store?.id || 1;
-    const token = localStorage.getItem("token");
-    
-    if (paymentMethod === 'online') {
-      // ========== ONLINE PAYMENT FLOW ==========
-      // Step 1: Prepare order data for backend
-      const orderData = {
-        user_id: user.id,
-        store_id: storeId,
-        customer_name: formData.fullName.trim(),
-        customer_phone: cleanPhone,
-        product_id: cart.map(item => item.id),
-        quantity: cart.map(item => item.quantity),
-        unit_id: cart.map(item => item.unit_id || 1),
-        payment_mode: 'online'
-      };
-      
-      console.log("📤 Creating order for online payment:", orderData);
-      
-      // Step 2: Call backend to create order and get payment session
-      const response = await fetch('http://localhost:8000/api/orders/store', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': token ? `Bearer ${token}` : '',
-        },
-        body: JSON.stringify(orderData)
-      });
-      
-      const res = await response.json();
-      console.log("📥 Order response:", res);
-      
-      toast.dismiss(loadingToast);
-      
-      // Step 3: Check if backend returned payment_session_id
-      if (res.payment_session_id) {
-        // Wait for Cashfree SDK
-        const waitForCashfree = setInterval(() => {
-          if (window.Cashfree) {
+    setIsPlacingOrder(true);
+    const loadingToast = toast.loading('Processing...');
+
+    try {
+      const storeId = user.store_id || user.store?.id || 1;
+      const token = localStorage.getItem("token");
+
+      if (paymentMethod === 'online') {
+        // ========== ONLINE PAYMENT FLOW ==========
+        // Step 1: Prepare order data for backend
+        const orderData = {
+          user_id: user.id,
+          store_id: storeId,
+          customer_name: formData.fullName.trim(),
+          customer_phone: cleanPhone,
+          product_id: cart.map(item => item.id),
+          quantity: cart.map(item => item.quantity),
+          unit_id: cart.map(item => item.unit_id || 1),
+          payment_mode: 'online'
+        };
+
+        console.log("📤 Creating order for online payment:", orderData);
+
+        // Step 2: Call backend to create order and get payment session
+        const response = await fetch('http://localhost:8000/api/orders/store', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': token ? `Bearer ${token}` : '',
+          },
+          body: JSON.stringify(orderData)
+        });
+
+        const res = await response.json();
+        console.log("📥 Order response:", res);
+
+        toast.dismiss(loadingToast);
+
+        // Step 3: Check if backend returned payment_session_id
+        if (res.payment_session_id) {
+          // Wait for Cashfree SDK
+          const waitForCashfree = setInterval(() => {
+            if (window.Cashfree) {
+              clearInterval(waitForCashfree);
+              const cashfree = new Cashfree({
+                mode: "sandbox"
+              });
+
+              cashfree.checkout({
+                paymentSessionId: res.payment_session_id,
+                redirectTarget: "_self"
+              });
+            }
+          }, 100);
+
+          // Set timeout to clear interval if Cashfree doesn't load
+          setTimeout(() => {
             clearInterval(waitForCashfree);
-            const cashfree = new Cashfree({
-              mode: "sandbox"
-            });
-            
-            cashfree.checkout({
-              paymentSessionId: res.payment_session_id,
-              redirectTarget: "_self"
-            });
-          }
-        }, 100);
-        
-        // Set timeout to clear interval if Cashfree doesn't load
-        setTimeout(() => {
-          clearInterval(waitForCashfree);
-          if (!window.Cashfree) {
-            toast.error("Payment gateway not loaded. Please refresh and try again.");
-            setIsPlacingOrder(false);
-          }
-        }, 10000);
-        
+            if (!window.Cashfree) {
+              toast.error("Payment gateway not loaded. Please refresh and try again.");
+              setIsPlacingOrder(false);
+            }
+          }, 10000);
+
+        } else {
+          toast.error(res.message || "Failed to initialize payment");
+          setIsPlacingOrder(false);
+        }
+
       } else {
-        toast.error(res.message || "Failed to initialize payment");
+        // ========== COD PAYMENT FLOW ==========
+        const orderData = {
+          user_id: user.id,
+          store_id: storeId,
+          customer_name: formData.fullName.trim(),
+          customer_phone: cleanPhone,
+          product_id: cart.map(item => item.id),
+          quantity: cart.map(item => item.quantity),
+          unit_id: cart.map(item => item.unit_id || 1)
+        };
+
+        console.log("📤 COD Order:", orderData);
+
+        const response = await fetch('http://localhost:8000/api/orders/store', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': token ? `Bearer ${token}` : '',
+          },
+          body: JSON.stringify(orderData)
+        });
+
+        const res = await response.json();
+        console.log("📥 COD Response:", res);
+
+        toast.dismiss(loadingToast);
+
+        if (response.ok) {
+          toast.success('Order placed successfully!');
+
+          const orderInfo = {
+            orderId: res.order_id || `ORD${Date.now()}`,
+            totalAmount: getCartTotal(),
+            items: cart.length,
+            timestamp: Date.now()
+          };
+          localStorage.setItem('pendingProductOrder', JSON.stringify(orderInfo));
+
+          setCart([]);
+          sessionStorage.removeItem('cart');
+          setShowCart(false);
+          setShowCheckout(false);
+          setFormData({ fullName: "", phone: "" });
+
+          router.push('/order-success');
+        } else {
+          throw new Error(res.message || 'Failed to create order');
+        }
         setIsPlacingOrder(false);
       }
-      
-    } else {
-      // ========== COD PAYMENT FLOW ==========
-      const orderData = {
-        user_id: user.id,
-        store_id: storeId,
-        customer_name: formData.fullName.trim(),
-        customer_phone: cleanPhone,
-        product_id: cart.map(item => item.id),
-        quantity: cart.map(item => item.quantity),
-        unit_id: cart.map(item => item.unit_id || 1)
-      };
-      
-      console.log("📤 COD Order:", orderData);
-      
-      const response = await fetch('http://localhost:8000/api/orders/store', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': token ? `Bearer ${token}` : '',
-        },
-        body: JSON.stringify(orderData)
-      });
-      
-      const res = await response.json();
-      console.log("📥 COD Response:", res);
-      
+
+    } catch (error) {
       toast.dismiss(loadingToast);
-      
-      if (response.ok) {
-        toast.success('Order placed successfully!');
-        
-        const orderInfo = {
-          orderId: res.order_id || `ORD${Date.now()}`,
-          totalAmount: getCartTotal(),
-          items: cart.length,
-          timestamp: Date.now()
-        };
-        localStorage.setItem('pendingProductOrder', JSON.stringify(orderInfo));
-        
-        setCart([]);
-        sessionStorage.removeItem('cart');
-        setShowCart(false);
-        setShowCheckout(false);
-        setFormData({ fullName: "", phone: "" });
-        
-        router.push('/order-success');
-      } else {
-        throw new Error(res.message || 'Failed to create order');
-      }
+      console.error('❌ Order error:', error);
+      setPopupMessage(error.message || 'Failed to place order. Please try again.');
+      setPopup(true);
+      setTimeout(() => setPopup(false), 3000);
       setIsPlacingOrder(false);
     }
-    
-  } catch (error) {
-    toast.dismiss(loadingToast);
-    console.error('❌ Order error:', error);
-    setPopupMessage(error.message || 'Failed to place order. Please try again.');
-    setPopup(true);
-    setTimeout(() => setPopup(false), 3000);
-    setIsPlacingOrder(false);
-  }
-};
-  // ========== FETCH PRODUCTS ==========
-  const fetchProductsData = async () => {
-    try {
-      setLoading(true);
-      const { user } = getAuthData();
-      if (!user || !user.id) {
-        router.push('/login');
-        return;
+  };
+const fetchProductsData = async () => {
+  try {
+    setLoading(true);
+    const { user } = getAuthData();
+    if (!user || !user.id) {
+      router.push('/login');
+      return;
+    }
+
+    const response = await fetch(`http://localhost:8000/api/restaurant-all-products/${user.id}`, {
+      headers: {
+        'Authorization': 'Bearer ' + localStorage.getItem('token'),
+      }
+    });
+    const productsData = await response.json();
+
+    let productsArray = [];
+    // ✅ FIX: Products are inside products.data
+    if (productsData?.products?.data && Array.isArray(productsData.products.data)) {
+      productsArray = productsData.products.data;
+      console.log("✅ Products found:", productsArray.length);
+      console.log("🔍 First product sample:", productsArray[0]);
+    } else if (Array.isArray(productsData)) {
+      productsArray = productsData;
+    } else if (productsData?.data) {
+      productsArray = productsData.data;
+    }
+
+    const transformedProducts = productsArray.map(product => {
+      // Get image from product
+      let imageUrl = product.image;
+      
+      console.log(`📸 Product: ${product.name}, Image:`, imageUrl);
+      
+      // Fix image URL if needed
+      if (imageUrl && (imageUrl.startsWith('http://') || imageUrl.startsWith('https://'))) {
+        // Full URL - use as is
+      } else if (imageUrl && imageUrl.startsWith('/')) {
+        imageUrl = `http://localhost:8000${imageUrl}`;
+      } else if (imageUrl && imageUrl !== "") {
+        imageUrl = `http://localhost:8000/storage/${imageUrl}`;
+      } else {
+        imageUrl = "https://placehold.co/400x400/f0f0f0/999?text=No+Image";
       }
       
-      const response = await fetch(`http://localhost:8000/api/restaurant-all-products/${user.id}`, {
-        headers: {
-          'Authorization': 'Bearer ' + localStorage.getItem('token'),
-        }
-      });
-      const productsData = await response.json();
-      
-      let productsArray = [];
-      if (productsData?.products?.data) {
-        productsArray = productsData.products.data;
-      } else if (Array.isArray(productsData)) {
-        productsArray = productsData;
-      } else if (productsData?.data) {
-        productsArray = productsData.data;
-      }
-      
-      const transformedProducts = productsArray.map(product => ({
+      return {
         id: product.id,
         name: product.name || "Unnamed Product",
         selling_price: parseFloat(product.selling_price) || 0,
@@ -616,19 +635,20 @@ const handlePlaceOrder = async (e) => {
         discount_percentage: parseFloat(product.discount_percentage) || 0,
         gst_percentage: parseFloat(product.gst_percentage) || 0,
         description: product.description || "",
-        img: product.image || "/image/placeholder.png",
-      }));
+        img: imageUrl,
+      };
+    });
 
-      setProducts(transformedProducts);
-    } catch (error) {
-      console.error("Fetch error:", error);
-      toast.error("Failed to load products");
-      setProducts([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
+    console.log("✅ Transformed products:", transformedProducts.length);
+    setProducts(transformedProducts);
+  } catch (error) {
+    console.error("Fetch error:", error);
+    toast.error("Failed to load products");
+    setProducts([]);
+  } finally {
+    setLoading(false);
+  }
+};
   // ========== GET UNIQUE CATEGORIES ==========
   const getCategories = useCallback(() => {
     const cats = products.map(p => p.category || "General");
@@ -734,9 +754,8 @@ const handlePlaceOrder = async (e) => {
   };
 
   const handleImageError = (e) => {
-    e.currentTarget.src = "/image/placeholder.png";
+    e.currentTarget.src = "https://placehold.co/400x400/f0f0f0/999?text=No+Image";
   };
-
   const clearSearch = () => {
     setSearch("");
   };
@@ -769,7 +788,7 @@ const handlePlaceOrder = async (e) => {
             📦 Bulk Cart ({selectedItems.size})
           </button>
         )}
-        
+
         <button
           onClick={() => {
             setShowCart(true);
@@ -875,8 +894,8 @@ const handlePlaceOrder = async (e) => {
                       key={i}
                       onClick={() => setCategory(cat)}
                       className={`flex justify-between items-center w-full px-3 py-2 rounded-lg transition-all duration-200 ${category === cat
-                          ? "bg-blue-600 text-white shadow-md scale-[1.02]"
-                          : "bg-gray-100 hover:bg-blue-50 hover:translate-x-1 text-black"
+                        ? "bg-blue-600 text-white shadow-md scale-[1.02]"
+                        : "bg-gray-100 hover:bg-blue-50 hover:translate-x-1 text-black"
                         }`}
                     >
                       <span>{cat}</span>
@@ -969,11 +988,11 @@ const handlePlaceOrder = async (e) => {
                         <div onClick={() => openProduct(product)} className="cursor-pointer flex-shrink-0">
                           <div className="relative h-40 mb-4">
                             <img
-  src={product.img || "/image/placeholder.png"}
-  alt={product.name}
-  className="w-full h-full object-contain"
-  onError={handleImageError}
-/>
+                              src={product.img}
+                              alt={product.name}
+                              className="w-full h-full object-contain"
+                              onError={handleImageError}
+                            />
                           </div>
                         </div>
 
@@ -983,7 +1002,7 @@ const handlePlaceOrder = async (e) => {
                           <p className="text-xs text-gray-500 mt-1 break-words">Category: {product.category || 'General'}</p>
                           <p className="text-xs text-gray-400 break-words">{product.brand || 'Unknown'} • {product.unit || 'Piece'}</p>
                           <p className="text-yellow-500 text-sm mt-1">{"⭐".repeat(4)}</p>
-                          
+
                           {/* Product Card - Show ORIGINAL SELLING PRICE only */}
                           <div className="mt-2">
                             <p className="text-xl font-bold text-blue-600">
@@ -996,7 +1015,7 @@ const handlePlaceOrder = async (e) => {
                               <p className="text-xs text-gray-400">+{product.gst_percentage}% GST</p>
                             )}
                           </div>
-                          
+
                           <p className={`text-xs mt-1 ${product.inStock ? 'text-green-600' : 'text-red-600'}`}>
                             {product.inStock ? '✅ In Stock' : '❌ Out of Stock'}
                           </p>
@@ -1144,11 +1163,11 @@ const handlePlaceOrder = async (e) => {
                     </div>
                   )}
                   <img
-  src={selectedProduct.img || "/image/placeholder.png"}
-  alt={selectedProduct.name}
-  className="w-full h-full object-contain"
-  onError={handleImageError}
-/>
+                    src={selectedProduct.img}
+                    alt={selectedProduct.name}
+                    className="w-full h-full object-contain"
+                    onError={handleImageError}
+                  />
                 </div>
               </div>
               <div>
@@ -1157,7 +1176,7 @@ const handlePlaceOrder = async (e) => {
                   {selectedProduct.category} • {selectedProduct.brand}
                 </p>
                 <p className="text-yellow-500 text-sm sm:text-base mb-2">{"⭐".repeat(4)}</p>
-                
+
                 {/* Modal - Show ORIGINAL SELLING PRICE */}
                 <p className="text-xl sm:text-2xl md:text-3xl font-bold text-blue-600 mb-3">
                   ₹{(selectedProduct.selling_price || selectedProduct.price).toLocaleString()}
@@ -1168,7 +1187,7 @@ const handlePlaceOrder = async (e) => {
                 {selectedProduct.gst_percentage > 0 && (
                   <p className="text-xs text-gray-500 mb-2">+{selectedProduct.gst_percentage}% GST</p>
                 )}
-                
+
                 <p className="text-gray-600 text-sm sm:text-base mb-5">{selectedProduct.description}</p>
                 <p className={`text-sm mb-4 ${selectedProduct.inStock ? 'text-green-600' : 'text-red-600'}`}>
                   {selectedProduct.inStock ? '✅ In Stock' : '❌ Out of Stock'}
@@ -1303,12 +1322,12 @@ const handlePlaceOrder = async (e) => {
                 ) : (
                   cart.map((item) => {
                     const sellingPrice = item.selling_price || item.price;
-                    
+
                     return (
                       <div key={item.id} className="flex gap-4 items-start bg-gray-50 rounded-xl p-3 hover:shadow-md transition-all duration-300 border border-gray-100">
                         <div className="relative w-20 h-20 bg-white rounded-xl overflow-hidden shadow-sm border border-gray-200 flex-shrink-0">
                           <img
-                            src={item.img || "/image/placeholder.png"}
+                            src={item.img}
                             alt={item.title}
                             className="w-full h-full object-contain p-2"
                             onError={handleImageError}
@@ -1381,14 +1400,14 @@ const handlePlaceOrder = async (e) => {
                     <span className="w-1 h-5 bg-indigo-600 rounded-full"></span>
                     Order Summary
                   </h3>
-                  
+
                   <div className="space-y-6 max-h-96 overflow-y-auto pr-2">
                     {cart.map((item, idx) => {
                       const sellingPrice = item.selling_price || item.price;
                       const discountPercent = item.discount_percentage || 0;
                       const gstPercent = item.gst_percentage || 0;
                       const quantity = item.quantity;
-                      
+
                       // Calculations for this product
                       const discountAmount = (sellingPrice * discountPercent) / 100;
                       const priceAfterDiscount = sellingPrice - discountAmount;
@@ -1397,7 +1416,7 @@ const handlePlaceOrder = async (e) => {
                       const itemTotal = finalPrice * quantity;
                       const totalDiscount = discountAmount * quantity;
                       const totalGst = gstAmount * quantity;
-                      
+
                       return (
                         <div key={item.id} className="border-b border-indigo-100 pb-4 last:border-0">
                           <div className="flex justify-between items-start mb-2">
@@ -1407,7 +1426,7 @@ const handlePlaceOrder = async (e) => {
                             </div>
                             <p className="font-bold text-indigo-600 text-lg">₹{Math.round(itemTotal).toLocaleString()}</p>
                           </div>
-                          
+
                           <div className="space-y-1 text-sm pl-2">
                             <div className="flex justify-between">
                               <span className="text-gray-600">Subtotal:</span>
@@ -1434,7 +1453,7 @@ const handlePlaceOrder = async (e) => {
                       );
                     })}
                   </div>
-                  
+
                   <div className="border-t border-indigo-100 mt-4 pt-4 space-y-2">
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-600">Total Subtotal:</span>
@@ -1518,7 +1537,7 @@ const handlePlaceOrder = async (e) => {
                       </label>
                     </div>
                   </div>
-                  
+
                   <button
                     type="submit"
                     disabled={isPlacingOrder}
