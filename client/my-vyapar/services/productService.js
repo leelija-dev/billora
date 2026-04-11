@@ -10,72 +10,60 @@ const getUserId = () => {
   return user.id;
 };
 
-// Get all products - Using your working endpoint
+// Get all products
 export const getProducts = async () => {
   try {
     const userId = getUserId();
-    console.log("Fetching products for user ID:", userId);
     const response = await apiRequest(`/restaurant-all-products/${userId}`);
-    console.log("Products API response:", response);
     
     let productsArray = [];
-    
-    // Handle different response structures
     if (response?.products?.data && Array.isArray(response.products.data)) {
       productsArray = response.products.data;
     } else if (response?.data && Array.isArray(response.data)) {
       productsArray = response.data;
     } else if (Array.isArray(response)) {
       productsArray = response;
-    } else if (response?.products && Array.isArray(response.products)) {
-      productsArray = response.products;
     }
     
-    console.log(`Found ${productsArray.length} products`);
     return productsArray;
   } catch (error) {
     console.error("Error in getProducts:", error);
-    return []; // Return empty array instead of throwing
+    return [];
   }
 };
 
-// Get user's store - Using your working endpoint
+// Get user's store
 export const getUserStore = async () => {
   try {
     const userId = getUserId();
-    console.log("Fetching store for user ID:", userId);
     const response = await apiRequest(`/store/${userId}`);
-    console.log("Store API response:", response);
-    
     if (response?.data && response.data.length > 0) {
-      const storeId = response.data[0].id;
-      console.log("Store ID found:", storeId);
-      return storeId;
+      return response.data[0].id;
     }
-    
-    // Try alternative response format
-    if (response?.store?.id) {
-      return response.store.id;
-    }
-    
-    if (response?.id) {
-      return response.id;
-    }
-    
-    console.log("No store found for user");
-    return null;
+    return 1;
   } catch (error) {
     console.error("Error fetching store:", error);
-    return null;
+    return 1;
   }
 };
 
-// Place order
+// Place order - ONLY send what backend validates
 export const placeOrder = async (orderData) => {
   try {
-    console.log("Placing order:", orderData);
-    const response = await apiRequest("/orders/store", "POST", orderData);
-    console.log("Order response:", response);
+    // Only send fields that are in the validation rules
+    const payload = {
+      user_id: orderData.user_id,
+      store_id: orderData.store_id,
+      customer_name: orderData.customer_name,
+      customer_phone: orderData.customer_phone,
+      product_id: orderData.product_id,
+      quantity: orderData.quantity,
+      unit_id: orderData.unit_id
+    };
+    
+    console.log("📤 Sending order:", payload);
+    const response = await apiRequest("/orders/store", "POST", payload);
+    console.log("📥 Order response:", response);
     return response;
   } catch (error) {
     console.error("Error placing order:", error);
@@ -83,26 +71,29 @@ export const placeOrder = async (orderData) => {
   }
 };
 
-// Get single product by ID
-export const getProduct = async (id) => {
+// Update payment status after successful online payment
+export const updatePaymentStatus = async (orderId, status) => {
   try {
-    const userId = getUserId();
-    const response = await apiRequest(`/restaurant-all-products/${userId}`);
-    
-    let productsArray = [];
-    if (response?.products?.data && Array.isArray(response.products.data)) {
-      productsArray = response.products.data;
-    } else if (response?.data && Array.isArray(response.data)) {
-      productsArray = response.data;
-    } else if (Array.isArray(response)) {
-      productsArray = response;
-    }
-    
-    const product = productsArray.find(p => p.id === parseInt(id));
-    return product || null;
+    const response = await apiRequest(`/invoice/update-payment-status/${orderId}`, "PUT", {
+      payment_status: status
+    });
+    return response;
   } catch (error) {
-    console.error("Error fetching product:", error);
-    return null;
+    console.error("Error updating payment status:", error);
+    throw error;
+  }
+};
+
+// Update order status
+export const updateOrderStatus = async (orderId, status) => {
+  try {
+    const response = await apiRequest(`/invoice/update-order-status/${orderId}`, "PUT", {
+      order_status: status
+    });
+    return response;
+  } catch (error) {
+    console.error("Error updating order status:", error);
+    throw error;
   }
 };
 
@@ -110,5 +101,6 @@ export default {
   getProducts,
   getUserStore,
   placeOrder,
-  getProduct,
+  updatePaymentStatus,
+  updateOrderStatus
 };
