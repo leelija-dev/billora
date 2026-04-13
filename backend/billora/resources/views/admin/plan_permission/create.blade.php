@@ -642,7 +642,27 @@
                     </div>
 
                 </div>
-                                   
+                    <div class="form-title" style="margin-top: 10px;">Customer Sidebar Permissions</div>
+                <div class="features-section">
+                    <div class="features-header">
+                        <h3>Select Permissions</h3>
+                    </div>
+
+                    <div class="permissions-grid">
+                        @foreach ($permissions as $permission)
+                            <label class="permission-card">
+                                <input type="checkbox" name="permissions[]" value="{{ $permission->id }}"
+                                    {{ in_array($permission->id, old('permissions', [])) ? 'checked' : '' }}>
+
+                                <div class="permission-content">
+                                    <span class="permission-title">
+                                        {{ $permission->name }}
+                                    </span>
+                                </div>
+                            </label>
+                        @endforeach
+                    </div>
+                </div>                
                 <!-- Status Toggle -->
                 <div class="form-group">
                     <div class="toggle-group">

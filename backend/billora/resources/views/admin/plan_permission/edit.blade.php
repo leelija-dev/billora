@@ -642,7 +642,20 @@
                     </div>
 
                 </div>
-                                   
+                          <div class="permissions-grid">
+                        @foreach ($permissions as $permission)
+                            <label class="permission-card">
+                                <input type="checkbox" name="permissions[]" value="{{ $permission->id }}"
+                                    {{ in_array($permission->id, old('permissions', $selectedPermissions ?? [])) ? 'checked' : '' }}>
+
+                                <div class="permission-content">
+                                    <span class="permission-title">
+                                        {{ $permission->name }}
+                                    </span>
+                                </div>
+                            </label>
+                        @endforeach
+                    </div>          
                 <!-- Status Toggle -->
                 <div class="form-group">
                     <div class="toggle-group">
