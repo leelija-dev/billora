@@ -33,6 +33,27 @@ import ProductModal from '../../components/features/Products/ProductModal'
 import Select from '../../components/common/Select/Select'
 import ProductForm from '../../components/features/Products/ProductForm' // You'll need to create this component
 
+// Stock cache to prevent duplicate requests
+const stockCache = new Map()
+const STOCK_CACHE_EXPIRY = 5 * 60 * 1000 // 5 minutes
+
+const isStockCacheValid = (cacheEntry) => {
+  return cacheEntry && (Date.now() - cacheEntry.timestamp) < STOCK_CACHE_EXPIRY
+}
+
+const getCachedStocks = () => {
+  const entry = stockCache.get('all')
+  if (isStockCacheValid(entry)) {
+    return entry.data
+  }
+  stockCache.delete('all')
+  return null
+}
+
+const setCachedStocks = (data) => {
+  stockCache.set('all', { data, timestamp: Date.now() })
+}
+
 const Products = () => {
   const {
     products,
@@ -41,7 +62,9 @@ const Products = () => {
     pageSize,
     loading,
     filters,
+    pagination,
     fetchProducts,
+    fetchProductsByUrl,
     deleteProduct,
     setFilters,
     createProduct,
@@ -73,17 +96,33 @@ const Products = () => {
     const fetchData = async () => {
       try {
         await fetchProducts()
-        const stocksResponse = await stockAPI.getAll()
-        console.log(' Stock API Response:', stocksResponse)
-        // Extract stocks array from nested response
-        const stocksData = stocksResponse.data?.data?.data || stocksResponse.data?.data || []
-        console.log(' Extracted stocks:', stocksData)
-        setStocks(stocksData)
+        
+        // Check cache first
+        const cachedStocks = getCachedStocks()
+        if (cachedStocks) {
+          console.log(' Using cached stocks data')
+          setStocks(cachedStocks)
+          setInitialLoading(false)
+          return
+        }
+        
+        // Only fetch stocks if not already loaded and no valid cache
+        if (stocks.length === 0) {
+          setStocksLoading(true)
+          const stocksResponse = await stockAPI.getAll()
+          console.log(' Stock API Response:', stocksResponse)
+          // Extract stocks array from nested response
+          const stocksData = stocksResponse.data?.data?.data || stocksResponse.data?.data || []
+          console.log(' Extracted stocks:', stocksData)
+          setStocks(stocksData)
+          setCachedStocks(stocksData)
+        }
       } catch (error) {
         console.error(' Error fetching stocks:', error)
         setStocks([])
       } finally {
         setInitialLoading(false)
+        setStocksLoading(false)
       }
     }
     fetchData()
@@ -146,13 +185,28 @@ const Products = () => {
     }
   }
 
-  const handlePageChange = (page) => {
-    fetchProducts(page)
+  const handlePageChange = (url) => {
+    if (url) {
+      fetchProductsByUrl(url)
+    }
   }
 
   const handleRefresh = async () => {
     setRefreshing(true)
+    // Clear stock cache to force fresh data
+    stockCache.delete('all')
     await fetchProducts()
+    // Refetch stocks with fresh data
+    if (stocks.length > 0) {
+      try {
+        const stocksResponse = await stockAPI.getAll()
+        const stocksData = stocksResponse.data?.data?.data || stocksResponse.data?.data || []
+        setStocks(stocksData)
+        setCachedStocks(stocksData)
+      } catch (error) {
+        console.error(' Error refreshing stocks:', error)
+      }
+    }
     setRefreshing(false)
   }
 
@@ -646,6 +700,7 @@ const Products = () => {
                     currentPage={currentPage}
                     totalItems={totalProducts}
                     pageSize={pageSize}
+                    pagination={pagination}
                     onPageChange={handlePageChange}
                   />
                 </>
@@ -767,6 +822,7 @@ const Products = () => {
                     currentPage={currentPage}
                     totalItems={totalProducts}
                     pageSize={pageSize}
+                    pagination={pagination}
                     onPageChange={handlePageChange}
                   />
                 </>

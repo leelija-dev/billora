@@ -35,6 +35,18 @@ export const useProductStore = create((set, get) => ({
     status: '',
   },
 
+  // Pagination state from API
+  pagination: {
+    current_page: 1,
+    last_page: 1,
+    per_page: 15,
+    total: 0,
+    next_page_url: null,
+    prev_page_url: null,
+    first_page_url: null,
+    last_page_url: null,
+  },
+
   // Cache state
   lastFetchTime: null,
   cacheKey: null,
@@ -75,66 +87,43 @@ export const useProductStore = create((set, get) => ({
       // Handle your API's response structure
       const apiData = response.data
       let products = apiData.data?.data || []
-      const total = apiData.data?.total || products.length
+      const paginationData = apiData.data || {}
       
-      // Fetch stock data for each product (only if products exist)
-      if (products.length > 0) {
-        try {
-          const stockPromises = products.map(product => 
-            stocksAPI.getById(product.id).catch(error => {
-              console.error(`Failed to fetch stock for product ${product.id}:`, error)
-              return null
-            })
-          )
-          
-          const stockResponses = await Promise.all(stockPromises)
-          
-          // Merge stock data with products
-          products = products.map((product, index) => {
-            const stockResponse = stockResponses[index]
-            const stockData = stockResponse?.data?.data || stockResponse?.data
-            
-            return {
-              ...product,
-              stock: stockData?.quantity || 0,
-              maxStock: stockData?.quantity || 100,
-              lowStockThreshold: 10,
-              lowStock: (stockData?.quantity || 0) <= 10
-            }
-          })
-          
-          console.log(' Product Store - Stock data merged:', products)
-        } catch (stockError) {
-          console.error(' Product Store - Error fetching stock data:', stockError)
-          // Set default stock values if stock API fails
-          products = products.map(product => ({
-            ...product,
-            stock: 0,
-            maxStock: 100,
-            lowStockThreshold: 10,
-            lowStock: true
-          }))
-        }
+      // Extract pagination data from API response
+      const pagination = {
+        current_page: paginationData.current_page || page,
+        last_page: paginationData.last_page || 1,
+        per_page: paginationData.per_page || 15,
+        total: paginationData.total || products.length,
+        next_page_url: paginationData.next_page_url || null,
+        prev_page_url: paginationData.prev_page_url || null,
+        first_page_url: paginationData.first_page_url || null,
+        last_page_url: paginationData.last_page_url || null,
       }
+      
+      // Stock data will be merged by Products component
+      // No individual stock API calls here to avoid duplicate requests
       
       // Cache the results
       const cacheData = {
         products: products,
-        total: total
+        total: pagination.total,
+        pagination: pagination
       }
       setCachedData(cacheKey, cacheData)
       
       console.log(' Product Store - Processed Data:', {
         apiData,
         products,
-        total,
+        pagination,
         productsLength: products.length
       })
       
       set({
         products: products,
-        totalProducts: total,
-        currentPage: page,
+        totalProducts: pagination.total,
+        currentPage: pagination.current_page,
+        pagination: pagination,
         loading: false,
         lastFetchTime: Date.now()
       })
@@ -267,6 +256,58 @@ export const useProductStore = create((set, get) => ({
       }, 300)
     } else {
       set({ filters: newFilters })
+    }
+  },
+
+  fetchProductsByUrl: async (url) => {
+    if (!url) return
+    
+    set({ loading: true })
+    try {
+      const response = await productsAPI.getByUrl(url)
+      
+      console.log(' Product Store - Raw API Response (URL):', response)
+      
+      // Handle your API's response structure
+      const apiData = response.data
+      let products = apiData.data?.data || []
+      const paginationData = apiData.data || {}
+      
+      // Extract pagination data from API response
+      const pagination = {
+        current_page: paginationData.current_page || 1,
+        last_page: paginationData.last_page || 1,
+        per_page: paginationData.per_page || 15,
+        total: paginationData.total || products.length,
+        next_page_url: paginationData.next_page_url || null,
+        prev_page_url: paginationData.prev_page_url || null,
+        first_page_url: paginationData.first_page_url || null,
+        last_page_url: paginationData.last_page_url || null,
+      }
+      
+      console.log(' Product Store - Processed Data (URL):', {
+        apiData,
+        products,
+        pagination,
+        productsLength: products.length
+      })
+      
+      set({
+        products: products,
+        totalProducts: pagination.total,
+        currentPage: pagination.current_page,
+        pagination: pagination,
+        loading: false,
+        lastFetchTime: Date.now()
+      })
+      return response.data
+    } catch (error) {
+      console.error(' Product Store - Error (URL):', error)
+      toast.error('Failed to fetch products')
+      set({ 
+        loading: false,
+        error: error.message || 'Failed to fetch products'
+      })
     }
   },
 

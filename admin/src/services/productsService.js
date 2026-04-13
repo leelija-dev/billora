@@ -255,4 +255,19 @@ export const productsAPI = {
       throw error.response?.data || error.message;
     }
   },
+
+  // Get products by URL (for pagination)
+  getByUrl: async (url) => {
+    try {
+      console.log('📦 Fetching products by URL:', url);
+      // Extract the path from the full URL to make a relative request
+      const urlPath = url.replace(import.meta.env.VITE_API_BASE_URL, '');
+      const response = await apiClient.get(urlPath);
+      console.log('📦 Products fetched by URL successfully:', response.data);
+      return response;
+    } catch (error) {
+      console.error('❌ Failed to fetch products by URL:', error);
+      throw error.response?.data || error.message;
+    }
+  },
 };

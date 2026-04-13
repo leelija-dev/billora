@@ -5,6 +5,7 @@ const Pagination = ({
   currentPage,
   totalItems,
   pageSize,
+  pagination,
   onPageChange,
 }) => {
   const totalPages = Math.ceil(totalItems / pageSize)
@@ -42,15 +43,15 @@ const Pagination = ({
     <div className="flex items-center justify-between px-4 py-3 sm:px-6">
       <div className="flex-1 flex justify-between sm:hidden">
         <button
-          onClick={() => onPageChange(currentPage - 1)}
-          disabled={currentPage === 1}
+          onClick={() => onPageChange(pagination?.prev_page_url)}
+          disabled={!pagination?.prev_page_url}
           className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300"
         >
           Previous
         </button>
         <button
-          onClick={() => onPageChange(currentPage + 1)}
-          disabled={currentPage === totalPages}
+          onClick={() => onPageChange(pagination?.next_page_url)}
+          disabled={!pagination?.next_page_url}
           className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300"
         >
           Next
@@ -77,16 +78,16 @@ const Pagination = ({
         <div>
           <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
             <button
-              onClick={() => onPageChange(1)}
-              disabled={currentPage === 1}
+              onClick={() => onPageChange(pagination?.first_page_url)}
+              disabled={!pagination?.first_page_url || currentPage === 1}
               className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-gray-800 dark:border-gray-600 dark:text-gray-400"
             >
               <FiChevronsLeft className="h-4 w-4" />
             </button>
             
             <button
-              onClick={() => onPageChange(currentPage - 1)}
-              disabled={currentPage === 1}
+              onClick={() => onPageChange(pagination?.prev_page_url)}
+              disabled={!pagination?.prev_page_url}
               className="relative inline-flex items-center px-2 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-gray-800 dark:border-gray-600 dark:text-gray-400"
             >
               <FiChevronLeft className="h-4 w-4" />
@@ -111,16 +112,16 @@ const Pagination = ({
             ))}
             
             <button
-              onClick={() => onPageChange(currentPage + 1)}
-              disabled={currentPage === totalPages}
+              onClick={() => onPageChange(pagination?.next_page_url)}
+              disabled={!pagination?.next_page_url}
               className="relative inline-flex items-center px-2 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-gray-800 dark:border-gray-600 dark:text-gray-400"
             >
               <FiChevronRight className="h-4 w-4" />
             </button>
             
             <button
-              onClick={() => onPageChange(totalPages)}
-              disabled={currentPage === totalPages}
+              onClick={() => onPageChange(pagination?.last_page_url)}
+              disabled={!pagination?.last_page_url || currentPage === totalPages}
               className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-gray-800 dark:border-gray-600 dark:text-gray-400"
             >
               <FiChevronsRight className="h-4 w-4" />
