@@ -13,13 +13,13 @@
 
                 <div class="flex items-center gap-3">
 
-                    <a href="{{ route('admin.mail-history') }}"
+                    <a href="{{ route('admin.contacts.index') }}"
                         class="flex items-center gap-2 px-4 py-2 bg-indigo-50 text-indigo-700 rounded-full text-sm hover:bg-indigo-100">
                         ← Back
                     </a>
 
-                    <form action="{{ route('admin.customers.customer-mail') }}" method="GET">
-                        <input type="hidden" name="ids" value="{{ $contacts->id }}">
+                    <form action="#" method="GET">
+                        {{-- <input type="hidden" name="ids" value="{{ $contacts->id }}"> --}}
 
                         <button type="submit"
                             class="flex items-center gap-2 px-4 py-2 bg-blue-400 text-white rounded-full text-sm hover:bg-blue-700 shadow">
@@ -51,7 +51,7 @@
 
                     <div
                         class="w-10 h-10 bg-indigo-500 text-white rounded-full flex items-center justify-center font-semibold">
-                        
+                        {{ $contacts->name ? strtoupper(substr($contacts->name, 0, 1)) : 'N/A' }}
                     </div>
 
                     <div>
@@ -83,10 +83,7 @@
 
             </div>
 
-            <!-- Footer -->
-            <div class="px-6 py-4 border-t text-xs text-gray-400">
-                Message ID: {{ $contacts->id ?? 'N/A' }}
-            </div>
+            
 
         </div>
 

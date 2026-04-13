@@ -96,7 +96,7 @@
                         );
                 @endphp
                 <a href="{{ route('admin.contacts.index') }}"
-                    class="flex items-center px-4 py-3 {{ request()->routeIs('admin.contacts.index') ? 'bg-blue-100 text-blue-600 font-semibold' : 'hover:bg-blue-100' }}">
+                    class="flex items-center px-4 py-3 {{ request()->routeIs('admin.contacts.index','admin.contacts.view') ? 'bg-blue-100 text-blue-600 font-semibold' : 'hover:bg-blue-100' }}">
                     <i class="fa fa-comments"></i>
                     <span class="ml-3">Contact Us</span>
                 </a>
