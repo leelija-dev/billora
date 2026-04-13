@@ -8,7 +8,7 @@ import Input from '../../common/Input/Input'
 import Button from '../../common/Button/Button'
 import Select from '../../common/Select/Select'
 import toast from 'react-hot-toast'
-import { FiUpload, FiX, FiImage, FiPlus, FiTrash2 } from 'react-icons/fi'
+import { FiUpload, FiX, FiPlus, FiTrash2 } from 'react-icons/fi'
 
 const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
   const { user } = useAuthStore()
@@ -37,7 +37,6 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
     handleSubmit,
     formState: { errors },
     setValue,
-    reset,
     watch,
   } = useForm({
     defaultValues: {
@@ -103,14 +102,18 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
       const response = await productsAPI.getCreatePage(user.id)
       const data = response.data
       
+      // Extract input permissions properly
+      const inputPermissions = data.inputPermission || []
+      
       setCreatePageData({
         brands: data.brand || [],
         categories: data.category || [],
         units: data.unit || [],
-        inputPermissions: data.inputPermission || []
+        inputPermissions: inputPermissions
       })
       
       console.log('Create page data loaded:', data)
+      console.log('Input permissions:', inputPermissions)
     } catch (error) {
       console.error('Failed to fetch create page data:', error)
       toast.error('Failed to load form data')
@@ -132,7 +135,6 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
       // Set variants in form state
       if (product.variants && Array.isArray(product.variants)) {
         setVariants(product.variants)
-        // Also set variants in form values for react-hook-form
         setValue('variants', product.variants)
       } else {
         setVariants([])
@@ -141,15 +143,15 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
       
       // Set attributes in form state
       if (product.attributes) {
-        let parsedAttributes = product.attributes;
+        let parsedAttributes = product.attributes
         
         // Parse attributes if it's a JSON string
         if (typeof product.attributes === 'string') {
           try {
-            parsedAttributes = JSON.parse(product.attributes);
+            parsedAttributes = JSON.parse(product.attributes)
           } catch (error) {
-            console.error('Error parsing attributes JSON:', error);
-            parsedAttributes = {};
+            console.error('Error parsing attributes JSON:', error)
+            parsedAttributes = {}
           }
         }
         
@@ -160,7 +162,6 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
             value: String(value)
           }))
           setAttributes(attrsArray.length > 0 ? attrsArray : [{ key: '', value: '' }])
-          // Also set attributes in form values for react-hook-form
           setValue('attributes', parsedAttributes)
         } else {
           setAttributes([{ key: '', value: '' }])
@@ -181,9 +182,20 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
 
   // Check if user has permission for a specific field
   const hasPermission = (fieldSlug) => {
-    return createPageData.inputPermissions.some(permission => 
-      permission.input_permission?.slug === fieldSlug
-    )
+    if (!createPageData.inputPermissions.length) return false
+    
+    const hasPerm = createPageData.inputPermissions.some(permission => {
+      // Access the nested input_permission object's slug
+      const permSlug = permission?.input_permission?.slug
+      
+      // Check both underscore and hyphen versions
+      const underscoreVersion = fieldSlug.replace(/-/g, '_')
+      const hyphenVersion = fieldSlug.replace(/_/g, '-')
+      
+      return permSlug === fieldSlug || permSlug === underscoreVersion || permSlug === hyphenVersion
+    })
+    
+    return hasPerm
   }
 
   // Dynamic field rendering based on permissions
@@ -276,7 +288,6 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
       created_by: user.id,
       images: selectedImages,
       variants: variants,
-      // Set attributes as JSON object (will be empty if no attributes)
       attributes: Object.keys(attributesObject).length > 0 ? attributesObject : null,
       // Convert boolean fields to integers for backend
       is_active: data.is_active ? 1 : 0,
@@ -306,8 +317,8 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
       className="space-y-6"
     >
       {/* Hidden user_id and created_by fields */}
-      <input type="hidden" {...register('user_id')} value={user.id} />
-      <input type="hidden" {...register('created_by')} value={user.id} />
+      <input type="hidden" {...register('user_id')} value={user?.id || ''} />
+      <input type="hidden" {...register('created_by')} value={user?.id || ''} />
 
       {/* Image Upload Section */}
       <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700">
@@ -329,15 +340,14 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
               <div className="aspect-square rounded-lg overflow-hidden border-2 border-gray-200 dark:border-gray-600 transition-all duration-200 group-hover:border-blue-300 dark:group-hover:border-blue-500">
                 <img 
                   src={preview} 
-                  alt={`Product image ${index + 1}`} 
+                  alt={`Product ${index + 1}`} 
                   className="w-full h-full object-cover"
                 />
               </div>
               <button
                 type="button"
                 onClick={() => removeImage(index)}
-                className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1.5 hover:bg-red-600 transition-all duration-200 shadow-lg group-hover:scale-110"
-                title="Remove image"
+                className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1.5 hover:bg-red-600 transition-all duration-200 shadow-lg"
               >
                 <FiX className="w-3 h-3" />
               </button>
@@ -353,10 +363,10 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
               onChange={handleImageChange}
             />
             <div className="text-center">
-              <div className="w-12 h-12 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-3 group-hover:bg-blue-100 dark:group-hover:bg-blue-900/50 transition-all duration-200">
-                <FiUpload className="w-6 h-6 text-gray-400 group-hover:text-blue-500 transition-all duration-200" />
+              <div className="w-12 h-12 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-3">
+                <FiUpload className="w-6 h-6 text-gray-400" />
               </div>
-              <p className="text-sm font-medium text-gray-600 dark:text-gray-300 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-all duration-200">
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-300">
                 Upload Images
               </p>
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
@@ -369,162 +379,130 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
       
       {/* Basic Product Information */}
       <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700">
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h3 className="text-xl font-bold text-gray-900 dark:text-white">Basic Information</h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Core product details and identifiers</p>
-          </div>
+        <div className="mb-6">
+          <h3 className="text-xl font-bold text-gray-900 dark:text-white">Basic Information</h3>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Core product details and identifiers</p>
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="space-y-6">
-            <Input
-              label="Product Name"
-              placeholder="Enter product name"
-              error={errors.name?.message}
-              {...register('name', { required: 'Product name is required' })}
-              className="transition-all duration-200 focus:ring-2 focus:ring-blue-500"
-            />
+          <Input
+            label="Product Name"
+            placeholder="Enter product name"
+            error={errors.name?.message}
+            {...register('name', { required: 'Product name is required' })}
+          />
 
-            <Input
-              label="Product Code (SKU)"
-              placeholder="Enter product code"
-              error={errors.sku?.message}
-              {...register('sku', { required: 'Product code is required' })}
-              className="transition-all duration-200 focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-          
-          <div className="space-y-6">
-            <Select
-              label="Brand"
-              options={[
-                { value: '', label: 'Select Brand' },
-                ...(createPageData.brands?.map(brand => ({
-                  value: brand.id,
-                  label: brand.name,
-                })) || [])
-              ]}
-              error={errors.brand_id?.message}
-              {...register('brand_id', { required: 'Brand is required' })}
-              className="transition-all duration-200 focus:ring-2 focus:ring-blue-500"
-            />
+          <Input
+            label="Product Code (SKU)"
+            placeholder="Enter product code"
+            error={errors.sku?.message}
+            {...register('sku', { required: 'Product code is required' })}
+          />
 
-            <Select
-              label="Category"
-              options={[
-                { value: '', label: 'Select Category' },
-                ...(createPageData.categories?.map(category => ({
-                  value: category.id,
-                  label: category.name,
-                })) || [])
-              ]}
-              error={errors.category_id?.message}
-              {...register('category_id', { required: 'Category is required' })}
-              className="transition-all duration-200 focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
+          <Select
+            label="Brand"
+            options={[
+              { value: '', label: 'Select Brand' },
+              ...(createPageData.brands?.map(brand => ({
+                value: brand.id,
+                label: brand.name,
+              })) || [])
+            ]}
+            error={errors.brand_id?.message}
+            {...register('brand_id', { required: 'Brand is required' })}
+          />
+
+          <Select
+            label="Category"
+            options={[
+              { value: '', label: 'Select Category' },
+              ...(createPageData.categories?.map(category => ({
+                value: category.id,
+                label: category.name,
+              })) || [])
+            ]}
+            error={errors.category_id?.message}
+            {...register('category_id', { required: 'Category is required' })}
+          />
         </div>
       </div>
 
       {/* Pricing Information */}
       <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700">
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h3 className="text-xl font-bold text-gray-900 dark:text-white">Pricing Information</h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Set product prices and tax details</p>
-          </div>
+        <div className="mb-6">
+          <h3 className="text-xl font-bold text-gray-900 dark:text-white">Pricing Information</h3>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Set product prices and tax details</p>
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="space-y-6">
-            <Input
-              label="Unit Amount"
-              type="number"
-              step="0.01"
-              placeholder="Enter unit amount"
-              error={errors.unit_amount?.message}
-              {...register('unit_amount', { 
-                required: 'Unit amount is required',
-                valueAsNumber: true 
-              })}
-              className="transition-all duration-200 focus:ring-2 focus:ring-blue-500"
-            />
+          <Input
+            label="Unit Amount"
+            type="number"
+            step="0.01"
+            placeholder="Enter unit amount"
+            error={errors.unit_amount?.message}
+            {...register('unit_amount', { 
+              required: 'Unit amount is required',
+              valueAsNumber: true 
+            })}
+          />
 
-            <Input
-              label="Selling Price"
-              type="number"
-              step="0.01"
-              placeholder="Enter selling price"
-              error={errors.selling_price?.message}
-              {...register('selling_price', { 
-                valueAsNumber: true 
-              })}
-              className="transition-all duration-200 focus:ring-2 focus:ring-blue-500"
-            />
+          <Select
+            label="Unit"
+            options={[
+              { value: '', label: 'Select Unit' },
+              ...(createPageData.units?.map(unit => ({
+                value: unit.id,
+                label: `${unit.name} (${unit.code})`,
+              })) || [])
+            ]}
+            error={errors.unit_id?.message}
+            {...register('unit_id', { required: 'Unit is required' })}
+          />
 
-            <Input
-              label="GST Percentage"
-              type="number"
-              step="0.01"
-              placeholder="Enter GST percentage"
-              error={errors.gst_percentage?.message}
-              {...register('gst_percentage', { 
-                valueAsNumber: true 
-              })}
-              className="transition-all duration-200 focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-          
-          <div className="space-y-6">
-            <Select
-              label="Unit"
-              options={[
-                { value: '', label: 'Select Unit' },
-                ...(createPageData.units?.map(unit => ({
-                  value: unit.id,
-                  label: `${unit.name} (${unit.code})`,
-                })) || [])
-              ]}
-              error={errors.unit_id?.message}
-              {...register('unit_id', { required: 'Unit is required' })}
-              className="transition-all duration-200 focus:ring-2 focus:ring-blue-500"
-            />
+          <Input
+            label="Selling Price"
+            type="number"
+            step="0.01"
+            placeholder="Enter selling price"
+            error={errors.selling_price?.message}
+            {...register('selling_price', { valueAsNumber: true })}
+          />
 
-            <Input
-              label="Purchase Price"
-              type="number"
-              step="0.01"
-              placeholder="Enter purchase price"
-              error={errors.purchase_price?.message}
-              {...register('purchase_price', { 
-                valueAsNumber: true 
-              })}
-              className="transition-all duration-200 focus:ring-2 focus:ring-blue-500"
-            />
+          <Input
+            label="Purchase Price"
+            type="number"
+            step="0.01"
+            placeholder="Enter purchase price"
+            error={errors.purchase_price?.message}
+            {...register('purchase_price', { valueAsNumber: true })}
+          />
 
-            <Input
-              label="Discount Percentage"
-              type="number"
-              step="0.01"
-              placeholder="Enter discount percentage"
-              error={errors.discount_percentage?.message}
-              {...register('discount_percentage', { 
-                valueAsNumber: true 
-              })}
-              className="transition-all duration-200 focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
+          <Input
+            label="GST Percentage"
+            type="number"
+            step="0.01"
+            placeholder="Enter GST percentage"
+            error={errors.gst_percentage?.message}
+            {...register('gst_percentage', { valueAsNumber: true })}
+          />
+
+          <Input
+            label="Discount Percentage"
+            type="number"
+            step="0.01"
+            placeholder="Enter discount percentage"
+            error={errors.discount_percentage?.message}
+            {...register('discount_percentage', { valueAsNumber: true })}
+          />
         </div>
       </div>
 
       {/* Product Description */}
       <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700">
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h3 className="text-xl font-bold text-gray-900 dark:text-white">Product Description</h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Detailed product information</p>
-          </div>
+        <div className="mb-6">
+          <h3 className="text-xl font-bold text-gray-900 dark:text-white">Product Description</h3>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Detailed product information</p>
         </div>
         
         <div className="space-y-4">
@@ -534,7 +512,7 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
             </label>
             <textarea
               rows={4}
-              className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white transition-all duration-200 resize-none"
+              className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white resize-none"
               placeholder="Enter detailed product description..."
               {...register('description')}
             />
@@ -559,69 +537,51 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
       </div>
 
       {/* Product Attributes */}
-      {hasPermission('attributes') && (
+      {renderField('attributes', (
         <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700">
           <div className="flex items-center justify-between mb-6">
             <div>
               <h3 className="text-xl font-bold text-gray-900 dark:text-white">Product Attributes</h3>
               <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Add custom key-value pairs for product specifications</p>
             </div>
-            <div className="flex items-center space-x-2">
-              <span className="text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded-full">
-                {attributes.filter(attr => attr.key.trim() !== '').length} active
-              </span>
-            </div>
+            <span className="text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded-full">
+              {attributes.filter(attr => attr.key.trim() !== '').length} active
+            </span>
           </div>
           
-          {/* Display existing attributes */}
           <div className="space-y-4 mb-6">
             {attributes.map((attr, index) => (
-              <div key={index} className="relative group">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-start">
-                  <div className="flex-1">
-                    <Input
-                      label="Attribute Key"
-                      placeholder="e.g., color, size, material"
-                      value={attr.key}
-                      onChange={(e) => updateAttribute(index, 'key', e.target.value)}
-                      className="transition-all duration-200 focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-                  <div className="flex-1">
-                    <Input
-                      label="Attribute Value"
-                      placeholder="e.g., red, large, cotton"
-                      value={attr.value}
-                      onChange={(e) => updateAttribute(index, 'value', e.target.value)}
-                      className="transition-all duration-200 focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-                  <div className="flex items-end h-full">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => removeAttribute(index)}
-                      className="text-red-500 min-h-[42px] hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all duration-200 group-hover:opacity-100 opacity-60"
-                      title="Remove attribute"
-                    >
-                      <FiTrash2 className="w-4 h-4" />
-                    </Button>
-                  </div>
-                </div>
-                {index < attributes.length - 1 && (
-                  <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-gray-200 dark:via-gray-600 to-transparent transform translate-y-2"></div>
-                )}
+              <div key={index} className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+                <Input
+                  label="Attribute Key"
+                  placeholder="e.g., color, size, material"
+                  value={attr.key}
+                  onChange={(e) => updateAttribute(index, 'key', e.target.value)}
+                />
+                <Input
+                  label="Attribute Value"
+                  placeholder="e.g., red, large, cotton"
+                  value={attr.value}
+                  onChange={(e) => updateAttribute(index, 'value', e.target.value)}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => removeAttribute(index)}
+                  className="text-red-500 hover:text-red-700"
+                >
+                  <FiTrash2 className="w-4 h-4" />
+                </Button>
               </div>
             ))}
           </div>
           
-          {/* Add new attribute button */}
           <div className="flex items-center justify-between pt-4 border-t border-gray-200 dark:border-gray-700">
             <Button
               type="button"
               variant="outline"
               onClick={addAttribute}
-              className="flex items-center space-x-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all duration-200 border-blue-200 dark:border-blue-700"
+              className="flex items-center space-x-2 text-blue-600"
             >
               <FiPlus className="w-4 h-4" />
               <span>Add Attribute</span>
@@ -632,55 +592,22 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
                 type="button"
                 variant="ghost"
                 onClick={() => setAttributes([{ key: '', value: '' }])}
-                className="text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700 transition-all duration-200"
               >
                 Clear All
               </Button>
             )}
           </div>
-          
-          {/* JSON Preview */}
-          {attributes.some(attr => attr.key.trim() !== '') && (
-            <div className="mt-6 p-4 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-700/50 dark:to-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-600">
-              <div className="flex items-center justify-between mb-3">
-                <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center">
-                  <svg className="w-4 h-4 mr-2 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
-                  </svg>
-                  JSON Output Preview
-                </h4>
-                <span className="text-xs text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-800 px-2 py-1 rounded border border-gray-200 dark:border-gray-600">
-                  {Object.keys(attributes.filter(attr => attr.key.trim() !== '').reduce((acc, attr) => {
-                    acc[attr.key.trim()] = attr.value.trim()
-                    return acc
-                  }, {})).length} properties
-                </span>
-              </div>
-              <div className="bg-white dark:bg-gray-900 p-3 rounded border border-gray-200 dark:border-gray-600 overflow-x-auto">
-                <pre className="text-xs font-mono text-gray-700 dark:text-gray-300 leading-relaxed">
-                  {JSON.stringify(
-                    attributes
-                      .filter(attr => attr.key.trim() !== '')
-                      .reduce((acc, attr) => {
-                        acc[attr.key.trim()] = attr.value.trim()
-                        return acc
-                      }, {}),
-                    null,
-                    2
-                  )}
-                </pre>
-              </div>
-            </div>
-          )}
         </div>
-      )}
+      ))}
 
       {/* Stock Information */}
-      {(hasPermission('conversion_factor') || hasPermission('minimum_stock_quantity') || hasPermission('maximum_stock_quantity') || hasPermission('current_stock') || hasPermission('warehouse_location')) && (
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm">
-          <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">Stock Information</h3>
+      {(hasPermission('conversion_factor') || hasPermission('minimum_stock_quantity') || 
+        hasPermission('maximum_stock_quantity') || hasPermission('current_stock') || 
+        hasPermission('warehouse_location')) && (
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700">
+          <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6">Stock Information</h3>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {renderField('conversion_factor', (
               <Input
                 label="Conversion Factor"
@@ -697,7 +624,7 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
                 label="Minimum Stock Quantity"
                 type="number"
                 step="1"
-                placeholder="Enter minimum stock quantity"
+                placeholder="Enter minimum stock"
                 error={errors.minimum_stock_quantity?.message}
                 {...register('minimum_stock_quantity', { valueAsNumber: true })}
               />
@@ -708,7 +635,7 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
                 label="Maximum Stock Quantity"
                 type="number"
                 step="1"
-                placeholder="Enter maximum stock quantity"
+                placeholder="Enter maximum stock"
                 error={errors.maximum_stock_quantity?.message}
                 {...register('maximum_stock_quantity', { valueAsNumber: true })}
               />
@@ -738,11 +665,12 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
       )}
 
       {/* Additional Pricing */}
-      {(hasPermission('mrp') || hasPermission('wholesale_price') || hasPermission('discount_amount') || hasPermission('cess_percentage')) && (
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm">
-          <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">Additional Pricing</h3>
+      {(hasPermission('mrp') || hasPermission('wholesale_price') || 
+        hasPermission('discount_amount') || hasPermission('cess_percentage')) && (
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700">
+          <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6">Additional Pricing</h3>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {renderField('mrp', (
               <Input
                 label="MRP (Maximum Retail Price)"
@@ -791,26 +719,35 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
       )}
 
       {/* Tax Information */}
-      {hasPermission('gst-hsn-code') && (
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm">
-          <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">Tax Information</h3>
+      {renderField('gst-hsn-code', (
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700">
+          <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6">Tax Information</h3>
           
           <Input
             label="GST HSN Code"
-            placeholder="Enter GST HSN code"
+            type="number"
+            placeholder="Enter GST HSN code (numeric only)"
             error={errors.gst_hsn_code?.message}
-            {...register('gst_hsn_code')}
+            {...register('gst_hsn_code', { 
+              valueAsNumber: true,
+              pattern: /^[0-9]*$/,
+              validate: value => !isNaN(value) || 'GST HSN Code must be a number'
+            })}
           />
         </div>
-      )}
+      ))}
 
       {/* Medicine Specific Fields */}
-      {(hasPermission('medicine-type') || hasPermission('other-medicine-type') || hasPermission('expiry-date') || hasPermission('batch-number') || hasPermission('manufacturer-name') || hasPermission('prescription-required') || hasPermission('schedule-type') || hasPermission('salt-composition')) && (
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm">
-          <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">Medicine Information</h3>
+      {(hasPermission('medicine_type') || hasPermission('other_medicine_type') || 
+        hasPermission('expiry_date') || hasPermission('batch_number') || 
+        hasPermission('manufacturer_name') || hasPermission('prescription_required') || 
+        hasPermission('schedule_type') || hasPermission('salt_composition') || 
+        hasPermission('warranty_months')) && (
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700">
+          <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6">Medicine Information</h3>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {renderField('medicine_type', (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {renderField('medicine-type', (
               <Input
                 label="Medicine Type"
                 placeholder="Enter medicine type"
@@ -819,7 +756,7 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
               />
             ))}
 
-            {renderField('other_medicine_type', (
+            {renderField('other-medicine-type', (
               <Input
                 label="Other Medicine Type"
                 placeholder="Enter other medicine type"
@@ -828,7 +765,7 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
               />
             ))}
 
-            {renderField('expiry_date', (
+            {renderField('expiry-date', (
               <Input
                 label="Expiry Date"
                 type="date"
@@ -837,7 +774,7 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
               />
             ))}
 
-            {renderField('batch_number', (
+            {renderField('batch-number', (
               <Input
                 label="Batch Number"
                 placeholder="Enter batch number"
@@ -846,7 +783,7 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
               />
             ))}
 
-            {renderField('manufacturer_name', (
+            {renderField('manufacturer-name', (
               <Input
                 label="Manufacturer Name"
                 placeholder="Enter manufacturer name"
@@ -855,20 +792,20 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
               />
             ))}
 
-            {renderField('prescription_required', (
-              <div className="flex items-center">
+            {renderField('prescription-required', (
+              <div className="flex items-center p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-600">
                 <input
                   type="checkbox"
-                  className="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50 mr-2"
+                  className="rounded border-gray-300 text-blue-600 mr-3 w-4 h-4"
                   {...register('prescription_required')}
                 />
-                <label className="text-sm text-gray-600 dark:text-gray-400">
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
                   Prescription Required
                 </label>
               </div>
             ))}
 
-            {renderField('schedule_type', (
+            {renderField('schedule-type', (
               <Input
                 label="Schedule Type"
                 placeholder="Enter schedule type"
@@ -877,7 +814,7 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
               />
             ))}
 
-            {renderField('salt_composition', (
+            {renderField('salt-composition', (
               <Input
                 label="Salt Composition"
                 placeholder="Enter salt composition"
@@ -886,7 +823,7 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
               />
             ))}
 
-            {renderField('warranty_months', (
+            {renderField('warranty-months', (
               <Input
                 label="Warranty Months"
                 type="number"
@@ -900,54 +837,56 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
       )}
 
       {/* Agricultural/Perishable Fields */}
-      {(hasPermission('perishable') || hasPermission('organic-certified') || hasPermission('harvest-date') || hasPermission('storage-instructions')) && (
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm">
-          <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">Agricultural Information</h3>
+      {(hasPermission('perishable') || hasPermission('organic-certified') || 
+        hasPermission('harvest-date') || hasPermission('storage-instructions')) && (
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700">
+          <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6">Agricultural Information</h3>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {renderField('perishable', (
-              <div className="flex items-center">
+              <div className="flex items-center p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-600">
                 <input
                   type="checkbox"
-                  className="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50 mr-2"
+                  className="rounded border-gray-300 text-blue-600 mr-3 w-4 h-4"
                   {...register('perishable')}
                 />
-                <label className="text-sm text-gray-600 dark:text-gray-400">
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
                   Perishable
                 </label>
               </div>
             ))}
 
-            {renderField('organic_certified', (
-              <div className="flex items-center">
+            {renderField('organic-certified', (
+              <div className="flex items-center p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-600">
                 <input
                   type="checkbox"
-                  className="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50 mr-2"
+                  className="rounded border-gray-300 text-blue-600 mr-3 w-4 h-4"
                   {...register('organic_certified')}
                 />
-                <label className="text-sm text-gray-600 dark:text-gray-400">
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
                   Organic Certified
                 </label>
               </div>
             ))}
 
-            {renderField('harvest_date', (
+            {renderField('harvest-date', (
               <Input
                 label="Harvest Date"
                 type="date"
+                placeholder="Enter harvest date"
                 error={errors.harvest_date?.message}
                 {...register('harvest_date')}
               />
             ))}
 
-            {renderField('storage_instructions', (
+            {renderField('storage-instructions', (
               <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Storage Instructions
                 </label>
                 <textarea
                   rows={3}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white resize-none"
                   placeholder="Enter storage instructions"
                   {...register('storage_instructions')}
                 />
@@ -959,9 +898,12 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
 
       {/* Variants Section */}
       {(hasPermission('size') || hasPermission('color') || hasPermission('material') || hasPermission('gender')) && (
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm">
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Product Variants</h3>
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700">
+          <div className="flex justify-between items-center mb-6">
+            <div>
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white">Product Variants</h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Add size, color, material, and gender variants</p>
+            </div>
             <Button
               type="button"
               variant="outline"
@@ -975,7 +917,7 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
           
           <div className="space-y-4">
             {variants.map((variant, index) => (
-              <div key={index} className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+              <div key={index} className="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
                 {renderField('size', (
                   <Input
                     label="Size"
@@ -1021,7 +963,7 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
                   type="button"
                   variant="outline"
                   onClick={() => removeVariant(index)}
-                  className="text-red-600 hover:text-red-700"
+                  className="text-red-500 hover:text-red-700"
                 >
                   <FiTrash2 className="w-4 h-4" />
                 </Button>
@@ -1032,9 +974,9 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
       )}
 
       {/* Additional Description */}
-      {hasPermission('short_description') && (
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm">
-          <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">Additional Description</h3>
+      {renderField('short_description', (
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700">
+          <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6">Additional Description</h3>
           
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -1042,54 +984,54 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
             </label>
             <textarea
               rows={2}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+              className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white resize-none"
               placeholder="Enter short description"
               {...register('short_description')}
             />
           </div>
         </div>
-      )}
+      ))}
 
       {/* Additional Options */}
       {(hasPermission('is_featured') || hasPermission('is_returnable') || hasPermission('is_refundable')) && (
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm">
-          <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">Additional Options</h3>
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700">
+          <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6">Additional Options</h3>
           
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {renderField('is_featured', (
-              <div className="flex items-center">
+              <div className="flex items-center p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-600">
                 <input
                   type="checkbox"
-                  className="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50 mr-2"
+                  className="rounded border-gray-300 text-blue-600 mr-3 w-4 h-4"
                   {...register('is_featured')}
                 />
-                <label className="text-sm text-gray-600 dark:text-gray-400">
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
                   Featured Product
                 </label>
               </div>
             ))}
 
             {renderField('is_returnable', (
-              <div className="flex items-center">
+              <div className="flex items-center p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-600">
                 <input
                   type="checkbox"
-                  className="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50 mr-2"
+                  className="rounded border-gray-300 text-blue-600 mr-3 w-4 h-4"
                   {...register('is_returnable')}
                 />
-                <label className="text-sm text-gray-600 dark:text-gray-400">
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
                   Returnable
                 </label>
               </div>
             ))}
 
             {renderField('is_refundable', (
-              <div className="flex items-center">
+              <div className="flex items-center p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-600">
                 <input
                   type="checkbox"
-                  className="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50 mr-2"
+                  className="rounded border-gray-300 text-blue-600 mr-3 w-4 h-4"
                   {...register('is_refundable')}
                 />
-                <label className="text-sm text-gray-600 dark:text-gray-400">
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
                   Refundable
                 </label>
               </div>
@@ -1097,6 +1039,23 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
           </div>
         </div>
       )}
+
+      {/* Supplier Information */}
+      {renderField('supplier_id', (
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700">
+          <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6">Supplier Information</h3>
+          
+          <Input
+            label="Supplier ID"
+            placeholder="Enter supplier ID"
+            error={errors.supplier_id?.message}
+            {...register('supplier_id')}
+          />
+        </div>
+      ))}
+
+      {/* Hidden updated_by field */}
+      <input type="hidden" {...register('updated_by')} value={user?.id || ''} />
 
       {/* Form Actions */}
       <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700">
@@ -1111,7 +1070,6 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
               variant="outline"
               onClick={onCancel}
               disabled={isSubmitting}
-              className="px-6 py-2.5 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200"
             >
               Cancel
             </Button>
@@ -1121,24 +1079,8 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
               onClick={handleSubmit(onFormSubmit)}
               isLoading={isSubmitting}
               disabled={isSubmitting}
-              className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium shadow-lg hover:shadow-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isSubmitting ? (
-                <span className="flex items-center">
-                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  {product ? 'Updating...' : 'Creating...'}
-                </span>
-              ) : (
-                <span className="flex items-center">
-                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                  {product ? 'Update Product' : 'Create Product'}
-                </span>
-              )}
+              {isSubmitting ? (product ? 'Updating...' : 'Creating...') : (product ? 'Update Product' : 'Create Product')}
             </Button>
           </div>
         </div>

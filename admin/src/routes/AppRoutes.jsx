@@ -24,7 +24,6 @@ import InvoiceDetail from '../pages/invoices/InvoiceDetail'
 import Reports from '../pages/reports/Reports'
 import ReportDetails from '../pages/reports/ReportDetails'
 import Plans from '../pages/billing/Plans'
-import BillGenerate from '../pages/bill-generate/BillGenerate'
 import Settings from '../pages/settings/Settings'
 
 // Test Page
@@ -59,7 +58,6 @@ const AppRoutes = () => {
           <Route path="/invoices/detail/:id" element={<InvoiceDetail />} />
           <Route path="/reports" element={<Reports />} />
           <Route path="/reports/:id" element={<ReportDetails />} />
-          <Route path="/invoice" element={<BillGenerate />} />
           <Route path="/billing" element={<Plans />} />
           <Route path="/settings" element={<Settings />} />
         </Route>

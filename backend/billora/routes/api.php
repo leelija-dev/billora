@@ -19,6 +19,7 @@ use App\Http\Controllers\admin\PlanPurchaseHistoryController;
 use App\Http\Controllers\admin\PaymentController;
 use App\Http\Controllers\admin\BusinessTypeController;
 use App\Http\Controllers\admin\ContactUsController;
+use App\Http\Controllers\admin\MedicineTypeController;
 use App\Http\Controllers\admin\PackageCostController;
 use App\Http\Controllers\admin\UserOrdersController;
 use App\Http\Controllers\PlanExpiryController;
@@ -221,4 +222,11 @@ Route::middleware('auth:sanctum')->prefix('packages-cost')->group(function () {
 Route::prefix('contact-us')->group(function () {
    Route::get('/', [ContactUsController::class, 'index']);
    Route::post('/store', [ContactUsController::class, 'store']);
+});
+Route::middleware('auth:sanctum')->prefix('medicine-type')->group(function () {
+   Route::get('/{id}', [MedicineTypeController::class, 'index']);
+   Route::post('/store', [MedicineTypeController::class, 'store']);
+   Route::get('/edit/{id}', [MedicineTypeController::class, 'edit']);
+   Route::put('/update/{id}', [MedicineTypeController::class, 'update']);
+   Route::delete('/delete/{id}', [MedicineTypeController::class, 'delete']);
 });
