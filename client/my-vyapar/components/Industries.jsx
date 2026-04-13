@@ -16,7 +16,7 @@ const INDUSTRY_DATA = [
     tag: "Innovation",
     title: "Drive Innovation",
     description: "Transform your business with cutting-edge billing solutions designed for the modern era of digital commerce.",
-    fullDescription: "Transform your business with cutting-edge billing solutions designed for the modern era of digital commerce. Our innovative platform leverages AI and machine learning to automate complex billing processes, reduce errors, and provide real-time insightsreduce errors, and provide real-time insightsreduce errors, and provide real-time insightsreduce errors, and provide real-time insightsreduce errors, and provide real-time insightsreduce errors, and provide real-time insightsreduce errors, and provide real-time insightsreduce errors, and provide real-time insightsreduce errors, and provide real-time insightsreduce errors, and provide real-time insightsreduce errors, and provide real-time insightsreduce errors, and provide real-time insights.",  
+    fullDescription: "Transform your business with cutting-edge billing solutions designed for the modern era of digital commerce. Our innovative platform leverages AI and machine learning to automate complex billing processes, reduce errors, and provide real-time insights. Experience seamless integration with your existing tools and unlock new levels of efficiency with our intelligent automation suite.",
     buttonLink: "/solutions/innovation",
     icon: "🚀",
     color: "#7fa1d0",
@@ -28,7 +28,7 @@ const INDUSTRY_DATA = [
     tag: "Growth",
     title: "Empower Growth",
     description: "Scale your business with powerful accounting tools that provide deep insights into your financial health.",
-    fullDescription: "Scale your business with powerful accounting tools that provide deep insights into your financial health. Our comprehensive suite includes advanced analytics, forecasting capabilities, and customizable dashboards.",
+    fullDescription: "Scale your business with powerful accounting tools that provide deep insights into your financial health. Our comprehensive suite includes advanced analytics, forecasting capabilities, and customizable dashboards. Make data-driven decisions with real-time financial reporting and predictive insights that help you stay ahead of the competition.",
     buttonLink: "/solutions/growth",
     icon: "📈",
     color: "#6366f1",
@@ -40,7 +40,7 @@ const INDUSTRY_DATA = [
     tag: "Compliance",
     title: "GSTR Filing",
     description: "Simplify GST returns with automated filing systems that ensure accuracy and save hours of manual work.",
-    fullDescription: "Simplify GST returns with automated filing systems that ensure accuracy and save hours of manual work. Our intelligent platform automatically extracts data from invoices, validates entries, and generates error-free returns.",
+    fullDescription: "Simplify GST returns with automated filing systems that ensure accuracy and save hours of manual work. Our intelligent platform automatically extracts data from invoices, validates entries, and generates error-free returns. Stay compliant with changing regulations while saving valuable time and resources.",
     buttonLink: "/solutions/gstr",
     icon: "📑",
     color: "#7bb2cc",
@@ -52,7 +52,7 @@ const INDUSTRY_DATA = [
     tag: "Operations",
     title: "Unite Industries",
     description: "Connect all your business operations seamlessly in one unified platform, from inventory to final sale.",
-    fullDescription: "Connect all your business operations seamlessly in one unified platform, from inventory to final sale. Break down silos between departments with integrated workflows, real-time synchronization, and automated processes.",
+    fullDescription: "Connect all your business operations seamlessly in one unified platform, from inventory to final sale. Break down silos between departments with integrated workflows, real-time synchronization, and automated processes. Achieve complete visibility across your entire business ecosystem.",
     buttonLink: "/solutions/unite",
     icon: "🔗",
     color: "#4b5563",
@@ -64,7 +64,7 @@ const INDUSTRY_DATA = [
     tag: "Reach",
     title: "Expand Reach",
     description: "Grow your customer base with professional digital invoices and integrated payment gateways.",
-    fullDescription: "Grow your customer base with professional digital invoices and integrated payment gateways. Our platform enables you to send branded, professional invoices that enhance your company's image.",
+    fullDescription: "Grow your customer base with professional digital invoices and integrated payment gateways. Our platform enables you to send branded, professional invoices that enhance your company's image. Accept payments faster with multiple payment options and reduce payment delays with automated reminders.",
     buttonLink: "/solutions/expand",
     icon: "🌍",
     color: "#4b22c5",
@@ -161,7 +161,7 @@ const CardContent = ({ item }) => {
       className="w-full max-w-[1440px] bg-white flex flex-col md:flex-row mx-auto overflow-hidden rounded-[40px]"
       style={{ height: 'min(650px, 75vh)' }}
     >
-      {/* TEXT AREA: Added overflow-y-auto so details can scroll if they exceed height */}
+      {/* TEXT AREA */}
       <div className="flex-1 px-8 lg:px-16 py-12 flex flex-col justify-center order-2 md:order-1 bg-white overflow-y-auto custom-scrollbar">
         <div className="flex items-center gap-4 mb-6">
           <span className="text-5xl">{item.icon}</span>
@@ -180,14 +180,21 @@ const CardContent = ({ item }) => {
             {isExpanded ? item.fullDescription : item.description}
           </p>
           
-          {item.fullDescription && (
-            <button onClick={() => setIsExpanded(!isExpanded)}
-              className="text-lg font-semibold mt-3 transition-colors hover:opacity-80 inline-block cursor-pointer"
-              style={{ color: item.color }}
-              type="button">
-              {isExpanded ? "Show less" : "Read more"}
-            </button>
-          )}
+         {/* Show button if fullDescription exists AND it's longer than description */}
+{item.fullDescription && item.fullDescription.length > item.description.length && (
+  <button
+    onClick={(e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setIsExpanded(!isExpanded);
+    }}
+    className="text-lg font-semibold mt-3 px-2 py-1 cursor-pointer relative z-10 hover:opacity-70 transition-opacity"
+    style={{ color: item.color }}
+    type="button"
+  >
+    {isExpanded ? "Show less" : "Read more"}
+  </button>
+)}
         </div>
       </div>
 

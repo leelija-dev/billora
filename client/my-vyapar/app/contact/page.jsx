@@ -1,8 +1,10 @@
 "use client";
 import Navbar from "@/components/Navbar";  
-import Footer from "@/components/Footer" ;
+import Footer from "@/components/Footer";
 import React, { useState } from "react";
 import Link from "next/link";
+import { submitContactForm } from "@/services/contactService";
+import toast from 'react-hot-toast';
 
 export default function Contact() {
   const [formData, setFormData] = useState({
@@ -13,10 +15,7 @@ export default function Contact() {
     message: ""
   });
 
-  const [formStatus, setFormStatus] = useState({
-    submitted: false,
-    loading: false
-  });
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleChange = (e) => {
     setFormData({
@@ -25,30 +24,76 @@ export default function Contact() {
     });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    setFormStatus({ ...formStatus, loading: true });
-
-    // Simulate API call
-    setTimeout(() => {
-      console.log("Form Submitted:", formData);
-      setFormStatus({ submitted: true, loading: false });
+    
+    // Validation
+    if (!formData.name.trim()) {
+      toast.error('Please enter your full name');
+      return;
+    }
+    
+    if (!formData.phone.trim()) {
+      toast.error('Please enter your phone number');
+      return;
+    }
+    
+    const phoneRegex = /^\d{10}$/;
+    if (!phoneRegex.test(formData.phone.replace(/\D/g, ''))) {
+      toast.error('Please enter a valid 10-digit phone number');
+      return;
+    }
+    
+    if (!formData.email.trim()) {
+      toast.error('Please enter your email address');
+      return;
+    }
+    
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.email)) {
+      toast.error('Please enter a valid email address');
+      return;
+    }
+    
+    if (!formData.subject.trim()) {
+      toast.error('Please enter a subject');
+      return;
+    }
+    
+    if (!formData.message.trim()) {
+      toast.error('Please enter your message');
+      return;
+    }
+    
+    setIsLoading(true);
+    
+    try {
+      const response = await submitContactForm(formData);
       
-      alert("✨ Your message has been submitted successfully! Our team will get back to you within 24 hours.");
+      console.log('API Response:', response);
       
-      setFormData({
-        name: "",
-        phone: "",
-        email: "",
-        subject: "",
-        message: ""
-      });
-
-      // Reset submitted status after 3 seconds
-      setTimeout(() => {
-        setFormStatus({ submitted: false, loading: false });
-      }, 3000);
-    }, 1500);
+      // Check response status
+      if (response?.status === true || response?.success === true || response?.data) {
+        toast.success('✨ Your message has been submitted successfully! Our team will get back to you within 24 hours.');
+        
+        // Reset form
+        setFormData({
+          name: "",
+          phone: "",
+          email: "",
+          subject: "",
+          message: ""
+        });
+      } else {
+        toast.error(response?.message || 'Failed to submit message. Please try again.');
+      }
+      
+    } catch (error) {
+      console.error('Form submission error:', error);
+      toast.error(error.message || 'Failed to submit message. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -209,22 +254,17 @@ export default function Contact() {
                 {/* Submit Button */}
                 <button
                   type="submit"
-                  disabled={formStatus.loading}
+                  disabled={isLoading}
                   className="relative w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 sm:px-8 py-3 sm:py-3.5 md:py-4 rounded-xl font-semibold hover:shadow-xl hover:scale-[1.02] transition-all duration-300 disabled:opacity-70 disabled:cursor-not-allowed group overflow-hidden text-sm sm:text-base"
                 >
                   <span className="relative z-10 flex items-center justify-center gap-2">
-                    {formStatus.loading ? (
+                    {isLoading ? (
                       <>
                         <svg className="animate-spin h-4 sm:h-5 w-4 sm:w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                           <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                           <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                         </svg>
                         <span>Sending...</span>
-                      </>
-                    ) : formStatus.submitted ? (
-                      <>
-                        <span>✓</span>
-                        <span>Message Sent!</span>
                       </>
                     ) : (
                       <>

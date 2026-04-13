@@ -416,7 +416,7 @@ class ContactUsController extends Controller
 
         <!-- Footer -->
         <div class='footer-note'>
-            This is an automated notification from <strong>{config('app.name')}</strong>.<br>
+            This is an automated notification from <strong>".config('app.name')."</strong>.<br>
             Please do not reply directly to this email.
         </div>
 
