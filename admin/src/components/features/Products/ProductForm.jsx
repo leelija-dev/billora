@@ -169,8 +169,25 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
           }
         }
         
-        // Convert to array format for form display
-        if (typeof parsedAttributes === 'object' && parsedAttributes !== null) {
+        // Handle API response format (array of objects)
+        if (Array.isArray(parsedAttributes)) {
+          // If it's already an array, merge all objects into one
+          const mergedAttributes = {}
+          parsedAttributes.forEach(attrObj => {
+            if (typeof attrObj === 'object' && attrObj !== null) {
+              Object.assign(mergedAttributes, attrObj)
+            }
+          })
+          
+          // Convert to array format for form display
+          const attrsArray = Object.entries(mergedAttributes).map(([key, value]) => ({
+            key,
+            value: String(value)
+          }))
+          setAttributes(attrsArray.length > 0 ? attrsArray : [{ key: '', value: '' }])
+          setValue('attributes', mergedAttributes)
+        } else if (typeof parsedAttributes === 'object' && parsedAttributes !== null) {
+          // Convert to array format for form display
           const attrsArray = Object.entries(parsedAttributes).map(([key, value]) => ({
             key,
             value: String(value)
