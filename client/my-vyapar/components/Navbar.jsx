@@ -21,6 +21,9 @@ const Navbar = () => {
   const [hasActivePlan, setHasActivePlan] = useState(false);
   const [isCheckingPlan, setIsCheckingPlan] = useState(true);
   
+  // Dashboard URL (external app on port 3000)
+  const DASHBOARD_URL = process.env.NEXT_PUBLIC_DASHBOARD_URL || 'http://localhost:3000';
+  
   // Slider styles
   const [activeSliderStyle, setActiveSliderStyle] = useState({
     width: 0,
@@ -70,12 +73,10 @@ const Navbar = () => {
   // Check if user has purchased a plan
   const checkPlanPurchaseStatus = () => {
     try {
-      // Check multiple indicators of plan purchase
       const purchaseCompleted = localStorage.getItem('purchase_completed') === 'true';
       const planPurchased = localStorage.getItem('plan_purchased') === 'true';
       const hasActiveSubscription = localStorage.getItem('has_active_subscription') === 'true';
       
-      // Check for plan purchase with timestamp to ensure it's not expired
       const purchaseDate = localStorage.getItem('plan_purchase_date');
       let isPurchaseValid = false;
       
@@ -83,8 +84,6 @@ const Navbar = () => {
         const purchaseTime = new Date(purchaseDate).getTime();
         const currentTime = new Date().getTime();
         const daysSincePurchase = (currentTime - purchaseTime) / (1000 * 60 * 60 * 24);
-        
-        // Consider purchase valid for 365 days (1 year)
         isPurchaseValid = daysSincePurchase <= 365;
       }
       
@@ -116,7 +115,6 @@ const Navbar = () => {
       if (authenticated) {
         const { user } = getAuthData();
         setUser(user);
-        // Only check plan status if user is logged in
         checkPlanPurchaseStatus();
       } else {
         setUser(null);
@@ -138,7 +136,6 @@ const Navbar = () => {
   const handleLogout = async () => {
     const userName = user?.name || user?.email?.split('@')[0] || 'User';
     
-    // Show confirmation toast with action buttons
     const toastId = toast.custom((t) => (
       <div className="bg-white rounded-lg shadow-lg border border-gray-200 p-4 max-w-sm w-full">
         <div className="flex items-start gap-3">
@@ -182,11 +179,8 @@ const Navbar = () => {
       
       setIsLoggingOut(true);
       setShowUserMenu(false);
-      
-      // Dismiss any existing toasts
       toast.dismiss();
       
-      // Show loading toast
       const loadingToastId = toast.loading('Logging out...', {
         position: 'top-center',
       });
@@ -202,7 +196,6 @@ const Navbar = () => {
           }
         }
         
-        // Clear all auth and plan data
         clearAuthData();
         localStorage.removeItem('purchase_completed');
         localStorage.removeItem('plan_purchased');
@@ -214,7 +207,6 @@ const Navbar = () => {
         setHasActivePlan(false);
         window.dispatchEvent(new Event("userLoggedOut"));
         
-        // Dismiss loading toast and show success
         toast.dismiss(loadingToastId);
         toast.success(`Successfully logged out. See you soon!`, {
           duration: 3000,
@@ -227,15 +219,12 @@ const Navbar = () => {
         
       } catch (error) {
         console.error("Logout failed:", error);
-        
-        // Dismiss loading toast and show error
         toast.dismiss(loadingToastId);
         toast.error(error?.message || 'Failed to logout. Please try again.', {
           duration: 4000,
           position: 'top-right',
         });
         
-        // Still clear local data as fallback
         clearAuthData();
         localStorage.removeItem('purchase_completed');
         localStorage.removeItem('plan_purchased');
@@ -297,7 +286,6 @@ const Navbar = () => {
     const handlePlanPurchase = (event) => {
       console.log("🎉 Plan purchase event received:", event.detail);
       if (event.detail?.status === 'completed' || event.detail?.planPurchased === true) {
-        // Set all the flags to show dashboard button
         localStorage.setItem('purchase_completed', 'true');
         localStorage.setItem('plan_purchased', 'true');
         localStorage.setItem('plan_purchase_date', new Date().toISOString());
@@ -305,7 +293,6 @@ const Navbar = () => {
         
         setHasActivePlan(true);
         
-        // Show success message
         toast.success('Plan activated! Dashboard is now available.', {
           duration: 5000,
           position: 'top-right',
@@ -327,7 +314,6 @@ const Navbar = () => {
       if (e.key === "token" || e.key === "user") {
         checkLoginStatus();
       }
-      // Check if plan purchase status changed in another tab
       if (e.key === "purchase_completed" || e.key === "plan_purchased") {
         checkPlanPurchaseStatus();
       }
@@ -362,7 +348,7 @@ const Navbar = () => {
     setShowUserMenu(false);
   }, [pathname]);
 
-  // ============ SLIDER FUNCTIONS (unchanged) ============
+  // ============ SLIDER FUNCTIONS ============
   const updateActiveIndicator = () => {
     if (animationFrameRef.current) {
       cancelAnimationFrame(animationFrameRef.current);
@@ -626,6 +612,12 @@ const Navbar = () => {
   const userEmail = user?.email || '';
   const userName = user?.name || user?.email?.split('@')[0] || 'User';
 
+  // Function to handle dashboard click - opens in new tab
+  const handleDashboardClick = (e) => {
+    e.preventDefault();
+    window.open(`${DASHBOARD_URL}/dashboard`, '_blank');
+  };
+
   return (
     <>
       <nav
@@ -709,16 +701,18 @@ const Navbar = () => {
               </ul>
             </div>
             
-            {/* Dashboard Button - Only show when user has active/purchased plan */}
+            {/* Dashboard Button - Opens external dashboard on port 3000 */}
             {isLoggedIn && hasActivePlan && !isCheckingPlan && (
-              <Link
-                href="/dashboard"
-                onClick={handleExternalClick}
-                className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-full text-sm font-semibold transition-all duration-200 hover:shadow-md hover:scale-105 whitespace-nowrap"
+              <a
+                href={`${DASHBOARD_URL}/dashboard`}
+                onClick={handleDashboardClick}
+                className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-full text-sm font-semibold transition-all duration-200 hover:shadow-md hover:scale-105 whitespace-nowrap cursor-pointer"
+                target="_blank"
+                rel="noopener noreferrer"
               >
                 <FiGrid size={16} />
                 <span>Dashboard</span>
-              </Link>
+              </a>
             )}
             
             <Link
@@ -737,15 +731,12 @@ const Navbar = () => {
                   className="flex items-center gap-2 px-2 py-1.5 rounded-full hover:bg-gray-100 transition-all duration-200"
                 >
                   <div className="relative">
-                    {/* Avatar with gradient background */}
                     <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 flex items-center justify-center text-white font-semibold text-sm shadow-md">
                       {userInitial}
                     </div>
-                    {/* Premium Badge if has active plan */}
                     {hasActivePlan && (
                       <span className="absolute -top-1 -right-1 w-3 h-3 bg-yellow-400 rounded-full border-2 border-white shadow-sm"></span>
                     )}
-                    {/* Active Green Dot */}
                     <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-white shadow-sm"></span>
                   </div>
                   <div className="hidden xl:block text-left">
@@ -788,17 +779,23 @@ const Navbar = () => {
                       </div>
                     </div>
                     <div className="py-2">
-                      {/* Dashboard link in dropdown menu for premium users */}
+                      {/* Dashboard link in dropdown menu - opens external dashboard */}
                       {hasActivePlan && (
-                        <Link
-                          href="/dashboard"
-                          onClick={() => setShowUserMenu(false)}
-                          className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                        <a
+                          href={`${DASHBOARD_URL}/dashboard`}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            setShowUserMenu(false);
+                            window.open(`${DASHBOARD_URL}/dashboard`, '_blank');
+                          }}
+                          className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer"
+                          target="_blank"
+                          rel="noopener noreferrer"
                         >
                           <FiGrid size={18} />
                           <span>Dashboard</span>
                           <span className="ml-auto text-xs bg-green-100 text-green-600 px-2 py-0.5 rounded-full">Active</span>
-                        </Link>
+                        </a>
                       )}
                       <Link
                         href="/profile"
@@ -945,16 +942,22 @@ const Navbar = () => {
 
           {/* Mobile Action Buttons */}
           <div className="p-4 border-t border-gray-100 space-y-2">
-            {/* Dashboard button for mobile - only if has active plan */}
+            {/* Dashboard button for mobile - opens external dashboard */}
             {isLoggedIn && hasActivePlan && !isCheckingPlan && (
-              <Link
-                href="/dashboard"
-                onClick={() => setIsMobileMenuOpen(false)}
-                className="flex items-center justify-center gap-2 w-full px-4 py-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-xl text-sm font-semibold transition-all duration-200"
+              <a
+                href={`${DASHBOARD_URL}/dashboard`}
+                onClick={(e) => {
+                  e.preventDefault();
+                  setIsMobileMenuOpen(false);
+                  window.open(`${DASHBOARD_URL}/dashboard`, '_blank');
+                }}
+                className="flex items-center justify-center gap-2 w-full px-4 py-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-xl text-sm font-semibold transition-all duration-200 cursor-pointer"
+                target="_blank"
+                rel="noopener noreferrer"
               >
                 <FiGrid size={18} />
                 <span>Go to Dashboard</span>
-              </Link>
+              </a>
             )}
             
             <Link
