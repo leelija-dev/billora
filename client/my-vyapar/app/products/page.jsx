@@ -590,7 +590,7 @@ const ProductsPage = () => {
     return (
       <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white flex justify-center items-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600 mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
           <p className="text-gray-600 text-lg">Loading products...</p>
         </div>
       </div>
@@ -604,7 +604,7 @@ const ProductsPage = () => {
       {/* Floating Filter Button */}
       <button
         onClick={() => setShowFilterOverlay(!showFilterOverlay)}
-        className="fixed left-4 top-24 z-30 bg-emerald-600 text-white p-3 rounded-full shadow-lg hover:bg-emerald-700 transition flex items-center gap-2"
+        className="fixed left-4 top-24 z-30 bg-blue-600 text-white p-3 rounded-full shadow-lg hover:bg-blue-700 transition flex items-center gap-2"
       >
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
@@ -612,8 +612,8 @@ const ProductsPage = () => {
         <span className="hidden sm:inline">Filters</span>
       </button>
 
-      {/* Floating Cart Button - Bottom Right Corner */}
-      <div className="fixed bottom-6 right-6 z-40">
+      {/* Floating Cart Button - Top Right Corner */}
+      <div className="fixed top-5 right-5 z-40">
         <button
           onClick={() => {
             setShowCart(!showCart);
@@ -621,11 +621,11 @@ const ProductsPage = () => {
               setShowFilterOverlay(false);
             }
           }}
-          className="bg-emerald-600 text-white p-4 rounded-full shadow-xl hover:bg-emerald-700 transition relative"
+          className="bg-blue-600 text-white p-3 rounded-full shadow-lg hover:bg-blue-700 transition relative"
         >
           🛒
           {getCartItemCount() > 0 && (
-            <span className="absolute -top-2 -right-2 bg-rose-500 text-white text-xs w-6 h-6 rounded-full flex items-center justify-center font-bold">
+            <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs w-6 h-6 rounded-full flex items-center justify-center font-bold">
               {getCartItemCount()}
             </span>
           )}
@@ -648,33 +648,22 @@ const ProductsPage = () => {
 
             {/* Search Bar */}
             <div className="max-w-xl mx-auto mb-10">
-              <div className="relative flex gap-2">
-                <div className="relative flex-1">
-                  <input
-                    type="text"
-                    placeholder="Search products..."
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    className="w-full px-4 py-3 pr-10 border border-gray-200 rounded-xl shadow-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none bg-white text-gray-800"
-                  />
-                  {search && (
-                    <button
-                      onClick={clearSearch}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition"
-                    >
-                      ✕
-                    </button>
-                  )}
-                </div>
-                <button
-                  onClick={() => {
-                    setLoading(true);
-                    fetchProductsData();
-                  }}
-                  className="px-6 py-3 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 transition"
-                >
-                  🔄 Refresh
-                </button>
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder="Search products..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="w-full px-4 py-3 pr-10 border border-gray-200 rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white text-gray-800"
+                />
+                {search && (
+                  <button
+                    onClick={clearSearch}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition"
+                  >
+                    ✕
+                  </button>
+                )}
               </div>
             </div>
 
@@ -682,37 +671,40 @@ const ProductsPage = () => {
             <div className="max-w-7xl mx-auto mb-6 flex flex-wrap items-center justify-between gap-3">
               <div className="flex items-center gap-3">
                 {selectedItems.size > 0 && (
-                  <span className="text-sm bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full">
+                  <span className="text-sm bg-blue-100 text-blue-700 px-3 py-1 rounded-full">
                     {selectedItems.size} selected
                   </span>
                 )}
                 {crossCategoryCount > 0 && (
-                  <span className="text-xs bg-amber-100 text-amber-700 px-2 py-1 rounded-full">
+                  <span className="text-xs bg-orange-100 text-orange-700 px-2 py-1 rounded-full">
                     +{crossCategoryCount} from other categories
                   </span>
                 )}
               </div>
             </div>
 
-            {/* Products Grid */}
+            {/* Products Grid - Responsive columns based on cart state */}
             {products.length === 0 ? (
               <div className="text-center py-12">
                 <div className="text-6xl mb-4">📦</div>
                 <p className="text-gray-500 text-lg">No products found</p>
                 <button
                   onClick={() => fetchProductsData()}
-                  className="mt-4 px-6 py-2 bg-emerald-600 text-white rounded-lg"
+                  className="mt-4 px-6 py-2 bg-blue-600 text-white rounded-lg"
                 >
                   Retry Loading
                 </button>
               </div>
             ) : (
               <>
-                <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3">
+                <div className={`grid gap-6 ${
+                  showCart 
+                    ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3' 
+                    : 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4'
+                }`}>
                   {displayedProducts.map((product, index) => {
                     const quantity = getProductQuantity(product.id);
                     const productPrice = product.selling_price || product.price;
-                    const originalPrice = productPrice + (productPrice * (product.discount_percentage || 0) / 100);
                     const isSelected = selectedItems.has(product.id);
                     const maxLength = 80;
                     const shouldTruncate = product.description?.length > maxLength;
@@ -721,13 +713,13 @@ const ProductsPage = () => {
                       <div
                         key={product.id}
                         ref={index === displayedProducts.length - 1 ? lastProductRef : null}
-                        className={`bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 p-4 relative group border-2 flex flex-col h-full ${isSelected ? 'border-emerald-500 bg-emerald-50' : 'border-transparent'}`}
+                        className={`bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 p-4 relative group border-2 flex flex-col h-full ${isSelected ? 'border-blue-500 bg-blue-50' : 'border-transparent'}`}
                       >
                         {/* Modern Discount Badge */}
                         {product.discount_percentage > 0 && (
                           <div className="absolute -top-3 -left-3 z-20">
                             <div className="relative">
-                              <div className="bg-gradient-to-r from-rose-500 to-amber-500 text-white px-3 py-1.5 rounded-lg shadow-lg transform -rotate-12">
+                              <div className="bg-gradient-to-r from-red-500 to-orange-500 text-white px-3 py-1.5 rounded-lg shadow-lg transform -rotate-12">
                                 <span className="text-xs font-bold">{product.discount_percentage}% OFF</span>
                               </div>
                             </div>
@@ -740,7 +732,7 @@ const ProductsPage = () => {
                             type="checkbox"
                             checked={isSelected}
                             onChange={(e) => handleCheckboxClick(product, e)}
-                            className="w-5 h-5 accent-emerald-600 cursor-pointer"
+                            className="w-5 h-5 accent-blue-600 cursor-pointer"
                             disabled={!product.inStock}
                           />
                         </div>
@@ -773,7 +765,7 @@ const ProductsPage = () => {
                             {shouldTruncate && (
                               <button
                                 onClick={() => toggleDescription(product.id)}
-                                className="text-xs text-emerald-600 hover:text-emerald-700 mt-1 font-medium"
+                                className="text-xs text-blue-600 hover:text-blue-700 mt-1 font-medium"
                               >
                                 {expandedDescriptions[product.id] ? 'Read Less ↑' : 'Read More ↓'}
                               </button>
@@ -788,7 +780,6 @@ const ProductsPage = () => {
                           <div className="mt-2 text-left">
                             {product.discount_percentage > 0 ? (
                               <div>
-                                {/* Calculate correct values */}
                                 {(() => {
                                   const basePrice = product.selling_price || product.price;
                                   const gstAmount = basePrice * (product.gst_percentage / 100);
@@ -798,18 +789,13 @@ const ProductsPage = () => {
                                   
                                   return (
                                     <>
-                                      {/* MRP with GST - strikethrough */}
                                       <p className="text-xs text-gray-400 line-through">
                                         MRP: ₹{Math.round(mrpWithGst).toLocaleString()}
                                       </p>
-                                      
-                                      {/* Final Price after GST and Discount */}
-                                      <p className="text-2xl font-bold text-emerald-600">
+                                      <p className="text-2xl font-bold text-blue-600">
                                         ₹{Math.round(finalPrice).toLocaleString()}
                                       </p>
-                                      
-                                      {/* Savings info */}
-                                      <p className="text-xs text-rose-500">
+                                      <p className="text-xs text-red-500">
                                         Save ₹{Math.round(gstAmount + discountAmount).toLocaleString()}
                                       </p>
                                     </>
@@ -817,14 +803,14 @@ const ProductsPage = () => {
                                 })()}
                               </div>
                             ) : (
-                              <p className="text-2xl font-bold text-emerald-600">
+                              <p className="text-2xl font-bold text-blue-600">
                                 ₹{Math.round((product.selling_price || product.price) + 
                                   ((product.selling_price || product.price) * (product.gst_percentage / 100))).toLocaleString()}
                               </p>
                             )}
                           </div>
                           
-                          <p className={`text-xs mt-2 text-left font-medium ${product.inStock ? 'text-emerald-600' : 'text-rose-600'}`}>
+                          <p className={`text-xs mt-2 text-left font-medium ${product.inStock ? 'text-blue-600' : 'text-red-600'}`}>
                             {product.inStock ? '✓ In Stock' : '✗ Out of Stock'}
                           </p>
                         </div>
@@ -839,7 +825,7 @@ const ProductsPage = () => {
                                     e.stopPropagation();
                                     addToCart(product, 1);
                                   }}
-                                  className="flex-1 py-2.5 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 transition text-sm font-medium"
+                                  className="flex-1 py-2.5 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition text-sm font-medium"
                                 >
                                   Add to Cart
                                 </button>
@@ -848,20 +834,20 @@ const ProductsPage = () => {
                                     e.stopPropagation();
                                     handleBuyNow(product);
                                   }}
-                                  className="px-5 py-2.5 rounded-lg bg-amber-600 text-white hover:bg-amber-700 transition font-semibold text-sm"
+                                  className="px-5 py-2.5 rounded-lg bg-orange-600 text-white hover:bg-orange-700 transition font-semibold text-sm"
                                 >
                                   Buy Now →
                                 </button>
                               </>
                             ) : (
                               <>
-                                <div className="flex-1 flex items-center justify-between border-2 border-emerald-200 rounded-lg overflow-hidden bg-emerald-50">
+                                <div className="flex-1 flex items-center justify-between border-2 border-blue-200 rounded-lg overflow-hidden bg-blue-50">
                                   <button
                                     onClick={(e) => {
                                       e.stopPropagation();
                                       updateQuantity(product.id, quantity - 1);
                                     }}
-                                    className="w-10 h-9 flex items-center justify-center bg-emerald-100 hover:bg-emerald-200 text-lg font-bold transition text-emerald-700"
+                                    className="w-10 h-9 flex items-center justify-center bg-blue-100 hover:bg-blue-200 text-lg font-bold transition text-blue-700"
                                   >
                                     −
                                   </button>
@@ -873,7 +859,7 @@ const ProductsPage = () => {
                                       e.stopPropagation();
                                       updateQuantity(product.id, quantity + 1);
                                     }}
-                                    className="w-10 h-9 flex items-center justify-center bg-emerald-100 hover:bg-emerald-200 text-lg font-bold transition text-emerald-700"
+                                    className="w-10 h-9 flex items-center justify-center bg-blue-100 hover:bg-blue-200 text-lg font-bold transition text-blue-700"
                                   >
                                     +
                                   </button>
@@ -883,7 +869,7 @@ const ProductsPage = () => {
                                     e.stopPropagation();
                                     handleBuyNow(product);
                                   }}
-                                  className="px-5 py-2.5 rounded-lg bg-amber-600 text-white hover:bg-amber-700 transition font-semibold text-sm"
+                                  className="px-5 py-2.5 rounded-lg bg-orange-600 text-white hover:bg-orange-700 transition font-semibold text-sm"
                                 >
                                   Buy Now →
                                 </button>
@@ -902,7 +888,7 @@ const ProductsPage = () => {
 
                 {loadingMore && (
                   <div className="flex justify-center items-center py-8">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-600 mx-auto mb-2"></div>
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
                     <p className="text-gray-500">Loading more products...</p>
                   </div>
                 )}
@@ -946,7 +932,7 @@ const ProductsPage = () => {
                       setSort("");
                       setSearch("");
                     }}
-                    className="text-sm text-emerald-600 hover:underline"
+                    className="text-sm text-blue-600 hover:underline"
                   >
                     Reset All
                   </button>
@@ -962,12 +948,12 @@ const ProductsPage = () => {
                           key={i}
                           onClick={() => setCategory(cat)}
                           className={`flex justify-between items-center w-full px-3 py-2 rounded-lg transition-all duration-200 ${category === cat
-                            ? "bg-emerald-600 text-white shadow-md scale-[1.02]"
-                            : "bg-gray-100 hover:bg-emerald-50 hover:translate-x-1 text-gray-700"
+                            ? "bg-blue-600 text-white shadow-md scale-[1.02]"
+                            : "bg-gray-100 hover:bg-blue-50 hover:translate-x-1 text-gray-700"
                             }`}
                         >
                           <span>{cat}</span>
-                          <span className={`text-xs px-2 py-1 rounded-full ${category === cat ? "bg-white text-emerald-600" : "bg-gray-200 text-gray-600"
+                          <span className={`text-xs px-2 py-1 rounded-full ${category === cat ? "bg-white text-blue-600" : "bg-gray-200 text-gray-600"
                             }`}>
                             {count}
                           </span>
@@ -985,7 +971,7 @@ const ProductsPage = () => {
                     max="100000"
                     value={maxPrice}
                     onChange={(e) => setMaxPrice(Number(e.target.value))}
-                    className="w-full accent-emerald-600"
+                    className="w-full accent-blue-600"
                   />
                   <div className="flex justify-between text-sm mt-2 text-gray-600">
                     <span>₹0</span>
@@ -998,7 +984,7 @@ const ProductsPage = () => {
                   <select
                     value={sort}
                     onChange={(e) => setSort(e.target.value)}
-                    className="w-full border rounded-lg p-2 focus:ring-2 focus:ring-emerald-500 outline-none text-gray-800"
+                    className="w-full border rounded-lg p-2 focus:ring-2 focus:ring-blue-500 outline-none text-gray-800"
                   >
                     <option value="">Default</option>
                     <option value="low">Price: Low to High</option>
@@ -1012,12 +998,12 @@ const ProductsPage = () => {
 
         {/* Cart Sidebar */}
         <div
-  className={`fixed top-0 right-0 h-full bg-white shadow-2xl z-50 transform transition-transform duration-500 ease-out overflow-y-auto ${
-    showCart ? "translate-x-0" : "translate-x-full"
-  } w-[85%] sm:w-[70%] md:w-[40%] lg:w-[30%] xl:w-[25%]`}
-  style={{ overflowY: 'auto', scrollbarWidth: 'thin' }}
->
-          <div className="relative p-4 pt-16 bg-gradient-to-r from-emerald-600 to-teal-600 text-white flex-shrink-0">
+          className={`fixed top-0 right-0 h-full bg-white shadow-2xl z-50 transform transition-transform duration-500 ease-out overflow-y-auto ${
+            showCart ? "translate-x-0" : "translate-x-full"
+          } w-[85%] sm:w-[70%] md:w-[40%] lg:w-[30%] xl:w-[25%]`}
+          style={{ overflowY: 'auto', scrollbarWidth: 'thin' }}
+        >
+          <div className="relative p-4 pt-16 bg-gradient-to-r from-blue-600 to-purple-600 text-white flex-shrink-0">
             <div className="absolute top-0 right-0 w-24 h-24 bg-white opacity-10 rounded-full -mr-6 -mt-6"></div>
             <div className="absolute bottom-0 left-0 w-20 h-20 bg-white opacity-10 rounded-full -ml-6 -mb-6"></div>
 
@@ -1076,7 +1062,7 @@ const ProductsPage = () => {
                     <p className="text-gray-500 text-sm mb-2 text-center">Your cart is empty</p>
                     <button
                       onClick={() => setShowCart(false)}
-                      className="px-4 py-2 text-sm bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-lg"
+                      className="px-4 py-2 text-sm bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg"
                     >
                       Continue Shopping
                     </button>
@@ -1104,20 +1090,20 @@ const ProductsPage = () => {
                                 ₹{sellingPrice} each
                               </p>
                               {item.discount_percentage > 0 && (
-                                <p className="text-xs text-emerald-600">{item.discount_percentage}% off</p>
+                                <p className="text-xs text-blue-600">{item.discount_percentage}% off</p>
                               )}
 
                               <div className="flex items-center gap-2 mt-2">
                                 <button
                                   onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                                  className="w-6 h-6 flex items-center justify-center bg-white border border-gray-300 rounded hover:border-emerald-500 hover:text-emerald-600 transition-all text-gray-700 text-sm"
+                                  className="w-6 h-6 flex items-center justify-center bg-white border border-gray-300 rounded hover:border-blue-500 hover:text-blue-600 transition-all text-gray-700 text-sm"
                                 >
                                   −
                                 </button>
                                 <span className="text-sm font-semibold w-6 text-center text-gray-700">{item.quantity}</span>
                                 <button
                                   onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                                  className="w-6 h-6 flex items-center justify-center bg-white border border-gray-300 rounded hover:border-emerald-500 hover:text-emerald-600 transition-all text-gray-700 text-sm"
+                                  className="w-6 h-6 flex items-center justify-center bg-white border border-gray-300 rounded hover:border-blue-500 hover:text-blue-600 transition-all text-gray-700 text-sm"
                                 >
                                   +
                                 </button>
@@ -1125,10 +1111,10 @@ const ProductsPage = () => {
                             </div>
 
                             <div className="text-right flex-shrink-0">
-                              <p className="font-bold text-emerald-600 text-sm">₹{sellingPrice * item.quantity}</p>
+                              <p className="font-bold text-blue-600 text-sm">₹{sellingPrice * item.quantity}</p>
                               <button
                                 onClick={() => removeFromCart(item.id)}
-                                className="text-xs text-gray-400 hover:text-rose-500 transition-colors mt-1"
+                                className="text-xs text-gray-400 hover:text-red-500 transition-colors mt-1"
                               >
                                 Remove
                               </button>
@@ -1139,7 +1125,7 @@ const ProductsPage = () => {
                     </div>
                     <button
                       onClick={() => setShowCheckout(true)}
-                      className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 text-white py-2 rounded-lg hover:from-emerald-700 hover:to-teal-700 transition shadow-lg font-semibold text-sm"
+                      className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-2 rounded-lg hover:from-blue-700 hover:to-purple-700 transition shadow-lg font-semibold text-sm"
                     >
                       Checkout • ₹{getCartSubtotal().toLocaleString()}
                     </button>
@@ -1150,15 +1136,15 @@ const ProductsPage = () => {
               <div className="space-y-4 pb-2 flex flex-col h-full">
                 <button
                   onClick={() => setShowCheckout(false)}
-                  className="flex items-center gap-2 text-gray-600 hover:text-emerald-600 transition-colors text-sm mb-1 self-start"
+                  className="flex items-center gap-2 text-gray-600 hover:text-blue-600 transition-colors text-sm mb-1 self-start"
                 >
                   <span className="text-lg">←</span>
                   <span>Back to Cart</span>
                 </button>
 
-                <div className="bg-gradient-to-br from-emerald-50 to-white p-3 rounded-lg border border-emerald-100 flex-1 overflow-y-auto">
+                <div className="bg-gradient-to-br from-blue-50 to-white p-3 rounded-lg border border-blue-100 flex-1 overflow-y-auto">
                   <h3 className="font-semibold text-gray-800 text-sm mb-2 flex items-center gap-2">
-                    <span className="w-1 h-4 bg-emerald-600 rounded-full"></span>
+                    <span className="w-1 h-4 bg-blue-600 rounded-full"></span>
                     Order Summary
                   </h3>
 
@@ -1176,34 +1162,34 @@ const ProductsPage = () => {
                       const itemTotal = finalPrice * quantity;
 
                       return (
-                        <div key={item.id} className="border-b border-emerald-100 pb-2 last:border-0">
+                        <div key={item.id} className="border-b border-blue-100 pb-2 last:border-0">
                           <div className="flex justify-between items-start mb-1">
                             <div>
                               <p className="font-semibold text-gray-800 text-sm">{item.title}</p>
                               <p className="text-xs text-gray-500">Qty: {quantity}</p>
                             </div>
-                            <p className="font-bold text-emerald-600 text-sm">₹{Math.round(itemTotal)}</p>
+                            <p className="font-bold text-blue-600 text-sm">₹{Math.round(itemTotal)}</p>
                           </div>
                         </div>
                       );
                     })}
                   </div>
 
-                  <div className="border-t border-emerald-100 mt-3 pt-3 space-y-1">
+                  <div className="border-t border-blue-100 mt-3 pt-3 space-y-1">
                     <div className="flex justify-between text-xs">
                       <span className="text-gray-600">Subtotal:</span>
                       <span>₹{Math.round(getCartSubtotal())}</span>
                     </div>
                     <div className="flex justify-between text-xs font-bold">
                       <span>Total:</span>
-                      <span className="text-emerald-600">₹{Math.round(getCartTotal())}</span>
+                      <span className="text-blue-600">₹{Math.round(getCartTotal())}</span>
                     </div>
                   </div>
                 </div>
 
                 <div className="flex items-center gap-2">
-                  <div className="w-6 h-6 bg-emerald-100 rounded-full flex items-center justify-center">
-                    <span className="text-emerald-600 text-xs">📦</span>
+                  <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center">
+                    <span className="text-blue-600 text-xs">📦</span>
                   </div>
                   <h3 className="font-semibold text-gray-800 text-sm">Delivery Info</h3>
                 </div>
@@ -1214,7 +1200,7 @@ const ProductsPage = () => {
                     name="fullName"
                     value={formData.fullName}
                     onChange={handleInputChange}
-                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none text-gray-800"
+                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-gray-800"
                     placeholder="Full Name *"
                     required
                   />
@@ -1224,7 +1210,7 @@ const ProductsPage = () => {
                     name="phone"
                     value={formData.phone}
                     onChange={handleInputChange}
-                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none text-gray-800"
+                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-gray-800"
                     placeholder="Phone *"
                     required
                   />
@@ -1237,7 +1223,7 @@ const ProductsPage = () => {
                         value="cod"
                         checked={paymentMethod === "cod"}
                         onChange={(e) => setPaymentMethod(e.target.value)}
-                        className="w-4 h-4 accent-emerald-600"
+                        className="w-4 h-4 accent-blue-600"
                       />
                       <span>COD</span>
                     </label>
@@ -1248,7 +1234,7 @@ const ProductsPage = () => {
                         value="online"
                         checked={paymentMethod === "online"}
                         onChange={(e) => setPaymentMethod(e.target.value)}
-                        className="w-4 h-4 accent-emerald-600"
+                        className="w-4 h-4 accent-blue-600"
                       />
                       <span>Online</span>
                     </label>
@@ -1257,7 +1243,7 @@ const ProductsPage = () => {
                   <button
                     type="submit"
                     disabled={isPlacingOrder}
-                    className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 text-white py-2 rounded-lg hover:from-emerald-700 hover:to-teal-700 transition font-medium disabled:opacity-50 text-sm"
+                    className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-2 rounded-lg hover:from-blue-700 hover:to-purple-700 transition font-medium disabled:opacity-50 text-sm"
                   >
                     {isPlacingOrder ? (
                       <span className="flex items-center justify-center gap-2">
@@ -1274,7 +1260,7 @@ const ProductsPage = () => {
           </div>
         </div>
 
-        {/* Product Modal - No ratings/GST */}
+        {/* Product Modal */}
         {showModal && selectedProduct && (
           <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-3 sm:p-4">
             <div className="bg-white rounded-2xl w-full max-w-4xl p-4 sm:p-6 md:p-8 relative max-h-[90vh] overflow-y-auto">
@@ -1289,7 +1275,7 @@ const ProductsPage = () => {
                   <div className="relative h-52 sm:h-64 md:h-80 bg-gray-50 rounded-lg">
                     {selectedProduct?.discount_percentage > 0 && (
                       <div className="absolute -top-3 -left-3 z-20">
-                        <div className="bg-gradient-to-r from-rose-500 to-amber-500 text-white px-3 py-1.5 rounded-lg shadow-lg transform -rotate-12">
+                        <div className="bg-gradient-to-r from-red-500 to-orange-500 text-white px-3 py-1.5 rounded-lg shadow-lg transform -rotate-12">
                           <span className="text-xs font-bold">{selectedProduct.discount_percentage}% OFF</span>
                         </div>
                       </div>
@@ -1311,23 +1297,23 @@ const ProductsPage = () => {
                   <div className="mt-3">
                     {selectedProduct.discount_percentage > 0 ? (
                       <div>
-                        <p className="text-2xl sm:text-3xl font-bold text-emerald-600">
+                        <p className="text-2xl sm:text-3xl font-bold text-blue-600">
                           ₹{(selectedProduct.selling_price || selectedProduct.price).toLocaleString()}
                         </p>
                         <p className="text-sm text-gray-400 line-through">
                           ₹{Math.round((selectedProduct.selling_price || selectedProduct.price) * (1 + (selectedProduct.discount_percentage || 0) / 100)).toLocaleString()}
                         </p>
-                        <p className="text-sm text-rose-600 mt-1">{selectedProduct.discount_percentage}% OFF</p>
+                        <p className="text-sm text-red-600 mt-1">{selectedProduct.discount_percentage}% OFF</p>
                       </div>
                     ) : (
-                      <p className="text-2xl sm:text-3xl font-bold text-emerald-600">
+                      <p className="text-2xl sm:text-3xl font-bold text-blue-600">
                         ₹{(selectedProduct.selling_price || selectedProduct.price).toLocaleString()}
                       </p>
                     )}
                   </div>
 
                   <p className="text-gray-600 text-sm sm:text-base my-4">{selectedProduct.description}</p>
-                  <p className={`text-sm mb-4 font-medium ${selectedProduct.inStock ? 'text-emerald-600' : 'text-rose-600'}`}>
+                  <p className={`text-sm mb-4 font-medium ${selectedProduct.inStock ? 'text-blue-600' : 'text-red-600'}`}>
                     {selectedProduct.inStock ? '✓ In Stock' : '✗ Out of Stock'}
                   </p>
                   {selectedProduct.unit && <p className="text-sm text-gray-500 mb-4">Unit: {selectedProduct.unit}</p>}
@@ -1341,7 +1327,7 @@ const ProductsPage = () => {
                               addToCart(selectedProduct, 1);
                               closeModal();
                             }}
-                            className="flex-1 py-3 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 transition"
+                            className="flex-1 py-3 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition"
                           >
                             Add to Cart
                           </button>
@@ -1350,24 +1336,24 @@ const ProductsPage = () => {
                               closeModal();
                               handleBuyNow(selectedProduct);
                             }}
-                            className="px-6 py-3 rounded-lg bg-amber-600 text-white hover:bg-amber-700 transition font-semibold"
+                            className="px-6 py-3 rounded-lg bg-orange-600 text-white hover:bg-orange-700 transition font-semibold"
                           >
                             Buy Now →
                           </button>
                         </>
                       ) : (
                         <>
-                          <div className="flex-1 flex items-center justify-between border-2 border-emerald-200 rounded-lg overflow-hidden bg-emerald-50">
-                            <button onClick={() => updateQuantity(selectedProduct.id, getProductQuantity(selectedProduct.id) - 1)} className="w-12 h-12 bg-emerald-100 hover:bg-emerald-200 text-xl text-emerald-700">−</button>
+                          <div className="flex-1 flex items-center justify-between border-2 border-blue-200 rounded-lg overflow-hidden bg-blue-50">
+                            <button onClick={() => updateQuantity(selectedProduct.id, getProductQuantity(selectedProduct.id) - 1)} className="w-12 h-12 bg-blue-100 hover:bg-blue-200 text-xl text-blue-700">−</button>
                             <span className="flex-1 text-center font-semibold text-lg text-gray-800">{getProductQuantity(selectedProduct.id)}</span>
-                            <button onClick={() => updateQuantity(selectedProduct.id, getProductQuantity(selectedProduct.id) + 1)} className="w-12 h-12 bg-emerald-100 hover:bg-emerald-200 text-xl text-emerald-700">+</button>
+                            <button onClick={() => updateQuantity(selectedProduct.id, getProductQuantity(selectedProduct.id) + 1)} className="w-12 h-12 bg-blue-100 hover:bg-blue-200 text-xl text-blue-700">+</button>
                           </div>
                           <button
                             onClick={() => {
                               closeModal();
                               handleBuyNow(selectedProduct);
                             }}
-                            className="px-6 py-3 rounded-lg bg-amber-600 text-white hover:bg-amber-700 transition font-semibold"
+                            className="px-6 py-3 rounded-lg bg-orange-600 text-white hover:bg-orange-700 transition font-semibold"
                           >
                             Buy Now →
                           </button>
@@ -1386,7 +1372,7 @@ const ProductsPage = () => {
 
       {/* Popup Notification */}
       {popup && (
-        <div className="fixed bottom-20 right-6 bg-emerald-600 text-white px-4 py-2 rounded-lg shadow-2xl z-[9999] animate-slide-up text-sm">
+        <div className="fixed bottom-20 right-6 bg-blue-600 text-white px-4 py-2 rounded-lg shadow-2xl z-[9999] animate-slide-up text-sm">
           ✅ {popupMessage}
         </div>
       )}
