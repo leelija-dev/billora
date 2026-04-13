@@ -27,7 +27,8 @@ class ContactUsController extends Controller
             'email' => $request->email,
             'phone' => $request->phone,
             'subject' => $request->subject,
-            'message' => $request->message
+            'message' => $request->message,
+            'status' => false
         ]);
         if($contact){
         $admin_mail_id = config('app.admin_mail');
@@ -415,7 +416,7 @@ class ContactUsController extends Controller
 
         <!-- Footer -->
         <div class='footer-note'>
-            This is an automated notification from <strong>{config('app.name')}</strong>.<br>
+            This is an automated notification from <strong>".config('app.name')."</strong>.<br>
             Please do not reply directly to this email.
         </div>
 

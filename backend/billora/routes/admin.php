@@ -4,6 +4,7 @@ use App\Http\Controllers\admin\AuthController;
 use App\Http\Controllers\admin\superadmin\AdminMailController;
 use App\Http\Controllers\admin\superadmin\AdminUserController;
 use App\Http\Controllers\admin\superadmin\BusinessTypeController;
+use App\Http\Controllers\admin\superadmin\ContactController;
 use App\Http\Controllers\admin\superadmin\CustomerController;
 use App\Http\Controllers\admin\superadmin\PlansController;
 use App\Http\Controllers\admin\superadmin\PlanPermissionController;
@@ -93,5 +94,9 @@ Route::middleware(['web', 'admin.auth'])->prefix('admin')->group(function () {
        Route::get('/edit/{id}', [BusinessTypeController::class, 'edit'])->name('admin.business-types.edit');
        Route::post('/update/{id}', [BusinessTypeController::class, 'update'])->name('admin.business-types.update');
        Route::delete('/delete/{id}', [BusinessTypeController::class, 'delete'])->name('admin.business-types.delete');
+    });
+    Route::prefix('contact-us')->group(function () {
+        Route::get('/', [ContactController::class, 'index'])->name('admin.contacts.index');
+        Route::get('/view/{id}', [ContactController::class, 'view'])->name('admin.contacts.view');
     });
 });

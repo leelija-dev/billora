@@ -288,21 +288,43 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
 
   // Form submission
   const onFormSubmit = (data) => {
-    // Convert attributes array to JSON object
-    const attributesObject = attributes
+    // Convert attributes to array format expected by backend
+    const attributesArray = attributes
       .filter(attr => attr.key.trim() !== '')
       .reduce((acc, attr) => {
-        acc[attr.key.trim()] = attr.value.trim()
+        // Group attributes by creating objects with multiple key-value pairs
+        if (acc.length === 0) {
+          acc.push({})
+        }
+        acc[0][attr.key.trim()] = attr.value.trim()
         return acc
-      }, {})
+      }, [])
+
+    // Convert empty/null numeric fields to 0
+    const numericFieldsToZero = [
+      'current_stock',
+      'discount_amount', 
+      'discount_percentage',
+      'cess_percentage',
+      'supplier_id',
+      'maximum_stock_quantity',
+      'minimum_stock_quantity',
+      'mrp',
+      'wholesale_price'
+    ]
+
+    const processedData = { ...data }
+    numericFieldsToZero.forEach(field => {
+      processedData[field] = processedData[field] === null || processedData[field] === '' || processedData[field] === undefined ? 0 : processedData[field]
+    })
 
     const productData = {
-      ...data,
+      ...processedData,
       user_id: user.id,
       created_by: user.id,
       images: selectedImages,
       variants: variants,
-      attributes: Object.keys(attributesObject).length > 0 ? attributesObject : null,
+      attributes: attributesArray.length > 0 ? attributesArray : [],
       // Convert boolean fields to integers for backend
       is_active: data.is_active ? 1 : 0,
       prescription_required: data.prescription_required ? 1 : 0,
