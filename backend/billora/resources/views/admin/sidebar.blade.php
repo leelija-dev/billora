@@ -52,7 +52,7 @@
                 {{-- @if($admin && $admin->can('view customers')) --}}
                 <a href="{{ route('admin.business-types.index') }}"
                     class="flex items-center px-4 py-3 {{ request()->routeIs('admin.business-types.index', 'admin.business-types.create', 'admin.business-types.edit') ? 'bg-blue-100 text-blue-600 font-semibold' : 'hover:bg-blue-100' }}">
-                    <i data-feather="users"></i>
+                    <i class="fa fa-hotel"></i>
                     <span class="ml-3">Business Types</span>
                 </a>
                 {{-- @endif --}}
@@ -95,6 +95,11 @@
                             'admin.roles.edit',
                         );
                 @endphp
+                <a href="{{ route('admin.contacts.index') }}"
+                    class="flex items-center px-4 py-3 {{ request()->routeIs('admin.contacts.index','admin.contacts.view') ? 'bg-blue-100 text-blue-600 font-semibold' : 'hover:bg-blue-100' }}">
+                    <i class="fa fa-comments"></i>
+                    <span class="ml-3">Contact Us</span>
+                </a>
                  @if($admin && $admin->can('view admin users'))
                 <div class="group">
 

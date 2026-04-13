@@ -12,6 +12,7 @@ class ContactUs extends Model
         'phone',
         'email',
         'subject',
-        'message'
+        'message',
+        'view_status'
     ];
 }

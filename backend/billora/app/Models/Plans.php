@@ -54,4 +54,5 @@ class Plans extends Model
     {
         return $this->hasMany(PlanBusinessType::class , 'plan_id');
     }
+
 }

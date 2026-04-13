@@ -28,8 +28,8 @@ class InputPermissionSeeder extends Seeder
             'harvest date',
             'storage instructions',
             //Medicine/Pharmacy Fields
-            'medicine type',
-            'other medicine type',
+            'medicine type Id',
+
             'expiry date',
             'batch number',
             'manufacturer name',

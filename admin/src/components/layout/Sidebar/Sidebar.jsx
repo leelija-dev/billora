@@ -21,10 +21,10 @@ import {
   FiBox,
   FiGrid,
   FiBarChart2,
-  FiTag,
+  FiTag
 } from 'react-icons/fi';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FaStore } from 'react-icons/fa';
+import { FaFileMedical, FaStore } from 'react-icons/fa';
 import { TbRuler2 } from "react-icons/tb";
 
 const Sidebar = () => {
@@ -66,6 +66,7 @@ const Sidebar = () => {
     { path: '/categories', name: 'Categories', icon: FiGrid, badge: null },
     { path: '/brands', name: 'Brands', icon: FiTag, badge: null },
     { path: '/units', name: 'Units', icon: TbRuler2, badge: null },
+    { path: '/medicine-types', name: 'Medicine Types', icon: FaFileMedical, badge: null },
     { path: '/stores', name: 'Stores', icon: FaStore, badge: null },
     { path: '/packages', name: 'Packages', icon: FiBox, badge: null },
     { path: '/stock', name: 'Stock', icon: FiArchive, badge: null, permission: 'stock-management' },
@@ -73,7 +74,7 @@ const Sidebar = () => {
     { path: '/customers', name: 'Customers', icon: FiUsers, badge: null },
     { path: '/invoices', name: 'Invoices', icon: FiFileText, badge: null },
     { path: '/reports', name: 'Reports', icon: FiBarChart2, badge: null },
-    { path: '/billing', name: 'Plans', icon: FiCreditCard, badge: planExpireReminder ? '⚠️' : null },
+    { path: '/billing', name: 'Plans', icon: FiCreditCard, badge: planExpireReminder ? '?' : null },
     { path: '/settings', name: 'Settings', icon: FiSettings, badge: null },
   ];
 

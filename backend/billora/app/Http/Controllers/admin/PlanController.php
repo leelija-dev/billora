@@ -48,41 +48,63 @@ class PlanController extends Controller
             ]);
         }
     }
-    public function edit($id)
-    {
-        try {
-            $data = Plans::findOrFail($id);
-            $plan = Plans::findOrFail($id);
+   public function edit($id)
+{
+    try {
 
+        // Get Plan
+        $plan = Plans::findOrFail($id);
 
+        // Get Plan Permission IDs
+        $planPermissions = PlanPermissionDetails::where('plan_id', $plan->id)
+            ->pluck('permission_id')
+            ->toArray();
 
-            // get saved permission IDs
-            $planPermissions = PlanPermissionDetails::where('plan_id', $plan->id)
-                ->pluck('permission_id')
-                ->toArray();
-            $permissionNames = PlanPermission::whereIn('id', $planPermissions)
-                ->select([
-                    'id',
-                    'permission_name',
-                    'slug',
-                    'description'
-                ])
-                ->get();
-                
-            return response()->json([
-                'status' => true,
-                'message' => 'Plan Details',
-                'Single Plan' => $data,
-                'permissions_id' => $planPermissions,
-                'permissionNames' => $permissionNames
-            ]);
-        } catch (\Exception $e) {
-            return response()->json([
-                'status' => false,
-                'message' => $e->getMessage()
-            ]);
-        }
+        // Get Permission Names
+        $permissionNames = PlanPermission::whereIn('id', $planPermissions)
+            ->select([
+                'id',
+                'permission_name',
+                'slug',
+                'description'
+            ])
+            ->get();
+
+        // Get Sidebar Permissions (IMPORTANT FIX)
+        $sidebarPermissions = PlanPermission::with('sidebarPermissions')
+            ->whereIn('id', $planPermissions)
+            ->get()
+            ->flatMap(function ($perm) {
+                return $perm->sidebarPermissions;
+            })
+            ->unique('id') // remove duplicates
+            ->values();
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Plan Details',
+
+            'Single Plan' => $plan,
+
+            'permissions_id' => $planPermissions,
+
+            'permissionNames' => $permissionNames,
+
+            'business_types' => $plan->business_types()->with('businessType')->get(),
+
+            //  FINAL SIDEBAR PERMISSIONS
+            'customer_sidebar_permission' => $sidebarPermissions
+
+        ]);
+
+    } catch (\Exception $e) {
+
+        return response()->json([
+            'status' => false,
+            'message' => $e->getMessage()
+        ]);
     }
+}
     public function update(Request $request, $id)
     {
         $data = $request->validate([
