@@ -810,10 +810,10 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
                   label="Medicine Type"
                   options={[
                     { value: '', label: 'Select medicine type' },
-                    ...createPageData.medicineTypes.map(type => ({
+                    ...(medicineTypes?.map(type => ({
                       value: type.id,
                       label: type.name
-                    }))
+                    })) || [])
                   ]}
                   value={watch('medicine_type_id') || ''}
                   onChange={(e) => {

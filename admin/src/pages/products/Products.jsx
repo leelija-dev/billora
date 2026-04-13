@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { 
   FiPlus, 
   FiSearch, 
@@ -73,6 +73,11 @@ const Products = () => {
     updateProduct,
   } = useProductStore()
 
+  // Refs to track initialization
+  const initializedRef = useRef(false)
+  const categoriesInitializedRef = useRef(false)
+  const brandsInitializedRef = useRef(false)
+
   const [showAddForm, setShowAddForm] = useState(false)
   const [showEditForm, setShowEditForm] = useState(false)
   const [selectedProduct, setSelectedProduct] = useState(null)
@@ -100,6 +105,10 @@ const Products = () => {
 
   useEffect(() => {
     const fetchData = async () => {
+      // Prevent multiple initial loads using ref
+      if (initializedRef.current) return
+      initializedRef.current = true
+      
       try {
         await fetchProducts()
         
@@ -145,6 +154,11 @@ const Products = () => {
   // Fetch categories and brands data
   useEffect(() => {
     const fetchCategoriesAndBrands = async () => {
+      // Prevent duplicate calls using refs
+      if (categoriesInitializedRef.current || brandsInitializedRef.current) return
+      categoriesInitializedRef.current = true
+      brandsInitializedRef.current = true
+      
       // Prevent duplicate calls if already loading or data exists
       if (categoriesLoading || brandsLoading || (categories.length > 0 && brands.length > 0)) {
         return
