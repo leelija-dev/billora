@@ -39,6 +39,13 @@ const Pagination = ({
     return rangeWithDots
   }
 
+  // Function to get URL for a specific page number
+  const getPageUrl = (pageNumber) => {
+    if (!pagination?.first_page_url) return null
+    // Replace page number in first_page_url with the requested page number
+    return pagination.first_page_url.replace(/page=\d+/, `page=${pageNumber}`)
+  }
+
   return (
     <div className="flex items-center justify-between px-4 py-3 sm:px-6">
       <div className="flex-1 flex justify-between sm:hidden">
@@ -96,7 +103,7 @@ const Pagination = ({
             {getPageNumbers().map((page, index) => (
               <button
                 key={index}
-                onClick={() => typeof page === 'number' && onPageChange(page)}
+                onClick={() => typeof page === 'number' && onPageChange(getPageUrl(page))}
                 disabled={page === '...'}
                 className={`
                   relative inline-flex items-center px-4 py-2 border text-sm font-medium
