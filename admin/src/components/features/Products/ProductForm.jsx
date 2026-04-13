@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { motion } from 'framer-motion'
 import { useAuthStore } from '../../../store/authStore'
+import useMedicineTypeStore from '../../../store/medicineTypeStore'
 import { productsAPI } from '../../../services/productsService'
 import Input from '../../common/Input/Input'
 import Button from '../../common/Button/Button'
@@ -12,12 +13,14 @@ import { FiUpload, FiX, FiPlus, FiTrash2 } from 'react-icons/fi'
 
 const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
   const { user } = useAuthStore()
+  const { fetchMedicineTypes, medicineTypes } = useMedicineTypeStore()
   
   // State for create page data
   const [createPageData, setCreatePageData] = useState({
     brands: [],
     categories: [],
     units: [],
+    medicineTypes: [],
     inputPermissions: []
   })
   const [loadingData, setLoadingData] = useState(false)
@@ -65,8 +68,7 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
       discount_amount: '',
       cess_percentage: '',
       attributes: '',
-      medicine_type: '',
-      other_medicine_type: '',
+      medicine_type_id: '',
       expiry_date: '',
       batch_number: '',
       manufacturer_name: '',
@@ -92,8 +94,19 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
   useEffect(() => {
     if (user?.id) {
       fetchCreatePageData()
+      fetchMedicineTypes(user.id)
     }
-  }, [user?.id])
+  }, [user?.id, fetchMedicineTypes])
+
+  // Update create page data when medicine types are loaded
+  useEffect(() => {
+    if (medicineTypes && medicineTypes.length > 0) {
+      setCreatePageData(prev => ({
+        ...prev,
+        medicineTypes
+      }))
+    }
+  }, [medicineTypes])
 
   // Fetch create page data
   const fetchCreatePageData = async () => {
@@ -109,6 +122,7 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
         brands: data.brand || [],
         categories: data.category || [],
         units: data.unit || [],
+        medicineTypes: [], // Will be populated by medicine type store
         inputPermissions: inputPermissions
       })
       
@@ -155,8 +169,25 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
           }
         }
         
-        // Convert to array format for form display
-        if (typeof parsedAttributes === 'object' && parsedAttributes !== null) {
+        // Handle API response format (array of objects)
+        if (Array.isArray(parsedAttributes)) {
+          // If it's already an array, merge all objects into one
+          const mergedAttributes = {}
+          parsedAttributes.forEach(attrObj => {
+            if (typeof attrObj === 'object' && attrObj !== null) {
+              Object.assign(mergedAttributes, attrObj)
+            }
+          })
+          
+          // Convert to array format for form display
+          const attrsArray = Object.entries(mergedAttributes).map(([key, value]) => ({
+            key,
+            value: String(value)
+          }))
+          setAttributes(attrsArray.length > 0 ? attrsArray : [{ key: '', value: '' }])
+          setValue('attributes', mergedAttributes)
+        } else if (typeof parsedAttributes === 'object' && parsedAttributes !== null) {
+          // Convert to array format for form display
           const attrsArray = Object.entries(parsedAttributes).map(([key, value]) => ({
             key,
             value: String(value)
@@ -274,21 +305,43 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
 
   // Form submission
   const onFormSubmit = (data) => {
-    // Convert attributes array to JSON object
-    const attributesObject = attributes
+    // Convert attributes to array format expected by backend
+    const attributesArray = attributes
       .filter(attr => attr.key.trim() !== '')
       .reduce((acc, attr) => {
-        acc[attr.key.trim()] = attr.value.trim()
+        // Group attributes by creating objects with multiple key-value pairs
+        if (acc.length === 0) {
+          acc.push({})
+        }
+        acc[0][attr.key.trim()] = attr.value.trim()
         return acc
-      }, {})
+      }, [])
+
+    // Convert empty/null numeric fields to 0
+    const numericFieldsToZero = [
+      'current_stock',
+      'discount_amount', 
+      'discount_percentage',
+      'cess_percentage',
+      'supplier_id',
+      'maximum_stock_quantity',
+      'minimum_stock_quantity',
+      'mrp',
+      'wholesale_price'
+    ]
+
+    const processedData = { ...data }
+    numericFieldsToZero.forEach(field => {
+      processedData[field] = processedData[field] === null || processedData[field] === '' || processedData[field] === undefined ? 0 : processedData[field]
+    })
 
     const productData = {
-      ...data,
+      ...processedData,
       user_id: user.id,
       created_by: user.id,
       images: selectedImages,
       variants: variants,
-      attributes: Object.keys(attributesObject).length > 0 ? attributesObject : null,
+      attributes: attributesArray.length > 0 ? attributesArray : [],
       // Convert boolean fields to integers for backend
       is_active: data.is_active ? 1 : 0,
       prescription_required: data.prescription_required ? 1 : 0,
@@ -738,7 +791,7 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
       ))}
 
       {/* Medicine Specific Fields */}
-      {(hasPermission('medicine_type') || hasPermission('other_medicine_type') || 
+      {(hasPermission('medicine_type_id') || 
         hasPermission('expiry_date') || hasPermission('batch_number') || 
         hasPermission('manufacturer_name') || hasPermission('prescription_required') || 
         hasPermission('schedule_type') || hasPermission('salt_composition') || 
@@ -747,22 +800,28 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
           <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6">Medicine Information</h3>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {renderField('medicine-type', (
-              <Input
-                label="Medicine Type"
-                placeholder="Enter medicine type"
-                error={errors.medicine_type?.message}
-                {...register('medicine_type')}
-              />
-            ))}
-
-            {renderField('other-medicine-type', (
-              <Input
-                label="Other Medicine Type"
-                placeholder="Enter other medicine type"
-                error={errors.other_medicine_type?.message}
-                {...register('other_medicine_type')}
-              />
+            {renderField('medicine_type_id', (
+              <>
+                <input
+                  type="hidden"
+                  {...register('medicine_type_id')}
+                />
+                <Select
+                  label="Medicine Type"
+                  options={[
+                    { value: '', label: 'Select medicine type' },
+                    ...createPageData.medicineTypes.map(type => ({
+                      value: type.id,
+                      label: type.name
+                    }))
+                  ]}
+                  value={watch('medicine_type_id') || ''}
+                  onChange={(e) => {
+                    setValue('medicine_type_id', e.target.value, { shouldValidate: true })
+                  }}
+                  error={errors.medicine_type_id?.message}
+                />
+              </>
             ))}
 
             {renderField('expiry-date', (

@@ -78,13 +78,16 @@ export const productsAPI = {
       if (productData.discount_amount) formData.append('discount_amount', productData.discount_amount);
       if (productData.cess_percentage) formData.append('cess_percentage', productData.cess_percentage);
       
-      // Handle attributes field - convert to JSON string if it's an object
-      if (productData.attributes) {
-        if (typeof productData.attributes === 'object') {
-          formData.append('attributes', JSON.stringify(productData.attributes));
-        } else {
-          formData.append('attributes', productData.attributes);
-        }
+      // Handle attributes field - send as array
+      if (productData.attributes && Array.isArray(productData.attributes)) {
+        productData.attributes.forEach((attr, index) => {
+          if (typeof attr === 'object' && attr !== null) {
+            // Send each attribute object as individual FormData entries
+            Object.keys(attr).forEach(key => {
+              formData.append(`attributes[${index}][${key}]`, attr[key]);
+            });
+          }
+        });
       }
       
       if (productData.medicine_type) formData.append('medicine_type', productData.medicine_type);
