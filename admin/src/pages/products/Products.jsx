@@ -23,6 +23,8 @@ import {
 import { motion, AnimatePresence } from 'framer-motion'
 import { useProductStore } from '../../store/productStore'
 import { stockAPI } from '../../services/stockService'
+import { categoriesAPI } from '../../services/categoriesService'
+import { brandsAPI } from '../../services/brandsService'
 import Button from '../../components/common/Button/Button'
 import Input from '../../components/common/Input/Input'
 import Table from '../../components/common/Table/Table'
@@ -84,6 +86,10 @@ const Products = () => {
   const [initialLoading, setInitialLoading] = useState(true)
   const [stocks, setStocks] = useState([])
   const [stocksLoading, setStocksLoading] = useState(false)
+  const [categories, setCategories] = useState([])
+  const [brands, setBrands] = useState([])
+  const [categoriesLoading, setCategoriesLoading] = useState(false)
+  const [brandsLoading, setBrandsLoading] = useState(false)
 
   // Function to get stock for a specific product
   const getProductStock = (productId) => {
@@ -106,8 +112,8 @@ const Products = () => {
           return
         }
         
-        // Only fetch stocks if not already loaded and no valid cache
-        if (stocks.length === 0) {
+        // Only fetch stocks if not already loaded, no valid cache, and not already loading
+        if (stocks.length === 0 && !stocksLoading) {
           setStocksLoading(true)
           const stocksResponse = await stockAPI.getAll()
           console.log(' Stock API Response:', stocksResponse)
@@ -135,6 +141,63 @@ const Products = () => {
 
     return () => clearTimeout(debounceTimer)
   }, [searchTerm, setFilters])
+
+  // Fetch categories and brands data
+  useEffect(() => {
+    const fetchCategoriesAndBrands = async () => {
+      // Prevent duplicate calls if already loading or data exists
+      if (categoriesLoading || brandsLoading || (categories.length > 0 && brands.length > 0)) {
+        return
+      }
+      
+      setCategoriesLoading(true)
+      setBrandsLoading(true)
+      
+      try {
+        const [categoriesRes, brandsRes] = await Promise.all([
+          categoriesAPI.getAll(),
+          brandsAPI.getAll()
+        ])
+        
+        // FIX: Extract the data array from the paginated response
+        // The categories API returns a paginated object with the actual array in the 'data' property
+        let categoriesData = []
+        if (categoriesRes?.data?.data) {
+          // If it's a paginated response with data property containing the array
+          categoriesData = Array.isArray(categoriesRes.data.data) 
+            ? categoriesRes.data.data 
+            : categoriesRes.data.data.data || []
+        } else {
+          categoriesData = categoriesRes?.data || []
+        }
+        
+        // Brands API might return array directly or nested
+        let brandsData = []
+        if (brandsRes?.data?.data) {
+          brandsData = Array.isArray(brandsRes.data.data)
+            ? brandsRes.data.data
+            : brandsRes.data.data.data || []
+        } else {
+          brandsData = brandsRes?.data || []
+        }
+        
+        console.log('Categories fetched:', categoriesData)
+        console.log('Brands fetched:', brandsData)
+        
+        setCategories(categoriesData)
+        setBrands(brandsData)
+      } catch (error) {
+        console.error('Error fetching categories and brands:', error)
+        setCategories([])
+        setBrands([])
+      } finally {
+        setCategoriesLoading(false)
+        setBrandsLoading(false)
+      }
+    }
+    
+    fetchCategoriesAndBrands()
+  }, [])
 
   const handleAddProduct = () => {
     setShowAddForm(true)
@@ -192,12 +255,15 @@ const Products = () => {
   }
 
   const handleRefresh = async () => {
+    // Prevent multiple simultaneous refresh calls
+    if (refreshing) return
+    
     setRefreshing(true)
     // Clear stock cache to force fresh data
     stockCache.delete('all')
     await fetchProducts()
-    // Refetch stocks with fresh data
-    if (stocks.length > 0) {
+    // Refetch stocks with fresh data (only if not already loading)
+    if (!stocksLoading) {
       try {
         const stocksResponse = await stockAPI.getAll()
         const stocksData = stocksResponse.data?.data?.data || stocksResponse.data?.data || []
@@ -287,20 +353,28 @@ const Products = () => {
     {
       header: 'Category',
       accessor: 'category_id',
-      cell: (value) => (
-        <span className="px-3 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg text-sm">
-          Category {value}
-        </span>
-      ),
+      cell: (value) => {
+        // Ensure categories is an array before calling find
+        const category = Array.isArray(categories) ? categories.find(cat => cat.id === value) : null
+        return (
+          <span className="px-3 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg text-sm">
+            {category?.name || `Category ${value}`}
+          </span>
+        )
+      },
     },
     {
-      header: 'Price',
-      accessor: 'selling_price',
-      cell: (value) => (
-        <span className="font-semibold text-gray-900 dark:text-white">
-          ${value ? parseFloat(value).toFixed(2) : '0.00'}
-        </span>
-      ),
+      header: 'Brand',
+      accessor: 'brand_id',
+      cell: (value) => {
+        // Ensure brands is an array before calling find
+        const brand = Array.isArray(brands) ? brands.find(b => b.id === value) : null
+        return (
+          <span className="px-3 py-1 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded-lg text-sm">
+            {brand?.name || `Brand ${value}`}
+          </span>
+        )
+      },
     },
     {
       header: 'Stock',
@@ -632,12 +706,10 @@ const Products = () => {
                           label="Category"
                           options={[
                             { value: '', label: 'All Categories' },
-                            { value: 'electronics', label: 'Electronics' },
-                            { value: 'clothing', label: 'Clothing' },
-                            { value: 'books', label: 'Books' },
-                            { value: 'home', label: 'Home & Garden' },
-                            { value: 'sports', label: 'Sports' },
-                            { value: 'toys', label: 'Toys' },
+                            ...(Array.isArray(categories) ? categories.map(cat => ({
+                              value: cat.id,
+                              label: cat.name
+                            })) : [])
                           ]}
                           value={filters.category}
                           onChange={(e) => setFilters({ category: e.target.value })}
@@ -796,18 +868,18 @@ const Products = () => {
                                   ? 'text-red-600 dark:text-red-400' 
                                   : 'text-gray-700 dark:text-gray-300'
                               }`}>
-                                {product.stock} / {product.maxStock}
+                                {getProductStock(product.id)} / {product.maxStock || 100}
                               </span>
                             </div>
                             <div className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
                               <motion.div
                                 initial={{ width: 0 }}
-                                animate={{ width: `${(product.stock / product.maxStock) * 100}%` }}
+                                animate={{ width: `${Math.min((getProductStock(product.id) / (product.maxStock || 100)) * 100, 100)}%` }}
                                 transition={{ duration: 0.5 }}
                                 className={`h-full rounded-full ${
-                                  product.stock <= product.lowStockThreshold 
+                                  getProductStock(product.id) <= (product.lowStockThreshold || 10)
                                     ? 'bg-red-500' 
-                                    : product.stock <= product.lowStockThreshold * 2
+                                    : getProductStock(product.id) <= (product.lowStockThreshold || 10) * 2
                                     ? 'bg-yellow-500'
                                     : 'bg-green-500'
                                 }`}
