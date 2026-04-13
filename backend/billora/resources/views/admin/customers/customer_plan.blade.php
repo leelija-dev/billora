@@ -188,7 +188,7 @@
             align-items: center;
             gap: 8px;
             transition: all 0.2s ease;
-            box-shadow: 0 4px 6px rgba(37, 99, 235, 0.2);
+            box-shadow: 0 4px 6px rgba(75, 77, 81, 0.2);
         }
 
         .add-btn:hover {
