@@ -959,7 +959,7 @@ const fetchProductsData = async () => {
                     const quantity = getProductQuantity(product.id);
                     const productPrice = product.selling_price || product.price;
                     const isSelected = selectedItems.has(product.id);
-
+// hhs
                     return (
                       <div
                         key={product.id}
