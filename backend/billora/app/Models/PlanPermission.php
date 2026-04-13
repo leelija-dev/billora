@@ -17,4 +17,13 @@ class PlanPermission extends Model
         'is_active' => 'boolean',
         
     ];
+    public function sidebarPermissions()
+{
+    return $this->belongsToMany(
+        CustomerSidebarPermission::class,
+        'plan_permission_with_customer_dashboard',
+        'plan_permission_id',
+        'customer_sidebar_permission_id'
+    );
+}
 }

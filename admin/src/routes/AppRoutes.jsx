@@ -13,6 +13,7 @@ import Products from '../pages/products/Products'
 import Categories from '../pages/categories/Categories'
 import Brands from '../pages/brands/Brands'
 import Units from '../pages/units/Units'
+import MedicineTypes from '../pages/medicine-types/MedicineTypes'
 import Stores from '../pages/stores/Stores'
 import Packages from '../pages/packages/Packages'
 import Inventory from '../pages/inventory/Inventory'
@@ -48,6 +49,7 @@ const AppRoutes = () => {
           <Route path="/categories" element={<Categories />} />
           <Route path="/brands" element={<Brands />} />
           <Route path="/units" element={<Units />} />
+          <Route path="/medicine-types" element={<MedicineTypes />} />
           <Route path="/stores" element={<Stores />} />
           <Route path="/packages" element={<Packages />} />
           <Route path="/stock" element={<ProtectedRoute feature="stock-management"><Inventory /></ProtectedRoute>} />

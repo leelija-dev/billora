@@ -63,6 +63,9 @@ class Products extends Model
         'updated_by'
 
     ];
+    protected $casts = [
+    'attributes' => 'array',
+];
 
     public function images(): HasMany
     {

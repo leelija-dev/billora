@@ -1,7 +1,6 @@
-
-    @extends('admin.main-layout')
-    @section('title', 'Create New Plan Permission')
-    @section('content')
+@extends('admin.main-layout')
+@section('title','Send Mail to Customer')
+@section('content')
     <style>
         * {
             margin: 0;
@@ -96,11 +95,11 @@
         }
 
         .form-grid {
-        display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 20px;
-        align-items: start; 
-    }
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            align-items: start;
+        }
 
         .form-group {
             margin-bottom: 0;
@@ -474,13 +473,13 @@
         }
 
         .btn-secondary {
-            background: #f80303;
-            color: #f5f5f5;
+            background: #f1f5f9;
+            color: #475569;
         }
 
         .btn-secondary:hover {
-            background: #f75d5d;
-            color: #f1f1f1;
+            background: #e2e8f0;
+            color: #1e293b;
         }
 
         /* Helper text */
@@ -579,52 +578,68 @@
                 /* Single column on mobile */
             }
         }
+
         .form-grid {
-    gap: 25px;
-}
+            gap: 25px;
+        }
     </style>
 
-    {{-- @include('admin.sidebar') --}}
     <!-- Main Content - Full Width -->
     <div class="main-content">
 
         <!-- Page Header -->
         <div class="page-header">
             <div class="header-left">
-                <h1>Create New Plan Permission</h1>
+                <h1>Send Mail to Contact us customers</h1>
             </div>
-            <a href="{{route('admin.plan-permission.index')}}" class="back-btn">
+            <a href="{{ route('admin.contacts.index') }}" class="back-btn">
                 <svg viewBox="0 0 24 24">
                     <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z" />
                 </svg>
-                Back to Plans Permissions
+                Back
             </a>
         </div>
-
+        @if (session('success'))
+            <div style="background: #d1fae5; color: #065f46; padding: 10px; border-radius: 6px; margin-bottom: 15px;">
+                {{ session('success') }}
+            </div>
+        @endif
         <!-- Form Container - Full Width -->
         <div class="form-container">
-            <form id="planForm" action="{{ route('admin.plan-permission.store') }}" method="POST" enctype="multipart/form-data"
-                novalidate>
+            <form id="mailForm" action="{{ route('admin.customers.send-mail') }}" method="POST"
+                enctype="multipart/form-data" novalidate>
                 @csrf
 
+                <!-- Plan Details -->
+                <div class="form-title">Mail Details</div>
+                {{-- <div>{{ implode(', ', $customer_ids) }} --}}
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                            Mail to
+                    </label>
 
-                <div class="">
-                    <!-- Plan Name -->
+                    <div class="border rounded-lg p-3 bg-gray-50 max-h-40 overflow-y-auto">
+
+                      {{ $contacts->email ? $contacts->email : '' }} 
+                        
+
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <!--  Customer ids -->
+                   
+                        <input type="hidden" name="customer_id" value="{{ $contacts  ->id }}">
+                  
                     <div class="form-group">
                         <label class="form-label">
-                            Permission Name <span>*</span>
+                            Subject <span>*</span>
                         </label>
                         <div class="input-wrapper">
-                            <span class="input-icon">
-                                <svg viewBox="0 0 24 24">
-                                    <path
-                                        d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2z" />
-                                </svg>
-                            </span>
-                            <input type="text" name="name" class="form-input with-icon"
-                                placeholder="Enter permission name " value="{{ old('name') }}"
-                                required>
-                            @error('name')
+
+                            <input type="text" name="subject" class="form-input " placeholder="Enter subject... "
+                                value="{{ old('subject') }}" required>
+                            @error('subject')
                                 <span class="text-danger">{{ $message }}</span>
                             @enderror
                         </div>
@@ -632,64 +647,28 @@
 
                     <!-- Description FULL WIDTH -->
                     <div class="form-group mt-2">
-                        <label class="form-label">Permission Description</label>
-                        <textarea name="description" id="description" class="form-textarea"
-                            placeholder="Enter permission description">{{ old('description') }}</textarea>
-
-                        @error('description')
-                            <span class="text-danger" style="color: red">{{ $message }}</span>
-                        @enderror
+                        <label class="form-label">Message <span>*</span></label>
+                        <textarea name="message" id="message" class="form-textarea">
+                            {{ old('message') }}
+                        </textarea>
                     </div>
-
-                </div>
-                    <div class="form-title" style="margin-top: 10px;">Customer Sidebar Permissions</div>
-                <div class="features-section">
-                    <div class="features-header">
-                        <h3>Select Permissions</h3>
-                    </div>
-
-                    <div class="permissions-grid">
-                        @foreach ($permissions as $permission)
-                            <label class="permission-card">
-                                <input type="checkbox" name="permissions[]" value="{{ $permission->id }}"
-                                    {{ in_array($permission->id, old('permissions', [])) ? 'checked' : '' }}>
-
-                                <div class="permission-content">
-                                    <span class="permission-title">
-                                        {{ $permission->name }}
-                                    </span>
-                                </div>
-                            </label>
-                        @endforeach
-                    </div>
-                </div>                
-                <!-- Status Toggle -->
-                <div class="form-group">
-                    <div class="toggle-group">
-                        <div>
-                            <div class="toggle-label">Active Status</div>
-                            
-                        </div>
-                        <label class="switch">
-                            <input type="hidden" name="is_active" value="0">
-                            <input type="checkbox" name="is_active" value="1" checked>
-                            <span class="slider"></span>
-                        </label>
-                    </div>
-                    @error('is_active')
+                    @error('message')
                         <span class="text-danger" style="color: red">{{ $message }}</span>
                     @enderror
+
+
                 </div>
+
 
                 <!-- Form Actions -->
                 <div class="form-actions">
-                    <a href="{{ route('admin.plan-permission.index') }}"><button type="button" class="btn btn-secondary">Cancel</button></a>
+                    <button type="button" class="btn btn-secondary">Cancel</button>
                     <button type="submit" class="btn btn-primary">
                         <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: white;">
                             <path
                                 d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm4-10H5V5h11v4z" />
                         </svg>
-                        Create Persission
+                        Send Mail
                     </button>
                 </div>
             </form>
@@ -703,62 +682,66 @@
 
     <!-- Summernote JS -->
     <script src="https://cdn.jsdelivr.net/npm/summernote@0.8.20/dist/summernote-lite.min.js"></script>
-    
-    {{-- <script>
-        $(document).ready(function() {
-            $('#description').summernote({
-                height: 150,
-            });
 
-        });
-    </script> --}}
     <script>
-        document.addEventListener("DOMContentLoaded", function() {
-
-            document.getElementById('planForm').addEventListener('submit', function(e) {
-
-                let isValid = true;
-
-                let name = document.querySelector('input[name="name"]');
-            
-
-                // Summernote content
-                // let description = $('#description').summernote('code');
-
-                // Remove old errors
-                document.querySelectorAll('.js-error').forEach(el => el.remove());
-
-                function showError(input, message) {
-                    let error = document.createElement('span');
-                    error.className = 'js-error';
-                    error.style.color = 'red';
-                    error.style.fontSize = '12px';
-                    error.innerText = message;
-
-                    let parent = input.closest('.form-group') || input.closest('.feature-item');
-                    parent.appendChild(error);
-
-                    isValid = false;
-                }
-
-                // Name
-                if (!name.value.trim()) {
-                    showError(name, "Plan name cannot be blank!");
-                }
-
-
-                // Description (optional but better)
-                // if (description.trim() === "" || description === "<p><br></p>") {
-                //     showError(document.getElementById('description'), "Description is required");
-                // }
-
-                // Stop submit
-                if (!isValid) {
-                    e.preventDefault();
-                }
-
+        $(document).ready(function() {
+            $('#message').summernote({
+                height: 300,
+                placeholder: 'Enter message...',
             });
 
         });
     </script>
+    <script id="validationfix">
+        document.addEventListener("DOMContentLoaded", function() {
+
+            document.getElementById('mailForm').addEventListener('submit', function(e) {
+
+                let isValid = true;
+
+                let subject = document.querySelector('input[name="subject"]');
+                let messageContent = $('#message').summernote('code');
+
+                // Remove old errors
+                document.querySelectorAll('.js-error').forEach(el => el.remove());
+
+                function showError(input, msg) {
+                    let error = document.createElement('span');
+                    error.className = 'js-error';
+                    error.style.color = 'red';
+                    error.style.fontSize = '12px';
+                    error.innerText = msg;
+
+                    input.closest('.form-group').appendChild(error);
+                    isValid = false;
+                }
+
+                // Subject validation
+                if (subject.value.trim() === '') {
+                    showError(subject, "Subject cannot be blank!");
+                }
+
+                // Message validation (Summernote fix)
+                if (messageContent === '' || messageContent === '<p><br></p>') {
+                    let messageBox = document.getElementById('message');
+                    showError(messageBox, "Message cannot be blank!");
+                }
+
+                if (!isValid) {
+                    e.preventDefault();
+                }
+            });
+
+        });
+    </script>
+    @if (session('success'))
+        <script>
+            Swal.fire({
+                icon: 'success',
+                title: 'Success',
+                text: "{{ session('success') }}",
+                confirmButtonColor: '#3085d6'
+            });
+        </script>
+    @endif
 @endsection
