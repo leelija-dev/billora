@@ -439,6 +439,34 @@
                 background: #ef4444;
             }
 
+            .mail-btn:hover svg {
+                fill: white;
+            }
+
+            .mail-btn:hover {
+                background: #ec8004;
+                color: white
+            }
+
+            .mail-btn svg {
+                width: 18px;
+                height: 18px;
+                fill: #64748b;
+                transition: fill 0.2s ease;
+            }
+
+            .mail-btn {
+                padding: 8px;
+                border: none;
+                background: #f1f5f9;
+                border-radius: 10px;
+                cursor: pointer;
+                transition: all 0.2s ease;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+            }
+
             /* Pagination */
             .pagination {
                 display: flex;
@@ -572,15 +600,15 @@
 
                         <!-- Center: Buttons -->
                         <div class="flex items-center gap-2 ">
-                            <button onclick="clearSelection()" class="px-3 py-2 bg-red-500 text-white rounded text-sm">
+                            {{-- <button onclick="clearSelection()" class="px-3 py-2 bg-red-500 text-white rounded text-sm">
                                 Clear all checked
-                            </button>
+                            </button> --}}
                             {{-- 
                         <a href="{{route('admin.customers.customer-mail')}}"><button class="px-3 py-2 bg-blue-500 text-white rounded text-sm">
                             Send Mail
                         </button></a> --}}
 
-                            <button onclick="handleSendMail()"
+                            {{-- <button onclick="handleSendMail()"
                                 class="relative px-4 py-2 bg-blue-500 text-white rounded flex items-center gap-2">
 
                                 <!-- Mail Icon -->
@@ -599,7 +627,7 @@
                                 </span>
 
 
-                            </button>
+                            </button> --}}
                             {{-- <form action="{{ route('admin.customers.index') }}" method="GET">
 
                                 <select name="status" onchange="this.form.submit()"
@@ -701,21 +729,16 @@
                                         <td class="text-center">
                                             <div class="action-buttons">
                                                 <a href="{{ route('admin.contacts.view', $contact->id) }}">
-                                                <button class="action-btn" 
-                                                    title="View">
-                                                    <svg viewBox="0 0 24 24">
-                                                        <path
-                                                            d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z" />
-                                                    </svg>
-                                                </button>
+                                                    <button class="action-btn" title="View">
+                                                        <svg viewBox="0 0 24 24">
+                                                            <path
+                                                                d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z" />
+                                                        </svg>
+                                                    </button>
                                                 </a>
-                                                {{-- <button class="action-btn" onclick="editCustomer({{ $contact['id'] }})"
-                                                title="Edit">
-                                                <svg viewBox="0 0 24 24">
-                                                    <path
-                                                        d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 5.63l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83c.39-.39.39-1.02 0-1.41z" />
-                                                </svg>
-                                            </button> --}}
+
+                                                <a href="{{route('admin.contacts.send-mail',$contact->id)}}"><button class="mail-btn" title="Send Mail">Mail
+                                                </button></a>
                                             </div>
                                         </td>
                                     </tr>
@@ -737,7 +760,7 @@
         </div>
         <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
-        <script>
+        {{-- <script>
             /* =========================
                        GLOBAL STATE
                     ========================= */
@@ -846,7 +869,7 @@
                     return;
                 }
 
-                let url = "#";
+                let url = "{{ route('admin.contacts.send-mail') }}";
 
                 //  GET search from URL (BEST METHOD)
                 let params = new URLSearchParams(window.location.search);
@@ -862,11 +885,11 @@
                     }
 
                 } else {
-                    url += "?ids=" + selected.join(',');
+                    url += "/" + selected.join(',');
                 }
 
                 window.location.href = url;
             }
-        </script>
+        </script> --}}
 
     @endsection

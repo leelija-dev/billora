@@ -36,4 +36,8 @@ class ContactController extends Controller
         $contacts->save();
         return view('admin.contact_us.view', compact('contacts'));
     }
+    public function sendMail($id){
+        $contacts = ContactUs::findOrFail($id);
+        return view('admin.contact_us.send-mail', compact('contacts'));
+    }
 }
