@@ -99,5 +99,6 @@ Route::middleware(['web', 'admin.auth'])->prefix('admin')->group(function () {
         Route::get('/', [ContactController::class, 'index'])->name('admin.contacts.index');
         Route::get('/view/{id}', [ContactController::class, 'view'])->name('admin.contacts.view');
         Route::get('/send-mail/{id}', [ContactController::class, 'sendMail'])->name('admin.contacts.send-mail');
+        Route::post('/send-mail', [ContactController::class, 'mailSend'])->name('admin.contacts.mail-send');
     });
 });
