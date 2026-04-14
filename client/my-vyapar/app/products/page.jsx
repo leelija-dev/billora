@@ -1268,7 +1268,7 @@ const ProductsPage = () => {
             {gstPercent > 0 && (
               <div className="flex justify-between text-xs">
                 <span className="text-gray-500">GST ({gstPercent}%):</span>
-                <span className="text-gray-600">+ ₹{Math.round(totalGstForItem).toLocaleString()}</span>
+                <span className="text-gray-600">+ ₹{totalGstForItem}</span>
               </div>
             )}
             
@@ -1281,8 +1281,14 @@ const ProductsPage = () => {
   {/* Totals */}
   <div className="border-t border-blue-100 mt-3 pt-3 space-y-1">
     <div className="flex justify-between text-xs font-bold">
-      <span>Grand Total:</span>
+      <span>Total:</span>
       <span className="text-blue-600">₹{Math.round(getCartTotal()).toLocaleString()}</span>
+      
+    </div>
+    <div className="flex justify-between text-xs font-bold">
+      <span>Grand Total(Round Off):</span>
+      <span className="text-blue-600">₹{Math.round(getCartTotal()).toLocaleString()}</span>
+      
     </div>
   </div>
 </div>
@@ -1406,8 +1412,8 @@ const ProductsPage = () => {
                       
                       const gstAmount = (basePrice * gstPercent) / 100;
                       const discountAmount = (basePrice * discountPercent) / 100;
-                      const finalPrice = basePrice + gstAmount - discountAmount;
-                      const mrp = basePrice + gstAmount;
+                      const finalPrice = basePrice - discountAmount;//gstAmount - discountAmount;
+                      const mrp = basePrice ;//+ gstAmount;
                       
                       return (
                         <>
@@ -1420,7 +1426,7 @@ const ProductsPage = () => {
                             ₹{Math.round(finalPrice).toLocaleString()}
                           </p>
                           {discountPercent > 0 && (
-                            <p className="text-sm text-red-600 mt-1">
+                            <p className="text-sm text-green-600 mt-1">
                               Save ₹{Math.round(discountAmount).toLocaleString()}
                             </p>
                           )}
