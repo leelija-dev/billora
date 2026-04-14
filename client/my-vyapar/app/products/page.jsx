@@ -1276,7 +1276,19 @@ const ProductsPage = () => {
 
   {/* Totals */}
   <div className="border-t border-blue-100 mt-3 pt-3 space-y-1">
-    <div className="flex justify-between text-xs font-bold">
+    <div className="flex justify-between text-xs">
+      <span className="text-gray-600">Subtotal:</span>
+      <span>₹{Math.round(getCartSubtotal()).toLocaleString()}</span>
+    </div>
+    <div className="flex justify-between text-xs">
+      <span className="text-gray-600">Total GST:</span>
+      <span className="text-gray-600">+ ₹{Math.round(getTotalGst()).toLocaleString()}</span>
+    </div>
+    <div className="flex justify-between text-xs">
+      <span className="text-gray-600">Total Discount:</span>
+      <span className="text-green-600">- ₹{Math.round(getTotalDiscountAmount()).toLocaleString()}</span>
+    </div>
+    <div className="flex justify-between text-xs font-bold pt-2 border-t border-blue-100">
       <span>Grand Total:</span>
       <span className="text-blue-600">₹{Math.round(getCartTotal()).toLocaleString()}</span>
     </div>
@@ -1396,7 +1408,7 @@ const ProductsPage = () => {
 
                   <div className="mt-3">
                     {(() => {
-                      const basePrice = selectedProduct.selling_price || selectedProduct.price;
+                      const basePrice = selectedProduct.selling_price ;
                       const discountPercent = selectedProduct.discount_percentage || 0;
                       const gstPercent = selectedProduct.gst_percentage || 0;
                       
