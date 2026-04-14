@@ -31,16 +31,9 @@ const Sidebar = () => {
   const { sidebarOpen, toggleSidebar, isMobile, setIsMobile } = useUIStore();
   const { canAccess } = usePermissionStore();
   const { user } = useAuthStore();
-  const { planExpireReminder, initializeNotifications } = useNotificationStore();
+  const { planExpireReminder } = useNotificationStore();
   const location = useLocation();
   const [hoveredItem, setHoveredItem] = useState(null);
-
-  // Initialize notifications on component mount
-  useEffect(() => {
-    if (user?.id) {
-      initializeNotifications(user.id);
-    }
-  }, [user?.id, initializeNotifications]);
 
   useEffect(() => {
     const checkMobile = () => {
