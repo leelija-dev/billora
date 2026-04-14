@@ -132,8 +132,8 @@ const Login = () => {
         errorMessage = "❌ No account found with this email. Please register first.";
       } else if (error.message.includes("password")) {
         errorMessage = "❌ Invalid password. Please try again.";
-      } else if (error.message.includes("verify")) {
-        errorMessage = "📧 Please verify your email before logging in. Check your inbox.";
+      // } else if (error.message.includes("verify")) {
+      //   errorMessage = "📧 Please verify your email before logging in. Check your inbox.";
       } else if (error.message.includes("Failed to fetch")) {
         errorMessage = "Cannot connect to server. Please make sure the backend is running.";
       } else {
@@ -141,14 +141,14 @@ const Login = () => {
       }
       
       setError(errorMessage);
-      toast.error(errorMessage, {
-        duration: 4000,
-        position: "top-center",
-        style: {
-          background: '#f44336',
-          color: '#fff',
-        },
-      });
+      // toast.error(errorMessage, {
+      //   duration: 4000,
+      //   position: "top-center",
+      //   style: {
+      //     background: '#f44336',
+      //     color: '#fff',
+      //   },
+      // });
     } finally {
       setLoading(false);
     }
