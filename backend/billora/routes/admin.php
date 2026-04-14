@@ -10,6 +10,7 @@ use App\Http\Controllers\admin\superadmin\PlansController;
 use App\Http\Controllers\admin\superadmin\PlanPermissionController;
 use App\Http\Controllers\admin\superadmin\RolesController;
 use App\Http\Controllers\admin\superadmin\SuperAdminPermissionController;
+use App\Http\Controllers\admin\superadmin\TestimonialsController;
 use App\Models\AdminMailHistory;
 use App\Models\AdminUser;
 use App\Models\SuperAdminPermission;
@@ -100,5 +101,14 @@ Route::middleware(['web', 'admin.auth'])->prefix('admin')->group(function () {
         Route::get('/view/{id}', [ContactController::class, 'view'])->name('admin.contacts.view');
         Route::get('/send-mail/{id}', [ContactController::class, 'sendMail'])->name('admin.contacts.send-mail');
         Route::post('/send-mail', [ContactController::class, 'mailSend'])->name('admin.contacts.mail-send');
+    });
+
+    Route::prefix('testimonial')->group(function () {
+        Route::get('/', [TestimonialsController::class, 'index'])->name('admin.testimonial.index');
+        Route::get('/create', [TestimonialsController::class, 'create'])->name('admin.testimonial.create');
+        Route::post('/store', [TestimonialsController::class, 'store'])->name('admin.testimonial.store');
+        Route::get('/edit/{id}', [TestimonialsController::class, 'edit'])->name('admin.testimonial.edit');
+        Route::post('/update/{id}', [TestimonialsController::class, 'update'])->name('admin.testimonial.update');
+        Route::delete('/delete/{id}', [TestimonialsController::class, 'delete'])->name('admin.testimonial.delete');
     });
 });

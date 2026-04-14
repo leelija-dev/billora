@@ -100,6 +100,11 @@
                     <i class="fa fa-comments"></i>
                     <span class="ml-3">Contact Us</span>
                 </a>
+                 <a href="{{ route('admin.testimonial.index') }}"
+                    class="flex items-center px-4 py-3 {{ request()->routeIs('admin.testimonial.index','admin.testimonial.create','admin.testimonial.edit') ? 'bg-blue-100 text-blue-600 font-semibold' : 'hover:bg-blue-100' }}">
+                    <i class="fa fa-comment"></i>
+                    <span class="ml-3">Testimonial</span>
+                </a>
                  @if($admin && $admin->can('view admin users'))
                 <div class="group">
 
