@@ -81,10 +81,10 @@ const ProductsPage = () => {
       const sellingPrice = item.selling_price || item.price;
       const discountPercent = item.discount_percentage || 0;
       const gstPercent = item.gst_percentage || 0;
-      
-      const gstAmount = (sellingPrice * gstPercent) / 100;
       const discountAmount = (sellingPrice * discountPercent) / 100;
-      const finalPrice = sellingPrice + gstAmount - discountAmount;
+      const gstAmount = ((sellingPrice - discountAmount) * gstPercent) / 100;
+      
+      const finalPrice = ((sellingPrice - discountAmount) + gstAmount);
       
       return total + (finalPrice * item.quantity);
     }, 0);
@@ -818,8 +818,8 @@ const ProductsPage = () => {
                               
                               const gstAmount = (basePrice * gstPercent) / 100;
                               const discountAmount = (basePrice * discountPercent) / 100;
-                              const finalPrice = basePrice + gstAmount - discountAmount;
-                              const mrp = basePrice + gstAmount;
+                              const finalPrice = basePrice - discountAmount; //+ gstAmount - discountAmount;
+                              const mrp = basePrice ;//+ gstAmount;
                               
                               return (
                                 <>
@@ -1149,6 +1149,7 @@ const ProductsPage = () => {
                     <div className="space-y-2 overflow-y-auto" style={{ maxHeight: 'calc(100vh - 280px)' }}>
                       {cart.map((item) => {
                         const sellingPrice = item.selling_price || item.price;
+                        const sellAfterDis =  (item.selling_price - ((item.selling_price * item.discount_percentage) / 100));
 
                         return (
                           <div key={item.id} className="flex gap-3 items-start bg-gray-50 rounded-lg p-2 border border-gray-100">
@@ -1188,7 +1189,7 @@ const ProductsPage = () => {
                             </div>
 
                             <div className="text-right flex-shrink-0">
-                              <p className="font-bold text-blue-600 text-sm">₹{sellingPrice * item.quantity}</p>
+                              <p className="font-bold text-blue-600 text-sm">₹{sellAfterDis * item.quantity}</p>
                               <button
                                 onClick={() => removeFromCart(item.id)}
                                 className="text-xs text-gray-400 hover:text-red-500 transition-colors mt-1"
@@ -1235,10 +1236,12 @@ const ProductsPage = () => {
       const gstPercent = item.gst_percentage || 0;
       const quantity = item.quantity;
 
-      const gstAmount = (basePrice * gstPercent) / 100;
+      
       const discountAmount = (basePrice * discountPercent) / 100;
+      const gstAmount = ((basePrice - discountAmount) * gstPercent) / 100;
       const finalPrice = basePrice + gstAmount - discountAmount;
-      const itemTotal = finalPrice * quantity;
+      const itemTotal = basePrice * quantity;
+      
       const totalGstForItem = gstAmount * quantity;
       const totalDiscountForItem = discountAmount * quantity;
 
@@ -1256,18 +1259,19 @@ const ProductsPage = () => {
               <span className="text-gray-500">Quantity:</span>
               <span className="text-gray-600">{quantity}</span>
             </div>
-            {gstPercent > 0 && (
-              <div className="flex justify-between text-xs">
-                <span className="text-gray-500">GST ({gstPercent}%):</span>
-                <span className="text-gray-600">+ ₹{Math.round(totalGstForItem).toLocaleString()}</span>
-              </div>
-            )}
             {discountPercent > 0 && (
               <div className="flex justify-between text-xs">
                 <span className="text-gray-500">Discount ({discountPercent}%):</span>
                 <span className="text-green-600">- ₹{Math.round(totalDiscountForItem).toLocaleString()}</span>
               </div>
             )}
+            {gstPercent > 0 && (
+              <div className="flex justify-between text-xs">
+                <span className="text-gray-500">GST ({gstPercent}%):</span>
+                <span className="text-gray-600">+ ₹{Math.round(totalGstForItem).toLocaleString()}</span>
+              </div>
+            )}
+            
           </div>
         </div>
       );
