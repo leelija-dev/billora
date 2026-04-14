@@ -42,7 +42,7 @@
                 <div class="px-3 py-4">
                     <div class="flex justify-between items-center">
                         <div>
-                            <h1 class="text-2xl font-bold text-gray-800">Plans Purchase History</h1>
+                            <h1 class="text-2xl font-bold text-gray-800">All Testimonials</h1>
 
                         </div>
 
@@ -52,7 +52,7 @@
                             <div class="relative">
                                 <form method="GET" action="#">
                                     <input type="text" name="search" value="{{ request('search') }}"
-                                        placeholder="Search plans..."
+                                        placeholder="Search testimonials..."
                                         class="pl-9 pr-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-transparent w-56">
                                     <i data-feather="search" class="absolute left-2.5 top-2 w-3.5 h-3.5 text-gray-400"></i>
 
@@ -84,8 +84,8 @@
                     <div class="bg-white rounded-lg shadow p-6 border-l-4 border-blue-500">
                         <div class="flex items-center justify-between">
                             <div>
-                                <p class="text-sm text-blue-600"><strong>Total Plan Purchases History</strong></p>
-                                <p class="text-2xl font-bold text-blue-600">{{ $totalplanHistory ?? 0 }}</p>
+                                <p class="text-sm text-blue-600"><strong>Total Testimonials</strong></p>
+                                <p class="text-2xl font-bold text-blue-600">{{ $totalTestimonials ?? 0 }}</p>
 
                             </div>
                             <div class="p-3 bg-blue-100 rounded-full">
@@ -97,8 +97,8 @@
                     <div class="bg-white rounded-lg shadow p-6 border-l-4 border-green-500">
                         <div class="flex items-center justify-between">
                             <div>
-                                <p class="text-sm text-green-600"><strong>Active Plans</strong></p>
-                                <p class="text-2xl font-bold text-green-600">{{ $successPayment ?? 0 }}</p>
+                                <p class="text-sm text-green-600"><strong>Active Testimonials</strong></p>
+                                <p class="text-2xl font-bold text-green-600">{{ $activeTestimonials ?? 0 }}</p>
                             </div>
 
                             <div class="p-3 bg-green-100 rounded-full">
@@ -110,8 +110,8 @@
                     <div class="bg-white rounded-lg shadow p-6 border-l-4 border-yellow-500">
                         <div class="flex items-center justify-between">
                             <div>
-                                <p class="text-sm text-yellow-600"> <strong> Pending Plans Purchase </strong></p>
-                                <p class="text-2xl font-bold text-yellow-600">{{ $planExpire ?? 0 }}</p>
+                                <p class="text-sm text-yellow-600"> <strong> Inactive Testimonials </strong></p>
+                                <p class="text-2xl font-bold text-yellow-600">{{ $inactiveTestimonials ?? 0 }}</p>
                             </div>
                             <div class="p-3 bg-orange-100 rounded-full">
                                 <i data-feather="pause-circle" class="w-6 h-6 text-orange-600"></i>
@@ -124,8 +124,8 @@
 
                         <div class="flex items-center justify-between">
                             <div>
-                                <p class="text-sm text-red-600"><strong> Cancelled Payment</strong></p>
-                                <p class="text-2xl font-bold text-red-600">{{ $cancelledPayment ?? '0' }}</p>
+                                <p class="text-sm text-red-600"><strong> Deleted Testimonials</strong></p>
+                                <p class="text-2xl font-bold text-red-600">{{ $deletedTestimonials ?? '0' }}</p>
                             </div>
                             <div class="p-3 bg-red-100 rounded-full">
                                 <!-- Cancel icon as a red X using Tailwind -->
