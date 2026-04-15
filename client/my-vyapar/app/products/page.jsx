@@ -32,8 +32,10 @@ const ProductsPage = () => {
   const [expandedDescriptions, setExpandedDescriptions] = useState({});
 
   const [selectedItems, setSelectedItems] = useState(new Set());
-const [searchInput, setSearchInput] = useState("");
-const [searchTerm, setSearchTerm] = useState("");
+  const [searchInput, setSearchInput] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [storeId, setStoreId] = useState(null);
+  const [recentOrder, setRecentOrder] = useState(null);
   const [formData, setFormData] = useState({
     fullName: "",
     phone: ""
@@ -60,7 +62,16 @@ const [searchTerm, setSearchTerm] = useState("");
 
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
-
+useEffect(() => {
+  const saved = localStorage.getItem("pendingProductOrder");
+  if (saved) {
+    try {
+      setRecentOrder(JSON.parse(saved));
+    } catch (e) {
+      setRecentOrder(null);
+    }
+  }
+}, []);
   const toggleDescription = (productId) => {
     setExpandedDescriptions(prev => ({
       ...prev,
@@ -363,7 +374,6 @@ const [searchTerm, setSearchTerm] = useState("");
     const loadingToast = toast.loading('Processing...');
 
     try {
-      const storeId = user.store_id || user.store?.id || 1;
       const token = localStorage.getItem("token");
 
       if (paymentMethod === 'online') {
@@ -427,7 +437,8 @@ const [searchTerm, setSearchTerm] = useState("");
           customer_phone: cleanPhone,
           product_id: cart.map(item => item.id),
           quantity: cart.map(item => item.quantity),
-          unit_id: cart.map(item => item.unit_id || 1)
+          unit_id: cart.map(item => item.unit_id || 1),
+          payment_mode:'cash'
         };
 
         const response = await fetch('http://localhost:8000/api/orders/store', {
@@ -445,11 +456,13 @@ const [searchTerm, setSearchTerm] = useState("");
 
         if (response.ok) {
           toast.success('Order placed successfully!');
-
+            if (!res?.data?.order_id) {
+              throw new Error(res?.message || "Order created but order id not returned");
+            }
           const orderInfo = {
-            orderId: res.order_id || `ORD${Date.now()}`,
-            totalAmount: getCartTotal(),
-            items: cart.length,
+            orderId: res?.data?.order_id,
+            totalAmount: res?.data?.total_amount,
+            items: res?.data?.total_items ?? (Array.isArray(res?.items) ? res.items.length : cart.length),
             timestamp: Date.now()
           };
           localStorage.setItem('pendingProductOrder', JSON.stringify(orderInfo));
@@ -487,21 +500,21 @@ const [searchTerm, setSearchTerm] = useState("");
         router.push('/login');
         return;
       }
-      
-       const params = new URLSearchParams({
+
+      const params = new URLSearchParams({
         page: String(page),
         per_page: 15,
         // user_id: user.id,
         // ...(search && { search: search }),
       });
-        if (term) params.set("search", term);
-        let url ="";
+      if (term) params.set("search", term);
+      let url = "";
       if (categoryId && categoryId !== "All") {
         params.set("user_id", String(user.id));
         // Use the new category endpoint
-           url = `http://localhost:8000/api/restaurant-all-products/category/${categoryId}?${params.toString()}`;
-    } else {
-      url = `http://localhost:8000/api/restaurant-all-products/${user.id}?${params.toString()}`;
+        url = `http://localhost:8000/api/restaurant-all-products/category/${categoryId}?${params.toString()}`;
+      } else {
+        url = `http://localhost:8000/api/restaurant-all-products/${user.id}?${params.toString()}`;
       }
       const response = await fetch(url, {
         headers: {
@@ -509,7 +522,11 @@ const [searchTerm, setSearchTerm] = useState("");
         }
       });
       const productsData = await response.json();
-      console.log("Fetched products data:", productsData);
+      if (Array.isArray(productsData?.stores) && productsData.stores.length > 0) {
+        setStoreId(productsData.stores[0].id);
+      }
+      console.log("Fetched products data:",productsData.stores[0].id );
+      
       let productsArray = [];
       if (productsData?.products?.data && Array.isArray(productsData.products.data)) {
         productsArray = productsData.products.data;
@@ -667,10 +684,10 @@ const [searchTerm, setSearchTerm] = useState("");
   };
 
   const clearSearch = () => {
-  setSearchInput("");
-  setSearchTerm("");
-  fetchProductsData(1, category.id, "");
-};
+    setSearchInput("");
+    setSearchTerm("");
+    fetchProductsData(1, category.id, "");
+  };
 
   const currentProducts = products;
   const visibleSelectedCount = currentProducts.filter(p => selectedItems.has(p.id)).length;
@@ -733,20 +750,20 @@ const [searchTerm, setSearchTerm] = useState("");
             {/* Search Bar */}
             <div className="max-w-xl mx-auto mb-10">
               <div className="relative">
-               <input
-                    type="text"
-                    placeholder="Search products..."
-                    value={searchInput}
-                    onChange={(e) => setSearchInput(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        const term = searchInput.trim();
-                        setSearchTerm(term);
-                        fetchProductsData(1, category.id, term);
-                      }
-                    }}
-                    className="w-full px-4 py-3 pr-10 border border-gray-200 rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white text-gray-800"
-                  />
+                <input
+                  type="text"
+                  placeholder="Search products..."
+                  value={searchInput}
+                  onChange={(e) => setSearchInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      const term = searchInput.trim();
+                      setSearchTerm(term);
+                      fetchProductsData(1, category.id, term);
+                    }
+                  }}
+                  className="w-full px-4 py-3 pr-10 border border-gray-200 rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white text-gray-800"
+                />
                 {search && (
                   <button
                     onClick={clearSearch}
@@ -757,7 +774,43 @@ const [searchTerm, setSearchTerm] = useState("");
                 )}
               </div>
             </div>
+{recentOrder && (
+  <div className="max-w-xl mx-auto mb-6 bg-white border border-green-200 rounded-xl p-4 shadow-sm">
+    <div className="flex items-start justify-between gap-3">
+      <div>
+        <p className="text-sm text-gray-500">Recent Order</p>
+        <p className="font-semibold text-gray-800">
+          Order ID: <span className="font-mono">ORD{recentOrder.orderId}</span>
+        </p>
+        <p className="text-sm text-gray-700 mt-1">
+          Total: <span className="font-bold text-green-600">₹{recentOrder.totalAmount}</span>
+        </p>
+        <p className="text-sm text-gray-700">
+          Items: <span className="font-semibold">{recentOrder.items}</span>
+        </p>
+      </div>
 
+      <div className="flex flex-col gap-2">
+        {/* <button
+          onClick={() => (window.location.href = "/order-success")}
+          className="px-3 py-2 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 transition"
+        >
+          View
+        </button> */}
+
+        <button
+          onClick={() => {
+            localStorage.removeItem("pendingProductOrder");
+            setRecentOrder(null);
+          }}
+          className="px-3 py-2 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition"
+        >
+          Dismiss
+        </button>
+      </div>
+    </div>
+  </div>
+)}
             {/* Selection info bar */}
             <div className="max-w-7xl mx-auto mb-6 flex flex-wrap items-center justify-between gap-3">
               <div className="flex items-center gap-3">
@@ -977,11 +1030,11 @@ const [searchTerm, setSearchTerm] = useState("");
                 {pagination.last_page > 1 && (
                   <div className="flex justify-center items-center gap-2 mt-8 mb-4">
                     <button
-                      onClick={() => fetchProductsData(pagination.current_page - 1 ,category.id, searchTerm)}
+                      onClick={() => fetchProductsData(pagination.current_page - 1, category.id, searchTerm)}
                       disabled={!pagination.prev_page_url || loading}
                       className={`px-4 py-2 rounded-lg font-medium transition ${!pagination.prev_page_url || loading
-                          ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                          : 'bg-blue-600 text-white hover:bg-blue-700'
+                        ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                        : 'bg-blue-600 text-white hover:bg-blue-700'
                         }`}
                     >
                       ← Previous
@@ -1006,8 +1059,8 @@ const [searchTerm, setSearchTerm] = useState("");
                             onClick={() => fetchProductsData(pageNum, category.id, searchTerm)}
                             disabled={loading}
                             className={`w-10 h-10 rounded-lg font-medium transition ${pagination.current_page === pageNum
-                                ? 'bg-blue-600 text-white'
-                                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                              ? 'bg-blue-600 text-white'
+                              : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                               }`}
                           >
                             {pageNum}
@@ -1017,11 +1070,11 @@ const [searchTerm, setSearchTerm] = useState("");
                     </div>
 
                     <button
-                      onClick={() => fetchProductsData(pagination.current_page + 1 ,category.id, searchTerm)}
+                      onClick={() => fetchProductsData(pagination.current_page + 1, category.id, searchTerm)}
                       disabled={!pagination.next_page_url || loading}
                       className={`px-4 py-2 rounded-lg font-medium transition ${!pagination.next_page_url || loading
-                          ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                          : 'bg-blue-600 text-white hover:bg-blue-700'
+                        ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                        : 'bg-blue-600 text-white hover:bg-blue-700'
                         }`}
                     >
                       Next →
@@ -1078,10 +1131,10 @@ const [searchTerm, setSearchTerm] = useState("");
                       return (
                         <button
                           key={cat.id || i}
-                         onClick={() => {
-  setCategory(cat);
-  fetchProductsData(1, cat.id, searchTerm);
-}}
+                          onClick={() => {
+                            setCategory(cat);
+                            fetchProductsData(1, cat.id, searchTerm);
+                          }}
                           className={`flex justify-between items-center w-full px-3 py-2 rounded-lg transition-all duration-200 ${category.id === cat.id
                             ? "bg-blue-600 text-white shadow-md scale-[1.02]"
                             : "bg-gray-100 hover:bg-blue-50 hover:translate-x-1 text-gray-700"
@@ -1341,19 +1394,20 @@ const [searchTerm, setSearchTerm] = useState("");
                       <span style={{ color: "black" }}>₹{truncateTo2Decimals(getCartSubtotal())}</span>
                     </div>
                     <div className="flex justify-between text-xs">
-                      <span className="text-gray-600">Total GST:</span>
-                      <span className="text-gray-600">+ ₹{truncateTo2Decimals(getTotalGst())}</span>
-                    </div>
-                    <div className="flex justify-between text-xs">
                       <span className="text-gray-600">Total Discount:</span>
                       <span className="text-green-600">- ₹{truncateTo2Decimals(getTotalDiscountAmount())}</span>
                     </div>
+                    <div className="flex justify-between text-xs">
+                      <span className="text-gray-600">Total GST:</span>
+                      <span className="text-gray-600">+ ₹{truncateTo2Decimals(getTotalGst())}</span>
+                    </div>
+
                     <div className="flex justify-between text-xs font-bold pt-2 border-t border-blue-100">
                       <span style={{ color: "black" }}> Total Price:</span>
                       <span className="text-blue-600">₹{truncateTo2Decimals(getCartTotal())}</span>
                     </div>
                     <div className="flex justify-between text-xs font-bold pt-2 border-t border-blue-100">
-                      <span style={{ color: "black" }}>Grand Total (rounded):</span>
+                      <span style={{ color: "black" }}>Grand Total (round off):</span>
                       <span className="text-blue-600">₹{Math.round(getCartTotal()).toLocaleString()}</span>
                     </div>
                   </div>
@@ -1362,7 +1416,20 @@ const [searchTerm, setSearchTerm] = useState("");
                 {/* Delivery Form */}
                 <div className="flex items-center gap-2">
                   <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center">
-                    <span className="text-blue-600 text-xs">📦</span>
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="w-4 h-4 text-blue-600"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                      />
+                    </svg>
                   </div>
                   <h3 className="font-semibold text-gray-800 text-sm">Customer Info</h3>
                 </div>
@@ -1420,7 +1487,7 @@ const [searchTerm, setSearchTerm] = useState("");
                         onChange={(e) => setPaymentMethod(e.target.value)}
                         className="w-4 h-4 accent-blue-600"
                       />
-                      <span style={{ color: 'black' }}>COD</span>
+                      <span style={{ color: 'black' }}>Cash</span>
                     </label>
                     <label className="flex items-center gap-2 p-2 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 flex-1 text-sm">
                       <input
@@ -1429,12 +1496,15 @@ const [searchTerm, setSearchTerm] = useState("");
                         value="online"
                         checked={paymentMethod === "online"}
                         onChange={(e) => setPaymentMethod(e.target.value)}
-                        className="w-4 h-4 accent-blue-600"
+                        className="w-4 h-4 accent-blue-600" disabled
                       />
-                      <span style={{ color: 'black' }}>Online</span>
+                      <span style={{ color: 'black' }}>Online<span style={{ color: 'gray' }} className="ml-2 text-xs text-gray-200">(Coming Soon)</span></span>
+                      
                     </label>
+                    
+                    
                   </div>
-
+                      
                   <button
                     type="submit"
                     disabled={isPlacingOrder}
