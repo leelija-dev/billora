@@ -8,10 +8,12 @@ import { useRouter } from 'next/navigation';
 const ProductsPage = () => {
   const router = useRouter();
   const [products, setProducts] = useState([]);
-  const [pagination, setPagination] = useState({}); 
+  const [pagination, setPagination] = useState({});
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
-  const [category, setCategory] = useState("All");
+  // const [category, setCategory] = useState("All");
+  const [category, setCategory] = useState({ id: "All", name: "All" });
+  const [categories, setCategories] = useState([{ id: "All", name: "All" }]);
   const [sort, setSort] = useState("");
   const [maxPrice, setMaxPrice] = useState(100000);
   const [selectedProduct, setSelectedProduct] = useState(null);
@@ -30,7 +32,8 @@ const ProductsPage = () => {
   const [expandedDescriptions, setExpandedDescriptions] = useState({});
 
   const [selectedItems, setSelectedItems] = useState(new Set());
-
+const [searchInput, setSearchInput] = useState("");
+const [searchTerm, setSearchTerm] = useState("");
   const [formData, setFormData] = useState({
     fullName: "",
     phone: ""
@@ -475,7 +478,7 @@ const ProductsPage = () => {
     }
   };
 
-  const fetchProductsData = async (page = 1) => {
+  const fetchProductsData = async (page = 1, categoryId = "All", term = "") => {
     setCurrentPage(page);
     try {
       setLoading(true);
@@ -484,14 +487,29 @@ const ProductsPage = () => {
         router.push('/login');
         return;
       }
-
-      const response = await fetch(`http://localhost:8000/api/restaurant-all-products/${user.id}?page=${page}&per_page=12`, {
+      
+       const params = new URLSearchParams({
+        page: String(page),
+        per_page: 15,
+        // user_id: user.id,
+        // ...(search && { search: search }),
+      });
+        if (term) params.set("search", term);
+        let url ="";
+      if (categoryId && categoryId !== "All") {
+        params.set("user_id", String(user.id));
+        // Use the new category endpoint
+           url = `http://localhost:8000/api/restaurant-all-products/category/${categoryId}?${params.toString()}`;
+    } else {
+      url = `http://localhost:8000/api/restaurant-all-products/${user.id}?${params.toString()}`;
+      }
+      const response = await fetch(url, {
         headers: {
           'Authorization': 'Bearer ' + localStorage.getItem('token'),
         }
       });
       const productsData = await response.json();
-
+      console.log("Fetched products data:", productsData);
       let productsArray = [];
       if (productsData?.products?.data && Array.isArray(productsData.products.data)) {
         productsArray = productsData.products.data;
@@ -532,16 +550,20 @@ const ProductsPage = () => {
 
       setProducts(transformedProducts);
       setPagination({
-      current_page: productsData.products.current_page,
-      last_page: productsData.products.last_page,
-      per_page: productsData.products.per_page,
-      total: productsData.products.total,
-      next_page_url: productsData.products.next_page_url,
-      prev_page_url: productsData.products.prev_page_url,
-      first_page_url: productsData.products.first_page_url,
-      last_page_url: productsData.products.last_page_url,
-      links: productsData.products.links
-    });
+        current_page: productsData.products.current_page,
+        last_page: productsData.products.last_page,
+        per_page: productsData.products.per_page,
+        total: productsData.products.total,
+        next_page_url: productsData.products.next_page_url,
+        prev_page_url: productsData.products.prev_page_url,
+        first_page_url: productsData.products.first_page_url,
+        last_page_url: productsData.products.last_page_url,
+        links: productsData.products.links
+
+      });
+      if (productsData.categories && Array.isArray(productsData.categories)) {
+        setCategories([{ id: "All", name: "All" }, ...productsData.categories]);
+      }
     } catch (error) {
       console.error("Fetch error:", error);
       toast.error("Failed to load products");
@@ -551,12 +573,12 @@ const ProductsPage = () => {
     }
   };
 
-  const getCategories = useCallback(() => {
-    const cats = products.map(p => p.category || "General");
-    return ["All", ...new Set(cats)];
-  }, [products]);
+  // const getCategories = useCallback(() => {
+  //   const cats = products.map(p => p.categories || "General");
+  //   return ["All", ...new Set(cats)];
+  // }, [products]);
 
-  const categories = getCategories();
+  // const categories = getCategories();
 
   // const applyFiltersAndSort = useCallback(() => {
   //   let filtered = [...products];
@@ -592,14 +614,14 @@ const ProductsPage = () => {
   //     setCurrentPage(1);
   //   }
   // }, [products, search, category, maxPrice, sort, applyFiltersAndSort]);
-// useEffect(() => {
-//   if (products.length > 0) {
-//     const filtered = applyFiltersAndSort();
-//     setFilteredProducts(filtered);
-//     // Remove setTotalPages line - backend pagination handles this
-//     setCurrentPage(1);
-//   }
-// }, [products, search, category, maxPrice, sort, applyFiltersAndSort]);
+  // useEffect(() => {
+  //   if (products.length > 0) {
+  //     const filtered = applyFiltersAndSort();
+  //     setFilteredProducts(filtered);
+  //     // Remove setTotalPages line - backend pagination handles this
+  //     setCurrentPage(1);
+  //   }
+  // }, [products, search, category, maxPrice, sort, applyFiltersAndSort]);
   // const getCurrentPageProducts = () => {
   //   const startIndex = (currentPage - 1) * PRODUCTS_PER_PAGE;
   //   const endIndex = startIndex + PRODUCTS_PER_PAGE;
@@ -645,8 +667,10 @@ const ProductsPage = () => {
   };
 
   const clearSearch = () => {
-    setSearch("");
-  };
+  setSearchInput("");
+  setSearchTerm("");
+  fetchProductsData(1, category.id, "");
+};
 
   const currentProducts = products;
   const visibleSelectedCount = currentProducts.filter(p => selectedItems.has(p.id)).length;
@@ -670,7 +694,7 @@ const ProductsPage = () => {
       {/* Floating Filter Button */}
       <button
         onClick={() => setShowFilterOverlay(!showFilterOverlay)}
-        className="fixed left-4 top-24 z-30 bg-blue-600 text-white p-3 rounded-full shadow-lg hover:bg-blue-700 transition flex items-center gap-2"
+        className="fixed left-4 top-6 z-35 bg-blue-600 text-white p-3 rounded-full shadow-lg hover:bg-blue-700 transition flex items-center gap-2"
       >
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
@@ -709,13 +733,20 @@ const ProductsPage = () => {
             {/* Search Bar */}
             <div className="max-w-xl mx-auto mb-10">
               <div className="relative">
-                <input
-                  type="text"
-                  placeholder="Search products..."
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  className="w-full px-4 py-3 pr-10 border border-gray-200 rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white text-gray-800"
-                />
+               <input
+                    type="text"
+                    placeholder="Search products..."
+                    value={searchInput}
+                    onChange={(e) => setSearchInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        const term = searchInput.trim();
+                        setSearchTerm(term);
+                        fetchProductsData(1, category.id, term);
+                      }
+                    }}
+                    className="w-full px-4 py-3 pr-10 border border-gray-200 rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white text-gray-800"
+                  />
                 {search && (
                   <button
                     onClick={clearSearch}
@@ -758,8 +789,8 @@ const ProductsPage = () => {
             ) : (
               <>
                 <div className={`grid gap-6 ${showCart
-                    ? 'grid-cols-1 sm:grid-cols-2 xl:grid-cols-3'
-                    : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'
+                  ? 'grid-cols-1 sm:grid-cols-2 xl:grid-cols-3'
+                  : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'
                   }`}>
                   {currentProducts.map((product, index) => {
                     const quantity = getProductQuantity(product.id);
@@ -943,63 +974,60 @@ const ProductsPage = () => {
 
                 {/* Pagination */}
                 {/* Backend Pagination */}
-{pagination.last_page > 1 && (
-  <div className="flex justify-center items-center gap-2 mt-8 mb-4">
-    <button
-      onClick={() => fetchProductsData(pagination.current_page - 1)}
-      disabled={!pagination.prev_page_url || loading}
-      className={`px-4 py-2 rounded-lg font-medium transition ${
-        !pagination.prev_page_url || loading
-          ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-          : 'bg-blue-600 text-white hover:bg-blue-700'
-      }`}
-    >
-      ← Previous
-    </button>
-    
-    <div className="flex gap-1">
-      {Array.from({ length: Math.min(5, pagination.last_page) }, (_, i) => {
-        let pageNum;
-        if (pagination.last_page <= 5) {
-          pageNum = i + 1;
-        } else if (pagination.current_page <= 3) {
-          pageNum = i + 1;
-        } else if (pagination.current_page >= pagination.last_page - 2) {
-          pageNum = pagination.last_page - 4 + i;
-        } else {
-          pageNum = pagination.current_page - 2 + i;
-        }
-        
-        return (
-          <button
-            key={pageNum}
-            onClick={() => fetchProductsData(pageNum)}
-            disabled={loading}
-            className={`w-10 h-10 rounded-lg font-medium transition ${
-              pagination.current_page === pageNum
-                ? 'bg-blue-600 text-white'
-                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-            }`}
-          >
-            {pageNum}
-          </button>
-        );
-      })}
-    </div>
-    
-    <button
-      onClick={() => fetchProductsData(pagination.current_page + 1)}
-      disabled={!pagination.next_page_url || loading}
-      className={`px-4 py-2 rounded-lg font-medium transition ${
-        !pagination.next_page_url || loading
-          ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-          : 'bg-blue-600 text-white hover:bg-blue-700'
-      }`}
-    >
-      Next →
-    </button>
-  </div>
-)}
+                {pagination.last_page > 1 && (
+                  <div className="flex justify-center items-center gap-2 mt-8 mb-4">
+                    <button
+                      onClick={() => fetchProductsData(pagination.current_page - 1 ,category.id, searchTerm)}
+                      disabled={!pagination.prev_page_url || loading}
+                      className={`px-4 py-2 rounded-lg font-medium transition ${!pagination.prev_page_url || loading
+                          ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                          : 'bg-blue-600 text-white hover:bg-blue-700'
+                        }`}
+                    >
+                      ← Previous
+                    </button>
+
+                    <div className="flex gap-1">
+                      {Array.from({ length: Math.min(5, pagination.last_page) }, (_, i) => {
+                        let pageNum;
+                        if (pagination.last_page <= 5) {
+                          pageNum = i + 1;
+                        } else if (pagination.current_page <= 3) {
+                          pageNum = i + 1;
+                        } else if (pagination.current_page >= pagination.last_page - 2) {
+                          pageNum = pagination.last_page - 4 + i;
+                        } else {
+                          pageNum = pagination.current_page - 2 + i;
+                        }
+
+                        return (
+                          <button
+                            key={pageNum}
+                            onClick={() => fetchProductsData(pageNum, category.id, searchTerm)}
+                            disabled={loading}
+                            className={`w-10 h-10 rounded-lg font-medium transition ${pagination.current_page === pageNum
+                                ? 'bg-blue-600 text-white'
+                                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                              }`}
+                          >
+                            {pageNum}
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    <button
+                      onClick={() => fetchProductsData(pagination.current_page + 1 ,category.id, searchTerm)}
+                      disabled={!pagination.next_page_url || loading}
+                      className={`px-4 py-2 rounded-lg font-medium transition ${!pagination.next_page_url || loading
+                          ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                          : 'bg-blue-600 text-white hover:bg-blue-700'
+                        }`}
+                    >
+                      Next →
+                    </button>
+                  </div>
+                )}
               </>
             )}
           </div>
@@ -1025,11 +1053,11 @@ const ProductsPage = () => {
               </div>
 
               <div className="p-6 space-y-6 pb-20">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-xl font-bold flex items-center gap-2 text-gray-800">🧰 Filters</h2>
+                {/* <div className="flex items-center justify-between">
+                  <h2 className="text-xl font-bold flex items-center gap-2 text-gray-800">Filters</h2>
                   <button
                     onClick={() => {
-                      setCategory("All");
+                      setCategory({ id: "All", name: "All" });
                       setMaxPrice(100000);
                       setSort("");
                       setSearch("");
@@ -1038,33 +1066,38 @@ const ProductsPage = () => {
                   >
                     Reset All
                   </button>
-                </div>
+                </div> */}
 
                 <div>
-                  <h3 className="font-semibold mb-3 flex items-center gap-2 text-gray-700">📦 Categories</h3>
+                  <h2 className="font-semibold mb-3 flex items-center gap-2 text-gray-700">Categories</h2>
                   <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
                     {categories.map((cat, i) => {
-                      const count = products.filter(p => cat === "All" || p.category === cat).length;
+                      const count = cat.id === "All"
+                        ? products.length
+                        : products.filter(p => p.category === cat.name).length;
                       return (
                         <button
-                          key={i}
-                          onClick={() => setCategory(cat)}
-                          className={`flex justify-between items-center w-full px-3 py-2 rounded-lg transition-all duration-200 ${category === cat
+                          key={cat.id || i}
+                         onClick={() => {
+  setCategory(cat);
+  fetchProductsData(1, cat.id, searchTerm);
+}}
+                          className={`flex justify-between items-center w-full px-3 py-2 rounded-lg transition-all duration-200 ${category.id === cat.id
                             ? "bg-blue-600 text-white shadow-md scale-[1.02]"
                             : "bg-gray-100 hover:bg-blue-50 hover:translate-x-1 text-gray-700"
                             }`}
                         >
-                          <span>{cat}</span>
-                          <span className={`text-xs px-2 py-1 rounded-full ${category === cat ? "bg-white text-blue-600" : "bg-gray-200 text-gray-600"
+                          <span>{cat.name}</span>
+                          {/* <span className={`text-xs px-2 py-1 rounded-full ${category.id === cat.id ? "bg-white text-blue-600" : "bg-gray-200 text-gray-600"
                             }`}>
                             {count}
-                          </span>
+                          </span> */}
                         </button>
                       );
                     })}
                   </div>
                 </div>
-
+                {/* 
                 <div>
                   <h3 className="font-semibold mb-3 flex items-center gap-2 text-gray-700">💰 Max Price</h3>
                   <input
@@ -1079,9 +1112,9 @@ const ProductsPage = () => {
                     <span>₹0</span>
                     <span className="font-semibold text-gray-800">Up to ₹{maxPrice.toLocaleString()}</span>
                   </div>
-                </div>
+                </div> */}
 
-                <div>
+                {/* <div>
                   <h3 className="font-semibold mb-3 flex items-center gap-2 text-gray-700">🔃 Sort By</h3>
                   <select
                     value={sort}
@@ -1092,7 +1125,7 @@ const ProductsPage = () => {
                     <option value="low">Price: Low to High</option>
                     <option value="high">Price: High to Low</option>
                   </select>
-                </div>
+                </div> */}
               </div>
             </div>
           </>
@@ -1100,11 +1133,10 @@ const ProductsPage = () => {
 
         {/* Cart Sidebar */}
         <div
-  className={`fixed top-0 right-0 h-full bg-white shadow-2xl z-50 transform transition-transform duration-500 ease-out overflow-y-auto overflow-x-hidden ${
-    showCart ? "translate-x-0" : "translate-x-full"
-  } w-[85%] sm:w-[70%] md:w-[50%] lg:w-[40%] xl:w-[40%]`}
-  style={{ overflowY: 'auto', overflowX: 'hidden', scrollbarWidth: 'thin' }}
->
+          className={`fixed top-0 right-0 h-full bg-white shadow-2xl z-50 transform transition-transform duration-500 ease-out overflow-y-auto overflow-x-hidden ${showCart ? "translate-x-0" : "translate-x-full"
+            } w-[85%] sm:w-[70%] md:w-[50%] lg:w-[40%] xl:w-[40%]`}
+          style={{ overflowY: 'auto', overflowX: 'hidden', scrollbarWidth: 'thin' }}
+        >
           <div className="relative p-4 pt-16 bg-gradient-to-r from-blue-600 to-purple-600 text-white flex-shrink-0">
             <div className="absolute top-0 right-0 w-24 h-24 bg-white opacity-10 rounded-full -mr-6 -mt-6"></div>
             <div className="absolute bottom-0 left-0 w-20 h-20 bg-white opacity-10 rounded-full -ml-6 -mb-6"></div>
@@ -1335,91 +1367,89 @@ const ProductsPage = () => {
                   <h3 className="font-semibold text-gray-800 text-sm">Customer Info</h3>
                 </div>
 
-<form onSubmit={handlePlaceOrder} className="space-y-3">
-  {/* Full Name */}
-  <div>
-    <label className="block text-xs font-medium text-gray-700 mb-1">Full Name *</label>
-    <input
-      type="text"
-      name="fullName"
-      value={formData.fullName}
-      onChange={handleInputChange}
-      className={`w-full px-3 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-gray-800 ${
-        validationErrors.fullName ? 'border-red-500 bg-red-50' : 'border-gray-200'
-      }`}
-      placeholder="John Doe"
-    />
-    {validationErrors.fullName && (
-      <p className="text-xs text-red-500 mt-1">{validationErrors.fullName}</p>
-    )}
-  </div>
-
-  {/* Phone Number */}
-  <div>
-    <label className="block text-xs font-medium text-gray-700 mb-1">Phone Number *</label>
-    <input
-      type="tel"
-      name="phone"
-      value={formData.phone}
-      onChange={handleInputChange}
-      className={`w-full px-3 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-gray-800 ${
-        validationErrors.phone ? 'border-red-500 bg-red-50' : 'border-gray-200'
-      }`}
-      placeholder="9876543210"
-    />
-    {validationErrors.phone && (
-      <p className="text-xs text-red-500 mt-1">{validationErrors.phone}</p>
-    )}
-  </div>
-
-  <div className="flex items-center gap-2">
-                  <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center">
-                    <span className="text-blue-600 text-xs">📦</span>
+                <form onSubmit={handlePlaceOrder} className="space-y-3">
+                  {/* Full Name */}
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">Full Name *</label>
+                    <input
+                      type="text"
+                      name="fullName"
+                      value={formData.fullName}
+                      onChange={handleInputChange}
+                      className={`w-full px-3 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-gray-800 ${validationErrors.fullName ? 'border-red-500 bg-red-50' : 'border-gray-200'
+                        }`}
+                      placeholder="John Doe"
+                    />
+                    {validationErrors.fullName && (
+                      <p className="text-xs text-red-500 mt-1">{validationErrors.fullName}</p>
+                    )}
                   </div>
-                  <h3 className="font-semibold text-gray-800 text-sm">Payment Corner</h3>
-                </div>
 
-  {/* Payment Method */}
-  <div className="flex gap-2">
-    <label className="flex items-center gap-2 p-2 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 flex-1 text-sm">
-      <input
-        type="radio"
-        name="paymentMethod"
-        value="cod"
-        checked={paymentMethod === "cod"}
-        onChange={(e) => setPaymentMethod(e.target.value)}
-        className="w-4 h-4 accent-blue-600"
-      />
-      <span style={{ color: 'black' }}>COD</span>
-    </label>
-    <label className="flex items-center gap-2 p-2 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 flex-1 text-sm">
-      <input
-        type="radio"
-        name="paymentMethod"
-        value="online"
-        checked={paymentMethod === "online"}
-        onChange={(e) => setPaymentMethod(e.target.value)}
-        className="w-4 h-4 accent-blue-600"
-      />
-      <span style={{ color: 'black' }}>Online</span>
-    </label>
-  </div>
+                  {/* Phone Number */}
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">Phone Number *</label>
+                    <input
+                      type="tel"
+                      name="phone"
+                      value={formData.phone}
+                      onChange={handleInputChange}
+                      className={`w-full px-3 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-gray-800 ${validationErrors.phone ? 'border-red-500 bg-red-50' : 'border-gray-200'
+                        }`}
+                      placeholder="9876543210"
+                    />
+                    {validationErrors.phone && (
+                      <p className="text-xs text-red-500 mt-1">{validationErrors.phone}</p>
+                    )}
+                  </div>
 
-  <button
-    type="submit"
-    disabled={isPlacingOrder}
-    className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-2 rounded-lg hover:from-blue-700 hover:to-purple-700 transition font-medium disabled:opacity-50 text-sm"
-  >
-    {isPlacingOrder ? (
-      <span className="flex items-center justify-center gap-2">
-        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-        Processing...
-      </span>
-    ) : (
-      paymentMethod === 'online' ? `Pay ₹${Math.round(getCartTotal())}` : `Place Order • ₹${Math.round(getCartTotal())}`
-    )}
-  </button>
-</form>
+                  <div className="flex items-center gap-2">
+                    <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center">
+                      <span className="text-blue-600 text-xs">📦</span>
+                    </div>
+                    <h3 className="font-semibold text-gray-800 text-sm">Payment Corner</h3>
+                  </div>
+
+                  {/* Payment Method */}
+                  <div className="flex gap-2">
+                    <label className="flex items-center gap-2 p-2 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 flex-1 text-sm">
+                      <input
+                        type="radio"
+                        name="paymentMethod"
+                        value="cod"
+                        checked={paymentMethod === "cod"}
+                        onChange={(e) => setPaymentMethod(e.target.value)}
+                        className="w-4 h-4 accent-blue-600"
+                      />
+                      <span style={{ color: 'black' }}>COD</span>
+                    </label>
+                    <label className="flex items-center gap-2 p-2 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 flex-1 text-sm">
+                      <input
+                        type="radio"
+                        name="paymentMethod"
+                        value="online"
+                        checked={paymentMethod === "online"}
+                        onChange={(e) => setPaymentMethod(e.target.value)}
+                        className="w-4 h-4 accent-blue-600"
+                      />
+                      <span style={{ color: 'black' }}>Online</span>
+                    </label>
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={isPlacingOrder}
+                    className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-2 rounded-lg hover:from-blue-700 hover:to-purple-700 transition font-medium disabled:opacity-50 text-sm"
+                  >
+                    {isPlacingOrder ? (
+                      <span className="flex items-center justify-center gap-2">
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                        Processing...
+                      </span>
+                    ) : (
+                      paymentMethod === 'online' ? `Pay ₹${Math.round(getCartTotal())}` : `Place Order • ₹${Math.round(getCartTotal())}`
+                    )}
+                  </button>
+                </form>
               </div>
             )}
           </div>
