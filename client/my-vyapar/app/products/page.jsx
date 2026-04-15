@@ -51,10 +51,10 @@ const ProductsPage = () => {
     const checkMobile = () => {
       setIsMobile(window.innerWidth < 768);
     };
-    
+
     checkMobile();
     window.addEventListener('resize', checkMobile);
-    
+
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
@@ -63,17 +63,17 @@ const ProductsPage = () => {
       ...prev,
       [productId]: !prev[productId]
     }));
-  };  
+  };
 
   const calculateProductFinalPrice = (product) => {
     const sellingPrice = product.selling_price || product.price;
     const discountPercent = product.discount_percentage || 0;
     const gstPercent = product.gst_percentage || 0;
-    
+
     const gstAmount = (sellingPrice * gstPercent) / 100;
     const discountAmount = (sellingPrice * discountPercent) / 100;
     const finalPrice = sellingPrice + gstAmount - discountAmount;
-    
+
     return finalPrice;
   };
 
@@ -84,9 +84,9 @@ const ProductsPage = () => {
       const gstPercent = item.gst_percentage || 0;
       const discountAmount = (sellingPrice * discountPercent) / 100;
       const gstAmount = ((sellingPrice - discountAmount) * gstPercent) / 100;
-      
+
       const finalPrice = ((sellingPrice - discountAmount) + gstAmount);
-      
+
       return total + (finalPrice * item.quantity);
     }, 0);
   };
@@ -102,8 +102,10 @@ const ProductsPage = () => {
   const getTotalGst = () => {
     return cart.reduce((total, item) => {
       const sellingPrice = item.selling_price || item.price;
+      const discountPercent = item.discount_percentage || 0;
       const gstPercent = item.gst_percentage || 0;
-      const gstAmount = (sellingPrice * gstPercent) / 100;
+      const discountAmount = (sellingPrice * discountPercent) / 100;
+      const gstAmount = ((sellingPrice - discountAmount) * gstPercent) / 100;
       return total + (gstAmount * item.quantity);
     }, 0);
   };
@@ -120,6 +122,11 @@ const ProductsPage = () => {
   const getProductQuantity = (productId) => {
     const item = cart.find(item => item.id === productId);
     return item ? item.quantity : 0;
+  };
+
+  // Helper function to truncate to 2 decimals without rounding
+  const truncateTo2Decimals = (value) => {
+    return (Math.floor(value * 100) / 100).toFixed(2);
   };
 
   useEffect(() => {
@@ -213,12 +220,12 @@ const ProductsPage = () => {
         gst_percentage: product.gst_percentage || 0,
       }];
     });
-    
+
     setSelectedItems(prev => new Set([...prev, product.id]));
     setPopupMessage(`${product.name} added to cart!`);
     setPopup(true);
     setTimeout(() => setPopup(false), 2000);
-    
+
     // Only open cart on desktop, NOT on mobile
     if (!isMobile) {
       setShowCart(true);
@@ -270,7 +277,7 @@ const ProductsPage = () => {
       discount_percentage: product.discount_percentage || 0,
       gst_percentage: product.gst_percentage || 0,
     }]);
-    
+
     setSelectedItems(new Set([product.id]));
     setShowCart(true);
     setShowCheckout(true);
@@ -284,7 +291,7 @@ const ProductsPage = () => {
       setTimeout(() => setPopup(false), 2000);
       return;
     }
-    
+
     if (selectedItems.has(product.id)) {
       removeFromCart(product.id);
     } else {
@@ -295,7 +302,7 @@ const ProductsPage = () => {
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
-    
+
     if (validationErrors[name]) {
       setValidationErrors(prev => ({ ...prev, [name]: '' }));
     }
@@ -305,18 +312,18 @@ const ProductsPage = () => {
     e.preventDefault();
 
     let hasError = false;
-    const newErrors = { fullName: '', phone: '', pincode: '', address: '' };
-    
+    const newErrors = { fullName: '', phone: '' };
+
     if (!formData.fullName.trim()) {
       newErrors.fullName = "Please enter your full name";
       hasError = true;
     }
-    
+
     if (!formData.phone.trim()) {
       newErrors.phone = "Please enter your phone number";
       hasError = true;
     }
-    
+
     const phoneRegex = /^\d{10}$/;
     const cleanPhone = formData.phone.replace(/\D/g, '');
     if (formData.phone && !phoneRegex.test(cleanPhone)) {
@@ -496,8 +503,7 @@ const ProductsPage = () => {
 
       const transformedProducts = productsArray.map(product => {
         let imageUrl = product.image;
-        
-        
+
         if (imageUrl && (imageUrl.startsWith('http://') || imageUrl.startsWith('https://'))) {
         } else if (imageUrl && imageUrl.startsWith('/')) {
           imageUrl = `http://localhost:8000${imageUrl}`;
@@ -506,7 +512,7 @@ const ProductsPage = () => {
         } else {
           imageUrl = "https://placehold.co/400x400/f0f0f0/999?text=No+Image";
         }
-        
+
         return {
           id: product.id,
           name: product.name || "Unnamed Product",
@@ -751,11 +757,10 @@ const ProductsPage = () => {
               </div>
             ) : (
               <>
-                <div className={`grid gap-6 ${
-                  showCart 
-                    ? 'grid-cols-1 sm:grid-cols-2 xl:grid-cols-3' 
+                <div className={`grid gap-6 ${showCart
+                    ? 'grid-cols-1 sm:grid-cols-2 xl:grid-cols-3'
                     : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'
-                }`}>
+                  }`}>
                   {currentProducts.map((product, index) => {
                     const quantity = getProductQuantity(product.id);
                     const productPrice = product.selling_price || product.price;
@@ -807,12 +812,12 @@ const ProductsPage = () => {
                           <h2 className="font-bold text-lg text-gray-800 mt-1 break-words leading-tight text-left">
                             {product.name || 'Unnamed Product'}
                           </h2>
-                          
+
                           {/* Description */}
                           <div className="text-left mt-1">
                             <p className="text-sm text-gray-500">
-                              {shouldTruncate && !expandedDescriptions[product.id] 
-                                ? `${product.description.substring(0, maxLength)}...` 
+                              {shouldTruncate && !expandedDescriptions[product.id]
+                                ? `${product.description.substring(0, maxLength)}...`
                                 : product.description || 'No description available'}
                             </p>
                             {shouldTruncate && (
@@ -824,23 +829,22 @@ const ProductsPage = () => {
                               </button>
                             )}
                           </div>
-                          
+
                           <p className="text-xs text-gray-400 mt-2 text-left">
                             {product.category || 'General'} • {product.brand || 'Unknown'}
                           </p>
-                          
+
                           {/* Price Section */}
                           <div className="mt-2 text-left">
                             {(() => {
                               const basePrice = product.selling_price || product.price;
                               const discountPercent = product.discount_percentage || 0;
                               const gstPercent = product.gst_percentage || 0;
-                              
-                              const gstAmount = (basePrice * gstPercent) / 100;
+
                               const discountAmount = (basePrice * discountPercent) / 100;
-                              const finalPrice = basePrice - discountAmount; //+ gstAmount - discountAmount;
-                              const mrp = basePrice ;//+ gstAmount;
-                              
+                              const finalPrice = basePrice - discountAmount;
+                              const mrp = basePrice;
+
                               return (
                                 <>
                                   {discountPercent > 0 && (
@@ -853,14 +857,14 @@ const ProductsPage = () => {
                                   </p>
                                   {discountPercent > 0 && (
                                     <p className="text-xs text-green-500">
-                                      Save ₹{Math.round(discountAmount).toLocaleString()}
+                                      Save ₹{truncateTo2Decimals(discountAmount)}
                                     </p>
                                   )}
                                 </>
                               );
                             })()}
                           </div>
-                          
+
                           <p className={`text-xs mt-2 text-left font-medium ${product.inStock ? 'text-blue-600' : 'text-red-600'}`}>
                             {product.inStock ? '✓ In Stock' : '✗ Out of Stock'}
                           </p>
@@ -1008,7 +1012,7 @@ const ProductsPage = () => {
               className="fixed inset-0 bg-black/50 z-40"
               onClick={() => setShowFilterOverlay(false)}
             />
-            
+
             <div className="fixed left-0 top-0 bottom-0 z-50 w-80 bg-white shadow-2xl overflow-y-auto max-h-screen">
               <div className="sticky top-0 bg-white p-4 border-b border-gray-200 flex justify-between items-center z-10">
                 <h2 className="text-lg font-bold text-gray-800">Filters</h2>
@@ -1019,7 +1023,7 @@ const ProductsPage = () => {
                   ✕
                 </button>
               </div>
-              
+
               <div className="p-6 space-y-6 pb-20">
                 <div className="flex items-center justify-between">
                   <h2 className="text-xl font-bold flex items-center gap-2 text-gray-800">🧰 Filters</h2>
@@ -1096,11 +1100,11 @@ const ProductsPage = () => {
 
         {/* Cart Sidebar */}
         <div
-          className={`fixed top-0 right-0 h-full bg-white shadow-2xl z-50 transform transition-transform duration-500 ease-out overflow-y-auto ${
-            showCart ? "translate-x-0" : "translate-x-full"
-          } w-[85%] sm:w-[70%] md:w-[50%] lg:w-[40%] xl:w-[40%]`}
-          style={{ overflowY: 'auto', scrollbarWidth: 'thin' }}
-        >
+  className={`fixed top-0 right-0 h-full bg-white shadow-2xl z-50 transform transition-transform duration-500 ease-out overflow-y-auto overflow-x-hidden ${
+    showCart ? "translate-x-0" : "translate-x-full"
+  } w-[85%] sm:w-[70%] md:w-[50%] lg:w-[40%] xl:w-[40%]`}
+  style={{ overflowY: 'auto', overflowX: 'hidden', scrollbarWidth: 'thin' }}
+>
           <div className="relative p-4 pt-16 bg-gradient-to-r from-blue-600 to-purple-600 text-white flex-shrink-0">
             <div className="absolute top-0 right-0 w-24 h-24 bg-white opacity-10 rounded-full -mr-6 -mt-6"></div>
             <div className="absolute bottom-0 left-0 w-20 h-20 bg-white opacity-10 rounded-full -ml-6 -mb-6"></div>
@@ -1171,7 +1175,8 @@ const ProductsPage = () => {
                     <div className="space-y-2 overflow-y-auto" style={{ maxHeight: 'calc(100vh - 280px)' }}>
                       {cart.map((item) => {
                         const sellingPrice = item.selling_price || item.price;
-                        const sellAfterDis =  (item.selling_price - ((item.selling_price * item.discount_percentage) / 100));
+                        const sellAfterDis = (item.selling_price - ((item.selling_price * item.discount_percentage) / 100));
+                        const itemTotal = sellAfterDis * item.quantity;
 
                         return (
                           <div key={item.id} className="flex gap-3 items-start bg-gray-50 rounded-lg p-2 border border-gray-100">
@@ -1187,7 +1192,7 @@ const ProductsPage = () => {
                             <div className="flex-1 min-w-0">
                               <p className="text-sm font-semibold text-gray-800 truncate">{item.title}</p>
                               <p className="text-xs text-gray-500">
-                                ₹{sellingPrice}
+                                ₹{truncateTo2Decimals(sellingPrice)}
                               </p>
                               {item.discount_percentage > 0 && (
                                 <p className="text-xs text-blue-600">{item.discount_percentage}% off</p>
@@ -1211,7 +1216,7 @@ const ProductsPage = () => {
                             </div>
 
                             <div className="text-right flex-shrink-0">
-                              <p className="font-bold text-blue-600 text-sm">₹{sellAfterDis * item.quantity}</p>
+                              <p className="font-bold text-blue-600 text-sm">₹{truncateTo2Decimals(itemTotal)}</p>
                               <button
                                 onClick={() => removeFromCart(item.id)}
                                 className="text-xs text-gray-400 hover:text-red-500 transition-colors mt-1"
@@ -1223,13 +1228,13 @@ const ProductsPage = () => {
                         );
                       })}
                     </div>
-                    
+
                     {/* Checkout button */}
                     <button
                       onClick={() => setShowCheckout(true)}
                       className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-2 rounded-lg hover:from-blue-700 hover:to-purple-700 transition shadow-lg font-semibold text-sm mt-3"
                     >
-                      Checkout 
+                      Checkout
                     </button>
                   </>
                 )}
@@ -1244,149 +1249,177 @@ const ProductsPage = () => {
                   <span>Back to Cart</span>
                 </button>
 
-{/* Order Summary */}
-<div className="bg-gradient-to-br from-blue-50 to-white p-3 rounded-lg border border-blue-100 overflow-y-auto" style={{ maxHeight: 'calc(100vh - 380px)' }}>
-  <h3 className="font-semibold text-gray-800 text-sm mb-2 flex items-center gap-2 sticky top-0 bg-blue-50 py-1">
-    <span className="w-1 h-4 bg-blue-600 rounded-full"></span>
-    Order Summary
-  </h3>
+                {/* Order Summary */}
+                <div className="bg-gradient-to-br from-blue-50 to-white p-3 rounded-lg border border-blue-100 overflow-y-auto" style={{ maxHeight: 'calc(100vh - 380px)' }}>
+                  <h3 className="font-semibold text-gray-800 text-sm mb-2 flex items-center gap-2 sticky top-0 bg-blue-50 py-1">
+                    <span className="w-1 h-4 bg-blue-600 rounded-full"></span>
+                    Order Summary
+                  </h3>
 
-  <div className="space-y-3">
-    {cart.map((item) => {
-      const basePrice = item.selling_price || item.price;
-      const discountPercent = item.discount_percentage || 0;
-      const gstPercent = item.gst_percentage || 0;
-      const quantity = item.quantity;
+                  <div className="space-y-3">
+                    {cart.map((item) => {
+                      const basePrice = item.selling_price || item.price;
+                      const discountPercent = item.discount_percentage || 0;
+                      const gstPercent = item.gst_percentage || 0;
+                      const quantity = item.quantity;
 
-      
-      const discountAmount = (basePrice * discountPercent) / 100;
-      const gstAmount = ((basePrice - discountAmount) * gstPercent) / 100;
-      const finalPrice = basePrice + gstAmount - discountAmount;
-      const itemTotal = basePrice * quantity;
-      
-      const totalGstForItem = gstAmount * quantity;
-      const totalDiscountForItem = discountAmount * quantity;
+                      const discountAmount = (basePrice * discountPercent) / 100;
+                      const gstAmount = ((basePrice - discountAmount) * gstPercent) / 100;
+                      const itemTotal = basePrice * quantity;
 
-      return (
-        <div key={item.id} className="border-b border-blue-100 pb-2 last:border-0">
-          {/* Product Name and Total Price - Right aligned */}
-          <div className="flex justify-between items-start mb-1">
-            <p className="font-semibold text-gray-800 text-sm">{item.title}</p>
-            <p className="font-bold text-blue-600 text-sm">₹{Math.round(itemTotal).toLocaleString()}</p>
-          </div>
-          
-          {/* Quantity, GST, Discount - Each with right-aligned values */}
-          <div className="space-y-0.5 pl-2">
-            <div className="flex justify-between text-xs">
-              <span className="text-gray-500">Quantity:</span>
-              <span className="text-gray-600">{quantity}</span>
-            </div>
-            {discountPercent > 0 && (
-              <div className="flex justify-between text-xs">
-                <span className="text-gray-500">Discount ({discountPercent}%):</span>
-                <span className="text-green-600">- ₹{Math.round(totalDiscountForItem).toLocaleString()}</span>
-              </div>
-            )}
-            {gstPercent > 0 && (
-              <div className="flex justify-between text-xs">
-                <span className="text-gray-500">GST ({gstPercent}%):</span>
-                <span className="text-gray-600">+ ₹{totalGstForItem}</span>
-              </div>
-            )}
-            
-          </div>
-        </div>
-      );
-    })}
-  </div>
+                      const totalGstForItem = gstAmount * quantity;
+                      const totalDiscountForItem = discountAmount * quantity;
 
-  {/* Totals */}
-  <div className="border-t border-blue-100 mt-3 pt-3 space-y-1">
-    <div className="flex justify-between text-xs font-bold">
-      <span>Total:</span>
-      <span className="text-blue-600">₹{Math.round(getCartTotal()).toLocaleString()}</span>
-      
-    </div>
-    <div className="flex justify-between text-xs font-bold">
-      <span>Grand Total(Round Off):</span>
-      <span className="text-blue-600">₹{Math.round(getCartTotal()).toLocaleString()}</span>
-      
-    </div>
-  </div>
-</div>
+                      return (
+                        <div key={item.id} className="border-b border-blue-100 pb-2 last:border-0">
+                          {/* Product Name and Total Price - Right aligned */}
+                          <div className="flex justify-between items-start mb-1">
+                            <p className="font-semibold text-gray-800 text-sm">{item.title}</p>
+                            <p className="font-bold text-blue-600 text-sm">₹{truncateTo2Decimals(itemTotal)}</p>
+                          </div>
+
+                          {/* Quantity, GST, Discount - Each with right-aligned values */}
+                          <div className="space-y-0.5 pl-2">
+                            <div className="flex justify-between text-xs">
+                              <span className="text-gray-500">Quantity:</span>
+                              <span className="text-gray-600">{quantity}</span>
+                            </div>
+                            {discountPercent > 0 && (
+                              <div className="flex justify-between text-xs">
+                                <span className="text-gray-500">Discount ({discountPercent}%):</span>
+                                <span className="text-green-600">- ₹{truncateTo2Decimals(totalDiscountForItem)}</span>
+                              </div>
+                            )}
+                            {gstPercent > 0 && (
+                              <div className="flex justify-between text-xs">
+                                <span className="text-gray-500">GST ({gstPercent}%):</span>
+                                <span className="text-gray-600">+ ₹{truncateTo2Decimals(totalGstForItem)}</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Totals */}
+                  <div className="border-t border-blue-100 mt-3 pt-3 space-y-1">
+                    <div className="flex justify-between text-xs">
+                      <span className="text-gray-600">Subtotal:</span>
+                      <span style={{ color: "black" }}>₹{truncateTo2Decimals(getCartSubtotal())}</span>
+                    </div>
+                    <div className="flex justify-between text-xs">
+                      <span className="text-gray-600">Total GST:</span>
+                      <span className="text-gray-600">+ ₹{truncateTo2Decimals(getTotalGst())}</span>
+                    </div>
+                    <div className="flex justify-between text-xs">
+                      <span className="text-gray-600">Total Discount:</span>
+                      <span className="text-green-600">- ₹{truncateTo2Decimals(getTotalDiscountAmount())}</span>
+                    </div>
+                    <div className="flex justify-between text-xs font-bold pt-2 border-t border-blue-100">
+                      <span style={{ color: "black" }}> Total Price:</span>
+                      <span className="text-blue-600">₹{truncateTo2Decimals(getCartTotal())}</span>
+                    </div>
+                    <div className="flex justify-between text-xs font-bold pt-2 border-t border-blue-100">
+                      <span style={{ color: "black" }}>Grand Total (rounded):</span>
+                      <span className="text-blue-600">₹{Math.round(getCartTotal()).toLocaleString()}</span>
+                    </div>
+                  </div>
+                </div>
+
                 {/* Delivery Form */}
                 <div className="flex items-center gap-2">
                   <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center">
                     <span className="text-blue-600 text-xs">📦</span>
                   </div>
-                  <h3 className="font-semibold text-gray-800 text-sm">Delivery Info</h3>
+                  <h3 className="font-semibold text-gray-800 text-sm">Customer Info</h3>
                 </div>
 
-                <form onSubmit={handlePlaceOrder} className="space-y-3">
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">Full Name *</label>
-                    <input
-                      type="text"
-                      name="fullName"
-                      value={formData.fullName}
-                      onChange={handleInputChange}
-                      className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-gray-800"
-                      placeholder="John Doe"
-                    />
-                  </div>
+<form onSubmit={handlePlaceOrder} className="space-y-3">
+  {/* Full Name */}
+  <div>
+    <label className="block text-xs font-medium text-gray-700 mb-1">Full Name *</label>
+    <input
+      type="text"
+      name="fullName"
+      value={formData.fullName}
+      onChange={handleInputChange}
+      className={`w-full px-3 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-gray-800 ${
+        validationErrors.fullName ? 'border-red-500 bg-red-50' : 'border-gray-200'
+      }`}
+      placeholder="John Doe"
+    />
+    {validationErrors.fullName && (
+      <p className="text-xs text-red-500 mt-1">{validationErrors.fullName}</p>
+    )}
+  </div>
 
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">Phone Number *</label>
-                    <input
-                      type="tel"
-                      name="phone"
-                      value={formData.phone}
-                      onChange={handleInputChange}
-                      className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-gray-800"
-                      placeholder="9876543210"
-                    />
-                  </div>
+  {/* Phone Number */}
+  <div>
+    <label className="block text-xs font-medium text-gray-700 mb-1">Phone Number *</label>
+    <input
+      type="tel"
+      name="phone"
+      value={formData.phone}
+      onChange={handleInputChange}
+      className={`w-full px-3 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-gray-800 ${
+        validationErrors.phone ? 'border-red-500 bg-red-50' : 'border-gray-200'
+      }`}
+      placeholder="9876543210"
+    />
+    {validationErrors.phone && (
+      <p className="text-xs text-red-500 mt-1">{validationErrors.phone}</p>
+    )}
+  </div>
 
-                  <div className="flex gap-2">
-                    <label className="flex items-center gap-2 p-2 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 flex-1 text-sm">
-                      <input
-                        type="radio"
-                        name="paymentMethod"
-                        value="cod"
-                        checked={paymentMethod === "cod"}
-                        onChange={(e) => setPaymentMethod(e.target.value)}
-                        className="w-4 h-4 accent-blue-600"
-                      />
-                      <span style={{ color: 'black' }}>COD</span>
-                    </label>
-                    <label className="flex items-center gap-2 p-2 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 flex-1 text-sm">
-                      <input
-                        type="radio"
-                        name="paymentMethod"
-                        value="online"
-                        checked={paymentMethod === "online"}
-                        onChange={(e) => setPaymentMethod(e.target.value)}
-                        className="w-4 h-4 accent-blue-600"
-                      />
-                      <span style={{ color: 'black' }}>Online</span>
-                    </label>
+  <div className="flex items-center gap-2">
+                  <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center">
+                    <span className="text-blue-600 text-xs">📦</span>
                   </div>
+                  <h3 className="font-semibold text-gray-800 text-sm">Payment Corner</h3>
+                </div>
 
-                  <button
-                    type="submit"
-                    disabled={isPlacingOrder}
-                    className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-2 rounded-lg hover:from-blue-700 hover:to-purple-700 transition font-medium disabled:opacity-50 text-sm"
-                  >
-                    {isPlacingOrder ? (
-                      <span className="flex items-center justify-center gap-2">
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                        Processing...
-                      </span>
-                    ) : (
-                      paymentMethod === 'online' ? `Pay ₹${Math.round(getCartTotal())}` : `Place Order • ₹${Math.round(getCartTotal())}`
-                    )}
-                  </button>
-                </form>
+  {/* Payment Method */}
+  <div className="flex gap-2">
+    <label className="flex items-center gap-2 p-2 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 flex-1 text-sm">
+      <input
+        type="radio"
+        name="paymentMethod"
+        value="cod"
+        checked={paymentMethod === "cod"}
+        onChange={(e) => setPaymentMethod(e.target.value)}
+        className="w-4 h-4 accent-blue-600"
+      />
+      <span style={{ color: 'black' }}>COD</span>
+    </label>
+    <label className="flex items-center gap-2 p-2 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 flex-1 text-sm">
+      <input
+        type="radio"
+        name="paymentMethod"
+        value="online"
+        checked={paymentMethod === "online"}
+        onChange={(e) => setPaymentMethod(e.target.value)}
+        className="w-4 h-4 accent-blue-600"
+      />
+      <span style={{ color: 'black' }}>Online</span>
+    </label>
+  </div>
+
+  <button
+    type="submit"
+    disabled={isPlacingOrder}
+    className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-2 rounded-lg hover:from-blue-700 hover:to-purple-700 transition font-medium disabled:opacity-50 text-sm"
+  >
+    {isPlacingOrder ? (
+      <span className="flex items-center justify-center gap-2">
+        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+        Processing...
+      </span>
+    ) : (
+      paymentMethod === 'online' ? `Pay ₹${Math.round(getCartTotal())}` : `Place Order • ₹${Math.round(getCartTotal())}`
+    )}
+  </button>
+</form>
               </div>
             )}
           </div>
@@ -1428,15 +1461,15 @@ const ProductsPage = () => {
 
                   <div className="mt-3">
                     {(() => {
-                      const basePrice = selectedProduct.selling_price || selectedProduct.price;
+                      const basePrice = selectedProduct.selling_price;
                       const discountPercent = selectedProduct.discount_percentage || 0;
                       const gstPercent = selectedProduct.gst_percentage || 0;
-                      
+
                       const gstAmount = (basePrice * gstPercent) / 100;
                       const discountAmount = (basePrice * discountPercent) / 100;
-                      const finalPrice = basePrice - discountAmount;//gstAmount - discountAmount;
-                      const mrp = basePrice ;//+ gstAmount;
-                      
+                      const finalPrice = basePrice + gstAmount - discountAmount;
+                      const mrp = basePrice + gstAmount;
+
                       return (
                         <>
                           {discountPercent > 0 && (
@@ -1448,8 +1481,8 @@ const ProductsPage = () => {
                             ₹{Math.round(finalPrice).toLocaleString()}
                           </p>
                           {discountPercent > 0 && (
-                            <p className="text-sm text-green-600 mt-1">
-                              Save ₹{Math.round(discountAmount).toLocaleString()}
+                            <p className="text-sm text-red-600 mt-1">
+                              Save ₹{truncateTo2Decimals(discountAmount)}
                             </p>
                           )}
                         </>
@@ -1462,7 +1495,7 @@ const ProductsPage = () => {
                     {selectedProduct.inStock ? '✓ In Stock' : '✗ Out of Stock'}
                   </p>
                   {selectedProduct.unit && <p className="text-sm text-gray-500 mb-4">Unit: {selectedProduct.unit}</p>}
-                  
+
                   <div className="flex flex-col sm:flex-row gap-3 w-full">
                     {selectedProduct.inStock ? (
                       getProductQuantity(selectedProduct.id) === 0 ? (

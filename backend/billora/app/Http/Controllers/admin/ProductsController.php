@@ -53,7 +53,7 @@ class ProductsController extends Controller
                     ->orWhere('brand_id', 'like', '%' . $request->search . '%')
                     ->orWhere('unit_id', 'like', '%' . $request->search . '%')
                     ->orWhere('unit_amount', 'like', '%' . $request->search . '%')
-                    ->where('is_active', true)->paginate(10);
+                    ->paginate(10);
             }
             return response()->json([
                 'status' => true,
@@ -92,8 +92,8 @@ class ProductsController extends Controller
                 ]);
             }
 
-            $brand = Brand::where('user_id', $id)->get();
-            $category = Categories::where('user_id', $id)->get();
+            $brand = Brand::where('user_id', $id)->where('is_active', true)->get();
+            $category = Categories::where('user_id', $id)->where('is_active', true)->get();
             $unit = Unit::where('user_id', $id)->get();
             if($customer->plan_id == null || $customer->plan_id == 0  || $customer->is_active == false){
                 return response()->json([
