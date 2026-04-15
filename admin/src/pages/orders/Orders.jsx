@@ -63,12 +63,12 @@ const Orders = () => {
   const [paymentDetails, setPaymentDetails] = useState(null)
   const [paidAmount, setPaidAmount] = useState('')
   const [stats, setStats] = useState({
-    total: 156,
-    pending: 23,
-    processing: 45,
-    completed: 88,
-    revenue: 45678,
-    revenueChange: 12
+    total: 0,
+    pending: 0,
+    processing: 0,
+    completed: 0,
+    revenue: 0,
+    revenueChange: 0
   })
 
   useEffect(() => {
@@ -85,6 +85,36 @@ const Orders = () => {
 
     return () => clearTimeout(debounceTimer)
   }, [searchTerm, setFilters])
+
+  useEffect(() => {
+    if (orders.length > 0) {
+      const pendingOrders = orders.filter(order => order.status === 'pending').length
+      const processingOrders = orders.filter(order => order.status === 'processing').length
+      const completedOrders = orders.filter(order => order.status === 'completed').length
+      const totalRevenue = orders
+        .filter(order => order.status === 'completed' && order.total_amount)
+        .reduce((sum, order) => sum + parseFloat(order.total_amount || 0), 0)
+
+      setStats({
+        total: totalOrders,
+        pending: pendingOrders,
+        processing: processingOrders,
+        completed: completedOrders,
+        revenue: totalRevenue,
+        revenueChange: 0 // Would need historical data for this
+      })
+    } else {
+      // Reset stats when no orders
+      setStats({
+        total: 0,
+        pending: 0,
+        processing: 0,
+        completed: 0,
+        revenue: 0,
+        revenueChange: 0
+      })
+    }
+  }, [orders, totalOrders])
 
   const handleViewOrder = (order) => {
     setSelectedOrder(order)

@@ -8,11 +8,11 @@ function App() {
   const { theme } = useUIStore()
   const { logout } = useAuthStore()
 
-  // Debug: Log environment variables
-  console.log('🔧 Environment Variables:')
-  console.log('VITE_API_BASE_URL:', import.meta.env.VITE_API_BASE_URL)
-  console.log('VITE_DATA_SOURCE:', import.meta.env.VITE_DATA_SOURCE)
-  console.log('VITE_APP_NAME:', import.meta.env.VITE_APP_NAME)
+  // // Debug: Log environment variables
+  // console.log('🔧 Environment Variables:')
+  // console.log('VITE_API_BASE_URL:', import.meta.env.VITE_API_BASE_URL)
+  // console.log('VITE_DATA_SOURCE:', import.meta.env.VITE_DATA_SOURCE)
+  // console.log('VITE_APP_NAME:', import.meta.env.VITE_APP_NAME)
 
   useEffect(() => {
     // Apply theme to root element
