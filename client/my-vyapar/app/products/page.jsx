@@ -8,6 +8,7 @@ import { useRouter } from 'next/navigation';
 const ProductsPage = () => {
   const router = useRouter();
   const [products, setProducts] = useState([]);
+  const [pagination, setPagination] = useState({}); 
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("All");
@@ -21,9 +22,9 @@ const ProductsPage = () => {
   const [showFilterOverlay, setShowFilterOverlay] = useState(false);
   const [popup, setPopup] = useState(false);
   const [popupMessage, setPopupMessage] = useState("");
-  const [filteredProducts, setFilteredProducts] = useState([]);
+  // const [filteredProducts, setFilteredProducts] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
+  // const [totalPages, setTotalPages] = useState(1);
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState("cod");
   const [expandedDescriptions, setExpandedDescriptions] = useState({});
@@ -467,7 +468,8 @@ const ProductsPage = () => {
     }
   };
 
-  const fetchProductsData = async () => {
+  const fetchProductsData = async (page = 1) => {
+    setCurrentPage(page);
     try {
       setLoading(true);
       const { user } = getAuthData();
@@ -476,7 +478,7 @@ const ProductsPage = () => {
         return;
       }
 
-      const response = await fetch(`http://localhost:8000/api/restaurant-all-products/${user.id}`, {
+      const response = await fetch(`http://localhost:8000/api/restaurant-all-products/${user.id}?page=${page}&per_page=12`, {
         headers: {
           'Authorization': 'Bearer ' + localStorage.getItem('token'),
         }
@@ -523,6 +525,17 @@ const ProductsPage = () => {
       });
 
       setProducts(transformedProducts);
+      setPagination({
+      current_page: productsData.products.current_page,
+      last_page: productsData.products.last_page,
+      per_page: productsData.products.per_page,
+      total: productsData.products.total,
+      next_page_url: productsData.products.next_page_url,
+      prev_page_url: productsData.products.prev_page_url,
+      first_page_url: productsData.products.first_page_url,
+      last_page_url: productsData.products.last_page_url,
+      links: productsData.products.links
+    });
     } catch (error) {
       console.error("Fetch error:", error);
       toast.error("Failed to load products");
@@ -539,70 +552,77 @@ const ProductsPage = () => {
 
   const categories = getCategories();
 
-  const applyFiltersAndSort = useCallback(() => {
-    let filtered = [...products];
+  // const applyFiltersAndSort = useCallback(() => {
+  //   let filtered = [...products];
 
-    if (search) {
-      filtered = filtered.filter(p =>
-        p.name?.toLowerCase().includes(search.toLowerCase()) ||
-        p.category?.toLowerCase().includes(search.toLowerCase()) ||
-        p.brand?.toLowerCase().includes(search.toLowerCase())
-      );
-    }
+  //   if (search) {
+  //     filtered = filtered.filter(p =>
+  //       p.name?.toLowerCase().includes(search.toLowerCase()) ||
+  //       p.category?.toLowerCase().includes(search.toLowerCase()) ||
+  //       p.brand?.toLowerCase().includes(search.toLowerCase())
+  //     );
+  //   }
 
-    if (category !== "All") {
-      filtered = filtered.filter(p => p.category === category);
-    }
+  //   if (category !== "All") {
+  //     filtered = filtered.filter(p => p.category === category);
+  //   }
 
-    filtered = filtered.filter(p => (p.selling_price || p.price) <= maxPrice);
+  //   filtered = filtered.filter(p => (p.selling_price || p.price) <= maxPrice);
 
-    if (sort === "low") {
-      filtered.sort((a, b) => (a.selling_price || a.price) - (b.selling_price || b.price));
-    } else if (sort === "high") {
-      filtered.sort((a, b) => (b.selling_price || b.price) - (a.selling_price || a.price));
-    }
+  //   if (sort === "low") {
+  //     filtered.sort((a, b) => (a.selling_price || a.price) - (b.selling_price || b.price));
+  //   } else if (sort === "high") {
+  //     filtered.sort((a, b) => (b.selling_price || b.price) - (a.selling_price || a.price));
+  //   }
 
-    return filtered;
-  }, [products, search, category, maxPrice, sort]);
+  //   return filtered;
+  // }, [products, search, category, maxPrice, sort]);
+
+  // useEffect(() => {
+  //   if (products.length > 0) {
+  //     const filtered = applyFiltersAndSort();
+  //     setFilteredProducts(filtered);
+  //     setTotalPages(Math.ceil(filtered.length / PRODUCTS_PER_PAGE));
+  //     setCurrentPage(1);
+  //   }
+  // }, [products, search, category, maxPrice, sort, applyFiltersAndSort]);
+// useEffect(() => {
+//   if (products.length > 0) {
+//     const filtered = applyFiltersAndSort();
+//     setFilteredProducts(filtered);
+//     // Remove setTotalPages line - backend pagination handles this
+//     setCurrentPage(1);
+//   }
+// }, [products, search, category, maxPrice, sort, applyFiltersAndSort]);
+  // const getCurrentPageProducts = () => {
+  //   const startIndex = (currentPage - 1) * PRODUCTS_PER_PAGE;
+  //   const endIndex = startIndex + PRODUCTS_PER_PAGE;
+  //   return filteredProducts.slice(startIndex, endIndex);
+  // };
+
+  // const goToPage = (page) => {
+  //   if (page >= 1 && page <= totalPages) {
+  //     setCurrentPage(page);
+  //     window.scrollTo({ top: 0, behavior: 'smooth' });
+  //   }
+  // };
+
+  // const goToPrevPage = () => {
+  //   if (currentPage > 1) {
+  //     setCurrentPage(currentPage - 1);
+  //     window.scrollTo({ top: 0, behavior: 'smooth' });
+  //   }
+  // };
+
+  // const goToNextPage = () => {
+  //   if (currentPage < totalPages) {
+  //     setCurrentPage(currentPage + 1);
+  //     window.scrollTo({ top: 0, behavior: 'smooth' });
+  //   }
+  // };
 
   useEffect(() => {
-    if (products.length > 0) {
-      const filtered = applyFiltersAndSort();
-      setFilteredProducts(filtered);
-      setTotalPages(Math.ceil(filtered.length / PRODUCTS_PER_PAGE));
-      setCurrentPage(1);
-    }
-  }, [products, search, category, maxPrice, sort, applyFiltersAndSort]);
-
-  const getCurrentPageProducts = () => {
-    const startIndex = (currentPage - 1) * PRODUCTS_PER_PAGE;
-    const endIndex = startIndex + PRODUCTS_PER_PAGE;
-    return filteredProducts.slice(startIndex, endIndex);
-  };
-
-  const goToPage = (page) => {
-    if (page >= 1 && page <= totalPages) {
-      setCurrentPage(page);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-  };
-
-  const goToPrevPage = () => {
-    if (currentPage > 1) {
-      setCurrentPage(currentPage - 1);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-  };
-
-  const goToNextPage = () => {
-    if (currentPage < totalPages) {
-      setCurrentPage(currentPage + 1);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-  };
-
-  useEffect(() => {
-    fetchProductsData();
+    fetchProductsData(1);
   }, []);
 
   const openProduct = (product) => {
@@ -622,7 +642,7 @@ const ProductsPage = () => {
     setSearch("");
   };
 
-  const currentProducts = getCurrentPageProducts();
+  const currentProducts = products;
   const visibleSelectedCount = currentProducts.filter(p => selectedItems.has(p.id)).length;
   const crossCategoryCount = selectedItems.size - visibleSelectedCount;
 
@@ -718,7 +738,7 @@ const ProductsPage = () => {
             </div>
 
             {/* Products Grid */}
-            {filteredProducts.length === 0 ? (
+            {products.length === 0 ? (
               <div className="text-center py-12">
                 <div className="text-6xl mb-4">📦</div>
                 <p className="text-gray-500 text-lg">No products found</p>
@@ -918,62 +938,64 @@ const ProductsPage = () => {
                 </div>
 
                 {/* Pagination */}
-                {totalPages > 1 && (
-                  <div className="flex justify-center items-center gap-2 mt-8 mb-4">
-                    <button
-                      onClick={goToPrevPage}
-                      disabled={currentPage === 1}
-                      className={`px-4 py-2 rounded-lg font-medium transition ${
-                        currentPage === 1
-                          ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                          : 'bg-blue-600 text-white hover:bg-blue-700'
-                      }`}
-                    >
-                      ← Previous
-                    </button>
-                    
-                    <div className="flex gap-1">
-                      {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                        let pageNum;
-                        if (totalPages <= 5) {
-                          pageNum = i + 1;
-                        } else if (currentPage <= 3) {
-                          pageNum = i + 1;
-                        } else if (currentPage >= totalPages - 2) {
-                          pageNum = totalPages - 4 + i;
-                        } else {
-                          pageNum = currentPage - 2 + i;
-                        }
-                        
-                        return (
-                          <button
-                            key={pageNum}
-                            onClick={() => goToPage(pageNum)}
-                            className={`w-10 h-10 rounded-lg font-medium transition ${
-                              currentPage === pageNum
-                                ? 'bg-blue-600 text-white'
-                                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                            }`}
-                          >
-                            {pageNum}
-                          </button>
-                        );
-                      })}
-                    </div>
-                    
-                    <button
-                      onClick={goToNextPage}
-                      disabled={currentPage === totalPages}
-                      className={`px-4 py-2 rounded-lg font-medium transition ${
-                        currentPage === totalPages
-                          ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                          : 'bg-blue-600 text-white hover:bg-blue-700'
-                      }`}
-                    >
-                      Next →
-                    </button>
-                  </div>
-                )}
+                {/* Backend Pagination */}
+{pagination.last_page > 1 && (
+  <div className="flex justify-center items-center gap-2 mt-8 mb-4">
+    <button
+      onClick={() => fetchProductsData(pagination.current_page - 1)}
+      disabled={!pagination.prev_page_url || loading}
+      className={`px-4 py-2 rounded-lg font-medium transition ${
+        !pagination.prev_page_url || loading
+          ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+          : 'bg-blue-600 text-white hover:bg-blue-700'
+      }`}
+    >
+      ← Previous
+    </button>
+    
+    <div className="flex gap-1">
+      {Array.from({ length: Math.min(5, pagination.last_page) }, (_, i) => {
+        let pageNum;
+        if (pagination.last_page <= 5) {
+          pageNum = i + 1;
+        } else if (pagination.current_page <= 3) {
+          pageNum = i + 1;
+        } else if (pagination.current_page >= pagination.last_page - 2) {
+          pageNum = pagination.last_page - 4 + i;
+        } else {
+          pageNum = pagination.current_page - 2 + i;
+        }
+        
+        return (
+          <button
+            key={pageNum}
+            onClick={() => fetchProductsData(pageNum)}
+            disabled={loading}
+            className={`w-10 h-10 rounded-lg font-medium transition ${
+              pagination.current_page === pageNum
+                ? 'bg-blue-600 text-white'
+                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+            }`}
+          >
+            {pageNum}
+          </button>
+        );
+      })}
+    </div>
+    
+    <button
+      onClick={() => fetchProductsData(pagination.current_page + 1)}
+      disabled={!pagination.next_page_url || loading}
+      className={`px-4 py-2 rounded-lg font-medium transition ${
+        !pagination.next_page_url || loading
+          ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+          : 'bg-blue-600 text-white hover:bg-blue-700'
+      }`}
+    >
+      Next →
+    </button>
+  </div>
+)}
               </>
             )}
           </div>
