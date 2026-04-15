@@ -83,20 +83,6 @@ export const useAuthStore = create(
         }
       },
 
-      register: async (userData) => {
-        set({ isLoading: true })
-        try {
-          const response = await authService.register(userData)
-          toast.success(response.data.message || 'Registration successful! Please login.')
-          set({ isLoading: false })
-          return { success: true }
-        } catch (error) {
-          set({ isLoading: false })
-          toast.error(error.response?.data?.message || 'Registration failed')
-          return { success: false, error: error.response?.data }
-        }
-      },
-
       logout: async () => {
         const { user } = get()
         
