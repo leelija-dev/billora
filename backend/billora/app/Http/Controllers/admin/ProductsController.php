@@ -809,7 +809,7 @@ if ($request->has('variants')) {
                             });
                     });
                 })
-                ->paginate(15);
+                ->paginate(12);
             if (!$products) {
                 return response()->json([
                     'status' => false,
@@ -838,8 +838,10 @@ if ($request->has('variants')) {
 
             $user_id = $request->user_id;
 
-            $products = Products::with('brand', 'category', 'unit')->where('category_id', $id)->where('user_id', $user_id)->paginate(15);
-
+            $products = Products::with('brand', 'category', 'unit')->where('category_id', $id)->where('user_id', $user_id)->paginate(12);
+            $categories = Categories::where('user_id', $user_id)
+            ->where('is_active', 1)
+            ->get();
             if (!$products) {
                 return response()->json([
                     'status'  => false,
@@ -849,6 +851,7 @@ if ($request->has('variants')) {
             return response()->json([
                 'status' => true,
                 'products' => $products,
+                'categories' => $categories
 
             ]);
         } catch (\Exception $e) {
