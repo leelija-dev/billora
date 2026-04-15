@@ -11,7 +11,7 @@
     }
 
     body {
-        background: #f8fafc;
+        background: #e0e5ec;
         display: flex;
         min-height: 100vh;
     }
@@ -131,14 +131,15 @@
         margin: 16px 0;
     }
 
-    /* main content */
+    /* main content - FULL WIDTH */
     .dashboard {
         flex: 1;
-        margin-left: auto;
+        margin-left: 280px;
         width: calc(100% - 280px);
         min-height: 100vh;
         display: flex;
         flex-direction: column;
+        background: #e0e5ec;
     }
 
     /* top navigation */
@@ -255,22 +256,18 @@
         stroke: #64748b;
     }
 
-    /* content wrapper */
+    /* content wrapper - FULL WIDTH with proper padding */
     .content-wrapper {
-        padding: 32px;
+        padding: 32px 40px;
         flex: 1;
+        width: 100%;
     }
 
-    /* ========== NEW GLASS + NEUMORPHISM DESIGN (ONLY INSIDE CONTENT) ========== */
-    
-    /* Override body background just for content area feel */
-    .content-wrapper {
-        background: #e0e5ec;
-    }
-    
+    /* Dashboard Inner Container - Centered with max-width for readability */
     .dashboard-container {
-        max-width: 1400px;
+        max-width: 1600px;
         margin: 0 auto;
+        width: 100%;
     }
 
     /* Header Area */
@@ -305,54 +302,11 @@
         font-size: 0.9rem;
     }
 
-    /* Main Layout Grid */
-    .main-layout {
-        display: grid;
-        grid-template-columns: 320px 1fr;
-        gap: 35px;
+    /* Content Area - Full width */
+    .content-area {
+        width: 100%;
     }
 
-    /* Sidebar Summary */
-    .sidebar-summary {
-        background: rgba(255, 255, 255, 0.45);
-        backdrop-filter: blur(12px);
-        border: 1px solid rgba(255, 255, 255, 0.6);
-        border-radius: 40px;
-        padding: 35px;
-        box-shadow: -9px -9px 16px rgba(255, 255, 255, 0.8), 9px 9px 16px rgba(163, 177, 198, 0.5);
-        height: fit-content;
-    }
-
-    .stat-item {
-        display: flex;
-        align-items: center;
-        gap: 20px;
-        margin-bottom: 30px;
-        padding: 15px;
-        border-radius: 25px;
-        transition: 0.3s;
-        cursor: pointer;
-    }
-
-    .stat-item:hover { box-shadow: inset -3px -3px 7px rgba(255, 255, 255, 0.7), inset 3px 3px 7px rgba(163, 177, 198, 0.3); }
-
-    .icon-circle {
-        width: 54px;
-        height: 54px;
-        background: #e0e5ec;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        box-shadow: -9px -9px 16px rgba(255, 255, 255, 0.8), 9px 9px 16px rgba(163, 177, 198, 0.5);
-        color: #7c83ff;
-        font-size: 1.2rem;
-    }
-
-    .stat-info h2 { font-size: 1.6rem; font-weight: 700; margin: 0; }
-    .stat-info p { font-size: 0.85rem; color: #5a5e73; font-weight: 600; margin: 0; }
-
-    /* Content Area */
     .nav-actions {
         display: flex;
         gap: 15px;
@@ -382,14 +336,14 @@
     .metrics-grid {
         display: grid;
         grid-template-columns: repeat(4, 1fr);
-        gap: 20px;
+        gap: 24px;
         margin-bottom: 35px;
     }
 
     .card {
         background: rgba(255, 255, 255, 0.45);
         backdrop-filter: blur(10px);
-        padding: 25px;
+        padding: 28px 20px;
         border-radius: 30px;
         border: 1px solid rgba(255, 255, 255, 0.6);
         box-shadow: -9px -9px 16px rgba(255, 255, 255, 0.8), 9px 9px 16px rgba(163, 177, 198, 0.5);
@@ -418,36 +372,35 @@
     }
 
     /* Chart Section */
-    .chart-box {
-        background: rgba(255, 255, 255, 0.45);
-        backdrop-filter: blur(15px);
-        border-radius: 40px;
-        border: 1px solid rgba(255, 255, 255, 0.6);
-        padding: 40px;
-        box-shadow: -9px -9px 16px rgba(255, 255, 255, 0.8), 9px 9px 16px rgba(163, 177, 198, 0.5);
+    .charts-section {
+        margin-top: 35px;
     }
 
-    .chart-header {
-        display: flex;
-        justify-content: space-between;
-        margin-bottom: 40px;
-        flex-wrap: wrap;
-        gap: 15px;
+    .charts-grid {
+        display: grid;
+        grid-template-columns: 1fr 1.2fr;
+        gap: 30px;
     }
 
-    .chart-header h3 { font-size: 1.3rem; font-weight: 700; display: flex; align-items: center; gap: 8px; margin: 0; }
-    .chart-header h3 i { color: #7c83ff; }
-
-    .chart-visual {
-        height: 250px;
-        width: 100%;
-        border-radius: 20px;
-        box-shadow: inset -3px -3px 7px rgba(255, 255, 255, 0.7), inset 3px 3px 7px rgba(163, 177, 198, 0.3);
+    .chart-wrapper {
+        background: transparent;
         padding: 20px;
-        position: relative;
     }
 
-    .chart-svg { width: 100%; height: 100%; }
+    .chart-container {
+        position: relative;
+        height: 340px;
+        width: 100%;
+    }
+
+    .chart-title {
+        font-size: 16px;
+        text-align: center;
+        margin-bottom: 20px;
+        letter-spacing: 0.5px;
+        font-weight: 600;
+        color: #2c2e3a;
+    }
 
     /* footer */
     .footer-note {
@@ -470,6 +423,13 @@
     }
 
     /* responsive */
+    @media (max-width: 1200px) {
+        .metrics-grid {
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+        }
+    }
+
     @media (max-width: 1024px) {
         .sidebar {
             width: 80px;
@@ -489,20 +449,9 @@
             margin-left: 80px;
             width: calc(100% - 80px);
         }
-        .main-layout {
+        .charts-grid {
             grid-template-columns: 1fr;
-        }
-        .sidebar-summary {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 20px;
-            padding: 24px;
-        }
-        .stat-item {
-            margin-bottom: 0;
-        }
-        .metrics-grid {
-            grid-template-columns: repeat(2, 1fr);
+            gap: 40px;
         }
     }
 
@@ -519,9 +468,6 @@
         .metrics-grid {
             grid-template-columns: 1fr;
         }
-        .sidebar-summary {
-            grid-template-columns: 1fr;
-        }
         .nav-actions {
             flex-direction: column;
         }
@@ -531,10 +477,6 @@
         .header {
             flex-direction: column;
             text-align: center;
-        }
-        .chart-header {
-            flex-direction: column;
-            align-items: flex-start;
         }
     }
 
@@ -570,85 +512,54 @@
             </div>
         </header>
 
-        <div class="main-layout">
-            <aside class="sidebar-summary">
-                <div class="stat-item">
-                    <div class="icon-circle"><i class="fas fa-users"></i></div>
-                    <div class="stat-info">
-                        <h2>2,418</h2>
-                        <p>Customers</p>
+        <div class="content-area">
+            <nav class="nav-actions">
+                <button class="btn"><i class="fas fa-plus"></i> New Order</button>
+                <button class="btn"><i class="fas fa-box"></i> Products</button>
+                <button class="btn"><i class="fas fa-file-alt"></i> Reports</button>
+                <button class="btn"><i class="fas fa-cog"></i> Settings</button>
+            </nav>
+
+            <section class="metrics-grid">
+                <div class="card">
+                    <span class="label">System Health</span>
+                    <h2>98.6%</h2>
+                    <span class="trend" style="color: #10b981;">+2.1% ↑</span>
+                </div>
+                <div class="card">
+                    <span class="label">Storage</span>
+                    <h2>64%</h2>
+                    <span class="trend">128 / 200 GB</span>
+                </div>
+                <div class="card">
+                    <span class="label">Tasks</span>
+                    <h2>14</h2>
+                    <span class="trend" style="color: #7c83ff;">Attention</span>
+                </div>
+                <div class="card">
+                    <span class="label">Reports</span>
+                    <h2>09</h2>
+                    <span class="trend" style="color: #ef4444;">Pending</span>
+                </div>
+            </section>
+
+            <!-- Charts Section -->
+            <section class="charts-section">
+                <div class="charts-grid">
+                    <div class="chart-wrapper">
+                        <div class="chart-title">WORKFORCE COMPOSITION</div>
+                        <div class="chart-container">
+                            <canvas id="pieChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="chart-wrapper">
+                        <div class="chart-title">HEADCOUNT METRICS</div>
+                        <div class="chart-container">
+                            <canvas id="barChart"></canvas>
+                        </div>
                     </div>
                 </div>
-                <div class="stat-item">
-                    <div class="icon-circle"><i class="fas fa-shopping-cart"></i></div>
-                    <div class="stat-info">
-                        <h2>284</h2>
-                        <p>New Orders</p>
-                    </div>
-                </div>
-                <div class="stat-item">
-                    <div class="icon-circle"><i class="fas fa-bell"></i></div>
-                    <div class="stat-info">
-                        <h2>12</h2>
-                        <p>Alerts</p>
-                    </div>
-                </div>
-            </aside>
-
-            <main class="content">
-                <nav class="nav-actions">
-                    <button class="btn"><i class="fas fa-plus"></i> New Order</button>
-                    <button class="btn"><i class="fas fa-box"></i> Products</button>
-                    <button class="btn"><i class="fas fa-file-alt"></i> Reports</button>
-                    <button class="btn"><i class="fas fa-cog"></i> Settings</button>
-                </nav>
-
-                <section class="metrics-grid">
-                    <div class="card">
-                        <span class="label">System Health</span>
-                        <h2>98.6%</h2>
-                        <span class="trend" style="color: #10b981;">+2.1% ↑</span>
-                    </div>
-                    <div class="card">
-                        <span class="label">Storage</span>
-                        <h2>64%</h2>
-                        <span class="trend">128 / 200 GB</span>
-                    </div>
-                    <div class="card">
-                        <span class="label">Tasks</span>
-                        <h2>14</h2>
-                        <span class="trend" style="color: #7c83ff;">Attention</span>
-                    </div>
-                    <div class="card">
-                        <span class="label">Reports</span>
-                        <h2>09</h2>
-                        <span class="trend" style="color: #ef4444;">Pending</span>
-                    </div>
-                </section>
-
-                <section class="chart-box">
-                    <div class="chart-header">
-                        <h3><i class="fas fa-chart-line"></i> &nbsp; Revenue Trend</h3>
-                        <span class="trend" style="color: #7c83ff;">Weekly Analysis</span>
-                    </div>
-                    <div class="chart-visual">
-                        <svg class="chart-svg" viewBox="0 0 1000 200" preserveAspectRatio="none">
-                            <path d="M0,180 Q150,150 300,160 T600,80 T1000,40" 
-                                  fill="none" 
-                                  stroke="#7c83ff" 
-                                  stroke-width="4" 
-                                  stroke-linecap="round"/>
-                            <circle cx="0" cy="180" r="5" fill="white" stroke="#7c83ff" stroke-width="3"/>
-                            <circle cx="150" cy="150" r="5" fill="white" stroke="#7c83ff" stroke-width="3"/>
-                            <circle cx="300" cy="160" r="6" fill="white" stroke="#7c83ff" stroke-width="3"/>
-                            <circle cx="450" cy="120" r="5" fill="white" stroke="#7c83ff" stroke-width="3"/>
-                            <circle cx="600" cy="80" r="6" fill="white" stroke="#7c83ff" stroke-width="3"/>
-                            <circle cx="750" cy="55" r="5" fill="white" stroke="#7c83ff" stroke-width="3"/>
-                            <circle cx="1000" cy="40" r="6" fill="white" stroke="#7c83ff" stroke-width="3"/>
-                        </svg>
-                    </div>
-                </section>
-            </main>
+            </section>
         </div>
 
         <div class="footer-note">
@@ -657,6 +568,7 @@
     </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
     (function() {
         // display current date
@@ -696,6 +608,68 @@
             }
         });
     })();
+
+    // Chart.js Initialization
+    const dataLabels = ['Entry', 'Junior', 'Mid-Weight', 'Senior', 'Director'];
+    const dataValues = [12, 25, 38, 18, 7];
+    const colors = ['#38bdf8', '#818cf8', '#c084fc', '#fb7185', '#fbbf24'];
+
+    // Donut Chart
+    new Chart(document.getElementById('pieChart'), {
+        type: 'doughnut',
+        data: {
+            labels: dataLabels,
+            datasets: [{
+                data: dataValues,
+                backgroundColor: colors,
+                borderWidth: 0,
+                hoverOffset: 20
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '70%',
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'bottom',
+                    labels: { color: '#5a5e73', padding: 20, font: { size: 11, weight: '500' } }
+                }
+            }
+        }
+    });
+
+    // Bar Chart
+    new Chart(document.getElementById('barChart'), {
+        type: 'bar',
+        data: {
+            labels: dataLabels,
+            datasets: [{
+                data: dataValues,
+                backgroundColor: colors,
+                borderRadius: 8,
+                barPercentage: 0.7
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false }
+            },
+            scales: {
+                y: { 
+                    grid: { color: '#d1d9e6' }, 
+                    ticks: { color: '#5a5e73', stepSize: 10 } 
+                },
+                x: { 
+                    grid: { display: false }, 
+                    ticks: { color: '#5a5e73', font: { size: 11, weight: '500' } } 
+                }
+            }
+        }
+    });
 </script>
 
 <!-- Font Awesome for icons -->

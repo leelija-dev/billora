@@ -47,7 +47,7 @@ const [searchTerm, setSearchTerm] = useState("");
   // Mobile detection state
   const [isMobile, setIsMobile] = useState(false);
 
-  const PRODUCTS_PER_PAGE = 12;
+  const PRODUCTS_PER_PAGE = 15;
 
   // Detect mobile screen
   useEffect(() => {
