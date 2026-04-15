@@ -585,7 +585,7 @@
         }
     </style>
     
-    <div class="card" style="bg:white;">
+    <div class="card" style="background:white;">
         <div class="main-content">
             <div class="grid grid-cols-1 gap-4 mb-6">
 

@@ -43,7 +43,7 @@ const ProductsPage = () => {
   // Mobile detection state
   const [isMobile, setIsMobile] = useState(false);
 
-  const PRODUCTS_PER_PAGE = 12;
+  const PRODUCTS_PER_PAGE = 15;
 
   // Detect mobile screen
   useEffect(() => {
@@ -489,7 +489,7 @@ const ProductsPage = () => {
         }
       });
       const productsData = await response.json();
-
+console.log ("Raw products data from API:", productsData);
       let productsArray = [];
       if (productsData?.products?.data && Array.isArray(productsData.products.data)) {
         productsArray = productsData.products.data;
