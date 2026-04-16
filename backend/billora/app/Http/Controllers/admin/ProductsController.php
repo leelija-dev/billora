@@ -45,7 +45,8 @@ class ProductsController extends Controller
                 ]);
             }
             $user = Auth::user()->id;
-            $product = Products::with('variants', 'images')->where('user_id', $user)->where('is_active', true)->paginate(15);
+            $product = Products::with('variQA::
+            ants', 'images')->where('user_id', $user)->where('is_active', true)->paginate(15);
             if ($request->has('search')) {
                 $product = Products::where('user_id', $user)->where('name', 'like', '%' . $request->search . '%')
                     ->orWhere('sku', 'like', '%' . $request->search . '%')
@@ -797,7 +798,7 @@ if ($request->has('variants')) {
 
                             // Price
                             ->orWhere('selling_price', 'like', "%{$search}%")
-
+                            ->orWhere('description', 'like', "%{$search}%")
                             // Category name
                             ->orWhereHas('category', function ($q) use ($search) {
                                 $q->where('name', 'like', "%{$search}%");
