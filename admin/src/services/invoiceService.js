@@ -22,8 +22,12 @@ export const invoiceAPI = {
   },
 
   // Get bill generate page data
-  getBillGenerateData: () => {
-    return apiClient.get('/invoice/')
+  getBillGenerateData: (userId) => {
+    if (!userId) {
+      console.error('User ID is required for getBillGenerateData')
+      return apiClient.get('/invoice/')
+    }
+    return apiClient.get(`/invoice/?user_id=${userId}`)
   },
 
   // Get customer details by ID
@@ -38,8 +42,8 @@ export const invoiceAPI = {
 
   // Create/store new invoice/bill
   create: (invoiceData) => {
-    return apiClient.post('/invoice/store', invoiceData),
     console.log('Creating invoice with data:', invoiceData) // Debug log
+    return apiClient.post('/invoice/store', invoiceData)
   },
 
   // Update invoice/bill
