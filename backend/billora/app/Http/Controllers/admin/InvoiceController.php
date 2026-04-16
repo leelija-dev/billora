@@ -87,7 +87,7 @@ class InvoiceController extends Controller
                 'message' => 'Authentication required. Please login first.'
             ]);
         }
-        
+        $user = Auth::user()->id;
         $request->validate([
             "user_id"       => 'required',
             "customer_id"   => 'required|exists:bill_customer,id',
@@ -98,7 +98,14 @@ class InvoiceController extends Controller
             // "package_price" => 'nullable|numeric|min:0',
             // "package_size"  => 'nullable',
         ]);
-
+        if($user != $request->user_id){
+            return response()->json([
+                'status' => false,
+                'message' => 'You are not authorized to perform this action.',
+                'user_id' => $user,
+                'request_user_id' => $request->user_id
+            ]);
+        }
         DB::beginTransaction();
         $customer =  Customers::findOrFail($request->user_id);
         if($customer->plan_id == null || $customer->is_active == false){
