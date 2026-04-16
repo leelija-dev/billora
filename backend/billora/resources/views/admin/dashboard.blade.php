@@ -11,7 +11,7 @@
     }
 
     body {
-        background: #f8fafc;
+        background: #e0e5ec;
         display: flex;
         min-height: 100vh;
     }
@@ -131,14 +131,15 @@
         margin: 16px 0;
     }
 
-    /* main content */
+    /* main content - FULL WIDTH */
     .dashboard {
         flex: 1;
-        margin-left: auto;
+        margin-left: 280px;
         width: calc(100% - 280px);
         min-height: 100vh;
         display: flex;
         flex-direction: column;
+        background: #e0e5ec;
     }
 
     /* top navigation */
@@ -255,229 +256,150 @@
         stroke: #64748b;
     }
 
-    /* content wrapper */
+    /* content wrapper - FULL WIDTH with proper padding */
     .content-wrapper {
-        padding: 32px;
+        padding: 32px 40px;
         flex: 1;
+        width: 100%;
     }
 
-    /* welcome card - modern redesign */
-    .welcome-card {
-        background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
-        border-radius: 32px;
-        padding: 40px 48px;
-        box-shadow: 0 20px 35px -12px rgba(0, 0, 0, 0.08);
-        border: 1px solid #e2e8f0;
+    /* Dashboard Inner Container - Centered with max-width for readability */
+    .dashboard-container {
+        max-width: 1600px;
+        margin: 0 auto;
+        width: 100%;
+    }
+
+    /* Header Area */
+    .header {
         display: flex;
-        align-items: center;
-        flex-wrap: wrap;
-        gap: 40px;
         justify-content: space-between;
-        margin-bottom: 32px;
+        align-items: center;
+        margin-bottom: 40px;
+        flex-wrap: wrap;
+        gap: 20px;
     }
 
-    .welcome-left h1 {
-        font-size: 36px;
-        font-weight: 800;
-        color: #0f172a;
+    .welcome h1 {
+        font-size: 2.2rem;
+        font-weight: 700;
         letter-spacing: -1px;
-        line-height: 1.2;
-        margin-bottom: 16px;
+        margin: 0;
+        color: #2c2e3a;
     }
 
-    .welcome-left h1 span {
-        background: linear-gradient(135deg, #3b82f6, #2563eb);
-        -webkit-background-clip: text;
-        background-clip: text;
-        color: transparent;
-        font-size: 36px;
-    }
-
-    .greeting-text {
-        font-size: 16px;
-        color: #475569;
-        max-width: 500px;
-        margin-bottom: 28px;
-        line-height: 1.6;
-    }
+    .welcome h1 span { color: #7c83ff; }
+    .welcome p { color: #5a5e73; margin-top: 5px; font-weight: 500; }
 
     .date-chip {
-        display: inline-flex;
+        background: rgba(255, 255, 255, 0.45);
+        backdrop-filter: blur(8px);
+        padding: 12px 24px;
+        border-radius: 40px;
+        border: 1px solid rgba(255, 255, 255, 0.6);
+        box-shadow: -9px -9px 16px rgba(255, 255, 255, 0.8), 9px 9px 16px rgba(163, 177, 198, 0.5);
+        font-weight: 600;
+        font-size: 0.9rem;
+    }
+
+    /* Content Area - Full width */
+    .content-area {
+        width: 100%;
+    }
+
+    .nav-actions {
+        display: flex;
+        gap: 15px;
+        margin-bottom: 30px;
+        flex-wrap: wrap;
+    }
+
+    .btn {
+        background: #e0e5ec;
+        border: none;
+        padding: 12px 24px;
+        border-radius: 50px;
+        font-weight: 600;
+        color: #2c2e3a;
+        box-shadow: -9px -9px 16px rgba(255, 255, 255, 0.8), 9px 9px 16px rgba(163, 177, 198, 0.5);
+        cursor: pointer;
+        transition: 0.2s;
+        display: flex;
         align-items: center;
         gap: 10px;
-        background: #f1f5f9;
-        border-radius: 50px;
-        padding: 10px 20px;
-        font-weight: 500;
-        color: #334155;
-        font-size: 14px;
     }
 
-    .date-chip svg {
-        width: 18px;
-        height: 18px;
-        stroke: #3b82f6;
-        stroke-width: 1.5;
-        fill: none;
-    }
+    .btn:active { box-shadow: inset -3px -3px 7px rgba(255, 255, 255, 0.7), inset 3px 3px 7px rgba(163, 177, 198, 0.3); transform: scale(0.98); }
+    .btn i { color: #7c83ff; }
 
-    .date-chip .date {
-        font-weight: 700;
-        color: #1d4ed8;
-    }
-
-    .welcome-right {
-        background: linear-gradient(135deg, #eff6ff, #dbeafe);
-        border-radius: 28px;
-        padding: 28px 32px;
-        min-width: 260px;
-    }
-
-    .stat-summary {
-        display: flex;
-        flex-direction: column;
-        gap: 24px;
-    }
-
-    .stat-summary-item {
-        display: flex;
-        align-items: center;
-        gap: 18px;
-    }
-
-    .stat-icon {
-        background: white;
-        width: 56px;
-        height: 56px;
-        border-radius: 20px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
-    }
-
-    .stat-icon svg {
-        width: 28px;
-        height: 28px;
-        stroke: #3b82f6;
-        stroke-width: 1.5;
-        fill: none;
-    }
-
-    .stat-numbers h3 {
-        font-size: 28px;
-        font-weight: 800;
-        color: #0f172a;
-        line-height: 1.2;
-    }
-
-    .stat-numbers p {
-        color: #475569;
-        font-size: 13px;
-        font-weight: 500;
-    }
-
-    /* quick actions */
-    .action-row {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 16px;
-        margin-bottom: 32px;
-    }
-
-    .action-btn {
-        background: white;
-        border: 1px solid #e2e8f0;
-        border-radius: 20px;
-        padding: 14px 28px;
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        font-weight: 600;
-        color: #1e293b;
-        transition: all 0.2s;
-        cursor: pointer;
-        box-shadow: 0 1px 2px rgba(0,0,0,0.02);
-    }
-
-    .action-btn svg {
-        width: 20px;
-        height: 20px;
-        stroke: #3b82f6;
-        stroke-width: 1.5;
-        fill: none;
-    }
-
-    .action-btn:hover {
-        border-color: #3b82f6;
-        background: #f0f9ff;
-        transform: translateY(-2px);
-        box-shadow: 0 8px 20px -10px rgba(59, 130, 246, 0.3);
-    }
-
-    /* stats grid */
-    .insight-grid {
+    /* Metrics Cards */
+    .metrics-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        grid-template-columns: repeat(4, 1fr);
         gap: 24px;
-        margin-bottom: 32px;
+        margin-bottom: 35px;
     }
 
-    .insight-card {
-        background: white;
-        border-radius: 24px;
-        padding: 24px;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.04);
-        border: 1px solid #e2e8f0;
+    .card {
+        background: rgba(255, 255, 255, 0.45);
+        backdrop-filter: blur(10px);
+        padding: 28px 20px;
+        border-radius: 30px;
+        border: 1px solid rgba(255, 255, 255, 0.6);
+        box-shadow: -9px -9px 16px rgba(255, 255, 255, 0.8), 9px 9px 16px rgba(163, 177, 198, 0.5);
+        text-align: center;
         transition: all 0.2s;
     }
 
-    .insight-card:hover {
-        border-color: #cbd5e1;
-        box-shadow: 0 12px 24px -12px rgba(0, 0, 0, 0.1);
-        transform: translateY(-2px);
-    }
+    .card:hover { transform: translateY(-3px); }
 
-    .card-title {
-        color: #64748b;
-        font-size: 14px;
-        font-weight: 600;
-        margin-bottom: 12px;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-    }
-
-    .card-title svg {
-        width: 18px;
-        height: 18px;
-        stroke: #3b82f6;
-    }
-
-    .card-value {
-        font-size: 36px;
+    .card .label {
+        font-size: 0.7rem;
         font-weight: 800;
-        color: #0f172a;
-        letter-spacing: -1px;
-        margin-bottom: 8px;
+        color: #5a5e73;
+        text-transform: uppercase;
+        letter-spacing: 1px;
     }
 
-    .card-footer {
-        color: #10b981;
-        font-size: 13px;
-        font-weight: 500;
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        border-top: 1px solid #e2e8f0;
-        padding-top: 16px;
-        margin-top: 8px;
+    .card h2 { font-size: 2rem; margin: 10px 0; font-weight: 700; }
+    
+    .trend {
+        font-size: 0.8rem;
+        font-weight: 700;
+        padding: 4px 12px;
+        background: rgba(255,255,255,0.3);
+        border-radius: 20px;
     }
 
-    .trend-down {
-        color: #ef4444;
+    /* Chart Section */
+    .charts-section {
+        margin-top: 35px;
+    }
+
+    .charts-grid {
+        display: grid;
+        grid-template-columns: 1fr 1.2fr;
+        gap: 30px;
+    }
+
+    .chart-wrapper {
+        background: transparent;
+        padding: 20px;
+    }
+
+    .chart-container {
+        position: relative;
+        height: 340px;
+        width: 100%;
+    }
+
+    .chart-title {
+        font-size: 16px;
+        text-align: center;
+        margin-bottom: 20px;
+        letter-spacing: 0.5px;
+        font-weight: 600;
+        color: #2c2e3a;
     }
 
     /* footer */
@@ -485,8 +407,8 @@
         margin-top: 48px;
         text-align: center;
         font-size: 13px;
-        color: #94a3b8;
-        border-top: 1px solid #e2e8f0;
+        color: #5a5e73;
+        border-top: 1px solid rgba(255,255,255,0.3);
         padding-top: 24px;
     }
 
@@ -500,17 +422,14 @@
         100% { opacity: 1; transform: translateY(0); }
     }
 
-    /* pulse animation for notifications */
-    @keyframes pulse {
-        0%, 100% { transform: scale(1); }
-        50% { transform: scale(1.1); }
-    }
-    
-    .badge {
-        animation: pulse 2s infinite;
+    /* responsive */
+    @media (max-width: 1200px) {
+        .metrics-grid {
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+        }
     }
 
-    /* responsive */
     @media (max-width: 1024px) {
         .sidebar {
             width: 80px;
@@ -530,13 +449,9 @@
             margin-left: 80px;
             width: calc(100% - 80px);
         }
-        .welcome-card {
-            flex-direction: column;
-            align-items: flex-start;
-            padding: 32px;
-        }
-        .welcome-left h1 {
-            font-size: 28px;
+        .charts-grid {
+            grid-template-columns: 1fr;
+            gap: 40px;
         }
     }
 
@@ -547,20 +462,21 @@
         .content-wrapper {
             padding: 20px;
         }
-        .welcome-card {
-            padding: 24px;
-        }
         .admin-details {
             display: none;
         }
-        .insight-grid {
+        .metrics-grid {
             grid-template-columns: 1fr;
         }
-        .action-row {
+        .nav-actions {
             flex-direction: column;
         }
-        .action-btn {
+        .btn {
             justify-content: center;
+        }
+        .header {
+            flex-direction: column;
+            text-align: center;
         }
     }
 
@@ -585,143 +501,82 @@
 </style>
 
 <div class="content-wrapper fade-in-up">
-    <!-- welcome card -->
-    <div class="welcome-card">
-        <div class="welcome-left">
-            <h1>Welcome back, <span>Lakshman</span></h1>
-            <p class="greeting-text">Your admin dashboard is ready. Monitor all key metrics and manage your business efficiently.</p>
-            <div class="date-chip">
-                <svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-                    <path d="M8 2v4M16 2v4M3 10h18M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z" />
-                </svg>
-                <span>Today is <span class="date" id="currentDate"></span></span>
+    <div class="dashboard-container">
+        <header class="header">
+            <div class="welcome">
+                <h1>Hi, <span>Lakshman</span></h1>
+                <p>Your performance metrics are looking healthy today.</p>
             </div>
-        </div>
-        <div class="welcome-right">
-            <div class="stat-summary">
-                <div class="stat-summary-item">
-                    <div class="stat-icon">
-                        <svg viewBox="0 0 24 24">
-                            <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
-                        </svg>
+            <div class="date-chip" id="currentDateDisplay">
+                <i class="far fa-calendar-alt"></i> &nbsp; 
+            </div>
+        </header>
+
+        <div class="content-area">
+            <nav class="nav-actions">
+                <button class="btn"><i class="fas fa-plus"></i> New Order</button>
+                <button class="btn"><i class="fas fa-box"></i> Products</button>
+                <button class="btn"><i class="fas fa-file-alt"></i> Reports</button>
+                <button class="btn"><i class="fas fa-cog"></i> Settings</button>
+            </nav>
+
+            <section class="metrics-grid">
+                <div class="card">
+                    <span class="label">System Health</span>
+                    <h2>98.6%</h2>
+                    <span class="trend" style="color: #10b981;">+2.1% ↑</span>
+                </div>
+                <div class="card">
+                    <span class="label">Storage</span>
+                    <h2>64%</h2>
+                    <span class="trend">128 / 200 GB</span>
+                </div>
+                <div class="card">
+                    <span class="label">Tasks</span>
+                    <h2>14</h2>
+                    <span class="trend" style="color: #7c83ff;">Attention</span>
+                </div>
+                <div class="card">
+                    <span class="label">Reports</span>
+                    <h2>09</h2>
+                    <span class="trend" style="color: #ef4444;">Pending</span>
+                </div>
+            </section>
+
+            <!-- Charts Section -->
+            <section class="charts-section">
+                <div class="charts-grid">
+                    <div class="chart-wrapper">
+                        <div class="chart-title">WORKFORCE COMPOSITION</div>
+                        <div class="chart-container">
+                            <canvas id="pieChart"></canvas>
+                        </div>
                     </div>
-                    <div class="stat-numbers">
-                        <h3>2,418</h3>
-                        <p>Active Customers</p>
+                    <div class="chart-wrapper">
+                        <div class="chart-title">HEADCOUNT METRICS</div>
+                        <div class="chart-container">
+                            <canvas id="barChart"></canvas>
+                        </div>
                     </div>
                 </div>
-                <div class="stat-summary-item">
-                    <div class="stat-icon">
-                        <svg viewBox="0 0 24 24">
-                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 4c1.1 0 2 .9 2 2s-.9 2-2 2-2-.9-2-2 .9-2 2-2zm0 13c-1.8 0-3.4-.9-4.3-2.3.7-1.2 2.1-2.1 4.3-2.1s3.6.9 4.3 2.1c-.9 1.4-2.5 2.3-4.3 2.3z"/>
-                        </svg>
-                    </div>
-                    <div class="stat-numbers">
-                        <h3>284</h3>
-                        <p>New Orders</p>
-                    </div>
-                </div>
-                <div class="stat-summary-item">
-                    <div class="stat-icon">
-                        <svg viewBox="0 0 24 24">
-                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
-                        </svg>
-                    </div>
-                    <div class="stat-numbers">
-                        <h3>12</h3>
-                        <p>Pending Alerts</p>
-                    </div>
-                </div>
-            </div>
+            </section>
         </div>
-    </div>
 
-    <!-- quick action buttons -->
-    <div class="action-row">
-        <div class="action-btn">
-            <svg viewBox="0 0 24 24">
-                <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
-            </svg>
-            Create New Order
+        <div class="footer-note">
+            <span>© 2025 Billora — Admin Dashboard. All metrics are real-time.</span>
         </div>
-        <div class="action-btn">
-            <svg viewBox="0 0 24 24">
-                <path d="M3 3v18h18V3H3zm16 16H5V5h14v14zM7 7h4v4H7V7zm6 0h4v4h-4V7zm-6 6h4v4H7v-4zm6 0h4v4h-4v-4z"/>
-            </svg>
-            Manage Products
-        </div>
-        <div class="action-btn">
-            <svg viewBox="0 0 24 24">
-                <path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/>
-            </svg>
-            View Reports
-        </div>
-        <div class="action-btn">
-            <svg viewBox="0 0 24 24">
-                <path d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm8.94 3A8.994 8.994 0 0 0 13 3.06V1h-2v2.06A8.994 8.994 0 0 0 3.06 11H1v2h2.06A8.994 8.994 0 0 0 11 20.94V23h2v-2.06A8.994 8.994 0 0 0 20.94 13H23v-2h-2.06zM12 19c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z"/>
-            </svg>
-            Settings
-        </div>
-    </div>
-
-    <!-- insight cards -->
-    <div class="insight-grid">
-        <div class="insight-card">
-            <div class="card-title">
-                <svg viewBox="0 0 24 24">
-                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
-                </svg>
-                System Health
-            </div>
-            <div class="card-value">98.6%</div>
-            <div class="card-footer">↑ 2.1% vs last week</div>
-        </div>
-        <div class="insight-card">
-            <div class="card-title">
-                <svg viewBox="0 0 24 24">
-                    <path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/>
-                </svg>
-                Storage Usage
-            </div>
-            <div class="card-value">64%</div>
-            <div class="card-footer">128/200 GB used</div>
-        </div>
-        <div class="insight-card">
-            <div class="card-title">
-                <svg viewBox="0 0 24 24">
-                    <path d="M12 12c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0-8c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z"/>
-                </svg>
-                Pending Tasks
-            </div>
-            <div class="card-value">14</div>
-            <div class="card-footer">3 require attention</div>
-        </div>
-        <div class="insight-card">
-            <div class="card-title">
-                <svg viewBox="0 0 24 24">
-                    <path d="M21 6h-2v3h-2V6h-2V4h2V2h2v2h2v2zm-6-4v2h-2V2h2zm0 8h-2v2h2v-2zm-2-2h2V6h-2v2zm0 8h2v-2h-2v2zM7 6h4v2H7V6zm0 10h4v2H7v-2zm0-4h4v2H7v-2zm-4 8h.01L5 20h14v2H3v-2zM3 4h4v2H3V4z"/>
-                </svg>
-                Reports Ready
-            </div>
-            <div class="card-value">9</div>
-            <div class="card-footer trend-down">2 pending review</div>
-        </div>
-    </div>
-
-    <!-- footer -->
-    <div class="footer-note">
-        <span>© 2025 Billora — Admin Dashboard. All metrics are real-time.</span>
     </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
     (function() {
         // display current date
-        const dateSpan = document.getElementById('currentDate');
+        const dateSpan = document.getElementById('currentDateDisplay');
         if (dateSpan) {
             const today = new Date();
             const options = { year: 'numeric', month: 'long', day: 'numeric' };
-            dateSpan.textContent = today.toLocaleDateString('en-US', options);
+            dateSpan.innerHTML = `<i class="far fa-calendar-alt"></i> &nbsp; ${today.toLocaleDateString('en-US', options)}`;
         }
 
         // profile click
@@ -737,10 +592,10 @@
         }
 
         // action buttons click handlers
-        const actionBtns = document.querySelectorAll('.action-btn');
+        const actionBtns = document.querySelectorAll('.btn');
         actionBtns.forEach((btn, index) => {
             btn.addEventListener('click', () => {
-                const actions = ['Create Order', 'Manage Products', 'View Reports', 'Settings'];
+                const actions = ['New Order', 'Products', 'Reports', 'Settings'];
                 console.log(`📋 ${actions[index]} clicked`);
             });
         });
@@ -753,5 +608,71 @@
             }
         });
     })();
+
+    // Chart.js Initialization
+    const dataLabels = ['Entry', 'Junior', 'Mid-Weight', 'Senior', 'Director'];
+    const dataValues = [12, 25, 38, 18, 7];
+    const colors = ['#38bdf8', '#818cf8', '#c084fc', '#fb7185', '#fbbf24'];
+
+    // Donut Chart
+    new Chart(document.getElementById('pieChart'), {
+        type: 'doughnut',
+        data: {
+            labels: dataLabels,
+            datasets: [{
+                data: dataValues,
+                backgroundColor: colors,
+                borderWidth: 0,
+                hoverOffset: 20
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '70%',
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'bottom',
+                    labels: { color: '#5a5e73', padding: 20, font: { size: 11, weight: '500' } }
+                }
+            }
+        }
+    });
+
+    // Bar Chart
+    new Chart(document.getElementById('barChart'), {
+        type: 'bar',
+        data: {
+            labels: dataLabels,
+            datasets: [{
+                data: dataValues,
+                backgroundColor: colors,
+                borderRadius: 8,
+                barPercentage: 0.7
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false }
+            },
+            scales: {
+                y: { 
+                    grid: { color: '#d1d9e6' }, 
+                    ticks: { color: '#5a5e73', stepSize: 10 } 
+                },
+                x: { 
+                    grid: { display: false }, 
+                    ticks: { color: '#5a5e73', font: { size: 11, weight: '500' } } 
+                }
+            }
+        }
+    });
 </script>
+
+<!-- Font Awesome for icons -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
 @endsection

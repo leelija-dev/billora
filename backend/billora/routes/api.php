@@ -23,6 +23,7 @@ use App\Http\Controllers\admin\MedicineTypeController;
 use App\Http\Controllers\admin\PackageCostController;
 use App\Http\Controllers\admin\UserOrdersController;
 use App\Http\Controllers\PlanExpiryController;
+use App\Http\Controllers\admin\TestimonialsController;
 use App\Models\User;
 use App\Models\UserOrders;
 
@@ -229,4 +230,7 @@ Route::middleware('auth:sanctum')->prefix('medicine-type')->group(function () {
    Route::get('/edit/{id}', [MedicineTypeController::class, 'edit']);
    Route::put('/update/{id}', [MedicineTypeController::class, 'update']);
    Route::delete('/delete/{id}', [MedicineTypeController::class, 'delete']);
+});
+Route::prefix('testimonial')->group(function () {
+   Route::get('/', [TestimonialsController::class, 'index']);
 });

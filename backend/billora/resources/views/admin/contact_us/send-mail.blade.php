@@ -606,7 +606,7 @@
         @endif
         <!-- Form Container - Full Width -->
         <div class="form-container">
-            <form id="mailForm" action="{{ route('admin.customers.send-mail') }}" method="POST"
+            <form id="mailForm" action="{{ route('admin.contacts.mail-send') }}" method="POST"
                 enctype="multipart/form-data" novalidate>
                 @csrf
 
@@ -619,17 +619,14 @@
                     </label>
 
                     <div class="border rounded-lg p-3 bg-gray-50 max-h-40 overflow-y-auto">
-
                       {{ $contacts->email ? $contacts->email : '' }} 
-                        
-
                     </div>
                 </div>
 
                 <div class="form-group">
                     <!--  Customer ids -->
                    
-                        <input type="hidden" name="customer_id" value="{{ $contacts  ->id }}">
+                        <input type="hidden" name="customer_id" value="{{ $contacts->id }}">
                   
                     <div class="form-group">
                         <label class="form-label">

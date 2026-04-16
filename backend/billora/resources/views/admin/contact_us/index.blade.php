@@ -737,7 +737,8 @@
                                                     </button>
                                                 </a>
 
-                                                <a href="{{route('admin.contacts.send-mail',$contact->id)}}"><button class="mail-btn" title="Send Mail">Mail
+                                                <a href="{{route('admin.contacts.send-mail',$contact->id)}}"><button class="mail-btn" title="Send Mail">
+                                                    <i class="fa-regular fa-envelope" style="font-size: 18px;"></i>
                                                 </button></a>
                                             </div>
                                         </td>
@@ -760,136 +761,28 @@
         </div>
         <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
-        {{-- <script>
-            /* =========================
-                       GLOBAL STATE
-                    ========================= */
-            let selectedCustomers = JSON.parse(localStorage.getItem('selectedCustomers')) || [];
-            let isAllSelected = localStorage.getItem('isAllSelected') === 'true';
-
-            /* =========================
-               UPDATE COUNT
-            ========================= */
-            function updateSelectedCount() {
-                let count = isAllSelected ?
-                    {{ $contacts->total() }} :
-                    selectedCustomers.length;
-
-                document.getElementById('selectedCount').innerText = count;
-            }
-
-            /* =========================
-               PAGE LOAD
-            ========================= */
-            document.addEventListener("DOMContentLoaded", function() {
-
-                let checkboxes = document.querySelectorAll('.customer_checkbox');
-                let selectAll = document.getElementById('select_all');
-
-                // Restore checkbox state
-                checkboxes.forEach(cb => {
-                    if (isAllSelected || selectedCustomers.includes(cb.value)) {
-                        cb.checked = true;
-                    }
-
-                    cb.addEventListener('change', function() {
-
-                        if (isAllSelected) {
-                            // switch to manual mode
-                            isAllSelected = false;
-                            localStorage.setItem('isAllSelected', 'false');
-                            selectedCustomers = [];
-                        }
-
-                        if (this.checked) {
-                            if (!selectedCustomers.includes(this.value)) {
-                                selectedCustomers.push(this.value);
-                            }
-                        } else {
-                            selectedCustomers = selectedCustomers.filter(id => id !== this.value);
-                        }
-
-                        localStorage.setItem('selectedCustomers', JSON.stringify(selectedCustomers));
-                        updateSelectedCount();
-                    });
-                });
-
-                // Select All toggle
-                selectAll.addEventListener('change', function() {
-
-                    if (this.checked) {
-                        isAllSelected = true;
-                        localStorage.setItem('isAllSelected', 'true');
-                        localStorage.removeItem('selectedCustomers');
-
-                        checkboxes.forEach(cb => cb.checked = true);
-
-                    } else {
-                        isAllSelected = false;
-                        localStorage.setItem('isAllSelected', 'false');
-
-                        selectedCustomers = [];
-                        localStorage.setItem('selectedCustomers', JSON.stringify(selectedCustomers));
-
-                        checkboxes.forEach(cb => cb.checked = false);
-                    }
-
-                    updateSelectedCount();
-                });
-
-                updateSelectedCount();
-
-
-
-            });
-
-            
-            //    CLEAR SELECTION
-           
-            function clearSelection() {
-                localStorage.removeItem('selectedCustomers');
-                localStorage.removeItem('isAllSelected');
-                location.reload();
-            }
-
-         
-            //    SEND MAIL
-           
-            function handleSendMail() {
-
-                let selected = JSON.parse(localStorage.getItem('selectedCustomers')) || [];
-                let isAll = localStorage.getItem('isAllSelected') === 'true';
-
-                if (!isAll && selected.length === 0) {
-                    Swal.fire({
-                        icon: 'warning',
-                        title: 'No Customer Selected',
-                        text: 'Please select at least one customer!',
-                    });
-                    return;
-                }
-
-                let url = "{{ route('admin.contacts.send-mail') }}";
-
-                //  GET search from URL (BEST METHOD)
-                let params = new URLSearchParams(window.location.search);
-                let search = params.get('search');
-                let status = params.get('status');
-                if (isAll) {
-                    url += "?all=true";
-
-                    if (search) {
-                        url += "&search=" + encodeURIComponent(search);
-                    } else if (status) {
-                        url += "&status=" + encodeURIComponent(status);
-                    }
-
-                } else {
-                    url += "/" + selected.join(',');
-                }
-
-                window.location.href = url;
-            }
-        </script> --}}
-
+    @if(session('success'))
+    <script>
+    Swal.fire({
+        toast: true,
+        position: 'top-end',
+        icon: 'success',
+        title: "{{ session('success') }}",
+        showConfirmButton: false,
+        timer: 3000
+    });
+    </script>
+    @endif
+    @if(session('error'))
+    <script>
+    Swal.fire({
+        toast: true,
+        position: 'top-end',
+        icon: 'error',
+        title: "{{ session('error') }}",
+        showConfirmButton: false,
+        timer: 3000
+    });
+    </script>
+    @endif
     @endsection

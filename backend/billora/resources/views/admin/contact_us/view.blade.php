@@ -18,7 +18,7 @@
                         ← Back
                     </a>
 
-                    <form action="#" method="GET">
+                    <form action="{{ route('admin.contacts.send-mail', $contacts->id) }}" method="GET">
                         {{-- <input type="hidden" name="ids" value="{{ $contacts->id }}"> --}}
 
                         <button type="submit"

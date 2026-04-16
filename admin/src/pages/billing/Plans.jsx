@@ -20,7 +20,7 @@ import {
   FiPackage
 } from 'react-icons/fi'
 import { motion, AnimatePresence } from 'framer-motion'
-import { plansAPI, invoiceAPI, dashboardAPI, billingAPI } from '../../services'
+import { plansAPI, invoiceAPI, billingAPI } from '../../services'
 import { usePermissionStore } from '../../store/permissionStore'
 import SubscriptionCard from '../../components/features/Billing/SubscriptionCard'
 import PaymentHistory from '../../components/features/Billing/PaymentHistory'
@@ -51,7 +51,6 @@ const Plans = () => {
   const [paymentsCount, setPaymentsCount] = useState(0)
   const [invoices, setInvoices] = useState([])
   const [invoicesCount, setInvoicesCount] = useState(0)
-  const [dashboardData, setDashboardData] = useState(null)
 
   const [paymentStatus, setPaymentStatus] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
@@ -115,14 +114,6 @@ const Plans = () => {
         setInvoices([]);
       }
       setInvoicesCount(invoicesRes?.data?.total || 0);
-      
-      // Fetch dashboard overview using service
-      try {
-        const dashboardRes = await dashboardAPI.getOverview(userId)
-        setDashboardData(dashboardRes?.data || {})
-      } catch (err) {
-        console.warn('Failed to fetch dashboard data:', err)
-      }
       
       // Fetch user plan purchase history using service
       try {
