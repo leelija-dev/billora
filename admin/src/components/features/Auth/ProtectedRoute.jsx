@@ -1,19 +1,238 @@
-import React from 'react'
-import { Navigate, Outlet } from 'react-router-dom'
+import React, { useEffect, useState } from 'react'
+import { Navigate, Outlet, useLocation } from 'react-router-dom'
 import { useAuthStore } from '../../../store/authStore'
+import { usePermissionStore, PERMISSIONS } from '../../../store/permissionStore'
+import { useFeatureAccess, usePermissionDebug } from '../../../hooks/usePermissions'
+import LoadingSpinner from '../../../components/common/Spinner/Spinner'
+import EmptyState from '../../../components/common/EmptyState/EmptyState'
+import { FiLock, FiShield, FiAlertTriangle, FiRefreshCw } from 'react-icons/fi'
 
-const ProtectedRoute = () => {
-  const { isAuthenticated, isLoading } = useAuthStore()
+const ProtectedRoute = ({ 
+  children, 
+  requiredPermission, 
+  feature,
+  fallbackPath = '/unauthorized',
+  requireAll = true,
+  showUpgradePrompt = true
+}) => {
+  const location = useLocation()
+  const { isAuthenticated, isLoading, hasHydrated, checkAuth } = useAuthStore()
+  const { 
+    user, 
+    permissions, 
+    loading: permissionLoading, 
+    fetchUserPermissions, 
+    permissionsFetched,
+    needsRefresh,
+    refreshPermissions,
+    error: permissionError
+  } = usePermissionStore()
+  const { hasAccess, loading: featureLoading, error: featureError } = useFeatureAccess(feature)
+  const { debugInfo } = usePermissionDebug()
+  const [isChecking, setIsChecking] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
 
-  if (isLoading) {
+  useEffect(() => {
+    if (hasHydrated) {
+      const isAuth = checkAuth()
+      setIsChecking(false)
+    }
+  }, [hasHydrated, checkAuth])
+
+  // Auto-refresh permissions if needed
+  useEffect(() => {
+    if (isAuthenticated && needsRefresh() && !permissionLoading && !refreshing) {
+      console.log('� Auto-refreshing stale permissions...')
+      refreshPermissions()
+    }
+  }, [isAuthenticated, needsRefresh, permissionLoading, refreshing])
+
+  // Fetch permissions if not loaded and user has plan_id
+  useEffect(() => {
+    if (!permissionsFetched && user?.plan_id && !permissionLoading) {
+      fetchUserPermissions(user.id)
+    }
+  }, [permissionsFetched, user?.plan_id, permissionLoading, fetchUserPermissions, user?.id])
+
+  // Manual refresh handler
+  const handleRefresh = async () => {
+    setRefreshing(true)
+    try {
+      await refreshPermissions()
+    } finally {
+      setRefreshing(false)
+    }
+  }
+
+  // If still loading auth or hydrating, show spinner
+  if (isLoading || !hasHydrated || isChecking) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+        <LoadingSpinner size="lg" />
       </div>
     )
   }
 
-  return isAuthenticated ? <Outlet /> : <Navigate to="/login" replace />
+  // If no user, redirect to login
+  if (!isAuthenticated) {
+    return <Navigate to="/login" state={{ from: location }} replace />
+  }
+
+  // If permissions are still loading, show spinner
+  if (permissionLoading || (feature && featureLoading)) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+        <div className="text-center">
+          <LoadingSpinner size="lg" />
+          <p className="mt-4 text-gray-600 dark:text-gray-400">Loading permissions...</p>
+        </div>
+      </div>
+    )
+  }
+
+  // Show permission error state
+  if (permissionError || featureError) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+        <EmptyState
+          icon={FiAlertTriangle}
+          title="Permission Error"
+          description={permissionError || featureError || 'Failed to verify permissions'}
+          action={
+            <div className="space-y-3">
+              <button
+                onClick={handleRefresh}
+                disabled={refreshing}
+                className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+              >
+                <FiRefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+                <span>{refreshing ? 'Refreshing...' : 'Refresh Permissions'}</span>
+              </button>
+              <button
+                onClick={() => window.history.back()}
+                className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+              >
+                Go Back
+              </button>
+            </div>
+          }
+        />
+      </div>
+    )
+  }
+
+  // Check specific permission
+  if (requiredPermission) {
+    const hasPermission = permissions.some(p => p.slug === requiredPermission)
+    if (!hasPermission) {
+      return (
+        <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+          <EmptyState
+            icon={FiLock}
+            title="Access Denied"
+            description={`You don't have permission to access this feature. Required permission: ${requiredPermission}`}
+            action={
+              <div className="space-y-3">
+                <button
+                  onClick={() => window.history.back()}
+                  className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+                >
+                  Go Back
+                </button>
+                {showUpgradePrompt && (
+                  <button
+                    onClick={() => window.location.href = '/billing'}
+                    className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+                  >
+                    Upgrade Plan
+                  </button>
+                )}
+              </div>
+            }
+          />
+        </div>
+      )
+    }
+  }
+
+  // Check feature access
+  if (feature) {
+    // Handle special hide-with-stock logic
+    if (feature === 'hide-with-stock') {
+      const hasStockPermission = permissions.some(p => p.slug === PERMISSIONS.STOCK_MANAGEMENT)
+      if (hasStockPermission) {
+        return (
+          <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+            <EmptyState
+              icon={FiLock}
+              title="Access Denied"
+              description="Users with stock management permissions cannot access this feature."
+              action={
+                <button
+                  onClick={() => window.history.back()}
+                  className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+                >
+                  Go Back
+                </button>
+              }
+            />
+          </div>
+        )
+      }
+      // If user doesn't have stock permission, allow access
+      return children || <Outlet />
+    }
+
+    const permissionMap = {
+      'stock-management': PERMISSIONS.STOCK_MANAGEMENT,
+      'billing': PERMISSIONS.BILL_GENERATION,
+      'reports': PERMISSIONS.REPORTS,
+      'customers': PERMISSIONS.CUSTOMER_MANAGEMENT,
+      'products': PERMISSIONS.PRODUCT_MANAGEMENT,
+      'invoices': PERMISSIONS.BILL_GENERATION,
+      'bill-generation': PERMISSIONS.BILL_GENERATION,
+      'dashboard': PERMISSIONS.DASHBOARD,
+      'settings': PERMISSIONS.SETTINGS,
+      'orders': PERMISSIONS.ORDERS,
+      'categories': PERMISSIONS.CATEGORIES,
+      'units': PERMISSIONS.UNITS,
+      'stores': PERMISSIONS.STORES
+    }
+    
+    const requiredPermission = permissionMap[feature]
+    if (requiredPermission && !hasAccess) {
+      return (
+        <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+          <EmptyState
+            icon={FiShield}
+            title="Feature Not Available"
+            description={`This feature is not included in your current plan. Upgrade your plan to access ${feature}.`}
+            action={
+              <div className="space-y-3">
+                <button
+                  onClick={() => window.history.back()}
+                  className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+                >
+                  Go Back
+                </button>
+                {showUpgradePrompt && (
+                  <button
+                    onClick={() => window.location.href = '/billing'}
+                    className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+                  >
+                    Upgrade Plan
+                  </button>
+                )}
+              </div>
+            }
+          />
+        </div>
+      )
+    }
+  }
+
+  // If children prop is provided, render it, otherwise render Outlet
+  return children || <Outlet />
 }
 
 export default ProtectedRoute

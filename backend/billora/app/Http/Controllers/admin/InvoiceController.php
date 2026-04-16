@@ -14,6 +14,7 @@ use App\Models\Brand;
 use App\Models\Store;
 use App\Models\BillCustomer;
 use App\Models\BillPaymentHistory;
+use App\Models\PackageInvoice;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 class InvoiceController extends Controller
@@ -28,10 +29,37 @@ class InvoiceController extends Controller
                 ]);
             }
             $user = Auth::user()->id;
+             $customer =  Customers::findOrFail($user);
+            if($customer->plan_id == null || $customer->is_active == false){
+                return response()->json([
+                    'status' => false,
+                    'message' =>'You do not have any active plan. Please upgrade your plan.'
+                ]);
+            }
+        $permissions = DB::table('plan_permission_details as ppd')
+            ->join('plan_permission as pp', 'pp.id', '=', 'ppd.permission_id')
+            ->where('ppd.plan_id', $customer->plan_id)
+            ->select('pp.permission_name', 'pp.id', 'pp.slug')
+            ->get();
+        $hasStockPermission = false;
+
+        foreach ($permissions as $permission) {
+            if ($permission->slug === 'stock-management') {
+                $hasStockPermission = true;
+                break;
+            }
+        }
+        if($hasStockPermission){
         $products = Products::where('user_id', $user)->with(['brand', 'category', 'unit', 'stocks'])
             ->where('is_active', true)
             ->whereHas('stocks')
             ->get();
+        }else{
+             $products = Products::where('user_id', $user)
+                ->with(['brand', 'category', 'unit'])
+                ->where('is_active', true)
+                ->get();
+        }
         $customers = BillCustomer::where('admin_id', $user)->get();
         $stores = Store::where('user_id', $user)->get();
         return response()->json([
@@ -39,7 +67,8 @@ class InvoiceController extends Controller
             'message'   => 'Products and Customers List',
             'products'  => $products,
             'customers' => $customers,
-            'stores'    => $stores
+            'stores'    => $stores,
+            'permissions'=> $permissions
         ]);
         }catch(\Exception $e){
             return response()->json([
@@ -58,26 +87,69 @@ class InvoiceController extends Controller
                 'message' => 'Authentication required. Please login first.'
             ]);
         }
+        
         $request->validate([
             "user_id"       => 'required',
             "customer_id"   => 'required|exists:bill_customer,id',
             "store_id"      => 'required|exists:store,id',
             "paid_amount"   => 'required|numeric|min:0',
             "created_by"    => 'required',
+            // "package_name"  => 'nullable',
+            // "package_price" => 'nullable|numeric|min:0',
+            // "package_size"  => 'nullable',
         ]);
 
         DB::beginTransaction();
-
+        $customer =  Customers::findOrFail($request->user_id);
+        if($customer->plan_id == null || $customer->is_active == false){
+                return response()->json([
+                    'status' => false,
+                    'message' =>'You do not have any active plan. Please upgrade your plan.'
+                ]);
+        }
         try {
+            // check permission 
+            $permissions = DB::table('plan_permission_details as ppd')
+            ->join('plan_permission as pp', 'pp.id', '=', 'ppd.permission_id')
+            ->where('ppd.plan_id', $customer->plan_id)
+            ->pluck('pp.slug')
+            ->toArray();
+
+            $hasStockPermission = in_array('stock-management', $permissions);
+
 
             $items = $request->items;
+            $packages = $request->packages;
+            $totalPackagePrice = 0;
+            if(isset($packages)){
+                foreach($packages as $package){
+                    $totalPackagePrice += (float)$package['package_price'] * (int)$package['quantity'];
+                }
+            }
 
             $totalAmount = 0;
             $totalItems = count($items);
 
             foreach ($items as $item) {
+                
+              if ($hasStockPermission) {
+                $stock = Stocks::where('id', $item['stock_id'])
+                    ->where('product_id', $item['product_id'])
+                    ->first();
 
-                $price = $item['price'];
+                if (!$stock || $stock->quantity < $item['quantity']) {
+                    DB::rollback();
+                    return response()->json([
+                        'status' => false,
+                        'message' => 'Stock not available'
+                    ]);
+                }
+                $price = $stock->selling_price;
+              }else{
+                    $product = Products::find($item['product_id']);
+                $price = $product->selling_price ?? 0;
+              }
+                // $price = $item['price'];
                 $qty = $item['quantity'];
                 $discount = ((($price * $qty) * $item['discount'] ?? 0) / 100);
                 $gst = (((($price * $qty) - $discount) * $item['gst'] ?? 0) / 100);
@@ -92,17 +164,29 @@ class InvoiceController extends Controller
                 'user_id'       => $request->user_id,
                 'customer_id'   => $request->customer_id,
                 'store_id'      => $request->store_id,
-                'total_amount'  => $totalAmount,
+                'total_amount'  => ($totalAmount + $totalPackagePrice),
                 'total_items'   => $totalItems,
                 'paid_amount'   => $request->paid_amount,
                 'created_by'    => $request->created_by,
-                'status'        => 'completed'
+                'status'        => 'completed',
+                "package_name"  => null,
+                "package_price" => $totalPackagePrice ?? 0,
+                "package_size"  => null,
             ]);
 
             // Store invoice items
             foreach ($items as $item) {
+                if ($hasStockPermission) {
+                $stock = Stocks::where('id', $item['stock_id'])
+                    ->where('product_id', $item['product_id'])
+                    ->first();
 
-                $price = $item['price'];
+                    $price = $stock->selling_price;
+                } else {
+                    $product = Products::find($item['product_id']);
+                    $price = $product->selling_price ?? 0;
+                }
+                // $price = $item['price'];
                 $qty = $item['quantity'];
 
                 $discount = ((($price * $qty) * $item['discount'] ?? 0) / 100);
@@ -123,6 +207,20 @@ class InvoiceController extends Controller
                     'status'        => 'completed',
                     'created_by'    => $request->created_by
                 ]);
+            }
+            if(isset($packages)){
+                foreach ($packages as $package) {
+                    PackageInvoice::create([
+                        'user_id'       => $request->user_id,
+                        'invoice_id'    => $invoice->id,
+                        'package_id'    => $package['package_id'] ?? null,
+                        'package_name'  => $package['package_name'] ?? null,
+                        'package_price' => $package['package_price'] ?? 0,
+                        'package_size'  => $package['package_size'] ?? null,
+                        'quantity'      => $package['quantity'] ?? 0,
+                        'created_by'    => $request->created_by ?? null
+                    ]);
+                }
             }
             // payment history
             BillPaymentHistory::create([
@@ -145,6 +243,7 @@ class InvoiceController extends Controller
             ]);
             
             //stock update
+            if ($hasStockPermission) {
             foreach ($items as $item) {
                 $stock = Stocks::where('id', $item['stock_id'])->where('product_id', $item['product_id'])->first();
                 if($stock->quantity >= $item['quantity'])
@@ -158,13 +257,14 @@ class InvoiceController extends Controller
                     ]);
                 }
             }
-
+            }
             DB::commit();
 
             return response()->json([
                 'status'  => true,
                 'message' => 'Invoice Created Successfully',
-                'invoice_id' => $invoice->id
+                'invoice_id' => $invoice->id,
+                'stock_permission' => $hasStockPermission
             ]);
         } catch (\Exception $e) {
 
@@ -181,11 +281,17 @@ class InvoiceController extends Controller
     try {
 
         $userId = Auth::user()->id;
-
-        $bill = Invoice::with('invoiceItems')
+        $customer =  Customers::findOrFail($userId);
+        if($customer->plan_id == null || $customer->is_active == false){
+                return response()->json([
+                    'status' => false,
+                    'message' =>'You do not have any active plan. Please upgrade your plan.'
+                ]);
+        }
+        $bill = Invoice::with('invoiceItems','packages')
             ->where('user_id', $userId)
             ->where('id', $id)
-            ->first();
+            ->first();  
 
         if (!$bill) {
             return response()->json([
@@ -214,7 +320,7 @@ class InvoiceController extends Controller
         $user = Auth::user()->id;
         $search = $request->search;
 
-        $billHistory = Invoice::with(['invoiceItems.product'])
+        $billHistory = Invoice::with(['invoiceItems.product', 'packages'])
             ->where('user_id', $user)
             ->when($search, function ($query) use ($search) {
 
@@ -259,6 +365,13 @@ class InvoiceController extends Controller
             ]);
         }
        $user = Auth::user()->id;
+       $customer =  Customers::findOrFail($user);
+        if($customer->plan_id == null || $customer->is_active == false){
+                return response()->json([
+                    'status' => false,
+                    'message' =>'You do not have any active plan. Please upgrade your plan.'
+                ]);
+        }
        $products = Products::with(['brand', 'category', 'unit'])
             ->where('is_active', true)
             ->where('user_id', $id)
@@ -285,7 +398,13 @@ class InvoiceController extends Controller
         ]);
 
         DB::beginTransaction();
-
+        $customer =  Customers::findOrFail($request->user_id);
+        if($customer->plan_id == null || $customer->is_active == false){
+                return response()->json([
+                    'status' => false,
+                    'message' =>'You do not have any active plan. Please upgrade your plan.'
+                ]);
+        }
         try {
 
             $items = $request->items;

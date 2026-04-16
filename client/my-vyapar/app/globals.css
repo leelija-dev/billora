@@ -21,7 +21,7 @@
 
 body {
   background: var(--background);
-  color: var(--foreground);
+  color: black;
   font-family: Arial, Helvetica, sans-serif;
 }
 @keyframes float {
@@ -29,7 +29,7 @@ body {
   50% { transform: translateY(-15px); }
 }
 
-@keyframes floatBadge {
+@keyframes floatBadge {a
   0%,100% { transform: translate(0,0); }
   25% { transform: translate(5px,-5px); }
   50% { transform: translate(0,-10px); }
@@ -61,4 +61,4 @@ background-position:100% 50%;
 background-position:0% 50%;
 }
 
-}
+} 

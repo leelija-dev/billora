@@ -1,17 +1,20 @@
-import React from 'react'
-import { motion } from 'framer-motion'
+import React, { useState, useEffect, useRef } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
 import { 
   FiEye, 
   FiDownload, 
   FiEdit2, 
-  FiTrash2, 
   FiCheckCircle,
   FiClock,
   FiAlertCircle,
-  FiFileText 
+  FiFileText,
+  FiPrinter,
+  FiChevronDown
 } from 'react-icons/fi'
 import Table from '../../common/Table/Table'
 import StatusBadge from '../../common/StatusBadge/StatusBadge'
+import { storeAPI } from '../../../services'
+
 
 const InvoiceTable = ({ 
   invoices, 
@@ -19,11 +22,175 @@ const InvoiceTable = ({
   onView, 
   onDownload,
   onEdit,
-  onDelete,
-  onMarkPaid 
+  onMarkPaid,
+  onPrintA4,
+  onPrintThermal
 }) => {
+  const [printDropdown, setPrintDropdown] = useState(null)
+  const [stores, setStores] = useState({})
+  const [storesLoading, setStoresLoading] = useState(true)
+  const [isResizing, setIsResizing] = useState(false)
+  const dropdownRef = useRef(null)
+  
+  // Cache for store data
+  const storeCacheRef = useRef(new Map())
+  const lastFetchTimeRef = useRef(null)
+  const resizeTimeoutRef = useRef(null)
+  const isFetchingRef = useRef(false)
+  
+  // Global resize lock - prevent ALL API calls during resize
+  const globalResizeLockRef = useRef(false)
+  
+  // Handle resize events to prevent unnecessary API calls
+  useEffect(() => {
+    let resizeDebounce
+    
+    const handleResize = () => {
+      // Set global lock immediately
+      globalResizeLockRef.current = true
+      
+      // Clear any existing timeout
+      if (resizeTimeoutRef.current) {
+        clearTimeout(resizeTimeoutRef.current)
+      }
+      
+      setIsResizing(true)
+      
+      // Set a longer debounce to ensure resize is completely finished
+      resizeTimeoutRef.current = setTimeout(() => {
+        setIsResizing(false)
+        globalResizeLockRef.current = false // Release lock after resize
+        console.log('Resize finished, API calls unlocked')
+      }, 500) // Increased to 500ms for better protection
+    }
+    
+    window.addEventListener('resize', handleResize, { passive: true })
+    
+    return () => {
+      window.removeEventListener('resize', handleResize, { passive: true })
+      if (resizeTimeoutRef.current) {
+        clearTimeout(resizeTimeoutRef.current)
+      }
+      globalResizeLockRef.current = false // Ensure lock is released
+    }
+  }, [])
+
+  // Fetch store data when invoices change (with enhanced caching and resize protection)
+  useEffect(() => {
+    const fetchStoreData = async () => {
+      // Multiple layers of protection
+      if (isResizing || globalResizeLockRef.current || isFetchingRef.current) {
+        console.log('Skipping store fetch - resize locked or already fetching')
+        return
+      }
+      
+      const storeIds = [...new Set(invoices?.map(invoice => invoice.store_id).filter(Boolean))]
+      
+      if (storeIds.length === 0) {
+        setStoresLoading(false)
+        return
+      }
+
+      // Enhanced cache key with timestamp to ensure uniqueness
+      const cacheKey = storeIds.sort().join(',')
+      const now = Date.now()
+      const cached = storeCacheRef.current.get(cacheKey)
+      
+      // Increased cache duration to 60 seconds (1 minute)
+      if (cached && (now - cached.timestamp) < 60000) {
+        console.log('Using cached store data (60s cache)')
+        setStores(cached.data)
+        setStoresLoading(false)
+        return
+      }
+
+      // Prevent duplicate requests within 10 seconds (much longer cooldown)
+      if (lastFetchTimeRef.current && (now - lastFetchTimeRef.current) < 10000) {
+        console.log('Skipping duplicate store request (10s cooldown)')
+        return
+      }
+
+      // Set fetching lock
+      isFetchingRef.current = true
+      setStoresLoading(true)
+      lastFetchTimeRef.current = now
+      
+      try {
+        // Group invoices by user_id to fetch stores efficiently
+        const userStoreMap = {}
+        storeIds.forEach(storeId => {
+          const invoice = invoices.find(inv => inv.store_id === storeId)
+          if (invoice && invoice.user_id) {
+            if (!userStoreMap[invoice.user_id]) {
+              userStoreMap[invoice.user_id] = []
+            }
+            userStoreMap[invoice.user_id].push(storeId)
+          }
+        })
+
+        // Fetch stores for each user
+        const storePromises = Object.entries(userStoreMap).map(async ([userId, storeIdsForUser]) => {
+          try {
+            const response = await storeAPI.getByUserId(userId)
+            const storesArray = response.data?.data?.data || response.data?.data || []
+            
+            // Find specific stores we need
+            const relevantStores = storesArray.filter(store => storeIdsForUser.includes(store.id))
+            
+            return relevantStores.reduce((acc, store) => {
+              acc[store.id] = store
+              return acc
+            }, {})
+          } catch (error) {
+            console.error(`Failed to fetch stores for user ${userId}:`, error)
+            return {}
+          }
+        })
+
+        const storeResults = await Promise.all(storePromises)
+        const allStores = storeResults.reduce((acc, stores) => ({ ...acc, ...stores }), {})
+        
+        // Cache the results with longer duration
+        storeCacheRef.current.set(cacheKey, {
+          data: allStores,
+          timestamp: now
+        })
+        
+        console.log('🏪 Fetched stores (new data):', allStores)
+        setStores(allStores)
+        setStoresLoading(false)
+      } catch (error) {
+        console.error('Failed to fetch store data:', error)
+        setStoresLoading(false)
+      } finally {
+        // Always release the fetching lock
+        isFetchingRef.current = false
+      }
+    }
+
+    // Only fetch if we have invoices and no locks are active
+    if (invoices && invoices.length > 0 && !isResizing && !globalResizeLockRef.current) {
+      fetchStoreData()
+    }
+  }, [invoices, isResizing])
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setPrintDropdown(null)
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [])
+
   const getStatusConfig = (status) => {
     const configs = {
+      completed: { variant: 'success', icon: FiCheckCircle, label: 'Completed' },
       paid: { variant: 'success', icon: FiCheckCircle, label: 'Paid' },
       unpaid: { variant: 'warning', icon: FiClock, label: 'Unpaid' },
       overdue: { variant: 'danger', icon: FiAlertCircle, label: 'Overdue' },
@@ -37,35 +204,112 @@ const InvoiceTable = ({
   const columns = [
     {
       header: 'Invoice',
-      accessor: 'invoiceNumber',
+      accessor: 'id',
       cell: (value, row) => (
         <div>
           <p className="font-medium text-gray-900 dark:text-white">#{value}</p>
           <p className="text-xs text-gray-500 dark:text-gray-400">
-            {new Date(row.issueDate).toLocaleDateString()}
+            {new Date(row.created_at).toLocaleDateString()}
           </p>
         </div>
       ),
     },
     {
       header: 'Customer',
-      accessor: 'customerName',
+      accessor: 'customer_id',
       cell: (value, row) => (
         <div>
-          <p className="font-medium text-gray-900 dark:text-white">{value || 'N/A'}</p>
-          {row.customerEmail && (
-            <p className="text-xs text-gray-500 dark:text-gray-400">{row.customerEmail}</p>
-          )}
+          <p className="font-medium text-gray-900 dark:text-white">
+            {row.customer_name || `Customer #${value}`}
+          </p>
+          <p className="text-xs text-gray-500 dark:text-gray-400">
+            ID: #{value}
+          </p>
         </div>
       ),
     },
     {
-      header: 'Amount',
-      accessor: 'amount',
+      header: 'Store',
+      accessor: 'store_id',
+      cell: (value, row) => {
+        const storeData = stores[value]
+        
+        if (storesLoading) {
+          return (
+            <div>
+              <div className="animate-pulse">
+                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-24 mb-2"></div>
+                <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-16"></div>
+              </div>
+            </div>
+          )
+        }
+        
+        const storeName = storeData?.name || row.store_name || `Store #${value}`
+        
+        return (
+          <div>
+            <p className="font-medium text-gray-900 dark:text-white">
+              {storeName}
+            </p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              ID: #{value}
+            </p>
+          </div>
+        )
+      },
+    },
+    {
+      header: 'Total Amount',
+      accessor: 'total_amount',
       cell: (value, row) => (
-        <p className="font-semibold text-gray-900 dark:text-white">
-          {row.currency} {value?.toFixed(2)}
-        </p>
+        <div>
+          <p className="font-semibold text-gray-900 dark:text-white">
+            ₹{parseFloat(value || 0).toFixed(2)}
+          </p>
+        </div>
+      ),
+    },
+    {
+      header: 'Paid Amount',
+      accessor: 'paid_amount',
+      cell: (value, row) => (
+        <div>
+          <p className="font-medium text-green-600 dark:text-green-400">
+            ₹{parseFloat(value || 0).toFixed(2)}
+          </p>
+        </div>
+      ),
+    },
+    {
+      header: 'Due Amount',
+      accessor: 'due_amount',
+      cell: (value, row) => {
+        const totalAmount = parseFloat(row.total_amount || 0)
+        const paidAmount = parseFloat(row.paid_amount || 0)
+        const dueAmount = totalAmount - paidAmount
+        
+        return (
+          <div>
+            <p className={`font-medium ${dueAmount > 0 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>
+              ₹{dueAmount.toFixed(2)}
+            </p>
+          </div>
+        )
+      },
+    },
+    {
+      header: 'Items',
+      accessor: 'total_items',
+      cell: (value, row) => (
+        <div>
+          <p className="font-medium text-gray-900 dark:text-white">{value || 0} items</p>
+          {row.invoice_items && (
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              {row.invoice_items.length} products
+            </p>
+          )}
+        </div>
       ),
     },
     {
@@ -83,30 +327,6 @@ const InvoiceTable = ({
       },
     },
     {
-      header: 'Due Date',
-      accessor: 'dueDate',
-      cell: (value, row) => {
-        const dueDate = new Date(value)
-        const today = new Date()
-        const isOverdue = row.status !== 'paid' && dueDate < today
-        
-        return (
-          <div className="flex items-center">
-            <span className={`text-sm ${
-              isOverdue 
-                ? 'text-red-600 dark:text-red-400 font-medium' 
-                : 'text-gray-600 dark:text-gray-300'
-            }`}>
-              {dueDate.toLocaleDateString()}
-            </span>
-            {isOverdue && (
-              <FiAlertCircle className="w-4 h-4 ml-1 text-red-500" />
-            )}
-          </div>
-        )
-      },
-    },
-    {
       header: 'Actions',
       accessor: 'actions',
       cell: (_, row) => (
@@ -120,48 +340,58 @@ const InvoiceTable = ({
           >
             <FiEye className="w-4 h-4" />
           </motion.button>
-          
-          <motion.button
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => onDownload(row)}
-            className="p-1.5 text-green-600 hover:bg-green-50 dark:text-green-400 dark:hover:bg-green-900/20 rounded-lg transition-colors"
-            title="Download PDF"
-          >
-            <FiDownload className="w-4 h-4" />
-          </motion.button>
-          
-          <motion.button
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => onEdit(row)}
-            className="p-1.5 text-yellow-600 hover:bg-yellow-50 dark:text-yellow-400 dark:hover:bg-yellow-900/20 rounded-lg transition-colors"
-            title="Edit Invoice"
-          >
-            <FiEdit2 className="w-4 h-4" />
-          </motion.button>
-          
-          {row.status !== 'paid' && (
+
+          {/* Print Button with Dropdown */}
+          <div className="relative" ref={dropdownRef}>
             <motion.button
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.95 }}
-              onClick={() => onMarkPaid(row)}
-              className="p-1.5 text-purple-600 hover:bg-purple-50 dark:text-purple-400 dark:hover:bg-purple-900/20 rounded-lg transition-colors"
-              title="Mark as Paid"
+              onClick={() => setPrintDropdown(printDropdown === row.id ? null : row.id)}
+              className="p-1.5 text-green-600 hover:bg-green-50 dark:text-green-400 dark:hover:bg-green-900/20 rounded-lg transition-colors"
+              title="Print Invoice"
             >
-              <FiCheckCircle className="w-4 h-4" />
+              <FiPrinter className="w-4 h-4" />
             </motion.button>
-          )}
-          
-          <motion.button
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => onDelete(row)}
-            className="p-1.5 text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20 rounded-lg transition-colors"
-            title="Delete Invoice"
-          >
-            <FiTrash2 className="w-4 h-4" />
-          </motion.button>
+
+            <AnimatePresence>
+              {printDropdown === row.id && (
+                <motion.div
+                  initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                  className="absolute right-0 top-full mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-50"
+                >
+                  <div className="py-1">
+                    <motion.button
+                      whileHover={{ backgroundColor: '#f3f4f6' }}
+                      whileTap={{ scale: 0.98 }}
+                      onClick={() => {
+                        onPrintA4(row)
+                        setPrintDropdown(null)
+                      }}
+                      className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center space-x-2"
+                    >
+                      <FiPrinter className="w-4 h-4" />
+                      <span>A4 Print</span>
+                    </motion.button>
+                    
+                    <motion.button
+                      whileHover={{ backgroundColor: '#f3f4f6' }}
+                      whileTap={{ scale: 0.98 }}
+                      onClick={() => {
+                        onPrintThermal(row)
+                        setPrintDropdown(null)
+                      }}
+                      className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center space-x-2"
+                    >
+                      <FiPrinter className="w-4 h-4" />
+                      <span>3" Thermal Print</span>
+                    </motion.button>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
         </div>
       ),
     },

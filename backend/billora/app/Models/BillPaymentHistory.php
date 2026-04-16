@@ -17,7 +17,8 @@ class BillPaymentHistory extends Model
         'due_amount',
         'payment_method',
         'transaction_id',
-        'created_by'
+        'created_by',
+        'remarks'
     ];
     protected $casts = [
         'total_amount'=>'decimal:2',

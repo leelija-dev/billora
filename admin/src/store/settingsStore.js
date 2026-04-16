@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import toast from 'react-hot-toast'
-import { authAPI } from '../services/api'
+import { authService } from '../services/authService'
 import { useAuthStore } from './authStore'
 
 export const useSettingsStore = create(
@@ -47,21 +47,28 @@ export const useSettingsStore = create(
       loadSettings: async () => {
         set({ loading: true })
         try {
-          const res = await authAPI.me()
-          const me = res?.data || {}
-          const user = me.user || me
+          const { user } = useAuthStore.getState()
+          const res = await authService.getUserById(user?.id)
+          const userData = res?.data?.data || res?.data || {}
 
-          const fullName = user?.name || ''
+          const fullName = userData?.name || ''
           const [firstNameFromName = '', ...rest] = fullName.split(' ')
           const lastNameFromName = rest.join(' ')
 
           set({
             profile: {
-              firstName: user?.first_name ?? user?.firstName ?? firstNameFromName,
-              lastName: user?.last_name ?? user?.lastName ?? lastNameFromName,
-              email: user?.email ?? '',
-              phone: user?.phone ?? '',
-              avatar: user?.avatar ?? '',
+              firstName: firstNameFromName,
+              lastName: lastNameFromName,
+              email: userData?.email || '',
+              phone: userData?.phone || '',
+              avatar: userData?.avatar || '',
+              company_name: userData?.company_name || '',
+              gst_number: userData?.gst_number || '',
+              address: userData?.address || '',
+              city: userData?.city || '',
+              state: userData?.state || '',
+              country: userData?.country || '',
+              pincode: userData?.pincode || '',
             },
           })
         } catch (e) {
@@ -73,18 +80,24 @@ export const useSettingsStore = create(
 
       saveProfile: async () => {
         const { profile } = get()
+        const { user } = useAuthStore.getState()
+        
         set({ savingProfile: true })
         try {
           const payload = {
-            first_name: profile.firstName,
-            last_name: profile.lastName,
-            email: profile.email,
-            phone: profile.phone,
-            avatar: profile.avatar,
+            id: user?.id,
             name: `${profile.firstName} ${profile.lastName}`.trim(),
+            phone: profile.phone,
+            company_name: profile.company_name,
+            gst_number: profile.gst_number,
+            address: profile.address,
+            city: profile.city,
+            state: profile.state,
+            country: profile.country,
+            pincode: profile.pincode,
           }
 
-          const res = await authAPI.updateProfile(payload)
+          const res = await authService.updateProfile(payload)
           const updatedUser = res?.data?.user || res?.data || payload
 
           useAuthStore.getState().updateUser(updatedUser)
@@ -100,6 +113,7 @@ export const useSettingsStore = create(
 
       savePassword: async () => {
         const { security } = get()
+        const { user } = useAuthStore.getState()
 
         if (!security.currentPassword || !security.newPassword) {
           toast.error('Please fill all password fields')
@@ -113,7 +127,8 @@ export const useSettingsStore = create(
 
         set({ savingPassword: true })
         try {
-          await authAPI.changePassword({
+          await authService.changePassword({
+            id: user?.id,
             current_password: security.currentPassword,
             new_password: security.newPassword,
           })

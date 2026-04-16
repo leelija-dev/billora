@@ -1,333 +1,642 @@
-// JUST USED A DUMMY API ''FOR CHECKING THE PRICE PAGE LAYOUT ALOS ADDED IN THE COMPONENT PRICING PAGE AS WELL
-// JUST USED A DUMMY API ''FOR CHECKING THE PRICE PAGE LAYOUT ALOS ADDED IN THE COMPONENT PRICING PAGE AS WELL
-// JUST USED A DUMMY API ''FOR CHECKING THE PRICE PAGE LAYOUT ALOS ADDED IN THE COMPONENT PRICING PAGE AS WELL
-// JUST USED A DUMMY API ''FOR CHECKING THE PRICE PAGE LAYOUT ALOS ADDED IN THE COMPONENT PRICING PAGE AS WELL
-// JUST USED A DUMMY API ''FOR CHECKING THE PRICE PAGE LAYOUT ALOS ADDED IN THE COMPONENT PRICING PAGE AS WELL
-// JUST USED A DUMMY API ''FOR CHECKING THE PRICE PAGE LAYOUT ALOS ADDED IN THE COMPONENT PRICING PAGE AS WELL
-// JUST USED A DUMMY API ''FOR CHECKING THE PRICE PAGE LAYOUT ALOS ADDED IN THE COMPONENT PRICING PAGE AS WELL
+// components/Pricing.jsx
 "use client";
 
-import React, { useEffect, useRef, useState } from 'react';
-import SectionTitle from "../components/SectionTitle";
-import Container from "../components/Container";
+import React, { useEffect, useRef, useState } from "react";
+import SectionTitle from "@/components/SectionTitle";
+import Container from "@/components/Container";
+import { getPlans } from "@/services/pricingService";
+import { getBusinessTypes as fetchBusinessTypes } from "@/services/bussinessService";
+import { searchPlans } from "@/services/filterService";
+import { useRouter } from "next/navigation";
 
-const Pricing = () => {
-  const [billingCycle, setBillingCycle] = useState('monthly');
+const Pricing = ({ limit = 3, showFilters = true, showViewAllButton = true }) => {
+  const [billingCycle, setBillingCycle] = useState("monthly");
   const [plans, setPlans] = useState([]);
+  const [filteredPlans, setFilteredPlans] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [subscribing, setSubscribing] = useState(null);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [pendingPlan, setPendingPlan] = useState(null);
+  const [selectedBusinessType, setSelectedBusinessType] = useState("all");
+  const [allBusinessTypes, setAllBusinessTypes] = useState([]);
   const cardRefs = useRef([]);
+  const router = useRouter();
 
+  // Check if user is logged in
   useEffect(() => {
-    const fetchPricingData = async () => {
+    const checkLoginStatus = () => {
+      const token = localStorage.getItem("auth_token") || localStorage.getItem("token");
+      const userData = localStorage.getItem("user_data");
+      setIsLoggedIn(!!(token || userData));
+    };
+
+    checkLoginStatus();
+    window.addEventListener("storage", checkLoginStatus);
+    return () => window.removeEventListener("storage", checkLoginStatus);
+  }, []);
+
+  // Load business types from API
+  useEffect(() => {
+    const loadBusinessTypes = async () => {
       try {
-        // Fetch from dummy API
-        const response = await fetch('https://fakestoreapi.com/products');
-        const products = await response.json();
+        const response = await fetchBusinessTypes();
         
-        // Sort products by price to create tiered plans
-        const sortedProducts = [...products].sort((a, b) => a.price - b.price);
+        let businessTypeData = [];
         
-        // Calculate price ranges for 3 tiers
-        const minPrice = sortedProducts[0].price;
-        const maxPrice = sortedProducts[sortedProducts.length - 1].price;
-        const range = maxPrice - minPrice;
-        const tierSize = range / 3;
+        if (response?.status === true && Array.isArray(response?.data)) {
+          businessTypeData = response.data;
+        } else if (Array.isArray(response)) {
+          businessTypeData = response;
+        } else if (response?.data && Array.isArray(response.data)) {
+          businessTypeData = response.data;
+        }
         
-        // Group products into 3 tiers
-        const basicTier = sortedProducts.filter(p => p.price <= minPrice + tierSize);
-        const proTier = sortedProducts.filter(p => p.price > minPrice + tierSize && p.price <= minPrice + (tierSize * 2));
-        const enterpriseTier = sortedProducts.filter(p => p.price > minPrice + (tierSize * 2));
+        if (businessTypeData.length > 0) {
+          setAllBusinessTypes(businessTypeData);
+        }
+      } catch (err) {
+        console.error("Business type fetch error:", err);
+      }
+    };
+
+    loadBusinessTypes();
+  }, []);
+
+  // Fetch plans from Laravel API
+  const transformPlans = (plansData) => {
+    return plansData.map((plan, index) => {
+      const features = plan.features || [];
+      const monthlyPrice = parseFloat(plan.price);
+      const yearlyPrice = monthlyPrice * 10;
+      const discount = parseFloat(plan.discount) || 0;
+      const monthlyDiscountedPrice = monthlyPrice - (monthlyPrice * discount / 100);
+      const yearlyDiscountedPrice = yearlyPrice - (yearlyPrice * discount / 100);
+      const gstRate = parseFloat(plan.gst) || 0;
+
+      const transformedBusinessTypes = (plan.business_types || []).map((bt) => ({
+        id: bt.business_type?.id || bt.id,
+        name: bt.business_type?.name || bt.name,
+        plan_id: bt.plan_id,
+        business_type_id: bt.business_type_id,
+        custom_price: bt.custom_price || null,
+      }));
+
+      const supportedBusinessTypeIds = transformedBusinessTypes.map((bt) => bt.id);
+
+      return {
+        id: plan.id,
+        name: plan.name,
+        price: {
+          monthly: monthlyPrice,
+          yearly: yearlyPrice,
+        },
+        displayPrice: {
+          monthly: monthlyPrice.toLocaleString("en-IN"),
+          yearly: yearlyPrice.toLocaleString("en-IN"),
+        },
+        discountedPrice: {
+          monthly: monthlyDiscountedPrice,
+          yearly: yearlyDiscountedPrice,
+        },
+        displayDiscountedPrice: {
+          monthly: monthlyDiscountedPrice.toLocaleString("en-IN"),
+          yearly: yearlyDiscountedPrice.toLocaleString("en-IN"),
+        },
+        discount: discount,
+        gst: gstRate,
+        businessTypes: transformedBusinessTypes,
+        supportedBusinessTypeIds: supportedBusinessTypeIds,
+        description: plan.description ? plan.description.replace(/<[^>]*>?/gm, "") : "",
+        features: features,
+        color: index === 1 ? "#8b5cf6" : "#000000",
+        buttonText: `Start ${plan.name}`,
+        popular: index === 1,
+      };
+    });
+  };
+
+  const filterPlansByBusinessTypeAPI = async (businessTypeId) => {
+    setLoading(true);
+    try {
+      let response;
+      
+      if (businessTypeId === "all") {
+        response = await getPlans();
+      } else {
+        response = await searchPlans({ search: parseInt(businessTypeId) });
+      }
+      
+      if (response.status === true && response.data) {
+        let transformedPlans = transformPlans(response.data);
         
-        // Calculate average price for each tier
-        const avgBasicPrice = basicTier.reduce((sum, p) => sum + p.price, 0) / basicTier.length;
-        const avgProPrice = proTier.reduce((sum, p) => sum + p.price, 0) / proTier.length;
-        const avgEnterprisePrice = enterpriseTier.reduce((sum, p) => sum + p.price, 0) / enterpriseTier.length;
+        // Apply limit if specified
+        if (limit && limit > 0) {
+          transformedPlans = transformedPlans.slice(0, limit);
+        }
         
-        // Get unique categories for each tier
-        const basicCategories = [...new Set(basicTier.map(p => p.category))];
-        const proCategories = [...new Set(proTier.map(p => p.category))];
-        const enterpriseCategories = [...new Set(enterpriseTier.map(p => p.category))];
-        
-        // Get sample products for features
-        const basicSample = basicTier[0];
-        const proSample = proTier[Math.floor(proTier.length / 2)];
-        const enterpriseSample = enterpriseTier[enterpriseTier.length - 1];
-        
-        // Create exactly 3 plans matching your design
-        const transformedPlans = [
-          {
-            name: 'Basic',
-            price: {
-              monthly: Math.round(avgBasicPrice).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ","),
-              yearly: Math.round(avgBasicPrice * 10).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")
-            },
-            description: `Perfect for ${basicCategories[0]?.split('-').join(' ') || 'small'} businesses`,
-            features: [
-              `Access to ${basicTier.length} premium products`,
-              `Categories: ${basicCategories.slice(0, 2).join(', ')}`,
-              `Featured: ${basicSample?.title.substring(0, 25)}...`,
-              `Avg rating: ${(basicTier.reduce((sum, p) => sum + p.rating.rate, 0) / basicTier.length).toFixed(1)} ★`,
-              `Email support`,
-              `Basic inventory tracking`
-            ],
-            color: '#000000',
-            buttonText: 'Start Basic',
-            popular: false,
-            productCount: basicTier.length
-          },
-          {
-            name: 'Pro',
-            price: {
-              monthly: Math.round(avgProPrice).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ","),
-              yearly: Math.round(avgProPrice * 10).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")
-            },
-            description: `Ideal for ${proCategories[0]?.split('-').join(' ') || 'growing'} businesses`,
-            features: [
-              `Access to ${proTier.length} premium products`,
-              `Categories: ${proCategories.slice(0, 3).join(', ')}`,
-              `Featured: ${proSample?.title.substring(0, 25)}...`,
-              `Avg rating: ${(proTier.reduce((sum, p) => sum + p.rating.rate, 0) / proTier.length).toFixed(1)} ★`,
-              `Priority support`,
-              `Advanced analytics`,
-              `API access`,
-              `Custom reports`
-            ],
-            color: '#8b5cf6',
-            buttonText: 'Start Pro',
-            popular: true,
-            productCount: proTier.length
-          },
-          {
-            name: 'Enterprise',
-            price: {
-              monthly: Math.round(avgEnterprisePrice).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ","),
-              yearly: Math.round(avgEnterprisePrice * 10).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")
-            },
-            description: `For ${enterpriseCategories[0]?.split('-').join(' ') || 'enterprise'} organizations`,
-            features: [
-              `Access to ${enterpriseTier.length} premium products`,
-              `Categories: ${enterpriseCategories.slice(0, 4).join(', ')}`,
-              `Featured: ${enterpriseSample?.title.substring(0, 25)}...`,
-              `Avg rating: ${(enterpriseTier.reduce((sum, p) => sum + p.rating.rate, 0) / enterpriseTier.length).toFixed(1)} ★`,
-              `24/7 phone support`,
-              `Dedicated manager`,
-              `Custom integrations`,
-              `SLA guarantee`,
-              `On-premise option`
-            ],
-            color: '#000000',
-            buttonText: 'Contact Sales',
-            popular: false,
-            productCount: enterpriseTier.length
+        setFilteredPlans(transformedPlans);
+      } else {
+        setFilteredPlans([]);
+      }
+    } catch (error) {
+      console.error("Error filtering plans:", error);
+      setFilteredPlans([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Initial plans fetch
+  useEffect(() => {
+    const fetchPlans = async () => {
+      try {
+        setLoading(true);
+        const data = await getPlans();
+
+        if (data.status === true && data.data) {
+          let transformedPlans = transformPlans(data.data);
+          
+          // Apply limit if specified
+          if (limit && limit > 0) {
+            transformedPlans = transformedPlans.slice(0, limit);
           }
-        ];
-        
-        setPlans(transformedPlans);
-        setLoading(false);
-        
+          
+          setPlans(transformedPlans);
+          setFilteredPlans(transformedPlans);
+        } else {
+          setError(data.message || "Failed to fetch plans");
+        }
       } catch (error) {
-        console.error('Error fetching pricing:', error);
-        // Fallback to static data if API fails
-        setPlans([
-          {
-            name: 'Basic',
-            price: { monthly: '999', yearly: '9,999' },
-            description: 'Perfect for small businesses just getting started',
-            features: ['Up to 100 invoices/month', 'Basic GST reports', 'Single user', 'Email support', 'Cloud backup', 'Basic inventory'],
-            color: '#000000',
-            buttonText: 'Start Basic',
-            popular: false
-          },
-          {
-            name: 'Pro',
-            price: { monthly: '1,999', yearly: '19,999' },
-            description: 'Ideal for growing businesses with advanced needs',
-            features: ['Unlimited invoices', 'Advanced GST reports', 'Up to 5 users', 'Priority support', 'Advanced inventory', 'Multi-user access', 'API access', 'Custom reports'],
-            color: '#8b5cf6',
-            buttonText: 'Start Pro',
-            popular: true
-          },
-          {
-            name: 'Enterprise',
-            price: { monthly: '3,999', yearly: '39,999' },
-            description: 'For large organizations with custom requirements',
-            features: ['Unlimited everything', 'Custom integrations', 'Unlimited users', '24/7 phone support', 'Dedicated manager', 'SLA guarantee', 'Custom training', 'On-premise option'],
-            color: '#000000',
-            buttonText: 'Contact Sales',
-            popular: false
-          }
-        ]);
+        console.error("Error fetching plans:", error);
+        setError("Something went wrong");
+      } finally {
         setLoading(false);
       }
     };
 
-    fetchPricingData();
-  }, []);
+    fetchPlans();
+  }, [limit]);
 
+  // Filter plans based on selected business type
   useEffect(() => {
-    const observerOptions = {
-      threshold: 0.2,
-      rootMargin: '0px'
+    if (showFilters) {
+      filterPlansByBusinessTypeAPI(selectedBusinessType);
+    }
+  }, [selectedBusinessType, showFilters]);
+
+  const getCurrentPrice = (plan) => {
+    let basePrice;
+
+    if (selectedBusinessType !== "all" && showFilters) {
+      const businessTypeForPlan = plan.businessTypes?.find(
+        (bt) => bt.id === parseInt(selectedBusinessType)
+      );
+
+      if (businessTypeForPlan && businessTypeForPlan.custom_price) {
+        basePrice = businessTypeForPlan.custom_price;
+        if (billingCycle === "yearly") {
+          basePrice = basePrice * 10;
+        }
+        return {
+          price: basePrice,
+          displayPrice: basePrice.toLocaleString("en-IN"),
+          hasCustomPrice: true,
+        };
+      }
+    }
+
+    if (plan.discount > 0) {
+      basePrice = billingCycle === "monthly"
+        ? plan.discountedPrice.monthly
+        : plan.discountedPrice.yearly;
+    } else {
+      basePrice = billingCycle === "monthly"
+        ? plan.price.monthly
+        : plan.price.yearly;
+    }
+
+    return {
+      price: basePrice,
+      displayPrice: basePrice.toLocaleString("en-IN"),
+      hasCustomPrice: false,
+    };
+  };
+
+  const getOriginalPrice = (plan) => {
+    if (selectedBusinessType !== "all" && showFilters) {
+      const businessTypeForPlan = plan.businessTypes?.find(
+        (bt) => bt.id === parseInt(selectedBusinessType)
+      );
+
+      if (businessTypeForPlan && businessTypeForPlan.custom_price) {
+        const customPrice = businessTypeForPlan.custom_price;
+        return {
+          price: billingCycle === "yearly" ? customPrice * 10 : customPrice,
+          displayPrice: (billingCycle === "yearly" ? customPrice * 10 : customPrice).toLocaleString("en-IN"),
+        };
+      }
+    }
+
+    return {
+      price: billingCycle === "monthly" ? plan.price.monthly : plan.price.yearly,
+      displayPrice: billingCycle === "monthly" ? plan.displayPrice.monthly : plan.displayPrice.yearly,
+    };
+  };
+
+  const handleSubscribe = (plan) => {
+    const currentPriceData = getCurrentPrice(plan);
+    const originalPriceData = getOriginalPrice(plan);
+    const gstAmount = currentPriceData.price * (plan.gst / 100);
+    const totalAmount = currentPriceData.price + gstAmount;
+
+    const selectedPlan = {
+      id: plan.id,
+      name: plan.name,
+      billingCycle: billingCycle,
+      price: currentPriceData.price,
+      displayPrice: currentPriceData.displayPrice,
+      originalPrice: originalPriceData.price,
+      discount: plan.discount,
+      gst: plan.gst,
+      gstAmount: gstAmount,
+      totalAmount: totalAmount,
+      businessType: selectedBusinessType !== "all" && showFilters
+        ? allBusinessTypes.find((bt) => bt.id === parseInt(selectedBusinessType))
+        : plan.businessTypes?.[0] || null,
+      hasCustomPrice: currentPriceData.hasCustomPrice,
     };
 
+    if (!isLoggedIn) {
+      setPendingPlan(selectedPlan);
+      setShowLoginModal(true);
+      return;
+    }
+
+    proceedToOrderSummary(selectedPlan);
+  };
+
+  const proceedToOrderSummary = (selectedPlan) => {
+    localStorage.setItem("selectedPlan", JSON.stringify(selectedPlan));
+    router.push("/order-summary");
+  };
+
+  const handleLoginRedirect = () => {
+    localStorage.setItem("redirectAfterLogin", "/pricing");
+    if (pendingPlan) {
+      localStorage.setItem("pendingPlan", JSON.stringify(pendingPlan));
+    }
+    router.push("/login");
+  };
+
+  useEffect(() => {
+    const checkPendingPlanAfterLogin = () => {
+      const pendingPlanStr = localStorage.getItem("pendingPlan");
+      const isLoggedInNow = !!(localStorage.getItem("auth_token") || localStorage.getItem("token") || localStorage.getItem("user_data"));
+
+      if (isLoggedInNow && pendingPlanStr) {
+        const pendingPlanData = JSON.parse(pendingPlanStr);
+        localStorage.removeItem("pendingPlan");
+        localStorage.removeItem("redirectAfterLogin");
+        proceedToOrderSummary(pendingPlanData);
+      }
+    };
+
+    checkPendingPlanAfterLogin();
+  }, [router]);
+
+  useEffect(() => {
+    const observerOptions = { threshold: 0.1, rootMargin: "0px" };
     const observer = new IntersectionObserver((entries) => {
       entries.forEach((entry) => {
         if (entry.isIntersecting) {
-          entry.target.classList.add('card-visible');
+          entry.target.classList.add("card-visible");
         }
       });
     }, observerOptions);
 
-    // Re-run observer when plans change
-    setTimeout(() => {
-      cardRefs.current.forEach((ref) => {
-        if (ref) {
-          observer.observe(ref);
-        }
-      });
-    }, 100);
+    cardRefs.current.forEach((ref) => {
+      if (ref) observer.observe(ref);
+    });
 
     return () => observer.disconnect();
-  }, [plans]);
+  }, [filteredPlans]);
 
-  // Loading state
+  const LoginModal = () => {
+    if (!showLoginModal) return null;
+
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4" onClick={() => setShowLoginModal(false)}>
+        <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
+          <div className="text-center mb-6">
+            <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg className="w-8 h-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+              </svg>
+            </div>
+            <h3 className="text-xl font-bold text-gray-900 mb-2">Login Required</h3>
+            <p className="text-gray-600">Please login to continue with your subscription</p>
+            {pendingPlan && (
+              <p className="text-sm text-purple-600 mt-2 font-medium">
+                Plan: {pendingPlan.name} • ₹{pendingPlan.displayPrice}/{pendingPlan.billingCycle === 'monthly' ? 'month' : 'year'}
+              </p>
+            )}
+          </div>
+          <div className="space-y-3">
+            <button
+              onClick={handleLoginRedirect}
+              className="w-full py-3 bg-gradient-to-r from-purple-600 to-purple-500 text-white rounded-xl font-semibold hover:from-purple-700 hover:to-purple-600 transition-all duration-300"
+            >
+              Login Now
+            </button>
+            <button
+              onClick={() => setShowLoginModal(false)}
+              className="w-full py-3 bg-gray-100 text-gray-700 rounded-xl font-semibold hover:bg-gray-200 transition-all duration-300"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   if (loading) {
     return (
-      <div className="py-10 sm:py-[60px] md:py-12 lg:py-[60px] bg-gradient-to-br from-[#f8fafc] to-[#f1f5f9] min-h-screen font-sans flex items-center justify-center">
+      <div className="py-20 bg-gradient-to-br from-[#f8fafc] to-[#f1f5f9] min-h-[400px] flex items-center justify-center">
         <div className="text-center">
-          <div className="inline-block w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-          <p className="mt-4 text-gray-600">Loading pricing plans...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500 mx-auto mb-4"></div>
+          <p className="text-gray-600 text-lg font-medium">Loading plans...</p>
         </div>
       </div>
     );
   }
 
+  if (error) {
+    return (
+      <div className="py-20 bg-gradient-to-br from-[#f8fafc] to-[#f1f5f9] min-h-[400px] flex items-center justify-center">
+        <div className="text-center bg-white p-8 rounded-2xl shadow-lg max-w-md">
+          <div className="text-red-500 text-6xl mb-4">⚠️</div>
+          <h3 className="text-xl font-bold text-gray-800 mb-2">Unable to Load Plans</h3>
+          <p className="text-gray-600 mb-4">{error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+          >
+            Try Again
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const displayPlans = showFilters ? filteredPlans : plans.slice(0, limit);
+
   return (
-    <div className="py-10 sm:py-[60px] md:py-12 lg:py-[60px] bg-gradient-to-br from-[#f8fafc] to-[#f1f5f9] min-h-screen font-sans">
+    <div className="py-10 sm:py-20 bg-gradient-to-br from-[#f8fafc] to-[#f1f5f9] font-['Inter',system-ui,-apple-system,sans-serif] overflow-x-hidden">
       <Container size="default">
-        
         {/* Header Section */}
-        <div className="text-center mb-8 sm:mb-10 md:mb-8 lg:mb-12 px-4 sm:px-0">
+        <div className="text-center mb-12 px-4">
           <SectionTitle title="Simple, Transparent Pricing" />
-          <p className="text-[#475569] text-base sm:text-lg md:text-sm lg:text-xl max-w-[600px] mx-auto mt-4 sm:mt-6 md:mt-3 lg:mt-4">
-            Choose the perfect plan for your business
+          <p className="text-[#475569] text-lg max-w-[600px] mx-auto mt-4 font-medium">
+            Choose the perfect plan for your business. No hidden fees.
           </p>
-          <p className="text-xs text-[#8b5cf6] mt-1">Based on {plans[0]?.productCount + plans[1]?.productCount + plans[2]?.productCount || 20} products</p>
         </div>
 
-        {/* Toggle */}
-        <div className="flex flex-row justify-center items-center gap-2 mb-8 sm:mb-[50px] md:mb-8 lg:mb-12 bg-white p-1.5 rounded-[60px] max-w-[340px] md:max-w-[280px] lg:max-w-[340px] mx-auto shadow-[0_5px_15px_rgba(0,0,0,0.05)]">
-          <button
-            className={`px-4 sm:px-[30px] md:px-4 lg:px-[30px] py-3 sm:py-3 md:py-2 lg:py-3 border-none rounded-[40px] text-sm sm:text-base md:text-xs lg:text-base font-semibold cursor-pointer transition-all duration-300 flex-1 whitespace-nowrap ${
-              billingCycle === 'monthly' ? 'bg-[#3b82f6] text-white shadow-[0_5px_15px_rgba(59,130,246,0.3)]' : 'bg-transparent text-[#1e293b]'
-            }`}
-            onClick={() => setBillingCycle('monthly')}
-          >
-            Monthly
-          </button>
-          <button
-            className={`px-4 sm:px-[30px] md:px-4 lg:px-[30px] py-3 sm:py-3 md:py-2 lg:py-3 border-none rounded-[40px] text-sm sm:text-base md:text-xs lg:text-base font-semibold cursor-pointer transition-all duration-300 flex-1 whitespace-nowrap ${
-              billingCycle === 'yearly' ? 'bg-[#3b82f6] text-white shadow-[0_5px_15px_rgba(59,130,246,0.3)]' : 'bg-transparent text-[#1e293b]'
-            }`}
-            onClick={() => setBillingCycle('yearly')}
-          >
-            Yearly <span className="bg-white/20 py-1 px-2 sm:py-1 sm:px-2 rounded-[20px] text-xs sm:text-xs md:text-[9px] lg:text-xs font-medium ml-1 sm:ml-2">Save 20%</span>
-          </button>
-        </div>
-
-        {/* Pricing Cards - Exactly 3 cards */}
-        <div className="w-full px-4 sm:px-0">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-4 lg:gap-8 mb-10 items-stretch">
-            {plans.map((plan, index) => (
-              <div
-                key={index}
-                ref={(el) => { cardRefs.current[index] = el; }}
-                className={`bg-white rounded-[30px] p-6 sm:p-8 md:p-4 lg:p-8 shadow-[0_20px_40px_rgba(0,0,0,0.08)] relative transition-all duration-500 border border-[#e2e8f0] flex flex-col opacity-0 translate-y-5 card-visible hover:-translate-y-2 hover:shadow-[0_30px_60px_rgba(0,0,0,0.12)] 
-                  ${index === 2 ? "sm:col-span-2 lg:col-span-1 sm:max-w-[450px] sm:mx-auto lg:max-w-full" : ""} 
-                  ${plan.popular ? 'border-2 border-[#8b5cf6] scale-105 z-10' : ''}`}
-              >
-                {plan.popular && (
-                  <div className="absolute top-[-12px] left-1/2 -translate-x-1/2 text-white px-4 sm:px-5 md:px-2 lg:px-5 py-1.5 rounded-[30px] text-xs sm:text-sm md:text-[9px] lg:text-sm font-semibold whitespace-nowrap shadow-lg" style={{ background: plan.color }}>
-                    Most Popular
+        {/* Filters Section - Only show if showFilters is true */}
+        {showFilters && (
+          <div className="flex flex-col md:flex-row justify-center items-center gap-6 mb-12">
+            {/* Business Type Dropdown */}
+            {allBusinessTypes.length > 0 && (
+              <div className="flex items-center gap-3 bg-white px-5 py-2.5 rounded-full shadow-md border border-gray-200">
+                <div className="flex items-center gap-2">
+                  <div className="bg-gradient-to-r from-purple-500 to-purple-600 p-1.5 rounded-full">
+                    <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                    </svg>
                   </div>
-                )}
-
-                <div className="text-center mb-6 pb-6 md:mb-3 md:pb-3 lg:mb-6 lg:pb-6 border-b border-[#e2e8f0]">
-                  <h3 className="text-2xl sm:text-2xl md:text-lg lg:text-3xl font-bold text-[#1e293b] mb-4 md:mb-2 lg:mb-4">{plan.name}</h3>
-                  <div className="flex items-baseline justify-center gap-1 mb-4 md:mb-2 lg:mb-4 flex-wrap px-2">
-                    <span className="text-xl sm:text-xl md:text-base lg:text-xl font-semibold text-[#64748b]">₹</span>
-                    <span className="text-4xl sm:text-4xl md:text-2xl lg:text-5xl font-extrabold" style={{ color: plan.color }}>
-                      {billingCycle === 'monthly' ? plan.price.monthly : plan.price.yearly}
-                    </span>
-                    <span className="text-base sm:text-lg md:text-xs lg:text-lg text-[#64748b]">/{billingCycle === 'monthly' ? 'mo' : 'yr'}</span>
-                  </div>
-                  <p className="text-sm sm:text-sm md:text-[10px] lg:text-base text-[#64748b] leading-relaxed px-2">{plan.description}</p>
-                  {plan.productCount && (
-                    <p className="text-xs text-[#8b5cf6] mt-1">{plan.productCount} products included</p>
-                  )}
+                  <span className="text-sm font-semibold text-gray-700">Business Type:</span>
                 </div>
-
-                <div className="flex-1 mb-8 md:mb-4 lg:mb-8">
-                  <h4 className="text-sm sm:text-sm md:text-[10px] lg:text-sm font-semibold text-[#1e293b] mb-4 md:mb-2 lg:mb-4 uppercase tracking-wider px-2">What's included:</h4>
-                  <ul className="space-y-4 md:space-y-1 lg:space-y-4 px-2">
-                    {plan.features.map((feature, idx) => (
-                      <li key={idx} className="flex items-start gap-3 md:gap-2 lg:gap-3 text-sm sm:text-sm md:text-[9px] lg:text-base text-[#475569]">
-                        <svg className="w-5 h-5 md:w-3 md:h-3 lg:w-5 lg:h-5 flex-shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none">
-                          <path d="M20 6L9 17L4 12" stroke={plan.color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-                        </svg>
-                        <span>{feature}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-
-                <div className="mt-auto px-2">
-                  <button
-                    className={`w-full py-4 md:py-2 lg:py-4 rounded-[50px] text-base sm:text-base md:text-[10px] lg:text-base font-bold transition-all duration-300 shadow-lg hover:-translate-y-1 active:translate-y-0
-                      ${plan.popular ? 'bg-[#8b5cf6] text-white hover:bg-[#7c3aed] shadow-[#8b5cf6]/20' : 'bg-transparent border-2 hover:text-white relative overflow-hidden group'}`}
-                    style={{
-                      color: plan.popular ? 'white' : plan.color,
-                      borderColor: plan.color
-                    }}
-                  >
-                    {!plan.popular && (
-                      <span className="absolute inset-0 bg-gradient-to-r from-[#6f86d6] to-[#4facfe] translate-y-full transition-transform duration-300 group-hover:translate-y-0 -z-10"></span>
-                    )}
-                    <span className="relative z-10">{plan.buttonText}</span>
-                  </button>
-                </div>
+                <select
+                  value={selectedBusinessType}
+                  onChange={(e) => setSelectedBusinessType(e.target.value)}
+                  className="px-3 py-1.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm bg-white cursor-pointer"
+                >
+                  <option value="all">🌐 All</option>
+                  {allBusinessTypes.map((businessType) => (
+                    <option key={businessType.id} value={businessType.id}>
+                      🏢 {businessType.name}
+                    </option>
+                  ))}
+                </select>
               </div>
-            ))}
-          </div>
+            )}
 
-          {/* Bottom Section - View All Plans and Guarantee in ONE ROW */}
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-8 mb-4 px-4">
-            {/* View All Plans Button - Left Side */}
-            <a 
-              href="/pricing" 
-              className="group inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-full font-semibold text-sm shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 w-full sm:w-auto justify-center"
-            >
-              <span>View All Plans</span>
-              <span className="group-hover:translate-x-1 transition-transform">→</span>
-            </a>
-
-            {/* GUARANTEE BOX - Right Side */}
-            <div className="flex flex-row items-center justify-center gap-3 p-4 sm:p-5 md:p-2 lg:p-5 bg-white rounded-[50px] shadow-[0_5px_20px_rgba(0,0,0,0.04)] border border-[#e2e8f0] w-full sm:w-auto">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="flex-shrink-0 w-6 h-6 md:w-4 md:h-4 lg:w-6 lg:h-6">
-                <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="#3b82f6" strokeWidth="2" />
-                <path d="M12 6V12L16 14" stroke="#3b82f6" strokeWidth="2" strokeLinecap="round" />
-              </svg>
-              <span className="text-sm sm:text-sm md:text-[9px] lg:text-base text-[#475569] font-medium leading-tight">
-                30-day money-back guarantee • No questions asked
-              </span>
+            {/* Billing Toggle */}
+            <div className="relative bg-white p-1 rounded-full shadow-md border border-gray-200 inline-flex">
+              <button
+                className={`relative px-6 sm:px-8 py-2.5 sm:py-3 rounded-full text-sm sm:text-base font-semibold transition-all duration-300 z-10 ${
+                  billingCycle === 'monthly' ? 'text-white' : 'text-gray-700 hover:text-gray-900'
+                }`}
+                onClick={() => setBillingCycle('monthly')}
+              >
+                Monthly
+              </button>
+              <button
+                className={`relative px-6 sm:px-8 py-2.5 sm:py-3 rounded-full text-sm sm:text-base font-semibold transition-all duration-300 z-10 ${
+                  billingCycle === 'yearly' ? 'text-white' : 'text-gray-700 hover:text-gray-900'
+                }`}
+                onClick={() => setBillingCycle('yearly')}
+              >
+                Yearly
+                <span className="absolute -top-2 -right-1 sm:-top-3 sm:-right-2 bg-green-500 text-white text-[9px] sm:text-[10px] font-bold px-1.5 sm:px-2 py-0.5 rounded-full whitespace-nowrap">
+                  Save 20%
+                </span>
+              </button>
+              <div 
+                className={`absolute top-1 bottom-1 w-[calc(50%-4px)] bg-gradient-to-r from-blue-600 to-blue-500 rounded-full transition-all duration-300 ease-out ${
+                  billingCycle === 'monthly' ? 'left-1' : 'left-[calc(50%-2px)]'
+                }`}
+              />
             </div>
           </div>
+        )}
+
+        {/* Pricing Cards Grid */}
+        {displayPlans.length === 0 ? (
+          <div className="text-center py-20">
+            <div className="text-6xl mb-4">🔍</div>
+            <h3 className="text-xl font-bold text-gray-800 mb-2">No Plans Found</h3>
+            <p className="text-gray-600">No plans available for this business type. Please try another selection.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8 mb-16 items-stretch px-4">
+            {displayPlans.map((plan, index) => {
+              const isPopular = plan.popular;
+              const currentPriceData = getCurrentPrice(plan);
+              const originalPriceData = getOriginalPrice(plan);
+
+              return (
+                <div
+                  key={plan.id}
+                  ref={(el) => (cardRefs.current[index] = el)}
+                  className={`bg-white rounded-2xl p-8 shadow-lg relative transition-all duration-500 border flex flex-col opacity-0 translate-y-10 hover:-translate-y-2 hover:shadow-2xl
+                    ${isPopular 
+                      ? 'border-2 border-purple-500 shadow-purple-100 scale-100 lg:scale-105 z-20 pt-10' 
+                      : 'border-gray-200 hover:border-gray-300 z-10'
+                    }`}
+                >
+                  {isPopular && (
+                    <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-gradient-to-r from-purple-600 to-purple-500 text-white px-4 py-1 rounded-full text-xs font-bold uppercase tracking-wider shadow-lg whitespace-nowrap">
+                      Most Popular
+                    </div>
+                  )}
+
+                  <div className="text-center mb-8 pb-6 border-b border-gray-100">
+                    <h3 className="text-2xl font-bold text-gray-900 mb-3">
+                      {plan.name.charAt(0).toUpperCase() + plan.name.slice(1).toLowerCase()}
+                    </h3>
+
+                    <div className="mb-4">
+                      {(plan.discount > 0 || currentPriceData.hasCustomPrice) && (
+                        <div className="inline-flex items-center gap-2 bg-red-50 px-3 py-1 rounded-full mb-3">
+                          <span className="text-red-600 text-xs font-bold">
+                            {currentPriceData.hasCustomPrice ? `Special Price` : `${plan.discount}% OFF`}
+                          </span>
+                          <span className="text-gray-400 line-through text-sm">
+                            ₹{originalPriceData.displayPrice}
+                          </span>
+                        </div>
+                      )}
+
+                      <div className="flex items-baseline justify-center gap-1">
+                        <span className="text-2xl font-semibold text-gray-500">₹</span>
+                        <span className="text-5xl font-bold" style={{ color: isPopular ? '#8b5cf6' : '#000000' }}>
+                          {currentPriceData.displayPrice}
+                        </span>
+                        <span className="text-gray-400 text-base font-medium">/{billingCycle === 'monthly' ? 'monthly' : 'yearly'}</span>
+                      </div>
+
+                      {(plan.discount > 0 || currentPriceData.hasCustomPrice) && (
+                        <p className="text-xs text-green-600 mt-1 font-medium">
+                          🎉 You save ₹{(originalPriceData.price - currentPriceData.price).toLocaleString('en-IN')}!
+                        </p>
+                      )}
+                    </div>
+
+                    <p className="text-sm text-gray-600 font-medium">{plan.description}</p>
+                  </div>
+
+                  <div className="flex-1 mb-8">
+                    <h4 className="text-xs font-bold text-gray-500 mb-5 uppercase tracking-wider">included Features :</h4>
+                    <ul className="space-y-3.5">
+                      {plan.features.map((feature, idx) => (
+                        <li key={idx} className="flex items-start gap-3 text-sm text-gray-700">
+                          <svg className="w-5 h-5 flex-shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none">
+                            <path d="M20 6L9 17L4 12" stroke={isPopular ? '#8b5cf6' : '#000000'} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                          </svg>
+                          <span className="leading-relaxed">{feature}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  <div className="mt-auto pt-4">
+                    <button
+                      onClick={() => handleSubscribe(plan)}
+                      disabled={subscribing === plan.id}
+                      className={`w-full py-3.5 rounded-xl text-base font-semibold transition-all duration-300 hover:shadow-lg active:scale-95
+                        ${isPopular 
+                          ? 'bg-gradient-to-r from-purple-600 to-purple-500 text-white hover:from-purple-700 hover:to-purple-600' 
+                          : 'bg-white border-2 hover:bg-gray-50'
+                        }
+                        ${subscribing === plan.id ? 'opacity-50 cursor-not-allowed' : ''}`}
+                      style={{
+                        color: isPopular ? 'white' : '#000000',
+                        borderColor: isPopular ? 'transparent' : '#000000'
+                      }}
+                    >
+                      {subscribing === plan.id ? (
+                        <span className="flex items-center justify-center gap-2">
+                          <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                          </svg>
+                          Processing...
+                        </span>
+                      ) : (
+                        plan.buttonText
+                      )}
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Bottom Section */}
+        <div className="flex flex-col md:flex-row items-center justify-between gap-6 px-4 border-t border-gray-200 pt-12">
+          <div className="hidden lg:block w-[150px]" />
+
+          <div className="flex flex-row items-center gap-3 py-3 px-6 bg-white rounded-full shadow-sm border border-gray-200 hover:shadow-md transition-shadow duration-300">
+            <div className="bg-blue-50 p-2 rounded-full">
+              <svg width="18" height="18" className="text-blue-600" viewBox="0 0 24 24" fill="none">
+                <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="currentColor" strokeWidth="2" />
+                <path d="M12 6V12L16 14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+              </svg>
+            </div>
+            <span className="text-sm text-gray-700 font-medium whitespace-nowrap">
+              30-day money-back guarantee • No questions asked
+            </span>
+          </div>
+
+          {showViewAllButton && (
+            <a
+              href="/pricing"
+              className="group inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl font-semibold text-sm shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300"
+            >
+              <span>View All Plans</span>
+              <svg className="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </a>
+          )}
         </div>
       </Container>
+
+      <LoginModal />
+
       <style jsx>{`
         .card-visible {
           opacity: 1 !important;
           transform: translateY(0) !important;
+        }
+        
+        @keyframes slide-in {
+          from {
+            opacity: 0;
+            transform: translateX(100%);
+          }
+          to {
+            opacity: 1;
+            transform: translateX(0);
+          }
+        }
+        
+        .animate-slide-in {
+          animation: slide-in 0.3s ease-out;
+        }
+        
+        @keyframes spin {
+          to {
+            transform: rotate(360deg);
+          }
+        }
+        
+        .animate-spin {
+          animation: spin 1s linear infinite;
         }
       `}</style>
     </div>

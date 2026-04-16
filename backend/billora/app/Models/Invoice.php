@@ -18,6 +18,9 @@ class Invoice extends Model
         'paid_amount',
         'created_by',
         'status',
+        'package_name',
+        'package_price',
+        'package_size'
 
     ];
         protected $casts = [
@@ -32,4 +35,7 @@ class Invoice extends Model
     {
         return $this->belongsTo(BillCustomer::class, 'customer_id');
     }
+public function packages(){
+    return $this->belongsTo(PackageInvoice::class , 'id' , 'invoice_id');
+}
 }

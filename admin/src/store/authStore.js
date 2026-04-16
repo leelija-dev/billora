@@ -1,6 +1,7 @@
 import { create } from 'zustand'
-import { persist } from 'zustand/middleware'
-import { authAPI } from '../services/api'
+import { persist, createJSONStorage } from 'zustand/middleware'
+import { authService } from '../services/authService'
+import { usePermissionStore } from './permissionStore'
 import toast from 'react-hot-toast'
 
 export const useAuthStore = create(
@@ -11,6 +12,7 @@ export const useAuthStore = create(
       tokens: null,
       isAuthenticated: false,
       isLoading: false,
+      hasHydrated: false,
 
       setTokens: (tokens) => {
         set({ 
@@ -21,22 +23,53 @@ export const useAuthStore = create(
         })
       },
 
+      setHasHydrated: (state) => {
+        set({ hasHydrated: state })
+      },
+
+      // Helper function to check if user is authenticated
+      checkAuth: () => {
+        const { tokens, user } = get()
+        const hasToken = !!tokens?.access || !!tokens?.token
+        const hasUser = !!user
+        const isAuthenticated = hasToken && hasUser
+        
+        // Update auth state if needed
+        if (get().isAuthenticated !== isAuthenticated) {
+          set({ isAuthenticated })
+        }
+        
+        return isAuthenticated
+      },
+
       login: async (credentials) => {
         set({ isLoading: true })
         try {
           console.log('Login attempt with:', credentials)
-          const response = await authAPI.login(credentials)
+          const response = await authService.login(credentials)
           console.log('Login response:', response)
           
-          const { access, refresh, user, company } = response.data
+          // Handle your API's token structure
+          const data = response.data
+          const token = data.token // Your API returns a single token
+          const user = data.user
           
           set({
             user,
-            company,
-            tokens: { access, refresh },
+            company: null, // Your API doesn't return company info
+            tokens: { access: token, token: token }, // Store token in both formats for compatibility
             isAuthenticated: true,
             isLoading: false,
           })
+          
+          // Set user in permission store
+          const { setUser: setPermissionUser, fetchUserPermissions } = usePermissionStore.getState()
+          setPermissionUser(user)
+          
+          // Fetch user permissions only if user exists and has plan_id
+          if (user && user.plan_id) {
+            fetchUserPermissions(user.id)
+          }
           
           toast.success('Login successful!')
           return { success: true }
@@ -50,21 +83,17 @@ export const useAuthStore = create(
         }
       },
 
-      register: async (companyData) => {
-        set({ isLoading: true })
-        try {
-          const response = await authAPI.register(companyData)
-          toast.success(response.data.message || 'Registration successful! Please login.')
-          set({ isLoading: false })
-          return { success: true }
-        } catch (error) {
-          set({ isLoading: false })
-          toast.error(error.response?.data?.message || 'Registration failed')
-          return { success: false, error: error.response?.data }
+      logout: async () => {
+        const { user } = get()
+        
+        // Try to call logout API but don't wait for it since token might be invalid
+        if (user?.id) {
+          authService.logout(user.id).catch(err => {
+            console.log('Logout API call failed (expected if token expired):', err)
+          })
         }
-      },
-
-      logout: () => {
+        
+        // Clear local state immediately
         set({
           user: null,
           company: null,
@@ -72,6 +101,11 @@ export const useAuthStore = create(
           isAuthenticated: false,
         })
         localStorage.removeItem('auth-storage')
+        
+        // Clear permission store
+        const { clearPermissions } = usePermissionStore.getState()
+        clearPermissions()
+        
         toast.success('Logged out successfully')
       },
 
@@ -80,7 +114,7 @@ export const useAuthStore = create(
         if (!tokens?.refresh) return false
 
         try {
-          const response = await authAPI.refresh(tokens.refresh)
+          const response = await authService.refreshToken(tokens.refresh)
           set({
             tokens: {
               ...tokens,
@@ -104,7 +138,31 @@ export const useAuthStore = create(
     }),
     {
       name: 'auth-storage',
-      getStorage: () => localStorage,
+      storage: createJSONStorage(() => localStorage),
+      onRehydrateStorage: () => (state) => {
+        console.log('🔄 Auth store rehydrating...', state)
+        
+        if (state) {
+          // Check authentication state after rehydration
+          const hasToken = !!state.tokens?.access || !!state.tokens?.token
+          const hasUser = !!state.user
+          const isAuthenticated = hasToken && hasUser
+          
+          console.log('🔐 Rehydration check:', {
+            hasToken,
+            hasUser,
+            isAuthenticated,
+            tokens: state.tokens,
+            user: state.user
+          })
+          
+          // Update isAuthenticated based on actual data
+          state.isAuthenticated = isAuthenticated
+          state.hasHydrated = true
+        }
+        
+        console.log('✅ Auth store rehydrated')
+      },
     }
   )
 )

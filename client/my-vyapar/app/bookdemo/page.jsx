@@ -223,30 +223,20 @@ const AppointmentPage = () => {
 
   const handlePrevMonth = () => {
     setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1));
-    // Note: We don't reset selections when changing month
   };
 
   const handleNextMonth = () => {
     setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1));
-    // Note: We don't reset selections when changing month
   };
 
   const handleResetToCurrent = () => {
-    // ONLY reset the calendar view to current month/year
-    // Does NOT affect selected date, time, form, or any other state
     setCurrentDate(new Date());
     setShowMonthPicker(false);
-    // Keep all other state intact:
-    // - selectedDate remains the same
-    // - selectedTime remains the same
-    // - showForm remains the same
-    // - formData remains the same
   };
 
   const handleMonthSelect = (monthIndex) => {
     setCurrentDate(new Date(currentDate.getFullYear(), monthIndex, 1));
     setShowMonthPicker(false);
-    // Note: We don't reset selections when changing month via picker
   };
 
   const handleYearChange = (increment) => {
@@ -327,7 +317,6 @@ const AppointmentPage = () => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     
-    // Consider today as past for booking (need 1 day advance)
     return dateToCheck <= today;
   };
 
@@ -360,7 +349,6 @@ const AppointmentPage = () => {
   const currentTimeZone = timeZones.find(tz => tz.value === selectedTimeZone) || timeZones[0];
   const selectedEnquiry = enquiryTypes.find(e => e.value === formData.enquiryType) || enquiryTypes[0];
 
-  // Calculate tomorrow's date for display
   const tomorrow = new Date();
   tomorrow.setDate(tomorrow.getDate() + 1);
   const formattedTomorrow = tomorrow.toLocaleDateString('en-US', {
@@ -437,7 +425,6 @@ const AppointmentPage = () => {
               <div className="w-px h-5 bg-gray-300"></div>
               <div className="flex items-center gap-2">
                 <Clock className="w-4 h-4 sm:w-5 sm:h-5 text-[#9E5CF2]" />
-                {/* Use ClientTimeOnly wrapper to prevent hydration mismatch */}
                 <ClientTimeOnly>
                   <span className="text-sm sm:text-base font-mono font-semibold text-[#0F172A]">
                     {formatTimeInZone(realTimeCurrentDate, selectedTimeZone)}
@@ -516,14 +503,14 @@ const AppointmentPage = () => {
           {/* Main Container - 60/40 Split */}
           <div className="flex flex-col lg:flex-row gap-6 items-stretch">
             
-            {/* Left Side - Calendar (60%) - Made smaller */}
+            {/* Left Side - Calendar (60%) */}
             <motion.div
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.4 }}
               className="lg:w-[60%] bg-white rounded-xl shadow-lg p-4 sm:p-5 border border-gray-200"
             >
-              {/* Calendar Header - More compact */}
+              {/* Calendar Header */}
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
                 <div className="flex items-center gap-2">
                   <h2 className="text-lg sm:text-xl font-bold text-[#0F172A] flex items-center gap-1">
@@ -531,7 +518,7 @@ const AppointmentPage = () => {
                     <span>Select Date</span>
                   </h2>
                   
-                  {/* Time Zone Selector - Smaller */}
+                  {/* Time Zone Selector */}
                   <div className="relative">
                     <button
                       onClick={() => setShowTimeZonePicker(!showTimeZonePicker)}
@@ -579,7 +566,7 @@ const AppointmentPage = () => {
                   </div>
                 </div>
 
-                {/* Month Navigation - More compact */}
+                {/* Month Navigation */}
                 <div className="flex items-center gap-1">
                   {/* Month/Year Selector */}
                   <div className="relative">
@@ -636,7 +623,7 @@ const AppointmentPage = () => {
                     </AnimatePresence>
                   </div>
 
-                  {/* Reset Button - Now only resets calendar view, not selections */}
+                  {/* Reset Button */}
                   <button
                     onClick={handleResetToCurrent}
                     className="p-1.5 bg-[#F0F7FF] rounded-lg hover:bg-[#4461F2] hover:text-white transition-colors"
@@ -660,7 +647,7 @@ const AppointmentPage = () => {
                 </div>
               </div>
 
-              {/* Day Names - Smaller */}
+              {/* Day Names */}
               <div className="grid grid-cols-7 gap-1 mb-2">
                 {dayNames.map((day) => (
                   <div key={day} className="text-center text-xs font-bold text-gray-500 py-1">
@@ -669,7 +656,7 @@ const AppointmentPage = () => {
                 ))}
               </div>
 
-              {/* Calendar Days - Smaller squares */}
+              {/* Calendar Days */}
               <div className="grid grid-cols-7 gap-1">
                 {days.map((day, index) => {
                   const available = isAvailable(day);
@@ -714,7 +701,7 @@ const AppointmentPage = () => {
                 })}
               </div>
 
-              {/* Legend - More compact */}
+              {/* Legend */}
               <div className="flex flex-wrap gap-3 mt-4 pt-3 border-t border-gray-200">
                 {[
                   { color: "bg-[#4461F2]", label: "Available" },
@@ -1004,6 +991,7 @@ const AppointmentPage = () => {
                 className="fixed bottom-4 right-4 left-4 sm:left-auto bg-[#4461F2] text-white px-5 py-4 rounded-xl shadow-2xl flex items-center gap-3 max-w-md mx-auto sm:mx-0"
               >
                 <CheckCircle size={24} />
+                {/* d */}
                 <div>
                   <p className="text-lg font-bold">Demo Booked Successfully!</p>
                   <p className="text-sm opacity-90">We'll contact you shortly</p>

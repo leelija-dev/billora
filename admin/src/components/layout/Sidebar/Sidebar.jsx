@@ -1,6 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
+import { useAuthStore } from '../../../store/authStore';
+import { useNotificationStore } from '../../../store/notificationStore';
 import { useUIStore } from '../../../store/uiStore';
+import { usePermissionStore } from '../../../store/permissionStore';
 import {
   FiHome,
   FiPackage,
@@ -15,11 +18,20 @@ import {
   FiLogOut,
   FiHelpCircle,
   FiBell,
+  FiBox,
+  FiGrid,
+  FiBarChart2,
+  FiTag
 } from 'react-icons/fi';
 import { motion, AnimatePresence } from 'framer-motion';
+import { FaFileMedical, FaStore } from 'react-icons/fa';
+import { TbRuler2 } from "react-icons/tb";
 
 const Sidebar = () => {
   const { sidebarOpen, toggleSidebar, isMobile, setIsMobile } = useUIStore();
+  const { canAccess, sidebarPermissions, loading: permissionsLoading, permissionsFetched } = usePermissionStore();
+  const { user } = useAuthStore();
+  const { planExpireReminder } = useNotificationStore();
   const location = useLocation();
   const [hoveredItem, setHoveredItem] = useState(null);
 
@@ -41,16 +53,73 @@ const Sidebar = () => {
     }
   }, [location.pathname, isMobile]);
 
-  const menuItems = [
-    { path: '/dashboard', name: 'Dashboard', icon: FiHome, badge: null },
-    { path: '/products', name: 'Products', icon: FiPackage, badge: null },
-    { path: '/inventory', name: 'Inventory', icon: FiArchive, badge: 'Low Stock' },
-    { path: '/orders', name: 'Orders', icon: FiShoppingBag, badge: '12' },
-    { path: '/customers', name: 'Customers', icon: FiUsers, badge: null },
-    { path: '/invoices', name: 'Invoices', icon: FiFileText, badge: '3' },
-    { path: '/billing', name: 'Billing', icon: FiCreditCard, badge: null },
-    { path: '/settings', name: 'Settings', icon: FiSettings, badge: null },
-  ];
+  // Fetch sidebar permissions if not already loaded
+  useEffect(() => {
+    const { fetchUserPermissions } = usePermissionStore.getState();
+    
+    if (user?.plan_id && !permissionsFetched && !permissionsLoading) {
+      fetchUserPermissions(user.id);
+    }
+  }, [user?.plan_id, permissionsFetched, permissionsLoading]);
+
+  // Icon mapping for dynamic menu items
+  const iconMap = {
+    'dashboard': FiHome,
+    'products': FiPackage,
+    'categories': FiGrid,
+    'brands': FiTag,
+    'units': TbRuler2,
+    'medicine-types': FaFileMedical,
+    'stores': FaStore,
+    'packages': FiBox,
+    'stock': FiArchive,
+    'orders': FiShoppingBag,
+    'customers': FiUsers,
+    'invoices': FiFileText,
+    'reports': FiBarChart2,
+    'plans': FiCreditCard,
+    'settings': FiSettings,
+  };
+
+  // Path mapping for menu items
+  const pathMap = {
+    'dashboard': '/dashboard',
+    'products': '/products',
+    'categories': '/categories',
+    'brands': '/brands',
+    'units': '/units',
+    'medicine-types': '/medicine-types',
+    'stores': '/stores',
+    'packages': '/packages',
+    'stock': '/stock',
+    'orders': '/orders',
+    'customers': '/customers',
+    'invoices': '/invoices',
+    'reports': '/reports',
+    'plans': '/billing',
+    'settings': '/settings',
+  };
+
+  // Generate dynamic menu items from API permissions
+  const menuItems = sidebarPermissions.map(permission => {
+    const path = pathMap[permission.slug];
+    const icon = iconMap[permission.slug] || FiSettings; // Default to Settings icon
+    const badge = permission.slug === 'plans' && planExpireReminder ? '?' : null;
+    
+    return {
+      path: path,
+      name: permission.name,
+      icon: icon,
+      badge: badge,
+      permission: null // Sidebar permissions already handle access control
+    };
+  });
+
+  // Filter menu items - sidebar permissions already control what's visible
+  const filteredMenuItems = menuItems.filter(item => {
+    // Only filter out items that don't have a valid path
+    return item.path !== undefined;
+  });
 
   return (
     <>
@@ -128,8 +197,8 @@ const Sidebar = () => {
         </div>
 
         {/* Navigation */}
-        <nav className="mt-6 px-3 space-y-1 overflow-y-auto max-h-[calc(100vh-180px)] scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600">
-          {menuItems.map((item, index) => {
+        <nav className="mt-6 px-3 space-y-1 overflow-y-auto max-h-[calc(100vh-180px)] scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 pb-20">
+          {filteredMenuItems.map((item, index) => {
             const Icon = item.icon;
             const isActive = location.pathname === item.path;
             
@@ -176,7 +245,13 @@ const Sidebar = () => {
                     
                     {/* Notification badge for icon */}
                     {item.badge && !sidebarOpen && (
-                      <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full ring-2 ring-white dark:ring-gray-800" />
+                      <span className={`absolute -top-1 -right-1 w-2 h-2 ${
+                        item.badge === 'Low Stock' 
+                          ? 'bg-yellow-500' 
+                          : item.badge === '⚠️' 
+                            ? 'bg-orange-500'
+                            : 'bg-red-500'
+                      } rounded-full ring-2 ring-white dark:ring-gray-800`} />
                     )}
                   </motion.div>
 

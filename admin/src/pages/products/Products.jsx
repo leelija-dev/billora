@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { 
   FiPlus, 
   FiSearch, 
@@ -22,6 +22,9 @@ import {
 } from 'react-icons/fi'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useProductStore } from '../../store/productStore'
+import { stockAPI } from '../../services/stockService'
+import { categoriesAPI } from '../../services/categoriesService'
+import { brandsAPI } from '../../services/brandsService'
 import Button from '../../components/common/Button/Button'
 import Input from '../../components/common/Input/Input'
 import Table from '../../components/common/Table/Table'
@@ -32,6 +35,27 @@ import ProductModal from '../../components/features/Products/ProductModal'
 import Select from '../../components/common/Select/Select'
 import ProductForm from '../../components/features/Products/ProductForm' // You'll need to create this component
 
+// Stock cache to prevent duplicate requests
+const stockCache = new Map()
+const STOCK_CACHE_EXPIRY = 5 * 60 * 1000 // 5 minutes
+
+const isStockCacheValid = (cacheEntry) => {
+  return cacheEntry && (Date.now() - cacheEntry.timestamp) < STOCK_CACHE_EXPIRY
+}
+
+const getCachedStocks = () => {
+  const entry = stockCache.get('all')
+  if (isStockCacheValid(entry)) {
+    return entry.data
+  }
+  stockCache.delete('all')
+  return null
+}
+
+const setCachedStocks = (data) => {
+  stockCache.set('all', { data, timestamp: Date.now() })
+}
+
 const Products = () => {
   const {
     products,
@@ -40,12 +64,19 @@ const Products = () => {
     pageSize,
     loading,
     filters,
+    pagination,
     fetchProducts,
+    fetchProductsByUrl,
     deleteProduct,
     setFilters,
-    addProduct,
+    createProduct,
     updateProduct,
   } = useProductStore()
+
+  // Refs to track initialization
+  const initializedRef = useRef(false)
+  const categoriesInitializedRef = useRef(false)
+  const brandsInitializedRef = useRef(false)
 
   const [showAddForm, setShowAddForm] = useState(false)
   const [showEditForm, setShowEditForm] = useState(false)
@@ -57,9 +88,59 @@ const Products = () => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [refreshing, setRefreshing] = useState(false)
   const [formSubmitting, setFormSubmitting] = useState(false)
+  const [initialLoading, setInitialLoading] = useState(true)
+  const [stocks, setStocks] = useState([])
+  const [stocksLoading, setStocksLoading] = useState(false)
+  const [categories, setCategories] = useState([])
+  const [brands, setBrands] = useState([])
+  const [categoriesLoading, setCategoriesLoading] = useState(false)
+  const [brandsLoading, setBrandsLoading] = useState(false)
+
+  // Function to get stock for a specific product
+  const getProductStock = (productId) => {
+    if (!Array.isArray(stocks)) return 0
+    const stock = stocks.find(s => s.product_id === productId)
+    return stock ? parseFloat(stock.quantity) || 0 : 0
+  }
 
   useEffect(() => {
-    fetchProducts()
+    const fetchData = async () => {
+      // Prevent multiple initial loads using ref
+      if (initializedRef.current) return
+      initializedRef.current = true
+      
+      try {
+        await fetchProducts()
+        
+        // Check cache first
+        const cachedStocks = getCachedStocks()
+        if (cachedStocks) {
+          console.log(' Using cached stocks data')
+          setStocks(cachedStocks)
+          setInitialLoading(false)
+          return
+        }
+        
+        // Only fetch stocks if not already loaded, no valid cache, and not already loading
+        if (stocks.length === 0 && !stocksLoading) {
+          setStocksLoading(true)
+          const stocksResponse = await stockAPI.getAll()
+          console.log(' Stock API Response:', stocksResponse)
+          // Extract stocks array from nested response
+          const stocksData = stocksResponse.data?.data?.data || stocksResponse.data?.data || []
+          console.log(' Extracted stocks:', stocksData)
+          setStocks(stocksData)
+          setCachedStocks(stocksData)
+        }
+      } catch (error) {
+        console.error(' Error fetching stocks:', error)
+        setStocks([])
+      } finally {
+        setInitialLoading(false)
+        setStocksLoading(false)
+      }
+    }
+    fetchData()
   }, [])
 
   useEffect(() => {
@@ -69,6 +150,68 @@ const Products = () => {
 
     return () => clearTimeout(debounceTimer)
   }, [searchTerm, setFilters])
+
+  // Fetch categories and brands data
+  useEffect(() => {
+    const fetchCategoriesAndBrands = async () => {
+      // Prevent duplicate calls using refs
+      if (categoriesInitializedRef.current || brandsInitializedRef.current) return
+      categoriesInitializedRef.current = true
+      brandsInitializedRef.current = true
+      
+      // Prevent duplicate calls if already loading or data exists
+      if (categoriesLoading || brandsLoading || (categories.length > 0 && brands.length > 0)) {
+        return
+      }
+      
+      setCategoriesLoading(true)
+      setBrandsLoading(true)
+      
+      try {
+        const [categoriesRes, brandsRes] = await Promise.all([
+          categoriesAPI.getAll(),
+          brandsAPI.getAll()
+        ])
+        
+        // FIX: Extract the data array from the paginated response
+        // The categories API returns a paginated object with the actual array in the 'data' property
+        let categoriesData = []
+        if (categoriesRes?.data?.data) {
+          // If it's a paginated response with data property containing the array
+          categoriesData = Array.isArray(categoriesRes.data.data) 
+            ? categoriesRes.data.data 
+            : categoriesRes.data.data.data || []
+        } else {
+          categoriesData = categoriesRes?.data || []
+        }
+        
+        // Brands API might return array directly or nested
+        let brandsData = []
+        if (brandsRes?.data?.data) {
+          brandsData = Array.isArray(brandsRes.data.data)
+            ? brandsRes.data.data
+            : brandsRes.data.data.data || []
+        } else {
+          brandsData = brandsRes?.data || []
+        }
+        
+        console.log('Categories fetched:', categoriesData)
+        console.log('Brands fetched:', brandsData)
+        
+        setCategories(categoriesData)
+        setBrands(brandsData)
+      } catch (error) {
+        console.error('Error fetching categories and brands:', error)
+        setCategories([])
+        setBrands([])
+      } finally {
+        setCategoriesLoading(false)
+        setBrandsLoading(false)
+      }
+    }
+    
+    fetchCategoriesAndBrands()
+  }, [])
 
   const handleAddProduct = () => {
     setShowAddForm(true)
@@ -91,7 +234,7 @@ const Products = () => {
       if (showEditForm && selectedProduct) {
         await updateProduct(selectedProduct.id, productData)
       } else {
-        await addProduct(productData)
+        await createProduct(productData)
       }
       // Refresh the product list
       await fetchProducts()
@@ -119,13 +262,31 @@ const Products = () => {
     }
   }
 
-  const handlePageChange = (page) => {
-    fetchProducts(page)
+  const handlePageChange = (url) => {
+    if (url) {
+      fetchProductsByUrl(url)
+    }
   }
 
   const handleRefresh = async () => {
+    // Prevent multiple simultaneous refresh calls
+    if (refreshing) return
+    
     setRefreshing(true)
+    // Clear stock cache to force fresh data
+    stockCache.delete('all')
     await fetchProducts()
+    // Refetch stocks with fresh data (only if not already loading)
+    if (!stocksLoading) {
+      try {
+        const stocksResponse = await stockAPI.getAll()
+        const stocksData = stocksResponse.data?.data?.data || stocksResponse.data?.data || []
+        setStocks(stocksData)
+        setCachedStocks(stocksData)
+      } catch (error) {
+        console.error(' Error refreshing stocks:', error)
+      }
+    }
     setRefreshing(false)
   }
 
@@ -205,56 +366,70 @@ const Products = () => {
     },
     {
       header: 'Category',
-      accessor: 'category',
-      cell: (value) => (
-        <span className="px-3 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg text-sm">
-          {value}
-        </span>
-      ),
+      accessor: 'category_id',
+      cell: (value) => {
+        // Ensure categories is an array before calling find
+        const category = Array.isArray(categories) ? categories.find(cat => cat.id === value) : null
+        return (
+          <span className="px-3 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg text-sm">
+            {category?.name || `Category ${value}`}
+          </span>
+        )
+      },
     },
     {
-      header: 'Price',
-      accessor: 'price',
-      cell: (value) => (
-        <span className="font-semibold text-gray-900 dark:text-white">
-          ${value.toFixed(2)}
-        </span>
-      ),
+      header: 'Brand',
+      accessor: 'brand_id',
+      cell: (value) => {
+        // Ensure brands is an array before calling find
+        const brand = Array.isArray(brands) ? brands.find(b => b.id === value) : null
+        return (
+          <span className="px-3 py-1 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded-lg text-sm">
+            {brand?.name || `Brand ${value}`}
+          </span>
+        )
+      },
     },
     {
       header: 'Stock',
       accessor: 'stock',
-      cell: (value, row) => (
-        <div className="flex items-center space-x-2">
-          <div className="w-16 h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-            <motion.div
-              initial={{ width: 0 }}
-              animate={{ width: `${(value / row.maxStock) * 100}%` }}
-              transition={{ duration: 0.5 }}
-              className={`h-full rounded-full ${
-                value <= row.lowStockThreshold 
-                  ? 'bg-red-500' 
-                  : value <= row.lowStockThreshold * 2
-                  ? 'bg-yellow-500'
-                  : 'bg-green-500'
-              }`}
-            />
+      cell: (_, row) => {
+        const stockQuantity = getProductStock(row.id)
+        const maxStock = 100 // You can adjust this based on your needs
+        const lowStockThreshold = 10 // You can adjust this based on your needs
+        
+        return (
+          <div className="flex items-center space-x-2">
+            <div className="w-16 h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+              <motion.div
+                initial={{ width: 0 }}
+                animate={{ width: `${Math.min((stockQuantity / maxStock) * 100, 100)}%` }}
+                transition={{ duration: 0.5 }}
+                className={`h-full rounded-full ${
+                  stockQuantity <= lowStockThreshold 
+                    ? 'bg-red-500' 
+                    : stockQuantity <= lowStockThreshold * 2
+                    ? 'bg-yellow-500'
+                    : 'bg-green-500'
+                }`}
+              />
+            </div>
+            <span className={`text-sm font-medium ${
+              stockQuantity <= lowStockThreshold 
+                ? 'text-red-600 dark:text-red-400' 
+                : stockQuantity <= lowStockThreshold * 2
+                ? 'text-yellow-600 dark:text-yellow-400'
+                : 'text-gray-900 dark:text-white'
+            }`}>
+              {stockQuantity}
+            </span>
           </div>
-          <span className={`text-sm font-medium ${
-            value <= row.lowStockThreshold 
-              ? 'text-red-600 dark:text-red-400' 
-              : value <= row.lowStockThreshold * 2
-              ? 'text-yellow-600 dark:text-yellow-400'
-              : 'text-gray-900 dark:text-white'
-          }`}>
-            {value}
-          </span>
-        </div>
-      ),
+        )
+      },
     },
     {
       header: 'Status',
-      accessor: 'isActive',
+      accessor: 'is_active',
       cell: (value) => (
         <StatusBadge
           status={value ? 'active' : 'inactive'}
@@ -285,33 +460,7 @@ const Products = () => {
           >
             <FiTrash2 className="w-4 h-4" />
           </motion.button>
-          <div className="relative group">
-            <motion.button
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.95 }}
-              className="p-2 text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700 rounded-lg transition-colors"
-            >
-              <FiMoreVertical className="w-4 h-4" />
-            </motion.button>
-            
-            {/* Quick actions dropdown */}
-            <div className="absolute right-0 mt-1 w-48 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10">
-              <div className="p-1">
-                <button className="w-full px-3 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg flex items-center space-x-2">
-                  <FiEye className="w-4 h-4" />
-                  <span>View details</span>
-                </button>
-                <button className="w-full px-3 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg flex items-center space-x-2">
-                  <FiCopy className="w-4 h-4" />
-                  <span>Duplicate</span>
-                </button>
-                <button className="w-full px-3 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg flex items-center space-x-2">
-                  <FiArchive className="w-4 h-4" />
-                  <span>Archive</span>
-                </button>
-              </div>
-            </div>
-          </div>
+          
         </div>
       ),
     },
@@ -446,7 +595,7 @@ const Products = () => {
             {showEditForm ? 'Edit Product' : 'Add New Product'}
           </h2>
           <ProductForm
-            initialData={selectedProduct}
+            product={selectedProduct}
             onSubmit={handleSubmitProduct}
             onCancel={handleCancelForm}
             isSubmitting={formSubmitting}
@@ -502,100 +651,110 @@ const Products = () => {
             transition={{ delay: 0.1 }}
             className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6"
           >
-            <div className="flex flex-col sm:flex-row gap-4">
-              <div className="flex-1 relative">
-                <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                <Input
-                  type="text"
-                  placeholder="Search products by name, SKU, or category..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
+            {initialLoading ? (
+              <div className="animate-pulse">
+                <div className="h-10 bg-gray-200 dark:bg-gray-700 rounded mb-4"></div>
+                <div className="flex space-x-2">
+                  <div className="h-10 bg-gray-200 dark:bg-gray-700 rounded w-24"></div>
+                  <div className="h-10 bg-gray-200 dark:bg-gray-700 rounded w-20"></div>
+                </div>
               </div>
-              
-              <div className="flex items-center space-x-2">
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => setShowFilters(!showFilters)}
-                  className={`px-4 py-2 rounded-xl border transition-colors flex items-center space-x-2 ${
-                    showFilters 
-                      ? 'bg-primary-50 border-primary-200 text-primary-600 dark:bg-primary-900/20 dark:border-primary-800 dark:text-primary-400'
-                      : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'
-                  }`}
-                >
-                  <FiFilter className="w-4 h-4" />
-                  <span>Filters</span>
-                  {(filters.category || filters.status) && (
-                    <span className="ml-1 w-2 h-2 bg-primary-500 rounded-full" />
-                  )}
-                </motion.button>
-
-                {(searchTerm || filters.category || filters.status) && (
+            ) : (
+              <div className="flex flex-col sm:flex-row gap-4">
+                <div className="flex-1 relative">
+                  <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                  <Input
+                    type="text"
+                    placeholder="Search products by name, SKU, or category..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+                
+                <div className="flex items-center space-x-2">
                   <motion.button
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    onClick={clearFilters}
-                    className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => setShowFilters(!showFilters)}
+                    className={`px-4 py-2 rounded-xl border transition-colors flex items-center space-x-2 ${
+                      showFilters 
+                        ? 'bg-primary-50 border-primary-200 text-primary-600 dark:bg-primary-900/20 dark:border-primary-800 dark:text-primary-400'
+                        : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'
+                    }`}
                   >
-                    <FiX className="w-5 h-5" />
+                    <FiFilter className="w-4 h-4" />
+                    <span>Filters</span>
+                    {(filters.category || filters.status) && (
+                      <span className="ml-1 w-2 h-2 bg-primary-500 rounded-full" />
+                    )}
                   </motion.button>
-                )}
-              </div>
-            </div>
 
-            <AnimatePresence>
-              {showFilters && (
-                <motion.div
-                  initial={{ height: 0, opacity: 0 }}
-                  animate={{ height: 'auto', opacity: 1 }}
-                  exit={{ height: 0, opacity: 0 }}
-                  transition={{ duration: 0.3 }}
-                  className="overflow-hidden"
-                >
-                  <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <Select
-                        label="Category"
-                        options={[
-                          { value: '', label: 'All Categories' },
-                          { value: 'electronics', label: 'Electronics' },
-                          { value: 'clothing', label: 'Clothing' },
-                          { value: 'books', label: 'Books' },
-                          { value: 'home', label: 'Home & Garden' },
-                          { value: 'sports', label: 'Sports' },
-                          { value: 'toys', label: 'Toys' },
-                        ]}
-                        value={filters.category}
-                        onChange={(e) => setFilters({ category: e.target.value })}
-                      />
-                      <Select
-                        label="Status"
-                        options={[
-                          { value: '', label: 'All Status' },
-                          { value: 'active', label: 'Active' },
-                          { value: 'inactive', label: 'Inactive' },
-                        ]}
-                        value={filters.status}
-                        onChange={(e) => setFilters({ status: e.target.value })}
-                      />
-                      <Select
-                        label="Stock Status"
-                        options={[
-                          { value: '', label: 'All Stock' },
-                          { value: 'low', label: 'Low Stock' },
-                          { value: 'out', label: 'Out of Stock' },
-                          { value: 'in', label: 'In Stock' },
-                        ]}
-                        value={filters.stockStatus}
-                        onChange={(e) => setFilters({ stockStatus: e.target.value })}
-                      />
+                  {(searchTerm || filters.category || filters.status) && (
+                    <motion.button
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      onClick={clearFilters}
+                      className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+                    >
+                      <FiX className="w-5 h-5" />
+                    </motion.button>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {!initialLoading && (
+              <AnimatePresence>
+                {showFilters && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: 'auto', opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.3 }}
+                    className="overflow-hidden"
+                  >
+                    <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <Select
+                          label="Category"
+                          options={[
+                            { value: '', label: 'All Categories' },
+                            ...(Array.isArray(categories) ? categories.map(cat => ({
+                              value: cat.id,
+                              label: cat.name
+                            })) : [])
+                          ]}
+                          value={filters.category}
+                          onChange={(e) => setFilters({ category: e.target.value })}
+                        />
+                        <Select
+                          label="Status"
+                          options={[
+                            { value: '', label: 'All Status' },
+                            { value: 'active', label: 'Active' },
+                            { value: 'inactive', label: 'Inactive' },
+                          ]}
+                          value={filters.status}
+                          onChange={(e) => setFilters({ status: e.target.value })}
+                        />
+                        <Select
+                          label="Stock Status"
+                          options={[
+                            { value: '', label: 'All Stock' },
+                            { value: 'low', label: 'Low Stock' },
+                            { value: 'out', label: 'Out of Stock' },
+                            { value: 'in', label: 'In Stock' },
+                          ]}
+                          value={filters.stockStatus}
+                          onChange={(e) => setFilters({ stockStatus: e.target.value })}
+                        />
+                      </div>
                     </div>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            )}
           </motion.div>
 
           {/* Products Display */}
@@ -604,7 +763,16 @@ const Products = () => {
             animate={{ y: 0, opacity: 1 }}
             transition={{ delay: 0.2 }}
           >
-            {products.length > 0 ? (
+            {initialLoading || loading ? (
+              <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-12">
+                <div className="flex flex-col items-center justify-center">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mb-4"></div>
+                  <p className="text-gray-600 dark:text-gray-400">
+                    {initialLoading ? 'Loading product data...' : 'Updating product data...'}
+                  </p>
+                </div>
+              </div>
+            ) : products.length > 0 ? (
               viewMode === 'table' ? (
                 <>
                   <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg overflow-hidden">
@@ -618,6 +786,7 @@ const Products = () => {
                     currentPage={currentPage}
                     totalItems={totalProducts}
                     pageSize={pageSize}
+                    pagination={pagination}
                     onPageChange={handlePageChange}
                   />
                 </>
@@ -695,11 +864,11 @@ const Products = () => {
                           
                           <div className="flex items-center justify-between mb-3">
                             <span className="text-lg font-bold text-gray-900 dark:text-white">
-                              ${product.price.toFixed(2)}
+                              ${product.selling_price ? parseFloat(product.selling_price).toFixed(2) : '0.00'}
                             </span>
                             <StatusBadge
-                              status={product.isActive ? 'active' : 'inactive'}
-                              variant={product.isActive ? 'success' : 'default'}
+                              status={product.is_active ? 'active' : 'inactive'}
+                              variant={product.is_active ? 'success' : 'default'}
                               size="sm"
                             />
                           </div>
@@ -713,18 +882,18 @@ const Products = () => {
                                   ? 'text-red-600 dark:text-red-400' 
                                   : 'text-gray-700 dark:text-gray-300'
                               }`}>
-                                {product.stock} / {product.maxStock}
+                                {getProductStock(product.id)} / {product.maxStock || 100}
                               </span>
                             </div>
                             <div className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
                               <motion.div
                                 initial={{ width: 0 }}
-                                animate={{ width: `${(product.stock / product.maxStock) * 100}%` }}
+                                animate={{ width: `${Math.min((getProductStock(product.id) / (product.maxStock || 100)) * 100, 100)}%` }}
                                 transition={{ duration: 0.5 }}
                                 className={`h-full rounded-full ${
-                                  product.stock <= product.lowStockThreshold 
+                                  getProductStock(product.id) <= (product.lowStockThreshold || 10)
                                     ? 'bg-red-500' 
-                                    : product.stock <= product.lowStockThreshold * 2
+                                    : getProductStock(product.id) <= (product.lowStockThreshold || 10) * 2
                                     ? 'bg-yellow-500'
                                     : 'bg-green-500'
                                 }`}
@@ -739,6 +908,7 @@ const Products = () => {
                     currentPage={currentPage}
                     totalItems={totalProducts}
                     pageSize={pageSize}
+                    pagination={pagination}
                     onPageChange={handlePageChange}
                   />
                 </>

@@ -1,6 +1,27 @@
 import { create } from 'zustand'
-import api from '../services/api'
+import { productsAPI, stocksAPI } from '../services'
 import toast from 'react-hot-toast'
+
+// Cache for products data
+const productCache = new Map()
+const CACHE_EXPIRY = 5 * 60 * 1000 // 5 minutes
+
+const isCacheValid = (cacheEntry) => {
+  return cacheEntry && (Date.now() - cacheEntry.timestamp) < CACHE_EXPIRY
+}
+
+const getCachedData = (cacheKey) => {
+  const entry = productCache.get(cacheKey)
+  if (isCacheValid(entry)) {
+    return entry.data
+  }
+  productCache.delete(cacheKey)
+  return null
+}
+
+const setCachedData = (cacheKey, data) => {
+  productCache.set(cacheKey, { data, timestamp: Date.now() })
+}
 
 export const useProductStore = create((set, get) => ({
   products: [],
@@ -14,42 +35,135 @@ export const useProductStore = create((set, get) => ({
     status: '',
   },
 
-  fetchProducts: async (page = 1) => {
-    set({ loading: true })
+  // Pagination state from API
+  pagination: {
+    current_page: 1,
+    last_page: 1,
+    per_page: 15,
+    total: 0,
+    next_page_url: null,
+    prev_page_url: null,
+    first_page_url: null,
+    last_page_url: null,
+  },
+
+  // Cache state
+  lastFetchTime: null,
+  cacheKey: null,
+
+  fetchProducts: async (page = 1, search = '') => {
+    const cacheKey = JSON.stringify({ page, search })
+    const currentState = get()
+    
+    // Avoid duplicate requests if same data was fetched recently
+    if (currentState.cacheKey === cacheKey && 
+        currentState.lastFetchTime && 
+        (Date.now() - currentState.lastFetchTime) < 2000) {
+      console.log('Using cached products data, skipping duplicate request')
+      return
+    }
+
+    // Check cache first
+    const cached = getCachedData(cacheKey)
+    if (cached) {
+      console.log('Using cached products data')
+      set({
+        products: cached.products,
+        totalProducts: cached.total,
+        currentPage: page,
+        loading: false,
+        cacheKey,
+        lastFetchTime: Date.now()
+      })
+      return
+    }
+
+    set({ loading: true, cacheKey })
     try {
-      const { filters, pageSize } = get()
-      const response = await api.get('/products/', {
-        params: {
-          page,
-          page_size: pageSize,
-          ...filters,
-        },
+      const response = await productsAPI.getAll(search)
+      
+      console.log(' Product Store - Raw API Response:', response)
+      
+      // Handle your API's response structure
+      const apiData = response.data
+      let products = apiData.data?.data || []
+      const paginationData = apiData.data || {}
+      
+      // Extract pagination data from API response
+      const pagination = {
+        current_page: paginationData.current_page || page,
+        last_page: paginationData.last_page || 1,
+        per_page: paginationData.per_page || 15,
+        total: paginationData.total || products.length,
+        next_page_url: paginationData.next_page_url || null,
+        prev_page_url: paginationData.prev_page_url || null,
+        first_page_url: paginationData.first_page_url || null,
+        last_page_url: paginationData.last_page_url || null,
+      }
+      
+      // Stock data will be merged by Products component
+      // No individual stock API calls here to avoid duplicate requests
+      
+      // Cache the results
+      const cacheData = {
+        products: products,
+        total: pagination.total,
+        pagination: pagination
+      }
+      setCachedData(cacheKey, cacheData)
+      
+      console.log(' Product Store - Processed Data:', {
+        apiData,
+        products,
+        pagination,
+        productsLength: products.length
       })
       
       set({
-        products: response.data.results,
-        totalProducts: response.data.count,
-        currentPage: page,
+        products: products,
+        totalProducts: pagination.total,
+        currentPage: pagination.current_page,
+        pagination: pagination,
         loading: false,
+        lastFetchTime: Date.now()
       })
+      return response.data
     } catch (error) {
+      console.error(' Product Store - Error:', error)
       toast.error('Failed to fetch products')
-      set({ loading: false })
+      set({ 
+        loading: false,
+        error: error.message || 'Failed to fetch products'
+      })
     }
   },
 
   createProduct: async (productData) => {
     set({ loading: true })
     try {
-      const response = await api.post('/products/', productData)
-      set((state) => ({
-        products: [response.data, ...state.products],
-        totalProducts: state.totalProducts + 1,
+      const response = await productsAPI.create(productData)
+      
+      // Extract actual product data from response structure
+      const newProduct = response.data?.data || response.data || response
+      console.log(' Product created successfully:', newProduct)
+      
+      // Get current state before clearing cache
+      const currentState = get()
+      
+      // Clear cache to ensure fresh data on next fetch
+      get().clearCache()
+      
+      // Update local state immediately for better UX
+      set({
+        products: [newProduct, ...(currentState.products || [])],
+        totalProducts: (currentState.products?.length || 0) + 1,
         loading: false,
-      }))
+      })
+      
       toast.success('Product created successfully')
       return { success: true }
     } catch (error) {
+      console.error('Failed to create product:', error)
       toast.error('Failed to create product')
       set({ loading: false })
       return { success: false, error: error.response?.data }
@@ -59,16 +173,40 @@ export const useProductStore = create((set, get) => ({
   updateProduct: async (id, productData) => {
     set({ loading: true })
     try {
-      const response = await api.put(`/products/${id}/`, productData)
-      set((state) => ({
-        products: state.products.map((p) => 
-          p.id === id ? response.data : p
+      const response = await productsAPI.update(id, productData)
+      
+      // Check if API response is successful
+      if (response.data?.status === false) {
+        // API returned validation errors
+        const errorMessage = response.data?.message || 'Failed to update product'
+        console.error('Product update validation error:', response.data)
+        toast.error(errorMessage)
+        set({ loading: false })
+        return { success: false, error: response.data }
+      }
+      
+      // Extract actual product data from response structure
+      const updatedProduct = response.data?.data || response.data || response
+      console.log('Product updated successfully:', updatedProduct)
+      
+      // Get current state before clearing cache
+      const currentState = get()
+      
+      // Clear cache to ensure fresh data on next fetch
+      get().clearCache()
+      
+      // Update local state immediately for better UX
+      set({
+        products: currentState.products.map(p => 
+          p.id === id ? updatedProduct : p
         ),
         loading: false,
-      }))
+      })
+      
       toast.success('Product updated successfully')
       return { success: true }
     } catch (error) {
+      console.error('Failed to update product:', error)
       toast.error('Failed to update product')
       set({ loading: false })
       return { success: false, error: error.response?.data }
@@ -78,15 +216,26 @@ export const useProductStore = create((set, get) => ({
   deleteProduct: async (id) => {
     set({ loading: true })
     try {
-      await api.delete(`/products/${id}/`)
-      set((state) => ({
-        products: state.products.filter((p) => p.id !== id),
-        totalProducts: state.totalProducts - 1,
+      await productsAPI.delete(id)
+      console.log(' Product deleted successfully')
+      
+      // Get current state before clearing cache
+      const currentState = get()
+      
+      // Clear cache to ensure fresh data on next fetch
+      get().clearCache()
+      
+      // Update local state immediately for better UX
+      set({
+        products: currentState.products.filter(p => p.id !== id),
+        totalProducts: Math.max(0, (currentState.products?.length || 0) - 1),
         loading: false,
-      }))
+      })
+      
       toast.success('Product deleted successfully')
       return { success: true }
     } catch (error) {
+      console.error('Failed to delete product:', error)
       toast.error('Failed to delete product')
       set({ loading: false })
       return { success: false }
@@ -94,7 +243,76 @@ export const useProductStore = create((set, get) => ({
   },
 
   setFilters: (filters) => {
-    set({ filters: { ...get().filters, ...filters } })
-    get().fetchProducts(1)
+    const currentState = get()
+    const newFilters = { ...currentState.filters, ...filters }
+    
+    // Only fetch if filters actually changed
+    if (JSON.stringify(newFilters) !== JSON.stringify(currentState.filters)) {
+      set({ filters: newFilters })
+      
+      // Debounce API call
+      setTimeout(() => {
+        get().fetchProducts(1, newFilters.search)
+      }, 300)
+    } else {
+      set({ filters: newFilters })
+    }
+  },
+
+  fetchProductsByUrl: async (url) => {
+    if (!url) return
+    
+    set({ loading: true })
+    try {
+      const response = await productsAPI.getByUrl(url)
+      
+      console.log(' Product Store - Raw API Response (URL):', response)
+      
+      // Handle your API's response structure
+      const apiData = response.data
+      let products = apiData.data?.data || []
+      const paginationData = apiData.data || {}
+      
+      // Extract pagination data from API response
+      const pagination = {
+        current_page: paginationData.current_page || 1,
+        last_page: paginationData.last_page || 1,
+        per_page: paginationData.per_page || 15,
+        total: paginationData.total || products.length,
+        next_page_url: paginationData.next_page_url || null,
+        prev_page_url: paginationData.prev_page_url || null,
+        first_page_url: paginationData.first_page_url || null,
+        last_page_url: paginationData.last_page_url || null,
+      }
+      
+      console.log(' Product Store - Processed Data (URL):', {
+        apiData,
+        products,
+        pagination,
+        productsLength: products.length
+      })
+      
+      set({
+        products: products,
+        totalProducts: pagination.total,
+        currentPage: pagination.current_page,
+        pagination: pagination,
+        loading: false,
+        lastFetchTime: Date.now()
+      })
+      return response.data
+    } catch (error) {
+      console.error(' Product Store - Error (URL):', error)
+      toast.error('Failed to fetch products')
+      set({ 
+        loading: false,
+        error: error.message || 'Failed to fetch products'
+      })
+    }
+  },
+
+  clearCache: () => {
+    productCache.clear()
+    console.log('Product cache cleared')
   },
 }))
