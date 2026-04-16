@@ -1,13 +1,34 @@
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import ReactApexChart from 'react-apexcharts'
 
 const OrderStatusChart = ({ data, height = 320 }) => {
+  const [chartKey, setChartKey] = useState(0)
   const COLORS = {
     completed: '#10b981',
     pending: '#f59e0b', 
     processing: '#3b82f6',
     cancelled: '#ef4444'
   }
+
+  useEffect(() => {
+    // Force chart re-render on window resize (sidebar toggle)
+    const handleResize = () => {
+      setChartKey(prev => prev + 1)
+    }
+
+    // Add resize observer for more responsive updates
+    const resizeObserver = new ResizeObserver(() => {
+      setTimeout(handleResize, 100) // Small delay to ensure DOM has updated
+    })
+
+    // Observe the document body to detect layout changes
+    resizeObserver.observe(document.body)
+
+    return () => {
+      resizeObserver.disconnect()
+      window.removeEventListener('resize', handleResize)
+    }
+  }, [])
 
   // Transform API data to chart format
   const chartData = Object.entries(data || {}).map(([status, count]) => ({
@@ -20,6 +41,7 @@ const OrderStatusChart = ({ data, height = 320 }) => {
     chart: {
       type: 'donut',
       height: height,
+      width: '100%',
       toolbar: {
         show: false
       },
@@ -31,7 +53,9 @@ const OrderStatusChart = ({ data, height = 320 }) => {
         blur: 10,
         opacity: 0.1,
         color: '#000'
-      }
+      },
+      redrawOnWindowResize: true,
+      redrawOnParentResize: true
     },
     dataLabels: {
       enabled: true,
@@ -220,8 +244,9 @@ const OrderStatusChart = ({ data, height = 320 }) => {
   }
 
   return (
-    <div className="h-80">
+    <div className="w-full h-80 overflow-hidden">
       <ReactApexChart 
+        key={chartKey}
         options={chartOptions} 
         series={chartSeries} 
         type="donut" 
