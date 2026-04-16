@@ -37,6 +37,7 @@ export const usePermissionStore = create(
       user: null,
       plan: null,
       permissions: [],
+      sidebarPermissions: [],
       loading: false,
       error: null,
       permissionsFetched: false,
@@ -114,13 +115,26 @@ export const usePermissionStore = create(
               p && typeof p === 'object' && p.slug && typeof p.slug === 'string'
             )
             
+            // Get sidebar permissions from API response
+            let sidebarPermissions = planResponse.data.customer_sidebar_permission || []
+            
+            // Validate sidebar permissions structure
+            const validatedSidebarPermissions = sidebarPermissions.filter(p => 
+              p && typeof p === 'object' && p.slug && typeof p.slug === 'string' && p.status === 1
+            )
+            
             if (validatedPermissions.length !== permissions.length) {
               console.warn(`⚠️ Filtered out ${permissions.length - validatedPermissions.length} invalid permissions`)
+            }
+            
+            if (validatedSidebarPermissions.length !== sidebarPermissions.length) {
+              console.warn(`⚠️ Filtered out ${sidebarPermissions.length - validatedSidebarPermissions.length} invalid sidebar permissions`)
             }
             
             set({
               plan: planData,
               permissions: validatedPermissions,
+              sidebarPermissions: validatedSidebarPermissions,
               loading: false,
               permissionsFetched: true,
               lastFetched: new Date().toISOString(),
@@ -284,6 +298,7 @@ export const usePermissionStore = create(
           user: null,
           plan: null,
           permissions: [],
+          sidebarPermissions: [],
           loading: false,
           error: null,
           permissionsFetched: false,
@@ -298,6 +313,7 @@ export const usePermissionStore = create(
         user: state.user,
         plan: state.plan,
         permissions: state.permissions,
+        sidebarPermissions: state.sidebarPermissions,
         permissionsFetched: state.permissionsFetched,
         lastFetched: state.lastFetched
       })

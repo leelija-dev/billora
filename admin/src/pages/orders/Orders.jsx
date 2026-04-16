@@ -34,6 +34,8 @@ import OrderForm from '../../components/features/Orders/OrderForm'
 import OrderDetails from '../../components/features/Orders/OrderDetails'
 import Select from '../../components/common/Select/Select'
 import Modal from '../../components/common/Modal/Modal'
+import { generateA4InvoiceHTML } from '../../templates/A4InvoiceTemplate'
+import { generateThermalInvoiceHTML } from '../../templates/ThermalInvoiceTemplate'
 
 const Orders = () => {
   const { user } = useAuthStore()
@@ -63,12 +65,12 @@ const Orders = () => {
   const [paymentDetails, setPaymentDetails] = useState(null)
   const [paidAmount, setPaidAmount] = useState('')
   const [stats, setStats] = useState({
-    total: 156,
-    pending: 23,
-    processing: 45,
-    completed: 88,
-    revenue: 45678,
-    revenueChange: 12
+    total: 0,
+    pending: 0,
+    processing: 0,
+    completed: 0,
+    revenue: 0,
+    revenueChange: 0
   })
 
   useEffect(() => {
@@ -85,6 +87,36 @@ const Orders = () => {
 
     return () => clearTimeout(debounceTimer)
   }, [searchTerm, setFilters])
+
+  useEffect(() => {
+    if (orders.length > 0) {
+      const pendingOrders = orders.filter(order => order.order_status === 'pending').length
+      const processingOrders = orders.filter(order => order.order_status === 'processing').length
+      const completedOrders = orders.filter(order => order.order_status === 'completed').length
+      const totalRevenue = orders
+        .filter(order => order.order_status === 'completed' && order.total_amount)
+        .reduce((sum, order) => sum + parseFloat(order.total_amount || 0), 0)
+
+      setStats({
+        total: totalOrders,
+        pending: pendingOrders,
+        processing: processingOrders,
+        completed: completedOrders,
+        revenue: totalRevenue,
+        revenueChange: 0 // Would need historical data for this
+      })
+    } else {
+      // Reset stats when no orders
+      setStats({
+        total: 0,
+        pending: 0,
+        processing: 0,
+        completed: 0,
+        revenue: 0,
+        revenueChange: 0
+      })
+    }
+  }, [orders, totalOrders])
 
   const handleViewOrder = (order) => {
     setSelectedOrder(order)
@@ -145,6 +177,44 @@ const Orders = () => {
     } finally {
       setUpdatingStatus(false)
     }
+  }
+
+  const handlePrintInvoice = (order, printType) => {
+    if (printType === 'a4') {
+      // Generate A4 invoice using template
+      const invoiceContent = generateA4InvoiceHTML(order)
+      printInvoice(invoiceContent, 'a4')
+    } else if (printType === 'thermal') {
+      // Generate thermal receipt using template
+      const receiptContent = generateThermalInvoiceHTML(order)
+      printInvoice(receiptContent, 'thermal')
+    } else {
+      console.error('Invalid print type:', printType)
+    }
+  }
+
+  const printInvoice = (content, type) => {
+    const printWindow = window.open('', '_blank')
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>${type === 'a4' ? 'Invoice' : 'Receipt'}</title>
+          <style>
+            @media print {
+              body { margin: 0; }
+              ${type === 'a4' ? '@page { margin: 1cm; }' : '@page { size: 80mm auto; margin: 5mm; }'}
+            }
+          </style>
+        </head>
+        <body>
+          ${content}
+        </body>
+      </html>
+    `)
+    printWindow.document.close()
+    printWindow.focus()
+    printWindow.print()
+    printWindow.close()
   }
 
   const handlePageChange = (page) => {
@@ -247,13 +317,13 @@ const Orders = () => {
     },
     {
       header: 'Order ID',
-      accessor: 'orderNumber',
+      accessor: 'order_id',
       cell: (value, row) => (
         <div className="flex items-center space-x-2">
           <div className={`w-2 h-2 rounded-full ${
-            row.status === 'completed' ? 'bg-green-500' :
-            row.status === 'processing' ? 'bg-blue-500' :
-            row.status === 'pending' ? 'bg-yellow-500' :
+            row.order_status === 'completed' ? 'bg-green-500' :
+            row.order_status === 'processing' ? 'bg-blue-500' :
+            row.order_status === 'pending' ? 'bg-yellow-500' :
             'bg-gray-500'
           }`} />
           <span className="font-mono text-sm font-medium text-gray-900 dark:text-white">
@@ -264,22 +334,22 @@ const Orders = () => {
     },
     {
       header: 'Customer',
-      accessor: 'customer',
+      accessor: 'customer_name',
       cell: (value, row) => (
         <div className="flex items-center space-x-3">
           <div className="w-8 h-8 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-600 rounded-full flex items-center justify-center text-sm font-medium text-gray-700 dark:text-gray-300">
-            {value.name?.charAt(0) || 'U'}
+            {value?.charAt(0) || 'U'}
           </div>
           <div>
-            <p className="font-medium text-gray-900 dark:text-white">{value.name}</p>
-            <p className="text-xs text-gray-500 dark:text-gray-400">{value.email}</p>
+            <p className="font-medium text-gray-900 dark:text-white">{value}</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">{row.customer_phone}</p>
           </div>
         </div>
       ),
     },
     {
       header: 'Date',
-      accessor: 'createdAt',
+      accessor: 'created_at',
       cell: (value) => (
         <div className="flex items-center text-sm text-gray-600 dark:text-gray-300">
           <FiCalendar className="w-3 h-3 mr-1 text-gray-400" />
@@ -293,29 +363,29 @@ const Orders = () => {
     },
     {
       header: 'Items',
-      accessor: 'items',
+      accessor: 'total_items',
       cell: (value) => (
         <div className="flex items-center">
           <FiShoppingBag className="w-3 h-3 mr-1 text-gray-400" />
-          <span className="text-sm text-gray-600 dark:text-gray-300">{value.length}</span>
+          <span className="text-sm text-gray-600 dark:text-gray-300">{value}</span>
         </div>
       ),
     },
     {
       header: 'Total',
-      accessor: 'total',
+      accessor: 'total_amount',
       cell: (value) => (
         <div className="flex items-center">
           <FiDollarSign className="w-3 h-3 mr-1 text-gray-400" />
           <span className="font-semibold text-gray-900 dark:text-white">
-            {value.toFixed(2)}
+            {parseFloat(value).toFixed(2)}
           </span>
         </div>
       ),
     },
     {
       header: 'Status',
-      accessor: 'status',
+      accessor: 'order_status',
       cell: (value) => {
         const Icon = getStatusIcon(value)
         return (
@@ -329,7 +399,7 @@ const Orders = () => {
     },
     {
       header: 'Payment',
-      accessor: 'paymentStatus',
+      accessor: 'payment_status',
       cell: (value) => (
         <StatusBadge
           status={value}
@@ -346,16 +416,6 @@ const Orders = () => {
           <motion.button
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.95 }}
-            onClick={() => handleViewOrder(row)}
-            className="p-2 text-blue-600 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
-            title="View Details"
-          >
-            <FiEye className="w-4 h-4" />
-          </motion.button>
-          
-          <motion.button
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.95 }}
             onClick={() => handleViewPaymentDetails(row)}
             className="p-2 text-green-600 hover:bg-green-50 dark:text-green-400 dark:hover:bg-green-900/20 rounded-lg transition-colors"
             title="Payment Details"
@@ -363,58 +423,15 @@ const Orders = () => {
             <FiDollarSign className="w-4 h-4" />
           </motion.button>
           
-          <div className="relative group">
-            <motion.button
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.95 }}
-              className="p-2 text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700 rounded-lg transition-colors"
-            >
-              <FiMoreVertical className="w-4 h-4" />
-            </motion.button>
-            
-            <div className="absolute right-0 mt-1 w-56 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10">
-              <div className="p-1">
-                {/* Order Status Dropdown */}
-                <div className="px-3 py-2">
-                  <label className="text-xs font-medium text-gray-700 dark:text-gray-300 block mb-1">Order Status</label>
-                  <Select
-                    value={row.status}
-                    onChange={(e) => handleOrderStatusChange(row.id, e.target.value)}
-                    options={orderStatusOptions}
-                    className="text-sm"
-                    disabled={updatingStatus}
-                  />
-                </div>
-                
-                {/* Payment Status Dropdown */}
-                <div className="px-3 py-2 border-t border-gray-200 dark:border-gray-700">
-                  <label className="text-xs font-medium text-gray-700 dark:text-gray-300 block mb-1">Payment Status</label>
-                  <Select
-                    value={row.paymentStatus || 'pending'}
-                    onChange={(e) => handlePaymentStatusChange(row.id, e.target.value)}
-                    options={paymentStatusOptions}
-                    className="text-sm"
-                    disabled={updatingStatus}
-                  />
-                </div>
-                
-                <div className="border-t border-gray-200 dark:border-gray-700 my-1" />
-                <button className="w-full px-3 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg flex items-center space-x-2">
-                  <FiPrinter className="w-4 h-4" />
-                  <span>Print Invoice</span>
-                </button>
-                <button className="w-full px-3 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg flex items-center space-x-2">
-                  <FiMail className="w-4 h-4" />
-                  <span>Email Customer</span>
-                </button>
-                <div className="border-t border-gray-200 dark:border-gray-700 my-1" />
-                <button className="w-full px-3 py-2 text-left text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg flex items-center space-x-2">
-                  <FiTrash2 className="w-4 h-4" />
-                  <span>Delete Order</span>
-                </button>
-              </div>
-            </div>
-          </div>
+          <motion.button
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => handleViewOrder(row)}
+            className="p-2 text-purple-600 hover:bg-purple-50 dark:text-purple-400 dark:hover:bg-purple-900/20 rounded-lg transition-colors"
+            title="Order Details"
+          >
+            <FiEye className="w-4 h-4" />
+          </motion.button>
         </div>
       ),
     },
@@ -881,7 +898,12 @@ const Orders = () => {
         size="lg"
       >
         {selectedOrder && (
-          <OrderDetails order={selectedOrder} />
+          <OrderDetails 
+            order={selectedOrder}
+            onUpdateOrder={handleOrderStatusChange}
+            onUpdatePayment={handlePaymentStatusChange}
+            onPrintInvoice={handlePrintInvoice}
+          />
         )}
       </Modal>
 

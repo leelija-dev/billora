@@ -5,8 +5,8 @@
 export const generateA4InvoiceHTML = (invoice) => {
   if (!invoice) return ''
 
-  const totalAmount = parseFloat(invoice.total_amount || 0)
-  const paidAmount = parseFloat(invoice.paid_amount || 0)
+  const totalAmount = parseFloat(invoice.total_amount || invoice.totalAmount || 0)
+  const paidAmount = parseFloat(invoice.paid_amount || invoice.paidAmount || 0)
   const changeAmount = paidAmount - totalAmount
 
   return `
@@ -285,7 +285,7 @@ export const generateA4InvoiceHTML = (invoice) => {
             return `
             <tr>
               <td>${index + 1}</td>
-              <td>${item.product_name}</td>
+              <td>${item.product?.name || item.product_name || 'N/A'}</td>
               <td class="text-right">${item.quantity}</td>
               <td class="text-right">₹${itemPrice.toFixed(2)}</td>
               <td class="text-right">${itemGst || 0}%</td>
@@ -328,35 +328,35 @@ export const generateA4InvoiceHTML = (invoice) => {
         <h3>Summary</h3>
         <div class="summary-row">
           <span class="label">Subtotal:</span>
-          <span class="value">₹${totalAmount.toFixed(2)}</span>
+          <span class="value">₹${(totalAmount || 0).toFixed(2)}</span>
         </div>
         <div class="summary-row">
           <span class="label">Total GST:</span>
-          <span class="value">₹${(invoice.items?.reduce((sum, item) => {
+          <span class="value">₹${((invoice.items?.reduce((sum, item) => {
             const itemPrice = typeof item.price === 'string' ? parseFloat(item.price) : (typeof item.price === 'number' ? item.price : 0);
             const itemGst = typeof item.gst === 'string' ? parseFloat(item.gst) : (typeof item.gst === 'number' ? item.gst : 0);
             const subtotal = itemPrice * parseFloat(item.quantity || 0);
             return sum + (subtotal * itemGst / 100);
-          }, 0)) + (invoice.packages?.reduce((sum, pkg) => {
+          }, 0) || 0) + (invoice.packages?.reduce((sum, pkg) => {
             const pkgPrice = typeof pkg.price === 'string' ? parseFloat(pkg.price) : (typeof pkg.price === 'number' ? pkg.price : 0);
             return sum + (pkgPrice * parseFloat(pkg.quantity || 0)); // Packages have 0 GST
-          }, 0)).toFixed(2)}</span>
+          }, 0) || 0)).toFixed(2)}</span>
         </div>
         <div class="summary-row">
           <span class="label">Total Discount:</span>
-          <span class="value" style="color: #28a745;">-₹${(invoice.items?.reduce((sum, item) => {
+          <span class="value" style="color: #28a745;">-₹${((invoice.items?.reduce((sum, item) => {
             const itemPrice = typeof item.price === 'string' ? parseFloat(item.price) : (typeof item.price === 'number' ? item.price : 0);
             const itemDiscount = typeof item.discount === 'string' ? parseFloat(item.discount) : (typeof item.discount === 'number' ? item.discount : 0);
             const subtotal = itemPrice * parseFloat(item.quantity || 0);
             return sum + (subtotal * itemDiscount / 100);
-          }, 0)) + (invoice.packages?.reduce((sum, pkg) => {
+          }, 0) || 0) + (invoice.packages?.reduce((sum, pkg) => {
             const pkgPrice = typeof pkg.price === 'string' ? parseFloat(pkg.price) : (typeof pkg.price === 'number' ? pkg.price : 0);
             return sum + 0; // Packages have 0 discount
-          }, 0)).toFixed(2)}</span>
+          }, 0) || 0)).toFixed(2)}</span>
         </div>
         <div class="summary-row total">
           <span>Grand Total:</span>
-          <span class="value">₹${totalAmount.toFixed(2)}</span>
+          <span class="value">₹${(totalAmount || 0).toFixed(2)}</span>
         </div>
       </div>
 
@@ -365,12 +365,12 @@ export const generateA4InvoiceHTML = (invoice) => {
         <h3>Payment Details:</h3>
         <div class="payment-row">
           <span class="label">Amount Paid:</span>
-          <span class="value">₹${paidAmount.toFixed(2)}</span>
+          <span class="value">₹${(paidAmount || 0).toFixed(2)}</span>
         </div>
         ${changeAmount > 0 ? `
           <div class="payment-row">
             <span class="label">Change Returned:</span>
-            <span class="value">₹${changeAmount.toFixed(2)}</span>
+            <span class="value">₹${(changeAmount || 0).toFixed(2)}</span>
           </div>
         ` : paidAmount < totalAmount ? `
           <div class="payment-row">
