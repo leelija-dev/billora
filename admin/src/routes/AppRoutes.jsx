@@ -5,7 +5,6 @@ import Layout from '../components/layout/Layout/Layout'
 
 // Auth Pages
 import Login from '../pages/auth/Login'
-import Register from '../pages/auth/Register'
 
 // Main Pages
 import Dashboard from '../pages/dashboard/Dashboard'
@@ -35,7 +34,6 @@ const AppRoutes = () => {
     <Routes>
       {/* Public Routes */}
       <Route path="/login" element={<Login />} />
-      <Route path="/register" element={<Register />} />
       
       {/* Test Route */}
       <Route path="/test-api" element={<APITest />} />

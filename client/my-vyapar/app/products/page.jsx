@@ -36,6 +36,7 @@ const ProductsPage = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [storeId, setStoreId] = useState(null);
   const [recentOrder, setRecentOrder] = useState(null);
+  const [showRecentOrder, setShowRecentOrder] = useState(false);
   const [formData, setFormData] = useState({
     fullName: "",
     phone: ""
@@ -62,16 +63,16 @@ const ProductsPage = () => {
 
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
-useEffect(() => {
-  const saved = localStorage.getItem("pendingProductOrder");
-  if (saved) {
-    try {
-      setRecentOrder(JSON.parse(saved));
-    } catch (e) {
-      setRecentOrder(null);
+  useEffect(() => {
+    const saved = localStorage.getItem("pendingProductOrder");
+    if (saved) {
+      try {
+        setRecentOrder(JSON.parse(saved));
+      } catch (e) {
+        setRecentOrder(null);
+      }
     }
-  }
-}, []);
+  }, []);
   const toggleDescription = (productId) => {
     setExpandedDescriptions(prev => ({
       ...prev,
@@ -438,7 +439,7 @@ useEffect(() => {
           product_id: cart.map(item => item.id),
           quantity: cart.map(item => item.quantity),
           unit_id: cart.map(item => item.unit_id || 1),
-          payment_mode:'cash'
+          payment_mode: 'cash'
         };
 
         const response = await fetch('http://localhost:8000/api/orders/store', {
@@ -456,9 +457,9 @@ useEffect(() => {
 
         if (response.ok) {
           toast.success('Order placed successfully!');
-            if (!res?.data?.order_id) {
-              throw new Error(res?.message || "Order created but order id not returned");
-            }
+          if (!res?.data?.order_id) {
+            throw new Error(res?.message || "Order created but order id not returned");
+          }
           const orderInfo = {
             orderId: res?.data?.order_id,
             totalAmount: res?.data?.total_amount,
@@ -512,6 +513,7 @@ useEffect(() => {
       if (categoryId && categoryId !== "All") {
         params.set("user_id", String(user.id));
         // Use the new category endpoint
+        console.log("Fetching products for category:", categoryId);
         url = `http://localhost:8000/api/restaurant-all-products/category/${categoryId}?${params.toString()}`;
       } else {
         url = `http://localhost:8000/api/restaurant-all-products/${user.id}?${params.toString()}`;
@@ -521,12 +523,15 @@ useEffect(() => {
           'Authorization': 'Bearer ' + localStorage.getItem('token'),
         }
       });
+      console.log("Fetch response status:", response);
       const productsData = await response.json();
+         // Set storeId only if stores data exists (for regular API, not category API)
       if (Array.isArray(productsData?.stores) && productsData.stores.length > 0) {
         setStoreId(productsData.stores[0].id);
+        console.log("Store ID set:", productsData.stores[0].id);
       }
-      console.log("Fetched products data:",productsData.stores[0].id );
-      
+      console.log("Fetched products data:", productsData);
+
       let productsArray = [];
       if (productsData?.products?.data && Array.isArray(productsData.products.data)) {
         productsArray = productsData.products.data;
@@ -538,15 +543,60 @@ useEffect(() => {
 
       const transformedProducts = productsArray.map(product => {
         let imageUrl = product.image;
+console.log(`Original image URL for product ${product.id}:`, imageUrl);
+if (imageUrl && (imageUrl.startsWith('http://') || imageUrl.startsWith('https://'))) {
+  // Handle external URLs (Google Drive, etc.)
+ if (imageUrl.includes('drive.google.com')) {
+  // Try multiple approaches to display Google Drive images
+  let fileId = null;
+  
+  if (imageUrl.includes('/file/d/')) {
+  const match = imageUrl.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+  fileId = match ? match[1] : null;
+} else if (imageUrl.includes('uc?export=view')) {
+  const match = imageUrl.match(/id=([a-zA-Z0-9_-]+)/);
+  fileId = match ? match[1] : null;
+}
+  
+  if (fileId) {
+    // Try Google's direct content delivery (most reliable)
+    imageUrl = `https://drive.google.com/thumbnail?id=${fileId}&sz=w400-h400`;
+    
+    // Add a flag to indicate this is a Drive image for fallback
+    product.isDriveImage = true;
+    product.driveUrl = product.image;
+    product.fileId = fileId;
+  } else {
+    console.log(`Google Drive image detected: ${imageUrl}`);
+    imageUrl = null; // Will trigger placeholder
+  }
+}
+  // Keep other external URLs as-is
+} else if (imageUrl && imageUrl.startsWith('/')) {
+  imageUrl = `http://localhost:8000${imageUrl}`;
+} else if (imageUrl && imageUrl !== "") {
+  const cleanImageUrl = imageUrl.replace(/^"|"$/g, '');
+  imageUrl = `http://localhost:8000/storage/${cleanImageUrl}`;
+} else {
+  imageUrl = "https://placehold.co/400x400/f0f0f0/999?text=No+Image";
+}
 
-        if (imageUrl && (imageUrl.startsWith('http://') || imageUrl.startsWith('https://'))) {
-        } else if (imageUrl && imageUrl.startsWith('/')) {
-          imageUrl = `http://localhost:8000${imageUrl}`;
-        } else if (imageUrl && imageUrl !== "") {
-          imageUrl = `http://localhost:8000/storage/${imageUrl}`;
-        } else {
-          imageUrl = "https://placehold.co/400x400/f0f0f0/999?text=No+Image";
-        }
+// Handle Google Drive images with a special placeholder
+// Handle Google Drive images with a special placeholder
+// Handle Google Drive images with a special placeholder
+if (!imageUrl && product.image && product.image.includes('drive.google.com')) {
+  // Extract file ID to show in placeholder
+  const fileId = product.image.match(/id=([a-zA-Z0-9_-]+)/);
+  const shortId = fileId ? fileId[1].substring(0, 8) : 'Drive';
+  imageUrl = `https://placehold.co/400x400/4285f4/ffffff?text=Drive+${shortId}`;
+  
+  // Add detailed logging
+  console.log(`Google Drive image for product ${product.id} (${product.name}):`);
+  console.log(`  Original URL: ${product.image}`);
+  console.log(`  File ID: ${fileId?.[1] || 'Unknown'}`);
+  console.log(`  Reason: Likely restricted or private sharing`);
+}
+console.log(`Final processed image URL for product ${product.id}:`, imageUrl);
 
         return {
           id: product.id,
@@ -679,9 +729,51 @@ useEffect(() => {
     setShowModal(false);
   };
 
-  const handleImageError = (e) => {
+ const handleImageError = (e) => {
+  console.log(`Image failed to load:`, e.currentTarget.src);
+  e.currentTarget.onerror = null; // Prevent infinite loop
+  
+  // Try to find the product data
+  const imgElement = e.currentTarget;
+  const container = imgElement.closest('[data-product-id]');
+  const productId = container?.dataset?.productId;
+  
+  if (productId) {
+    const product = currentProducts.find(p => p.id.toString() === productId);
+    if (product?.isDriveImage && product?.fileId) {
+      const currentSrc = imgElement.src;
+      
+      // Try alternative URLs in order
+      const alternatives = [
+        `https://lh3.googleusercontent.com/d/${product.fileId}=s400`,
+        `https://drive.google.com/uc?export=view&id=${product.fileId}`,
+        `https://drive.google.com/thumbnail?id=${product.fileId}&sz=w400-h400`,
+        `https://drive.google.com/thumbnail?id=${product.fileId}&sz=w800-h800` // Try larger size
+      ];
+      
+      const currentIndex = alternatives.findIndex(url => currentSrc.includes(url.split('?')[0].split('&')[0]));
+      
+      // Try the next alternative
+      if (currentIndex >= 0 && currentIndex < alternatives.length - 1) {
+        console.log(`Trying alternative URL:`, alternatives[currentIndex + 1]);
+        imgElement.src = alternatives[currentIndex + 1];
+        return;
+      }
+    }
+  }
+  
+  // Final fallback
+  const originalSrc = e.currentTarget.src;
+  if (originalSrc.includes('drive.google.com') || originalSrc.includes('googleusercontent.com')) {
+    e.currentTarget.src = `https://placehold.co/400x400/4285f4/ffffff?text=Drive+Failed`;
+  } else {
     e.currentTarget.src = "https://placehold.co/400x400/f0f0f0/999?text=No+Image";
-  };
+  }
+};
+
+const handleImageLoad = (e) => {
+  console.log(`Image loaded successfully:`, e.currentTarget.src);
+};
 
   const clearSearch = () => {
     setSearchInput("");
@@ -719,8 +811,18 @@ useEffect(() => {
         <span className="hidden sm:inline">Filters</span>
       </button>
 
-      {/* Floating Cart Button - Top Right Corner */}
-      <div className="fixed top-5 right-5 z-40">
+      {/* Floating Cart & Order Buttons - Top Right Corner */}
+      <div className="fixed top-5 right-5 z-40 flex gap-2">
+        {/* Recent Order Button */}
+        <button
+          onClick={() => setShowRecentOrder(!showRecentOrder)}
+          className="bg-green-600 text-white p-3 rounded-full shadow-lg hover:bg-green-700 transition relative"
+          title="Recent Order"
+        >
+          📋
+        </button>
+
+        {/* Cart Button */}
         <button
           onClick={() => {
             setShowCart(!showCart);
@@ -739,11 +841,74 @@ useEffect(() => {
         </button>
       </div>
 
+      {/* Recent Order Modal */}
+      {showRecentOrder && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-800">Recent Order</h3>
+              <button
+                onClick={() => setShowRecentOrder(false)}
+                className="text-gray-400 hover:text-gray-600 transition"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {recentOrder ? (
+              <div className="space-y-4">
+                <div>
+                  <p className="text-sm text-gray-500">Order ID</p>
+                  <p className="font-semibold text-gray-800 font-mono">ORD{recentOrder.orderId}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">Total Amount</p>
+                  <p className="font-bold text-green-600 text-lg">₹{recentOrder.totalAmount}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">Number of Items</p>
+                  <p className="font-semibold text-gray-800">{recentOrder.items} items</p>
+                </div>
+
+                <div className="flex gap-2 pt-4">
+                  <button
+                    onClick={() => {
+                      window.location.href = "/order-success";
+                    }}
+                    className="flex-1 bg-green-600 text-white py-2 rounded-lg hover:bg-green-700 transition"
+                  >
+                    View Details
+                  </button>
+                  <button
+                    onClick={() => {
+                      localStorage.removeItem("pendingProductOrder");
+                      setRecentOrder(null);
+                      setShowRecentOrder(false);
+                    }}
+                    className="flex-1 bg-gray-100 text-gray-700 py-2 rounded-lg hover:bg-gray-200 transition"
+                  >
+                    Dismiss
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <div className="text-5xl mb-4">📦</div>
+                <p className="text-gray-500 text-lg">No order yet</p>
+                <p className="text-gray-400 text-sm mt-2">Start shopping to see your recent orders here</p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       <div className="flex min-h-screen">
         {/* Products Grid */}
         <div className={`flex-1 transition-all duration-300 ${showCart ? 'lg:mr-[40%]' : 'mr-0'}`}>
           <div className="px-4 sm:px-6 md:px-8 lg:px-12 py-8">
-            <h1 className="text-3xl sm:text-4xl font-bold text-center mb-4 text-gray-800">
+            <h1 className="text-3xl sm:text-3xl font-bold mb-4 text-gray-800 text-center sm:text-center md:text-center lg:text-center xl:text-center sm:mx-auto md:mx-auto lg:mx-auto xl:mx-auto sm:ml-0 md:ml-0 lg:ml-0 xl:ml-0 ml-[5px]">
               Our Products
             </h1>
 
@@ -774,43 +939,7 @@ useEffect(() => {
                 )}
               </div>
             </div>
-{recentOrder && (
-  <div className="max-w-xl mx-auto mb-6 bg-white border border-green-200 rounded-xl p-4 shadow-sm">
-    <div className="flex items-start justify-between gap-3">
-      <div>
-        <p className="text-sm text-gray-500">Recent Order</p>
-        <p className="font-semibold text-gray-800">
-          Order ID: <span className="font-mono">ORD{recentOrder.orderId}</span>
-        </p>
-        <p className="text-sm text-gray-700 mt-1">
-          Total: <span className="font-bold text-green-600">₹{recentOrder.totalAmount}</span>
-        </p>
-        <p className="text-sm text-gray-700">
-          Items: <span className="font-semibold">{recentOrder.items}</span>
-        </p>
-      </div>
 
-      <div className="flex flex-col gap-2">
-        {/* <button
-          onClick={() => (window.location.href = "/order-success")}
-          className="px-3 py-2 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 transition"
-        >
-          View
-        </button> */}
-
-        <button
-          onClick={() => {
-            localStorage.removeItem("pendingProductOrder");
-            setRecentOrder(null);
-          }}
-          className="px-3 py-2 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition"
-        >
-          Dismiss
-        </button>
-      </div>
-    </div>
-  </div>
-)}
             {/* Selection info bar */}
             <div className="max-w-7xl mx-auto mb-6 flex flex-wrap items-center justify-between gap-3">
               <div className="flex items-center gap-3">
@@ -859,7 +988,7 @@ useEffect(() => {
                       >
                         {/* Discount Badge */}
                         {product.discount_percentage > 0 && (
-                          <div className="absolute -top-3 -left-3 z-20">
+                          <div className="absolute -top-3 -left-3 z-10">
                             <div className="relative">
                               <div className="bg-gradient-to-r from-red-500 to-orange-500 text-white px-3 py-1.5 rounded-lg shadow-lg transform -rotate-12">
                                 <span className="text-xs font-bold">{product.discount_percentage}% OFF</span>
@@ -880,16 +1009,28 @@ useEffect(() => {
                         </div>
 
                         {/* Image */}
-                        <div onClick={() => openProduct(product)} className="cursor-pointer flex-shrink-0">
-                          <div className="relative h-40 mb-4 flex justify-center items-center bg-gray-50 rounded-lg">
-                            <img
-                              src={product.img}
-                              alt={product.name}
-                              className="max-h-full max-w-full object-contain transition-transform duration-300 group-hover:scale-105"
-                              onError={handleImageError}
-                            />
-                          </div>
-                        </div>
+                        <div onClick={() => {
+  if (product.isDriveImage && product.driveUrl) {
+    window.open(product.driveUrl, '_blank');
+  } else {
+    openProduct(product);
+  }
+}} className="cursor-pointer flex-shrink-0" data-product-id={product.id}>
+  <div className="relative h-40 mb-4 flex justify-center items-center bg-gray-50 rounded-lg">
+    <img
+      src={product.img}
+      alt={product.name}
+      className="max-h-full max-w-full object-contain transition-transform duration-300 group-hover:scale-105"
+      onError={handleImageError}
+      onLoad={handleImageLoad}
+    />
+    {product.isDriveImage && (
+      <div className="absolute bottom-2 right-2 bg-blue-600 text-white text-xs px-2 py-1 rounded">
+        View in Drive
+      </div>
+    )}
+  </div>
+</div>
 
                         {/* Content */}
                         <div className="flex-1 flex flex-col">
@@ -1499,12 +1640,12 @@ useEffect(() => {
                         className="w-4 h-4 accent-blue-600" disabled
                       />
                       <span style={{ color: 'black' }}>Online<span style={{ color: 'gray' }} className="ml-2 text-xs text-gray-200">(Coming Soon)</span></span>
-                      
+
                     </label>
-                    
-                    
+
+
                   </div>
-                      
+
                   <button
                     type="submit"
                     disabled={isPlacingOrder}

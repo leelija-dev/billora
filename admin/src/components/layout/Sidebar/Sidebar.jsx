@@ -29,7 +29,7 @@ import { TbRuler2 } from "react-icons/tb";
 
 const Sidebar = () => {
   const { sidebarOpen, toggleSidebar, isMobile, setIsMobile } = useUIStore();
-  const { canAccess } = usePermissionStore();
+  const { canAccess, sidebarPermissions, loading: permissionsLoading, permissionsFetched } = usePermissionStore();
   const { user } = useAuthStore();
   const { planExpireReminder } = useNotificationStore();
   const location = useLocation();
@@ -53,32 +53,72 @@ const Sidebar = () => {
     }
   }, [location.pathname, isMobile]);
 
-  const menuItems = [
-    { path: '/dashboard', name: 'Dashboard', icon: FiHome, badge: null },
-    { path: '/products', name: 'Products', icon: FiPackage, badge: null },
-    { path: '/categories', name: 'Categories', icon: FiGrid, badge: null },
-    { path: '/brands', name: 'Brands', icon: FiTag, badge: null },
-    { path: '/units', name: 'Units', icon: TbRuler2, badge: null },
-    { path: '/medicine-types', name: 'Medicine Types', icon: FaFileMedical, badge: null },
-    { path: '/stores', name: 'Stores', icon: FaStore, badge: null },
-    { path: '/packages', name: 'Packages', icon: FiBox, badge: null },
-    { path: '/stock', name: 'Stock', icon: FiArchive, badge: null, permission: 'stock-management' },
-    { path: '/orders', name: 'Orders', icon: FiShoppingBag, badge: null, permission: 'hide-with-stock' },
-    { path: '/customers', name: 'Customers', icon: FiUsers, badge: null },
-    { path: '/invoices', name: 'Invoices', icon: FiFileText, badge: null },
-    { path: '/reports', name: 'Reports', icon: FiBarChart2, badge: null },
-    { path: '/billing', name: 'Plans', icon: FiCreditCard, badge: planExpireReminder ? '?' : null },
-    { path: '/settings', name: 'Settings', icon: FiSettings, badge: null },
-  ];
-
-  // Filter menu items based on permissions
-  const filteredMenuItems = menuItems.filter(item => {
-    if (!item.permission) return true; // Show items without permission requirements
-    if (item.permission === 'hide-with-stock') {
-      // Hide this item if user has stock management permission
-      return !canAccess('stock-management');
+  // Fetch sidebar permissions if not already loaded
+  useEffect(() => {
+    const { fetchUserPermissions } = usePermissionStore.getState();
+    
+    if (user?.plan_id && !permissionsFetched && !permissionsLoading) {
+      fetchUserPermissions(user.id);
     }
-    return canAccess(item.permission);
+  }, [user?.plan_id, permissionsFetched, permissionsLoading]);
+
+  // Icon mapping for dynamic menu items
+  const iconMap = {
+    'dashboard': FiHome,
+    'products': FiPackage,
+    'categories': FiGrid,
+    'brands': FiTag,
+    'units': TbRuler2,
+    'medicine-types': FaFileMedical,
+    'stores': FaStore,
+    'packages': FiBox,
+    'stock': FiArchive,
+    'orders': FiShoppingBag,
+    'customers': FiUsers,
+    'invoices': FiFileText,
+    'reports': FiBarChart2,
+    'plans': FiCreditCard,
+    'settings': FiSettings,
+  };
+
+  // Path mapping for menu items
+  const pathMap = {
+    'dashboard': '/dashboard',
+    'products': '/products',
+    'categories': '/categories',
+    'brands': '/brands',
+    'units': '/units',
+    'medicine-types': '/medicine-types',
+    'stores': '/stores',
+    'packages': '/packages',
+    'stock': '/stock',
+    'orders': '/orders',
+    'customers': '/customers',
+    'invoices': '/invoices',
+    'reports': '/reports',
+    'plans': '/billing',
+    'settings': '/settings',
+  };
+
+  // Generate dynamic menu items from API permissions
+  const menuItems = sidebarPermissions.map(permission => {
+    const path = pathMap[permission.slug];
+    const icon = iconMap[permission.slug] || FiSettings; // Default to Settings icon
+    const badge = permission.slug === 'plans' && planExpireReminder ? '?' : null;
+    
+    return {
+      path: path,
+      name: permission.name,
+      icon: icon,
+      badge: badge,
+      permission: null // Sidebar permissions already handle access control
+    };
+  });
+
+  // Filter menu items - sidebar permissions already control what's visible
+  const filteredMenuItems = menuItems.filter(item => {
+    // Only filter out items that don't have a valid path
+    return item.path !== undefined;
   });
 
   return (
