@@ -38,7 +38,8 @@ export const invoiceAPI = {
 
   // Create/store new invoice/bill
   create: (invoiceData) => {
-    return apiClient.post('/invoice/store', invoiceData)
+    return apiClient.post('/invoice/store', invoiceData),
+    console.log('Creating invoice with data:', invoiceData) // Debug log
   },
 
   // Update invoice/bill
