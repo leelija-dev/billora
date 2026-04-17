@@ -82,11 +82,13 @@ const Orders = () => {
 
   useEffect(() => {
     const debounceTimer = setTimeout(() => {
-      setFilters({ search: searchTerm })
+      if (user?.id) {
+        setFilters({ search: searchTerm }, user.id)
+      }
     }, 500)
 
     return () => clearTimeout(debounceTimer)
-  }, [searchTerm, setFilters])
+  }, [searchTerm, setFilters, user?.id])
 
   useEffect(() => {
     if (orders.length > 0) {
@@ -242,7 +244,9 @@ const Orders = () => {
 
   const clearFilters = () => {
     setSearchTerm('')
-    setFilters({ search: '', status: '', paymentStatus: '', dateFrom: '', dateTo: '' })
+    if (user?.id) {
+      setFilters({ search: '', status: '', paymentStatus: '', dateFrom: '', dateTo: '' }, user.id)
+    }
   }
 
   const getStatusColor = (status) => {

@@ -21,23 +21,44 @@ export const useOrderStore = create((set, get) => ({
     try {
       const { filters, pageSize } = get()
       
+      // Validate user ID
+      if (!userId) {
+        throw new Error('User ID is required to fetch orders')
+      }
+      
       // Use user order history endpoint for admin side
-      const response = await orderAPI.getUserOrderHistory(userId || 1)
+      const response = await orderAPI.getUserOrderHistory(userId)
+      console.log('Orders API response:', response)
       
-      // Handle different response structure
-      const ordersData = response.data?.data || response.data || []
-      const totalCount = response.data?.total || response.data?.count || ordersData.length
-      
-      set({
-        orders: ordersData,
-        totalOrders: totalCount,
-        currentPage: page,
-        loading: false,
-      })
+      // Handle the actual response structure: { status: true, data: [], message: "Order History" }
+      const responseData = response.data
+      if (responseData?.status === true) {
+        const ordersData = Array.isArray(responseData?.data) ? responseData.data : []
+        const totalCount = ordersData.length
+        
+        set({
+          orders: ordersData,
+          totalOrders: totalCount,
+          currentPage: page,
+          loading: false,
+        })
+      } else {
+        // Handle error response
+        toast.error(responseData?.message || 'Failed to fetch orders')
+        set({
+          orders: [],
+          totalOrders: 0,
+          loading: false,
+        })
+      }
     } catch (error) {
       console.error('Failed to fetch orders:', error)
       toast.error('Failed to fetch orders: ' + (error.response?.data?.message || error.message))
-      set({ loading: false })
+      set({ 
+        orders: [],
+        totalOrders: 0,
+        loading: false 
+      })
     }
   },
 
@@ -81,8 +102,10 @@ export const useOrderStore = create((set, get) => ({
     }
   },
 
-  setFilters: (filters) => {
+  setFilters: (filters, userId) => {
     set({ filters: { ...get().filters, ...filters } })
-    get().fetchOrders(1)
+    if (userId) {
+      get().fetchOrders(1, userId)
+    }
   },
 }))
