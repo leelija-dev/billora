@@ -45,8 +45,7 @@ class ProductsController extends Controller
                 ]);
             }
             $user = Auth::user()->id;
-            $product = Products::with('variQA::
-            ants', 'images')->where('user_id', $user)->where('is_active', true)->paginate(15);
+            $product = Products::with('variants', 'images')->where('user_id', $user)->where('is_active', true)->paginate(15);
             if ($request->has('search')) {
                 $product = Products::where('user_id', $user)->where('name', 'like', '%' . $request->search . '%')
                     ->orWhere('sku', 'like', '%' . $request->search . '%')
@@ -322,10 +321,23 @@ class ProductsController extends Controller
                 'variants.*.gender'     => 'nullable',
 
             ]);
+            // return response()->json([
+            //     'status' => false,
+            //     'message' => 'send data ',
+            //     'data' => $data
+            // ]);
             if (!Auth::check()) {
                 return response()->json([
                     'status' => false,
                     'message' => 'Authentication required. Please login first.'
+                ]);
+            }
+            if($user != $request->user_id){
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Authentication required. Please login first.',
+                    'logged_user_id' => $user,
+                    'sent_user_id' => $request->user_id
                 ]);
             }
             //  Upload main Image → image folder
