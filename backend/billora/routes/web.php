@@ -33,5 +33,5 @@ Route::get('/google-drive-token', function () {
     // Step 2: After Google login
     $token = $client->fetchAccessTokenWithAuthCode(request('code'));
 
-    dd($token);
+    // dd($token);
 });
