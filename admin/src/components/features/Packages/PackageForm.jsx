@@ -9,16 +9,26 @@ const PackageForm = ({ initialData, onSubmit, onCancel, isSubmitting = false }) 
   
   // Get current user ID
   const getUserId = () => {
+    // First try to get from auth store (most reliable)
+    if (user?.id) {
+      console.log('Using user ID from auth store:', user.id)
+      return user.id
+    }
+    
+    // Fallback to localStorage if store is not available
     const authData = localStorage.getItem('auth')
     if (authData) {
       try {
         const parsed = JSON.parse(authData)
-        return parsed.user?.id || parsed.userId || '1'
-      } catch {
-        return '1'
+        console.log('Parsed auth data for user ID:', parsed)
+        return parsed.user?.id || parsed.userId
+      } catch (error) {
+        console.error('Failed to parse auth data:', error)
       }
     }
-    return '1'
+    
+    // Last resort - throw error instead of returning hardcoded ID
+    throw new Error('User ID not found in auth store or localStorage')
   }
 
   const currentUserId = getUserId()

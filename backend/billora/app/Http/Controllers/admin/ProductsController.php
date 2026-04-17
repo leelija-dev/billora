@@ -321,10 +321,23 @@ class ProductsController extends Controller
                 'variants.*.gender'     => 'nullable',
 
             ]);
+            // return response()->json([
+            //     'status' => false,
+            //     'message' => 'send data ',
+            //     'data' => $data
+            // ]);
             if (!Auth::check()) {
                 return response()->json([
                     'status' => false,
                     'message' => 'Authentication required. Please login first.'
+                ]);
+            }
+            if($user != $request->user_id){
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Authentication required. Please login first.',
+                    'logged_user_id' => $user,
+                    'sent_user_id' => $request->user_id
                 ]);
             }
             //  Upload main Image → image folder
@@ -797,7 +810,7 @@ if ($request->has('variants')) {
 
                             // Price
                             ->orWhere('selling_price', 'like', "%{$search}%")
-
+                            ->orWhere('description', 'like', "%{$search}%")
                             // Category name
                             ->orWhereHas('category', function ($q) use ($search) {
                                 $q->where('name', 'like', "%{$search}%");

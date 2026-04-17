@@ -1,11 +1,34 @@
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import ReactApexChart from 'react-apexcharts'
 
 const RevenueChart = ({ data, height = 320 }) => {
+  const [chartKey, setChartKey] = useState(0)
+
+  useEffect(() => {
+    // Force chart re-render on window resize (sidebar toggle)
+    const handleResize = () => {
+      setChartKey(prev => prev + 1)
+    }
+
+    // Add resize observer for more responsive updates
+    const resizeObserver = new ResizeObserver(() => {
+      setTimeout(handleResize, 100) // Small delay to ensure DOM has updated
+    })
+
+    // Observe the document body to detect layout changes
+    resizeObserver.observe(document.body)
+
+    return () => {
+      resizeObserver.disconnect()
+      window.removeEventListener('resize', handleResize)
+    }
+  }, [])
+
   const chartOptions = {
     chart: {
       type: 'area',
       height: height,
+      width: '100%',
       zoom: {
         enabled: false
       },
@@ -20,7 +43,9 @@ const RevenueChart = ({ data, height = 320 }) => {
         blur: 15,
         opacity: 0.08,
         color: '#3b82f6'
-      }
+      },
+      redrawOnWindowResize: true,
+      redrawOnParentResize: true
     },
     dataLabels: {
       enabled: false
@@ -226,8 +251,9 @@ const RevenueChart = ({ data, height = 320 }) => {
   }]
 
   return (
-    <div className="h-80">
+    <div className="w-full h-80 overflow-hidden">
       <ReactApexChart 
+        key={chartKey}
         options={chartOptions} 
         series={chartSeries} 
         type="area" 

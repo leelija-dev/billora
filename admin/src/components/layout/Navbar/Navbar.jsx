@@ -136,8 +136,8 @@ const Navbar = () => {
       <motion.nav
         initial={{ y: -100 }}
         animate={{ y: 0 }}
-        transition={{ duration: 0.5, type: 'spring', stiffness: 100 }}
-        className="fixed top-0 right-0 left-0 z-40 h-16 bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl border-b border-gray-200/50 dark:border-gray-700/50 shadow-sm"
+        transition={{  type: 'spring', stiffness: 100 }}
+        className="fixed top-0 transition-all duration-200 ease-in-out right-0 left-0 z-40 h-16 bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl border-b border-gray-200/50 dark:border-gray-700/50 shadow-sm"
         style={{ 
           left: !isMobile && sidebarOpen ? '256px' : !isMobile && !sidebarOpen ? '80px' : '0px'
         }}
@@ -153,7 +153,7 @@ const Navbar = () => {
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={toggleSidebar}
-              className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors relative group lg:hidden"
+              className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors relative group lggs:hidden"
             >
               {sidebarOpen ? (
                 <FiX className="w-5 h-5 text-gray-600 dark:text-gray-300" />
@@ -166,7 +166,7 @@ const Navbar = () => {
             <motion.div 
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
-              className={`flex items-center space-x-3 ${showMobileSearch ? 'hidden md:flex' : 'flex'}`}
+              className={`flex items-center space-x-3 ${showMobileSearch ? 'hidden lggs:flex' : 'flex'}`}
             >
               <div className="flex flex-col">
                 <div className="flex items-center space-x-2">
@@ -181,7 +181,7 @@ const Navbar = () => {
                     {company?.plan || 'Free Plan'}
                   </motion.span>
                 </div>
-                <p className="hidden md:block text-xs text-gray-500 dark:text-gray-400">
+                <p className="hidden lg:block text-xs text-gray-500 dark:text-gray-400">
                   {new Date().toLocaleDateString('en-US', { 
                     weekday: 'long', 
                     year: 'numeric', 
@@ -209,7 +209,7 @@ const Navbar = () => {
             <motion.div
               animate={{ width: searchFocused ? 300 : 200 }}
               transition={{ duration: 0.3 }}
-              className="relative hidden md:block"
+              className="relative hidden lg:block"
             >
               <input
                 type="text"
@@ -251,7 +251,7 @@ const Navbar = () => {
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={toggleFullscreen}
-              className="hidden md:block p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors relative group"
+              className="hidden lg:block p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors relative group"
             >
               {isFullscreen ? (
                 <FiMinimize2 className="w-5 h-5 text-gray-600 dark:text-gray-300" />
@@ -407,7 +407,7 @@ const Navbar = () => {
                   <span className="absolute bottom-0 right-0 w-2 h-2 md:w-2.5 md:h-2.5 bg-green-500 border-2 border-white dark:border-gray-800 rounded-full" />
                 </motion.div>
                 
-                <div className="hidden md:block text-left">
+                <div className="hidden lg:block text-left">
                   <p className="text-sm font-semibold text-gray-700 dark:text-gray-200">
                     {user?.name || 'User Name'}
                   </p>
@@ -419,7 +419,7 @@ const Navbar = () => {
                 <motion.div
                   animate={{ rotate: showUserMenu ? 180 : 0 }}
                   transition={{ duration: 0.2 }}
-                  className="hidden md:block"
+                  className="hidden lg:block"
                 >
                   <FiChevronDown className="w-4 h-4 text-gray-500 dark:text-gray-400" />
                 </motion.div>
