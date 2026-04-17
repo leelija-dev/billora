@@ -32,17 +32,26 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
   
   // Get current user ID
   const getUserId = () => {
+    // First try to get from auth store (most reliable)
+    if (user?.id) {
+      console.log('Using user ID from auth store:', user.id)
+      return user.id
+    }
+    
+    // Fallback to localStorage if store is not available
     const authData = localStorage.getItem('auth')
     if (authData) {
       try {
         const parsed = JSON.parse(authData)
         console.log('Parsed auth data for user ID:', parsed)
-        return parsed.user?.id || parsed.userId || '1'
-      } catch {
-        return '1'
+        return parsed.user?.id || parsed.userId
+      } catch (error) {
+        console.error('Failed to parse auth data:', error)
       }
     }
-    return '1'
+    
+    // Last resort - throw error instead of returning hardcoded ID
+    throw new Error('User ID not found in auth store or localStorage')
   }
 
   const currentUserId = getUserId()
@@ -137,7 +146,7 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
 
     setLoading(true)
     try {
-      const response = await invoiceAPI.getBillGenerateData()
+      const response = await invoiceAPI.getBillGenerateData(currentUserId)
       console.log('Full API response:', response)
       
       let data = {}
@@ -464,10 +473,10 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
       
       if (result.success) {
         // Refresh customers list
-        await fetchCustomers(1, '')
+        await fetchCustomers(currentUserId, '')
         
         // Fetch updated customers from API
-        const response = await invoiceAPI.getBillGenerateData()
+        const response = await invoiceAPI.getBillGenerateData(currentUserId)
         let updatedData = response.data?.data || response.data || {}
         const updatedCustomersList = updatedData.customers || updatedData.bill_customer || updatedData.customer || []
         setCustomers(updatedCustomersList.length > 0 ? updatedCustomersList : mockCustomers)
@@ -1324,7 +1333,7 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
                             type="text"
                             value={item.quantity.toString()}
                             onChange={(e) => handleUpdateItem(index, 'quantity', e.target.value)}
-                            className={`w-14 text-sm text-center ${
+                            className={`min-w-[5.5rem] text-sm text-center ${
                               item.stock_quantity > 0 && item.quantity > item.stock_quantity 
                                 ? 'border-red-500 bg-red-50' 
                                 : ''
@@ -1366,7 +1375,7 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
                             step="0.01"
                             value={item.gst.toString()}
                             onChange={(e) => handleUpdateItem(index, 'gst', e.target.value)}
-                            className="w-14 text-sm text-center"
+                            className="min-w-[5.5rem] text-sm text-center"
                           />
                           <button
                             type="button"
@@ -1393,7 +1402,7 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
                             step="0.01"
                             value={item.discount.toString()}
                             onChange={(e) => handleUpdateItem(index, 'discount', e.target.value)}
-                            className="w-14 text-sm text-center"
+                            className="min-w-[5.5rem] text-sm text-center"
                           />
                           <button
                             type="button"

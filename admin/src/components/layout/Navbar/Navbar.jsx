@@ -136,8 +136,8 @@ const Navbar = () => {
       <motion.nav
         initial={{ y: -100 }}
         animate={{ y: 0 }}
-        transition={{ duration: 0.5, type: 'spring', stiffness: 100 }}
-        className="fixed top-0 right-0 left-0 z-40 h-16 bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl border-b border-gray-200/50 dark:border-gray-700/50 shadow-sm"
+        transition={{  type: 'spring', stiffness: 100 }}
+        className="fixed top-0 transition-all duration-200 ease-in-out right-0 left-0 z-40 h-16 bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl border-b border-gray-200/50 dark:border-gray-700/50 shadow-sm"
         style={{ 
           left: !isMobile && sidebarOpen ? '256px' : !isMobile && !sidebarOpen ? '80px' : '0px'
         }}
