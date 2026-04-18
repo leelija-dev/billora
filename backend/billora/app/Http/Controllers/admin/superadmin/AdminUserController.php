@@ -168,4 +168,23 @@ class AdminUserController extends Controller
            
         }
     }
+
+    public function destroy($id)
+    {
+        try {
+            $user = AdminUser::findOrFail($id);
+            
+            // Delete user image if exists
+            if ($user->image && File::exists(public_path($user->image))) {
+                File::delete(public_path($user->image));
+            }
+            
+            // Delete the user
+            $user->delete();
+            
+            return redirect()->route('admin.admin-users.index')->with('success', 'Admin User Deleted Successfully');
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Failed to delete user: ' . $e->getMessage());
+        }
+    }
 }

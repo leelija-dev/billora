@@ -809,7 +809,7 @@ if ($request->has('variants')) {
                             });
                     });
                 })
-                ->paginate(15);
+                ->paginate(12);
             if (!$products) {
                 return response()->json([
                     'status' => false,

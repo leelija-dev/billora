@@ -21,6 +21,11 @@ const Navbar = () => {
   const [hasActivePlan, setHasActivePlan] = useState(false);
   const [isCheckingPlan, setIsCheckingPlan] = useState(true);
   
+  // Hide navbar on scroll state
+  const [isNavbarVisible, setIsNavbarVisible] = useState(true);
+  const [lastScrollY, setLastScrollY] = useState(0);
+  const scrollTimeoutRef = useRef(null);
+  
   // Dashboard URL (external app on port 3000)
   const DASHBOARD_URL = process.env.NEXT_PUBLIC_DASHBOARD_URL || 'http://localhost:3000';
   
@@ -70,6 +75,45 @@ const Navbar = () => {
     return routeMap.hasOwnProperty(path?.replace(/\/$/, ""));
   };
 
+  // Handle scroll to hide/show navbar
+  const handleScroll = () => {
+    const currentScrollY = window.scrollY;
+    const scrollingDown = currentScrollY > lastScrollY;
+    const isAtTop = currentScrollY < 50;
+    
+    // Clear existing timeout
+    if (scrollTimeoutRef.current) {
+      clearTimeout(scrollTimeoutRef.current);
+    }
+    
+    // Hide navbar when scrolling down (not at top, and scrolled past 100px)
+    if (scrollingDown && !isAtTop && currentScrollY > 100) {
+      setIsNavbarVisible(false);
+    }
+    
+    // Show navbar immediately when scrolling up
+    if (!scrollingDown && !isAtTop) {
+      setIsNavbarVisible(true);
+    }
+    
+    // Show navbar when at top of page
+    if (isAtTop) {
+      setIsNavbarVisible(true);
+    }
+    
+    // CRITICAL FIX: When scrolling stops (after 300ms of no scroll movement), show navbar
+    scrollTimeoutRef.current = setTimeout(() => {
+      // Only show if navbar is hidden and not at top (to avoid unnecessary animation)
+      if (!isNavbarVisible && currentScrollY > 50) {
+        setIsNavbarVisible(true);
+      }
+    }, 300);
+    
+    // Update scroll position for scrolled effect
+    setScrolled(currentScrollY > 20);
+    setLastScrollY(currentScrollY);
+  };
+
   // Check if user has purchased a plan
   const checkPlanPurchaseStatus = () => {
     try {
@@ -88,14 +132,6 @@ const Navbar = () => {
       }
       
       const hasPlan = (purchaseCompleted || planPurchased || hasActiveSubscription) && isPurchaseValid;
-      
-      console.log("🔍 Checking plan status:", { 
-        purchaseCompleted, 
-        planPurchased, 
-        hasActiveSubscription,
-        isPurchaseValid,
-        hasPlan 
-      });
       
       setHasActivePlan(hasPlan);
     } catch (error) {
@@ -280,6 +316,17 @@ const Navbar = () => {
   useEffect(() => {
     checkLoginStatus();
   }, []);
+
+  // Add scroll event listener
+  useEffect(() => {
+    window.addEventListener("scroll", handleScroll);
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+      if (scrollTimeoutRef.current) {
+        clearTimeout(scrollTimeoutRef.current);
+      }
+    };
+  }, [lastScrollY, isNavbarVisible]); // Added isNavbarVisible to dependency
 
   // Listen for plan purchase completion event
   useEffect(() => {
@@ -574,12 +621,6 @@ const Navbar = () => {
     };
   }, [isNavAction, activeTab]);
 
-  useEffect(() => {
-    const handleScroll = () => setScrolled(window.scrollY > 20);
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
-
   const navItems = [
     { name: "Home", href: "/" },
     { name: "Try Mobile", href: "/trymobile" },
@@ -621,9 +662,16 @@ const Navbar = () => {
   return (
     <>
       <nav
-        className={`sticky top-0 bg-white z-[1000] h-16 md:h-20 flex items-center px-3 sm:px-4 md:px-6 transition-all duration-300 ${
+        className={`fixed top-0 left-0 w-full bg-white z-[1000] h-16 md:h-20 flex items-center px-3 sm:px-4 md:px-6 transition-all duration-300 ${
           scrolled ? "shadow-lg border-b border-gray-100" : "shadow-sm"
+        } ${
+          isNavbarVisible 
+            ? "translate-y-0 opacity-100" 
+            : "-translate-y-full opacity-0"
         }`}
+        style={{
+          transition: "transform 0.3s ease-in-out, opacity 0.25s ease-in-out"
+        }}
       >
         <div className="max-w-[1400px] w-full mx-auto flex justify-between items-center gap-2 sm:gap-4">
           {/* Logo */}
@@ -864,6 +912,9 @@ const Navbar = () => {
           </button>
         </div>
       </nav>
+
+      {/* Add spacer div to prevent content jump when navbar is fixed */}
+      <div className="h-16 md:h-20"></div>
 
       {/* Backdrop Overlay */}
       <div 
