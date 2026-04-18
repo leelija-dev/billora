@@ -18,7 +18,7 @@ export const orderAPI = {
 
   // Show payment details for each order
   getOrderPaymentDetails: (orderId, userId) => {
-    return apiClient.post(`/invoice/user-order-due/${orderId}`, { user_id: userId })
+    return apiClient.get(`/invoice/user-order-due/${orderId}?user_id=${userId}`)
   },
 
   // Update payment

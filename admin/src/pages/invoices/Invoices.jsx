@@ -19,6 +19,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useInvoiceStore } from '../../store/invoiceStore'
 import { usePermissionStore } from '../../store/permissionStore'
 import Button from '../../components/common/Button/Button'
+import toast from 'react-hot-toast'
 import Input from '../../components/common/Input/Input'
 import Pagination from '../../components/common/Pagination/Pagination'
 import EmptyState from '../../components/common/EmptyState/EmptyState'
@@ -175,12 +176,19 @@ const Invoices = () => {
     setFormSubmitting(true)
     try {
       const res = await createInvoice(data)
-      if (res?.success) {
+      console.log('Invoice creation response:', res)
+      
+      // Check for successful response - backend returns status: true, not success field
+      if (res?.status === true || res?.success) {
         setShowAddForm(false)
         await fetchInvoices(currentPage)
+        toast.success('Invoice created successfully')
+      } else {
+        toast.error(res?.message || 'Failed to create invoice')
       }
     } catch (error) {
       console.error('Failed to create invoice:', error)
+      toast.error('Failed to create invoice')
     } finally {
       setFormSubmitting(false)
     }

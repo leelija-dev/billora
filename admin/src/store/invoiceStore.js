@@ -188,17 +188,25 @@ export const useInvoiceStore = create((set, get) => ({
     set({ loading: true })
     try {
       const response = await invoiceAPI.create(invoiceData)
-      set((state) => ({
-        invoices: [response.data, ...state.invoices],
-        totalInvoices: state.totalInvoices + 1,
-        loading: false,
-      }))
-      toast.success('Invoice created successfully')
-      return { success: true, data: response.data }
+      console.log('Invoice store API response:', response)
+      
+      // Handle the actual response structure from backend
+      const responseData = response.data
+      if (responseData?.status === true) {
+        // Success case - return the response data structure
+        set({ loading: false })
+        return { success: true, data: responseData }
+      } else {
+        // Backend returned failure
+        toast.error(responseData?.message || 'Failed to create invoice')
+        set({ loading: false })
+        return { success: false, error: responseData }
+      }
     } catch (error) {
+      console.error('Invoice store error:', error)
       toast.error('Failed to create invoice')
       set({ loading: false })
-      return { success: false, error: error.response?.data }
+      return { success: false, error: error.response?.data || error.message }
     }
   },
 

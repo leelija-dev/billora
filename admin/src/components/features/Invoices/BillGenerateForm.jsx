@@ -32,16 +32,26 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
   
   // Get current user ID
   const getUserId = () => {
+    // First try to get from auth store (most reliable)
+    if (user?.id) {
+      console.log('Using user ID from auth store:', user.id)
+      return user.id
+    }
+    
+    // Fallback to localStorage if store is not available
     const authData = localStorage.getItem('auth')
     if (authData) {
       try {
         const parsed = JSON.parse(authData)
-        return parsed.user?.id || parsed.userId || '1'
-      } catch {
-        return '1'
+        console.log('Parsed auth data for user ID:', parsed)
+        return parsed.user?.id || parsed.userId
+      } catch (error) {
+        console.error('Failed to parse auth data:', error)
       }
     }
-    return '1'
+    
+    // Last resort - throw error instead of returning hardcoded ID
+    throw new Error('User ID not found in auth store or localStorage')
   }
 
   const currentUserId = getUserId()
@@ -98,9 +108,9 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
   // Helper function to calculate item total price
   const calculateItemTotal = (price, quantity, gst, discount) => {
     const basePrice = price * quantity
-    const gstAmount = basePrice * (gst / 100)
     const discountAmount = basePrice * (discount / 100)
-    return basePrice + gstAmount - discountAmount
+    const gstAmount = (basePrice - discountAmount) * (gst / 100)
+    return ((basePrice - discountAmount) + gstAmount) 
   }
 
   // Check if we have valid cached data
@@ -136,7 +146,7 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
 
     setLoading(true)
     try {
-      const response = await invoiceAPI.getBillGenerateData()
+      const response = await invoiceAPI.getBillGenerateData(currentUserId)
       console.log('Full API response:', response)
       
       let data = {}
@@ -463,10 +473,10 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
       
       if (result.success) {
         // Refresh customers list
-        await fetchCustomers(1, '')
+        await fetchCustomers(currentUserId, '')
         
         // Fetch updated customers from API
-        const response = await invoiceAPI.getBillGenerateData()
+        const response = await invoiceAPI.getBillGenerateData(currentUserId)
         let updatedData = response.data?.data || response.data || {}
         const updatedCustomersList = updatedData.customers || updatedData.bill_customer || updatedData.customer || []
         setCustomers(updatedCustomersList.length > 0 ? updatedCustomersList : mockCustomers)
@@ -1323,7 +1333,7 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
                             type="text"
                             value={item.quantity.toString()}
                             onChange={(e) => handleUpdateItem(index, 'quantity', e.target.value)}
-                            className={`w-14 text-sm text-center ${
+                            className={`min-w-[5.5rem] text-sm text-center ${
                               item.stock_quantity > 0 && item.quantity > item.stock_quantity 
                                 ? 'border-red-500 bg-red-50' 
                                 : ''
@@ -1342,7 +1352,7 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
                       <td className="py-3">
                         <div className="flex justify-center">
                           <Input
-                            type="text"
+                            type="number"
                             step="0.01"
                             value={item.price.toString()}
                             onChange={(e) => handleUpdateItem(index, 'price', e.target.value)}
@@ -1361,11 +1371,11 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
                             <FiMinus className="w-3 h-3" />
                           </button>
                           <Input
-                            type="text"
+                            type="number"
                             step="0.01"
                             value={item.gst.toString()}
                             onChange={(e) => handleUpdateItem(index, 'gst', e.target.value)}
-                            className="w-14 text-sm text-center"
+                            className="min-w-[5.5rem] text-sm text-center"
                           />
                           <button
                             type="button"
@@ -1388,11 +1398,11 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
                             <FiMinus className="w-3 h-3" />
                           </button>
                           <Input
-                            type="text"
+                            type="number"
                             step="0.01"
                             value={item.discount.toString()}
                             onChange={(e) => handleUpdateItem(index, 'discount', e.target.value)}
-                            className="w-14 text-sm text-center"
+                            className="min-w-[5.5rem] text-sm text-center"
                           />
                           <button
                             type="button"
@@ -1407,7 +1417,7 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
                       <td className="py-3">
                         <div className="flex justify-center">
                           <Input
-                            type="text"
+                            type="number"
                             value={item.total_price.toFixed(2)}
                             readOnly
                             className="w-20 text-sm text-center bg-gray-50 dark:bg-gray-500 font-semibold"
@@ -1441,7 +1451,7 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
             className="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-4"
           >
             <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4 flex items-center">
-              <FiDollarSign className="w-4 h-4 mr-2" />
+              {/* <FiDollarSign className="w-4 h-4 mr-2" /> */}
               Payment Options & Invoice Summary
             </h3>
 
@@ -1500,12 +1510,6 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
                         ₹{totals.subtotal.toFixed(2)}
                       </span>
                     </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-600 dark:text-gray-300">GST:</span>
-                      <span className="font-medium text-blue-600 dark:text-blue-400">
-                        +₹{totals.totalGst.toFixed(2)}
-                      </span>
-                    </div>
                     {totals.totalDiscount > 0 && (
                       <div className="flex justify-between text-sm">
                         <span className="text-gray-600 dark:text-gray-300">Discount:</span>
@@ -1514,6 +1518,13 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
                         </span>
                       </div>
                     )}
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600 dark:text-gray-300">GST:</span>
+                      <span className="font-medium text-blue-600 dark:text-blue-400">
+                        +₹{totals.totalGst.toFixed(2)}
+                      </span>
+                    </div>
+                    
                     <div className="flex justify-between text-base font-bold pt-2 border-t border-gray-200 dark:border-gray-500">
                       <span className="text-gray-900 dark:text-white">Total Amount:</span>
                       <span className="text-primary-600 dark:text-primary-400">

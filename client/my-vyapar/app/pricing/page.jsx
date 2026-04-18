@@ -185,7 +185,7 @@ useEffect(() => {
         const transformedPlans = response.data.map((plan, index) => {
           const features = plan.features || [];
           const monthlyPrice = parseFloat(plan.price);
-          const yearlyPrice = monthlyPrice * 10;
+          const yearlyPrice = monthlyPrice ;//* 10;
           const discount = parseFloat(plan.discount) || 0;
           const monthlyDiscountedPrice = monthlyPrice - (monthlyPrice * discount / 100);
           const yearlyDiscountedPrice = yearlyPrice - (yearlyPrice * discount / 100);
@@ -207,6 +207,7 @@ useEffect(() => {
             color: index === 1 ? "#8b5cf6" : "#000000",
             buttonText: `Start ${plan.name}`,
             popular: index === 1,
+            duration_days: plan.duration_days
           };
         });
         setFilteredPlans(transformedPlans);
@@ -512,9 +513,9 @@ useEffect(() => {
                 onClick={() => setBillingCycle('yearly')}
               >
                 Yearly
-                <span className="absolute -top-2 -right-1 sm:-top-3 sm:-right-2 bg-green-500 text-white text-[9px] sm:text-[10px] font-bold px-1.5 sm:px-2 py-0.5 rounded-full whitespace-nowrap">
-                  Save 20%
-                </span>
+                {/* <span className="absolute -top-2 -right-1 sm:-top-3 sm:-right-2 bg-green-500 text-white text-[9px] sm:text-[10px] font-bold px-1.5 sm:px-2 py-0.5 rounded-full whitespace-nowrap">
+                  Save extrem offer
+                </span> */}
               </button>
               <div 
                 className={`absolute top-1 bottom-1 w-[calc(50%-4px)] bg-gradient-to-r from-blue-600 to-blue-500 rounded-full transition-all duration-300 ease-out ${
@@ -586,7 +587,7 @@ useEffect(() => {
                           <span className="text-5xl font-bold" style={{ color: isPopular ? '#8b5cf6' : '#000000' }}>
                             {currentPriceData.displayPrice}
                           </span>
-                          <span className="text-gray-400 text-base font-medium">/{billingCycle === 'monthly' ? 'monthly' : 'yearly'}</span>
+                          <span className="text-gray-400 text-base font-medium">/ {plan.duration_days} days</span>
                         </div>
 
                         {(plan.discount > 0 || currentPriceData.hasCustomPrice) && (

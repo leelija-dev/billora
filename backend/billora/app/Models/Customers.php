@@ -94,5 +94,9 @@ public function plan()
     {
         return $this->email;
     }
+    public function stores()
+    {
+        return $this->hasMany(Store::class, 'user_id');
+    }
 
 }

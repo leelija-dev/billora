@@ -1,13 +1,35 @@
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import ReactApexChart from 'react-apexcharts'
 
 const TopProductsChart = ({ data, height = 320 }) => {
+  const [chartKey, setChartKey] = useState(0)
   const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899']
+
+  useEffect(() => {
+    // Force chart re-render on window resize (sidebar toggle)
+    const handleResize = () => {
+      setChartKey(prev => prev + 1)
+    }
+
+    // Add resize observer for more responsive updates
+    const resizeObserver = new ResizeObserver(() => {
+      setTimeout(handleResize, 100) // Small delay to ensure DOM has updated
+    })
+
+    // Observe the document body to detect layout changes
+    resizeObserver.observe(document.body)
+
+    return () => {
+      resizeObserver.disconnect()
+      window.removeEventListener('resize', handleResize)
+    }
+  }, [])
 
   const chartOptions = {
     chart: {
       type: 'bar',
       height: height,
+      width: '100%',
       toolbar: {
         show: false
       },
@@ -19,7 +41,9 @@ const TopProductsChart = ({ data, height = 320 }) => {
         blur: 12,
         opacity: 0.08,
         color: '#000'
-      }
+      },
+      redrawOnWindowResize: true,
+      redrawOnParentResize: true
     },
     plotOptions: {
       bar: {
@@ -228,8 +252,9 @@ const TopProductsChart = ({ data, height = 320 }) => {
   }
 
   return (
-    <div className="h-80">
+    <div className="w-full h-80 overflow-hidden">
       <ReactApexChart 
+        key={chartKey}
         options={chartOptions} 
         series={chartSeries} 
         type="bar" 

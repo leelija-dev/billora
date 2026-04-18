@@ -142,28 +142,39 @@ export const useProductStore = create((set, get) => ({
     set({ loading: true })
     try {
       const response = await productsAPI.create(productData)
+      console.log(' Product creation API response:', response)
       
-      // Extract actual product data from response structure
-      const newProduct = response.data?.data || response.data || response
-      console.log(' Product created successfully:', newProduct)
-      
-      // Get current state before clearing cache
-      const currentState = get()
-      
-      // Clear cache to ensure fresh data on next fetch
-      get().clearCache()
-      
-      // Update local state immediately for better UX
-      set({
-        products: [newProduct, ...(currentState.products || [])],
-        totalProducts: (currentState.products?.length || 0) + 1,
-        loading: false,
-      })
-      
-      toast.success('Product created successfully')
-      return { success: true }
+      // Check if the backend actually succeeded
+      const responseData = response.data
+      if (responseData?.status === true) {
+        // Extract actual product data from response structure
+        const newProduct = responseData?.data || response.data?.data || response.data
+        console.log(' Product created successfully:', newProduct)
+        
+        // Get current state before clearing cache
+        const currentState = get()
+        
+        // Clear cache to ensure fresh data on next fetch
+        get().clearCache()
+        
+        // Update local state immediately for better UX
+        set({
+          products: [newProduct, ...(currentState.products || [])],
+          totalProducts: (currentState.products?.length || 0) + 1,
+          loading: false,
+        })
+        
+        toast.success('Product created successfully')
+        return { success: true, data: newProduct }
+      } else {
+        // Backend returned failure (like Google Drive auth error)
+        console.error(' Backend error creating product:', responseData)
+        toast.error('Failed to create product')
+        set({ loading: false })
+        return { success: false, error: responseData }
+      }
     } catch (error) {
-      console.error('Failed to create product:', error)
+      console.error(' Failed to create product:', error)
       toast.error('Failed to create product')
       set({ loading: false })
       return { success: false, error: error.response?.data }

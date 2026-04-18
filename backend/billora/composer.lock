@@ -2609,18 +2609,6 @@
         },
         {
             "name": "nesbot/carbon",
-<<<<<<< HEAD
-            "version": "3.11.4",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/CarbonPHP/carbon.git",
-                "reference": "e890471a3494740f7d9326d72ce6a8c559ffee60"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/CarbonPHP/carbon/zipball/e890471a3494740f7d9326d72ce6a8c559ffee60",
-                "reference": "e890471a3494740f7d9326d72ce6a8c559ffee60",
-=======
             "version": "3.11.3",
             "source": {
                 "type": "git",
@@ -2631,7 +2619,6 @@
                 "type": "zip",
                 "url": "https://api.github.com/repos/CarbonPHP/carbon/zipball/6a7e652845bb018c668220c2a545aded8594fbbf",
                 "reference": "6a7e652845bb018c668220c2a545aded8594fbbf",
->>>>>>> origin/main
                 "shasum": ""
             },
             "require": {
@@ -2723,11 +2710,7 @@
                     "type": "tidelift"
                 }
             ],
-<<<<<<< HEAD
-            "time": "2026-04-07T09:57:54+00:00"
-=======
             "time": "2026-03-11T17:23:39+00:00"
->>>>>>> origin/main
         },
         {
             "name": "nette/schema",
