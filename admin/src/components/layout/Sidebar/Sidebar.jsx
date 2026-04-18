@@ -29,7 +29,7 @@ import { TbRuler2 } from "react-icons/tb";
 
 const Sidebar = () => {
   const { sidebarOpen, toggleSidebar, isMobile, setIsMobile } = useUIStore();
-  const { canAccess } = usePermissionStore();
+  const { canAccess, sidebarPermissions, loading: permissionsLoading, permissionsFetched } = usePermissionStore();
   const { user } = useAuthStore();
   const { planExpireReminder } = useNotificationStore();
   const location = useLocation();
@@ -37,7 +37,7 @@ const Sidebar = () => {
 
   useEffect(() => {
     const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768);
+      setIsMobile(window.innerWidth < 1080);
     };
     
     checkMobile();
@@ -53,32 +53,72 @@ const Sidebar = () => {
     }
   }, [location.pathname, isMobile]);
 
-  const menuItems = [
-    { path: '/dashboard', name: 'Dashboard', icon: FiHome, badge: null },
-    { path: '/products', name: 'Products', icon: FiPackage, badge: null },
-    { path: '/categories', name: 'Categories', icon: FiGrid, badge: null },
-    { path: '/brands', name: 'Brands', icon: FiTag, badge: null },
-    { path: '/units', name: 'Units', icon: TbRuler2, badge: null },
-    { path: '/medicine-types', name: 'Medicine Types', icon: FaFileMedical, badge: null },
-    { path: '/stores', name: 'Stores', icon: FaStore, badge: null },
-    { path: '/packages', name: 'Packages', icon: FiBox, badge: null },
-    { path: '/stock', name: 'Stock', icon: FiArchive, badge: null, permission: 'stock-management' },
-    { path: '/orders', name: 'Orders', icon: FiShoppingBag, badge: null, permission: 'hide-with-stock' },
-    { path: '/customers', name: 'Customers', icon: FiUsers, badge: null },
-    { path: '/invoices', name: 'Invoices', icon: FiFileText, badge: null },
-    { path: '/reports', name: 'Reports', icon: FiBarChart2, badge: null },
-    { path: '/billing', name: 'Plans', icon: FiCreditCard, badge: planExpireReminder ? '?' : null },
-    { path: '/settings', name: 'Settings', icon: FiSettings, badge: null },
-  ];
-
-  // Filter menu items based on permissions
-  const filteredMenuItems = menuItems.filter(item => {
-    if (!item.permission) return true; // Show items without permission requirements
-    if (item.permission === 'hide-with-stock') {
-      // Hide this item if user has stock management permission
-      return !canAccess('stock-management');
+  // Fetch sidebar permissions if not already loaded
+  useEffect(() => {
+    const { fetchUserPermissions } = usePermissionStore.getState();
+    
+    if (user?.plan_id && !permissionsFetched && !permissionsLoading) {
+      fetchUserPermissions(user.id);
     }
-    return canAccess(item.permission);
+  }, [user?.plan_id, permissionsFetched, permissionsLoading]);
+
+  // Icon mapping for dynamic menu items
+  const iconMap = {
+    'dashboard': FiHome,
+    'products': FiPackage,
+    'categories': FiGrid,
+    'brands': FiTag,
+    'units': TbRuler2,
+    'medicine-types': FaFileMedical,
+    'stores': FaStore,
+    'packages': FiBox,
+    'stock': FiArchive,
+    'orders': FiShoppingBag,
+    'customers': FiUsers,
+    'invoices': FiFileText,
+    'reports': FiBarChart2,
+    'plans': FiCreditCard,
+    'settings': FiSettings,
+  };
+
+  // Path mapping for menu items
+  const pathMap = {
+    'dashboard': '/dashboard',
+    'products': '/products',
+    'categories': '/categories',
+    'brands': '/brands',
+    'units': '/units',
+    'medicine-types': '/medicine-types',
+    'stores': '/stores',
+    'packages': '/packages',
+    'stock': '/stock',
+    'orders': '/orders',
+    'customers': '/customers',
+    'invoices': '/invoices',
+    'reports': '/reports',
+    'plans': '/billing',
+    'settings': '/settings',
+  };
+
+  // Generate dynamic menu items from API permissions
+  const menuItems = sidebarPermissions.map(permission => {
+    const path = pathMap[permission.slug];
+    const icon = iconMap[permission.slug] || FiSettings; // Default to Settings icon
+    const badge = permission.slug === 'plans' && planExpireReminder ? '?' : null;
+    
+    return {
+      path: path,
+      name: permission.name,
+      icon: icon,
+      badge: badge,
+      permission: null // Sidebar permissions already handle access control
+    };
+  });
+
+  // Filter menu items - sidebar permissions already control what's visible
+  const filteredMenuItems = menuItems.filter(item => {
+    // Only filter out items that don't have a valid path
+    return item.path !== undefined;
   });
 
   return (
@@ -112,16 +152,19 @@ const Sidebar = () => {
         {/* Logo Area */}
         <div className="relative flex items-center justify-between h-20 px-4 border-b border-gray-200/50 dark:border-gray-700/50 bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm">
           <div className="flex items-center space-x-3 overflow-hidden">
-            <motion.div
+            
+            
+            <AnimatePresence mode="wait">
+              {sidebarOpen && (
+                <> 
+                <motion.div
               whileHover={{ scale: 1.05, rotate: 5 }}
               whileTap={{ scale: 0.95 }}
               className="flex-shrink-0 w-10 h-10 bg-gradient-to-br from-primary-500 via-primary-600 to-secondary-500 rounded-xl flex items-center justify-center shadow-lg shadow-primary-500/20"
             >
               <span className="text-white font-bold text-xl">S</span>
-            </motion.div>
-            
-            <AnimatePresence mode="wait">
-              {sidebarOpen && (
+            </motion.div> 
+               
                 <motion.div
                   key="logo-text"
                   initial={{ opacity: 0, x: -20 }}
@@ -131,10 +174,11 @@ const Sidebar = () => {
                   className="flex flex-col"
                 >
                   <span className="font-bold text-xl bg-gradient-to-r from-gray-800 to-gray-600 dark:from-white dark:to-gray-300 bg-clip-text text-transparent">
-                    SaaS ERP
+                    Billora
                   </span>
                   <span className="text-xs text-gray-500 dark:text-gray-400">v2.0.0</span>
                 </motion.div>
+                 </>
               )}
             </AnimatePresence>
           </div>
@@ -309,15 +353,15 @@ const Sidebar = () => {
                 whileHover={{ scale: 1.05, rotate: 5 }}
                 className="flex-shrink-0 w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center text-white font-bold shadow-lg shadow-purple-500/20"
               >
-                JD
+                {user?.name?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || 'U'}
               </motion.div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">
-                  John Doe
+                  {user?.name || 'User'}
                 </p>
                 <p className="text-xs text-gray-500 dark:text-gray-400 truncate flex items-center">
                   <span className="w-1.5 h-1.5 bg-green-500 rounded-full mr-1.5" />
-                  Free Plan
+                  {user?.plan_name || 'Free Plan'}
                 </p>
               </div>
             </div>

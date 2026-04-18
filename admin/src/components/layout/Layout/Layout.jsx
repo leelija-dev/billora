@@ -15,7 +15,7 @@ const Layout = () => {
       <main
         className={`
           transition-all duration-300 pt-4
-          ${!isMobile && sidebarOpen ? 'md:ml-64' : 'md:ml-20'}
+          ${!isMobile && sidebarOpen ? 'lggs:ml-64' : 'lggs:ml-20'}
           ${isMobile ? 'ml-0' : ''}
         `}
       >

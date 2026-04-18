@@ -239,7 +239,7 @@ export const generateThermalInvoiceHTML = (invoice) => {
         
         return `
           <div class="item-row">
-            <div class="item-col item-name">${item.product_name || `Product #${item.product_id}`}</div>
+            <div class="item-col item-name">${item.product?.name || item.product_name || `Product #${item.product_id}`}</div>
             <div class="item-col item-qty">${quantity}</div>
             <div class="item-col item-price">Rs${formatCurrency(itemPrice)}</div>
             <div class="item-col item-total">Rs${formatCurrency(itemTotal)}</div>

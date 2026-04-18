@@ -20,25 +20,33 @@ const Login = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  // Check for pending plan on component mount
+  // ✅ Check for pending plan on mount - DON'T clear it immediately
   useEffect(() => {
-    const pendingPlan = localStorage.getItem('pendingPlan');
-    const redirectUrl = searchParams.get("redirect");
+    const from = searchParams.get("from");
+    const pendingPlan = localStorage.getItem("pendingPlan");
     
-    console.log("Login page loaded - Pending plan:", pendingPlan);
-    console.log("Login page loaded - Redirect URL:", redirectUrl);
+    console.log("🔍 Login page loaded");
+    console.log("🔍 from param:", from);
+    console.log("🔍 pendingPlan exists:", !!pendingPlan);
     
-    if (pendingPlan && !redirectUrl) {
-      const planData = JSON.parse(pendingPlan);
-      toast.success(`Complete your ${planData.name} plan purchase!`, {
-        duration: 4000,
-        position: "top-center",
-        icon: '🎯',
-        style: {
-          background: '#8b5cf6',
-          color: '#fff',
-        },
-      });
+    if (pendingPlan) {
+      try {
+        const planData = JSON.parse(pendingPlan);
+        console.log("📋 Found pending plan:", planData.name);
+        toast.success(`Complete your ${planData.name} plan purchase!`, {
+          duration: 4000,
+        });
+      } catch (e) {
+        console.error("Error parsing pending plan:", e);
+        localStorage.removeItem("pendingPlan");
+      }
+    }
+    
+    // Only clear pending plan if this is a normal login (not from pricing)
+    // AND there's no pending plan in the URL
+    if (from !== "pricing" && !pendingPlan) {
+      console.log("🗑️ Normal login - clearing any old pending plan");
+      localStorage.removeItem("pendingPlan");
     }
   }, [searchParams]);
 
@@ -132,8 +140,6 @@ const Login = () => {
         errorMessage = "❌ No account found with this email. Please register first.";
       } else if (error.message.includes("password")) {
         errorMessage = "❌ Invalid password. Please try again.";
-      // } else if (error.message.includes("verify")) {
-      //   errorMessage = "📧 Please verify your email before logging in. Check your inbox.";
       } else if (error.message.includes("Failed to fetch")) {
         errorMessage = "Cannot connect to server. Please make sure the backend is running.";
       } else {
@@ -141,77 +147,51 @@ const Login = () => {
       }
       
       setError(errorMessage);
-      // toast.error(errorMessage, {
-      //   duration: 4000,
-      //   position: "top-center",
-      //   style: {
-      //     background: '#f44336',
-      //     color: '#fff',
-      //   },
-      // });
     } finally {
       setLoading(false);
     }
   };
 
-  const handleRedirectAfterLogin = async () => {
-    // IMPORTANT: Check pendingPlan FIRST (highest priority)
-    const pendingPlan = localStorage.getItem('pendingPlan');
-    const redirectFromQuery = searchParams.get("redirect");
-    const redirectAfterLogin = localStorage.getItem('redirectAfterLogin');
+  // ✅ Critical: Handle redirect with pending plan
+  const handleRedirectAfterLogin = () => {
+    // Check for pendingPlan IMMEDIATELY
+    const pendingPlan = localStorage.getItem("pendingPlan");
+    const fromParam = searchParams.get("from");
     
-    console.log("Redirect priorities - Pending Plan:", pendingPlan);
-    console.log("Redirect priorities - From Query:", redirectFromQuery);
-    console.log("Redirect priorities - After Login:", redirectAfterLogin);
+    console.log("🔄 handleRedirectAfterLogin called");
+    console.log("🔄 pendingPlan exists:", !!pendingPlan);
+    console.log("🔄 from param:", fromParam);
     
-    // Priority 1: Pending plan from pricing page (MOST IMPORTANT)
     if (pendingPlan) {
       try {
         const planData = JSON.parse(pendingPlan);
-        console.log("Found pending plan, redirecting to order summary:", planData);
+        console.log("✅ Found pending plan, redirecting to order summary for:", planData.name);
         
-        toast.success(`Proceeding to ${planData.name} plan checkout!`, {
+        toast.success(`Proceeding to ${planData.name} checkout!`, {
           duration: 2000,
           position: "top-center",
         });
         
-        // Small delay to ensure toast is seen
-        setTimeout(() => {
-          // Clear ALL redirect-related items EXCEPT pending plan
-          localStorage.removeItem('redirectAfterLogin');
-          // Don't remove pendingPlan here - it will be used in order summary
-          // But we need to keep it for the order summary page
-          
-          // Navigate to order summary
-          router.push('/order-summary');
-        }, 500);
+        // DON'T remove pendingPlan here - keep it for order summary page
+        // Just redirect
+        router.push("/order-summary");
         return;
       } catch (error) {
         console.error("Error parsing pending plan:", error);
-        localStorage.removeItem('pendingPlan');
-        // Continue to next priority if pending plan is invalid
+        localStorage.removeItem("pendingPlan");
       }
     }
     
-    // Priority 2: Direct redirect from query parameter
-    if (redirectFromQuery) {
-      console.log("Redirecting to query param URL:", redirectFromQuery);
-      localStorage.removeItem('pendingPlan');
-      localStorage.removeItem('redirectAfterLogin');
-      router.push(redirectFromQuery);
+    // Check for redirect parameter
+    const redirectUrl = searchParams.get("redirect");
+    if (redirectUrl) {
+      console.log("🔄 Redirecting to:", redirectUrl);
+      router.push(redirectUrl);
       return;
     }
     
-    // Priority 3: Generic redirect after login
-    if (redirectAfterLogin) {
-      console.log("Redirecting to after login URL:", redirectAfterLogin);
-      localStorage.removeItem('redirectAfterLogin');
-      router.push(redirectAfterLogin);
-      return;
-    }
-    
-    // Priority 4: Default redirect to pricing page
-    console.log("No redirect found, going to pricing page");
+    // Default to pricing
+    console.log("🔄 No pending plan, going to pricing page");
     router.push("/pricing");
   };
 
@@ -264,13 +244,13 @@ const Login = () => {
       />
       
       <div className="flex-1 flex justify-center items-center font-sans relative py-8">
-        <button
+        {/* <button
           onClick={() => router.push("/")}
           className="absolute top-6 left-6 flex items-center gap-2 px-4 py-2 bg-white rounded-lg shadow-md hover:shadow-lg transition-all duration-300 hover:scale-105 text-[#2d236b] font-medium z-10"
         >
           <FaHome className="text-[#5b5bd6]" size={20} />
           <span>Back to Home</span>
-        </button>
+        </button> */}
 
         <form onSubmit={handleLogin} className="w-[550px] bg-white py-10 px-[50px] rounded-[25px] shadow-[0_10px_25px_rgba(0,0,0,0.08)] max-md:w-[450px] max-md:px-8 max-sm:w-[90%] max-sm:px-5 max-sm:py-8">
           
@@ -278,6 +258,7 @@ const Login = () => {
             LOG IN
           </h1>
 
+          {/* Show pending plan info if exists */}
           {(() => {
             const pendingPlan = typeof window !== 'undefined' ? localStorage.getItem('pendingPlan') : null;
             if (pendingPlan) {
@@ -376,17 +357,16 @@ const Login = () => {
               <span 
                 onClick={() => {
                   const redirect = searchParams.get("redirect");
-                  // Preserve pending plan info when going to register
                   const pendingPlan = localStorage.getItem('pendingPlan');
-                  let registerUrl = "/register";
                   
-                  if (redirect) {
-                    registerUrl = `/register?redirect=${encodeURIComponent(redirect)}`;
-                  } else if (pendingPlan) {
-                    registerUrl = `/register?redirect=${encodeURIComponent('/order-summary')}`;
+                  // If there's a pending plan, preserve it for registration redirect
+                  if (pendingPlan) {
+                    router.push("/register?redirect=/order-summary");
+                  } else if (redirect) {
+                    router.push(`/register?redirect=${encodeURIComponent(redirect)}`);
+                  } else {
+                    router.push("/register");
                   }
-                  
-                  router.push(registerUrl);
                 }}
                 className="text-[#3b82f6] font-bold cursor-pointer hover:underline"
               >

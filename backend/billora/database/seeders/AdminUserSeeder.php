@@ -17,6 +17,7 @@ class AdminUserSeeder extends Seeder
      */
     public function run(): void
     {
+         AdminUser::truncate();
         $admin = AdminUser::updateOrCreate(
             ['username' => 'admin'], // condition
             [
@@ -28,6 +29,7 @@ class AdminUserSeeder extends Seeder
                 'image' => 'default.jpg',
             ]
         );
+        Roles::truncate();
         $role = Roles::firstOrCreate([
             'name' => 'superadmin',
             'guard_name' => 'admin'
@@ -63,6 +65,7 @@ class AdminUserSeeder extends Seeder
             'edit permissions',
             'delete permissions',
         ];
+            Permission::truncate();
          foreach ($permissions as $perm) {
             Permission::Create([
                 'name' => $perm,

@@ -122,7 +122,7 @@
                             <span
                                 class="transition-transform 
                             {{ $isUserMenuActive ? 'rotate-180' : 'group-hover:rotate-180' }}">
-                                â–¾
+                                ▾
                             </span>
                         </div>
 

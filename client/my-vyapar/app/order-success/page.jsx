@@ -6,13 +6,13 @@ import { FaCheckCircle, FaTruck, FaClock, FaReceipt, FaShoppingBag } from "react
 
 const OrderSuccessPage = () => {
   const router = useRouter();
-  const [countdown, setCountdown] = useState(5);
+  const [countdown, setCountdown] = useState(60);
   const [orderDetails, setOrderDetails] = useState(null);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     setMounted(true);
-    
+
     // Get order details from localStorage
     const pendingOrder = localStorage.getItem("pendingProductOrder");
     if (pendingOrder) {
@@ -43,7 +43,23 @@ const OrderSuccessPage = () => {
   if (!mounted) {
     return null;
   }
+if (!orderDetails) {
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl shadow-xl p-8 max-w-md w-full text-center">
+        <h1 className="text-2xl font-bold text-gray-800">No order found</h1>
+        <p className="text-gray-600 mt-2">You have not ordered yet.</p>
 
+        <button
+          onClick={() => (window.location.href = "/products")}
+          className="mt-6 w-full bg-blue-600 text-white py-3 rounded-xl font-semibold hover:bg-blue-700 transition"
+        >
+          Go to Products
+        </button>
+      </div>
+    </div>
+  );
+}
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 overflow-hidden relative">
       {/* Confetti Animation */}
@@ -91,10 +107,13 @@ const OrderSuccessPage = () => {
                     </div>
                   </div>
                   <h1 className="text-2xl md:text-3xl font-bold text-gray-800 mt-4">
-                    Order Placed Successfully! 🎉
+                    Order Placed Successfully!
                   </h1>
-                  <p className="text-gray-500 mt-1">
-                    Thank you for shopping with us
+                  <p className="mt-2 text-sm text-gray-600">
+                    <strong>Note:</strong>{" "}
+                    <span className="text-red-500">
+                      Please save your Order ID. You will be automatically redirected to the Products page shortly.
+                    </span>
                   </p>
                 </div>
 
@@ -105,7 +124,7 @@ const OrderSuccessPage = () => {
                       <div className="flex justify-between items-center pb-2 border-b border-gray-200">
                         <span className="text-gray-600 text-sm">Order ID:</span>
                         <span className="font-mono font-bold text-gray-800 text-sm">
-                          {orderDetails.orderId || "PROD" + Date.now()}
+                          ORD{orderDetails.orderId || "PROD" + Date.now()}
                         </span>
                       </div>
                       <div className="flex justify-between items-center pb-2 border-b border-gray-200">
@@ -133,13 +152,13 @@ const OrderSuccessPage = () => {
                     <FaShoppingBag className="w-4 h-4" />
                     Continue Shopping
                   </button>
-                  <button
+                  {/* <button
                     onClick={() => window.location.href = "/orders"}
                     className="flex-1 bg-gray-100 text-gray-700 py-2.5 rounded-xl font-semibold hover:bg-gray-200 transition-all duration-300 flex items-center justify-center gap-2 text-sm"
                   >
                     <FaReceipt className="w-4 h-4" />
                     View Orders
-                  </button>
+                  </button> */}
                 </div>
 
                 {/* Auto Redirect Message */}
@@ -160,7 +179,7 @@ const OrderSuccessPage = () => {
                       </div>
                       <div className="flex-1">
                         <p className="font-semibold text-gray-800">Order Confirmed</p>
-                        <p className="text-sm text-gray-500">Your order has been received</p>
+                        <p className="text-sm text-gray-500">Your have successfully placed the order </p>
                       </div>
                     </div>
                     <div className="flex items-start gap-4 relative">
@@ -169,10 +188,10 @@ const OrderSuccessPage = () => {
                       </div>
                       <div className="flex-1">
                         <p className="font-semibold text-gray-800">Processing</p>
-                        <p className="text-sm text-gray-500">Restaurant is preparing your order</p>
+                        <p className="text-sm text-gray-500">Your Order is being processed</p>
                       </div>
                     </div>
-                    <div className="flex items-start gap-4 relative">
+                    {/* <div className="flex items-start gap-4 relative">
                       <div className="relative z-10 w-10 h-10 bg-gray-300 rounded-full flex items-center justify-center flex-shrink-0">
                         <FaTruck className="w-5 h-5 text-gray-500" />
                       </div>
@@ -180,7 +199,7 @@ const OrderSuccessPage = () => {
                         <p className="font-semibold text-gray-400">On the Way</p>
                         <p className="text-sm text-gray-400">Your order is out for delivery</p>
                       </div>
-                    </div>
+                    </div> */}
                     <div className="flex items-start gap-4 relative">
                       <div className="relative z-10 w-10 h-10 bg-gray-300 rounded-full flex items-center justify-center flex-shrink-0">
                         <FaReceipt className="w-5 h-5 text-gray-500" />

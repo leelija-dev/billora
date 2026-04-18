@@ -469,7 +469,7 @@ const OrderSummary = () => {
                   </div>
                 </div>
 
-                Business Details Section - Optional but backend requires it
+                {/* Business Details Section - Optional but backend requires it */}
                 <div className="mt-6">
                   <button
                     onClick={() => setShowOptional(!showOptional)}

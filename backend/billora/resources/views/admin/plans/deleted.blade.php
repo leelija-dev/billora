@@ -587,7 +587,7 @@
                                 <h4 class="text-sm font-medium text-gray-500">Deleted At</h4>
                                 <p class="text-base text-gray-900">${new Date(data.deleted_at).toLocaleString()}</p>
                             </div>
-                        </div>
+                        </div> 
                     `;
                     document.getElementById('viewDetailsModal').classList.remove('hidden');
                 })
@@ -595,7 +595,7 @@
                     console.error('Error fetching plan details:', error);
                     alert('Could not load plan details');
                 });
-        }
+        } 
 
         function closeViewDetailsModal() {
             document.getElementById('viewDetailsModal').classList.add('hidden');

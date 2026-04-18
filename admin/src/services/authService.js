@@ -19,23 +19,6 @@ export const authService = {
     }
   },
 
-  register: async (userData) => {
-    try {
-      console.log(' Attempting registration with data:', { 
-        name: userData.name, 
-        email: userData.email, 
-        phone: userData.phone,
-        company_name: userData.company_name
-      });
-      const response = await apiClient.post('/users/register', userData);
-      console.log(' Registration successful:', response.data);
-      return response;
-    } catch (error) {
-      console.error(' Registration failed:', error);
-      throw error.response?.data || error.message;
-    }
-  },
-
   logout: async (userId) => {
     try {
       console.log(' Attempting logout for user:', userId);
