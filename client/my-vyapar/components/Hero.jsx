@@ -217,7 +217,7 @@ const Hero = () => {
               {/* PC Monitor Model - Responsive sizing */}
               <div className="relative w-full max-w-[500px] md:max-w-[400px] lg:max-w-full z-10 flight-pc mx-auto">
                 {/* Monitor Screen */}
-                <div className="relative aspect-[16/10] bg-slate-900 rounded-[12px] sm:rounded-[16px] md:rounded-[20px] p-1.5 sm:p-2 md:p-2.5 shadow-2xl border border-slate-700/50">
+                <div className="relative aspect-[16/10] bg-slate-900 rounded-[12px] sm:rounded-[16px] md:rounded-[20px] p-1.5 sm:p-2 md:p-2.5 shadow-2xl border border-slate-700">
                   <div className="w-full h-full bg-slate-800 rounded-lg sm:rounded-xl overflow-hidden relative shadow-inner">
                     {/* Top bar with dots - always visible */}
                     <div className="h-5 sm:h-6 md:h-7 bg-slate-700/50 flex items-center px-2 sm:px-3 md:px-4 gap-1 sm:gap-2 border-b border-slate-600/30">

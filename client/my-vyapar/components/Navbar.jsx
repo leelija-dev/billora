@@ -71,40 +71,40 @@ const Navbar = () => {
   };
 
   // Check if user has purchased a plan
-  const checkPlanPurchaseStatus = () => {
-    try {
-      const purchaseCompleted = localStorage.getItem('purchase_completed') === 'true';
-      const planPurchased = localStorage.getItem('plan_purchased') === 'true';
-      const hasActiveSubscription = localStorage.getItem('has_active_subscription') === 'true';
-      
-      const purchaseDate = localStorage.getItem('plan_purchase_date');
-      let isPurchaseValid = false;
-      
-      if (purchaseDate) {
-        const purchaseTime = new Date(purchaseDate).getTime();
-        const currentTime = new Date().getTime();
-        const daysSincePurchase = (currentTime - purchaseTime) / (1000 * 60 * 60 * 24);
-        isPurchaseValid = daysSincePurchase <= 365;
-      }
-      
-      const hasPlan = (purchaseCompleted || planPurchased || hasActiveSubscription) && isPurchaseValid;
-      
-      console.log("🔍 Checking plan status:", { 
-        purchaseCompleted, 
-        planPurchased, 
-        hasActiveSubscription,
-        isPurchaseValid,
-        hasPlan 
-      });
-      
-      setHasActivePlan(hasPlan);
-    } catch (error) {
-      console.error("Error checking plan purchase:", error);
+const checkPlanPurchaseStatus = () => {
+  try {
+    const { user } = getAuthData();
+    const userId = user?._id || user?.id;
+
+    if (!userId) {
       setHasActivePlan(false);
-    } finally {
-      setIsCheckingPlan(false);
+      return;
     }
-  };
+
+    const planData = localStorage.getItem(`plan_${userId}`);
+
+    if (!planData) {
+      setHasActivePlan(false);
+      return;
+    }
+
+    const parsed = JSON.parse(planData);
+
+    const purchaseTime = new Date(parsed.purchaseDate).getTime();
+    const currentTime = new Date().getTime();
+    const daysSincePurchase = (currentTime - purchaseTime) / (1000 * 60 * 60 * 24);
+
+    const isValid = daysSincePurchase <= 365;
+
+    setHasActivePlan(parsed.active && isValid);
+
+  } catch (error) {
+    console.error("Error checking plan:", error);
+    setHasActivePlan(false);
+  } finally {
+    setIsCheckingPlan(false);
+  }
+};
 
   // Check login status from localStorage
   const checkLoginStatus = () => {
@@ -196,11 +196,11 @@ const Navbar = () => {
           }
         }
         
-        clearAuthData();
-        localStorage.removeItem('purchase_completed');
-        localStorage.removeItem('plan_purchased');
-        localStorage.removeItem('plan_purchase_date');
-        localStorage.removeItem('has_active_subscription');
+        // clearAuthData();
+        // localStorage.removeItem('purchase_completed');
+        // localStorage.removeItem('plan_purchased');
+        // localStorage.removeItem('plan_purchase_date');
+        // localStorage.removeItem('has_active_subscription');
         
         setIsLoggedIn(false);
         setUser(null);
@@ -282,32 +282,39 @@ const Navbar = () => {
   }, []);
 
   // Listen for plan purchase completion event
-  useEffect(() => {
-    const handlePlanPurchase = (event) => {
-      console.log("🎉 Plan purchase event received:", event.detail);
-      if (event.detail?.status === 'completed' || event.detail?.planPurchased === true) {
-        localStorage.setItem('purchase_completed', 'true');
-        localStorage.setItem('plan_purchased', 'true');
-        localStorage.setItem('plan_purchase_date', new Date().toISOString());
-        localStorage.setItem('has_active_subscription', 'true');
-        
-        setHasActivePlan(true);
-        
-        toast.success('Plan activated! Dashboard is now available.', {
-          duration: 5000,
-          position: 'top-right',
-          icon: '🎉',
-        });
-      }
-    };
+ useEffect(() => {
+  const handlePlanPurchase = (event) => {
+    console.log("🎉 Plan purchase event received:", event.detail);
 
-    window.addEventListener("planPurchaseCompleted", handlePlanPurchase);
-    
-    return () => {
-      window.removeEventListener("planPurchaseCompleted", handlePlanPurchase);
-    };
-  }, []);
+    if (event.detail?.status === 'completed' || event.detail?.planPurchased === true) {
+      
+      const { user } = getAuthData();
+      const userId = user?._id || user?.id;
 
+      if (!userId) return;
+
+      // ✅ Save plan per user (IMPORTANT FIX)
+      localStorage.setItem(`plan_${userId}`, JSON.stringify({
+        active: true,
+        purchaseDate: new Date().toISOString()
+      }));
+
+      setHasActivePlan(true);
+
+      toast.success('Plan activated! Dashboard is now available.', {
+        duration: 5000,
+        position: 'top-right',
+        icon: '🎉',
+      });
+    }
+  };
+
+  window.addEventListener("planPurchaseCompleted", handlePlanPurchase);
+
+  return () => {
+    window.removeEventListener("planPurchaseCompleted", handlePlanPurchase);
+  };
+}, []);
   // Listen for storage changes (for cross-tab updates)
   useEffect(() => {
     const handleStorageChange = (e) => {
