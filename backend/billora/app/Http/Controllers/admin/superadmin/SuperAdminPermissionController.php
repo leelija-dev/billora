@@ -32,4 +32,33 @@ class SuperAdminPermissionController extends Controller
         ]);
         return redirect()->route('admin.permissions.index')->with('success','Permission Created Successfully');
     }
+
+    public function edit($id){
+        $permission = Permission::findOrFail($id);
+        return view('admin.admin_permission.edit',compact('permission'));
+    }
+
+    public function update(Request $request, $id){
+        $permission = Permission::findOrFail($id);
+        
+        $data = $request->validate([
+            'name' => 'required', 
+        ]);
+
+        $permission->update([
+            'name' => $data['name'],
+        ]);
+        
+        return redirect()->route('admin.permissions.index')->with('success','Permission Updated Successfully');
+    }
+
+    public function destroy($id){
+        try {
+            $permission = Permission::findOrFail($id);
+            $permission->delete();
+            return redirect()->route('admin.permissions.index')->with('success','Permission Deleted Successfully');
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Failed to delete permission: ' . $e->getMessage());
+        }
+    }
 }

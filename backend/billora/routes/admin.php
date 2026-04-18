@@ -71,6 +71,7 @@ Route::middleware(['web', 'admin.auth'])->prefix('admin')->group(function () {
         Route::post('/store', [AdminUserController::class, 'store'])->name('admin.admin-users.store');
         Route::get('/edit/{id}',[AdminUserController::class, 'edit'])->name('admin.admin-users.edit');
         Route::post('/update/{id}',[AdminUserController::class, 'update'])->name('admin.admin-users.update');
+        Route::delete('/delete/{id}',[AdminUserController::class, 'destroy'])->name('admin.admin-users.destroy');
         Route::get('/update-pssword/{id}',[AdminUserController::class, 'showPassword'])->name('admin.admin-users.show-password');
         Route::post('/update-password/{id}',[AdminUserController::class, 'updatePassword'])->name('admin.admin-users.update-password');
 
@@ -79,6 +80,9 @@ Route::middleware(['web', 'admin.auth'])->prefix('admin')->group(function () {
         Route::get('/', [SuperAdminPermissionController::class, 'index'])->name('admin.permissions.index');
         Route::get('/create', [SuperAdminPermissionController::class, 'create'])->name('admin.permissions.create');
         Route::post('/store', [SuperAdminPermissionController::class, 'store'])->name('admin.permissions.store');
+        Route::get('/edit/{id}', [SuperAdminPermissionController::class, 'edit'])->name('admin.permissions.edit');
+        Route::post('/update/{id}', [SuperAdminPermissionController::class, 'update'])->name('admin.permissions.update');
+        Route::delete('/delete/{id}', [SuperAdminPermissionController::class, 'destroy'])->name('admin.permissions.destroy');
     });
     Route::prefix('role')->group(function (){
         Route::get('/',[RolesController::class ,'index'])->name('admin.roles.index');

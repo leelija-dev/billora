@@ -16,7 +16,7 @@
 
         /* Main Content - Full Width */
         .main-content {
-            padding: 30px;
+            padding: 0px 0px;
             background: #f8fafc;
             min-height: 100vh;
             width: 100%;
