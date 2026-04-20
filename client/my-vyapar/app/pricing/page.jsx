@@ -7,6 +7,7 @@ import { getPlans } from "@/services/pricingService";
 import { getBusinessTypes as fetchBusinessTypes } from "@/services/bussinessService";
 import { searchPlans } from "@/services/filterService"; // 
 import { useRouter } from "next/navigation";
+import { useAuthStore } from "../../store/authStoreZustand";
 
 const Pricing = () => {
   const [billingCycle, setBillingCycle] = useState("monthly");
@@ -16,7 +17,6 @@ const Pricing = () => {
   const [error, setError] = useState(null);
   const [subscribing, setSubscribing] = useState(null);
   const [subscribeMessage, setSubscribeMessage] = useState(null);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [pendingPlan, setPendingPlan] = useState(null);
   const [selectedBusinessType, setSelectedBusinessType] = useState("all");
@@ -24,26 +24,14 @@ const Pricing = () => {
   const cardRefs = useRef([]);
   const router = useRouter();
 
-  // Check if user is logged in
-  useEffect(() => {
-    const checkLoginStatus = () => {
-      const token = localStorage.getItem("auth_token") || localStorage.getItem("token");
-      const userData = localStorage.getItem("user_data");
-
-      setIsLoggedIn(!!(token || userData));
-    };
-
-    checkLoginStatus();
-
-    window.addEventListener("storage", checkLoginStatus);
-    return () => window.removeEventListener("storage", checkLoginStatus);
-  }, []);
+  // Use Zustand auth store instead of manual localStorage
+  const { user, token, isLoggedIn, hasActivePlan } = useAuthStore();
 
 // Load business types from API
 useEffect(() => {
   const loadBusinessTypes = async () => {
     try {
-      console.log("🌐 Fetching business types from API...");
+      console.log("Fetching business types from API...");
       const response = await fetchBusinessTypes();
       
       console.log("Business types API response:", response);
@@ -59,7 +47,7 @@ useEffect(() => {
       }
       
       if (businessTypeData.length > 0) {
-        console.log("✅ Business types loaded:", businessTypeData);
+        console.log("Business types loaded:", businessTypeData);
         setAllBusinessTypes(businessTypeData);
       } else {
         console.log("No business types found");
@@ -310,16 +298,23 @@ useEffect(() => {
       hasCustomPrice: currentPriceData.hasCustomPrice,
     };
 
-    if (!isLoggedIn) {
-      setPendingPlan(selectedPlan);
-      setShowLoginModal(true);
+    console.log("Handle Subscribe Click:", { isLoggedIn, planId: plan.id, planName: plan.name });
+
+    // If user is logged in, proceed directly to order summary
+    if (isLoggedIn) {
+      console.log("User is logged in, proceeding to checkout");
+      proceedToOrderSummary(selectedPlan);
       return;
     }
 
-    proceedToOrderSummary(selectedPlan);
+    // If user is not logged in, show login modal
+    console.log("User not logged in, showing login modal");
+    setPendingPlan(selectedPlan);
+    setShowLoginModal(true);
   };
 
   const proceedToOrderSummary = (selectedPlan) => {
+    // ...
     localStorage.setItem("selectedPlan", JSON.stringify(selectedPlan));
     router.push("/order-summary");
   };
@@ -335,9 +330,9 @@ useEffect(() => {
   useEffect(() => {
     const checkPendingPlanAfterLogin = () => {
       const pendingPlanStr = localStorage.getItem("pendingPlan");
-      const isLoggedInNow = !!(localStorage.getItem("auth_token") || localStorage.getItem("token") || localStorage.getItem("user_data"));
+      const isUserLoggedIn = !!(localStorage.getItem("auth_token") || localStorage.getItem("token") || localStorage.getItem("user_data"));
 
-      if (isLoggedInNow && pendingPlanStr) {
+      if (isUserLoggedIn && pendingPlanStr) {
         const pendingPlanData = JSON.parse(pendingPlanStr);
         localStorage.removeItem("pendingPlan");
         localStorage.removeItem("redirectAfterLogin");

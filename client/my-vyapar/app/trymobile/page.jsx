@@ -265,61 +265,6 @@ export default function BilloraHero() {
         </div>
       </section>
 
-      {/* ===== PRICING SECTION ===== */}
-      <section className="relative py-20 px-6 md:px-12 bg-gradient-to-br from-gray-50 to-white">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-12">
-            <div className="inline-block bg-blue-100 rounded-full px-4 py-1 text-sm font-semibold text-blue-700 mb-4">
-              Simple Pricing
-            </div>
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-              Plans for Every Business
-            </h2>
-            <p className="text-gray-600 max-w-2xl mx-auto">
-              Choose the perfect plan for your needs. No hidden fees.
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-8">
-            {pricingPlans.map((plan, idx) => (
-              <motion.div
-                key={idx}
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: idx * 0.1 }}
-                whileHover={{ y: -10 }}
-                className={`relative bg-white rounded-2xl shadow-xl overflow-hidden ${plan.popular ? 'ring-2 ring-emerald-500 scale-105' : ''}`}
-              >
-                {plan.popular && (
-                  <div className="absolute top-0 right-0 bg-gradient-to-r from-emerald-500 to-teal-500 text-white px-4 py-1 text-xs font-bold">
-                    Most Popular
-                  </div>
-                )}
-                <div className="p-8">
-                  <h3 className="text-2xl font-bold text-gray-900 mb-2">{plan.name}</h3>
-                  <div className="mb-4">
-                    <span className="text-4xl font-bold text-emerald-600">{plan.price}</span>
-                    <span className="text-gray-500">{plan.period}</span>
-                  </div>
-                  <ul className="space-y-3 mb-8">
-                    {plan.features.map((feature, fIdx) => (
-                      <li key={fIdx} className="flex items-center gap-2 text-sm text-gray-600">
-                        <svg className="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                        </svg>
-                        {feature}
-                      </li>
-                    ))}
-                  </ul>
-                  <button className={`w-full py-3 rounded-xl font-bold transition-all duration-300 ${plan.popular ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white hover:shadow-lg' : 'border-2 border-gray-300 text-gray-700 hover:border-emerald-600 hover:text-emerald-600'}`}>
-                    Get Started
-                  </button>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
 
       {/* ===== TESTIMONIALS SECTION ===== */}
       <section className="relative py-20 px-6 md:px-12">
@@ -390,46 +335,7 @@ export default function BilloraHero() {
         </div>
       </motion.section>
 
-      {/* ===== FOOTER ===== */}
-      <footer className="bg-gray-900 text-white py-12">
-        <div className="max-w-7xl mx-auto px-6 md:px-12">
-          <div className="grid md:grid-cols-4 gap-8 mb-8">
-            <div>
-              <div className="text-2xl font-black tracking-tight mb-4">
-                BILLORA<span className="text-emerald-400">.</span>
-              </div>
-              <p className="text-gray-400 text-sm">Simplifying business for Indian entrepreneurs since 2020</p>
-            </div>
-            <div>
-              <h4 className="font-bold mb-3">Product</h4>
-              <ul className="space-y-2 text-sm text-gray-400">
-                <li><a href="#" className="hover:text-emerald-400 transition">Features</a></li>
-                <li><a href="#" className="hover:text-emerald-400 transition">Pricing</a></li>
-                <li><a href="#" className="hover:text-emerald-400 transition">Integrations</a></li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="font-bold mb-3">Company</h4>
-              <ul className="space-y-2 text-sm text-gray-400">
-                <li><a href="#" className="hover:text-emerald-400 transition">About Us</a></li>
-                <li><a href="#" className="hover:text-emerald-400 transition">Careers</a></li>
-                <li><a href="#" className="hover:text-emerald-400 transition">Contact</a></li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="font-bold mb-3">Support</h4>
-              <ul className="space-y-2 text-sm text-gray-400">
-                <li><a href="#" className="hover:text-emerald-400 transition">Help Center</a></li>
-                <li><a href="#" className="hover:text-emerald-400 transition">API Docs</a></li>
-                <li><a href="#" className="hover:text-emerald-400 transition">Status</a></li>
-              </ul>
-            </div>
-          </div>
-          <div className="border-t border-gray-800 pt-8 text-center text-sm text-gray-400">
-            © 2024 Billora. All rights reserved. Made in India 🇮🇳
-          </div>
-        </div>
-      </footer>
+      
     </div>
   );
 }

@@ -166,7 +166,7 @@ export const useAuthStore = create(
           
           // Check plan status after rehydration
           if (isAuthenticated && state.user) {
-            const userId = state.user._id || state.user.id;
+            const userId = state.user.id || state.user._id;
             const planData = secureStorage.getPlanData(userId);
             
             if (planData) {
@@ -177,9 +177,9 @@ export const useAuthStore = create(
               const isActive = planData.active || planData.is_active;
               
               state.hasActivePlan = isActive && isValid;
-              console.log('MyVyapar: Plan status after rehydrate:', state.hasActivePlan);
             }
           }
+          console.log('MyVyapar: Plan status after rehydrate:', state.hasActivePlan);
         }
         
         console.log('MyVyapar: Auth store rehydrated');

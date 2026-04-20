@@ -58,14 +58,13 @@ const Navbar = () => {
   const router = useRouter();
 
   const routeMap = {
-    "/": 0,
-    "/trymobile": 1,
-    "/carrers": 2,
-    "/partner": 3,
-    "/solution": 4,
-    "/about": 5,
-    "/pricing": 6,
-    "/contact": 7,
+    "/trymobile": 0,
+    "/carrers": 1,
+    "/partner": 2,
+    "/solution": 3,
+    "/about": 4,
+    "/pricing": 5,
+    "/contact": 6,
   };
 
   const isNavPage = (path) => {
@@ -433,7 +432,6 @@ const Navbar = () => {
   }, [isNavAction, activeTab]);
 
   const navItems = [
-    { name: "Home", href: "/" },
     { name: "Try Mobile", href: "/trymobile" },
     { name: "Carrers", href: "/carrers" },
     { name: "Partner", href: "/partner" },
@@ -448,16 +446,10 @@ const Navbar = () => {
     try {
       if (user?.name) return user.name.charAt(0).toUpperCase();
       if (user?.email) return user.email.charAt(0).toUpperCase();
-      const userStr = localStorage.getItem("user");
-      if (userStr) {
-        const userData = JSON.parse(userStr);
-        if (userData.name) return userData.name.charAt(0).toUpperCase();
-        if (userData.email) return userData.email.charAt(0).toUpperCase();
-      }
+      return "U";
     } catch (e) {
       return "U";
     }
-    return "U";
   };
 
   const userInitial = getUserInitial();
@@ -561,7 +553,7 @@ const Navbar = () => {
             </div>
             
             {/* Dashboard Button - Opens external dashboard on port 3000 */}
-            {isLoggedIn && hasActivePlan && (
+            {isLoggedIn && hasActivePlan ? (
               <a
                 href={`${DASHBOARD_URL}/dashboard`}
                 onClick={handleDashboardClick}
@@ -572,15 +564,16 @@ const Navbar = () => {
                 <FiGrid size={16} />
                 <span>Dashboard</span>
               </a>
-            )}
-            
-            <Link
+            ) : ( <Link
               href="/bookdemo"
               onClick={handleExternalClick}
               className="px-3 sm:px-4 py-1.5 sm:py-2 bg-gradient-to-r from-indigo-500 to-purple-500 text-white rounded-full text-xs sm:text-sm font-semibold transition-all duration-200 hover:shadow-md hover:scale-105 whitespace-nowrap"
             >
               Book Free Demo
             </Link>
+            )}
+            
+           
 
             {/* Desktop Auth Section */}
             {isLoggedIn ? (
@@ -657,16 +650,24 @@ const Navbar = () => {
                         </a>
                       )}
                       <Link
-                        href="/profile"
-                        onClick={() => setShowUserMenu(false)}
+                        href={`${DASHBOARD_URL}/settings`}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            setShowUserMenu(false);
+                            window.open(`${DASHBOARD_URL}/settings`, '_blank');
+                          }}
                         className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
                       >
                         <FiUser size={18} />
                         <span>My Profile</span>
                       </Link>
                       <Link
-                        href="/settings"
-                        onClick={() => setShowUserMenu(false)}
+                        href={`${DASHBOARD_URL}/settings`}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            setShowUserMenu(false);
+                            window.open(`${DASHBOARD_URL}/settings`, '_blank');
+                          }}
                         className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
                       >
                         <FiSettings size={18} />

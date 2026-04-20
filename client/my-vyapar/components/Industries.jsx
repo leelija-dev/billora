@@ -89,7 +89,7 @@ const IndustrySection = () => {
 
   return (
     <section ref={containerRef} className="relative h-[500vh] bg-white">
-      <div className="sticky top-0 h-screen w-full flex flex-col overflow-hidden">
+      <div className="sticky top-0 h-screen w-full flex flex-col overflow-hidden container mx-auto">
         <div className="h-[25vh] flex items-center justify-center pb-4 z-20">
           <Container size="full">
             <div className="text-center max-w-4xl mx-auto px-4">
