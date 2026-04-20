@@ -1,5 +1,4 @@
-
-    @extends('admin.main-layout')
+@extends('admin.main-layout')
     @section('title', 'Create New Plan')
     @section('content')
     <style>

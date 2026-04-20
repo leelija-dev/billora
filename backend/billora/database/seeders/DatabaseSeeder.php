@@ -23,5 +23,8 @@ class DatabaseSeeder extends Seeder
         // ]);
         $this->call([AdminUserSeeder::class]);    
         $this->call([PlanPermissionSeeder::class]);
+        $this->call([CustomerSiderbarPermission::class]);
+        $this->call([InputPermissionSeeder::class]);
+        
     }
 }

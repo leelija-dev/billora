@@ -1,3 +1,4 @@
+
 @php
     $admin = Auth::guard('admin')->user();
 @endphp

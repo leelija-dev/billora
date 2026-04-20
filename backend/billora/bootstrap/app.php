@@ -3,7 +3,7 @@
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
-
+use Illuminate\Http\Middleware\HandleCors;
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
         web:[ __DIR__.'/../routes/web.php',
@@ -13,6 +13,15 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // $middleware->append(HandleCors::class);
+          $middleware->api(append: [
+            HandleCors::class,
+        ]);
+        
+        // Add CORS to web middleware stack
+        $middleware->web(append: [
+            HandleCors::class,
+        ]);
         $middleware->alias([
             'admin.guest' => \App\Http\Middleware\AdminGuest::class,
             'admin.auth' => \App\Http\Middleware\AdminAuth::class,

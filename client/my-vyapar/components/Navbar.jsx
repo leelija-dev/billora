@@ -21,6 +21,11 @@ const Navbar = () => {
   const [hasActivePlan, setHasActivePlan] = useState(false);
   const [isCheckingPlan, setIsCheckingPlan] = useState(true);
   
+  // Hide navbar on scroll state
+  const [isNavbarVisible, setIsNavbarVisible] = useState(true);
+  const [lastScrollY, setLastScrollY] = useState(0);
+  const scrollTimeoutRef = useRef(null);
+  
   // Dashboard URL (external app on port 3000)
   const DASHBOARD_URL = process.env.NEXT_PUBLIC_DASHBOARD_URL || 'http://localhost:3000';
   
@@ -70,41 +75,80 @@ const Navbar = () => {
     return routeMap.hasOwnProperty(path?.replace(/\/$/, ""));
   };
 
-  // Check if user has purchased a plan
-  const checkPlanPurchaseStatus = () => {
-    try {
-      const purchaseCompleted = localStorage.getItem('purchase_completed') === 'true';
-      const planPurchased = localStorage.getItem('plan_purchased') === 'true';
-      const hasActiveSubscription = localStorage.getItem('has_active_subscription') === 'true';
-      
-      const purchaseDate = localStorage.getItem('plan_purchase_date');
-      let isPurchaseValid = false;
-      
-      if (purchaseDate) {
-        const purchaseTime = new Date(purchaseDate).getTime();
-        const currentTime = new Date().getTime();
-        const daysSincePurchase = (currentTime - purchaseTime) / (1000 * 60 * 60 * 24);
-        isPurchaseValid = daysSincePurchase <= 365;
-      }
-      
-      const hasPlan = (purchaseCompleted || planPurchased || hasActiveSubscription) && isPurchaseValid;
-      
-      console.log("🔍 Checking plan status:", { 
-        purchaseCompleted, 
-        planPurchased, 
-        hasActiveSubscription,
-        isPurchaseValid,
-        hasPlan 
-      });
-      
-      setHasActivePlan(hasPlan);
-    } catch (error) {
-      console.error("Error checking plan purchase:", error);
-      setHasActivePlan(false);
-    } finally {
-      setIsCheckingPlan(false);
+  // Handle scroll to hide/show navbar
+  const handleScroll = () => {
+    const currentScrollY = window.scrollY;
+    const scrollingDown = currentScrollY > lastScrollY;
+    const isAtTop = currentScrollY < 50;
+    
+    // Clear existing timeout
+    if (scrollTimeoutRef.current) {
+      clearTimeout(scrollTimeoutRef.current);
     }
+    
+    // Hide navbar when scrolling down (not at top, and scrolled past 100px)
+    if (scrollingDown && !isAtTop && currentScrollY > 100) {
+      setIsNavbarVisible(false);
+    }
+    
+    // Show navbar immediately when scrolling up
+    if (!scrollingDown && !isAtTop) {
+      setIsNavbarVisible(true);
+    }
+    
+    // Show navbar when at top of page
+    if (isAtTop) {
+      setIsNavbarVisible(true);
+    }
+    
+    // CRITICAL FIX: When scrolling stops (after 300ms of no scroll movement), show navbar
+    scrollTimeoutRef.current = setTimeout(() => {
+      // Only show if navbar is hidden and not at top (to avoid unnecessary animation)
+      if (!isNavbarVisible && currentScrollY > 50) {
+        setIsNavbarVisible(true);
+      }
+    }, 300);
+    
+    // Update scroll position for scrolled effect
+    setScrolled(currentScrollY > 20);
+    setLastScrollY(currentScrollY);
   };
+
+  // Check if user has purchased a plan
+// Check if user has purchased a plan
+const checkPlanPurchaseStatus = () => {
+  try {
+    const { user: userData } = getAuthData();
+    const userId = userData?._id || userData?.id;
+    
+    if (!userId) {
+      setHasActivePlan(false);
+      setIsCheckingPlan(false);
+      return;
+    }
+    
+    const planData = localStorage.getItem(`plan_${userId}`);
+    
+    if (!planData) {
+      setHasActivePlan(false);
+      setIsCheckingPlan(false);
+      return;
+    }
+    
+    const parsed = JSON.parse(planData);
+    const purchaseTime = new Date(parsed.purchaseDate).getTime();
+    const currentTime = new Date().getTime();
+    const daysSincePurchase = (currentTime - purchaseTime) / (1000 * 60 * 60 * 24);
+    const isValid = daysSincePurchase <= 365;
+    
+    setHasActivePlan(parsed.active && isValid);
+  } catch (error) {
+    console.error("Error checking plan:", error);
+    setHasActivePlan(false);
+  } finally {
+    setIsCheckingPlan(false);
+  }
+};
 
   // Check login status from localStorage
   const checkLoginStatus = () => {
@@ -197,6 +241,11 @@ const Navbar = () => {
         }
         
         clearAuthData();
+        
+        // Clear all plan data for this user
+        if (userId) {
+          localStorage.removeItem(`plan_${userId}`);
+        }
         localStorage.removeItem('purchase_completed');
         localStorage.removeItem('plan_purchased');
         localStorage.removeItem('plan_purchase_date');
@@ -226,6 +275,12 @@ const Navbar = () => {
         });
         
         clearAuthData();
+        
+        const { user: userData } = getAuthData();
+        const userId = userData?._id || userData?.id;
+        if (userId) {
+          localStorage.removeItem(`plan_${userId}`);
+        }
         localStorage.removeItem('purchase_completed');
         localStorage.removeItem('plan_purchased');
         localStorage.removeItem('plan_purchase_date');
@@ -281,18 +336,37 @@ const Navbar = () => {
     checkLoginStatus();
   }, []);
 
+  // Add scroll event listener
+  useEffect(() => {
+    window.addEventListener("scroll", handleScroll);
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+      if (scrollTimeoutRef.current) {
+        clearTimeout(scrollTimeoutRef.current);
+      }
+    };
+  }, [lastScrollY, isNavbarVisible]);
+
   // Listen for plan purchase completion event
   useEffect(() => {
     const handlePlanPurchase = (event) => {
       console.log("🎉 Plan purchase event received:", event.detail);
+
       if (event.detail?.status === 'completed' || event.detail?.planPurchased === true) {
-        localStorage.setItem('purchase_completed', 'true');
-        localStorage.setItem('plan_purchased', 'true');
-        localStorage.setItem('plan_purchase_date', new Date().toISOString());
-        localStorage.setItem('has_active_subscription', 'true');
         
+        const { user } = getAuthData();
+        const userId = user?._id || user?.id;
+
+        if (!userId) return;
+
+        // Save plan per user (IMPORTANT FIX)
+        localStorage.setItem(`plan_${userId}`, JSON.stringify({
+          active: true,
+          purchaseDate: new Date().toISOString()
+        }));
+
         setHasActivePlan(true);
-        
+
         toast.success('Plan activated! Dashboard is now available.', {
           duration: 5000,
           position: 'top-right',
@@ -302,7 +376,7 @@ const Navbar = () => {
     };
 
     window.addEventListener("planPurchaseCompleted", handlePlanPurchase);
-    
+
     return () => {
       window.removeEventListener("planPurchaseCompleted", handlePlanPurchase);
     };
@@ -314,7 +388,7 @@ const Navbar = () => {
       if (e.key === "token" || e.key === "user") {
         checkLoginStatus();
       }
-      if (e.key === "purchase_completed" || e.key === "plan_purchased") {
+      if (e.key?.startsWith("plan_")) {
         checkPlanPurchaseStatus();
       }
     };
@@ -574,12 +648,6 @@ const Navbar = () => {
     };
   }, [isNavAction, activeTab]);
 
-  useEffect(() => {
-    const handleScroll = () => setScrolled(window.scrollY > 20);
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
-
   const navItems = [
     { name: "Home", href: "/" },
     { name: "Try Mobile", href: "/trymobile" },
@@ -621,9 +689,16 @@ const Navbar = () => {
   return (
     <>
       <nav
-        className={`sticky top-0 bg-white z-[1000] h-16 md:h-20 flex items-center px-3 sm:px-4 md:px-6 transition-all duration-300 ${
+        className={`fixed top-0 left-0 w-full bg-white z-[1000] h-16 md:h-20 flex items-center px-3 sm:px-4 md:px-6 transition-all duration-300 ${
           scrolled ? "shadow-lg border-b border-gray-100" : "shadow-sm"
+        } ${
+          isNavbarVisible 
+            ? "translate-y-0 opacity-100" 
+            : "-translate-y-full opacity-0"
         }`}
+        style={{
+          transition: "transform 0.3s ease-in-out, opacity 0.25s ease-in-out"
+        }}
       >
         <div className="max-w-[1400px] w-full mx-auto flex justify-between items-center gap-2 sm:gap-4">
           {/* Logo */}
@@ -864,6 +939,9 @@ const Navbar = () => {
           </button>
         </div>
       </nav>
+
+      {/* Add spacer div to prevent content jump when navbar is fixed */}
+      <div className="h-16 md:h-20"></div>
 
       {/* Backdrop Overlay */}
       <div 
