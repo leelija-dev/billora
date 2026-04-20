@@ -433,7 +433,7 @@ const Navbar = () => {
   }, [isNavAction, activeTab]);
 
   const navItems = [
-    { name: "Home", href: "/" },
+   
     { name: "Try Mobile", href: "/trymobile" },
     { name: "Carrers", href: "/carrers" },
     { name: "Partner", href: "/partner" },
@@ -555,7 +555,7 @@ const Navbar = () => {
             </div>
             
             {/* Dashboard Button - Opens external dashboard on port 3000 */}
-            {isLoggedIn && hasActivePlan && (
+            {isLoggedIn && hasActivePlan ? (
               <a
                 href={`${DASHBOARD_URL}/dashboard`}
                 onClick={handleDashboardClick}
@@ -566,15 +566,16 @@ const Navbar = () => {
                 <FiGrid size={16} />
                 <span>Dashboard</span>
               </a>
-            )}
-            
-            <Link
+            ) : ( <Link
               href="/bookdemo"
               onClick={handleExternalClick}
               className="px-3 sm:px-4 py-1.5 sm:py-2 bg-gradient-to-r from-indigo-500 to-purple-500 text-white rounded-full text-xs sm:text-sm font-semibold transition-all duration-200 hover:shadow-md hover:scale-105 whitespace-nowrap"
             >
               Book Free Demo
             </Link>
+            )}
+            
+           
 
             {/* Desktop Auth Section */}
             {isLoggedIn ? (

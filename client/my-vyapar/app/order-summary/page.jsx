@@ -6,11 +6,19 @@ import { useRouter } from "next/navigation";
 import toast, { Toaster } from 'react-hot-toast';
 import { usePaymentStore } from "@/store/paymentStore";
 import { useAuthStore } from "../../store/authStoreZustand";
+import useBusinessStore from "../../store/businessStore";
 
 const OrderSummary = () => {
   const router = useRouter();
   const { createOrderAction, loading: storeLoading, error: storeError } = usePaymentStore();
   const { user, token, isLoggedIn } = useAuthStore();
+  const { 
+    businessTypes, 
+    loading: loadingBusinessTypes, 
+    error: businessError,
+    fetchBusinessTypes,
+    getBusinessTypeOptions 
+  } = useBusinessStore();
   
   const [selectedPlan, setSelectedPlan] = useState(null);
   const [companyName, setCompanyName] = useState("");
@@ -23,43 +31,16 @@ const OrderSummary = () => {
   const [showOptional, setShowOptional] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [loggedInUser, setLoggedInUser] = useState(null);
-  const [businessTypes, setBusinessTypes] = useState([]);
-  const [loadingBusinessTypes, setLoadingBusinessTypes] = useState(false);
   const [customerId, setCustomerId] = useState(null);
 
-  // Fetch business types from backend
+  // Fetch business types using business store
   useEffect(() => {
-    const fetchBusinessTypes = async () => {
-      try {
-        setLoadingBusinessTypes(true);
-        const token = token;
-        
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/business-types`, {
-          headers: {
-            'Authorization': token ? `Bearer ${token}` : '',
-            'Content-Type': 'application/json'
-          }
-        });
-        
-        if (response.ok) {
-          const data = await response.json();
-          if (data.status && data.data) {
-            setBusinessTypes(data.data);
-          } else if (Array.isArray(data)) {
-            setBusinessTypes(data);
-          }
-        }
-      } catch (error) {
-        console.error('Error fetching business types:', error);
-        setBusinessTypes([]);
-        toast.error('Failed to load business types. Please refresh the page.');
-      } finally {
-        setLoadingBusinessTypes(false);
-      }
-    };
-    
-    fetchBusinessTypes();
-  }, []);
+    if (token) {
+      fetchBusinessTypes(token).catch(error => {
+        console.error('Failed to fetch business types:', error);
+      });
+    }
+  }, [token, fetchBusinessTypes]);
 
   // Load user data from Zustand store
   useEffect(() => {
@@ -73,13 +54,17 @@ const OrderSummary = () => {
         if (user.mobile) setCustomerPhone(user.mobile);
         if (user.customer_id) setCustomerId(user.customer_id);
         if (user.id) setCustomerId(user.id);
+        if (user.company_name) setCompanyName(user.company_name);
+        if (user.gst_number) setGstNumber(user.gst_number);
+        if (user.address) setBillingAddress(user.address);
+        if (user.business_type_id) setBusinessTypeId(String(user.business_type_id));
           
-        console.log("✅ Logged-in user loaded:", user);
+        console.log("Logged-in user loaded:", user);
       }
     };
     
     getUserData();
-  }, []);
+  }, [user]);
 
   // Load selected plan from localStorage
   useEffect(() => {
@@ -478,7 +463,7 @@ const OrderSummary = () => {
                           value={companyName}
                           onChange={(e) => setCompanyName(e.target.value)}
                           placeholder="Enter your company name"
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#5b5bd6] focus:border-transparent outline-none transition-all"
+                          className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#5b5bd6] focus:border-transparent outline-none transition-all"
                         />
                       </div>
                       
@@ -512,7 +497,7 @@ const OrderSummary = () => {
                           value={gstNumber}
                           onChange={(e) => setGstNumber(e.target.value)}
                           placeholder="Enter GST number"
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#5b5bd6] focus:border-transparent outline-none transition-all"
+                          className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#5b5bd6] focus:border-transparent outline-none transition-all"
                         />
                         <p className="text-xs text-gray-500 mt-1">Required only for GST invoice</p>
                       </div>
@@ -526,7 +511,7 @@ const OrderSummary = () => {
                           onChange={(e) => setBillingAddress(e.target.value)}
                           placeholder="Enter your billing address"
                           rows="3"
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#5b5bd6] focus:border-transparent outline-none transition-all"
+                          className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#5b5bd6] focus:border-transparent outline-none transition-all"
                         />
                       </div>
                     </div>
