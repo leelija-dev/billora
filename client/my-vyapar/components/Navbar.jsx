@@ -6,20 +6,17 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FiLogIn, FiLogOut, FiUser, FiSettings, FiChevronDown, FiMenu, FiX, FiGrid } from "react-icons/fi";
 import { logoutUser } from "../services/authService";
-import { getAuthData, clearAuthData, isAuthenticated } from "../store/authStore";
+import { useAuth } from "../contexts/AuthContext";
 import toast from 'react-hot-toast';
 
 const Navbar = () => {
+  const { isLoggedIn, user, hasActivePlan, logout } = useAuth();
   const [scrolled, setScrolled] = useState(false);
   const [activeTab, setActiveTab] = useState(0);
   const [isNavAction, setIsNavAction] = useState(true);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [user, setUser] = useState(null);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
-  const [hasActivePlan, setHasActivePlan] = useState(false);
-  const [isCheckingPlan, setIsCheckingPlan] = useState(true);
   
   // Dashboard URL (external app on port 3000)
   const DASHBOARD_URL = process.env.NEXT_PUBLIC_DASHBOARD_URL || 'http://localhost:3000';
@@ -68,68 +65,6 @@ const Navbar = () => {
 
   const isNavPage = (path) => {
     return routeMap.hasOwnProperty(path?.replace(/\/$/, ""));
-  };
-
-  // Check if user has purchased a plan
-const checkPlanPurchaseStatus = () => {
-  try {
-    const { user } = getAuthData();
-    const userId = user?._id || user?.id;
-
-    if (!userId) {
-      setHasActivePlan(false);
-      return;
-    }
-
-    const planData = localStorage.getItem(`plan_${userId}`);
-
-    if (!planData) {
-      setHasActivePlan(false);
-      return;
-    }
-
-    const parsed = JSON.parse(planData);
-
-    const purchaseTime = new Date(parsed.purchaseDate).getTime();
-    const currentTime = new Date().getTime();
-    const daysSincePurchase = (currentTime - purchaseTime) / (1000 * 60 * 60 * 24);
-
-    const isValid = daysSincePurchase <= 365;
-
-    setHasActivePlan(parsed.active && isValid);
-
-  } catch (error) {
-    console.error("Error checking plan:", error);
-    setHasActivePlan(false);
-  } finally {
-    setIsCheckingPlan(false);
-  }
-};
-
-  // Check login status from localStorage
-  const checkLoginStatus = () => {
-    try {
-      const authenticated = isAuthenticated();
-      setIsLoggedIn(authenticated);
-      
-      if (authenticated) {
-        const { user } = getAuthData();
-        setUser(user);
-        checkPlanPurchaseStatus();
-      } else {
-        setUser(null);
-        setHasActivePlan(false);
-        setIsCheckingPlan(false);
-      }
-      return authenticated;
-    } catch (error) {
-      console.error('Error checking login status:', error);
-      setIsLoggedIn(false);
-      setUser(null);
-      setHasActivePlan(false);
-      setIsCheckingPlan(false);
-      return false;
-    }
   };
 
   // Handle logout with toast notification
@@ -186,8 +121,7 @@ const checkPlanPurchaseStatus = () => {
       });
       
       try {
-        const { user: userData } = getAuthData();
-        const userId = userData?._id || userData?.id;
+        const userId = user?._id || user?.id;
         
         if (userId) {
           const response = await logoutUser(userId);
@@ -196,22 +130,14 @@ const checkPlanPurchaseStatus = () => {
           }
         }
         
-        // clearAuthData();
-        // localStorage.removeItem('purchase_completed');
-        // localStorage.removeItem('plan_purchased');
-        // localStorage.removeItem('plan_purchase_date');
-        // localStorage.removeItem('has_active_subscription');
-        
-        setIsLoggedIn(false);
-        setUser(null);
-        setHasActivePlan(false);
-        window.dispatchEvent(new Event("userLoggedOut"));
+        // Use AuthContext logout function
+        await logout();
         
         toast.dismiss(loadingToastId);
         toast.success(`Successfully logged out. See you soon!`, {
           duration: 3000,
           position: 'top-right',
-          icon: '👋',
+          icon: '',
         });
         
         router.push("/");
@@ -225,15 +151,8 @@ const checkPlanPurchaseStatus = () => {
           position: 'top-right',
         });
         
-        clearAuthData();
-        localStorage.removeItem('purchase_completed');
-        localStorage.removeItem('plan_purchased');
-        localStorage.removeItem('plan_purchase_date');
-        localStorage.removeItem('has_active_subscription');
-        
-        setIsLoggedIn(false);
-        setUser(null);
-        setHasActivePlan(false);
+        // Still logout locally even if API call fails
+        await logout();
         router.push("/");
       } finally {
         setIsLoggingOut(false);
@@ -275,79 +194,6 @@ const checkPlanPurchaseStatus = () => {
       document.body.style.overflow = "unset";
     };
   }, [isMobileMenuOpen]);
-
-  // Check login status on component mount
-  useEffect(() => {
-    checkLoginStatus();
-  }, []);
-
-  // Listen for plan purchase completion event
- useEffect(() => {
-  const handlePlanPurchase = (event) => {
-    console.log("🎉 Plan purchase event received:", event.detail);
-
-    if (event.detail?.status === 'completed' || event.detail?.planPurchased === true) {
-      
-      const { user } = getAuthData();
-      const userId = user?._id || user?.id;
-
-      if (!userId) return;
-
-      // ✅ Save plan per user (IMPORTANT FIX)
-      localStorage.setItem(`plan_${userId}`, JSON.stringify({
-        active: true,
-        purchaseDate: new Date().toISOString()
-      }));
-
-      setHasActivePlan(true);
-
-      toast.success('Plan activated! Dashboard is now available.', {
-        duration: 5000,
-        position: 'top-right',
-        icon: '🎉',
-      });
-    }
-  };
-
-  window.addEventListener("planPurchaseCompleted", handlePlanPurchase);
-
-  return () => {
-    window.removeEventListener("planPurchaseCompleted", handlePlanPurchase);
-  };
-}, []);
-  // Listen for storage changes (for cross-tab updates)
-  useEffect(() => {
-    const handleStorageChange = (e) => {
-      if (e.key === "token" || e.key === "user") {
-        checkLoginStatus();
-      }
-      if (e.key === "purchase_completed" || e.key === "plan_purchased") {
-        checkPlanPurchaseStatus();
-      }
-    };
-
-    window.addEventListener("storage", handleStorageChange);
-    return () => {
-      window.removeEventListener("storage", handleStorageChange);
-    };
-  }, []);
-
-  // Listen for custom login/logout events
-  useEffect(() => {
-    const handleLoginEvent = () => checkLoginStatus();
-    const handleLogoutEvent = () => {
-      checkLoginStatus();
-      setHasActivePlan(false);
-    };
-
-    window.addEventListener("userLoggedIn", handleLoginEvent);
-    window.addEventListener("userLoggedOut", handleLogoutEvent);
-    
-    return () => {
-      window.removeEventListener("userLoggedIn", handleLoginEvent);
-      window.removeEventListener("userLoggedOut", handleLogoutEvent);
-    };
-  }, []);
 
   // Close mobile menu on route change
   useEffect(() => {
