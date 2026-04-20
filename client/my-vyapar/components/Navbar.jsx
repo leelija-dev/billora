@@ -58,14 +58,13 @@ const Navbar = () => {
   const router = useRouter();
 
   const routeMap = {
-    "/": 0,
-    "/trymobile": 1,
-    "/carrers": 2,
-    "/partner": 3,
-    "/solution": 4,
-    "/about": 5,
-    "/pricing": 6,
-    "/contact": 7,
+    "/trymobile": 0,
+    "/carrers": 1,
+    "/partner": 2,
+    "/solution": 3,
+    "/about": 4,
+    "/pricing": 5,
+    "/contact": 6,
   };
 
   const isNavPage = (path) => {
@@ -433,7 +432,6 @@ const Navbar = () => {
   }, [isNavAction, activeTab]);
 
   const navItems = [
-   
     { name: "Try Mobile", href: "/trymobile" },
     { name: "Carrers", href: "/carrers" },
     { name: "Partner", href: "/partner" },
@@ -652,16 +650,24 @@ const Navbar = () => {
                         </a>
                       )}
                       <Link
-                        href="/profile"
-                        onClick={() => setShowUserMenu(false)}
+                        href={`${DASHBOARD_URL}/settings`}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            setShowUserMenu(false);
+                            window.open(`${DASHBOARD_URL}/settings`, '_blank');
+                          }}
                         className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
                       >
                         <FiUser size={18} />
                         <span>My Profile</span>
                       </Link>
                       <Link
-                        href="/settings"
-                        onClick={() => setShowUserMenu(false)}
+                        href={`${DASHBOARD_URL}/settings`}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            setShowUserMenu(false);
+                            window.open(`${DASHBOARD_URL}/settings`, '_blank');
+                          }}
                         className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
                       >
                         <FiSettings size={18} />
