@@ -12,7 +12,6 @@ import toast from 'react-hot-toast';
 const Navbar = () => {
   const { isLoggedIn, user, hasActivePlan, logout } = useAuthStore();
   const [scrolled, setScrolled] = useState(false);
-  const [forceUpdate, setForceUpdate] = useState(0);
   const [activeTab, setActiveTab] = useState(0);
   const [isNavAction, setIsNavAction] = useState(true);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -136,7 +135,7 @@ const Navbar = () => {
           }
         }
         
-        // Use AuthContext logout function
+        // Use Zustand logout function
         await logout();
         
         toast.dismiss(loadingToastId);
@@ -206,14 +205,6 @@ const Navbar = () => {
     setIsMobileMenuOpen(false);
     setShowUserMenu(false);
   }, [pathname]);
-
-  // Force re-render when auth state changes
-  useEffect(() => {
-    if (isLoggedIn && hasActivePlan) {
-      console.log("Navbar: Auth state updated, forcing re-render...");
-      setForceUpdate(prev => prev + 1);
-    }
-  }, [isLoggedIn, hasActivePlan]);
 
   // ============ SLIDER FUNCTIONS ============
   const updateActiveIndicator = () => {

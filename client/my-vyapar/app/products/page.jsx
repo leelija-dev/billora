@@ -1,12 +1,13 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { getAuthData } from '../../store/authStore';
+import { useAuthStore } from '../../store/authStoreZustand';
 import toast, { Toaster } from 'react-hot-toast';
 import { useRouter } from 'next/navigation';
 
 const ProductsPage = () => {
   const router = useRouter();
+  const { user } = useAuthStore();
   const [products, setProducts] = useState([]);
   const [pagination, setPagination] = useState({});
   const [loading, setLoading] = useState(true);
@@ -362,7 +363,7 @@ const ProductsPage = () => {
       return;
     }
 
-    const { user } = getAuthData();
+    // User is already available from Zustand store
 
     if (!user || !user.id) {
       setPopupMessage("Please login to place order");
@@ -496,7 +497,7 @@ const ProductsPage = () => {
     setCurrentPage(page);
     try {
       setLoading(true);
-      const { user } = getAuthData();
+      // User is already available from Zustand store
       if (!user || !user.id) {
         router.push('/login');
         return;

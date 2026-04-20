@@ -1,36 +1,9 @@
 // store/authStoreZustand.js - Industry-standard Zustand store for authentication
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { persist, createJSONStorage } from 'zustand/middleware';
 
-// Helper functions for localStorage
-const saveAuthData = (user, token) => {
-  if (user) localStorage.setItem("user", JSON.stringify(user));
-  if (token) localStorage.setItem("token", token);
-};
-
-const getAuthData = () => {
-  try {
-    const user = localStorage.getItem("user");
-    const token = localStorage.getItem("token");
-    return {
-      user: user ? JSON.parse(user) : null,
-      token: token || null,
-    };
-  } catch {
-    return { user: null, token: null };
-  }
-};
-
-const clearAuthData = () => {
-  localStorage.removeItem("user");
-  localStorage.removeItem("token");
-  // Clear plan data for all users
-  Object.keys(localStorage).forEach(key => {
-    if (key.startsWith('plan_')) {
-      localStorage.removeItem(key);
-    }
-  });
-};
+// Import secure storage utilities
+import { secureStorage, validateToken } from '../utils/secureStorage';
 
 // Create Zustand store
 export const useAuthStore = create(
@@ -47,10 +20,7 @@ export const useAuthStore = create(
 
       // Actions
       login: (userData, token) => {
-        console.log("Zustand: Login called with:", { userData, token });
-        
-        // Save to localStorage
-        saveAuthData(userData, token);
+        console.log('MyVyapar: Login called with:', { userData, token });
         
         // Save plan data if user has active plan
         if (userData.is_active && userData.plan_id) {
@@ -67,12 +37,11 @@ export const useAuthStore = create(
               created_at: userData.created_at || new Date().toISOString()
             };
             
-            console.log("Zustand: Saving plan data to localStorage:", planData);
-            localStorage.setItem(`plan_${userId}`, JSON.stringify(planData));
+            secureStorage.savePlanData(userId, planData);
           }
         }
         
-        // Update state
+        // Update state (Zustand persist will handle localStorage)
         set({
           user: userData,
           token: token,
@@ -88,13 +57,15 @@ export const useAuthStore = create(
       },
 
       logout: async () => {
-        console.log("Zustand: Logout called");
-        
         try {
-          // Clear localStorage
-          clearAuthData();
+          // Clear plan data from secure storage
+          const { user } = get();
+          if (user) {
+            const userId = user._id || user.id;
+            secureStorage.removePlanData(userId);
+          }
           
-          // Update state
+          // Update state (Zustand persist will handle localStorage)
           set({
             user: null,
             token: null,
@@ -103,18 +74,19 @@ export const useAuthStore = create(
             error: null,
           });
           
+          // Clear localStorage directly as well
+          localStorage.removeItem('auth-storage');
+          
           // Dispatch event
           window.dispatchEvent(new Event("userLoggedOut"));
           
         } catch (error) {
-          console.error("Zustand: Logout error:", error);
           set({ error: error.message });
         }
       },
 
       updateUser: (userData) => {
-        const currentToken = get().token;
-        saveAuthData(userData, currentToken);
+        // Update state (Zustand persist will handle localStorage)
         set({ user: userData });
       },
 
@@ -123,92 +95,48 @@ export const useAuthStore = create(
         
         try {
           const userId = user?._id || user?.id;
-          
-          console.log("Zustand: Checking plan status for user:", userId);
-          console.log("Zustand: User object:", user);
 
           if (!userId) {
-            console.log("Zustand: No user ID found");
             set({ hasActivePlan: false });
             return;
           }
 
-          const planData = localStorage.getItem(`plan_${userId}`);
-          console.log("Zustand: Plan data from localStorage:", planData);
+          const planData = secureStorage.getPlanData(userId);
 
           if (!planData) {
-            console.log("Zustand: No plan data found in localStorage");
             set({ hasActivePlan: false });
             return;
           }
 
-          const parsed = JSON.parse(planData);
-          console.log("Zustand: Parsed plan data:", parsed);
-
-          const purchaseTime = new Date(parsed.purchaseDate).getTime();
+          const purchaseTime = new Date(planData.purchaseDate).getTime();
           const currentTime = new Date().getTime();
           const daysSincePurchase = (currentTime - purchaseTime) / (1000 * 60 * 60 * 24);
 
           const isValid = daysSincePurchase <= 365;
-          console.log("Zustand: Days since purchase:", daysSincePurchase, "Valid:", isValid);
-
-          const isActive = parsed.active || parsed.is_active;
-          console.log("Zustand: Plan active status:", isActive);
+          const isActive = planData.active || planData.is_active;
           
           const hasActivePlan = isActive && isValid;
           set({ hasActivePlan });
-          
-          console.log("Zustand: Final hasActivePlan set to:", hasActivePlan);
 
         } catch (error) {
-          console.error("Zustand: Error checking plan:", error);
           set({ hasActivePlan: false, error: error.message });
         }
       },
 
       initializeAuth: () => {
-        console.log("Zustand: Initializing auth...");
+        console.log('MyVyapar: Initializing auth...');
         set({ isLoading: true });
         
-        try {
-          const authData = getAuthData();
-          
-          if (authData.token && authData.user) {
-            set({
-              user: authData.user,
-              token: authData.token,
-              isLoggedIn: true,
-              isLoading: false,
-              error: null,
-            });
-            
-            // Check plan status after setting user
-            get().checkPlanPurchaseStatus();
-          } else {
-            set({
-              user: null,
-              token: null,
-              isLoggedIn: false,
-              isLoading: false,
-              error: null,
-            });
-          }
-        } catch (error) {
-          console.error("Zustand: Auth initialization error:", error);
-          set({
-            user: null,
-            token: null,
-            isLoggedIn: false,
-            isLoading: false,
-            error: error.message,
-          });
-        }
+        // Zustand persist will handle initialization
+        // This function is mainly for manual initialization if needed
+        set({ isLoading: false });
       },
 
       clearError: () => set({ error: null }),
     }),
     {
-      name: 'auth-storage', // name for localStorage
+      name: 'auth-storage',
+      storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({
         // Only persist these fields
         user: state.user,
@@ -216,6 +144,46 @@ export const useAuthStore = create(
         isLoggedIn: state.isLoggedIn,
         hasActivePlan: state.hasActivePlan,
       }),
+      onRehydrateStorage: () => (state) => {
+        console.log('MyVyapar: Auth store rehydrating...', state);
+        
+        if (state) {
+          // Check authentication state after rehydration
+          const hasToken = !!state.token;
+          const hasUser = !!state.user;
+          const isAuthenticated = hasToken && hasUser;
+          
+          console.log('MyVyapar: Rehydration check:', {
+            hasToken,
+            hasUser,
+            isAuthenticated,
+            token: state.token,
+            user: state.user
+          });
+          
+          // Update isLoggedIn based on actual data
+          state.isLoggedIn = isAuthenticated;
+          
+          // Check plan status after rehydration
+          if (isAuthenticated && state.user) {
+            const userId = state.user._id || state.user.id;
+            const planData = secureStorage.getPlanData(userId);
+            
+            if (planData) {
+              const purchaseTime = new Date(planData.purchaseDate).getTime();
+              const currentTime = new Date().getTime();
+              const daysSincePurchase = (currentTime - purchaseTime) / (1000 * 60 * 60 * 24);
+              const isValid = daysSincePurchase <= 365;
+              const isActive = planData.active || planData.is_active;
+              
+              state.hasActivePlan = isActive && isValid;
+              console.log('MyVyapar: Plan status after rehydrate:', state.hasActivePlan);
+            }
+          }
+        }
+        
+        console.log('MyVyapar: Auth store rehydrated');
+      },
     }
   )
 );

@@ -115,7 +115,7 @@ const Login = () => {
       const userData = res.user || res.data?.user || res;
       const token = res.token || res.data?.token || null;
       
-      // Use AuthContext login method
+      // Use Zustand login method
       login(userData, token);
       
       toast.dismiss(loadingToast);

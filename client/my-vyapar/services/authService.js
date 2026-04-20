@@ -1,50 +1,57 @@
 // services/authService.js
-import { apiRequest } from "../utils/api";
-import { clearAuthData, saveAuthData } from "../store/authStore";
+import { api } from "../utils/secureApi";
+import { ERROR_MESSAGES } from "../constants";
 
 export const loginUser = async (userData) => {
-  const response = await apiRequest("/users/login", "POST", userData);
-  
-  // Handle both response formats (success OR status)
-  if ((response.success || response.status) && response.data) {
-    saveAuthData(response.data.user, response.data.token);
-  }
-  
-  return response;
-};
-
-export const registerUser = async (userData) => {
-  const response = await apiRequest("/users/register", "POST", userData);
-  
-  // Handle both response formats
-  if ((response.success || response.status) && response.data) {
-    saveAuthData(response.data.user, response.data.token);
-  }
-  
-  return response;
-};
-
-export const logoutUser = async (userId) => {
   try {
-    const response = await apiRequest("/users/logout", "POST", { user_id: userId });
+    const response = await api.post("/users/login", userData);
     
-    // Log the response to see what we're getting
-    console.log('Logout API response:', response);
-    
-    // Check if logout was successful (handles both 'success' and 'status')
-    if (response.status === true || response.success === true) {
-      console.log('✅ Server logout successful');
-    } else {
-      console.warn('⚠️ Logout API returned:', response);
+    // Handle both response formats (success OR status)
+    if ((response.success || response.status) && response.data) {
+      // Let Zustand handle storage via persist middleware
     }
     
     return response;
   } catch (error) {
-    console.error('❌ Logout API error:', error);
+    // Provide specific error messages
+    if (error.message?.includes("User not found")) {
+      throw new Error(ERROR_MESSAGES.AUTH.USER_NOT_FOUND);
+    } else if (error.message?.includes("password")) {
+      throw new Error(ERROR_MESSAGES.AUTH.INVALID_CREDENTIALS);
+    } else if (error.message?.includes("verify")) {
+      throw new Error(ERROR_MESSAGES.AUTH.EMAIL_NOT_VERIFIED);
+    } else {
+      throw error;
+    }
+  }
+};
+
+export const registerUser = async (userData) => {
+  try {
+    const response = await api.post("/users/register", userData);
+    
+    // Handle both response formats
+    if ((response.success || response.status) && response.data) {
+      // Let Zustand handle storage via persist middleware
+    }
+    
+    return response;
+  } catch (error) {
     throw error;
-  } finally {
-    // Always clear local auth data, even if API call fails
-    console.log('🗑️ Clearing local auth data');
-    clearAuthData();
+  }
+};
+
+export const logoutUser = async (userId) => {
+  try {
+    const response = await api.post("/users/logout", { user_id: userId });
+    
+    if (response?.status === true || response?.success === true) {
+      // Success case - handled by caller
+    }
+    
+    return response;
+  } catch (error) {
+    // Don't throw error for logout - always succeed locally
+    return { success: true, message: "Logged out successfully" };
   }
 };
