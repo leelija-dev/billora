@@ -25,9 +25,12 @@ export const invoiceAPI = {
   getBillGenerateData: (userId) => {
     if (!userId) {
       console.error('User ID is required for getBillGenerateData')
-      return apiClient.get('/invoice/')
+      return apiClient.get('/invoice')
     }
-    return apiClient.get(`/invoice/?user_id=${userId}`)
+    console.log('Fetching bill generate data for user ID:', userId) // Debug log
+    return apiClient.get('/invoice', {
+    params: { user_id: userId } 
+  })
   },
 
   // Get customer details by ID
