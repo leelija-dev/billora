@@ -2,19 +2,48 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useAuthStore } from '../../store/authStoreZustand';
+import { useProductsStore } from '../../store/productsStore';
 import toast, { Toaster } from 'react-hot-toast';
 import { useRouter } from 'next/navigation';
 
 const ProductsPage = () => {
   const router = useRouter();
-  const { user } = useAuthStore();
-  const [products, setProducts] = useState([]);
-  const [pagination, setPagination] = useState({});
-  const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState("");
-  // const [category, setCategory] = useState("All");
-  const [category, setCategory] = useState({ id: "All", name: "All" });
-  const [categories, setCategories] = useState([{ id: "All", name: "All" }]);
+  const { user, token } = useAuthStore();
+  
+  // Use Zustand products store
+  const {
+    products,
+    pagination,
+    loading,
+    error,
+    storeId,
+    search,
+    selectedCategory,
+    currentPage,
+    fetchProducts,
+    setSearch: setSearchStore,
+    setSelectedCategory,
+    setCurrentPage,
+    clearError
+  } = useProductsStore();
+  
+  // Add Zustand store subscription to ensure we wait for proper rehydration
+  const [isAuthReady, setIsAuthReady] = useState(false);
+  
+  useEffect(() => {
+    const unsubscribe = useAuthStore.subscribe((state) => {
+      const hasAuth = !!(state.user && state.token);
+      if (hasAuth && !isAuthReady) {
+        console.log(' Auth store updated - User:', !!state.user, 'Token:', !!state.token);
+        setIsAuthReady(true);
+      }
+    });
+    
+    return unsubscribe;
+  }, []);
+  
+  // Local state for UI components
+  const [localSearch, setLocalSearch] = useState(search);
   const [sort, setSort] = useState("");
   const [maxPrice, setMaxPrice] = useState(100000);
   const [selectedProduct, setSelectedProduct] = useState(null);
@@ -25,9 +54,6 @@ const ProductsPage = () => {
   const [showFilterOverlay, setShowFilterOverlay] = useState(false);
   const [popup, setPopup] = useState(false);
   const [popupMessage, setPopupMessage] = useState("");
-  // const [filteredProducts, setFilteredProducts] = useState([]);
-  const [currentPage, setCurrentPage] = useState(1);
-  // const [totalPages, setTotalPages] = useState(1);
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState("cod");
   const [expandedDescriptions, setExpandedDescriptions] = useState({});
@@ -35,7 +61,6 @@ const ProductsPage = () => {
   const [selectedItems, setSelectedItems] = useState(new Set());
   const [searchInput, setSearchInput] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
-  const [storeId, setStoreId] = useState(null);
   const [recentOrder, setRecentOrder] = useState(null);
   const [showRecentOrder, setShowRecentOrder] = useState(false);
   const [formData, setFormData] = useState({
@@ -376,7 +401,7 @@ const ProductsPage = () => {
     const loadingToast = toast.loading('Processing...');
 
     try {
-      const token = localStorage.getItem("token");
+      const token = token;
 
       if (paymentMethod === 'online') {
         const orderData = {
@@ -485,7 +510,7 @@ const ProductsPage = () => {
 
     } catch (error) {
       toast.dismiss(loadingToast);
-      console.error('❌ Order error:', error);
+      console.error('Order error:', error);
       setPopupMessage(error.message || 'Failed to place order. Please try again.');
       setPopup(true);
       setTimeout(() => setPopup(false), 3000);
@@ -494,156 +519,35 @@ const ProductsPage = () => {
   };
 
   const fetchProductsData = async (page = 1, categoryId = "All", term = "") => {
-    setCurrentPage(page);
     try {
-      setLoading(true);
-      // User is already available from Zustand store
-      if (!user || !user.id) {
-        router.push('/login');
+      // Clear any previous errors
+      clearError();
+      
+      // Wait for auth to be ready using subscription state
+      if (!isAuthReady) {
+        console.log('⏳ Waiting for auth store to be ready...');
+        toast.loading("Initializing authentication...");
         return;
       }
-
-      const params = new URLSearchParams({
-        page: String(page),
-        per_page: 15,
-        // user_id: user.id,
-        // ...(search && { search: search }),
-      });
-      if (term) params.set("search", term);
-      let url = "";
-      if (categoryId && categoryId !== "All") {
-        params.set("user_id", String(user.id));
-        // Use the new category endpoint
-        console.log("Fetching products for category:", categoryId);
-        url = `${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000/api'}/restaurant-all-products/category/${categoryId}?${params.toString()}`;
-      } else {
-        url = `${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000/api'}/restaurant-all-products/${user.id}?${params.toString()}`;
-      }
-      const response = await fetch(url, {
-        headers: {
-          'Authorization': 'Bearer ' + localStorage.getItem('token'),
-        }
-      });
-      console.log("Fetch response status:", response);
-      const productsData = await response.json();
-         // Set storeId only if stores data exists (for regular API, not category API)
-      if (Array.isArray(productsData?.stores) && productsData.stores.length > 0) {
-        setStoreId(productsData.stores[0].id);
-        console.log("Store ID set:", productsData.stores[0].id);
-      }
-      console.log("Fetched products data:", productsData);
-
-      let productsArray = [];
-      if (productsData?.products?.data && Array.isArray(productsData.products.data)) {
-        productsArray = productsData.products.data;
-      } else if (Array.isArray(productsData)) {
-        productsArray = productsData;
-      } else if (productsData?.data) {
-        productsArray = productsData.data;
-      }
-
-      const transformedProducts = productsArray.map(product => {
-        let imageUrl = product.image;
-console.log(`Original image URL for product ${product.id}:`, imageUrl);
-if (imageUrl && (imageUrl.startsWith('http://') || imageUrl.startsWith('https://'))) {
-  // Handle external URLs (Google Drive, etc.)
- if (imageUrl.includes('drive.google.com')) {
-  // Try multiple approaches to display Google Drive images
-  let fileId = null;
-  
-  if (imageUrl.includes('/file/d/')) {
-  const match = imageUrl.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
-  fileId = match ? match[1] : null;
-} else if (imageUrl.includes('uc?export=view')) {
-  const match = imageUrl.match(/id=([a-zA-Z0-9_-]+)/);
-  fileId = match ? match[1] : null;
-}
-  
-  if (fileId) {
-    // Try Google's direct content delivery (most reliable)
-    imageUrl = `https://drive.google.com/thumbnail?id=${fileId}&sz=w400-h400`;
-    
-    // Add a flag to indicate this is a Drive image for fallback
-    product.isDriveImage = true;
-    product.driveUrl = product.image;
-    product.fileId = fileId;
-  } else {
-    console.log(`Google Drive image detected: ${imageUrl}`);
-    imageUrl = null; // Will trigger placeholder
-  }
-}
-  // Keep other external URLs as-is
-} else if (imageUrl && imageUrl.startsWith('/')) {
-  imageUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000/api'}${imageUrl}`;
-} else if (imageUrl && imageUrl !== "") {
-  const cleanImageUrl = imageUrl.replace(/^"|"$/g, '');
-  imageUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000/api'}/storage/${cleanImageUrl}`;
-} else {
-  imageUrl = "https://placehold.co/400x400/f0f0f0/999?text=No+Image";
-}
-
-// Handle Google Drive images with a special placeholder
-// Handle Google Drive images with a special placeholder
-// Handle Google Drive images with a special placeholder
-if (!imageUrl && product.image && product.image.includes('drive.google.com')) {
-  // Extract file ID to show in placeholder
-  const fileId = product.image.match(/id=([a-zA-Z0-9_-]+)/);
-  const shortId = fileId ? fileId[1].substring(0, 8) : 'Drive';
-  imageUrl = `https://placehold.co/400x400/4285f4/ffffff?text=Drive+${shortId}`;
-  
-  // Add detailed logging
-  console.log(`Google Drive image for product ${product.id} (${product.name}):`);
-  console.log(`  Original URL: ${product.image}`);
-  console.log(`  File ID: ${fileId?.[1] || 'Unknown'}`);
-  console.log(`  Reason: Likely restricted or private sharing`);
-}
-console.log(`Final processed image URL for product ${product.id}:`, imageUrl);
-
-        return {
-          id: product.id,
-          name: product.name || "Unnamed Product",
-          selling_price: parseFloat(product.selling_price) || 0,
-          price: parseFloat(product.selling_price) || 0,
-          category: product.category?.name || "General",
-          brand: product.brand?.name || "Unknown",
-          unit: product.unit?.name || "Piece",
-          unit_id: product.unit_id || 1,
-          inStock: product.is_active === 1 || product.is_active === true,
-          discount_percentage: parseFloat(product.discount_percentage) || 0,
-          gst_percentage: parseFloat(product.gst_percentage) || 0,
-          description: product.description || "",
-          img: imageUrl,
-        };
-      });
-
-      setProducts(transformedProducts);
-      setPagination({
-        current_page: productsData.products.current_page,
-        last_page: productsData.products.last_page,
-        per_page: productsData.products.per_page,
-        total: productsData.products.total,
-        next_page_url: productsData.products.next_page_url,
-        prev_page_url: productsData.products.prev_page_url,
-        first_page_url: productsData.products.first_page_url,
-        last_page_url: productsData.products.last_page_url,
-        links: productsData.products.links
-
-      });
-      if (productsData.categories && Array.isArray(productsData.categories)) {
-        setCategories([{ id: "All", name: "All" }, ...productsData.categories]);
-      }
+      
+      console.log('✅ Auth ready, proceeding to fetch products');
+      
+      // Use Zustand store to fetch products
+      await fetchProducts(page, categoryId, term, user, token);
+      
     } catch (error) {
       console.error("Fetch error:", error);
-      toast.error("Failed to load products");
-      setProducts([]);
-    } finally {
-      setLoading(false);
+      toast.error("Failed to load products: " + error.message);
+      
+      // Only redirect on critical authentication errors
+      if (error.message && error.message.includes('User not authenticated')) {
+        console.log('Critical auth error detected, redirecting to login');
+        setTimeout(() => router.push('/login'), 1000);
+      }
     }
   };
 
-  // const getCategories = useCallback(() => {
-  //   const cats = products.map(p => p.categories || "General");
-  //   return ["All", ...new Set(cats)];
+  // ...
   // }, [products]);
 
   // const categories = getCategories();
@@ -718,8 +622,10 @@ console.log(`Final processed image URL for product ${product.id}:`, imageUrl);
   // };
 
   useEffect(() => {
-    fetchProductsData(1);
-  }, []);
+    if (isAuthReady) {
+      fetchProductsData(1);
+    }
+  }, [isAuthReady]);
 
   const openProduct = (product) => {
     setSelectedProduct(product);
