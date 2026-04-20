@@ -1,13 +1,11 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
-import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
 import SectionTitle from "../../components/SectionTitle";
 import Container from "../../components/Container";
 import { getPlans } from "@/services/pricingService";
 import { getBusinessTypes as fetchBusinessTypes } from "@/services/bussinessService";
-import { searchPlans } from "@/services/filterService"; // 👈 ADD THIS IMPORT
+import { searchPlans } from "@/services/filterService"; // 
 import { useRouter } from "next/navigation";
 
 const Pricing = () => {
@@ -412,45 +410,40 @@ useEffect(() => {
   if (loading) {
     return (
       <>
-        <Navbar />
         <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#f8fafc] to-[#f1f5f9]">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500 mx-auto mb-4"></div>
             <p className="text-gray-600 text-lg font-medium">Loading plans...</p>
           </div>
         </div>
-        <Footer />
         <LoginModal />
       </>
     );
-  }
+  };
 
   if (error) {
     return (
       <>
-        <Navbar />
         <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#f8fafc] to-[#f1f5f9]">
           <div className="text-center bg-white p-8 rounded-2xl shadow-lg max-w-md">
             <div className="text-red-500 text-6xl mb-4">⚠️</div>
-            <h3 className="text-xl font-bold text-gray-800 mb-2">Unable to Load Plans</h3>
-            <p className="text-gray-600 mb-4">{error}</p>
-            <button
-              onClick={() => window.location.reload()}
-              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">Oops! Something went wrong</h2>
+            <p className="text-gray-600 mb-6">{error}</p>
+            <button 
+              onClick={() => window.location.reload()} 
+              className="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium"
             >
               Try Again
             </button>
           </div>
         </div>
-        <Footer />
         <LoginModal />
       </>
     );
-  }
+  };
 
   return (
     <>
-      <Navbar />
       <div className="py-20 bg-gradient-to-br from-[#f8fafc] to-[#f1f5f9] min-h-screen font-['Inter',system-ui,-apple-system,sans-serif]">
         <Container size="default">
           
@@ -660,13 +653,13 @@ useEffect(() => {
               }}
               className="inline-flex items-center gap-3 px-6 py-3 bg-white border-2 border-gray-300 rounded-xl hover:border-purple-500 hover:shadow-lg transition-all duration-300 group"
             >
-              <svg className="w-5 h-5 text-gray-600 group-hover:text-purple-600 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-5 h-5 text-gray-600 group-hover:text-purple-600 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-1.5 6M17 13l1.5 6M9 21h6M12 15v6" />
               </svg>
               <span className="font-semibold text-gray-700 group-hover:text-purple-600 transition-colors">
                 View Order Summary  
               </span>
-              <svg className="w-4 h-4 text-gray-600 group-hover:text-purple-600 group-hover:translate-x-1 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-4 h-4 text-gray-600 group-hover:text-purple-600 group-hover:translate-x-1 transition-all" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
               </svg>
             </button>
@@ -700,7 +693,6 @@ useEffect(() => {
 
         </Container>
       </div>
-      <Footer />
       <LoginModal />
 
       <style jsx>{`

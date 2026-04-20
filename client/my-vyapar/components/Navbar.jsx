@@ -643,7 +643,7 @@ const checkPlanPurchaseStatus = () => {
               B
             </span>
             <span className="text-lg sm:text-xl md:text-2xl font-bold text-slate-800 group-hover:text-blue-600 transition-all duration-200">
-              Billora
+              {process.env.NEXT_PUBLIC_APP_NAME || 'Billora'}
             </span>
           </Link>
 
@@ -896,7 +896,7 @@ const checkPlanPurchaseStatus = () => {
               onClick={() => setIsMobileMenuOpen(false)}
             >
               <span className="bg-blue-600 text-white px-2 py-1 rounded text-xl font-bold">B</span>
-              <span className="text-xl font-bold text-slate-800">Billora</span>
+              <span className="text-xl font-bold text-slate-800">{process.env.NEXT_PUBLIC_APP_NAME || 'Billora'}</span>
             </Link>
             <button 
               onClick={() => setIsMobileMenuOpen(false)}

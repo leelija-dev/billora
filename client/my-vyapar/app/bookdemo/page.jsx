@@ -19,8 +19,6 @@ import {
   ChevronDown,
   AlertCircle
 } from "lucide-react";
-import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
 
 // Client-side only wrapper component to prevent hydration mismatch
 const ClientTimeOnly = ({ children }) => {
@@ -359,7 +357,6 @@ const AppointmentPage = () => {
 
   return (
     <div className="min-h-screen bg-[#F0F7FF] relative">
-      <Navbar />
       
       <div className="py-4 sm:py-6 md:py-8 px-3 sm:px-4 md:px-6 lg:px-8">
 
@@ -1002,7 +999,6 @@ const AppointmentPage = () => {
         </div>
       </div>
       
-      <Footer />
     </div>
   );
 };

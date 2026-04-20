@@ -389,7 +389,7 @@ const ProductsPage = () => {
           payment_mode: 'online'
         };
 
-        const response = await fetch('http://localhost:8000/api/orders/store', {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000/api'}/orders/store`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -442,7 +442,7 @@ const ProductsPage = () => {
           payment_mode: 'cash'
         };
 
-        const response = await fetch('http://localhost:8000/api/orders/store', {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000/api'}/orders/store`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -514,9 +514,9 @@ const ProductsPage = () => {
         params.set("user_id", String(user.id));
         // Use the new category endpoint
         console.log("Fetching products for category:", categoryId);
-        url = `http://localhost:8000/api/restaurant-all-products/category/${categoryId}?${params.toString()}`;
+        url = `${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000/api'}/restaurant-all-products/category/${categoryId}?${params.toString()}`;
       } else {
-        url = `http://localhost:8000/api/restaurant-all-products/${user.id}?${params.toString()}`;
+        url = `${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000/api'}/restaurant-all-products/${user.id}?${params.toString()}`;
       }
       const response = await fetch(url, {
         headers: {
@@ -573,10 +573,10 @@ if (imageUrl && (imageUrl.startsWith('http://') || imageUrl.startsWith('https://
 }
   // Keep other external URLs as-is
 } else if (imageUrl && imageUrl.startsWith('/')) {
-  imageUrl = `http://localhost:8000${imageUrl}`;
+  imageUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000/api'}${imageUrl}`;
 } else if (imageUrl && imageUrl !== "") {
   const cleanImageUrl = imageUrl.replace(/^"|"$/g, '');
-  imageUrl = `http://localhost:8000/storage/${cleanImageUrl}`;
+  imageUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000/api'}/storage/${cleanImageUrl}`;
 } else {
   imageUrl = "https://placehold.co/400x400/f0f0f0/999?text=No+Image";
 }

@@ -2,8 +2,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Navbar from "../../components/Navbar";
-import Footer from "../../components/Footer";
 
 export default function AboutPage() {
   const [activeCard, setActiveCard] = useState(null);
@@ -48,8 +46,6 @@ export default function AboutPage() {
 
   return (
     <div className="min-h-screen bg-white">
-      <Navbar />
-
       {/* Hero Section - Floating Cards Layout */}
       <div className="relative overflow-hidden bg-gradient-to-br from-blue-50 via-white to-cyan-50">
         <div className="absolute top-20 -left-20 w-72 h-72 bg-blue-200 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-pulse"></div>
@@ -360,8 +356,6 @@ export default function AboutPage() {
           </div>
         </div>
       </div>
-
-      <Footer />
     </div>
   );
 }

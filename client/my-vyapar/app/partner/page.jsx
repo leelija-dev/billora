@@ -2,8 +2,6 @@
 "use client";
 
 import { useState } from "react";
-import Navbar from "../../components/Navbar";
-import Footer from "../../components/Footer";
 
 export default function PartnerPage() {
   const [formData, setFormData] = useState({
@@ -65,8 +63,6 @@ export default function PartnerPage() {
 
   return (
     <div className="min-h-screen bg-white">
-      <Navbar />
-
       {/* Hero Section - Split Layout */}
       <div className="relative overflow-hidden bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-800">
         <div className="absolute inset-0">
@@ -174,9 +170,7 @@ export default function PartnerPage() {
           <h2 className="text-4xl font-bold text-gray-900 mb-4">
             Choose Your Path
           </h2>
-          <p className="text-gray-600 max-w-2xl mx-auto">
-            Multiple ways to partner with us and grow your business
-          </p>
+          <p className="text-gray-600 text-lg">Multiple ways to partner with us and grow your business</p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -393,8 +387,6 @@ export default function PartnerPage() {
           </div>
         </div>
       </div>
-
-      <Footer />
     </div>
   );
 }

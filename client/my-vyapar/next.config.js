@@ -5,18 +5,27 @@ const nextConfig = {
   },
   images: {
     remotePatterns: [
-      {
-        protocol: 'http',
-        hostname: 'localhost',
-        port: '8000',
-        pathname: '/**',
-      },
-      {
-        protocol: 'http',
-        hostname: '127.0.0.1',
-        port: '8000',
-        pathname: '/**',
-      },
+      ...(process.env.NEXT_PUBLIC_API_BASE_URL && (() => {
+        try {
+          const apiUrl = new URL(process.env.NEXT_PUBLIC_API_BASE_URL);
+          return {
+            protocol: apiUrl.protocol.slice(0, -1),
+            hostname: apiUrl.hostname,
+            port: apiUrl.port || (apiUrl.protocol === 'https:' ? '443' : '80'),
+            pathname: '/**',
+          };
+        } catch (e) {
+          return null;
+        }
+      })() ? [(() => {
+        const apiUrl = new URL(process.env.NEXT_PUBLIC_API_BASE_URL);
+        return {
+          protocol: apiUrl.protocol.slice(0, -1),
+          hostname: apiUrl.hostname,
+          port: apiUrl.port || (apiUrl.protocol === 'https:' ? '443' : '80'),
+          pathname: '/**',
+        };
+      })()] : []),
       {
         protocol: 'https',
         hostname: 'via.placeholder.com',

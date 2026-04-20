@@ -1,11 +1,17 @@
 import "./globals.css";
 import { Toaster } from 'react-hot-toast';
+import Navbar from '../components/Navbar';
+import Footer from '../components/Footer';
 
 export default function RootLayout({ children }) {
   return (
     <html lang="en" suppressHydrationWarning>
       <body suppressHydrationWarning={true}>
-        {children}
+        <Navbar />
+        <main>
+          {children}
+        </main>
+        <Footer />
         <Toaster 
           position="top-right"
           toastOptions={{

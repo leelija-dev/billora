@@ -29,7 +29,7 @@ export default function Start() {
             </h2>
 
             <p className="text-slate-600 text-base sm:text-base md:text-lg lg:text-lg mb-3 sm:mb-4 md:mb-4 lg:mb-4 leading-relaxed">
-              Not in the office? No worries, you can use Billora from your
+              Not in the office? No worries, you can use {process.env.NEXT_PUBLIC_APP_NAME || 'Billora'} from your
               phone from anywhere.
             </p>
 

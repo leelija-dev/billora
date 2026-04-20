@@ -64,7 +64,7 @@ const Nav2 = () => {
               B
             </span>
             <span className="text-slate-800 text-2xl lg:text-3xl font-bold leading-none">
-              Billora
+              {process.env.NEXT_PUBLIC_APP_NAME || 'Billora'}
             </span>
           </Link>
 
