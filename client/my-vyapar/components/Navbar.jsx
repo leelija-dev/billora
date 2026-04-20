@@ -6,20 +6,17 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FiLogIn, FiLogOut, FiUser, FiSettings, FiChevronDown, FiMenu, FiX, FiGrid } from "react-icons/fi";
 import { logoutUser } from "../services/authService";
-import { getAuthData, clearAuthData, isAuthenticated } from "../store/authStore";
+import { useAuthStore } from "../store/authStoreZustand";
 import toast from 'react-hot-toast';
 
 const Navbar = () => {
+  const { isLoggedIn, user, hasActivePlan, logout } = useAuthStore();
   const [scrolled, setScrolled] = useState(false);
   const [activeTab, setActiveTab] = useState(0);
   const [isNavAction, setIsNavAction] = useState(true);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [user, setUser] = useState(null);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
-  const [hasActivePlan, setHasActivePlan] = useState(false);
-  const [isCheckingPlan, setIsCheckingPlan] = useState(true);
   
   // Hide navbar on scroll state
   const [isNavbarVisible, setIsNavbarVisible] = useState(true);
@@ -73,107 +70,6 @@ const Navbar = () => {
 
   const isNavPage = (path) => {
     return routeMap.hasOwnProperty(path?.replace(/\/$/, ""));
-  };
-
-  // Handle scroll to hide/show navbar
-  const handleScroll = () => {
-    const currentScrollY = window.scrollY;
-    const scrollingDown = currentScrollY > lastScrollY;
-    const isAtTop = currentScrollY < 50;
-    
-    // Clear existing timeout
-    if (scrollTimeoutRef.current) {
-      clearTimeout(scrollTimeoutRef.current);
-    }
-    
-    // Hide navbar when scrolling down (not at top, and scrolled past 100px)
-    if (scrollingDown && !isAtTop && currentScrollY > 100) {
-      setIsNavbarVisible(false);
-    }
-    
-    // Show navbar immediately when scrolling up
-    if (!scrollingDown && !isAtTop) {
-      setIsNavbarVisible(true);
-    }
-    
-    // Show navbar when at top of page
-    if (isAtTop) {
-      setIsNavbarVisible(true);
-    }
-    
-    // CRITICAL FIX: When scrolling stops (after 300ms of no scroll movement), show navbar
-    scrollTimeoutRef.current = setTimeout(() => {
-      // Only show if navbar is hidden and not at top (to avoid unnecessary animation)
-      if (!isNavbarVisible && currentScrollY > 50) {
-        setIsNavbarVisible(true);
-      }
-    }, 300);
-    
-    // Update scroll position for scrolled effect
-    setScrolled(currentScrollY > 20);
-    setLastScrollY(currentScrollY);
-  };
-
-  // Check if user has purchased a plan
-// Check if user has purchased a plan
-const checkPlanPurchaseStatus = () => {
-  try {
-    const { user: userData } = getAuthData();
-    const userId = userData?._id || userData?.id;
-    
-    if (!userId) {
-      setHasActivePlan(false);
-      setIsCheckingPlan(false);
-      return;
-    }
-    
-    const planData = localStorage.getItem(`plan_${userId}`);
-    
-    if (!planData) {
-      setHasActivePlan(false);
-      setIsCheckingPlan(false);
-      return;
-    }
-    
-    const parsed = JSON.parse(planData);
-    const purchaseTime = new Date(parsed.purchaseDate).getTime();
-    const currentTime = new Date().getTime();
-    const daysSincePurchase = (currentTime - purchaseTime) / (1000 * 60 * 60 * 24);
-    const isValid = daysSincePurchase <= 365;
-    
-    setHasActivePlan(parsed.active && isValid);
-  } catch (error) {
-    console.error("Error checking plan:", error);
-    setHasActivePlan(false);
-  } finally {
-    setIsCheckingPlan(false);
-  }
-};
-
-  // Check login status from localStorage
-  const checkLoginStatus = () => {
-    try {
-      const authenticated = isAuthenticated();
-      setIsLoggedIn(authenticated);
-      
-      if (authenticated) {
-        const { user } = getAuthData();
-        setUser(user);
-        checkPlanPurchaseStatus();
-      } else {
-        setUser(null);
-        setHasActivePlan(false);
-        setIsCheckingPlan(false);
-      }
-      return authenticated;
-    } catch (error) {
-      console.error('Error checking login status:', error);
-      setIsLoggedIn(false);
-      setUser(null);
-      setHasActivePlan(false);
-      setIsCheckingPlan(false);
-      return false;
-    }
   };
 
   // Handle logout with toast notification
@@ -230,8 +126,7 @@ const checkPlanPurchaseStatus = () => {
       });
       
       try {
-        const { user: userData } = getAuthData();
-        const userId = userData?._id || userData?.id;
+        const userId = user?._id || user?.id;
         
         if (userId) {
           const response = await logoutUser(userId);
@@ -240,27 +135,14 @@ const checkPlanPurchaseStatus = () => {
           }
         }
         
-        clearAuthData();
-        
-        // Clear all plan data for this user
-        if (userId) {
-          localStorage.removeItem(`plan_${userId}`);
-        }
-        localStorage.removeItem('purchase_completed');
-        localStorage.removeItem('plan_purchased');
-        localStorage.removeItem('plan_purchase_date');
-        localStorage.removeItem('has_active_subscription');
-        
-        setIsLoggedIn(false);
-        setUser(null);
-        setHasActivePlan(false);
-        window.dispatchEvent(new Event("userLoggedOut"));
+        // Use Zustand logout function
+        await logout();
         
         toast.dismiss(loadingToastId);
         toast.success(`Successfully logged out. See you soon!`, {
           duration: 3000,
           position: 'top-right',
-          icon: '👋',
+          icon: '',
         });
         
         router.push("/");
@@ -274,21 +156,8 @@ const checkPlanPurchaseStatus = () => {
           position: 'top-right',
         });
         
-        clearAuthData();
-        
-        const { user: userData } = getAuthData();
-        const userId = userData?._id || userData?.id;
-        if (userId) {
-          localStorage.removeItem(`plan_${userId}`);
-        }
-        localStorage.removeItem('purchase_completed');
-        localStorage.removeItem('plan_purchased');
-        localStorage.removeItem('plan_purchase_date');
-        localStorage.removeItem('has_active_subscription');
-        
-        setIsLoggedIn(false);
-        setUser(null);
-        setHasActivePlan(false);
+        // Still logout locally even if API call fails
+        await logout();
         router.push("/");
       } finally {
         setIsLoggingOut(false);
@@ -330,91 +199,6 @@ const checkPlanPurchaseStatus = () => {
       document.body.style.overflow = "unset";
     };
   }, [isMobileMenuOpen]);
-
-  // Check login status on component mount
-  useEffect(() => {
-    checkLoginStatus();
-  }, []);
-
-  // Add scroll event listener
-  useEffect(() => {
-    window.addEventListener("scroll", handleScroll);
-    return () => {
-      window.removeEventListener("scroll", handleScroll);
-      if (scrollTimeoutRef.current) {
-        clearTimeout(scrollTimeoutRef.current);
-      }
-    };
-  }, [lastScrollY, isNavbarVisible]);
-
-  // Listen for plan purchase completion event
-  useEffect(() => {
-    const handlePlanPurchase = (event) => {
-      console.log("🎉 Plan purchase event received:", event.detail);
-
-      if (event.detail?.status === 'completed' || event.detail?.planPurchased === true) {
-        
-        const { user } = getAuthData();
-        const userId = user?._id || user?.id;
-
-        if (!userId) return;
-
-        // Save plan per user (IMPORTANT FIX)
-        localStorage.setItem(`plan_${userId}`, JSON.stringify({
-          active: true,
-          purchaseDate: new Date().toISOString()
-        }));
-
-        setHasActivePlan(true);
-
-        toast.success('Plan activated! Dashboard is now available.', {
-          duration: 5000,
-          position: 'top-right',
-          icon: '🎉',
-        });
-      }
-    };
-
-    window.addEventListener("planPurchaseCompleted", handlePlanPurchase);
-
-    return () => {
-      window.removeEventListener("planPurchaseCompleted", handlePlanPurchase);
-    };
-  }, []);
-
-  // Listen for storage changes (for cross-tab updates)
-  useEffect(() => {
-    const handleStorageChange = (e) => {
-      if (e.key === "token" || e.key === "user") {
-        checkLoginStatus();
-      }
-      if (e.key?.startsWith("plan_")) {
-        checkPlanPurchaseStatus();
-      }
-    };
-
-    window.addEventListener("storage", handleStorageChange);
-    return () => {
-      window.removeEventListener("storage", handleStorageChange);
-    };
-  }, []);
-
-  // Listen for custom login/logout events
-  useEffect(() => {
-    const handleLoginEvent = () => checkLoginStatus();
-    const handleLogoutEvent = () => {
-      checkLoginStatus();
-      setHasActivePlan(false);
-    };
-
-    window.addEventListener("userLoggedIn", handleLoginEvent);
-    window.addEventListener("userLoggedOut", handleLogoutEvent);
-    
-    return () => {
-      window.removeEventListener("userLoggedIn", handleLoginEvent);
-      window.removeEventListener("userLoggedOut", handleLogoutEvent);
-    };
-  }, []);
 
   // Close mobile menu on route change
   useEffect(() => {
@@ -711,7 +495,7 @@ const checkPlanPurchaseStatus = () => {
               B
             </span>
             <span className="text-lg sm:text-xl md:text-2xl font-bold text-slate-800 group-hover:text-blue-600 transition-all duration-200">
-              Billora
+              {process.env.NEXT_PUBLIC_APP_NAME || 'Billora'}
             </span>
           </Link>
 
@@ -777,7 +561,7 @@ const checkPlanPurchaseStatus = () => {
             </div>
             
             {/* Dashboard Button - Opens external dashboard on port 3000 */}
-            {isLoggedIn && hasActivePlan && !isCheckingPlan && (
+            {isLoggedIn && hasActivePlan && (
               <a
                 href={`${DASHBOARD_URL}/dashboard`}
                 onClick={handleDashboardClick}
@@ -967,7 +751,7 @@ const checkPlanPurchaseStatus = () => {
               onClick={() => setIsMobileMenuOpen(false)}
             >
               <span className="bg-blue-600 text-white px-2 py-1 rounded text-xl font-bold">B</span>
-              <span className="text-xl font-bold text-slate-800">Billora</span>
+              <span className="text-xl font-bold text-slate-800">{process.env.NEXT_PUBLIC_APP_NAME || 'Billora'}</span>
             </Link>
             <button 
               onClick={() => setIsMobileMenuOpen(false)}
@@ -1021,7 +805,7 @@ const checkPlanPurchaseStatus = () => {
           {/* Mobile Action Buttons */}
           <div className="p-4 border-t border-gray-100 space-y-2">
             {/* Dashboard button for mobile - opens external dashboard */}
-            {isLoggedIn && hasActivePlan && !isCheckingPlan && (
+            {isLoggedIn && hasActivePlan && (
               <a
                 href={`${DASHBOARD_URL}/dashboard`}
                 onClick={(e) => {

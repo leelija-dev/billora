@@ -4,7 +4,6 @@ import React, { useState, useEffect } from "react";
 import { FaCheckCircle, FaRupeeSign, FaUser, FaBuilding } from "react-icons/fa";
 import { useRouter } from "next/navigation";
 import toast, { Toaster } from 'react-hot-toast';
-import Navbar from "@/components/Navbar";
 import { usePaymentStore } from "@/store/paymentStore";
 
 const OrderSummary = () => {
@@ -50,15 +49,8 @@ const OrderSummary = () => {
         }
       } catch (error) {
         console.error('Error fetching business types:', error);
-        setBusinessTypes([
-          { id: "1", name: "Individual / Sole Proprietorship" },
-          { id: "2", name: "Partnership" },
-          { id: "3", name: "Private Limited Company" },
-          { id: "4", name: "Public Limited Company" },
-          { id: "5", name: "LLP (Limited Liability Partnership)" },
-          { id: "6", name: "Trust / NGO / Society" },
-          { id: "7", name: "Others" }
-        ]);
+        setBusinessTypes([]);
+        toast.error('Failed to load business types. Please refresh the page.');
       } finally {
         setLoadingBusinessTypes(false);
       }
@@ -282,7 +274,9 @@ const OrderSummary = () => {
         try {
           const parsed = JSON.parse(response);
           paymentSessionId = parsed.payment_session_id || parsed.sessionId;
-        } catch(e) {}
+        } catch(e) {
+          // Ignore parsing errors
+        }
       }
       
       if (!paymentSessionId && response && typeof response === 'string' && response.length > 10) {
@@ -352,7 +346,7 @@ const OrderSummary = () => {
         errorMessage = error.message;
       }
       
-      toast.error(errorMessage, { duration: 5000 });
+      toast.error(errorMessage);
     } finally {
       setIsProcessing(false);
     }
@@ -361,11 +355,10 @@ const OrderSummary = () => {
   if (!selectedPlan) {
     return (
       <>
-        <Navbar />
         <div className="min-h-screen flex items-center justify-center">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500 mx-auto mb-4"></div>
-            <p className="text-gray-600">Loading order details...</p>
+            <p className="text-gray-600 text-lg font-medium">Loading plan details...</p>
           </div>
         </div>
       </>
@@ -375,12 +368,11 @@ const OrderSummary = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#f0f4ff] to-[#e8eef9]">
       <Toaster position="top-right" />
-      <Navbar />
 
       <div className="container mx-auto px-4 py-8 max-w-7xl">
         <div className="grid lg:grid-cols-3 gap-8">
-          {/* Left Column - Order Details */}
-          <div className="lg:col-span-2 space-y-6">
+          {/* Left Column - Order Form */}
+          <div className="lg:col-span-2">
             <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
               <div className="bg-gradient-to-r from-[#2d236b] to-[#5b5bd6] px-6 py-4">
                 <h2 className="text-white text-xl font-bold flex items-center gap-2">
@@ -391,7 +383,6 @@ const OrderSummary = () => {
               
               <div className="p-6">
                 <h3 className="text-lg font-semibold text-gray-800 mb-4">Selected Plan</h3>
-                
                 <div className="bg-gradient-to-br from-[#f8f9ff] to-white border border-[#e0e4f0] rounded-xl p-6 mb-6">
                   <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                     <div>
@@ -421,8 +412,9 @@ const OrderSummary = () => {
                   </div>
                 </div>
 
-                <div className="mb-6">
-                  <h3 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                {/* Customer Details Section */}
+                <div className="mt-8">
+                  <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
                     <FaUser className="text-[#5b5bd6]" />
                     Customer Details <span className="text-red-500 text-sm">*Required</span>
                   </h3>

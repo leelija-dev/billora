@@ -65,7 +65,7 @@ const Footer = () => {
               </span>
               <span className="text-white text-xl md:text-base lg:text-xl font-bold leading-none">
                 {/* Tablet: md:text-base (16px) */}
-                Billora
+                {process.env.NEXT_PUBLIC_APP_NAME || 'Billora'}
               </span>
             </div>
             <p className="text-[#94a3b8] text-sm sm:text-base md:text-xs lg:text-base leading-relaxed max-w-[300px] mx-auto lg:mx-0">
@@ -104,7 +104,7 @@ const Footer = () => {
         <div className="pt-6 sm:pt-8 md:pt-4 border-t border-[#1e293b] flex flex-col sm:flex-row justify-between items-center gap-4 sm:gap-6 md:gap-3">
           <div className="text-[#94a3b8] text-xs sm:text-sm md:text-[10px] lg:text-sm order-2 sm:order-1">
             {/* Tablet: md:text-[10px] (10px) */}
-            &copy; 2026 Billora. All rights reserved.
+            &copy; 2026 {process.env.NEXT_PUBLIC_APP_NAME || 'Billora'}. All rights reserved.
           </div>
           <div className="flex gap-3 sm:gap-4 md:gap-1.5 lg:gap-4 order-1 sm:order-2">
             {socialLinks.map((social, index) => (

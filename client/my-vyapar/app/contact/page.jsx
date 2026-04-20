@@ -1,6 +1,4 @@
 "use client";
-import Navbar from "@/components/Navbar";  
-import Footer from "@/components/Footer";
 import React, { useState } from "react";
 import Link from "next/link";
 import { submitContactForm } from "@/services/contactService";
@@ -98,8 +96,6 @@ export default function Contact() {
 
   return (
     <div className="w-full bg-gradient-to-b from-gray-50 to-white min-h-screen">
-      <Navbar />
-
       {/* Hero Banner - Modern Design */}
       <div className="relative bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white py-12 sm:py-14 md:py-16 lg:py-16 xl:py-20 2xl:py-24 overflow-hidden">
         {/* Animated Background Elements */}
@@ -433,9 +429,6 @@ export default function Contact() {
           </div>
         </div>
       </div>
-
-      {/* Footer */}
-      <Footer />
 
       {/* Add custom animations */}
       <style jsx>{`

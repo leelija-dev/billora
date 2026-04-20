@@ -16,7 +16,13 @@ export default function StartFreeTrial() {
     console.log(email);
 
     setTimeout(() => {
-      router.push("/dashboard");
+      // Use environment variable for dashboard URL
+      const DASHBOARD_URL = process.env.NEXT_PUBLIC_DASHBOARD_URL;
+      if (DASHBOARD_URL) {
+        window.open(DASHBOARD_URL, '_blank');
+      } else {
+        console.error('NEXT_PUBLIC_DASHBOARD_URL not configured');
+      }
     }, 1500);
   };
 

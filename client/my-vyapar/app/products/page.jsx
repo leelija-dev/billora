@@ -1,12 +1,13 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { getAuthData } from '../../store/authStore';
+import { useAuthStore } from '../../store/authStoreZustand';
 import toast, { Toaster } from 'react-hot-toast';
 import { useRouter } from 'next/navigation';
 
 const ProductsPage = () => {
   const router = useRouter();
+  const { user } = useAuthStore();
   const [products, setProducts] = useState([]);
   const [pagination, setPagination] = useState({});
   const [loading, setLoading] = useState(true);
@@ -362,7 +363,7 @@ const ProductsPage = () => {
       return;
     }
 
-    const { user } = getAuthData();
+    // User is already available from Zustand store
 
     if (!user || !user.id) {
       setPopupMessage("Please login to place order");
@@ -389,7 +390,7 @@ const ProductsPage = () => {
           payment_mode: 'online'
         };
 
-        const response = await fetch('http://localhost:8000/api/orders/store', {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000/api'}/orders/store`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -442,7 +443,7 @@ const ProductsPage = () => {
           payment_mode: 'cash'
         };
 
-        const response = await fetch('http://localhost:8000/api/orders/store', {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000/api'}/orders/store`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -496,7 +497,7 @@ const ProductsPage = () => {
     setCurrentPage(page);
     try {
       setLoading(true);
-      const { user } = getAuthData();
+      // User is already available from Zustand store
       if (!user || !user.id) {
         router.push('/login');
         return;
@@ -514,9 +515,9 @@ const ProductsPage = () => {
         params.set("user_id", String(user.id));
         // Use the new category endpoint
         console.log("Fetching products for category:", categoryId);
-        url = `http://localhost:8000/api/restaurant-all-products/category/${categoryId}?${params.toString()}`;
+        url = `${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000/api'}/restaurant-all-products/category/${categoryId}?${params.toString()}`;
       } else {
-        url = `http://localhost:8000/api/restaurant-all-products/${user.id}?${params.toString()}`;
+        url = `${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000/api'}/restaurant-all-products/${user.id}?${params.toString()}`;
       }
       const response = await fetch(url, {
         headers: {
@@ -573,10 +574,10 @@ if (imageUrl && (imageUrl.startsWith('http://') || imageUrl.startsWith('https://
 }
   // Keep other external URLs as-is
 } else if (imageUrl && imageUrl.startsWith('/')) {
-  imageUrl = `http://localhost:8000${imageUrl}`;
+  imageUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000/api'}${imageUrl}`;
 } else if (imageUrl && imageUrl !== "") {
   const cleanImageUrl = imageUrl.replace(/^"|"$/g, '');
-  imageUrl = `http://localhost:8000/storage/${cleanImageUrl}`;
+  imageUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000/api'}/storage/${cleanImageUrl}`;
 } else {
   imageUrl = "https://placehold.co/400x400/f0f0f0/999?text=No+Image";
 }
@@ -762,15 +763,17 @@ console.log(`Final processed image URL for product ${product.id}:`, imageUrl);
     }
   }
   
-  // Final fallback
+  // Final fallback - remove placeholder, just show broken image indicator
   const originalSrc = e.currentTarget.src;
   if (originalSrc.includes('drive.google.com') || originalSrc.includes('googleusercontent.com')) {
-    e.currentTarget.src = `https://placehold.co/400x400/4285f4/ffffff?text=Drive+Failed`;
+    // Don't set fallback image, let the browser show broken image
+    console.error('Google Drive image failed to load:', originalSrc);
   } else {
     e.currentTarget.src = "https://placehold.co/400x400/f0f0f0/999?text=No+Image";
   }
 };
 
+// ... (rest of the code remains the same)
 const handleImageLoad = (e) => {
   console.log(`Image loaded successfully:`, e.currentTarget.src);
 };

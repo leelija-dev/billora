@@ -190,7 +190,7 @@ const Hero = () => {
                 GST Billing Software for <span className="text-indigo-600 block sm:inline">Small Businesses in India</span>
               </h1>
               <p className="text-sm sm:text-base md:text-lg lg:text-xl text-slate-600 leading-relaxed mb-8 md:mb-10 max-w-[650px] mx-auto lg:mx-0 px-2 sm:px-0 animate-fadeInUp">
-                Manage your business professionally with Billora, India's leading
+                Manage your business professionally with {process.env.NEXT_PUBLIC_APP_NAME || 'Billora'}, India's leading
                 small business software for billing, inventory, and accounting.
               </p>
               
@@ -350,7 +350,7 @@ const Hero = () => {
               <div className="flex-1 text-center md:text-left">
                 <div className="flex items-center gap-2 mb-3 sm:mb-4 justify-center md:justify-start">
                   <div className="w-6 sm:w-7 md:w-8 h-6 sm:h-7 md:h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold text-sm sm:text-base md:text-lg">B</div>
-                  <span className="font-bold text-slate-800 text-base sm:text-lg md:text-lg">Billora Premium</span>
+                  <span className="font-bold text-slate-800 text-base sm:text-lg md:text-lg">{process.env.NEXT_PUBLIC_APP_NAME || 'Billora'} Premium</span>
                 </div>
                 <h3 className="text-xl sm:text-2xl md:text-2xl lg:text-3xl font-extrabold text-slate-900 mb-1 sm:mb-2">GST Billing Software</h3>
                 <p className="text-sm sm:text-base text-slate-500 mb-4 sm:mb-5 md:mb-6">Automate your invoicing and inventory in seconds.</p>

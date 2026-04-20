@@ -4,11 +4,12 @@ import React, { useState, useEffect } from "react";
 import { FcGoogle } from "react-icons/fc";
 import { FaEye, FaEyeSlash, FaHome } from "react-icons/fa";
 import { loginUser } from "../../services/authService";
-import { saveAuthData } from "../../store/authStore";
+import { useAuthStore } from "../../store/authStoreZustand";
 import { useRouter, useSearchParams } from "next/navigation";
 import toast, { Toaster } from 'react-hot-toast';
 
 const Login = () => {
+  const { login } = useAuthStore();
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -114,8 +115,8 @@ const Login = () => {
       const userData = res.user || res.data?.user || res;
       const token = res.token || res.data?.token || null;
       
-      saveAuthData(userData, token);
-      window.dispatchEvent(new Event("userLoggedIn"));
+      // Use Zustand login method
+      login(userData, token);
       
       toast.dismiss(loadingToast);
       toast.success("Login Successful! ✅", {

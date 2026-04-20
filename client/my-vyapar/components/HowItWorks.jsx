@@ -58,7 +58,7 @@ const HowItWorks = () => {
                 <div className="text-center mb-8 lg:mb-12 xl:mb-16 px-4">
                     <SectionTitle title="How It Works" />
                     <p className="text-[#475569] text-sm md:text-base lg:text-lg max-w-[600px] mx-auto mt-4 animate-[fadeInUp_0.8s_ease-out_0.2s_both] leading-relaxed">
-                        Get started with Billora in three simple steps
+                        Get started with {process.env.NEXT_PUBLIC_APP_NAME || 'Billora'} in three simple steps
                     </p>
                 </div>
 

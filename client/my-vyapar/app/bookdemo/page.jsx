@@ -19,8 +19,6 @@ import {
   ChevronDown,
   AlertCircle
 } from "lucide-react";
-import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
 
 // Client-side only wrapper component to prevent hydration mismatch
 const ClientTimeOnly = ({ children }) => {
@@ -103,10 +101,7 @@ const AppointmentPage = () => {
     return () => clearInterval(timer);
   }, []);
 
-  // Mock booked dates
-  const bookedDates = [1, 2, 3, 10, 11, 16, 17, 20, 21, 24];
-  
-  // Mock available dates - requires 1 day advance booking
+  // Available dates - requires 1 day advance booking
   const getAvailableDates = () => {
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth();
@@ -126,9 +121,7 @@ const AppointmentPage = () => {
       
       // Only allow dates from tomorrow onwards
       if (dateToCheck >= tomorrow) {
-        if (!bookedDates.includes(day)) {
-          available.push(day);
-        }
+        available.push(day);
       }
     }
     
@@ -301,13 +294,8 @@ const AppointmentPage = () => {
   };
 
   const isBooked = (day) => {
-    if (!day) return false;
-    
-    const dateToCheck = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    
-    return dateToCheck >= today && bookedDates.includes(day);
+    // All dates are available now - no static booked dates
+    return false;
   };
 
   const isPastDate = (day) => {
@@ -359,7 +347,6 @@ const AppointmentPage = () => {
 
   return (
     <div className="min-h-screen bg-[#F0F7FF] relative">
-      <Navbar />
       
       <div className="py-4 sm:py-6 md:py-8 px-3 sm:px-4 md:px-6 lg:px-8">
 
@@ -1002,7 +989,6 @@ const AppointmentPage = () => {
         </div>
       </div>
       
-      <Footer />
     </div>
   );
 };

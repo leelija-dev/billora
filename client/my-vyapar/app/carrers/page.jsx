@@ -2,8 +2,6 @@
 "use client";
 
 import { useState } from "react";
-import Navbar from "../../components/Navbar";
-import Footer from "../../components/Footer";
 
 export default function JoinTeamPage() {
   const [activeTab, setActiveTab] = useState("openings");
@@ -82,16 +80,14 @@ export default function JoinTeamPage() {
   ];
 
   const values = [
-    { title: "Customer First", desc: "Everything we do is for our customers", icon: "🎯", color: "bg-blue-50" },
-    { title: "Innovation", desc: "Constantly improve and innovate", icon: "💡", color: "bg-purple-50" },
-    { title: "Integrity", desc: "Do the right thing, always", icon: "⚖️", color: "bg-emerald-50" },
-    { title: "Teamwork", desc: "Together we achieve more", icon: "🤝", color: "bg-amber-50" },
+    { title: "Customer First", desc: "Everything we do is for our customers", icon: "", color: "bg-blue-50" },
+    { title: "Innovation", desc: "Constantly improve and innovate", icon: "", color: "bg-purple-50" },
+    { title: "Integrity", desc: "Do the right thing, always", icon: "", color: "bg-emerald-50" },
+    { title: "Teamwork", desc: "Together we achieve more", icon: "", color: "bg-amber-50" },
   ];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-indigo-50">
-      <Navbar />
-
       {/* Hero Section with Enhanced Design */}
       <div className="relative overflow-hidden bg-gradient-to-br from-blue-600 via-indigo-700 to-purple-800 text-white">
         {/* Animated background elements */}
@@ -143,10 +139,10 @@ export default function JoinTeamPage() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-8 mb-16 relative z-10">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
           {[
-            { value: "50+", label: "Team Members", icon: "👥", gradient: "from-blue-600 to-cyan-600" },
-            { value: "10+", label: "Open Roles", icon: "💼", gradient: "from-purple-600 to-pink-600" },
-            { value: "4.9", label: "Glassdoor Rating", icon: "⭐", gradient: "from-yellow-500 to-orange-500" },
-            { value: "100%", label: "Remote Friendly", icon: "🏠", gradient: "from-emerald-500 to-teal-500" }
+            { value: "50+", label: "Team Members", icon: "", gradient: "from-blue-600 to-cyan-600" },
+            { value: "10+", label: "Open Roles", icon: "", gradient: "from-purple-600 to-pink-600" },
+            { value: "4.9", label: "Glassdoor Rating", icon: "", gradient: "from-yellow-500 to-orange-500" },
+            { value: "100%", label: "Remote Friendly", icon: "", gradient: "from-emerald-500 to-teal-500" }
           ].map((stat, idx) => (
             <div key={idx} className="bg-white rounded-2xl shadow-xl p-5 text-center transform hover:scale-105 transition-all duration-300 border border-gray-100">
               <div className="text-3xl mb-2">{stat.icon}</div>
@@ -258,7 +254,7 @@ export default function JoinTeamPage() {
                     </span>
                     {job.urgent && (
                       <span className="px-2 py-0.5 bg-red-100 text-red-600 text-xs rounded-full animate-pulse">
-                        🔥 Urgent
+                        Urgent
                       </span>
                     )}
                   </div>
@@ -315,8 +311,6 @@ export default function JoinTeamPage() {
           </button>
         </div>
       </div>
-
-      <Footer />
     </div>
   );
 }

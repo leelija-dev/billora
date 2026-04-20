@@ -2,8 +2,6 @@
 "use client";
 
 import Link from "next/link";
-import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
 
 export default function SolutionPage() {
   const solutions = [
@@ -38,7 +36,6 @@ export default function SolutionPage() {
 
   return (
     <div className="min-h-screen bg-white">
-      <Navbar />
       
       {/* Main Content */}
       <div className="py-16 px-4 sm:px-6 lg:px-8">
@@ -82,7 +79,6 @@ export default function SolutionPage() {
         </div>
       </div>
 
-      <Footer />
     </div>
   );
 }
