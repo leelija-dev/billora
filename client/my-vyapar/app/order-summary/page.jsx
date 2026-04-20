@@ -49,15 +49,8 @@ const OrderSummary = () => {
         }
       } catch (error) {
         console.error('Error fetching business types:', error);
-        setBusinessTypes([
-          { id: "1", name: "Individual / Sole Proprietorship" },
-          { id: "2", name: "Partnership" },
-          { id: "3", name: "Private Limited Company" },
-          { id: "4", name: "Public Limited Company" },
-          { id: "5", name: "LLP (Limited Liability Partnership)" },
-          { id: "6", name: "Trust / NGO / Society" },
-          { id: "7", name: "Others" }
-        ]);
+        setBusinessTypes([]);
+        toast.error('Failed to load business types. Please refresh the page.');
       } finally {
         setLoadingBusinessTypes(false);
       }

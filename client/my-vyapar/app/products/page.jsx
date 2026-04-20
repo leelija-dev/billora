@@ -762,15 +762,17 @@ console.log(`Final processed image URL for product ${product.id}:`, imageUrl);
     }
   }
   
-  // Final fallback
+  // Final fallback - remove placeholder, just show broken image indicator
   const originalSrc = e.currentTarget.src;
   if (originalSrc.includes('drive.google.com') || originalSrc.includes('googleusercontent.com')) {
-    e.currentTarget.src = `https://placehold.co/400x400/4285f4/ffffff?text=Drive+Failed`;
+    // Don't set fallback image, let the browser show broken image
+    console.error('Google Drive image failed to load:', originalSrc);
   } else {
     e.currentTarget.src = "https://placehold.co/400x400/f0f0f0/999?text=No+Image";
   }
 };
 
+// ... (rest of the code remains the same)
 const handleImageLoad = (e) => {
   console.log(`Image loaded successfully:`, e.currentTarget.src);
 };

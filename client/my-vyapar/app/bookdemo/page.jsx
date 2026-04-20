@@ -101,10 +101,7 @@ const AppointmentPage = () => {
     return () => clearInterval(timer);
   }, []);
 
-  // Mock booked dates
-  const bookedDates = [1, 2, 3, 10, 11, 16, 17, 20, 21, 24];
-  
-  // Mock available dates - requires 1 day advance booking
+  // Available dates - requires 1 day advance booking
   const getAvailableDates = () => {
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth();
@@ -124,9 +121,7 @@ const AppointmentPage = () => {
       
       // Only allow dates from tomorrow onwards
       if (dateToCheck >= tomorrow) {
-        if (!bookedDates.includes(day)) {
-          available.push(day);
-        }
+        available.push(day);
       }
     }
     
@@ -299,13 +294,8 @@ const AppointmentPage = () => {
   };
 
   const isBooked = (day) => {
-    if (!day) return false;
-    
-    const dateToCheck = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    
-    return dateToCheck >= today && bookedDates.includes(day);
+    // All dates are available now - no static booked dates
+    return false;
   };
 
   const isPastDate = (day) => {
