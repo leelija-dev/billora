@@ -29,7 +29,10 @@ use App\Models\UserOrders;
 
 Route::get('/test', function () {
    return response()->json([
-      'message' => 'Hello World',
+       'message' => 'Hello World',
+      'cors' => 'enabled', 
+      'timestamp' => now()
+
    ]);
 });
 //admin user
