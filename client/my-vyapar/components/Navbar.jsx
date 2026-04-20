@@ -448,16 +448,10 @@ const Navbar = () => {
     try {
       if (user?.name) return user.name.charAt(0).toUpperCase();
       if (user?.email) return user.email.charAt(0).toUpperCase();
-      const userStr = localStorage.getItem("user");
-      if (userStr) {
-        const userData = JSON.parse(userStr);
-        if (userData.name) return userData.name.charAt(0).toUpperCase();
-        if (userData.email) return userData.email.charAt(0).toUpperCase();
-      }
+      return "U";
     } catch (e) {
       return "U";
     }
-    return "U";
   };
 
   const userInitial = getUserInitial();

@@ -8,6 +8,7 @@ import { getPlans } from "@/services/pricingService";
 import { getBusinessTypes as fetchBusinessTypes } from "@/services/bussinessService";
 import { searchPlans } from "@/services/filterService";
 import { useRouter } from "next/navigation";
+import { useAuthStore } from "../store/authStoreZustand";
 
 const Pricing = ({ limit = 3, showFilters = true, showViewAllButton = true }) => {
   const [billingCycle, setBillingCycle] = useState("monthly");
@@ -16,7 +17,6 @@ const Pricing = ({ limit = 3, showFilters = true, showViewAllButton = true }) =>
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [subscribing, setSubscribing] = useState(null);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [pendingPlan, setPendingPlan] = useState(null);
   const [selectedBusinessType, setSelectedBusinessType] = useState("all");
@@ -24,18 +24,8 @@ const Pricing = ({ limit = 3, showFilters = true, showViewAllButton = true }) =>
   const cardRefs = useRef([]);
   const router = useRouter();
 
-  // Check if user is logged in
-  useEffect(() => {
-    const checkLoginStatus = () => {
-      const token = localStorage.getItem("auth_token") || localStorage.getItem("token");
-      const userData = localStorage.getItem("user_data");
-      setIsLoggedIn(!!(token || userData));
-    };
-
-    checkLoginStatus();
-    window.addEventListener("storage", checkLoginStatus);
-    return () => window.removeEventListener("storage", checkLoginStatus);
-  }, []);
+  // Use Zustand auth store instead of manual localStorage
+  const { user, token, isLoggedIn, hasActivePlan } = useAuthStore();
 
   // Load business types from API
   useEffect(() => {
@@ -293,9 +283,8 @@ const Pricing = ({ limit = 3, showFilters = true, showViewAllButton = true }) =>
   useEffect(() => {
     const checkPendingPlanAfterLogin = () => {
       const pendingPlanStr = localStorage.getItem("pendingPlan");
-      const isLoggedInNow = !!(localStorage.getItem("auth_token") || localStorage.getItem("token") || localStorage.getItem("user_data"));
 
-      if (isLoggedInNow && pendingPlanStr) {
+      if (isLoggedIn && pendingPlanStr) {
         const pendingPlanData = JSON.parse(pendingPlanStr);
         localStorage.removeItem("pendingPlan");
         localStorage.removeItem("redirectAfterLogin");
@@ -304,7 +293,7 @@ const Pricing = ({ limit = 3, showFilters = true, showViewAllButton = true }) =>
     };
 
     checkPendingPlanAfterLogin();
-  }, [router]);
+  }, [router, isLoggedIn]);
 
   useEffect(() => {
     const observerOptions = { threshold: 0.1, rootMargin: "0px" };

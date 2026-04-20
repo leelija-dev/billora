@@ -5,18 +5,17 @@ import React from 'react';
 
 // Initialize Zustand store on client side
 function StoreInitializer() {
-  const { initializeAuth, checkPlanPurchaseStatus } = useAuthStore();
+  const { checkPlanPurchaseStatus } = useAuthStore();
   
   React.useEffect(() => {
-    // Simple initialization with a small delay to ensure hydration
+    // Only initialize if not already authenticated
     const timer = setTimeout(() => {
-      initializeAuth();
       // Check plan status after a short delay
       setTimeout(checkPlanPurchaseStatus, 100);
     }, 100);
     
     return () => clearTimeout(timer);
-  }, [initializeAuth, checkPlanPurchaseStatus]);
+  }, [checkPlanPurchaseStatus]);
   
   return null;
 }

@@ -5,10 +5,12 @@ import { FaCheckCircle, FaRupeeSign, FaUser, FaBuilding } from "react-icons/fa";
 import { useRouter } from "next/navigation";
 import toast, { Toaster } from 'react-hot-toast';
 import { usePaymentStore } from "@/store/paymentStore";
+import { useAuthStore } from "../../store/authStoreZustand";
 
 const OrderSummary = () => {
   const router = useRouter();
   const { createOrderAction, loading: storeLoading, error: storeError } = usePaymentStore();
+  const { user, token, isLoggedIn } = useAuthStore();
   
   const [selectedPlan, setSelectedPlan] = useState(null);
   const [companyName, setCompanyName] = useState("");
@@ -30,7 +32,7 @@ const OrderSummary = () => {
     const fetchBusinessTypes = async () => {
       try {
         setLoadingBusinessTypes(true);
-        const token = localStorage.getItem('token') || localStorage.getItem('auth_token');
+        const token = token;
         
         const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/business-types`, {
           headers: {
@@ -59,29 +61,20 @@ const OrderSummary = () => {
     fetchBusinessTypes();
   }, []);
 
-  // Load user data from localStorage/session
+  // Load user data from Zustand store
   useEffect(() => {
     const getUserData = () => {
-      const userStr = localStorage.getItem('user') || 
-                     sessionStorage.getItem('user') ||
-                     localStorage.getItem('user_data');
-      
-      if (userStr) {
-        try {
-          const user = JSON.parse(userStr);
-          setLoggedInUser(user);
+      if (user) {
+        setLoggedInUser(user);
+        
+        if (user.name) setCustomerName(user.name);
+        if (user.email) setCustomerEmail(user.email);
+        if (user.phone) setCustomerPhone(user.phone);
+        if (user.mobile) setCustomerPhone(user.mobile);
+        if (user.customer_id) setCustomerId(user.customer_id);
+        if (user.id) setCustomerId(user.id);
           
-          if (user.name) setCustomerName(user.name);
-          if (user.email) setCustomerEmail(user.email);
-          if (user.phone) setCustomerPhone(user.phone);
-          if (user.mobile) setCustomerPhone(user.mobile);
-          if (user.customer_id) setCustomerId(user.customer_id);
-          if (user.id) setCustomerId(user.id);
-          
-          console.log("✅ Logged-in user loaded:", user);
-        } catch (e) {
-          console.error("Error parsing user data:", e);
-        }
+        console.log("✅ Logged-in user loaded:", user);
       }
     };
     
