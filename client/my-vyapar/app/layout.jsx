@@ -2,11 +2,13 @@ import "./globals.css";
 import { Toaster } from 'react-hot-toast';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
-import { AuthProvider } from '../contexts/AuthContext';
+import StoreInitializer from '../components/StoreInitializer';
+import React from 'react';
 
 export default function RootLayout({ children }) {
   return (
-    <AuthProvider>
+    <>
+      <StoreInitializer />
       <html lang="en" suppressHydrationWarning>
         <body suppressHydrationWarning={true}>
           <Navbar />
@@ -45,6 +47,6 @@ export default function RootLayout({ children }) {
           />
         </body>
       </html>
-    </AuthProvider>
+    </> // Removed AuthProvider closing tag
   );
 }

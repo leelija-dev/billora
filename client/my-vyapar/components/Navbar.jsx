@@ -6,12 +6,13 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FiLogIn, FiLogOut, FiUser, FiSettings, FiChevronDown, FiMenu, FiX, FiGrid } from "react-icons/fi";
 import { logoutUser } from "../services/authService";
-import { useAuth } from "../contexts/AuthContext";
+import { useAuthStore } from "../store/authStoreZustand";
 import toast from 'react-hot-toast';
 
 const Navbar = () => {
-  const { isLoggedIn, user, hasActivePlan, logout } = useAuth();
+  const { isLoggedIn, user, hasActivePlan, logout } = useAuthStore();
   const [scrolled, setScrolled] = useState(false);
+  const [forceUpdate, setForceUpdate] = useState(0);
   const [activeTab, setActiveTab] = useState(0);
   const [isNavAction, setIsNavAction] = useState(true);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -205,6 +206,14 @@ const Navbar = () => {
     setIsMobileMenuOpen(false);
     setShowUserMenu(false);
   }, [pathname]);
+
+  // Force re-render when auth state changes
+  useEffect(() => {
+    if (isLoggedIn && hasActivePlan) {
+      console.log("Navbar: Auth state updated, forcing re-render...");
+      setForceUpdate(prev => prev + 1);
+    }
+  }, [isLoggedIn, hasActivePlan]);
 
   // ============ SLIDER FUNCTIONS ============
   const updateActiveIndicator = () => {
@@ -561,7 +570,7 @@ const Navbar = () => {
             </div>
             
             {/* Dashboard Button - Opens external dashboard on port 3000 */}
-            {isLoggedIn && hasActivePlan && !isCheckingPlan && (
+            {isLoggedIn && hasActivePlan && (
               <a
                 href={`${DASHBOARD_URL}/dashboard`}
                 onClick={handleDashboardClick}
@@ -805,7 +814,7 @@ const Navbar = () => {
           {/* Mobile Action Buttons */}
           <div className="p-4 border-t border-gray-100 space-y-2">
             {/* Dashboard button for mobile - opens external dashboard */}
-            {isLoggedIn && hasActivePlan && !isCheckingPlan && (
+            {isLoggedIn && hasActivePlan && (
               <a
                 href={`${DASHBOARD_URL}/dashboard`}
                 onClick={(e) => {

@@ -4,12 +4,12 @@ import React, { useState, useEffect } from "react";
 import { FcGoogle } from "react-icons/fc";
 import { FaEye, FaEyeSlash, FaHome } from "react-icons/fa";
 import { loginUser } from "../../services/authService";
-import { useAuth } from "../../contexts/AuthContext";
+import { useAuthStore } from "../../store/authStoreZustand";
 import { useRouter, useSearchParams } from "next/navigation";
 import toast, { Toaster } from 'react-hot-toast';
 
 const Login = () => {
-  const { login } = useAuth();
+  const { login } = useAuthStore();
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
