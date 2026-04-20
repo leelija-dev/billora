@@ -18,6 +18,11 @@ const Navbar = () => {
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   
+  // Hide navbar on scroll state
+  const [isNavbarVisible, setIsNavbarVisible] = useState(true);
+  const [lastScrollY, setLastScrollY] = useState(0);
+  const scrollTimeoutRef = useRef(null);
+  
   // Dashboard URL (external app on port 3000)
   const DASHBOARD_URL = process.env.NEXT_PUBLIC_DASHBOARD_URL || 'http://localhost:3000';
   
@@ -427,12 +432,6 @@ const Navbar = () => {
     };
   }, [isNavAction, activeTab]);
 
-  useEffect(() => {
-    const handleScroll = () => setScrolled(window.scrollY > 20);
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
-
   const navItems = [
     { name: "Home", href: "/" },
     { name: "Try Mobile", href: "/trymobile" },
@@ -474,9 +473,16 @@ const Navbar = () => {
   return (
     <>
       <nav
-        className={`sticky top-0 bg-white z-[1000] h-16 md:h-20 flex items-center px-3 sm:px-4 md:px-6 transition-all duration-300 ${
+        className={`fixed top-0 left-0 w-full bg-white z-[1000] h-16 md:h-20 flex items-center px-3 sm:px-4 md:px-6 transition-all duration-300 ${
           scrolled ? "shadow-lg border-b border-gray-100" : "shadow-sm"
+        } ${
+          isNavbarVisible 
+            ? "translate-y-0 opacity-100" 
+            : "-translate-y-full opacity-0"
         }`}
+        style={{
+          transition: "transform 0.3s ease-in-out, opacity 0.25s ease-in-out"
+        }}
       >
         <div className="max-w-[1400px] w-full mx-auto flex justify-between items-center gap-2 sm:gap-4">
           {/* Logo */}
@@ -717,6 +723,9 @@ const Navbar = () => {
           </button>
         </div>
       </nav>
+
+      {/* Add spacer div to prevent content jump when navbar is fixed */}
+      <div className="h-16 md:h-20"></div>
 
       {/* Backdrop Overlay */}
       <div 

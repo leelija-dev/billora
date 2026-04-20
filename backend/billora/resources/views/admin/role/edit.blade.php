@@ -16,7 +16,7 @@
 
         /* Main Content - Full Width */
         .main-content {
-            padding: 30px;
+            padding: 0px 0px;
             background: #f8fafc;
             min-height: 100vh;
             width: 100%;
@@ -637,7 +637,7 @@
     @enderror
 </div>
 
-                </div>
+                </div><br>
                 <div class="form-group full-width mt-2">
                     <label class="form-label">
                         Permissions <span>*</span>
