@@ -77,7 +77,6 @@ export const TIMEOUTS = {
 export const BUSINESS = {
   PLAN_VALIDITY_DAYS: 365,
   GST_RATE: 18,
-  DEFAULT_BUSINESS_TYPE_ID: 1,
 };
 
 // UI Constants

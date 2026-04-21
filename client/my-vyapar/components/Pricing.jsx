@@ -48,6 +48,15 @@ const Pricing = ({ limit = 3, showFilters = true, showViewAllButton = true }) =>
   useEffect(() => {
     const loadBusinessTypes = async () => {
       try {
+        // Get the first business type from API as default, no fallback needed since API should provide data
+        const DEFAULT_BUSINESS_TYPE_ID = businessTypes.length > 0 ? businessTypes[0].id : null;
+        
+        // If no business types available, show error and don't proceed
+        if (!DEFAULT_BUSINESS_TYPE_ID && !selectedBusinessType) {
+          console.error('Business types not loaded. Please refresh the page.');
+          return;
+        }
+        
         // Use the correct business types endpoint
         const response = await apiRequest("/business-type/", "GET");
         
@@ -79,7 +88,8 @@ const Pricing = ({ limit = 3, showFilters = true, showViewAllButton = true }) =>
     
     const features = plan.features || [];
     const monthlyPrice = parseFloat(plan.price);
-    const yearlyPrice = monthlyPrice * 10;
+    // Use yearly price from API if available, otherwise calculate with multiplier from API or default to 12
+    const yearlyPrice = plan.price?.yearly ? parseFloat(plan.price.yearly) : monthlyPrice * (plan.yearly_multiplier || 12);
     const discount = parseFloat(plan.discount) || 0;
     const monthlyDiscountedPrice = monthlyPrice - (monthlyPrice * discount / 100);
     const yearlyDiscountedPrice = yearlyPrice - (yearlyPrice * discount / 100);

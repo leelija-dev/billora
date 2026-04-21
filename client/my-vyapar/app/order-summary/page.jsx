@@ -110,7 +110,7 @@ const OrderSummary = () => {
   const calculateGST = () => {
     if (!selectedPlan) return 0;
     const price = Number(selectedPlan.price);
-    const gstRate = selectedPlan.gst || 18;
+    const gstRate = selectedPlan.gst || 0; // Use API GST rate, fallback to 0 if not provided
     return (price * gstRate) / 100;
   };
 
@@ -205,11 +205,10 @@ const OrderSummary = () => {
       // Clean phone number
       const cleanCustomerPhone = customerPhone.replace(/\D/g, '');
       
-      // IMPORTANT: Since backend requires business_type_id, we need to send a default value
-      // Default business type ID (Individual/Sole Proprietorship) - adjust based on your DB
-      const DEFAULT_BUSINESS_TYPE_ID = 1; // Change this to match your default business type ID
+      // Get the first business type from API as default, or fallback to 1
+      const DEFAULT_BUSINESS_TYPE_ID = businessTypes.length > 0 ? businessTypes[0].id : 1;
       
-      // Use selected business type ID if provided, otherwise use default
+      // Use selected business type ID if provided, otherwise use default from API
       const finalBusinessTypeId = businessTypeId ? parseInt(businessTypeId) : DEFAULT_BUSINESS_TYPE_ID;
       
       logger.log("Business Type - Selected:", businessTypeId, "Final:", finalBusinessTypeId);
