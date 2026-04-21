@@ -7,6 +7,7 @@ import toast, { Toaster } from 'react-hot-toast';
 import { usePaymentStore } from "@/store/paymentStore";
 import { useAuthStore } from "../../store/authStoreZustand";
 import useBusinessStore from "../../store/businessStore";
+import { logger } from '../../utils/logger';
 
 const OrderSummary = () => {
   const router = useRouter();
@@ -37,7 +38,7 @@ const OrderSummary = () => {
   useEffect(() => {
     if (token) {
       fetchBusinessTypes(token).catch(error => {
-        console.error('Failed to fetch business types:', error);
+        logger.error('Failed to fetch business types:', error);
       });
     }
   }, [token, fetchBusinessTypes]);
@@ -59,7 +60,7 @@ const OrderSummary = () => {
         if (user.address) setBillingAddress(user.address);
         if (user.business_type_id) setBusinessTypeId(String(user.business_type_id));
           
-        console.log("Logged-in user loaded:", user);
+        logger.log("Logged-in user loaded:", user);
       }
     };
     
@@ -74,9 +75,9 @@ const OrderSummary = () => {
         try {
           const parsedPlan = JSON.parse(planData);
           setSelectedPlan(parsedPlan);
-          console.log("✅ Loaded plan:", parsedPlan);
+          logger.log("✅ Loaded plan:", parsedPlan);
         } catch (e) {
-          console.error("Error parsing plan:", e);
+          logger.error("Error parsing plan:", e);
           toast.error('Invalid plan data');
           router.push('/pricing');
         }
@@ -207,7 +208,7 @@ const OrderSummary = () => {
       // Use selected business type ID if provided, otherwise use default
       const finalBusinessTypeId = businessTypeId ? parseInt(businessTypeId) : DEFAULT_BUSINESS_TYPE_ID;
       
-      console.log("🏢 Business Type - Selected:", businessTypeId, "Final:", finalBusinessTypeId);
+      logger.log("Business Type - Selected:", businessTypeId, "Final:", finalBusinessTypeId);
       
       // Prepare payload
       const payload = {
@@ -227,15 +228,15 @@ const OrderSummary = () => {
       if (billingAddress) payload.billing_address = billingAddress;
       if (selectedBusinessType) payload.business_type_name = selectedBusinessType.name;
 
-      console.log("📤 Sending payload to backend:", JSON.stringify(payload, null, 2));
-      console.log("📞 Customer ID being sent (as string):", String(customerIdValue));
-      console.log("📞 Customer phone being sent:", cleanCustomerPhone);
-      console.log("🏢 Business type ID being sent:", finalBusinessTypeId);
+      logger.log("📤 Sending payload to backend:", JSON.stringify(payload, null, 2));
+      logger.log("📞 Customer ID being sent (as string):", String(customerIdValue));
+      logger.log("📞 Customer phone being sent:", cleanCustomerPhone);
+      logger.log("🏢 Business type ID being sent:", finalBusinessTypeId);
       
       // Call the store action
       const response = await createOrderAction(payload);
       
-      console.log("📥 Full response from createOrderAction:", response);
+      logger.log("📥 Full response from createOrderAction:", response);
       
       toast.dismiss(loadingToast);
 
@@ -261,10 +262,10 @@ const OrderSummary = () => {
         paymentSessionId = response;
       }
       
-      console.log("🔑 Extracted paymentSessionId:", paymentSessionId);
+      logger.log("🔑 Extracted paymentSessionId:", paymentSessionId);
       
       if (!paymentSessionId) {
-        console.error("Response structure:", JSON.stringify(response, null, 2));
+        logger.error("Response structure:", JSON.stringify(response, null, 2));
         throw new Error(response?.message || response?.error || 'Payment session ID not found in response');
       }
       
@@ -305,11 +306,11 @@ const OrderSummary = () => {
         redirectTarget: "_self"
       });
       
-      console.log("Payment checkout result:", paymentResult);
+      logger.log("Payment checkout result:", paymentResult);
       
     } catch (error) {
       toast.dismiss(loadingToast);
-      console.error('❌ Payment error:', error);
+      logger.error('❌ Payment error:', error);
       
       let errorMessage = 'Payment failed. Please try again.';
       if (error.message?.includes('customer_id')) {

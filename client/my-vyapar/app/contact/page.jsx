@@ -3,6 +3,7 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { submitContactForm } from "@/services/contactService";
 import toast from 'react-hot-toast';
+import { logger } from '../../utils/logger';
 
 export default function Contact() {
   const [formData, setFormData] = useState({
@@ -68,7 +69,7 @@ export default function Contact() {
     try {
       const response = await submitContactForm(formData);
       
-      console.log('API Response:', response);
+      logger.log('API Response:', response);
       
       // Check response status
       if (response?.status === true || response?.success === true || response?.data) {
@@ -87,7 +88,7 @@ export default function Contact() {
       }
       
     } catch (error) {
-      console.error('Form submission error:', error);
+      logger.error('Form submission error:', error);
       toast.error(error.message || 'Failed to submit message. Please try again.');
     } finally {
       setIsLoading(false);

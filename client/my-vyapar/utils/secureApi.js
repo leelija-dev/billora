@@ -2,7 +2,7 @@
 import { API_CONFIG, ERROR_MESSAGES } from '../constants';
 
 // Development mode check
-const isDevelopment = process.env.NODE_ENV === 'development';
+const isDevelopment = process.env.NEXT_PUBLIC_PROJECT_MODE === 'development';
 
 // Logger utility for development only
 const logger = {

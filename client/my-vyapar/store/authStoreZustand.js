@@ -1,6 +1,7 @@
 // store/authStoreZustand.js - Industry-standard Zustand store for authentication
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
+import { logger } from '../utils/logger';
 
 // Import secure storage utilities
 import { secureStorage, validateToken } from '../utils/secureStorage';
@@ -20,7 +21,7 @@ export const useAuthStore = create(
 
       // Actions
       login: (userData, token) => {
-        console.log('MyVyapar: Login called with:', { userData, token });
+        logger.log('MyVyapar: Login called with:', { userData, token });
         
         // Save plan data if user has active plan
         if (userData.is_active && userData.plan_id) {
@@ -124,7 +125,7 @@ export const useAuthStore = create(
       },
 
       initializeAuth: () => {
-        console.log('MyVyapar: Initializing auth...');
+        logger.log('MyVyapar: Initializing auth...');
         set({ isLoading: true });
         
         // Zustand persist will handle initialization
@@ -145,7 +146,7 @@ export const useAuthStore = create(
         hasActivePlan: state.hasActivePlan,
       }),
       onRehydrateStorage: () => (state) => {
-        console.log('MyVyapar: Auth store rehydrating...', state);
+        logger.log('MyVyapar: Auth store rehydrating...', state);
         
         if (state) {
           // Check authentication state after rehydration
@@ -153,7 +154,7 @@ export const useAuthStore = create(
           const hasUser = !!state.user;
           const isAuthenticated = hasToken && hasUser;
           
-          console.log('MyVyapar: Rehydration check:', {
+          logger.log('MyVyapar: Rehydration check:', {
             hasToken,
             hasUser,
             isAuthenticated,
@@ -179,10 +180,10 @@ export const useAuthStore = create(
               state.hasActivePlan = isActive && isValid;
             }
           }
-          console.log('MyVyapar: Plan status after rehydrate:', state.hasActivePlan);
+          logger.log('MyVyapar: Plan status after rehydrate:', state.hasActivePlan);
         }
         
-        console.log('MyVyapar: Auth store rehydrated');
+        logger.log('MyVyapar: Auth store rehydrated');
       },
     }
   )

@@ -7,6 +7,7 @@ import { loginUser } from "../../services/authService";
 import { useAuthStore } from "../../store/authStoreZustand";
 import { useRouter, useSearchParams } from "next/navigation";
 import toast, { Toaster } from 'react-hot-toast';
+import { logger } from '../../utils/logger';
 
 const Login = () => {
   const { login } = useAuthStore();
@@ -26,19 +27,19 @@ const Login = () => {
     const from = searchParams.get("from");
     const pendingPlan = localStorage.getItem("pendingPlan");
     
-    console.log("🔍 Login page loaded");
-    console.log("🔍 from param:", from);
-    console.log("🔍 pendingPlan exists:", !!pendingPlan);
+    logger.log("🔍 Login page loaded");
+    logger.log("🔍 from param:", from);
+    logger.log("🔍 pendingPlan exists:", !!pendingPlan);
     
     if (pendingPlan) {
       try {
         const planData = JSON.parse(pendingPlan);
-        console.log("📋 Found pending plan:", planData.name);
+        logger.log("📋 Found pending plan:", planData.name);
         toast.success(`Complete your ${planData.name} plan purchase!`, {
           duration: 4000,
         });
       } catch (e) {
-        console.error("Error parsing pending plan:", e);
+        logger.error("Error parsing pending plan:", e);
         localStorage.removeItem("pendingPlan");
       }
     }
@@ -46,7 +47,7 @@ const Login = () => {
     // Only clear pending plan if this is a normal login (not from pricing)
     // AND there's no pending plan in the URL
     if (from !== "pricing" && !pendingPlan) {
-      console.log("🗑️ Normal login - clearing any old pending plan");
+      logger.log("🗑️ Normal login - clearing any old pending plan");
       localStorage.removeItem("pendingPlan");
     }
   }, [searchParams]);
@@ -159,14 +160,14 @@ const Login = () => {
     const pendingPlan = localStorage.getItem("pendingPlan");
     const fromParam = searchParams.get("from");
     
-    console.log("🔄 handleRedirectAfterLogin called");
-    console.log("🔄 pendingPlan exists:", !!pendingPlan);
-    console.log("🔄 from param:", fromParam);
+    logger.log("🔄 handleRedirectAfterLogin called");
+    logger.log("🔄 pendingPlan exists:", !!pendingPlan);
+    logger.log("🔄 from param:", fromParam);
     
     if (pendingPlan) {
       try {
         const planData = JSON.parse(pendingPlan);
-        console.log("✅ Found pending plan, redirecting to order summary for:", planData.name);
+        logger.log("✅ Found pending plan, redirecting to order summary for:", planData.name);
         
         toast.success(`Proceeding to ${planData.name} checkout!`, {
           duration: 2000,
@@ -178,7 +179,7 @@ const Login = () => {
         router.push("/order-summary");
         return;
       } catch (error) {
-        console.error("Error parsing pending plan:", error);
+        logger.error("Error parsing pending plan:", error);
         localStorage.removeItem("pendingPlan");
       }
     }
@@ -186,13 +187,13 @@ const Login = () => {
     // Check for redirect parameter
     const redirectUrl = searchParams.get("redirect");
     if (redirectUrl) {
-      console.log("🔄 Redirecting to:", redirectUrl);
+      logger.log("🔄 Redirecting to:", redirectUrl);
       router.push(redirectUrl);
       return;
     }
     
     // Default to pricing
-    console.log("🔄 No pending plan, going to pricing page");
+    logger.log("🔄 No pending plan, going to pricing page");
     router.push("/pricing");
   };
 

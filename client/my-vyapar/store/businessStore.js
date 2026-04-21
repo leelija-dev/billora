@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { businessService } from '../services/businessService';
+import { logger } from '../utils/logger';
 
 /**
  * Business Store - Zustand store for business-related state management
@@ -30,14 +31,14 @@ const useBusinessStore = create(
         const cacheTime = 5 * 60 * 1000; // 5 minutes
         
         if (state.lastFetched && (now - state.lastFetched) < cacheTime && state.businessTypes.length > 0) {
-          console.log('📦 Using cached business types');
+          logger.log('📦 Using cached business types');
           return state.businessTypes;
         }
 
         set({ loading: true, error: null });
 
         try {
-          console.log('🔄 Fetching business types from service...');
+          logger.log('🔄 Fetching business types from service...');
           const businessTypes = await businessService.getBusinessTypes(token);
           
           set({
@@ -47,10 +48,10 @@ const useBusinessStore = create(
             lastFetched: now,
           });
 
-          console.log('✅ Business types loaded:', businessTypes.length, 'items');
+          logger.log('✅ Business types loaded:', businessTypes.length, 'items');
           return businessTypes;
         } catch (error) {
-          console.error('❌ Error fetching business types:', error);
+          logger.error('❌ Error fetching business types:', error);
           set({
             loading: false,
             error: error.message,
@@ -76,13 +77,13 @@ const useBusinessStore = create(
           }
 
           // If not in store, fetch from API
-          console.log('🔄 Fetching specific business type:', id);
+          logger.log('🔄 Fetching specific business type:', id);
           const businessType = await businessService.getBusinessTypeById(id, token);
           
           set({ selectedBusinessType: businessType });
           return businessType;
         } catch (error) {
-          console.error('❌ Error fetching business type:', error);
+          logger.error('❌ Error fetching business type:', error);
           set({ error: error.message });
           throw error;
         }
@@ -120,7 +121,7 @@ const useBusinessStore = create(
 
           return newBusinessType;
         } catch (error) {
-          console.error('❌ Error creating business type:', error);
+          logger.error('❌ Error creating business type:', error);
           set({ error: error.message });
           throw error;
         }
@@ -149,7 +150,7 @@ const useBusinessStore = create(
 
           return updatedBusinessType;
         } catch (error) {
-          console.error('❌ Error updating business type:', error);
+          logger.error('❌ Error updating business type:', error);
           set({ error: error.message });
           throw error;
         }
@@ -173,7 +174,7 @@ const useBusinessStore = create(
             selectedBusinessType: state.selectedBusinessType?.id === id ? null : state.selectedBusinessType,
           });
         } catch (error) {
-          console.error('❌ Error deleting business type:', error);
+          logger.error('❌ Error deleting business type:', error);
           set({ error: error.message });
           throw error;
         }
@@ -229,7 +230,7 @@ const useBusinessStore = create(
         lastFetched: state.lastFetched,
       }),
       onRehydrateStorage: () => (state) => {
-        console.log('🔄 Business store rehydrated');
+        logger.log('🔄 Business store rehydrated');
         if (state) {
           state.loading = false;
           state.error = null;
