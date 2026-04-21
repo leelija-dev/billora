@@ -13,6 +13,8 @@ import { apiRequest } from "../utils/api";
 
 const Pricing = ({ limit = 3, showFilters = true, showViewAllButton = true }) => {
   const [showLoginModal, setShowLoginModal] = useState(false);
+  const [planEligibility, setPlanEligibility] = useState({});
+  const [checkingEligibility, setCheckingEligibility] = useState({});
   
   const {
     plans,
@@ -42,7 +44,7 @@ const Pricing = ({ limit = 3, showFilters = true, showViewAllButton = true }) =>
   const router = useRouter();
 
   // Use Zustand auth store instead of manual localStorage
-  const { user, token, isLoggedIn, hasActivePlan } = useAuthStore();
+  const { user, token, isLoggedIn, hasActivePlan, checkPlanPurchaseEligibility } = useAuthStore();
 
   // Load business types from API
   useEffect(() => {
@@ -220,6 +222,34 @@ const Pricing = ({ limit = 3, showFilters = true, showViewAllButton = true }) =>
     }
   }, [selectedBusinessType, showFilters, plans]);
 
+  // Check plan eligibility when plans are loaded and user is logged in
+  useEffect(() => {
+    const checkEligibilityForPlans = async () => {
+      if (isLoggedIn && filteredPlans.length > 0) {
+        const eligibilityData = {};
+        
+        for (const plan of filteredPlans) {
+          setCheckingEligibility(prev => ({ ...prev, [plan.id]: true }));
+          
+          try {
+            const eligibility = await checkPlanPurchaseEligibility(plan.id);
+            eligibilityData[plan.id] = eligibility;
+          } catch (error) {
+            console.error(`Error checking eligibility for plan ${plan.id}:`, error);
+            eligibilityData[plan.id] = { canPurchase: false, reason: 'Error checking eligibility' };
+          } finally {
+            setCheckingEligibility(prev => ({ ...prev, [plan.id]: false }));
+          }
+        }
+        
+        setPlanEligibility(eligibilityData);
+        console.log("Plan eligibility data:", eligibilityData);
+      }
+    };
+
+    checkEligibilityForPlans();
+  }, [isLoggedIn, filteredPlans, checkPlanPurchaseEligibility]);
+
   const getCurrentPrice = (plan) => {
     let basePrice;
 
@@ -275,6 +305,31 @@ const Pricing = ({ limit = 3, showFilters = true, showViewAllButton = true }) =>
   const handleSubscribe = async (plan) => {
     console.log("handleSubscribe called with plan:", plan.name, "isLoggedIn:", isLoggedIn);
     
+    // Check plan eligibility if user is logged in
+    if (isLoggedIn) {
+      const eligibility = planEligibility[plan.id];
+      
+      if (!eligibility) {
+        console.log("Eligibility not checked yet, checking now...");
+        try {
+          const eligibilityResult = await checkPlanPurchaseEligibility(plan.id);
+          setPlanEligibility(prev => ({ ...prev, [plan.id]: eligibilityResult }));
+          
+          if (!eligibilityResult.canPurchase) {
+            alert(eligibilityResult.reason);
+            return;
+          }
+        } catch (error) {
+          console.error("Error checking eligibility:", error);
+          alert("Error checking plan eligibility. Please try again.");
+          return;
+        }
+      } else if (!eligibility.canPurchase) {
+        alert(eligibility.reason);
+        return;
+      }
+    }
+    
     const currentPriceData = getCurrentPrice(plan);
     const originalPriceData = getOriginalPrice(plan);
     const gstAmount = currentPriceData.price * (plan.gst / 100);
@@ -295,6 +350,7 @@ const Pricing = ({ limit = 3, showFilters = true, showViewAllButton = true }) =>
         ? allBusinessTypes.find((bt) => bt.id === parseInt(selectedBusinessType))
         : plan.businessTypes?.[0] || null,
       hasCustomPrice: currentPriceData.hasCustomPrice,
+      eligibility: planEligibility[plan.id] || null,
     };
 
     if (!isLoggedIn) {
@@ -550,7 +606,7 @@ const Pricing = ({ limit = 3, showFilters = true, showViewAllButton = true }) =>
                     <ul className="space-y-3.5">
                       {plan.features.map((feature, idx) => (
                         <li key={idx} className="flex items-start gap-3 text-sm text-gray-700">
-                          <svg className="w-5 h-5 flex-shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none">
+                          <svg className="w-5 h-5 shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none">
                             <path d="M20 6L9 17L4 12" stroke={isPopular ? '#8b5cf6' : '#000000'} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
                           </svg>
                           <span className="leading-relaxed">{feature}</span>
@@ -560,15 +616,38 @@ const Pricing = ({ limit = 3, showFilters = true, showViewAllButton = true }) =>
                   </div>
 
                   <div className="mt-auto pt-4">
+                    {/* Plan eligibility status indicator */}
+                    {isLoggedIn && planEligibility[plan.id] && (
+                      <div className="mb-3 p-2 rounded-lg text-xs font-medium">
+                        {planEligibility[plan.id].canPurchase ? (
+                          <div className="text-green-600 bg-green-50 px-2 py-1 rounded">
+                            {planEligibility[plan.id].action === 'upgrade' && 'Upgrade Available'}
+                            {planEligibility[plan.id].action === 'renewal' && 'Renewal Available'}
+                            {planEligibility[plan.id].action === 'new_purchase' && 'Available'}
+                          </div>
+                        ) : (
+                          <div className="text-red-600 bg-red-50 px-2 py-1 rounded">
+                            {planEligibility[plan.id].reason}
+                          </div>
+                        )}
+                      </div>
+                    )}
+
                     <button
                       onClick={() => handleSubscribe(plan)}
-                      disabled={subscribing === plan.id}
+                      disabled={
+                        subscribing === plan.id || 
+                        (isLoggedIn && planEligibility[plan.id] && !planEligibility[plan.id].canPurchase) ||
+                        checkingEligibility[plan.id]
+                      }
                       className={`w-full py-3.5 rounded-xl text-base font-semibold transition-all duration-300 hover:shadow-lg active:scale-95
                         ${isPopular 
                           ? 'bg-gradient-to-r from-purple-600 to-purple-500 text-white hover:from-purple-700 hover:to-purple-600' 
                           : 'bg-white border-2 hover:bg-gray-50'
                         }
-                        ${subscribing === plan.id ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        ${subscribing === plan.id || checkingEligibility[plan.id] ? 'opacity-50 cursor-not-allowed' : ''}
+                        ${isLoggedIn && planEligibility[plan.id] && !planEligibility[plan.id].canPurchase ? 'opacity-50 cursor-not-allowed bg-gray-100' : ''}
+                      `}
                       style={{
                         color: isPopular ? 'white' : '#000000',
                         borderColor: isPopular ? 'transparent' : '#000000'
@@ -582,6 +661,24 @@ const Pricing = ({ limit = 3, showFilters = true, showViewAllButton = true }) =>
                           </svg>
                           Processing...
                         </span>
+                      ) : checkingEligibility[plan.id] ? (
+                        <span className="flex items-center justify-center gap-2">
+                          <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                          </svg>
+                          Checking...
+                        </span>
+                      ) : isLoggedIn && planEligibility[plan.id] ? (
+                        planEligibility[plan.id].canPurchase ? (
+                          <span>
+                            {planEligibility[plan.id].action === 'upgrade' && 'Upgrade Plan'}
+                            {planEligibility[plan.id].action === 'renewal' && 'Renew Plan'}
+                            {planEligibility[plan.id].action === 'new_purchase' && 'Select Plan'}
+                          </span>
+                        ) : (
+                          <span className="text-gray-500">You already have this plan</span>
+                        )
                       ) : (
                         plan.buttonText
                       )}
@@ -625,37 +722,7 @@ const Pricing = ({ limit = 3, showFilters = true, showViewAllButton = true }) =>
 
       <LoginModal />
 
-      <style jsx>{`
-        .card-visible {
-          opacity: 1 !important;
-          transform: translateY(0) !important;
-        }
-        
-        @keyframes slide-in {
-          from {
-            opacity: 0;
-            transform: translateX(100%);
-          }
-          to {
-            opacity: 1;
-            transform: translateX(0);
-          }
-        }
-        
-        .animate-slide-in {
-          animation: slide-in 0.3s ease-out;
-        }
-        
-        @keyframes spin {
-          to {
-            transform: rotate(360deg);
-          }
-        }
-        
-        .animate-spin {
-          animation: spin 1s linear infinite;
-        }
-      `}</style>
+      
     </div>
   );
 };
