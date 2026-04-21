@@ -43,6 +43,8 @@ background: linear-gradient(
 #ede9fe,
 #dbeafe
 );
+
+
 background-size: 400% 400%;
 animation: gradientMove 12s ease infinite;
 }
@@ -62,6 +64,8 @@ background-position:0% 50%;
 }
 
 }
+
+
 
 
 .card-visible {

@@ -120,6 +120,7 @@ const Pricing = ({ limit = 3, showFilters = true, showViewAllButton = true }) =>
         monthly: monthlyDiscountedPrice.toLocaleString("en-IN"),
         yearly: yearlyDiscountedPrice.toLocaleString("en-IN"),
       },
+      plan_duration:plan.duration_days,
       discount: discount,
       gst: gstRate,
       businessTypes: transformedBusinessTypes,
@@ -549,6 +550,7 @@ const Pricing = ({ limit = 3, showFilters = true, showViewAllButton = true }) =>
               const isPopular = plan.popular;
               const currentPriceData = getCurrentPrice(plan);
               const originalPriceData = getOriginalPrice(plan);
+             
 
               return (
                 <div
@@ -588,7 +590,7 @@ const Pricing = ({ limit = 3, showFilters = true, showViewAllButton = true }) =>
                         <span className="text-5xl font-bold" style={{ color: isPopular ? '#8b5cf6' : '#000000' }}>
                           {currentPriceData.displayPrice}
                         </span>
-                        <span className="text-gray-400 text-base font-medium">/ month</span>
+                        <span className="text-gray-400 text-base font-medium">/ {plan.plan_duration} days</span>
                       </div>
 
                       {(plan.discount > 0 || currentPriceData.hasCustomPrice) && (
