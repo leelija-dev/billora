@@ -3,7 +3,6 @@
 import React, { useState, useEffect } from "react";
 import { FcGoogle } from "react-icons/fc";
 import { FaEye, FaEyeSlash, FaHome } from "react-icons/fa";
-import { loginUser } from "../../services/authService";
 import { useAuthStore } from "../../store/authStoreZustand";
 import { useRouter, useSearchParams } from "next/navigation";
 import toast, { Toaster } from 'react-hot-toast';
@@ -99,25 +98,8 @@ const Login = () => {
     const loadingToast = toast.loading("Logging in...");
     
     try {
-      const res = await loginUser({ email, password });
-      
-      if (res.status === false || res.success === false) {
-        if (res.message && res.message.includes("User not found")) {
-          throw new Error("No account found with this email. Please register first.");
-        } else if (res.message && res.message.includes("password")) {
-          throw new Error("Invalid password. Please try again.");
-        } else if (res.message && res.message.includes("verify")) {
-          throw new Error("Please verify your email before logging in. Check your inbox.");
-        } else {
-          throw new Error(res.message || "Invalid credentials");
-        }
-      }
-      
-      const userData = res.user || res.data?.user || res;
-      const token = res.token || res.data?.token || null;
-      
-      // Use Zustand login method
-      login(userData, token);
+      // Use authStore's login method directly
+      await login({ email, password });
       
       toast.dismiss(loadingToast);
       toast.success("Login Successful! ✅", {

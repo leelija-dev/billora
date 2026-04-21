@@ -6,5 +6,5 @@ export const getPlans = () => {
 };
 // Subscribe plan
 export const subscribePlan = (data) => {
-  return apiRequest("/subscribe", "POST", data);
+  return apiRequest("/cashfree/create-order", "POST", data);
 };

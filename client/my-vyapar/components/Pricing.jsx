@@ -4,23 +4,40 @@
 import React, { useEffect, useRef, useState } from "react";
 import SectionTitle from "@/components/SectionTitle";
 import Container from "@/components/Container";
-import { getPlans } from "@/services/pricingService";
-import { getBusinessTypes as fetchBusinessTypes } from "@/services/bussinessService";
-import { searchPlans } from "@/services/filterService";
-import { useRouter } from "next/navigation";
+import { usePricingStore } from "../store/pricingStore";
 import { useAuthStore } from "../store/authStoreZustand";
+import { useFilterStore } from "../store/filterStore";
+import { useRouter } from "next/navigation";
+import businessService from "../services/businessService";
 
 const Pricing = ({ limit = 3, showFilters = true, showViewAllButton = true }) => {
   const [billingCycle, setBillingCycle] = useState("monthly");
-  const [plans, setPlans] = useState([]);
-  const [filteredPlans, setFilteredPlans] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [subscribing, setSubscribing] = useState(null);
   const [showLoginModal, setShowLoginModal] = useState(false);
+  
+  const {
+    plans,
+    loading,
+    error,
+    selectedPlan,
+    categories,
+    businessTypes,
+    fetchPlans,
+    selectPlan,
+    subscribeToPlan,
+    clearError
+  } = usePricingStore();
+  
+  const {
+    filters,
+    updateFilter,
+    searchPlans: searchWithFilters,
+    setSortBy
+  } = useFilterStore();
   const [pendingPlan, setPendingPlan] = useState(null);
   const [selectedBusinessType, setSelectedBusinessType] = useState("all");
   const [allBusinessTypes, setAllBusinessTypes] = useState([]);
+  const [filteredPlans, setFilteredPlans] = useState([]);
+  const [subscribing, setSubscribing] = useState(null);
   const cardRefs = useRef([]);
   const router = useRouter();
 
@@ -30,8 +47,13 @@ const Pricing = ({ limit = 3, showFilters = true, showViewAllButton = true }) =>
   // Load business types from API
   useEffect(() => {
     const loadBusinessTypes = async () => {
+      if (!token) {
+        console.log("No token available, skipping business types fetch");
+        return;
+      }
+      
       try {
-        const response = await fetchBusinessTypes();
+        const response = await businessService.getBusinessTypes(token);
         
         let businessTypeData = [];
         
@@ -52,129 +74,149 @@ const Pricing = ({ limit = 3, showFilters = true, showViewAllButton = true }) =>
     };
 
     loadBusinessTypes();
-  }, []);
+  }, [token]);
 
   // Fetch plans from Laravel API
-  const transformPlans = (plansData) => {
-    return plansData.map((plan, index) => {
-      const features = plan.features || [];
-      const monthlyPrice = parseFloat(plan.price);
-      const yearlyPrice = monthlyPrice * 10;
-      const discount = parseFloat(plan.discount) || 0;
-      const monthlyDiscountedPrice = monthlyPrice - (monthlyPrice * discount / 100);
-      const yearlyDiscountedPrice = yearlyPrice - (yearlyPrice * discount / 100);
-      const gstRate = parseFloat(plan.gst) || 0;
+  const transformPlan = (plan, index) => {
+    console.log("transformPlan called with:", plan, typeof plan);
+    
+    const features = plan.features || [];
+    const monthlyPrice = parseFloat(plan.price);
+    const yearlyPrice = monthlyPrice * 10;
+    const discount = parseFloat(plan.discount) || 0;
+    const monthlyDiscountedPrice = monthlyPrice - (monthlyPrice * discount / 100);
+    const yearlyDiscountedPrice = yearlyPrice - (yearlyPrice * discount / 100);
+    const gstRate = parseFloat(plan.gst) || 0;
 
-      const transformedBusinessTypes = (plan.business_types || []).map((bt) => ({
-        id: bt.business_type?.id || bt.id,
-        name: bt.business_type?.name || bt.name,
-        plan_id: bt.plan_id,
-        business_type_id: bt.business_type_id,
-        custom_price: bt.custom_price || null,
-      }));
+    const transformedBusinessTypes = (plan.business_types || []).map((bt) => ({
+      id: bt.business_type?.id || bt.id,
+      name: bt.business_type?.name || bt.name,
+      plan_id: bt.plan_id,
+      business_type_id: bt.business_type_id,
+      custom_price: bt.custom_price || null,
+    }));
 
-      const supportedBusinessTypeIds = transformedBusinessTypes.map((bt) => bt.id);
+    const supportedBusinessTypeIds = transformedBusinessTypes.map((bt) => bt.id);
 
-      return {
-        id: plan.id,
-        name: plan.name,
-        price: {
-          monthly: monthlyPrice,
-          yearly: yearlyPrice,
-        },
-        displayPrice: {
-          monthly: monthlyPrice.toLocaleString("en-IN"),
-          yearly: yearlyPrice.toLocaleString("en-IN"),
-        },
-        discountedPrice: {
-          monthly: monthlyDiscountedPrice,
-          yearly: yearlyDiscountedPrice,
-        },
-        displayDiscountedPrice: {
-          monthly: monthlyDiscountedPrice.toLocaleString("en-IN"),
-          yearly: yearlyDiscountedPrice.toLocaleString("en-IN"),
-        },
-        discount: discount,
-        gst: gstRate,
-        businessTypes: transformedBusinessTypes,
-        supportedBusinessTypeIds: supportedBusinessTypeIds,
-        description: plan.description ? plan.description.replace(/<[^>]*>?/gm, "") : "",
-        features: features,
-        color: index === 1 ? "#8b5cf6" : "#000000",
-        buttonText: `Start ${plan.name}`,
-        popular: index === 1,
-      };
-    });
+    return {
+      id: plan.id,
+      name: plan.name,
+      price: {
+        monthly: monthlyPrice,
+        yearly: yearlyPrice,
+      },
+      displayPrice: {
+        monthly: monthlyPrice.toLocaleString("en-IN"),
+        yearly: yearlyPrice.toLocaleString("en-IN"),
+      },
+      discountedPrice: {
+        monthly: monthlyDiscountedPrice,
+        yearly: yearlyDiscountedPrice,
+      },
+      displayDiscountedPrice: {
+        monthly: monthlyDiscountedPrice.toLocaleString("en-IN"),
+        yearly: yearlyDiscountedPrice.toLocaleString("en-IN"),
+      },
+      discount: discount,
+      gst: gstRate,
+      businessTypes: transformedBusinessTypes,
+      supportedBusinessTypeIds: supportedBusinessTypeIds,
+      description: plan.description ? plan.description.replace(/<[^>]*>?/gm, "") : "",
+      features: features,
+      color: index === 1 ? "#8b5cf6" : "#000000",
+      buttonText: `Select Plan`,
+      popular: index === 1,
+    };
   };
 
-  const filterPlansByBusinessTypeAPI = async (businessTypeId) => {
-    setLoading(true);
+  const transformPlans = (plansData) => {
+    console.log("transformPlans called with:", plansData, typeof plansData, Array.isArray(plansData));
+    
+    if (!Array.isArray(plansData)) {
+      console.error("transformPlans expected array but got:", typeof plansData, plansData);
+      return [];
+    }
+    
+    return plansData.map((plan, index) => transformPlan(plan, index));
+  };
+
+  const filterPlansByBusinessType = async (businessTypeId) => {
     try {
-      let response;
-      
       if (businessTypeId === "all") {
-        response = await getPlans();
-      } else {
-        response = await searchPlans({ search: parseInt(businessTypeId) });
-      }
-      
-      if (response.status === true && response.data) {
-        let transformedPlans = transformPlans(response.data);
+        // Use store methods to get all plans
+        await fetchPlans();
+        let transformedPlans = plans.map(transformPlan);
         
         // Apply limit if specified
         if (limit && limit > 0) {
           transformedPlans = transformedPlans.slice(0, limit);
         }
         
+        console.log("Setting filteredPlans with:", transformedPlans, "Length:", transformedPlans.length);
         setFilteredPlans(transformedPlans);
       } else {
-        setFilteredPlans([]);
-      }
-    } catch (error) {
-      console.error("Error filtering plans:", error);
-      setFilteredPlans([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Initial plans fetch
-  useEffect(() => {
-    const fetchPlans = async () => {
-      try {
-        setLoading(true);
-        const data = await getPlans();
-
-        if (data.status === true && data.data) {
-          let transformedPlans = transformPlans(data.data);
+        // Use filter store to search by business type
+        updateFilter('search', parseInt(businessTypeId));
+        const searchResults = await searchWithFilters();
+        console.log("Search results:", searchResults);
+        
+        if (searchResults && searchResults.length > 0) {
+          let transformedPlans = searchResults.map(transformPlan);
           
           // Apply limit if specified
           if (limit && limit > 0) {
             transformedPlans = transformedPlans.slice(0, limit);
           }
           
-          setPlans(transformedPlans);
+          console.log("Setting filteredPlans with search results:", transformedPlans, "Length:", transformedPlans.length);
           setFilteredPlans(transformedPlans);
         } else {
-          setError(data.message || "Failed to fetch plans");
+          console.log("No search results found, setting filteredPlans to empty array");
+          setFilteredPlans([]);
         }
+      }
+    } catch (error) {
+      console.error("Error filtering plans:", error);
+      setFilteredPlans([]);
+    }
+  };
+
+  // Initial plans fetch
+  useEffect(() => {
+    const loadPlans = async () => {
+      try {
+        await fetchPlans();
       } catch (error) {
         console.error("Error fetching plans:", error);
-        setError("Something went wrong");
-      } finally {
-        setLoading(false);
       }
     };
 
-    fetchPlans();
-  }, [limit]);
+    loadPlans();
+  }, [limit, fetchPlans]);
+
+  // Update filteredPlans when plans are available
+  useEffect(() => {
+    console.log("Main plans useEffect triggered - plans length:", plans?.length);
+    if (plans && plans.length > 0) {
+      let transformedPlans = plans.map(transformPlan);
+      
+      // Apply limit if specified
+      if (limit && limit > 0) {
+        transformedPlans = transformedPlans.slice(0, limit);
+      }
+      
+      console.log("Main useEffect - Setting filteredPlans with:", transformedPlans, "Length:", transformedPlans.length);
+        setFilteredPlans(transformedPlans);
+    }
+  }, [plans, limit, fetchPlans]);
 
   // Filter plans based on selected business type
   useEffect(() => {
-    if (showFilters) {
-      filterPlansByBusinessTypeAPI(selectedBusinessType);
+    console.log("Business type filter useEffect triggered - selectedBusinessType:", selectedBusinessType, "plans length:", plans?.length);
+    if (showFilters && plans && plans.length > 0) {
+      filterPlansByBusinessType(selectedBusinessType);
     }
-  }, [selectedBusinessType, showFilters]);
+  }, [selectedBusinessType, showFilters, plans]);
 
   const getCurrentPrice = (plan) => {
     let basePrice;
@@ -235,13 +277,15 @@ const Pricing = ({ limit = 3, showFilters = true, showViewAllButton = true }) =>
     };
   };
 
-  const handleSubscribe = (plan) => {
+  const handleSubscribe = async (plan) => {
+    console.log("handleSubscribe called with plan:", plan.name, "isLoggedIn:", isLoggedIn);
+    
     const currentPriceData = getCurrentPrice(plan);
     const originalPriceData = getOriginalPrice(plan);
     const gstAmount = currentPriceData.price * (plan.gst / 100);
     const totalAmount = currentPriceData.price + gstAmount;
 
-    const selectedPlan = {
+    const selectedPlanData = {
       id: plan.id,
       name: plan.name,
       billingCycle: billingCycle,
@@ -259,16 +303,20 @@ const Pricing = ({ limit = 3, showFilters = true, showViewAllButton = true }) =>
     };
 
     if (!isLoggedIn) {
-      setPendingPlan(selectedPlan);
+      console.log("User not logged in, showing login modal");
+      setPendingPlan(selectedPlanData);
       setShowLoginModal(true);
       return;
     }
 
-    proceedToOrderSummary(selectedPlan);
+    console.log("User is logged in, proceeding to order summary");
+    selectPlan(selectedPlanData);
+    localStorage.setItem('selectedPlan', JSON.stringify(selectedPlanData));
+    router.push("/order-summary");
   };
 
   const proceedToOrderSummary = (selectedPlan) => {
-    localStorage.setItem("selectedPlan", JSON.stringify(selectedPlan));
+    selectPlan(selectedPlan);
     router.push("/order-summary");
   };
 
@@ -380,7 +428,16 @@ const Pricing = ({ limit = 3, showFilters = true, showViewAllButton = true }) =>
     );
   }
 
-  const displayPlans = showFilters ? filteredPlans : plans.slice(0, limit);
+  const displayPlans = showFilters ? filteredPlans : (plans && plans.length > 0 ? plans.slice(0, limit) : []);
+  
+  // Debug logging
+  console.log("Pricing Component Debug:", {
+    showFilters,
+    plansLength: plans?.length || 0,
+    filteredPlansLength: filteredPlans?.length || 0,
+    displayPlansLength: displayPlans?.length || 0,
+    limit
+  });
 
   return (
     <div className="py-10 sm:py-20 bg-gradient-to-br from-[#f8fafc] to-[#f1f5f9] font-['Inter',system-ui,-apple-system,sans-serif] overflow-x-hidden">

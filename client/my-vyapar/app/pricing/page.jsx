@@ -3,219 +3,81 @@
 import React, { useEffect, useRef, useState } from "react";
 import SectionTitle from "../../components/SectionTitle";
 import Container from "../../components/Container";
-import { getPlans } from "@/services/pricingService";
-import { getBusinessTypes as fetchBusinessTypes } from "@/services/bussinessService";
-import { searchPlans } from "@/services/filterService"; // 
+import { usePricingStore } from "../../store/pricingStore";
+import { useFilterStore } from "../../store/filterStore";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "../../store/authStoreZustand";
 
 const Pricing = () => {
   const [billingCycle, setBillingCycle] = useState("monthly");
-  const [plans, setPlans] = useState([]);
-  const [filteredPlans, setFilteredPlans] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [subscribing, setSubscribing] = useState(null);
-  const [subscribeMessage, setSubscribeMessage] = useState(null);
   const [showLoginModal, setShowLoginModal] = useState(false);
+  
+  const {
+    plans,
+    loading,
+    error,
+    selectedPlan,
+    categories,
+    businessTypes,
+    fetchPlans,
+    selectPlan,
+    subscribeToPlan,
+    clearError
+  } = usePricingStore();
+  
+  const {
+    filters,
+    updateFilter,
+    searchPlans: searchWithFilters
+  } = useFilterStore();
   const [pendingPlan, setPendingPlan] = useState(null);
   const [selectedBusinessType, setSelectedBusinessType] = useState("all");
   const [allBusinessTypes, setAllBusinessTypes] = useState([]);
+  const [filteredPlans, setFilteredPlans] = useState([]);
+  const [subscribing, setSubscribing] = useState(null);
   const cardRefs = useRef([]);
   const router = useRouter();
 
-  // Use Zustand auth store instead of manual localStorage
+// Use Zustand auth store instead of manual localStorage
   const { user, token, isLoggedIn, hasActivePlan } = useAuthStore();
 
-// Load business types from API
+// Load business types from store
 useEffect(() => {
-  const loadBusinessTypes = async () => {
-    try {
-      console.log("Fetching business types from API...");
-      const response = await fetchBusinessTypes();
-      
-      console.log("Business types API response:", response);
-      
-      let businessTypeData = [];
-      
-      if (response?.status === true && Array.isArray(response?.data)) {
-        businessTypeData = response.data;
-      } else if (Array.isArray(response)) {
-        businessTypeData = response;
-      } else if (response?.data && Array.isArray(response.data)) {
-        businessTypeData = response.data;
-      }
-      
-      if (businessTypeData.length > 0) {
-        console.log("Business types loaded:", businessTypeData);
-        setAllBusinessTypes(businessTypeData);
-      } else {
-        console.log("No business types found");
-        setAllBusinessTypes([]);
-      }
-    } catch (err) {
-      console.error("Business type fetch error:", err);
-      if (plans.length > 0) {
-        extractBusinessTypesFromPlans();
-      }
-    }
-  };
+  if (businessTypes && businessTypes.length > 0) {
+    setAllBusinessTypes(businessTypes);
+  }
+}, [businessTypes]);
 
-  loadBusinessTypes();
-}, []);
-
-  // Fetch plans from Laravel API - SHOW ALL PLANS
+  // Fetch plans from store - SHOW ALL PLANS
   useEffect(() => {
-    const fetchPlans = async () => {
+    const loadPlans = async () => {
       try {
-        setLoading(true);
-
-        const data = await getPlans();
-
-        console.log("API Response:", data);
-
-        if (data.status === true && data.data) {
-          const allPlans = data.data;
-
-          const transformedPlans = allPlans.map((plan, index) => {
-            const features = plan.features || [];
-
-            const monthlyPrice = parseFloat(plan.price);
-            const yearlyPrice = monthlyPrice * 10;
-
-            const discount = parseFloat(plan.discount) || 0;
-            const monthlyDiscountedPrice = monthlyPrice - (monthlyPrice * discount / 100);
-            const yearlyDiscountedPrice = yearlyPrice - (yearlyPrice * discount / 100);
-
-            const gstRate = parseFloat(plan.gst) || 0;
-
-            const transformedBusinessTypes = (plan.business_types || []).map((bt) => ({
-              id: bt.business_type?.id || bt.id,
-              name: bt.business_type?.name || bt.name,
-              plan_id: bt.plan_id,
-              business_type_id: bt.business_type_id,
-              custom_price: bt.custom_price || null,
-            }));
-
-            const supportedBusinessTypeIds = transformedBusinessTypes.map((bt) => bt.id);
-
-            return {
-              id: plan.id,
-              name: plan.name,
-              price: {
-                monthly: monthlyPrice,
-                yearly: yearlyPrice,
-              },
-              displayPrice: {
-                monthly: monthlyPrice.toLocaleString("en-IN"),
-                yearly: yearlyPrice.toLocaleString("en-IN"),
-              },
-              discountedPrice: {
-                monthly: monthlyDiscountedPrice,
-                yearly: yearlyDiscountedPrice,
-              },
-              displayDiscountedPrice: {
-                monthly: monthlyDiscountedPrice.toLocaleString("en-IN"),
-                yearly: yearlyDiscountedPrice.toLocaleString("en-IN"),
-              },
-              discount: discount,
-              gst: gstRate,
-              businessTypes: transformedBusinessTypes,
-              supportedBusinessTypeIds: supportedBusinessTypeIds,
-              description: plan.description
-                ? plan.description.replace(/<[^>]*>?/gm, "")
-                : "",
-              features: features,
-              color: index === 1 ? "#8b5cf6" : "#000000",
-              buttonText: `Start ${plan.name}`,
-              popular: index === 1,
-            };
-          });
-
-          console.log("Transformed Plans:", transformedPlans);
-          setPlans(transformedPlans);
-          setFilteredPlans(transformedPlans);
-
-          console.log("Plans set");
-        } else {
-          setError(data.message || "Failed to fetch plans");
-        }
+        await fetchPlans();
       } catch (error) {
         console.error("Error fetching plans:", error);
         setError("Something went wrong");
-      } finally {
-        setLoading(false);
       }
     };
 
-    fetchPlans();
-  }, []);
+    loadPlans();
+  }, [fetchPlans]);
 
-  // 👈 ADD THIS NEW FUNCTION - Filter plans using search API
-  const filterPlansByBusinessTypeAPI = async (businessTypeId) => {
-    setLoading(true);
-    try {
-      let response;
-      
-      if (businessTypeId === "all") {
-        // Get all plans
-        response = await getPlans();
-      } else {
-        // Use search API to filter by business type
-        response = await searchPlans({ search: parseInt(businessTypeId) });
-      }
-      
-      console.log("Filtered plans response:", response);
-      
-      if (response.status === true && response.data) {
-        const transformedPlans = response.data.map((plan, index) => {
-          const features = plan.features || [];
-          const monthlyPrice = parseFloat(plan.price);
-          const yearlyPrice = monthlyPrice ;//* 10;
-          const discount = parseFloat(plan.discount) || 0;
-          const monthlyDiscountedPrice = monthlyPrice - (monthlyPrice * discount / 100);
-          const yearlyDiscountedPrice = yearlyPrice - (yearlyPrice * discount / 100);
-          const gstRate = parseFloat(plan.gst) || 0;
-
-          return {
-            id: plan.id,
-            name: plan.name,
-            price: { monthly: monthlyPrice, yearly: yearlyPrice },
-            displayPrice: { monthly: monthlyPrice.toLocaleString("en-IN"), yearly: yearlyPrice.toLocaleString("en-IN") },
-            discountedPrice: { monthly: monthlyDiscountedPrice, yearly: yearlyDiscountedPrice },
-            displayDiscountedPrice: { monthly: monthlyDiscountedPrice.toLocaleString("en-IN"), yearly: yearlyDiscountedPrice.toLocaleString("en-IN") },
-            discount: discount,
-            gst: gstRate,
-            businessTypes: [],
-            supportedBusinessTypeIds: [],
-            description: plan.description?.replace(/<[^>]*>?/gm, "") || "",
-            features: features,
-            color: index === 1 ? "#8b5cf6" : "#000000",
-            buttonText: `Start ${plan.name}`,
-            popular: index === 1,
-            duration_days: plan.duration_days
-          };
-        });
-        setFilteredPlans(transformedPlans);
-      } else {
-        setFilteredPlans([]);
-      }
-    } catch (error) {
-      console.error("Error filtering plans:", error);
-      setFilteredPlans([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Filter plans based on selected business type - UPDATED to use API
+  // Update filteredPlans when plans change or business type changes
   useEffect(() => {
-    filterPlansByBusinessTypeAPI(selectedBusinessType);
-  }, [selectedBusinessType]);
+    if (selectedBusinessType === "all") {
+      setFilteredPlans(plans);
+    } else {
+      // Filter plans based on selected business type
+      const filtered = plans.filter(plan => 
+        plan.businessTypes?.some(bt => bt.id === parseInt(selectedBusinessType))
+      );
+      setFilteredPlans(filtered);
+    }
+  }, [plans, selectedBusinessType]);
 
   // Get current price based on billing cycle, discount, and selected business type
   const getCurrentPrice = (plan) => {
-    let basePrice;
+    let basePrice = 0; // Default to 0 to prevent undefined
 
     if (selectedBusinessType !== "all") {
       const businessTypeForPlan = plan.businessTypes?.find(
@@ -235,15 +97,20 @@ useEffect(() => {
       }
     }
 
-    if (plan.discount > 0) {
+    // Handle discounted price
+    if (plan.discount > 0 && plan.discountedPrice) {
       basePrice = billingCycle === "monthly"
-        ? plan.discountedPrice.monthly
-        : plan.discountedPrice.yearly;
+        ? plan.discountedPrice.monthly || 0
+        : plan.discountedPrice.yearly || 0;
     } else {
+      // Handle regular price with fallbacks
       basePrice = billingCycle === "monthly"
-        ? plan.price.monthly
-        : plan.price.yearly;
+        ? (plan.price?.monthly || plan.price || 0)
+        : (plan.price?.yearly || plan.price || 0);
     }
+
+    // Ensure basePrice is a number
+    basePrice = Number(basePrice) || 0;
 
     return {
       price: basePrice,
@@ -254,34 +121,50 @@ useEffect(() => {
 
   // Get original price for comparison
   const getOriginalPrice = (plan) => {
+    let basePrice = 0; // Default to 0 to prevent undefined
+
     if (selectedBusinessType !== "all") {
       const businessTypeForPlan = plan.businessTypes?.find(
         (bt) => bt.id === parseInt(selectedBusinessType)
       );
 
       if (businessTypeForPlan && businessTypeForPlan.custom_price) {
-        const customPrice = businessTypeForPlan.custom_price;
+        basePrice = businessTypeForPlan.custom_price;
+        if (billingCycle === "yearly") {
+          basePrice = basePrice * 10;
+        }
         return {
-          price: billingCycle === "yearly" ? customPrice * 10 : customPrice,
-          displayPrice: (billingCycle === "yearly" ? customPrice * 10 : customPrice).toLocaleString("en-IN"),
+          price: basePrice,
+          displayPrice: basePrice.toLocaleString("en-IN"),
         };
       }
     }
 
+    // Handle regular price with fallbacks
+    basePrice = billingCycle === "monthly"
+      ? (plan.price?.monthly || plan.price || 0)
+      : (plan.price?.yearly || plan.price || 0);
+
+    // Ensure basePrice is a number
+    basePrice = Number(basePrice) || 0;
+
     return {
-      price: billingCycle === "monthly" ? plan.price.monthly : plan.price.yearly,
-      displayPrice: billingCycle === "monthly" ? plan.displayPrice.monthly : plan.displayPrice.yearly,
+      price: basePrice,
+      displayPrice: basePrice.toLocaleString("en-IN"),
     };
   };
 
-  // Handle subscription
-  const handleSubscribe = (plan) => {
+  // Handle subscription - redirect to order summary instead of creating order
+  const handleSubscribe = async (plan) => {
     const currentPriceData = getCurrentPrice(plan);
     const originalPriceData = getOriginalPrice(plan);
     const gstAmount = currentPriceData.price * (plan.gst / 100);
     const totalAmount = currentPriceData.price + gstAmount;
 
-    const selectedPlan = {
+    console.log("Handle Subscribe Click:", { isLoggedIn, planId: plan.id, planName: plan.name });
+
+    // Prepare plan data for order summary
+    const selectedPlanData = {
       id: plan.id,
       name: plan.name,
       billingCycle: billingCycle,
@@ -298,24 +181,23 @@ useEffect(() => {
       hasCustomPrice: currentPriceData.hasCustomPrice,
     };
 
-    console.log("Handle Subscribe Click:", { isLoggedIn, planId: plan.id, planName: plan.name });
-
     // If user is logged in, proceed directly to order summary
     if (isLoggedIn) {
-      console.log("User is logged in, proceeding to checkout");
-      proceedToOrderSummary(selectedPlan);
+      console.log("User is logged in, proceeding to order summary");
+      selectPlan(selectedPlanData);
+      localStorage.setItem('selectedPlan', JSON.stringify(selectedPlanData));
+      router.push("/order-summary");
       return;
     }
 
     // If user is not logged in, show login modal
     console.log("User not logged in, showing login modal");
-    setPendingPlan(selectedPlan);
+    setPendingPlan(selectedPlanData);
     setShowLoginModal(true);
   };
 
   const proceedToOrderSummary = (selectedPlan) => {
-    // ...
-    localStorage.setItem("selectedPlan", JSON.stringify(selectedPlan));
+    selectPlan(selectedPlan);
     router.push("/order-summary");
   };
 
@@ -358,7 +240,7 @@ useEffect(() => {
     });
 
     return () => observer.disconnect();
-  }, [filteredPlans]);
+  }, [plans]);
 
   // Login Modal Component
   const LoginModal = () => {
@@ -442,14 +324,6 @@ useEffect(() => {
       <div className="py-20 bg-gradient-to-br from-[#f8fafc] to-[#f1f5f9] min-h-screen font-['Inter',system-ui,-apple-system,sans-serif]">
         <Container size="default">
           
-          {subscribeMessage && (
-            <div className={`fixed top-24 right-4 z-50 p-4 rounded-lg shadow-lg max-w-md animate-slide-in ${
-              subscribeMessage.type === 'success' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
-            }`}>
-              <p className="font-medium">{subscribeMessage.text}</p>
-            </div>
-          )}
-
           {/* Header Section */}
           <div className="text-center mb-12">
             <SectionTitle title="Simple, Transparent Pricing" />
@@ -541,7 +415,7 @@ useEffect(() => {
                   <div
                     key={plan.id}
                     ref={(el) => (cardRefs.current[index] = el)}
-                    className={`bg-white rounded-2xl p-8 shadow-lg relative transition-all duration-500 border flex flex-col opacity-0 translate-y-10 hover:-translate-y-2 hover:shadow-2xl
+                    className={`bg-white rounded-2xl p-8 shadow-lg relative transition-all duration-500 border flex flex-col hover:-translate-y-2 hover:shadow-2xl
                       ${isPopular 
                         ? 'border-2 border-purple-500 shadow-purple-100 scale-100 lg:scale-105 z-20 pt-10' 
                         : 'border-gray-200 hover:border-gray-300 z-10'

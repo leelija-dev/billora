@@ -2,15 +2,20 @@
 import SectionTitle from "../components/SectionTitle";
 import Container from "../components/Container";
 import React, { useState, useEffect } from "react";
-import testimonialService from "../services/testimonialService";
+import { useTestimonialStore } from "../store/testimonialStore";
 
 const Testimonials = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isAnimating, setIsAnimating] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
-  const [testimonials, setTestimonials] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
+  
+  const {
+    testimonials,
+    loading: isLoading,
+    error,
+    fetchTestimonials,
+    clearError
+  } = useTestimonialStore();
 
   // Fetch testimonials from backend on component mount
   useEffect(() => {
@@ -18,28 +23,12 @@ const Testimonials = () => {
   }, []);
 
   const loadTestimonials = async () => {
-    setIsLoading(true);
-    setError(null);
-    
     try {
-      const result = await testimonialService.getAllTestimonials({ 
-        status: 'approved', 
-        limit: 20 
-      });
-
-      if (result.success && result.data && result.data.length > 0) {
-        setTestimonials(result.data);
-      } else {
-        setError('No testimonials found');
-        setTestimonials([]);
-      }
+      await fetchTestimonials();
     } catch (err) {
-      console.error("API ERROR:", err);
-      setError('Failed to load testimonials');
-      setTestimonials([]);
+      console.error('Error loading testimonials:', err);
+      clearError('Failed to load testimonials. Please try again.');
     }
-    
-    setIsLoading(false);
   };
 
   // Auto-rotate carousel

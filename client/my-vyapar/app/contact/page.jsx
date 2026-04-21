@@ -1,99 +1,42 @@
 "use client";
-import React, { useState } from "react";
+import React, { useEffect } from "react";
 import Link from "next/link";
-import { submitContactForm } from "@/services/contactService";
+import { useContactStore } from "../../store/contactStore";
 import toast from 'react-hot-toast';
 import { logger } from '../../utils/logger';
 
 export default function Contact() {
-  const [formData, setFormData] = useState({
-    name: "",
-    phone: "",
-    email: "",
-    subject: "",
-    message: ""
-  });
-
-  const [isLoading, setIsLoading] = useState(false);
+  const {
+    formData,
+    loading,
+    error,
+    success,
+    updateFormField,
+    submitContactForm: submitForm,
+    clearError,
+    clearSuccess
+  } = useContactStore();
 
   const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
+    updateFormField(e.target.name, e.target.value);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    // Validation
-    if (!formData.name.trim()) {
-      toast.error('Please enter your full name');
-      return;
-    }
-    
-    if (!formData.phone.trim()) {
-      toast.error('Please enter your phone number');
-      return;
-    }
-    
-    const phoneRegex = /^\d{10}$/;
-    if (!phoneRegex.test(formData.phone.replace(/\D/g, ''))) {
-      toast.error('Please enter a valid 10-digit phone number');
-      return;
-    }
-    
-    if (!formData.email.trim()) {
-      toast.error('Please enter your email address');
-      return;
-    }
-    
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(formData.email)) {
-      toast.error('Please enter a valid email address');
-      return;
-    }
-    
-    if (!formData.subject.trim()) {
-      toast.error('Please enter a subject');
-      return;
-    }
-    
-    if (!formData.message.trim()) {
-      toast.error('Please enter your message');
-      return;
-    }
-    
-    setIsLoading(true);
-    
     try {
-      const response = await submitContactForm(formData);
-      
-      logger.log('API Response:', response);
-      
-      // Check response status
-      if (response?.status === true || response?.success === true || response?.data) {
-        toast.success('✨ Your message has been submitted successfully! Our team will get back to you within 24 hours.');
-        
-        // Reset form
-        setFormData({
-          name: "",
-          phone: "",
-          email: "",
-          subject: "",
-          message: ""
-        });
-      } else {
-        toast.error(response?.message || 'Failed to submit message. Please try again.');
-      }
-      
+      await submitForm();
+      toast.success('Message sent successfully!');
     } catch (error) {
-      logger.error('Form submission error:', error);
       toast.error(error.message || 'Failed to submit message. Please try again.');
-    } finally {
-      setIsLoading(false);
     }
   };
+
+  // Clear messages when component mounts
+  useEffect(() => {
+    clearError();
+    clearSuccess();
+  }, [clearError, clearSuccess]);
 
   return (
     <div className="w-full bg-gradient-to-b from-gray-50 to-white min-h-screen">
@@ -251,15 +194,15 @@ export default function Contact() {
                 {/* Submit Button */}
                 <button
                   type="submit"
-                  disabled={isLoading}
-                  className="relative w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 sm:px-8 py-3 sm:py-3.5 md:py-4 rounded-xl font-semibold hover:shadow-xl hover:scale-[1.02] transition-all duration-300 disabled:opacity-70 disabled:cursor-not-allowed group overflow-hidden text-sm sm:text-base"
+                  disabled={loading}
+                  className="w-full bg-gradient-to-r from-[#2d236b] to-[#5b5bd6] text-white py-4 rounded-xl font-semibold hover:shadow-xl transform hover:scale-105 transition-all duration-300 relative overflow-hidden group"
                 >
                   <span className="relative z-10 flex items-center justify-center gap-2">
-                    {isLoading ? (
+                    {loading ? (
                       <>
-                        <svg className="animate-spin h-4 sm:h-5 w-4 sm:w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                           <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C4.589 0 1.589.893 2.293l1.414 1.414A2 2 0 014.586 4H12m0 16v-4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                         </svg>
                         <span>Sending...</span>
                       </>

@@ -71,17 +71,21 @@ const OrderSummary = () => {
   useEffect(() => {
     const loadPlanData = () => {
       const planData = localStorage.getItem('selectedPlan');
+      console.log(" Raw plan data from localStorage:", planData);
+      
       if (planData) {
         try {
           const parsedPlan = JSON.parse(planData);
+          console.log(" Parsed plan data:", parsedPlan);
           setSelectedPlan(parsedPlan);
-          logger.log("✅ Loaded plan:", parsedPlan);
+          logger.log(" Loaded plan:", parsedPlan);
         } catch (e) {
           logger.error("Error parsing plan:", e);
           toast.error('Invalid plan data');
           router.push('/pricing');
         }
       } else {
+        console.log(" No plan data found in localStorage");
         toast.error('No plan selected');
         router.push('/pricing');
       }

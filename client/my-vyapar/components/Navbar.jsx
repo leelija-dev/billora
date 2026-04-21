@@ -5,7 +5,6 @@ import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FiLogIn, FiLogOut, FiUser, FiSettings, FiChevronDown, FiMenu, FiX, FiGrid } from "react-icons/fi";
-import { logoutUser } from "../services/authService";
 import { useAuthStore } from "../store/authStoreZustand";
 import toast from 'react-hot-toast';
 
@@ -125,16 +124,7 @@ const Navbar = () => {
       });
       
       try {
-        const userId = user?._id || user?.id;
-        
-        if (userId) {
-          const response = await logoutUser(userId);
-          if (response?.status === true || response?.success === true) {
-            // Success case - handled below
-          }
-        }
-        
-        // Use Zustand logout function
+        // Use Zustand logout function directly
         await logout();
         
         toast.dismiss(loadingToastId);
