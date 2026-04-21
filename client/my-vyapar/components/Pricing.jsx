@@ -15,6 +15,7 @@ const Pricing = ({ limit = 3, showFilters = true, showViewAllButton = true }) =>
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [planEligibility, setPlanEligibility] = useState({});
   const [checkingEligibility, setCheckingEligibility] = useState({});
+  const [isClientMounted, setIsClientMounted] = useState(false);
   
   const {
     plans,
@@ -518,7 +519,7 @@ const Pricing = ({ limit = 3, showFilters = true, showViewAllButton = true }) =>
               value={selectedBusinessType}
               onChange={(e) => setSelectedBusinessType(e.target.value)}
               className="px-3 py-1.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm bg-white cursor-pointer"
-              disabled={allBusinessTypes.length === 0}
+              disabled={!isClientMounted || allBusinessTypes.length === 0}
             >
               <option value="all">All Business Types</option>
               {allBusinessTypes.length > 0 ? (
