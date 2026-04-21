@@ -457,7 +457,7 @@ const OrderSummary = () => {
                   </button>
                   
                   {showOptional && (
-                    <div className="mt-4 p-6 bg-gray-50 rounded-xl space-y-4">
+                    <div className="mt-4 p-6 bg-[#F0F8FF] rounded-xl space-y-4">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
                           Company Name <span className="text-gray-400 text-xs font-normal">(Optional)</span>
