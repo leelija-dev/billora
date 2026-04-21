@@ -268,6 +268,15 @@ if (is_null($user->email_verified_at)) {
         'status' => true,
         'message' => 'Login successful',
         'token' => $token,
+        'cookie' => [
+        'name' => 'client_auth_token',
+        'value' => $token,
+        'domain' => $cookieDomain ?: 'localhost',
+        'path' => '/',
+        'secure' => $cookieSecure,
+        'httpOnly' => false,
+        'sameSite' => $cookieSameSite
+    ],
         'user' => $user
     ]);
     $response->cookie(cookie(
