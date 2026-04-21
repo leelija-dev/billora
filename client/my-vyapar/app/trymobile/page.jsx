@@ -2,6 +2,32 @@
 
 import React, { useState } from "react";
 import { motion, useScroll, useTransform, useSpring } from "framer-motion";
+import { 
+  FaFileInvoice, 
+  FaBoxes, 
+  FaChartLine, 
+  FaCreditCard, 
+  FaBuilding, 
+  FaMoneyBillWave, 
+  FaUsers, 
+  FaStar,
+  FaArrowRight,
+  FaPlay,
+  FaTachometerAlt,
+  FaShoppingCart,
+  FaCheckCircle,
+  FaRocket,
+  FaUserFriends,
+  FaChartBar,
+  FaShieldAlt,
+  FaHeadset,
+  FaGem,
+  FaCrown,
+  FaArrowLeft,
+  FaRegSmile,
+  FaQuoteLeft
+} from "react-icons/fa";
+
 
 export default function BilloraHero() {
   const [activeTestimonial, setActiveTestimonial] = useState(0);
@@ -14,17 +40,17 @@ export default function BilloraHero() {
   const cardsY = useTransform(smoothY, [0, 600], [0, -100]);
 
   const features = [
-    { title: "Smart Invoicing", icon: "📄", desc: "Create professional invoices in seconds", stat: "50K+ invoices/month", color: "from-emerald-400 to-teal-500" },
-    { title: "Inventory Management", icon: "📦", desc: "Track stock in real-time", stat: "99.9% accuracy", color: "from-blue-400 to-indigo-500" },
-    { title: "GST Compliance", icon: "📊", desc: "Auto-calculate taxes and file returns", stat: "100% compliant", color: "from-purple-400 to-pink-500" },
-    { title: "Payment Collection", icon: "💳", desc: "Accept payments via UPI, cards, netbanking", stat: "₹100Cr+ processed", color: "from-orange-400 to-red-500" },
+    { title: "Smart Invoicing", icon: <FaFileInvoice className="w-10 h-10" />, desc: "Create professional invoices in seconds", stat: "50K+ invoices/month", color: "from-emerald-400 to-teal-500" },
+    { title: "Inventory Management", icon: <FaBoxes className="w-10 h-10" />, desc: "Track stock in real-time", stat: "99.9% accuracy", color: "from-blue-400 to-indigo-500" },
+    { title: "GST Compliance", icon: <FaFileInvoice className="w-10 h-10" />, desc: "Auto-calculate taxes and file returns", stat: "100% compliant", color: "from-purple-400 to-pink-500" },
+    { title: "Payment Collection", icon: <FaCreditCard className="w-10 h-10" />, desc: "Accept payments via UPI, cards, netbanking", stat: "₹100Cr+ processed", color: "from-orange-400 to-red-500" },
   ];
 
   const stats = [
-    { value: "70,000+", label: "Businesses", icon: "🏢", detail: "Across 28 states" },
-    { value: "₹15,000 Cr+", label: "Transactions", icon: "💰", detail: "Annual volume" },
-    { value: "500+", label: "Team Members", icon: "👥", detail: "Dedicated support" },
-    { value: "4.9", label: "Rating", icon: "⭐", detail: "From 5000+ reviews" },
+    { value: "70,000+", label: "Businesses", icon: <FaBuilding className="w-8 h-8" />, detail: "Across 28 states" },
+    { value: "₹15,000 Cr+", label: "Transactions", icon: <FaMoneyBillWave className="w-8 h-8" />, detail: "Annual volume" },
+    { value: "500+", label: "Team Members", icon: <FaUsers className="w-8 h-8" />, detail: "Dedicated support" },
+    { value: "4.9", label: "Rating", icon: <FaStar className="w-8 h-8" />, detail: "From 5000+ reviews" },
   ];
 
   const testimonials = [
@@ -49,20 +75,9 @@ export default function BilloraHero() {
         <div className="absolute bottom-0 right-0 w-[500px] h-[500px] bg-blue-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse delay-1000"></div>
         <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-purple-100 rounded-full mix-blend-multiply filter blur-3xl opacity-10"></div>
         
-        {/* Simple Pattern Overlay - FIXED: Removed problematic SVG */}
+        {/* Simple Pattern Overlay */}
         <div className="absolute inset-0 bg-black opacity-5"></div>
       </div>
-
-       {/* <div className="fixed top-0 left-0 w-full z-50 px-6 md:px-12 py-6">
-        <motion.div 
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-2xl font-black tracking-tight"
-        >
-          <span className="text-gray-900">BILLORA</span> 
-          <span className="text-emerald-600">.</span>
-        </motion.div>
-      </div> */}
 
       {/* ===== HERO SECTION ===== */}
       <motion.main 
@@ -98,11 +113,10 @@ export default function BilloraHero() {
               <div className="flex flex-wrap gap-4 mb-12">
                 <button className="group px-8 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-full font-bold hover:shadow-xl transition-all duration-300 transform hover:scale-105 flex items-center gap-2">
                   Start Free Trial
-                  <svg className="w-4 h-4 group-hover:translate-x-1 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
-                  </svg>
+                  <FaArrowRight className="w-4 h-4 group-hover:translate-x-1 transition" />
                 </button>
-                <button className="px-8 py-3 border-2 border-gray-300 text-gray-700 rounded-full font-bold hover:border-emerald-600 hover:text-emerald-600 transition-all duration-300">
+                <button className="px-8 py-3 border-2 border-gray-300 text-gray-700 rounded-full font-bold hover:border-emerald-600 hover:text-emerald-600 transition-all duration-300 flex items-center gap-2">
+                  <FaPlay className="w-4 h-4" />
                   Watch Demo
                 </button>
               </div>
@@ -112,7 +126,7 @@ export default function BilloraHero() {
                 <div className="flex -space-x-2">
                   {[1,2,3,4].map((i) => (
                     <div key={i} className="w-8 h-8 rounded-full bg-gradient-to-br from-emerald-400 to-teal-500 border-2 border-white flex items-center justify-center text-white text-xs">
-                      👤
+                      <FaUserFriends className="w-4 h-4" />
                     </div>
                   ))}
                 </div>
@@ -133,7 +147,10 @@ export default function BilloraHero() {
                 {/* Dashboard Header */}
                 <div className="bg-gradient-to-r from-emerald-600 to-teal-600 px-6 py-4">
                   <div className="flex items-center justify-between">
-                    <div className="text-white font-bold">Dashboard</div>
+                    <div className="text-white font-bold flex items-center gap-2">
+                      <FaTachometerAlt />
+                      Dashboard
+                    </div>
                     <div className="flex gap-2">
                       <div className="w-3 h-3 bg-red-400 rounded-full"></div>
                       <div className="w-3 h-3 bg-yellow-400 rounded-full"></div>
@@ -146,12 +163,12 @@ export default function BilloraHero() {
                 <div className="p-6">
                   <div className="grid grid-cols-2 gap-4 mb-6">
                     <div className="bg-emerald-50 rounded-xl p-4">
-                      <div className="text-2xl mb-1">📊</div>
+                      <FaChartLine className="text-2xl mb-1 text-emerald-600" />
                       <div className="text-2xl font-bold text-gray-900">₹12,45,678</div>
                       <div className="text-xs text-gray-500">Total Revenue</div>
                     </div>
                     <div className="bg-blue-50 rounded-xl p-4">
-                      <div className="text-2xl mb-1">📦</div>
+                      <FaShoppingCart className="text-2xl mb-1 text-blue-600" />
                       <div className="text-2xl font-bold text-gray-900">1,234</div>
                       <div className="text-xs text-gray-500">Orders</div>
                     </div>
@@ -161,7 +178,7 @@ export default function BilloraHero() {
                   <div className="space-y-3">
                     <div className="flex items-center justify-between text-sm">
                       <span className="text-gray-600">Recent Invoices</span>
-                      <span className="text-emerald-600 text-xs">View all →</span>
+                      <span className="text-emerald-600 text-xs cursor-pointer">View all →</span>
                     </div>
                     {[1,2,3].map((i) => (
                       <div key={i} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
@@ -171,7 +188,10 @@ export default function BilloraHero() {
                         </div>
                         <div className="text-right">
                           <div className="font-semibold">₹{i}2,500</div>
-                          <div className="text-xs text-green-600">Paid</div>
+                          <div className="text-xs text-green-600 flex items-center gap-1">
+                            <FaCheckCircle className="w-3 h-3" />
+                            Paid
+                          </div>
                         </div>
                       </div>
                     ))}
@@ -186,7 +206,7 @@ export default function BilloraHero() {
                 className="absolute -bottom-6 -left-6 bg-white rounded-xl shadow-xl p-4 border-l-4 border-emerald-500"
               >
                 <div className="flex items-center gap-3">
-                  <div className="text-3xl">🎯</div>
+                  <FaFileInvoice className="text-3xl text-emerald-600" />
                   <div>
                     <div className="text-sm font-bold">GST Filing</div>
                     <div className="text-xs text-gray-500">Due in 5 days</div>
@@ -214,7 +234,7 @@ export default function BilloraHero() {
                 whileHover={{ scale: 1.05 }}
                 className="bg-white rounded-2xl p-6 text-center shadow-lg border border-gray-100"
               >
-                <div className="text-4xl mb-3">{stat.icon}</div>
+                <div className="text-emerald-600 mb-3 flex justify-center">{stat.icon}</div>
                 <div className="text-2xl font-bold text-gray-900">{stat.value}</div>
                 <div className="text-sm font-semibold text-emerald-600 mb-1">{stat.label}</div>
                 <div className="text-xs text-gray-400">{stat.detail}</div>
@@ -254,7 +274,9 @@ export default function BilloraHero() {
               >
                 <div className={`absolute inset-0 bg-gradient-to-br ${feature.color} opacity-0 group-hover:opacity-5 rounded-2xl transition-opacity duration-300`}></div>
                 <div className="relative">
-                  <div className="text-5xl mb-4 group-hover:scale-110 transition-transform duration-300">{feature.icon}</div>
+                  <div className="text-emerald-600 mb-4 group-hover:scale-110 transition-transform duration-300">
+                    {feature.icon}
+                  </div>
                   <h3 className="text-xl font-bold text-gray-900 mb-2">{feature.title}</h3>
                   <p className="text-gray-600 text-sm mb-3">{feature.desc}</p>
                   <div className="text-xs font-semibold text-emerald-600">{feature.stat}</div>
@@ -264,7 +286,6 @@ export default function BilloraHero() {
           </div>
         </div>
       </section>
-
 
       {/* ===== TESTIMONIALS SECTION ===== */}
       <section className="relative py-20 px-6 md:px-12">
@@ -289,8 +310,9 @@ export default function BilloraHero() {
                 whileInView={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 0.5, delay: idx * 0.1 }}
                 whileHover={{ y: -10 }}
-                className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100"
+                className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100 relative"
               >
+                <FaQuoteLeft className="absolute text-gray-100 w-12 h-12 top-4 right-4" />
                 <div className="flex items-center gap-4 mb-4">
                   <img src={testimonial.image} alt={testimonial.name} className="w-12 h-12 rounded-full object-cover" />
                   <div>
@@ -299,7 +321,9 @@ export default function BilloraHero() {
                   </div>
                 </div>
                 <div className="flex text-yellow-400 mb-3">
-                  {"★".repeat(testimonial.rating)}
+                  {[...Array(testimonial.rating)].map((_, i) => (
+                    <FaStar key={i} className="w-4 h-4" />
+                  ))}
                 </div>
                 <p className="text-gray-600 text-sm italic leading-relaxed">"{testimonial.quote}"</p>
               </motion.div>
@@ -308,7 +332,7 @@ export default function BilloraHero() {
         </div>
       </section>
 
-      {/* ===== CTA SECTION - FIXED: Removed SVG pattern ===== */}
+      {/* ===== CTA SECTION ===== */}
       <motion.section 
         initial={{ opacity: 0 }}
         whileInView={{ opacity: 1 }}
@@ -319,7 +343,7 @@ export default function BilloraHero() {
         <div className="absolute inset-0 bg-black opacity-10"></div>
         
         <div className="relative px-8 py-16 text-center">
-          <div className="text-6xl mb-4">🚀</div>
+          <FaRocket className="text-6xl mb-4 text-white mx-auto" />
           <h3 className="text-3xl md:text-4xl font-bold text-white mb-3">
             Ready to Grow Your Business?
           </h3>
@@ -328,14 +352,10 @@ export default function BilloraHero() {
           </p>
           <button className="group bg-white text-emerald-600 px-8 py-3 rounded-full font-bold hover:shadow-2xl transition-all duration-300 transform hover:scale-105 inline-flex items-center gap-2">
             Start Free Trial
-            <svg className="w-4 h-4 group-hover:translate-x-1 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
-            </svg>
+            <FaArrowRight className="w-4 h-4 group-hover:translate-x-1 transition" />
           </button>
         </div>
       </motion.section>
-
-      
     </div>
   );
 }

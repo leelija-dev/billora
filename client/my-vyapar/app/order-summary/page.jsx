@@ -1,14 +1,39 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { FaCheckCircle, FaRupeeSign, FaUser, FaBuilding, FaCalendarAlt, FaIndustry, FaStar, FaLock, FaInfoCircle, FaCalendar } from "react-icons/fa";
+import { 
+  FaCheckCircle, 
+  FaRupeeSign, 
+  FaUser, 
+  FaBuilding, 
+  FaCalendarAlt, 
+  FaIndustry, 
+  FaStar, 
+  FaLock, 
+  FaInfoCircle, 
+  FaCalendar,
+  FaSpinner,
+  FaArrowLeft,
+  FaArrowRight,
+  FaMinus,
+  FaPlus,
+  FaRegBuilding,
+  FaRegEnvelope,
+  FaRegUser,
+  FaPhone,
+  FaRegAddressCard,
+  FaRegClock,
+  FaShieldAlt,
+  FaCreditCard,
+  FaLock as FaLockIcon
+} from "react-icons/fa";
+import { FiCheckCircle as FiCheckCircleIcon } from "react-icons/fi";
 import { useRouter } from "next/navigation";
 import toast, { Toaster } from 'react-hot-toast';
 import { usePaymentStore } from "@/store/paymentStore";
 import { useAuthStore } from "../../store/authStoreZustand";
 import useBusinessStore from "../../store/businessStore";
 import { logger } from '../../utils/logger';
-import { FiCheckCircle } from "react-icons/fi";
 
 const OrderSummary = () => {
   const router = useRouter();
@@ -111,7 +136,7 @@ const OrderSummary = () => {
   const calculateGST = () => {
     if (!selectedPlan) return 0;
     const price = Number(selectedPlan.price);
-    const gstRate = selectedPlan.gst || 0; // Use API GST rate, fallback to 0 if not provided
+    const gstRate = selectedPlan.gst || 0;
     return (price * gstRate) / 100;
   };
 
@@ -219,7 +244,7 @@ const OrderSummary = () => {
         // Required fields
         amount: Number(totalAmount.toFixed(2)),
         plan_id: selectedPlan.id,
-        business_type_id: finalBusinessTypeId, // Always send a value
+        business_type_id: finalBusinessTypeId,
         customer_id: String(customerIdValue),
         
         // Optional fields
@@ -359,7 +384,7 @@ const OrderSummary = () => {
             <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
               <div className="bg-gradient-to-r from-[#2d236b] to-[#5b5bd6] px-6 py-4">
                 <h2 className="text-white text-xl font-bold flex items-center gap-2">
-                  <FiCheckCircle />
+                  <FiCheckCircleIcon />
                   Review Order Summary
                 </h2>
               </div>
@@ -375,12 +400,12 @@ const OrderSummary = () => {
                       </div>
                       <h4 className="text-2xl font-bold text-[#2d236b]">{selectedPlan.name}</h4>
                       <p className="text-sm text-gray-500 mt-2 flex items-center gap-1">
-                        <FaCalendar className="w-4 h-4" />
+                        <FaCalendarAlt className="w-4 h-4" />
                         {selectedPlan.billingCycle === 'monthly' ? 'Monthly Billing' : 'Yearly Billing'}
                       </p>
                       {selectedPlan.businessType && (
                         <p className="text-xs text-purple-600 mt-1">
-                          🏢 Business Type: {selectedPlan.businessType.name}
+                          <FaIndustry className="inline mr-1 w-3 h-3" /> Business Type: {selectedPlan.businessType.name}
                         </p>
                       )}
                     </div>
@@ -390,7 +415,7 @@ const OrderSummary = () => {
                       )}
                       <p className="text-3xl font-bold text-[#5b5bd6]">₹{selectedPlan.price}</p>
                       {selectedPlan.discount > 0 && (
-                        <p className="text-xs text-green-600 mt-1">✨ {selectedPlan.discount}% OFF</p>
+                        <p className="text-xs text-green-600 mt-1"><FaStar className="inline mr-1" /> {selectedPlan.discount}% OFF</p>
                       )}
                     </div>
                   </div>
@@ -455,7 +480,7 @@ const OrderSummary = () => {
                       <FaBuilding className="text-[#5b5bd6]" />
                       Add Business Details <span className="text-xs text-gray-500 font-normal">(Recommended)</span>
                     </span>
-                    <span className="text-[#5b5bd6]">{showOptional ? "−" : "+"}</span>
+                    <span className="text-[#5b5bd6]">{showOptional ? <FaMinus /> : <FaPlus />}</span>
                   </button>
                   
                   {showOptional && (
@@ -527,7 +552,7 @@ const OrderSummary = () => {
                 {/* Info note */}
                 <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-100">
                   <p className="text-xs text-blue-700">
-                    ℹ️ <span className="font-semibold">Note:</span> A default business type will be used if you don't select one. You can update this later in your profile.
+                    <FaInfoCircle className="inline mr-1" /> <span className="font-semibold">Note:</span> A default business type will be used if you don't select one. You can update this later in your profile.
                   </p>
                 </div>
               </div>
@@ -578,16 +603,16 @@ const OrderSummary = () => {
                 >
                   {isProcessing || storeLoading ? (
                     <span className="flex items-center justify-center gap-2">
-                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                      <FaSpinner className="animate-spin h-5 w-5" />
                       {storeLoading ? 'Creating Order...' : 'Processing...'}
                     </span>
                   ) : (
-                    `Pay ₹${calculateTotal().toFixed(2)} Securely`
+                    <>Pay ₹{calculateTotal().toFixed(2)} Securely</>
                   )}
                 </button>
 
                 <div className="mt-4 text-center">
-                  <p className="text-xs text-gray-500">🔒 Secured by Cashfree</p>
+                  <p className="text-xs text-gray-500"><FaLockIcon className="inline mr-1" /> Secured by Cashfree</p>
                 </div>
               </div>
             </div>
