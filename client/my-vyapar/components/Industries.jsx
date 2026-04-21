@@ -9,6 +9,8 @@ import {
 } from "framer-motion";
 import Container from "../components/Container";
 import SectionTitle from "./SectionTitle";
+import { FaChartLine, FaFileInvoice, FaLink, FaRocket } from "react-icons/fa";
+import { FiLink } from "react-icons/fi";
 
 const INDUSTRY_DATA = [
   {
@@ -18,7 +20,7 @@ const INDUSTRY_DATA = [
     description: "Transform your business with cutting-edge billing solutions designed for the modern era of digital commerce.",
     fullDescription: "Transform your business with cutting-edge billing solutions designed for the modern era of digital commerce. Our innovative platform leverages AI and machine learning to automate complex billing processes, reduce errors, and provide real-time insights. Experience seamless integration with your existing tools and unlock new levels of efficiency with our intelligent automation suite.",
     buttonLink: "/solutions/innovation",
-    icon: "🚀",
+   
     color: "#7fa1d0",
     lightColor: "#f0f4f9",
     image: "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&w=1200&q=80"
@@ -30,7 +32,7 @@ const INDUSTRY_DATA = [
     description: "Scale your business with powerful accounting tools that provide deep insights into your financial health.",
     fullDescription: "Scale your business with powerful accounting tools that provide deep insights into your financial health. Our comprehensive suite includes advanced analytics, forecasting capabilities, and customizable dashboards. Make data-driven decisions with real-time financial reporting and predictive insights that help you stay ahead of the competition.",
     buttonLink: "/solutions/growth",
-    icon: "📈",
+    
     color: "#6366f1",
     lightColor: "#eef2ff",
     image: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=1200&q=80"
@@ -42,7 +44,7 @@ const INDUSTRY_DATA = [
     description: "Simplify GST returns with automated filing systems that ensure accuracy and save hours of manual work.",
     fullDescription: "Simplify GST returns with automated filing systems that ensure accuracy and save hours of manual work. Our intelligent platform automatically extracts data from invoices, validates entries, and generates error-free returns. Stay compliant with changing regulations while saving valuable time and resources.",
     buttonLink: "/solutions/gstr",
-    icon: "📑",
+    
     color: "#7bb2cc",
     lightColor: "#f1f7f9",
     image: "https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?auto=format&fit=crop&w=1200&q=80"
@@ -54,7 +56,7 @@ const INDUSTRY_DATA = [
     description: "Connect all your business operations seamlessly in one unified platform, from inventory to final sale.",
     fullDescription: "Connect all your business operations seamlessly in one unified platform, from inventory to final sale. Break down silos between departments with integrated workflows, real-time synchronization, and automated processes. Achieve complete visibility across your entire business ecosystem.",
     buttonLink: "/solutions/unite",
-    icon: "🔗",
+
     color: "#4b5563",
     lightColor: "#f3f4f6",
     image: "https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=1200&q=80"
@@ -66,7 +68,7 @@ const INDUSTRY_DATA = [
     description: "Grow your customer base with professional digital invoices and integrated payment gateways.",
     fullDescription: "Grow your customer base with professional digital invoices and integrated payment gateways. Our platform enables you to send branded, professional invoices that enhance your company's image. Accept payments faster with multiple payment options and reduce payment delays with automated reminders.",
     buttonLink: "/solutions/expand",
-    icon: "🌍",
+  
     color: "#4b22c5",
     lightColor: "#eeebf9",
     image: "https://images.unsplash.com/photo-1542744173-8e7e53415bb0?auto=format&fit=crop&w=1200&q=80"
@@ -164,7 +166,7 @@ const CardContent = ({ item }) => {
       {/* TEXT AREA */}
       <div className="flex-1 px-8 lg:px-16 py-12 flex flex-col justify-center order-2 md:order-1 bg-white overflow-y-auto custom-scrollbar">
         <div className="flex items-center gap-4 mb-6">
-          <span className="text-5xl">{item.icon}</span>
+          
           <span className="px-5 py-2 rounded-full text-xs font-[900] uppercase tracking-[0.2em]"
             style={{ backgroundColor: item.lightColor, color: item.color }}>
             {item.tag}
