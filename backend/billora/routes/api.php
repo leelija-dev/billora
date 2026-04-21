@@ -35,6 +35,11 @@ Route::get('/test', function () {
 
    ]);
 });
+Route::prefix('auth/session')->group(function () {
+    Route::post('/login', [CustomerController::class, 'login']);
+    Route::post('/logout', [CustomerController::class, 'logout']);
+    Route::get('/check', [CustomerController::class, 'checkSession']);
+});
 //admin user
 Route::prefix('users')->group(function () {
    //    Route::get('/', [CustomerController::class, 'index']);
