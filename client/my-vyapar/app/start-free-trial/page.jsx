@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
+import { FaTimes, FaShieldAlt, FaClock, FaBolt, FaEnvelope, FaCalendarAlt, FaStar } from "react-icons/fa";
 
 export default function StartFreeTrial() {
   const router = useRouter();
@@ -79,7 +80,7 @@ export default function StartFreeTrial() {
               onClick={handleClose}
               className="absolute top-4 right-4 sm:top-6 sm:right-6 p-2 rounded-full bg-white shadow hover:bg-gray-100"
             >
-              <span className="text-xl text-gray-600">✕</span>
+              <FaTimes className="text-xl text-gray-600" />
             </button>
 
             <div className="w-full max-w-5xl mx-auto px-2 sm:px-4">
@@ -136,17 +137,17 @@ export default function StartFreeTrial() {
                   {/* Trust badges */}
                   <div className="flex flex-wrap gap-2 sm:gap-3">
                     <div className="flex items-center gap-1 px-3 py-1 bg-white text-gray-700 rounded-full text-xs shadow">
-                      <span className="text-indigo-600">🛡️</span>
+                      <FaShieldAlt className="text-indigo-600 w-3 h-3" />
                       No credit card
                     </div>
 
                     <div className="flex items-center gap-1 px-3 py-1 bg-white text-gray-700 rounded-full text-xs shadow">
-                      <span className="text-indigo-600">⏰</span>
+                      <FaClock className="text-indigo-600 w-3 h-3" />
                       14 days free
                     </div>
 
                     <div className="flex items-center gap-1 px-3 py-1 bg-white text-gray-700 rounded-full text-xs shadow">
-                      <span className="text-indigo-600">⚡</span>
+                      <FaBolt className="text-indigo-600 w-3 h-3" />
                       Instant setup
                     </div>
                   </div>
@@ -185,7 +186,7 @@ export default function StartFreeTrial() {
                         name: "apple"
                       },
                       {
-                        icon: "📧",
+                        icon: <FaEnvelope className="text-xl" />,
                         name: "email",
                         emoji: true
                       }
@@ -228,7 +229,7 @@ export default function StartFreeTrial() {
                     />
 
                     <p className="text-xs text-gray-500 mt-2 flex items-center gap-1">
-                      <span className="text-indigo-600">📅</span>
+                      <FaCalendarAlt className="text-indigo-600 w-3 h-3" />
                       Your 14-day trial starts immediately
                     </p>
 
@@ -275,7 +276,7 @@ export default function StartFreeTrial() {
                 className="mt-6 text-center text-sm text-gray-600"
               >
                 <p className="flex items-center justify-center gap-2">
-                  <span className="text-indigo-500">✨</span>
+                  <FaStar className="text-indigo-500 w-4 h-4" />
                   Trusted by 1 Cr+ Indian businesses • GST Ready • Made in India
                 </p>
               </motion.div>

@@ -70,49 +70,12 @@ const Navbar = () => {
     return routeMap.hasOwnProperty(path?.replace(/\/$/, ""));
   };
 
-  // Handle logout with toast notification
+  // Handle logout directly without confirmation
   const handleLogout = async () => {
-    const userName = user?.name || user?.email?.split('@')[0] || 'User';
-    
-    const toastId = toast.custom((t) => (
-      <div className="bg-white rounded-lg shadow-lg border border-gray-200 p-4 max-w-sm w-full">
-        <div className="flex items-start gap-3">
-          <div className="flex-shrink-0">
-            <div className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center">
-              <FiLogOut className="text-red-600" size={16} />
-            </div>
-          </div>
-          <div className="flex-1">
-            <h3 className="text-sm font-semibold text-gray-900 mb-1">Confirm Logout</h3>
-            <p className="text-sm text-gray-600">
-              Logout from <span className="font-medium">{userName}</span>?
-            </p>
-          </div>
-        </div>
-        <div className="flex gap-2 mt-4">
-          <button
-            onClick={() => {
-              toast.dismiss(t.id);
-              performLogout();
-            }}
-            className="flex-1 px-3 py-1.5 bg-red-600 text-white text-sm font-medium rounded-md hover:bg-red-700 transition-colors"
-          >
-            Logout
-          </button>
-          <button
-            onClick={() => toast.dismiss(t.id)}
-            className="flex-1 px-3 py-1.5 bg-gray-100 text-gray-700 text-sm font-medium rounded-md hover:bg-gray-200 transition-colors"
-          >
-            Cancel
-          </button>
-        </div>
-      </div>
-    ), {
-      duration: Infinity,
-      position: 'top-center',
-    });
+    await performLogout();
+  };
 
-    const performLogout = async () => {
+  const performLogout = async () => {
       if (isLoggingOut) return;
       
       setIsLoggingOut(true);
@@ -152,7 +115,6 @@ const Navbar = () => {
         setIsLoggingOut(false);
       }
     };
-  };
 
   // Close dropdown when clicking outside
   useEffect(() => {

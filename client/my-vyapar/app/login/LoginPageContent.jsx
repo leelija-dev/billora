@@ -7,6 +7,7 @@ import { useAuthStore } from "../../store/authStoreZustand";
 import { useRouter, useSearchParams } from "next/navigation";
 import toast, { Toaster } from 'react-hot-toast';
 import { logger } from '../../utils/logger';
+import { loginUser } from '../../services/authService';
 
 const Login = () => {
   const { login } = useAuthStore();
@@ -98,14 +99,25 @@ const Login = () => {
     const loadingToast = toast.loading("Logging in...");
     
     try {
-      // Use authStore's login method directly
-      await login({ email, password });
+      // Call API first, then pass response to auth store
+      const response = await loginUser({ email, password });
+      
+      // Extract user data and token from response
+      const userData = response.user;
+      const token = response.token;
+      
+      if (!userData || !token) {
+        throw new Error("Invalid response from server");
+      }
+      
+      // Now call auth store login with proper data
+      login(userData, token);
       
       toast.dismiss(loadingToast);
-      toast.success("Login Successful! ✅", {
+      toast.success("Login Successful! ", {
         duration: 3000,
         position: "top-center",
-        icon: '🎉',
+        icon: '',
         style: {
           background: '#4caf50',
           color: '#fff',
@@ -121,6 +133,7 @@ const Login = () => {
       
       let errorMessage = "";
       if (error.message.includes("No account")) {
+        errorMessage = " No account found with this email. Please register first.";
         errorMessage = "❌ No account found with this email. Please register first.";
       } else if (error.message.includes("password")) {
         errorMessage = "❌ Invalid password. Please try again.";

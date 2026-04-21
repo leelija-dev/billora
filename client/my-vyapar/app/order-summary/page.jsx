@@ -1,13 +1,14 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { FaCheckCircle, FaRupeeSign, FaUser, FaBuilding } from "react-icons/fa";
+import { FaCheckCircle, FaRupeeSign, FaUser, FaBuilding, FaCalendarAlt, FaIndustry, FaStar, FaLock, FaInfoCircle, FaCalendar } from "react-icons/fa";
 import { useRouter } from "next/navigation";
 import toast, { Toaster } from 'react-hot-toast';
 import { usePaymentStore } from "@/store/paymentStore";
 import { useAuthStore } from "../../store/authStoreZustand";
 import useBusinessStore from "../../store/businessStore";
 import { logger } from '../../utils/logger';
+import { FiCheckCircle } from "react-icons/fi";
 
 const OrderSummary = () => {
   const router = useRouter();
@@ -358,7 +359,7 @@ const OrderSummary = () => {
             <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
               <div className="bg-gradient-to-r from-[#2d236b] to-[#5b5bd6] px-6 py-4">
                 <h2 className="text-white text-xl font-bold flex items-center gap-2">
-                  <FaCheckCircle />
+                  <FiCheckCircle />
                   Review Order Summary
                 </h2>
               </div>
@@ -373,8 +374,9 @@ const OrderSummary = () => {
                         <span className="text-xs font-semibold text-green-600">SELECTED PLAN</span>
                       </div>
                       <h4 className="text-2xl font-bold text-[#2d236b]">{selectedPlan.name}</h4>
-                      <p className="text-sm text-gray-500 mt-2">
-                        📅 {selectedPlan.billingCycle === 'monthly' ? 'Monthly Billing' : 'Yearly Billing'}
+                      <p className="text-sm text-gray-500 mt-2 flex items-center gap-1">
+                        <FaCalendar className="w-4 h-4" />
+                        {selectedPlan.billingCycle === 'monthly' ? 'Monthly Billing' : 'Yearly Billing'}
                       </p>
                       {selectedPlan.businessType && (
                         <p className="text-xs text-purple-600 mt-1">
