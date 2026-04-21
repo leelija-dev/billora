@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { FaCheckCircle, FaTruck, FaClock, FaReceipt, FaShoppingBag } from "react-icons/fa";
+import { logger } from '../../utils/logger';
 
 const OrderSuccessPage = () => {
   const router = useRouter();
@@ -20,7 +21,7 @@ const OrderSuccessPage = () => {
         const order = JSON.parse(pendingOrder);
         setOrderDetails(order);
       } catch (e) {
-        console.error("Error parsing order:", e);
+        logger.error("Error parsing order:", e);
       }
     }
 

@@ -1,6 +1,7 @@
 // store/paymentStore.js
 import { create } from "zustand";
 import { createOrder } from "../services/paymentService";
+import { logger } from '../utils/logger';
 
 export const usePaymentStore = create((set) => ({
   order: null,
@@ -8,13 +9,13 @@ export const usePaymentStore = create((set) => ({
   error: null,
 
   createOrderAction: async (payload) => {
-    console.log("🟣 Store - Creating order with payload:", payload);
+    logger.log("🟣 Store - Creating order with payload:", payload);
     set({ loading: true, error: null });
 
     try {
       const response = await createOrder(payload);
       
-      console.log("🟣 Store - Order created successfully:", response);
+      logger.log("🟣 Store - Order created successfully:", response);
       
       set({
         order: response,
@@ -24,7 +25,7 @@ export const usePaymentStore = create((set) => ({
 
       return response;
     } catch (error) {
-      console.log("🟣 Store - Error creating order:", error);
+      logger.log("🟣 Store - Error creating order:", error);
       
       set({
         error: error.message || "Failed to create order",

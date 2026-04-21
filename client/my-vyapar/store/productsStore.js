@@ -1,6 +1,7 @@
 // store/productsStore.js - Zustand store for products management
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
+import { logger } from '../utils/logger';
 
 // Create Zustand store for products
 export const useProductsStore = create(
@@ -35,12 +36,12 @@ export const useProductsStore = create(
         try {
           // Validate user and token - handle undefined case
           if (!user || !user.id) {
-            console.log('User validation failed:', { user, token });
+            logger.log('User validation failed:', { user, token });
             throw new Error('User not authenticated');
           }
 
           if (!token) {
-            console.log('Token validation failed:', { user, token });
+            logger.log('Token validation failed:', { user, token });
             throw new Error('No authentication token available');
           }
 
@@ -59,7 +60,7 @@ export const useProductsStore = create(
             url = `${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000/api'}/restaurant-all-products/${user.id}?${params.toString()}`;
           }
 
-          console.log("Fetching products from:", url);
+          logger.log("Fetching products from:", url);
 
           const response = await fetch(url, {
             headers: {
@@ -73,12 +74,12 @@ export const useProductsStore = create(
           }
 
           const productsData = await response.json();
-          console.log("Products API response:", productsData);
+          logger.log("Products API response:", productsData);
 
           // Set storeId only if stores data exists (for regular API, not category API)
           if (Array.isArray(productsData?.stores) && productsData.stores.length > 0) {
             set({ storeId: productsData.stores[0].id });
-            console.log("Store ID set:", productsData.stores[0].id);
+            logger.log("Store ID set:", productsData.stores[0].id);
           }
 
           // Process products data
@@ -160,10 +161,10 @@ export const useProductsStore = create(
             error: null
           });
 
-          console.log("Successfully loaded", transformedProducts.length, "products");
+          logger.log("Successfully loaded", transformedProducts.length, "products");
           
         } catch (error) {
-          console.error("Error fetching products:", error);
+          logger.error("Error fetching products:", error);
           set({ 
             error: error.message || 'Failed to load products',
             loading: false,

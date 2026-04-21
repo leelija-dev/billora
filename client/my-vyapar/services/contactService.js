@@ -1,5 +1,6 @@
 // services/contactService.js
 import { apiRequest } from '@/utils/api';
+import { logger } from '../utils/logger';
 
 export const submitContactForm = async (formData) => {
   try {
@@ -7,7 +8,7 @@ export const submitContactForm = async (formData) => {
     const response = await apiRequest('/contact-us/store', 'POST', formData);
     return response;
   } catch (error) {
-    console.error('Contact form submission error:', error);
+    logger.error('Contact form submission error:', error);
     throw error;
   }
 };

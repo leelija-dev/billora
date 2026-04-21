@@ -4,37 +4,59 @@
 import React, { useEffect, useRef, useState } from "react";
 import SectionTitle from "@/components/SectionTitle";
 import Container from "@/components/Container";
-import { getPlans } from "@/services/pricingService";
-import { getBusinessTypes as fetchBusinessTypes } from "@/services/bussinessService";
-import { searchPlans } from "@/services/filterService";
-import { useRouter } from "next/navigation";
+import { usePricingStore } from "../store/pricingStore";
 import { useAuthStore } from "../store/authStoreZustand";
+import { useFilterStore } from "../store/filterStore";
+import { useRouter } from "next/navigation";
+import businessService from "../services/businessService";
+import { apiRequest } from "../utils/api";
 
 const Pricing = ({ limit = 3, showFilters = true, showViewAllButton = true }) => {
-  const [billingCycle, setBillingCycle] = useState("monthly");
-  const [plans, setPlans] = useState([]);
-  const [filteredPlans, setFilteredPlans] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [subscribing, setSubscribing] = useState(null);
   const [showLoginModal, setShowLoginModal] = useState(false);
+  const [planEligibility, setPlanEligibility] = useState({});
+  const [checkingEligibility, setCheckingEligibility] = useState({});
+  const [isClientMounted, setIsClientMounted] = useState(false);
+  
+  const {
+    plans,
+    loading,
+    error,
+    selectedPlan,
+    categories,
+    businessTypes,
+    fetchPlans,
+    selectPlan,
+    subscribeToPlan,
+    clearError
+  } = usePricingStore();
+  
+  const {
+    filters,
+    updateFilter,
+    searchPlans: searchWithFilters,
+    setSortBy
+  } = useFilterStore();
   const [pendingPlan, setPendingPlan] = useState(null);
   const [selectedBusinessType, setSelectedBusinessType] = useState("all");
   const [allBusinessTypes, setAllBusinessTypes] = useState([]);
+  const [filteredPlans, setFilteredPlans] = useState([]);
+  const [subscribing, setSubscribing] = useState(null);
   const cardRefs = useRef([]);
   const router = useRouter();
 
   // Use Zustand auth store instead of manual localStorage
-  const { user, token, isLoggedIn, hasActivePlan } = useAuthStore();
+  const { user, token, isLoggedIn, hasActivePlan, checkPlanPurchaseEligibility } = useAuthStore();
 
   // Load business types from API
   useEffect(() => {
     const loadBusinessTypes = async () => {
       try {
-        const response = await fetchBusinessTypes();
+        // Use the correct business types endpoint
+        const response = await apiRequest("/business-type/", "GET");
         
         let businessTypeData = [];
         
+        // Handle different response formats from backend
         if (response?.status === true && Array.isArray(response?.data)) {
           businessTypeData = response.data;
         } else if (Array.isArray(response)) {
@@ -45,6 +67,9 @@ const Pricing = ({ limit = 3, showFilters = true, showViewAllButton = true }) =>
         
         if (businessTypeData.length > 0) {
           setAllBusinessTypes(businessTypeData);
+          console.log("Business types loaded:", businessTypeData);
+        } else {
+          console.warn("No business types found in API response");
         }
       } catch (err) {
         console.error("Business type fetch error:", err);
@@ -55,126 +80,177 @@ const Pricing = ({ limit = 3, showFilters = true, showViewAllButton = true }) =>
   }, []);
 
   // Fetch plans from Laravel API
-  const transformPlans = (plansData) => {
-    return plansData.map((plan, index) => {
-      const features = plan.features || [];
-      const monthlyPrice = parseFloat(plan.price);
-      const yearlyPrice = monthlyPrice * 10;
-      const discount = parseFloat(plan.discount) || 0;
-      const monthlyDiscountedPrice = monthlyPrice - (monthlyPrice * discount / 100);
-      const yearlyDiscountedPrice = yearlyPrice - (yearlyPrice * discount / 100);
-      const gstRate = parseFloat(plan.gst) || 0;
+  const transformPlan = (plan, index) => {
+    console.log("transformPlan called with:", plan, typeof plan);
+    
+    const features = plan.features || [];
+    const monthlyPrice = parseFloat(plan.price);
+    // Use yearly price from API if available, otherwise calculate with multiplier from API or default to 12
+    const yearlyPrice = plan.price?.yearly ? parseFloat(plan.price.yearly) : monthlyPrice * (plan.yearly_multiplier || 12);
+    const discount = parseFloat(plan.discount) || 0;
+    const monthlyDiscountedPrice = monthlyPrice - (monthlyPrice * discount / 100);
+    const yearlyDiscountedPrice = yearlyPrice - (yearlyPrice * discount / 100);
+    const gstRate = parseFloat(plan.gst) || 0;
 
-      const transformedBusinessTypes = (plan.business_types || []).map((bt) => ({
-        id: bt.business_type?.id || bt.id,
-        name: bt.business_type?.name || bt.name,
-        plan_id: bt.plan_id,
-        business_type_id: bt.business_type_id,
-        custom_price: bt.custom_price || null,
-      }));
+    const transformedBusinessTypes = (plan.business_types || []).map((bt) => ({
+      id: bt.business_type?.id || bt.id,
+      name: bt.business_type?.name || bt.name,
+      plan_id: bt.plan_id,
+      business_type_id: bt.business_type_id,
+      custom_price: bt.custom_price || null,
+    }));
 
-      const supportedBusinessTypeIds = transformedBusinessTypes.map((bt) => bt.id);
+    const supportedBusinessTypeIds = transformedBusinessTypes.map((bt) => bt.id);
 
-      return {
-        id: plan.id,
-        name: plan.name,
-        price: {
-          monthly: monthlyPrice,
-          yearly: yearlyPrice,
-        },
-        displayPrice: {
-          monthly: monthlyPrice.toLocaleString("en-IN"),
-          yearly: yearlyPrice.toLocaleString("en-IN"),
-        },
-        discountedPrice: {
-          monthly: monthlyDiscountedPrice,
-          yearly: yearlyDiscountedPrice,
-        },
-        displayDiscountedPrice: {
-          monthly: monthlyDiscountedPrice.toLocaleString("en-IN"),
-          yearly: yearlyDiscountedPrice.toLocaleString("en-IN"),
-        },
-        discount: discount,
-        gst: gstRate,
-        businessTypes: transformedBusinessTypes,
-        supportedBusinessTypeIds: supportedBusinessTypeIds,
-        description: plan.description ? plan.description.replace(/<[^>]*>?/gm, "") : "",
-        features: features,
-        color: index === 1 ? "#8b5cf6" : "#000000",
-        buttonText: `Start ${plan.name}`,
-        popular: index === 1,
-      };
-    });
+    return {
+      id: plan.id,
+      name: plan.name,
+      price: {
+        monthly: monthlyPrice,
+        yearly: yearlyPrice,
+      },
+      displayPrice: {
+        monthly: monthlyPrice.toLocaleString("en-IN"),
+        yearly: yearlyPrice.toLocaleString("en-IN"),
+      },
+      discountedPrice: {
+        monthly: monthlyDiscountedPrice,
+        yearly: yearlyDiscountedPrice,
+      },
+      displayDiscountedPrice: {
+        monthly: monthlyDiscountedPrice.toLocaleString("en-IN"),
+        yearly: yearlyDiscountedPrice.toLocaleString("en-IN"),
+      },
+      plan_duration:plan.duration_days,
+      discount: discount,
+      gst: gstRate,
+      businessTypes: transformedBusinessTypes,
+      supportedBusinessTypeIds: supportedBusinessTypeIds,
+      description: plan.description ? plan.description.replace(/<[^>]*>?/gm, "") : "",
+      features: features,
+      color: index === 1 ? "#8b5cf6" : "#000000",
+      buttonText: `Select Plan`,
+      popular: index === 1,
+    };
   };
 
-  const filterPlansByBusinessTypeAPI = async (businessTypeId) => {
-    setLoading(true);
+  const transformPlans = (plansData) => {
+    console.log("transformPlans called with:", plansData, typeof plansData, Array.isArray(plansData));
+    
+    if (!Array.isArray(plansData)) {
+      console.error("transformPlans expected array but got:", typeof plansData, plansData);
+      return [];
+    }
+    
+    return plansData.map((plan, index) => transformPlan(plan, index));
+  };
+
+  const filterPlansByBusinessType = async (businessTypeId) => {
     try {
-      let response;
-      
       if (businessTypeId === "all") {
-        response = await getPlans();
-      } else {
-        response = await searchPlans({ search: parseInt(businessTypeId) });
-      }
-      
-      if (response.status === true && response.data) {
-        let transformedPlans = transformPlans(response.data);
+        // Use store methods to get all plans
+        await fetchPlans();
+        let transformedPlans = plans.map(transformPlan);
         
         // Apply limit if specified
         if (limit && limit > 0) {
           transformedPlans = transformedPlans.slice(0, limit);
         }
         
+        console.log("Setting filteredPlans with:", transformedPlans, "Length:", transformedPlans.length);
         setFilteredPlans(transformedPlans);
       } else {
-        setFilteredPlans([]);
-      }
-    } catch (error) {
-      console.error("Error filtering plans:", error);
-      setFilteredPlans([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Initial plans fetch
-  useEffect(() => {
-    const fetchPlans = async () => {
-      try {
-        setLoading(true);
-        const data = await getPlans();
-
-        if (data.status === true && data.data) {
-          let transformedPlans = transformPlans(data.data);
+        // Use filter store to search by business type (send 'all' for all plans or business type id)
+        const searchValue = businessTypeId === "all" ? "all" : businessTypeId;
+        updateFilter('search', searchValue);
+        const searchResults = await searchWithFilters();
+        console.log("Search results:", searchResults);
+        
+        if (searchResults && searchResults.length > 0) {
+          let transformedPlans = searchResults.map(transformPlan);
           
           // Apply limit if specified
           if (limit && limit > 0) {
             transformedPlans = transformedPlans.slice(0, limit);
           }
           
-          setPlans(transformedPlans);
+          console.log("Setting filteredPlans with search results:", transformedPlans, "Length:", transformedPlans.length);
           setFilteredPlans(transformedPlans);
         } else {
-          setError(data.message || "Failed to fetch plans");
+          console.log("No search results found, setting filteredPlans to empty array");
+          setFilteredPlans([]);
         }
+      }
+    } catch (error) {
+      console.error("Error filtering plans:", error);
+      setFilteredPlans([]);
+    }
+  };
+
+  // Initial plans fetch
+  useEffect(() => {
+    const loadPlans = async () => {
+      try {
+        await fetchPlans();
       } catch (error) {
         console.error("Error fetching plans:", error);
-        setError("Something went wrong");
-      } finally {
-        setLoading(false);
       }
     };
 
-    fetchPlans();
-  }, [limit]);
+    loadPlans();
+  }, [limit, fetchPlans]);
+
+  // Update filteredPlans when plans are available
+  useEffect(() => {
+    console.log("Main plans useEffect triggered - plans length:", plans?.length);
+    if (plans && plans.length > 0) {
+      let transformedPlans = plans.map(transformPlan);
+      
+      // Apply limit if specified
+      if (limit && limit > 0) {
+        transformedPlans = transformedPlans.slice(0, limit);
+      }
+      
+      console.log("Main useEffect - Setting filteredPlans with:", transformedPlans, "Length:", transformedPlans.length);
+        setFilteredPlans(transformedPlans);
+    }
+  }, [plans, limit, fetchPlans]);
 
   // Filter plans based on selected business type
   useEffect(() => {
-    if (showFilters) {
-      filterPlansByBusinessTypeAPI(selectedBusinessType);
+    console.log("Business type filter useEffect triggered - selectedBusinessType:", selectedBusinessType, "plans length:", plans?.length);
+    if (showFilters && plans && plans.length > 0) {
+      filterPlansByBusinessType(selectedBusinessType);
     }
-  }, [selectedBusinessType, showFilters]);
+  }, [selectedBusinessType, showFilters, plans]);
+
+  // Check plan eligibility when plans are loaded and user is logged in
+  useEffect(() => {
+    const checkEligibilityForPlans = async () => {
+      if (isLoggedIn && filteredPlans.length > 0) {
+        const eligibilityData = {};
+        
+        for (const plan of filteredPlans) {
+          setCheckingEligibility(prev => ({ ...prev, [plan.id]: true }));
+          
+          try {
+            const eligibility = await checkPlanPurchaseEligibility(plan.id);
+            eligibilityData[plan.id] = eligibility;
+          } catch (error) {
+            console.error(`Error checking eligibility for plan ${plan.id}:`, error);
+            eligibilityData[plan.id] = { canPurchase: false, reason: 'Error checking eligibility' };
+          } finally {
+            setCheckingEligibility(prev => ({ ...prev, [plan.id]: false }));
+          }
+        }
+        
+        setPlanEligibility(eligibilityData);
+        console.log("Plan eligibility data:", eligibilityData);
+      }
+    };
+
+    checkEligibilityForPlans();
+  }, [isLoggedIn, filteredPlans, checkPlanPurchaseEligibility]);
 
   const getCurrentPrice = (plan) => {
     let basePrice;
@@ -186,9 +262,6 @@ const Pricing = ({ limit = 3, showFilters = true, showViewAllButton = true }) =>
 
       if (businessTypeForPlan && businessTypeForPlan.custom_price) {
         basePrice = businessTypeForPlan.custom_price;
-        if (billingCycle === "yearly") {
-          basePrice = basePrice * 10;
-        }
         return {
           price: basePrice,
           displayPrice: basePrice.toLocaleString("en-IN"),
@@ -198,13 +271,9 @@ const Pricing = ({ limit = 3, showFilters = true, showViewAllButton = true }) =>
     }
 
     if (plan.discount > 0) {
-      basePrice = billingCycle === "monthly"
-        ? plan.discountedPrice.monthly
-        : plan.discountedPrice.yearly;
+      basePrice = plan.discountedPrice.monthly;
     } else {
-      basePrice = billingCycle === "monthly"
-        ? plan.price.monthly
-        : plan.price.yearly;
+      basePrice = plan.price.monthly;
     }
 
     return {
@@ -223,28 +292,55 @@ const Pricing = ({ limit = 3, showFilters = true, showViewAllButton = true }) =>
       if (businessTypeForPlan && businessTypeForPlan.custom_price) {
         const customPrice = businessTypeForPlan.custom_price;
         return {
-          price: billingCycle === "yearly" ? customPrice * 10 : customPrice,
-          displayPrice: (billingCycle === "yearly" ? customPrice * 10 : customPrice).toLocaleString("en-IN"),
+          price: customPrice,
+          displayPrice: customPrice.toLocaleString("en-IN"),
         };
       }
     }
 
     return {
-      price: billingCycle === "monthly" ? plan.price.monthly : plan.price.yearly,
-      displayPrice: billingCycle === "monthly" ? plan.displayPrice.monthly : plan.displayPrice.yearly,
+      price: plan.price.monthly,
+      displayPrice: plan.displayPrice.monthly,
     };
   };
 
-  const handleSubscribe = (plan) => {
+  const handleSubscribe = async (plan) => {
+    console.log("handleSubscribe called with plan:", plan.name, "isLoggedIn:", isLoggedIn);
+    
+    // Check plan eligibility if user is logged in
+    if (isLoggedIn) {
+      const eligibility = planEligibility[plan.id];
+      
+      if (!eligibility) {
+        console.log("Eligibility not checked yet, checking now...");
+        try {
+          const eligibilityResult = await checkPlanPurchaseEligibility(plan.id);
+          setPlanEligibility(prev => ({ ...prev, [plan.id]: eligibilityResult }));
+          
+          if (!eligibilityResult.canPurchase) {
+            alert(eligibilityResult.reason);
+            return;
+          }
+        } catch (error) {
+          console.error("Error checking eligibility:", error);
+          alert("Error checking plan eligibility. Please try again.");
+          return;
+        }
+      } else if (!eligibility.canPurchase) {
+        alert(eligibility.reason);
+        return;
+      }
+    }
+    
     const currentPriceData = getCurrentPrice(plan);
     const originalPriceData = getOriginalPrice(plan);
     const gstAmount = currentPriceData.price * (plan.gst / 100);
     const totalAmount = currentPriceData.price + gstAmount;
 
-    const selectedPlan = {
+    const selectedPlanData = {
       id: plan.id,
       name: plan.name,
-      billingCycle: billingCycle,
+      billingCycle: "monthly",
       price: currentPriceData.price,
       displayPrice: currentPriceData.displayPrice,
       originalPrice: originalPriceData.price,
@@ -256,19 +352,24 @@ const Pricing = ({ limit = 3, showFilters = true, showViewAllButton = true }) =>
         ? allBusinessTypes.find((bt) => bt.id === parseInt(selectedBusinessType))
         : plan.businessTypes?.[0] || null,
       hasCustomPrice: currentPriceData.hasCustomPrice,
+      eligibility: planEligibility[plan.id] || null,
     };
 
     if (!isLoggedIn) {
-      setPendingPlan(selectedPlan);
+      console.log("User not logged in, showing login modal");
+      setPendingPlan(selectedPlanData);
       setShowLoginModal(true);
       return;
     }
 
-    proceedToOrderSummary(selectedPlan);
+    console.log("User is logged in, proceeding to order summary");
+    selectPlan(selectedPlanData);
+    localStorage.setItem('selectedPlan', JSON.stringify(selectedPlanData));
+    router.push("/order-summary");
   };
 
   const proceedToOrderSummary = (selectedPlan) => {
-    localStorage.setItem("selectedPlan", JSON.stringify(selectedPlan));
+    selectPlan(selectedPlan);
     router.push("/order-summary");
   };
 
@@ -328,7 +429,7 @@ const Pricing = ({ limit = 3, showFilters = true, showViewAllButton = true }) =>
             <p className="text-gray-600">Please login to continue with your subscription</p>
             {pendingPlan && (
               <p className="text-sm text-purple-600 mt-2 font-medium">
-                Plan: {pendingPlan.name} • ₹{pendingPlan.displayPrice}/{pendingPlan.billingCycle === 'monthly' ? 'month' : 'year'}
+                Plan: {pendingPlan.name} • ₹{pendingPlan.displayPrice}/month
               </p>
             )}
           </div>
@@ -380,7 +481,16 @@ const Pricing = ({ limit = 3, showFilters = true, showViewAllButton = true }) =>
     );
   }
 
-  const displayPlans = showFilters ? filteredPlans : plans.slice(0, limit);
+  const displayPlans = showFilters ? filteredPlans : (plans && plans.length > 0 ? plans.slice(0, limit) : []);
+  
+  // Debug logging
+  console.log("Pricing Component Debug:", {
+    showFilters,
+    plansLength: plans?.length || 0,
+    filteredPlansLength: filteredPlans?.length || 0,
+    displayPlansLength: displayPlans?.length || 0,
+    limit
+  });
 
   return (
     <div className="py-10 sm:py-20 bg-gradient-to-br from-[#f8fafc] to-[#f1f5f9] font-['Inter',system-ui,-apple-system,sans-serif] overflow-x-hidden">
@@ -393,64 +503,40 @@ const Pricing = ({ limit = 3, showFilters = true, showViewAllButton = true }) =>
           </p>
         </div>
 
-        {/* Filters Section - Only show if showFilters is true */}
-        {showFilters && (
-          <div className="flex flex-col md:flex-row justify-center items-center gap-6 mb-12">
-            {/* Business Type Dropdown */}
-            {allBusinessTypes.length > 0 && (
-              <div className="flex items-center gap-3 bg-white px-5 py-2.5 rounded-full shadow-md border border-gray-200">
-                <div className="flex items-center gap-2">
-                  <div className="bg-gradient-to-r from-purple-500 to-purple-600 p-1.5 rounded-full">
-                    <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                    </svg>
-                  </div>
-                  <span className="text-sm font-semibold text-gray-700">Business Type:</span>
-                </div>
-                <select
-                  value={selectedBusinessType}
-                  onChange={(e) => setSelectedBusinessType(e.target.value)}
-                  className="px-3 py-1.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm bg-white cursor-pointer"
-                >
-                  <option value="all">🌐 All</option>
-                  {allBusinessTypes.map((businessType) => (
-                    <option key={businessType.id} value={businessType.id}>
-                      🏢 {businessType.name}
-                    </option>
-                  ))}
-                </select>
+        {/* Filters Section */}
+        <div className="flex flex-col md:flex-row justify-center items-center gap-6 mb-12">
+          {/* Business Type Dropdown */}
+          <div className="flex items-center gap-3 bg-white px-5 py-2.5 rounded-full shadow-md border border-gray-200">
+            <div className="flex items-center gap-2">
+              <div className="bg-gradient-to-r from-purple-500 to-purple-600 p-1.5 rounded-full">
+                <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                </svg>
               </div>
-            )}
-
-            {/* Billing Toggle */}
-            <div className="relative bg-white p-1 rounded-full shadow-md border border-gray-200 inline-flex">
-              <button
-                className={`relative px-6 sm:px-8 py-2.5 sm:py-3 rounded-full text-sm sm:text-base font-semibold transition-all duration-300 z-10 ${
-                  billingCycle === 'monthly' ? 'text-white' : 'text-gray-700 hover:text-gray-900'
-                }`}
-                onClick={() => setBillingCycle('monthly')}
-              >
-                Monthly
-              </button>
-              <button
-                className={`relative px-6 sm:px-8 py-2.5 sm:py-3 rounded-full text-sm sm:text-base font-semibold transition-all duration-300 z-10 ${
-                  billingCycle === 'yearly' ? 'text-white' : 'text-gray-700 hover:text-gray-900'
-                }`}
-                onClick={() => setBillingCycle('yearly')}
-              >
-                Yearly
-                <span className="absolute -top-2 -right-1 sm:-top-3 sm:-right-2 bg-green-500 text-white text-[9px] sm:text-[10px] font-bold px-1.5 sm:px-2 py-0.5 rounded-full whitespace-nowrap">
-                  Save 20%
-                </span>
-              </button>
-              <div 
-                className={`absolute top-1 bottom-1 w-[calc(50%-4px)] bg-gradient-to-r from-blue-600 to-blue-500 rounded-full transition-all duration-300 ease-out ${
-                  billingCycle === 'monthly' ? 'left-1' : 'left-[calc(50%-2px)]'
-                }`}
-              />
+              <span className="text-sm font-semibold text-gray-700">Business Type:</span>
             </div>
+            <select
+              value={selectedBusinessType}
+              onChange={(e) => setSelectedBusinessType(e.target.value)}
+              className="px-3 py-1.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm bg-white cursor-pointer"
+              disabled={!isClientMounted || allBusinessTypes.length === 0}
+            >
+              <option value="all">All Business Types</option>
+              {allBusinessTypes.length > 0 ? (
+                allBusinessTypes.map((businessType) => (
+                  <option key={businessType.id} value={businessType.id}>
+                    {businessType.name}
+                  </option>
+                ))
+              ) : (
+                <option value="" disabled>Loading business types...</option>
+              )}
+            </select>
+            {allBusinessTypes.length === 0 && (
+              <span className="text-xs text-red-500">Loading...</span>
+            )}
           </div>
-        )}
+        </div>
 
         {/* Pricing Cards Grid */}
         {displayPlans.length === 0 ? (
@@ -465,6 +551,7 @@ const Pricing = ({ limit = 3, showFilters = true, showViewAllButton = true }) =>
               const isPopular = plan.popular;
               const currentPriceData = getCurrentPrice(plan);
               const originalPriceData = getOriginalPrice(plan);
+             
 
               return (
                 <div
@@ -504,7 +591,7 @@ const Pricing = ({ limit = 3, showFilters = true, showViewAllButton = true }) =>
                         <span className="text-5xl font-bold" style={{ color: isPopular ? '#8b5cf6' : '#000000' }}>
                           {currentPriceData.displayPrice}
                         </span>
-                        <span className="text-gray-400 text-base font-medium">/{billingCycle === 'monthly' ? 'monthly' : 'yearly'}</span>
+                        <span className="text-gray-400 text-base font-medium">/ {plan.plan_duration} days</span>
                       </div>
 
                       {(plan.discount > 0 || currentPriceData.hasCustomPrice) && (
@@ -522,7 +609,7 @@ const Pricing = ({ limit = 3, showFilters = true, showViewAllButton = true }) =>
                     <ul className="space-y-3.5">
                       {plan.features.map((feature, idx) => (
                         <li key={idx} className="flex items-start gap-3 text-sm text-gray-700">
-                          <svg className="w-5 h-5 flex-shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none">
+                          <svg className="w-5 h-5 shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none">
                             <path d="M20 6L9 17L4 12" stroke={isPopular ? '#8b5cf6' : '#000000'} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
                           </svg>
                           <span className="leading-relaxed">{feature}</span>
@@ -532,15 +619,38 @@ const Pricing = ({ limit = 3, showFilters = true, showViewAllButton = true }) =>
                   </div>
 
                   <div className="mt-auto pt-4">
+                    {/* Plan eligibility status indicator */}
+                    {isLoggedIn && planEligibility[plan.id] && (
+                      <div className="mb-3 p-2 rounded-lg text-xs font-medium">
+                        {planEligibility[plan.id].canPurchase ? (
+                          <div className="text-green-600 bg-green-50 px-2 py-1 rounded">
+                            {planEligibility[plan.id].action === 'upgrade' && 'Upgrade Available'}
+                            {planEligibility[plan.id].action === 'renewal' && 'Renewal Available'}
+                            {planEligibility[plan.id].action === 'new_purchase' && 'Available'}
+                          </div>
+                        ) : (
+                          <div className="text-red-600 bg-red-50 px-2 py-1 rounded">
+                            {planEligibility[plan.id].reason}
+                          </div>
+                        )}
+                      </div>
+                    )}
+
                     <button
                       onClick={() => handleSubscribe(plan)}
-                      disabled={subscribing === plan.id}
+                      disabled={
+                        subscribing === plan.id || 
+                        (isLoggedIn && planEligibility[plan.id] && !planEligibility[plan.id].canPurchase) ||
+                        checkingEligibility[plan.id]
+                      }
                       className={`w-full py-3.5 rounded-xl text-base font-semibold transition-all duration-300 hover:shadow-lg active:scale-95
                         ${isPopular 
                           ? 'bg-gradient-to-r from-purple-600 to-purple-500 text-white hover:from-purple-700 hover:to-purple-600' 
                           : 'bg-white border-2 hover:bg-gray-50'
                         }
-                        ${subscribing === plan.id ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        ${subscribing === plan.id || checkingEligibility[plan.id] ? 'opacity-50 cursor-not-allowed' : ''}
+                        ${isLoggedIn && planEligibility[plan.id] && !planEligibility[plan.id].canPurchase ? 'opacity-50 cursor-not-allowed bg-gray-100' : ''}
+                      `}
                       style={{
                         color: isPopular ? 'white' : '#000000',
                         borderColor: isPopular ? 'transparent' : '#000000'
@@ -554,6 +664,24 @@ const Pricing = ({ limit = 3, showFilters = true, showViewAllButton = true }) =>
                           </svg>
                           Processing...
                         </span>
+                      ) : checkingEligibility[plan.id] ? (
+                        <span className="flex items-center justify-center gap-2">
+                          <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                          </svg>
+                          Checking...
+                        </span>
+                      ) : isLoggedIn && planEligibility[plan.id] ? (
+                        planEligibility[plan.id].canPurchase ? (
+                          <span>
+                            {planEligibility[plan.id].action === 'upgrade' && 'Upgrade Plan'}
+                            {planEligibility[plan.id].action === 'renewal' && 'Renew Plan'}
+                            {planEligibility[plan.id].action === 'new_purchase' && 'Select Plan'}
+                          </span>
+                        ) : (
+                          <span className="text-gray-500">You already have this plan</span>
+                        )
                       ) : (
                         plan.buttonText
                       )}
@@ -597,37 +725,7 @@ const Pricing = ({ limit = 3, showFilters = true, showViewAllButton = true }) =>
 
       <LoginModal />
 
-      <style jsx>{`
-        .card-visible {
-          opacity: 1 !important;
-          transform: translateY(0) !important;
-        }
-        
-        @keyframes slide-in {
-          from {
-            opacity: 0;
-            transform: translateX(100%);
-          }
-          to {
-            opacity: 1;
-            transform: translateX(0);
-          }
-        }
-        
-        .animate-slide-in {
-          animation: slide-in 0.3s ease-out;
-        }
-        
-        @keyframes spin {
-          to {
-            transform: rotate(360deg);
-          }
-        }
-        
-        .animate-spin {
-          animation: spin 1s linear infinite;
-        }
-      `}</style>
+      
     </div>
   );
 };

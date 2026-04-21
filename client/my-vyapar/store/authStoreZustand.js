@@ -1,6 +1,7 @@
 // store/authStoreZustand.js - Industry-standard Zustand store for authentication
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
+import { logger } from '../utils/logger';
 
 // Import secure storage utilities
 import { secureStorage, validateToken } from '../utils/secureStorage';
@@ -20,7 +21,7 @@ export const useAuthStore = create(
 
       // Actions
       login: (userData, token) => {
-        console.log('MyVyapar: Login called with:', { userData, token });
+        logger.log('MyVyapar: Login called with:', { userData, token });
         
         // Save plan data if user has active plan
         if (userData.is_active && userData.plan_id) {
@@ -124,12 +125,127 @@ export const useAuthStore = create(
       },
 
       initializeAuth: () => {
-        console.log('MyVyapar: Initializing auth...');
+        logger.log('MyVyapar: Initializing auth...');
         set({ isLoading: true });
         
         // Zustand persist will handle initialization
         // This function is mainly for manual initialization if needed
         set({ isLoading: false });
+      },
+
+      /**
+       * Get user's plan purchase history
+       * @returns {Promise<Array>} Array of plan purchases
+       */
+      getPlanPurchaseHistory: async () => {
+        const { user, token } = get();
+        
+        if (!user || !token) {
+          logger.log('No user or token available for plan history');
+          return [];
+        }
+
+        try {
+          const userId = user._id || user.id || user.customer_id;
+          if (!userId) {
+            logger.log('No user ID found for plan history');
+            return [];
+          }
+
+          logger.log('Fetching plan purchase history for user:', userId);
+          
+          // Use the plan purchase history API
+          const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000/api'}/plans-purchase-history/${userId}`, {
+            method: 'GET',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            }
+          });
+
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+
+          const data = await response.json();
+          logger.log('Plan purchase history response:', data);
+
+          // Handle different response formats - API returns nested structure: {status: true, data: {data: [...], ...}}
+          let purchaseHistory = [];
+          if (data?.data?.data && Array.isArray(data.data.data)) {
+            purchaseHistory = data.data.data;
+          } else if (data?.data && Array.isArray(data.data)) {
+            purchaseHistory = data.data;
+          } else if (Array.isArray(data)) {
+            purchaseHistory = data;
+          } else if (data?.purchase_history && Array.isArray(data.purchase_history)) {
+            purchaseHistory = data.purchase_history;
+          }
+
+          logger.log('Processed purchase history:', purchaseHistory);
+          return purchaseHistory;
+
+        } catch (error) {
+          logger.error('Error fetching plan purchase history:', error);
+          return [];
+        }
+      },
+
+      /**
+       * Check if user can purchase a specific plan
+       * @param {string} planId - Plan ID to check
+       * @returns {Promise<Object>} Purchase eligibility info
+       */
+      checkPlanPurchaseEligibility: async (planId) => {
+        const { user, token, hasActivePlan } = get();
+        
+        if (!user || !token) {
+          return { canPurchase: false, reason: 'User not logged in' };
+        }
+
+        try {
+          // Get user's plan purchase history
+          const purchaseHistory = await get().getPlanPurchaseHistory();
+          
+          // Find current active plan from purchase history
+          const currentPlan = purchaseHistory.find(purchase => 
+            purchase.status === 'active' || purchase.is_active
+          );
+
+          if (!currentPlan) {
+            // No active plan - can purchase any plan
+            return { canPurchase: true, reason: 'No active plan', action: 'new_purchase' };
+          }
+
+          // Check if trying to purchase the same plan
+          if (currentPlan.plan_id == planId) {
+            // Same plan - check if can renew (only if plan is expired or about to expire)
+            const expiryDate = new Date(currentPlan.expiry_date || currentPlan.end_date);
+            const now = new Date();
+            const daysUntilExpiry = Math.ceil((expiryDate - now) / (1000 * 60 * 60 * 24));
+            
+            if (daysUntilExpiry <= 7) { // Allow renewal if less than 7 days left
+              return { canPurchase: true, reason: 'Plan expires soon', action: 'renewal' };
+            } else {
+              return { canPurchase: false, reason: 'Already have this active plan', action: 'cannot_purchase' };
+            }
+          }
+
+          // Different plan - check if it's an upgrade
+          const currentPlanPrice = parseFloat(currentPlan.amount || currentPlan.price || 0);
+          // We'll need to get the target plan details to compare prices
+          
+          return { 
+            canPurchase: true, 
+            reason: 'Can upgrade plan', 
+            action: 'upgrade',
+            currentPlan: currentPlan
+          };
+
+        } catch (error) {
+          logger.error('Error checking plan purchase eligibility:', error);
+          return { canPurchase: false, reason: 'Error checking eligibility' };
+        }
       },
 
       clearError: () => set({ error: null }),
@@ -145,7 +261,7 @@ export const useAuthStore = create(
         hasActivePlan: state.hasActivePlan,
       }),
       onRehydrateStorage: () => (state) => {
-        console.log('MyVyapar: Auth store rehydrating...', state);
+        logger.log('MyVyapar: Auth store rehydrating...', state);
         
         if (state) {
           // Check authentication state after rehydration
@@ -153,7 +269,7 @@ export const useAuthStore = create(
           const hasUser = !!state.user;
           const isAuthenticated = hasToken && hasUser;
           
-          console.log('MyVyapar: Rehydration check:', {
+          logger.log('MyVyapar: Rehydration check:', {
             hasToken,
             hasUser,
             isAuthenticated,
@@ -179,10 +295,10 @@ export const useAuthStore = create(
               state.hasActivePlan = isActive && isValid;
             }
           }
-          console.log('MyVyapar: Plan status after rehydrate:', state.hasActivePlan);
+          logger.log('MyVyapar: Plan status after rehydrate:', state.hasActivePlan);
         }
         
-        console.log('MyVyapar: Auth store rehydrated');
+        logger.log('MyVyapar: Auth store rehydrated');
       },
     }
   )

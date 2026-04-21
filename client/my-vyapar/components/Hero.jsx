@@ -3,6 +3,7 @@ import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import Container from "../components/Container";
+import { FaStar, FaUsers, FaChartBar } from "react-icons/fa";
 
 const Hero = () => {
   const [screenState, setScreenState] = useState(0);
@@ -309,13 +310,13 @@ const Hero = () => {
 
               {/* Badges - Keep as is */}
               <div className="absolute top-[5%] md:top-[8%] lg:top-[10%] -right-2 md:-right-3 lg:-right-4 bg-white px-3 md:px-4 lg:px-5 py-1.5 md:py-2 lg:py-2.5 rounded-full font-bold text-xs md:text-sm shadow-xl border border-blue-100 text-blue-600 z-40 hidden md:block heroic-slide-badge1">
-                ✨ Easy to Use
+                <FaStar className="w-4 h-4 mr-1 inline" /> Easy to Use
               </div>
               <div className="absolute bottom-[30%] md:bottom-[32%] lg:bottom-[49%] -right-4 md:-right-6 lg:-right-4 bg-white px-3 md:px-4 lg:px-5 py-1.5 md:py-2 lg:py-2.5 rounded-full font-bold text-xs md:text-sm shadow-xl border border-purple-100 text-purple-600 z-40 hidden md:block heroic-slide-badge2">
-                👥 Collaborative
+                <FaUsers className="w-4 h-4 mr-1 inline" /> Collaborative
               </div>
               <div className="absolute top-[35%] md:top-[38%] lg:top-[20%] -left-8 md:-left-10 lg:-left-12 bg-white px-3 md:px-4 lg:px-5 py-1.5 md:py-2 lg:py-2.5 rounded-full font-bold text-xs md:text-sm shadow-xl border border-emerald-100 text-emerald-600 z-40 hidden md:block heroic-slide-badge3">
-                📊 Activity Stream
+                <FaChartBar className="w-4 h-4 mr-1 inline" /> Activity Stream
               </div>
             </div>
           </div>
