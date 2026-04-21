@@ -12,7 +12,7 @@ export const getPlan = (id) => {
 
 // Search plans by business type
 export const searchPlans = (searchTerm) => {
-  return apiRequest(`/plans/search?name=${searchTerm}`, "GET");
+  return apiRequest(`/plans/search?search=${searchTerm}`, "GET");
 };
 
 // Subscribe plan (create order)

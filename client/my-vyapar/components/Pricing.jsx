@@ -48,20 +48,12 @@ const Pricing = ({ limit = 3, showFilters = true, showViewAllButton = true }) =>
   useEffect(() => {
     const loadBusinessTypes = async () => {
       try {
-        // Get the first business type from API as default, no fallback needed since API should provide data
-        const DEFAULT_BUSINESS_TYPE_ID = businessTypes.length > 0 ? businessTypes[0].id : null;
-        
-        // If no business types available, show error and don't proceed
-        if (!DEFAULT_BUSINESS_TYPE_ID && !selectedBusinessType) {
-          console.error('Business types not loaded. Please refresh the page.');
-          return;
-        }
-        
         // Use the correct business types endpoint
         const response = await apiRequest("/business-type/", "GET");
         
         let businessTypeData = [];
         
+        // Handle different response formats from backend
         if (response?.status === true && Array.isArray(response?.data)) {
           businessTypeData = response.data;
         } else if (Array.isArray(response)) {
@@ -73,6 +65,8 @@ const Pricing = ({ limit = 3, showFilters = true, showViewAllButton = true }) =>
         if (businessTypeData.length > 0) {
           setAllBusinessTypes(businessTypeData);
           console.log("Business types loaded:", businessTypeData);
+        } else {
+          console.warn("No business types found in API response");
         }
       } catch (err) {
         console.error("Business type fetch error:", err);
@@ -451,36 +445,40 @@ const Pricing = ({ limit = 3, showFilters = true, showViewAllButton = true }) =>
           </p>
         </div>
 
-        {/* Filters Section - Only show if showFilters is true */}
-        {showFilters && (
-          <div className="flex flex-col md:flex-row justify-center items-center gap-6 mb-12">
-            {/* Business Type Dropdown */}
-            {allBusinessTypes.length > 0 && (
-              <div className="flex items-center gap-3 bg-white px-5 py-2.5 rounded-full shadow-md border border-gray-200">
-                <div className="flex items-center gap-2">
-                  <div className="bg-gradient-to-r from-purple-500 to-purple-600 p-1.5 rounded-full">
-                    <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                    </svg>
-                  </div>
-                  <span className="text-sm font-semibold text-gray-700">Business Type:</span>
-                </div>
-                <select
-                  value={selectedBusinessType}
-                  onChange={(e) => setSelectedBusinessType(e.target.value)}
-                  className="px-3 py-1.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm bg-white cursor-pointer"
-                >
-                  <option value="all">🌐 All</option>
-                  {allBusinessTypes.map((businessType) => (
-                    <option key={businessType.id} value={businessType.id}>
-                      🏢 {businessType.name}
-                    </option>
-                  ))}
-                </select>
+        {/* Filters Section */}
+        <div className="flex flex-col md:flex-row justify-center items-center gap-6 mb-12">
+          {/* Business Type Dropdown */}
+          <div className="flex items-center gap-3 bg-white px-5 py-2.5 rounded-full shadow-md border border-gray-200">
+            <div className="flex items-center gap-2">
+              <div className="bg-gradient-to-r from-purple-500 to-purple-600 p-1.5 rounded-full">
+                <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                </svg>
               </div>
+              <span className="text-sm font-semibold text-gray-700">Business Type:</span>
+            </div>
+            <select
+              value={selectedBusinessType}
+              onChange={(e) => setSelectedBusinessType(e.target.value)}
+              className="px-3 py-1.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm bg-white cursor-pointer"
+              disabled={allBusinessTypes.length === 0}
+            >
+              <option value="all">All Business Types</option>
+              {allBusinessTypes.length > 0 ? (
+                allBusinessTypes.map((businessType) => (
+                  <option key={businessType.id} value={businessType.id}>
+                    {businessType.name}
+                  </option>
+                ))
+              ) : (
+                <option value="" disabled>Loading business types...</option>
+              )}
+            </select>
+            {allBusinessTypes.length === 0 && (
+              <span className="text-xs text-red-500">Loading...</span>
             )}
           </div>
-        )}
+        </div>
 
         {/* Pricing Cards Grid */}
         {displayPlans.length === 0 ? (
