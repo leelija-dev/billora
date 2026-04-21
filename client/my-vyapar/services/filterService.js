@@ -2,11 +2,12 @@
 import { apiRequest } from "@/utils/api";
 import { logger } from '../utils/logger';
 
-// Simple search function - just sends filters as query params
+// Search plans by business type name parameter
 export const searchPlans = async (filters = {}) => {
-  const queryParams = new URLSearchParams(filters).toString();
-  logger.log("Filter Service - Search Plans with filters:", queryParams);
-  const endpoint = queryParams ? `/plans/search?${queryParams}` : '/plans/search';
+  // Use the 'name' parameter as specified in the backend API
+  const searchValue = filters.search || 'all'; // Default to 'all' for showing all plans
+  logger.log("Filter Service - Search Plans with name:", searchValue);
+  const endpoint = `/plans/search?name=${searchValue}`;
 
   return await apiRequest(endpoint, 'GET');
 };

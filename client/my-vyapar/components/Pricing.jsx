@@ -9,9 +9,9 @@ import { useAuthStore } from "../store/authStoreZustand";
 import { useFilterStore } from "../store/filterStore";
 import { useRouter } from "next/navigation";
 import businessService from "../services/businessService";
+import { apiRequest } from "../utils/api";
 
 const Pricing = ({ limit = 3, showFilters = true, showViewAllButton = true }) => {
-  const [billingCycle, setBillingCycle] = useState("monthly");
   const [showLoginModal, setShowLoginModal] = useState(false);
   
   const {
@@ -47,13 +47,9 @@ const Pricing = ({ limit = 3, showFilters = true, showViewAllButton = true }) =>
   // Load business types from API
   useEffect(() => {
     const loadBusinessTypes = async () => {
-      if (!token) {
-        console.log("No token available, skipping business types fetch");
-        return;
-      }
-      
       try {
-        const response = await businessService.getBusinessTypes(token);
+        // Use the correct business types endpoint
+        const response = await apiRequest("/business-type/", "GET");
         
         let businessTypeData = [];
         
@@ -67,6 +63,7 @@ const Pricing = ({ limit = 3, showFilters = true, showViewAllButton = true }) =>
         
         if (businessTypeData.length > 0) {
           setAllBusinessTypes(businessTypeData);
+          console.log("Business types loaded:", businessTypeData);
         }
       } catch (err) {
         console.error("Business type fetch error:", err);
@@ -74,7 +71,7 @@ const Pricing = ({ limit = 3, showFilters = true, showViewAllButton = true }) =>
     };
 
     loadBusinessTypes();
-  }, [token]);
+  }, []);
 
   // Fetch plans from Laravel API
   const transformPlan = (plan, index) => {
@@ -155,8 +152,9 @@ const Pricing = ({ limit = 3, showFilters = true, showViewAllButton = true }) =>
         console.log("Setting filteredPlans with:", transformedPlans, "Length:", transformedPlans.length);
         setFilteredPlans(transformedPlans);
       } else {
-        // Use filter store to search by business type
-        updateFilter('search', parseInt(businessTypeId));
+        // Use filter store to search by business type (send 'all' for all plans or business type id)
+        const searchValue = businessTypeId === "all" ? "all" : businessTypeId;
+        updateFilter('search', searchValue);
         const searchResults = await searchWithFilters();
         console.log("Search results:", searchResults);
         
@@ -228,9 +226,6 @@ const Pricing = ({ limit = 3, showFilters = true, showViewAllButton = true }) =>
 
       if (businessTypeForPlan && businessTypeForPlan.custom_price) {
         basePrice = businessTypeForPlan.custom_price;
-        if (billingCycle === "yearly") {
-          basePrice = basePrice * 10;
-        }
         return {
           price: basePrice,
           displayPrice: basePrice.toLocaleString("en-IN"),
@@ -240,13 +235,9 @@ const Pricing = ({ limit = 3, showFilters = true, showViewAllButton = true }) =>
     }
 
     if (plan.discount > 0) {
-      basePrice = billingCycle === "monthly"
-        ? plan.discountedPrice.monthly
-        : plan.discountedPrice.yearly;
+      basePrice = plan.discountedPrice.monthly;
     } else {
-      basePrice = billingCycle === "monthly"
-        ? plan.price.monthly
-        : plan.price.yearly;
+      basePrice = plan.price.monthly;
     }
 
     return {
@@ -265,15 +256,15 @@ const Pricing = ({ limit = 3, showFilters = true, showViewAllButton = true }) =>
       if (businessTypeForPlan && businessTypeForPlan.custom_price) {
         const customPrice = businessTypeForPlan.custom_price;
         return {
-          price: billingCycle === "yearly" ? customPrice * 10 : customPrice,
-          displayPrice: (billingCycle === "yearly" ? customPrice * 10 : customPrice).toLocaleString("en-IN"),
+          price: customPrice,
+          displayPrice: customPrice.toLocaleString("en-IN"),
         };
       }
     }
 
     return {
-      price: billingCycle === "monthly" ? plan.price.monthly : plan.price.yearly,
-      displayPrice: billingCycle === "monthly" ? plan.displayPrice.monthly : plan.displayPrice.yearly,
+      price: plan.price.monthly,
+      displayPrice: plan.displayPrice.monthly,
     };
   };
 
@@ -288,7 +279,7 @@ const Pricing = ({ limit = 3, showFilters = true, showViewAllButton = true }) =>
     const selectedPlanData = {
       id: plan.id,
       name: plan.name,
-      billingCycle: billingCycle,
+      billingCycle: "monthly",
       price: currentPriceData.price,
       displayPrice: currentPriceData.displayPrice,
       originalPrice: originalPriceData.price,
@@ -376,7 +367,7 @@ const Pricing = ({ limit = 3, showFilters = true, showViewAllButton = true }) =>
             <p className="text-gray-600">Please login to continue with your subscription</p>
             {pendingPlan && (
               <p className="text-sm text-purple-600 mt-2 font-medium">
-                Plan: {pendingPlan.name} • ₹{pendingPlan.displayPrice}/{pendingPlan.billingCycle === 'monthly' ? 'month' : 'year'}
+                Plan: {pendingPlan.name} • ₹{pendingPlan.displayPrice}/month
               </p>
             )}
           </div>
@@ -478,34 +469,6 @@ const Pricing = ({ limit = 3, showFilters = true, showViewAllButton = true }) =>
                 </select>
               </div>
             )}
-
-            {/* Billing Toggle */}
-            <div className="relative bg-white p-1 rounded-full shadow-md border border-gray-200 inline-flex">
-              <button
-                className={`relative px-6 sm:px-8 py-2.5 sm:py-3 rounded-full text-sm sm:text-base font-semibold transition-all duration-300 z-10 ${
-                  billingCycle === 'monthly' ? 'text-white' : 'text-gray-700 hover:text-gray-900'
-                }`}
-                onClick={() => setBillingCycle('monthly')}
-              >
-                Monthly
-              </button>
-              <button
-                className={`relative px-6 sm:px-8 py-2.5 sm:py-3 rounded-full text-sm sm:text-base font-semibold transition-all duration-300 z-10 ${
-                  billingCycle === 'yearly' ? 'text-white' : 'text-gray-700 hover:text-gray-900'
-                }`}
-                onClick={() => setBillingCycle('yearly')}
-              >
-                Yearly
-                <span className="absolute -top-2 -right-1 sm:-top-3 sm:-right-2 bg-green-500 text-white text-[9px] sm:text-[10px] font-bold px-1.5 sm:px-2 py-0.5 rounded-full whitespace-nowrap">
-                  Save 20%
-                </span>
-              </button>
-              <div 
-                className={`absolute top-1 bottom-1 w-[calc(50%-4px)] bg-gradient-to-r from-blue-600 to-blue-500 rounded-full transition-all duration-300 ease-out ${
-                  billingCycle === 'monthly' ? 'left-1' : 'left-[calc(50%-2px)]'
-                }`}
-              />
-            </div>
           </div>
         )}
 
@@ -561,7 +524,7 @@ const Pricing = ({ limit = 3, showFilters = true, showViewAllButton = true }) =>
                         <span className="text-5xl font-bold" style={{ color: isPopular ? '#8b5cf6' : '#000000' }}>
                           {currentPriceData.displayPrice}
                         </span>
-                        <span className="text-gray-400 text-base font-medium">/{billingCycle === 'monthly' ? 'monthly' : 'yearly'}</span>
+                        <span className="text-gray-400 text-base font-medium">/ month</span>
                       </div>
 
                       {(plan.discount > 0 || currentPriceData.hasCustomPrice) && (
