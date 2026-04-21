@@ -81,7 +81,8 @@ class PaymentController extends Controller
             'status' => 'cancelled', // placeholder
             'payment_id' => $orderId,
             'payment_status' => 'pending',
-            'payment_method' => 'cashfree'
+            'payment_method' => 'cashfree',
+            'remarks' => 'new purchase'
         ]);
         $sessionId = $data['payment_session_id'];
         // Remove any extra "paymentpayment" suffix if present
@@ -720,4 +721,98 @@ body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height
 
     return $html;
 }
+
+//upgrade plan 
+public function upgradePlan(Request $request)
+{
+        $request->validate([
+            'amount' => 'required|numeric|min:1',
+            'plan_id' => 'required|exists:plans,id',
+            'business_type_id' => 'required',
+            'customer_id' => 'required|exists:customers,id',
+            'customer_phone'=>'required',
+        ]);
+        $customer = Customers::find($request->customer_id);
+        $lastPlanPurchase = PlanPurchaseHistory::where('user_id', $request->customer_id)->where('plan_id', $customer->plan_id)->latest()->first();
+        $orderId = 'order_' . uniqid();
+        $url = config('cashfree.base_url') . '/orders';
+        $remaningDays = Carbon::parse($lastPlanPurchase->end_date)->diffInDays(Carbon::now(), false);
+        $duration = Carbon::parse($lastPlanPurchase->end_date)->diffInDays(Carbon::parse($lastPlanPurchase->start_date));
+        $perDayPrice = $lastPlanPurchase->price / (float)$duration;
+        $remainingAmount = $perDayPrice * $remaningDays;
+        $totalAmount = $request->amount - $remainingAmount;
+        $response = Http::withHeaders([
+            'x-client-id' => config('cashfree.app_id'),
+            'x-client-secret' => config('cashfree.secret_key'),
+            'x-api-version' => '2022-09-01',
+            'Content-Type' => 'application/json'
+        ])->post($url, [
+            "order_id" => $orderId,
+            "order_amount" => $totalAmount,//$request->amount,
+            "order_currency" => "INR",
+            "customer_details" => [
+                "customer_id" => $request->customer_id,
+                "customer_email" => $customer->email,
+                "customer_phone" => $request->customer_phone
+            ],
+            "order_meta" => [
+                // "return_url" => url('/payment-success?order_id={order_id}'),
+                "return_url" => url('/api/cashfree/verify/{order_id}')
+            ]
+        ]);
+
+        $data = $response->json();
+
+        // Handle API failure
+        if ($response->failed()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Cashfree API failed',
+                'error' => $data
+            ]);
+        }
+        
+
+        // Store Payment (PENDING)
+        PaymentHistory::create([
+            'customer_id' => $request->customer_id,
+            'plan_id' => $request->plan_id,
+            'amount' => $totalAmount,//$request->amount,
+            'payment_method' => 'cashfree',
+            'transaction_id' => $orderId,
+            'status' => 'PENDING'
+        ]);
+        $customer->update(['phone' => $request->customer_phone]);
+
+        // Store Plan (temporary state)
+        $planPurchase = PlanPurchaseHistory::create([
+            'user_id' => $request->customer_id,
+            'plan_id' => $request->plan_id,
+            'price' => $totalAmount,//$request->amount,
+            'currency' => 'INR',
+            'start_date' => null,
+            'end_date' => null,
+            'status' => 'cancelled', // placeholder
+            'payment_id' => $orderId,
+            'payment_status' => 'pending',
+            'payment_method' => 'cashfree',
+            'remarks' => 'Upgrade Plan'
+        ]);
+        $sessionId = $data['payment_session_id'];
+        // Remove any extra "paymentpayment" suffix if present
+        if (str_ends_with($sessionId, 'paymentpayment')) {
+            $sessionId = str_replace('paymentpayment', '', $sessionId);
+        }
+
+        $encodedSessionId = urlencode($sessionId);
+        // Create correct payment URL
+        $paymentUrl = "https://sandbox.cashfree.com/pg/checkout?session_id=" . $encodedSessionId;
+        return response()->json([
+            'success' => true,
+            'session_id' => $sessionId,
+            'payment_url' => $paymentUrl,
+            'data' => $data
+        ]);
+    }
 }
+
