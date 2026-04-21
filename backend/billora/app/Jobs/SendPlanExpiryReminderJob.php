@@ -38,6 +38,7 @@ class SendPlanExpiryReminderJob implements ShouldQueue
             ->where('status', 'active')
             ->whereDate('end_date', '>=', $today)
             ->get();
+        Log::info('Plan find for expiry reminder: ' . $plans->count());
         if ($plans->isEmpty()) {
             Log::warning('No active plans found');
         }

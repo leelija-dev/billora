@@ -259,30 +259,132 @@ if (is_null($user->email_verified_at)) {
     }
 
     $token = $user->createToken('customer-token')->plainTextToken;
-
-    return response()->json([
+    // Shared cookie settings (works for localhost + production subdomains)
+    $cookieDomain = env('AUTH_COOKIE_DOMAIN');
+    $cookieSecure = filter_var(env('AUTH_COOKIE_SECURE'), FILTER_VALIDATE_BOOL);
+    $cookieSameSite = env('AUTH_COOKIE_SAMESITE', 'lax');
+    // return response()->json([
+    $response = response()->json([
         'status' => true,
         'message' => 'Login successful',
         'token' => $token,
         'user' => $user
     ]);
+    $response->cookie(cookie(
+    'client_auth_token',
+    $token,
+    60 * 24 * 30, // 30 days
+    '/',
+    $cookieDomain,
+    $cookieSecure,
+    false, // HttpOnly
+    false,
+    $cookieSameSite
+));
+// Optional: Set user info cookies (not HttpOnly, so JS can read)
+$response->cookie(cookie('client_id', $user->id, 60 * 24 * 30, '/', $cookieDomain, $cookieSecure, false, false, $cookieSameSite));
+$response->cookie(cookie('client_email', $user->email, 60 * 24 * 30, '/', $cookieDomain, $cookieSecure, false, false, $cookieSameSite));
+$response->cookie(cookie('client_name', $user->name, 60 * 24 * 30, '/', $cookieDomain, $cookieSecure, false, false, $cookieSameSite));
+
+return $response;
 }
+// public function logout(Request $request)
+// {
+//     $user = $request->user();
+
+//     if (!$user) {
+//         return response()->json([
+//             'status' => false,
+//             'message' => 'User not authenticated'
+//         ], 401);
+//     }
+
+//     $user->currentAccessToken()->delete();
+
+//     return response()->json([
+//         'status' => true,
+//         'message' => 'Logout successful'
+//     ]);
+// }
 public function logout(Request $request)
 {
-    $user = $request->user();
+    // Manually read the custom cookie
+    $token = $request->cookie('client_auth_token');
+    
+    if (!$token) {
+        // Even if no token, clear cookies and return success
+        $cookieDomain = env('AUTH_COOKIE_DOMAIN');
+        $response = response()->json([
+            'status' => true,
+            'message' => 'Logout successful'
+        ]);
+        $response->withoutCookie(cookie('client_auth_token', null, -1, '/', $cookieDomain));
+        $response->withoutCookie(cookie('client_id', null, -1, '/', $cookieDomain));
+        $response->withoutCookie(cookie('client_email', null, -1, '/', $cookieDomain));
+        $response->withoutCookie(cookie('client_name', null, -1, '/', $cookieDomain));
+        return $response;
+    }
+    
+    // Find and delete the token
+    $tokenModel = \Laravel\Sanctum\PersonalAccessToken::findToken($token);
+    
+    if ($tokenModel) {
+        $tokenModel->delete();
+    }
 
+    // Clear shared cookies using same domain
+    $cookieDomain = env('AUTH_COOKIE_DOMAIN');
+
+    $response = response()->json([
+        'status' => true,
+        'message' => 'Logout successful'
+    ]);
+
+    // Clear all auth cookies
+    $response->withoutCookie(cookie('client_auth_token', null, -1, '/', $cookieDomain));
+    $response->withoutCookie(cookie('client_id', null, -1, '/', $cookieDomain));
+    $response->withoutCookie(cookie('client_email', null, -1, '/', $cookieDomain));
+    $response->withoutCookie(cookie('client_name', null, -1, '/', $cookieDomain));
+
+    return $response;
+}
+public function checkSession(Request $request)
+{
+    // Manually read the custom cookie
+    $token = $request->cookie('client_auth_token');
+    
+    if (!$token) {
+        return response()->json([
+            'status' => false,
+            'message' => 'No auth token found'
+        ], 401);
+    }
+    
+    // Find user by token in personal_access_tokens table
+    $tokenModel = \Laravel\Sanctum\PersonalAccessToken::findToken($token);
+    
+    if (!$tokenModel) {
+        return response()->json([
+            'status' => false,
+            'message' => 'Invalid token'
+        ], 401);
+    }
+    
+    // Get the user associated with the token
+    $user = $tokenModel->tokenable;
+    
     if (!$user) {
         return response()->json([
             'status' => false,
-            'message' => 'User not authenticated'
+            'message' => 'User not found'
         ], 401);
     }
-
-    $user->currentAccessToken()->delete();
-
+    
     return response()->json([
         'status' => true,
-        'message' => 'Logout successful'
+        'message' => 'Authenticated',
+        'user' => $user,
+        'token' => $token 
     ]);
 }
 public function verifyEmail($token)

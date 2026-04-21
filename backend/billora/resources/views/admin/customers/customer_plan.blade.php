@@ -621,14 +621,10 @@
                         @if (isset($plans) && count($plans) > 0)
                             @foreach ($plans as $plan)
                                 <tr>
-                                    <td style="font-weight: 600; color: #64748b;">#{{ $plan->id }}</td>
+                                    <td style="font-weight: 600; color: #64748b;">{{ $plan->plan_id ?? ''}}</td>
                                     <td>
                                         <div class="plan-cell">
-                                            <div class="plan-badge-icon">
-                                                <svg viewBox="0 0 24 24">
-                                                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
-                                                </svg>
-                                            </div>
+                                            
                                             <span class="plan-name-text">{{ ucfirst($plan->plan?->name ?? '') }}</span>
                                         </div>
                                     </td>
@@ -641,9 +637,9 @@
                                             @elseif($planStatus == 'active') status-active
                                             @elseif($planStatus == 'cancelled') status-cancelled
                                             @endif">
-                                            @if($planStatus == 'expired') 🔄 Expired
-                                            @elseif($planStatus == 'active') ✓ Active
-                                            @elseif($planStatus == 'cancelled') ✗ Cancelled
+                                            @if($planStatus == 'expired') Expired
+                                            @elseif($planStatus == 'active') Active
+                                            @elseif($planStatus == 'cancelled') Cancelled
                                             @else {{ ucfirst($planStatus) }}
                                             @endif
                                         </span>
@@ -653,9 +649,7 @@
                                     </td>
                                     <td>
                                         <div class="payment-method-badge">
-                                            <svg viewBox="0 0 24 24">
-                                                <path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/>
-                                            </svg>
+                                            
                                             {{ $plan->payment_method ?? 'N/A' }}
                                         </div>
                                     </td>
@@ -668,22 +662,22 @@
                                             @elseif($status == 'success') payment-success
                                             @elseif($status == 'failed') payment-failed
                                             @endif">
-                                            @if($status == 'pending') ⏳ Pending
-                                            @elseif($status == 'success') ✓ Success
-                                            @elseif($status == 'failed') ✗ Failed
+                                            @if($status == 'pending')Pending
+                                            @elseif($status == 'success')Success
+                                            @elseif($status == 'failed') Failed
                                             @else {{ ucfirst($status) }}
                                             @endif
                                         </span>
                                     </td>
                                     <td class="date-cell">
-                                        {{ $plan->start_date->format('d M Y') ?? 'N/A' }}
+                                        {{ $plan->start_date ? $plan->start_date->format('d M Y') : 'N/A' }}
                                     </td>
                                     <td class="date-cell">
-                                        {{ $plan->end_date->format('d M Y') ?? 'N/A' }}
+                                        {{ $plan->end_date ? $plan->end_date->format('d M Y') : 'N/A' }}
                                     </td>
                                     <td class="date-cell">
-                                        {{ $plan->created_at->format('d M Y') ?? 'N/A' }}
-                                        <small>{{ $plan->created_at->format('h:i A') ?? '' }}</small>
+                                        {{ $plan->created_at ? $plan->created_at->format('d M Y') : 'N/A' }}
+                                        <small>{{ $plan->created_at ? $plan->created_at->format('h:i A') : '' }}</small>
                                     </td>
                                 </tr>
                             @endforeach
@@ -691,9 +685,9 @@
                             <tr>
                                 <td colspan="9">
                                     <div class="empty-state"> 
-                                        <svg viewBox="0 0 24 24">
+                                        {{-- <svg viewBox="0 0 24 24">
                                             <path d="M19 3h-4.18C14.4 1.84 13.3 1 12 1c-1.3 0-2.4.84-2.82 2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 0c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm0 15c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5z"/>
-                                        </svg>
+                                        </svg> --}}
                                         <h4>No Plans Found</h4>
                                         <p>This customer hasn't subscribed to any plans yet.</p>
                                     </div>
