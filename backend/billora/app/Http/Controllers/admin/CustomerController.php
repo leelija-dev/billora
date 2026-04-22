@@ -1084,7 +1084,7 @@ public function adminMail($customer_id) {
 
             <!-- Action Buttons -->
             <div class='action-buttons'>
-                <a href='#' class='btn btn-primary'>👤 View Customer Profile</a>
+                <a href=".route('admin.customers.plans',$customer->id)." class='btn btn-primary'>View Customer Profile</a>
             </div>
 
         </div>
