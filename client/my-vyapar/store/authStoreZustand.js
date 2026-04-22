@@ -37,8 +37,6 @@ export const useAuthStore = create(
         }
       },
 
-      // ✅ FIX: This function should NOT call loginUser again
-      // It should just update the state with user data
       login: (userData, token) => {
         console.log('📝 Store login called with user:', userData?.email);
         console.log('📝 Token received:', token?.substring(0, 20) + '...');
@@ -98,6 +96,43 @@ export const useAuthStore = create(
       },
 
       clearError: () => set({ error: null }),
+
+      checkPlanPurchaseEligibility: async (planId) => {
+        const { user, isLoggedIn } = get();
+        
+        console.log('🔍 Checking plan purchase eligibility for plan:', planId);
+        
+        if (!isLoggedIn || !user) {
+          return { canPurchase: true, reason: 'User not logged in', action: 'login_required' };
+        }
+
+        try {
+          const currentPlanId = user.plan_id;
+          
+          if (!currentPlanId) {
+            return { canPurchase: true, reason: 'No active plan', action: 'new_purchase' };
+          }
+          
+          if (currentPlanId === planId) {
+            return { 
+              canPurchase: false, 
+              reason: 'You already have this active plan',
+              action: 'cannot_purchase'
+            };
+          }
+          
+          return { 
+            canPurchase: true, 
+            reason: 'Can upgrade plan', 
+            action: 'upgrade',
+            currentPlanId: currentPlanId
+          };
+          
+        } catch (error) {
+          console.error('Error checking plan eligibility:', error);
+          return { canPurchase: false, reason: 'Error checking eligibility' };
+        }
+      },
     }),
     {
       name: 'auth-storage',
@@ -117,6 +152,13 @@ export const useAuthStore = create(
   )
 );
 
+// ✅ Add hasActivePlan as a selector (computed property)
+export const useHasActivePlan = () => {
+  const user = useAuthStore((state) => state.user);
+  return user?.is_active === 1 || false;
+};
+
+// Export other hooks
 export const useAuth = () => useAuthStore();
 export const useUser = () => useAuthStore((state) => state.user);
 export const useIsLoggedIn = () => useAuthStore((state) => state.isLoggedIn);

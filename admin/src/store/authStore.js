@@ -1,7 +1,12 @@
+// src/store/authStore.js
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { authService } from '../services/authService';
+import { usePermissionStore } from './permissionStore';
 import toast from 'react-hot-toast';
+
+// ✅ Generate unique tab ID to prevent self-broadcast
+const TAB_ID = Math.random().toString(36).substring(7);
 
 export const useAuthStore = create(
   persist(
@@ -19,9 +24,11 @@ export const useAuthStore = create(
       checkAuth: async () => {
         set({ isLoading: true });
         try {
+          console.log('🔍 Checking auth status...');
           const response = await authService.checkSession();
           
           if (response.status && response.user) {
+            console.log('✅ User is authenticated:', response.user.email);
             set({
               user: response.user,
               isAuthenticated: true,
@@ -30,12 +37,16 @@ export const useAuthStore = create(
             
             localStorage.setItem('user', JSON.stringify(response.user));
             
-            // Broadcast to other tabs
-            const channel = new BroadcastChannel('auth_channel');
-            channel.postMessage({ type: 'LOGIN', user: response.user });
+            const { setUser: setPermissionUser, fetchUserPermissions } = usePermissionStore.getState();
+            setPermissionUser(response.user);
+            
+            if (response.user && response.user.plan_id) {
+              fetchUserPermissions(response.user.id);
+            }
             
             return true;
           } else {
+            console.log('❌ User is not authenticated');
             set({ user: null, isAuthenticated: false, isLoading: false });
             localStorage.removeItem('user');
             return false;
@@ -50,6 +61,7 @@ export const useAuthStore = create(
       login: async (credentials) => {
         set({ isLoading: true });
         try {
+          console.log('Login attempt with:', credentials.email);
           const response = await authService.login(credentials);
           
           const data = response.data;
@@ -63,8 +75,21 @@ export const useAuthStore = create(
           
           localStorage.setItem('user', JSON.stringify(user));
           
+          const { setUser: setPermissionUser, fetchUserPermissions } = usePermissionStore.getState();
+          setPermissionUser(user);
+          
+          if (user && user.plan_id) {
+            fetchUserPermissions(user.id);
+          }
+          
+          // ✅ Broadcast to OTHER tabs only
           const channel = new BroadcastChannel('auth_channel');
-          channel.postMessage({ type: 'LOGIN', user: user });
+          channel.postMessage({ 
+            type: 'LOGIN', 
+            user: user,
+            sourceTabId: TAB_ID 
+          });
+          setTimeout(() => channel.close(), 100);
           
           toast.success('Login successful!');
           return { success: true };
@@ -79,10 +104,14 @@ export const useAuthStore = create(
       },
 
       logout: async () => {
+        const { user } = get();
+        
         set({ isLoading: true });
         
         try {
-          await authService.logout();
+          if (user?.id) {
+            await authService.logout(user.id);
+          }
         } catch (err) {
           console.log('Logout API call failed:', err);
         }
@@ -98,8 +127,16 @@ export const useAuthStore = create(
         localStorage.removeItem('user');
         localStorage.removeItem('auth_token');
         
+        const { clearPermissions } = usePermissionStore.getState();
+        clearPermissions();
+        
+        // ✅ Broadcast to OTHER tabs only
         const channel = new BroadcastChannel('auth_channel');
-        channel.postMessage({ type: 'LOGOUT' });
+        channel.postMessage({ 
+          type: 'LOGOUT',
+          sourceTabId: TAB_ID 
+        });
+        setTimeout(() => channel.close(), 100);
         
         toast.success('Logged out successfully');
       },
@@ -111,6 +148,25 @@ export const useAuthStore = create(
 
       updateCompany: (companyData) => {
         set({ company: { ...get().company, ...companyData } });
+      },
+
+      refreshToken: async () => {
+        const { tokens } = get();
+        if (!tokens?.refresh) return false;
+
+        try {
+          const response = await authService.refreshToken(tokens.refresh);
+          set({
+            tokens: {
+              ...tokens,
+              access: response.data.access,
+            },
+          });
+          return true;
+        } catch (error) {
+          get().logout();
+          return false;
+        }
       },
     }),
     {
@@ -132,18 +188,34 @@ export const useAuthStore = create(
   )
 );
 
-// Cross-tab synchronization
+// ✅ Fix: Cross-tab synchronization - Don't reload current tab
 if (typeof window !== 'undefined') {
   const channel = new BroadcastChannel('auth_channel');
+  
   channel.onmessage = (event) => {
+    // ✅ Ignore messages from the same tab
+    if (event.data.sourceTabId === TAB_ID) {
+      console.log('📢 Ignoring self-broadcast message');
+      return;
+    }
+    
+    console.log('📢 Received message from another tab:', event.data.type);
+    
     if (event.data.type === 'LOGIN') {
-      console.log('Login detected from another tab - refreshing...');
-      window.location.reload();
+      console.log('✅ Login detected from another tab - updating state');
+      // Just update state, don't reload
+      useAuthStore.getState().checkAuth();
     } else if (event.data.type === 'LOGOUT') {
-      console.log('Logout detected from another tab - refreshing...');
-      window.location.reload();
+      console.log('🔓 Logout detected from another tab - clearing state');
+      // Clear local state without API call
+      useAuthStore.getState().logout();
     }
   };
+  
+  // Keep channel open
+  window.addEventListener('beforeunload', () => {
+    channel.close();
+  });
 }
 
 

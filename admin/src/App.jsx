@@ -1,11 +1,13 @@
-import React, { useEffect } from 'react';
+// src/App.js
+import React, { useEffect, useRef } from 'react';
 import AppRoutes from './routes/AppRoutes';
 import { useAuthStore } from './store/authStore';
 import { useUIStore } from './store/uiStore';
 
 function App() {
   const { theme } = useUIStore();
-  const { checkAuth, isLoading } = useAuthStore();
+  const { checkAuth, isAuthenticated, isLoading } = useAuthStore();
+  const authChecked = useRef(false);
 
   useEffect(() => {
     if (theme === 'dark') {
@@ -16,8 +18,12 @@ function App() {
   }, [theme]);
 
   useEffect(() => {
-    checkAuth();
-  }, []);
+    // ✅ Only check auth once
+    if (!authChecked.current) {
+      authChecked.current = true;
+      checkAuth();
+    }
+  }, [checkAuth]);
 
   if (isLoading) {
     return (

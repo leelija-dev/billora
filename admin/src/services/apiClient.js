@@ -76,22 +76,24 @@ apiClient.interceptors.request.use(async (config) => {
 apiClient.interceptors.response.use(
   (response) => response,
   async (error) => {
-    if (error.response?.status === 401) {
-      useAuthStore.getState().logout();
+    const originalRequest = error.config;
+    
+    // ✅ Handle 419 CSRF mismatch - retry once
+    if (error.response?.status === 419 && !originalRequest._retry) {
+      originalRequest._retry = true;
+      csrfFetched = false;
+      try {
+        await fetchCsrfCookie();
+        return apiClient(originalRequest);
+      } catch (retryError) {
+        return Promise.reject(retryError);
+      }
     }
     
-    if (error.response?.status === 419) {
-      csrfFetched = false;
-      const originalRequest = error.config;
-      if (!originalRequest._retry) {
-        originalRequest._retry = true;
-        try {
-          await fetchCsrfCookie();
-          return apiClient(originalRequest);
-        } catch (retryError) {
-          return Promise.reject(retryError);
-        }
-      }
+    // ✅ Handle 401 - logout but don't retry
+    if (error.response?.status === 401 && !originalRequest.url.includes('check-session')) {
+      console.log('🔒 Unauthorized, logging out...');
+      useAuthStore.getState().logout();
     }
     
     return Promise.reject(error);
