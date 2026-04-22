@@ -1,12 +1,41 @@
+// src/services/apiClient.js
 import axios from 'axios';
 import { useAuthStore } from '../store/authStore';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
 
+let csrfFetched = false;
+let csrfPromise = null;
+
+const fetchCsrfCookie = async () => {
+  if (csrfFetched) return true;
+  
+  if (csrfPromise) return csrfPromise;
+  
+  csrfPromise = new Promise(async (resolve, reject) => {
+    try {
+      await axios.get('http://localhost:8000/api/sanctum/csrf-cookie', {
+        withCredentials: true,
+        baseURL: API_BASE_URL,
+      });
+      csrfFetched = true;
+      console.log('✅ CSRF cookie fetched');
+      resolve(true);
+    } catch (error) {
+      console.error('❌ CSRF fetch failed:', error);
+      reject(error);
+    } finally {
+      csrfPromise = null;
+    }
+  });
+  
+  return csrfPromise;
+};
+
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,
   timeout: 30000,
-  withCredentials: true, // CRITICAL: Send cookies automatically
+  withCredentials: true,
   headers: {
     'Content-Type': 'application/json',
     'Accept': 'application/json',
@@ -14,44 +43,55 @@ export const apiClient = axios.create({
   },
 });
 
-// Request interceptor
-apiClient.interceptors.request.use(
-  async (config) => {
-    if (config.method !== 'get' && !config.url.includes('csrf-cookie')) {
-      try {
-        await apiClient.get('/sanctum/csrf-cookie');
-      } catch (error) {
-        console.log('CSRF cookie fetch failed:', error);
+apiClient.interceptors.request.use(async (config) => {
+  const skipCsrf = config.method === 'get' || 
+                   config.url.includes('csrf-cookie') ||
+                   config.url.includes('check-session');
+  
+  if (!skipCsrf) {
+    try {
+      await fetchCsrfCookie();
+      
+      const csrfToken = document.cookie
+        .split('; ')
+        .find(row => row.startsWith('XSRF-TOKEN='))
+        ?.split('=')[1];
+      
+      if (csrfToken) {
+        config.headers['X-XSRF-TOKEN'] = decodeURIComponent(csrfToken);
       }
+    } catch (error) {
+      console.error('CSRF setup failed:', error);
     }
-    
-    const token = localStorage.getItem('auth_token');
-    if (token && !config.headers.Authorization) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    
-    return config;
-  },
-  (error) => Promise.reject(error)
-);
+  }
+  
+  const token = localStorage.getItem('auth_token');
+  if (token && !config.headers.Authorization) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  
+  return config;
+});
 
-// Response interceptor
 apiClient.interceptors.response.use(
   (response) => response,
   async (error) => {
     if (error.response?.status === 401) {
-      try {
-        useAuthStore.getState().logout();
-      } catch (logoutError) {
-        console.error('Error during logout:', logoutError);
-      }
+      useAuthStore.getState().logout();
     }
     
-    if (!error.response) {
-      error.response = {
-        data: { message: 'Network error. Please check your connection.' },
-        status: 0,
-      };
+    if (error.response?.status === 419) {
+      csrfFetched = false;
+      const originalRequest = error.config;
+      if (!originalRequest._retry) {
+        originalRequest._retry = true;
+        try {
+          await fetchCsrfCookie();
+          return apiClient(originalRequest);
+        } catch (retryError) {
+          return Promise.reject(retryError);
+        }
+      }
     }
     
     return Promise.reject(error);

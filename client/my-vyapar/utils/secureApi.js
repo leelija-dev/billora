@@ -172,7 +172,7 @@
 // export default secureApiRequest;
 
 
-
+// utils/secureApi.js
 import axios from 'axios';
 
 const isDevelopment = process.env.NODE_ENV === 'development';
@@ -195,13 +195,62 @@ export const api = axios.create({
   },
 });
 
+// Flag to track if CSRF cookie has been fetched
+let csrfFetched = false;
+let csrfPromise = null;
+
+// Function to fetch CSRF cookie
+const fetchCsrfCookie = async () => {
+  if (csrfFetched) return true;
+  
+  if (csrfPromise) {
+    return csrfPromise;
+  }
+  
+  csrfPromise = new Promise(async (resolve, reject) => {
+    try {
+      // Use a separate axios instance without interceptors to avoid loops
+      const response = await axios.get('http://localhost:8000/api/sanctum/csrf-cookie', {
+        withCredentials: true,
+        baseURL: getApiBaseUrl(),
+      });
+      csrfFetched = true;
+      console.log('✅ CSRF cookie fetched successfully');
+      resolve(true);
+    } catch (error) {
+      console.error('❌ Failed to fetch CSRF cookie:', error);
+      reject(error);
+    } finally {
+      csrfPromise = null;
+    }
+  });
+  
+  return csrfPromise;
+};
+
 // Request interceptor for CSRF
 api.interceptors.request.use(async (config) => {
-  if (config.method !== 'get' && !config.url.includes('csrf-cookie')) {
+  // Skip CSRF for GET requests and CSRF endpoint itself
+  const skipCsrf = config.method === 'get' || 
+                   config.url.includes('csrf-cookie') ||
+                   config.url.includes('check-session');
+  
+  if (!skipCsrf) {
     try {
-      await api.get('/sanctum/csrf-cookie');
+      await fetchCsrfCookie();
+      
+      // Get the CSRF token from cookie
+      const csrfToken = document.cookie
+        .split('; ')
+        .find(row => row.startsWith('XSRF-TOKEN='))
+        ?.split('=')[1];
+      
+      if (csrfToken) {
+        config.headers['X-XSRF-TOKEN'] = decodeURIComponent(csrfToken);
+        console.log('✅ CSRF token added to request');
+      }
     } catch (error) {
-      console.log('CSRF cookie fetch failed:', error);
+      console.error('❌ CSRF setup failed:', error);
     }
   }
   
@@ -213,13 +262,19 @@ api.interceptors.request.use(async (config) => {
     }
   }
   
+  console.log(`📤 ${config.method?.toUpperCase()} ${config.url}`);
   return config;
 });
 
 // Response interceptor
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    console.log(`✅ ${response.config.method?.toUpperCase()} ${response.config.url} - ${response.status}`);
+    return response;
+  },
   async (error) => {
+    console.error(`❌ API Error:`, error.response?.status, error.response?.data);
+    
     if (error.response?.status === 401) {
       if (typeof window !== 'undefined') {
         localStorage.removeItem('auth_token');
@@ -228,6 +283,25 @@ api.interceptors.response.use(
         window.dispatchEvent(new CustomEvent('unauthorized'));
       }
     }
+    
+    // Reset CSRF flag on 419 to retry
+    if (error.response?.status === 419) {
+      console.log('🔄 CSRF token mismatch, resetting and retrying...');
+      csrfFetched = false;
+      
+      // Retry the request once
+      const originalRequest = error.config;
+      if (!originalRequest._retry) {
+        originalRequest._retry = true;
+        try {
+          await fetchCsrfCookie();
+          return api(originalRequest);
+        } catch (retryError) {
+          return Promise.reject(retryError);
+        }
+      }
+    }
+    
     return Promise.reject(error);
   }
 );

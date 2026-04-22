@@ -1,16 +1,23 @@
+// services/authService.js
 import { api } from "../utils/secureApi";
 
 export const loginUser = async (userData) => {
   try {
-    await api.get("/sanctum/csrf-cookie");
+    console.log('🔐 Attempting login for:', userData.email);
+    
+    // CSRF cookie will be fetched automatically by the interceptor
     const response = await api.post("/users/login", userData);
+    
+    console.log('✅ Login response:', response.data);
     
     if (response.data.token) {
       localStorage.setItem('auth_token', response.data.token);
+      console.log('✅ Token stored in localStorage');
     }
     
     return response;
   } catch (error) {
+    console.error('❌ Login failed:', error.response?.data || error);
     throw error.response?.data || error;
   }
 };
@@ -39,9 +46,12 @@ export const logoutUser = async () => {
 
 export const checkSession = async () => {
   try {
+    console.log('🔍 Checking session...');
     const response = await api.get("/users/check-session");
+    console.log('✅ Session check response:', response.data);
     return response.data;
   } catch (error) {
+    console.log('❌ Session check failed:', error.response?.status);
     return { status: false, message: 'Not authenticated' };
   }
 };
