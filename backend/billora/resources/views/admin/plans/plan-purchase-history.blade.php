@@ -90,7 +90,7 @@
         text-transform: uppercase;
         letter-spacing: 0.5px;
         background: #f8fafc;
-        border-radius: 14px;
+        /* border-radius: 14px; */
     }
 
     .purchase-table tbody tr {
@@ -121,7 +121,7 @@
     .purchase-table tbody tr:hover td {
         background: #fafcff;
         transform: scale(1.01);
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        /* box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05); */
     }
 
     /* Badges */
@@ -376,7 +376,7 @@
                 <table class="purchase-table">
                     <thead>
                         <tr>
-                            <th>Sl. No</th>
+                            <th>Invoice No.</th>
                             <th>Plan Name</th>
                             <th>Status</th>
                             <th>Price</th>
@@ -392,7 +392,8 @@
                             <tr style="animation-delay: {{ $index * 0.05 }}s">
                                 <td data-label="Sl. No">
                                     <span class="font-medium text-gray-500">
-                                        {{ $loop->iteration + ($planPurchaseHistory->currentPage() - 1) * $planPurchaseHistory->perPage() }}
+                                        {{ $plans->id ?? 'N/A' }}
+                                        {{-- {{ $loop->iteration + ($planPurchaseHistory->currentPage() - 1) * $planPurchaseHistory->perPage() }} --}}
                                     </span>
                                 </td>
                                 <td data-label="Plan Name">

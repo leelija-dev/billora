@@ -184,7 +184,7 @@ public function paymentSuccess(Request $request)
             $planPurchase->id,
             $plan->id,
             $plan->name,
-            $plan->price
+            $planPurchase->price
         );
 
         $customerMail = $this->customerMail(
@@ -566,7 +566,7 @@ body {
                 <div class='details-value amount-highlight'>" . number_format($amount, 2) . "</div>
 
                 <div class='details-label'>Plan Duration</div>
-                <div class='details-value'>" . ($plan->duration ?? 'N/A') . "</div>
+                <div class='details-value'>" . ($plan->duration_days ?? 'N/A') . "</div>
 
                 <div class='details-label'>Transaction ID</div>
                 <div class='details-value'><span class='code'>" . ($planPurchase->payment_id ?? 'N/A') . "</span></div>
@@ -583,9 +583,9 @@ body {
         </div>
 
         <div class='action-buttons'>
-            <a href='#' class='btn btn-primary'>👤 View Customer Profile</a>
-            <a href='#' class='btn btn-primary'>💰 View Transaction Details</a>
-            <a href='#' class='btn btn-secondary'>📊 Go to Dashboard</a>
+            <a href=". route('admin.customers.plans',$customer->id) ." class='btn btn-primary'>View Customer Profile</a>
+            <a href=".route('admin.plans.purchase-history')." class='btn btn-primary'>View Transaction Details</a>
+            <a href=".route('admin.dashboard')." class='btn btn-secondary'>Go to Dashboard</a>
         </div>
 
         <div class='notes-section'>
