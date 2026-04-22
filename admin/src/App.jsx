@@ -3,8 +3,6 @@ import AppRoutes from './routes/AppRoutes'
 import { useAuthStore } from './store/authStore'
 import { useUIStore } from './store/uiStore'
 import { setupAxiosInterceptors } from './services/axiosConfig'
-import { SharedAuthProvider } from './contexts/SharedAuthContext'
-import AuthGuard from './components/AuthGuard'
 
 function App() {
   const { theme } = useUIStore()
@@ -31,13 +29,9 @@ function App() {
   }, [logout])
 
   return (
-    <SharedAuthProvider>
-      <AuthGuard>
-        <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
-          <AppRoutes />
-        </div>
-      </AuthGuard>
-    </SharedAuthProvider>
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
+      <AppRoutes />
+    </div>
   )
 }
 

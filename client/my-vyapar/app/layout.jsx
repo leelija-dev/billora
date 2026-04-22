@@ -3,12 +3,11 @@ import { Toaster } from 'react-hot-toast';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import StoreInitializer from '../components/StoreInitializer';
-import { SharedAuthProvider } from '../contexts/SharedAuthContext';
 import React from 'react';
 
 export default function RootLayout({ children }) {
   return (
-    <SharedAuthProvider>
+    <>
       <StoreInitializer />
       <html lang="en" suppressHydrationWarning>
         <body suppressHydrationWarning={true}>
@@ -48,6 +47,6 @@ export default function RootLayout({ children }) {
           />
         </body>
       </html>
-    </SharedAuthProvider>
+    </> // Removed AuthProvider closing tag
   );
 }
