@@ -35,6 +35,11 @@ Route::get('/test', function () {
 
    ]);
 });
+Route::prefix('auth/session')->group(function () {
+    Route::post('/login', [CustomerController::class, 'login']);
+    Route::post('/logout', [CustomerController::class, 'logout']);
+    Route::get('/check', [CustomerController::class, 'checkSession']);
+});
 //admin user
 Route::prefix('users')->group(function () {
    //    Route::get('/', [CustomerController::class, 'index']);
@@ -191,6 +196,7 @@ Route::middleware('auth:sanctum')->prefix('plans-purchase-history')->group(funct
 //payment 
 Route::prefix('cashfree')->group(function () {
     Route::post('/create-order', [PaymentController::class, 'createOrder']);
+    Route::post('/upgrade-plan', [PaymentController::class, 'upgradePlan']);
     Route::get('/verify/{order_id}', [PaymentController::class, 'verifyPayment']);
 });
 

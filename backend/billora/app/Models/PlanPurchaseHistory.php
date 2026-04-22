@@ -17,7 +17,8 @@ class PlanPurchaseHistory extends Model
         'status',
         'payment_id',
         'payment_status',
-        'payment_method'
+        'payment_method',
+        'remarks'
     ];
     protected $casts = [
     'start_date' => 'datetime',

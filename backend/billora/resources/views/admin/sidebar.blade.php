@@ -159,12 +159,12 @@
                         </div>
                     </div>
                 @endif
-                <a href="{{ route('admin.plans.index') }}"
-                    class="flex items-center px-4 py-3 {{ request()->routeIs('admin.plans.index', 'admin.plans.create', 'admin.plans.edit', 'admin.plans.deleted') ? 'bg-blue-100 text-blue-600 font-semibold' : 'hover:bg-blue-100' }}">
+                {{-- <a href="{{ route('admin.plans.index') }}"
+                    class="flex items-center px-4 py-3 {{ request()->routeIs('admin.plans.index', 'admin.plans.create', 'admin.plans.edit', 'admin.plans.deleted') ? 'bg-blue-100 text-blue-600 font-semibold' : 'hover:bg-blue-100' }}"> --}}
 
 
 
-                    <div class="flex space-x-3">
+                    <div class="flex space-x-3 ml-3">
 
                         <!-- Avatar -->
                         @php
@@ -195,7 +195,7 @@
                         </div>
 
                     </div>
-                </a>
+                {{-- </a> --}}
                 <!-- Logout Link with Form -->
                 <div class="px-4 pb-4">
                     <form action="{{ route('admin.logout') }}" method="POST">

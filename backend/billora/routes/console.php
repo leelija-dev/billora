@@ -13,3 +13,6 @@ Schedule::job(new SendPlanExpiryReminderJob(true))->dailyAt('10:15');
 // JSON notifications every 30 minutes
 Schedule::job(new SendPlanExpiryReminderJob(false))
         ->everyThirtyMinutes();
+
+//plan expire daily check
+Schedule::command('app:expire-plans')->daily();  

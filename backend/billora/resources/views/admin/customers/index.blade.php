@@ -517,6 +517,7 @@
                         </th>
                         <th style="width: 50px;">#</th>
                         <th>Customer Information</th>
+                        <th>Recent Plans</th>
                         <th>Status</th>
                         <th>Joined Date</th>
                         <th>Plans</th>
@@ -533,6 +534,7 @@
                                 <td style="font-weight: 600; color: #64748b;">
                                     {{ $loop->iteration + ($customers->currentPage() - 1) * $customers->perPage() }}
                                 </td>
+                               
                                 <td>
                                     <div class="customer-info">
                                         <div class="customer-avatar">
@@ -544,6 +546,9 @@
                                         </div>
                                     </div>
                                 </td>
+                                <td style="font-weight: 600; color: #64748b;">
+                                {{$customer->plan->name ?? ''}}
+                               </td>
                                 <td>
                                     @if ($customer->is_active)
                                         <span class="badge badge-active">Active</span>
