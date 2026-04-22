@@ -1,4 +1,3 @@
-// components/Pricing.jsx
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
@@ -16,6 +15,7 @@ const Pricing = ({ limit = 3, showFilters = true, showViewAllButton = true }) =>
   const [planEligibility, setPlanEligibility] = useState({});
   const [checkingEligibility, setCheckingEligibility] = useState({});
   const [isClientMounted, setIsClientMounted] = useState(false);
+  const [isSelectEnabled, setIsSelectEnabled] = useState(false);
   
   const {
     plans,
@@ -50,6 +50,11 @@ const Pricing = ({ limit = 3, showFilters = true, showViewAllButton = true }) =>
   // Set client mounted state
   useEffect(() => {
     setIsClientMounted(true);
+    // Enable select after client mount to avoid hydration mismatch
+    const timer = setTimeout(() => {
+      setIsSelectEnabled(true);
+    }, 100);
+    return () => clearTimeout(timer);
   }, []);
 
   // Load business types from API
@@ -522,7 +527,8 @@ const Pricing = ({ limit = 3, showFilters = true, showViewAllButton = true }) =>
               value={selectedBusinessType}
               onChange={(e) => setSelectedBusinessType(e.target.value)}
               className="px-3 py-1.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm bg-white cursor-pointer"
-              disabled={!isClientMounted || allBusinessTypes.length === 0}
+              disabled={!isSelectEnabled || allBusinessTypes.length === 0}
+              suppressHydrationWarning
             >
               <option value="all">All Business Types</option>
               {allBusinessTypes.length > 0 ? (
