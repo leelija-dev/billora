@@ -1,6 +1,7 @@
+// store/authStoreZustand.js
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import { loginUser, logoutUser, checkSession } from '../services/authService';
+import { logoutUser, checkSession } from '../services/authService';
 
 export const useAuthStore = create(
   persist(
@@ -15,7 +16,7 @@ export const useAuthStore = create(
         try {
           const response = await checkSession();
           
-          if (response.status && response.user) {
+          if (response.status === true && response.user) {
             set({
               user: response.user,
               isLoggedIn: true,
@@ -23,13 +24,6 @@ export const useAuthStore = create(
             });
             
             localStorage.setItem('user', JSON.stringify(response.user));
-            
-            // Broadcast to other tabs
-            if (typeof window !== 'undefined') {
-              const channel = new BroadcastChannel('auth_channel');
-              channel.postMessage({ type: 'LOGIN', user: response.user });
-            }
-            
             return true;
           } else {
             set({ user: null, isLoggedIn: false, isLoading: false });
@@ -43,46 +37,31 @@ export const useAuthStore = create(
         }
       },
 
-      login: async (userData) => {
-        set({ isLoading: true, error: null });
-        try {
-          const response = await loginUser(userData);
-          
-          if (response.data.status) {
-            const user = response.data.user;
-            const token = response.data.token;
-            
-            set({
-              user: user,
-              isLoggedIn: true,
-              isLoading: false,
-              error: null,
-            });
-            
-            localStorage.setItem('user', JSON.stringify(user));
-            if (token) localStorage.setItem('auth_token', token);
-            
-            // Broadcast to other tabs
-            if (typeof window !== 'undefined') {
-              const channel = new BroadcastChannel('auth_channel');
-              channel.postMessage({ type: 'LOGIN', user: user });
-            }
-            
-            window.dispatchEvent(new Event("userLoggedIn"));
-            
-            return { success: true };
-          } else {
-            throw new Error(response.data.message || 'Login failed');
-          }
-        } catch (error) {
-          console.error('Login error:', error);
-          set({
-            isLoading: false,
-            error: error.message,
-            isLoggedIn: false,
-          });
-          return { success: false, error: error.message };
+      // ✅ FIX: This function should NOT call loginUser again
+      // It should just update the state with user data
+      login: (userData, token) => {
+        console.log('📝 Store login called with user:', userData?.email);
+        console.log('📝 Token received:', token?.substring(0, 20) + '...');
+        
+        if (!userData || !token) {
+          console.error('❌ Store login: Missing userData or token');
+          return { success: false, error: 'Missing user data or token' };
         }
+        
+        set({
+          user: userData,
+          isLoggedIn: true,
+          isLoading: false,
+          error: null,
+        });
+        
+        localStorage.setItem('user', JSON.stringify(userData));
+        if (token) localStorage.setItem('auth_token', token);
+        
+        window.dispatchEvent(new Event("userLoggedIn"));
+        
+        console.log('✅ Store login successful');
+        return { success: true };
       },
 
       logout: async () => {
@@ -104,11 +83,6 @@ export const useAuthStore = create(
         localStorage.removeItem('auth-storage');
         localStorage.removeItem('user');
         localStorage.removeItem('auth_token');
-        
-        if (typeof window !== 'undefined') {
-          const channel = new BroadcastChannel('auth_channel');
-          channel.postMessage({ type: 'LOGOUT' });
-        }
         
         window.dispatchEvent(new Event("userLoggedOut"));
       },
@@ -142,20 +116,6 @@ export const useAuthStore = create(
     }
   )
 );
-
-// Cross-tab synchronization
-if (typeof window !== 'undefined') {
-  const channel = new BroadcastChannel('auth_channel');
-  channel.onmessage = (event) => {
-    if (event.data.type === 'LOGIN') {
-      console.log('Login detected from another tab - refreshing...');
-      window.location.reload();
-    } else if (event.data.type === 'LOGOUT') {
-      console.log('Logout detected from another tab - refreshing...');
-      window.location.reload();
-    }
-  };
-}
 
 export const useAuth = () => useAuthStore();
 export const useUser = () => useAuthStore((state) => state.user);

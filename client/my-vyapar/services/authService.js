@@ -5,20 +5,54 @@ export const loginUser = async (userData) => {
   try {
     console.log('🔐 Attempting login for:', userData.email);
     
-    // CSRF cookie will be fetched automatically by the interceptor
     const response = await api.post("/users/login", userData);
     
-    console.log('✅ Login response:', response.data);
+    console.log('📦 Full response:', response);
+    console.log('📦 Response data:', response.data);
+    console.log('📦 Response status:', response.data.status);
     
-    if (response.data.token) {
-      localStorage.setItem('auth_token', response.data.token);
-      console.log('✅ Token stored in localStorage');
+    // IMPORTANT: Your API returns { status: true, token: "...", user: {...} }
+    // Check if response.data.status is true (not response.status)
+    if (response.data.status === true) {
+      console.log('✅ Login successful from API');
+      
+      // Store token in localStorage
+      if (response.data.token) {
+        localStorage.setItem('auth_token', response.data.token);
+        console.log('✅ Token stored');
+      }
+      
+      if (response.data.user) {
+        localStorage.setItem('user', JSON.stringify(response.data.user));
+        console.log('✅ User stored');
+      }
+      
+      // Return the data in the format expected by the store
+      return {
+        data: {
+          status: true,
+          token: response.data.token,
+          user: response.data.user
+        }
+      };
+    } else {
+      // Handle case where status is false
+      throw new Error(response.data.message || 'Login failed');
+    }
+  } catch (error) {
+    console.error('❌ Login error:', error);
+    console.error('❌ Error response:', error.response);
+    console.error('❌ Error data:', error.response?.data);
+    
+    // Extract meaningful error message
+    let errorMessage = 'Login failed';
+    if (error.response?.data?.message) {
+      errorMessage = error.response.data.message;
+    } else if (error.message) {
+      errorMessage = error.message;
     }
     
-    return response;
-  } catch (error) {
-    console.error('❌ Login failed:', error.response?.data || error);
-    throw error.response?.data || error;
+    throw { message: errorMessage, ...error.response?.data };
   }
 };
 
@@ -36,22 +70,21 @@ export const logoutUser = async () => {
     const response = await api.post("/users/logout");
     localStorage.removeItem('auth_token');
     localStorage.removeItem('user');
+    localStorage.removeItem('auth-storage');
     return response;
   } catch (error) {
     localStorage.removeItem('auth_token');
     localStorage.removeItem('user');
+    localStorage.removeItem('auth-storage');
     return { status: true, message: "Logged out successfully" };
   }
 };
 
 export const checkSession = async () => {
   try {
-    console.log('🔍 Checking session...');
     const response = await api.get("/users/check-session");
-    console.log('✅ Session check response:', response.data);
     return response.data;
   } catch (error) {
-    console.log('❌ Session check failed:', error.response?.status);
     return { status: false, message: 'Not authenticated' };
   }
 };
