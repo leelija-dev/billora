@@ -47,6 +47,11 @@ const Pricing = ({ limit = 3, showFilters = true, showViewAllButton = true }) =>
   // Use Zustand auth store instead of manual localStorage
   const { user, token, isLoggedIn, hasActivePlan, checkPlanPurchaseEligibility } = useAuthStore();
 
+  // Set client mounted state
+  useEffect(() => {
+    setIsClientMounted(true);
+  }, []);
+
   // Load business types from API
   useEffect(() => {
     const loadBusinessTypes = async () => {
@@ -149,7 +154,6 @@ const Pricing = ({ limit = 3, showFilters = true, showViewAllButton = true }) =>
     try {
       if (businessTypeId === "all") {
         // Use store methods to get all plans
-        await fetchPlans();
         let transformedPlans = plans.map(transformPlan);
         
         // Apply limit if specified
@@ -157,14 +161,13 @@ const Pricing = ({ limit = 3, showFilters = true, showViewAllButton = true }) =>
           transformedPlans = transformedPlans.slice(0, limit);
         }
         
-        console.log("Setting filteredPlans with:", transformedPlans, "Length:", transformedPlans.length);
+        console.log("Setting filteredPlans with all plans:", transformedPlans, "Length:", transformedPlans.length);
         setFilteredPlans(transformedPlans);
       } else {
-        // Use filter store to search by business type (send 'all' for all plans or business type id)
-        const searchValue = businessTypeId === "all" ? "all" : businessTypeId;
-        updateFilter('search', searchValue);
+        // Use filter store to search by business type
+        updateFilter('search', businessTypeId);
         const searchResults = await searchWithFilters();
-        console.log("Search results:", searchResults);
+        console.log("Search results for business type", businessTypeId, ":", searchResults);
         
         if (searchResults && searchResults.length > 0) {
           let transformedPlans = searchResults.map(transformPlan);
