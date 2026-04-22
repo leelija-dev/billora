@@ -9,7 +9,11 @@ import { useAuthStore } from "../store/authStoreZustand";
 import toast from 'react-hot-toast';
 
 const Navbar = () => {
-  const { isLoggedIn, user, hasActivePlan, logout } = useAuthStore();
+  const { user, isLoggedIn, logout } = useAuthStore();
+  
+  // ✅ Calculate hasActivePlan directly from user data
+  const hasActivePlan = user?.is_active === 1 || false;
+  
   const [scrolled, setScrolled] = useState(false);
   const [activeTab, setActiveTab] = useState(0);
   const [isNavAction, setIsNavAction] = useState(true);
@@ -56,6 +60,17 @@ const Navbar = () => {
   const pathname = usePathname();
   const router = useRouter();
 
+  // ✅ Debug logging
+  useEffect(() => {
+    console.log("Navbar Debug:", {
+      isLoggedIn,
+      hasActivePlan,
+      userIsActive: user?.is_active,
+      userPlanId: user?.plan_id,
+      user
+    });
+  }, [isLoggedIn, hasActivePlan, user]);
+
   const routeMap = {
     "/trymobile": 0,
     "/carrers": 1,
@@ -87,7 +102,6 @@ const Navbar = () => {
       });
       
       try {
-        // Use Zustand logout function directly
         await logout();
         
         toast.dismiss(loadingToastId);
@@ -108,7 +122,6 @@ const Navbar = () => {
           position: 'top-right',
         });
         
-        // Still logout locally even if API call fails
         await logout();
         router.push("/");
       } finally {
@@ -504,7 +517,7 @@ const Navbar = () => {
               </ul>
             </div>
             
-            {/* Dashboard Button - Opens external dashboard on port 3000 */}
+            {/* ✅ FIXED: Dashboard Button Logic */}
             {isLoggedIn && hasActivePlan ? (
               <a
                 href={`${DASHBOARD_URL}/dashboard`}
@@ -516,16 +529,15 @@ const Navbar = () => {
                 <FiGrid size={16} />
                 <span>Dashboard</span>
               </a>
-            ) : ( <Link
-              href="/bookdemo"
-              onClick={handleExternalClick}
-              className="px-3 sm:px-4 py-1.5 sm:py-2 bg-gradient-to-r from-indigo-500 to-purple-500 text-white rounded-full text-xs sm:text-sm font-semibold transition-all duration-200 hover:shadow-md hover:scale-105 whitespace-nowrap"
-            >
-              Book Free Demo
-            </Link>
+            ) : (
+              <Link
+                href="/bookdemo"
+                onClick={handleExternalClick}
+                className="px-3 sm:px-4 py-1.5 sm:py-2 bg-gradient-to-r from-indigo-500 to-purple-500 text-white rounded-full text-xs sm:text-sm font-semibold transition-all duration-200 hover:shadow-md hover:scale-105 whitespace-nowrap"
+              >
+                Book Free Demo
+              </Link>
             )}
-            
-           
 
             {/* Desktop Auth Section */}
             {isLoggedIn ? (
@@ -583,7 +595,7 @@ const Navbar = () => {
                       </div>
                     </div>
                     <div className="py-2">
-                      {/* Dashboard link in dropdown menu - opens external dashboard */}
+                      {/* Dashboard link in dropdown menu */}
                       {hasActivePlan && (
                         <a
                           href={`${DASHBOARD_URL}/dashboard`}
@@ -602,24 +614,16 @@ const Navbar = () => {
                         </a>
                       )}
                       <Link
-                        href={`${DASHBOARD_URL}/settings`}
-                          onClick={(e) => {
-                            e.preventDefault();
-                            setShowUserMenu(false);
-                            window.open(`${DASHBOARD_URL}/settings`, '_blank');
-                          }}
+                        href="/profile"
+                        onClick={() => setShowUserMenu(false)}
                         className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
                       >
                         <FiUser size={18} />
                         <span>My Profile</span>
                       </Link>
                       <Link
-                        href={`${DASHBOARD_URL}/settings`}
-                          onClick={(e) => {
-                            e.preventDefault();
-                            setShowUserMenu(false);
-                            window.open(`${DASHBOARD_URL}/settings`, '_blank');
-                          }}
+                        href="/settings"
+                        onClick={() => setShowUserMenu(false)}
                         className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
                       >
                         <FiSettings size={18} />
@@ -757,7 +761,7 @@ const Navbar = () => {
 
           {/* Mobile Action Buttons */}
           <div className="p-4 border-t border-gray-100 space-y-2">
-            {/* Dashboard button for mobile - opens external dashboard */}
+            {/* ✅ FIXED: Dashboard button for mobile */}
             {isLoggedIn && hasActivePlan && (
               <a
                 href={`${DASHBOARD_URL}/dashboard`}
