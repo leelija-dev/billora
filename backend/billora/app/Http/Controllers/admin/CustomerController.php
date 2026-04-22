@@ -1,5 +1,7 @@
 <?php
 
+
+
 namespace App\Http\Controllers\admin;
 
 use App\Http\Controllers\Controller;
@@ -8,82 +10,555 @@ use App\Models\Customers;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
-use App\Notifications\VerifyEmailNotification;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Log;
+
 class CustomerController extends Controller
 {
-
-
-    public function index() // check logged in user
+    public function index()
     {
-        // $customer = Customers::id()->get();
-        $customer = Auth::user();
+        $user = Auth::user();
+        if (!$user) {
+            return response()->json([
+                'status' => false,
+                'message' => 'User not authenticated'
+            ], 401);
+        }
+        
         return response()->json([
             'status' => true,
             'message' => 'User List',
-            'data' => $customer
+            'data' => $user
         ]);
     }
+    
     public function store(Request $request)
     {
-        try{
-        $data = $request->validate([
-            'name'          => 'nullable|string',
-            'email'         => 'required|email',
-            'phone'         => 'nullable',
-            'password'      => 'required',
-            'company_name'  => 'nullable',
-            'gst_number'    => 'nullable',
-            'address'       => 'nullable',
-            'city'          => 'nullable',
-            'state'         => 'nullable',
-            'country'       => 'nullable',
-            'pincode'       => 'nullable',
-            'created_by'    => 'nullable'
+        try {
+            $data = $request->validate([
+                'name'          => 'nullable|string',
+                'email'         => 'required|email|unique:customers,email',
+                'phone'         => 'nullable',
+                'password'      => 'required|min:6',
+                'company_name'  => 'nullable',
+                'gst_number'    => 'nullable',
+                'address'       => 'nullable',
+                'city'          => 'nullable',
+                'state'         => 'nullable',
+                'country'       => 'nullable',
+                'pincode'       => 'nullable',
+                'created_by'    => 'nullable'
+            ]);
+            
+            $data['verification_token'] = Str::random(64);
+            $data['password'] = Hash::make($data['password']);
+            $customer = Customers::create($data);
+            
+            return response()->json([
+                'status' => true,
+                'message' => 'User Registered Successfully',
+                'data' => $customer
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => false,
+                'message' => $e->getMessage()
+            ], 422);
+        }
+    }
 
-        ]);
-         $data['verification_token'] = Str::random(64);
-        $data['password'] = Hash::make($data['password']);
-        $customer = Customers::create($data);
-        // $customer->notify(new VerifyEmailNotification($data['verification_token']));
-    try{
-       $customerMail = $this->CustomerMail($customer->id, $data['verification_token']);
-        $adminMail = $this->AdminMail($customer->id);
-        $admin_mail_id = config('app.admin_mail');
-        // Send admin mail
-        Mail::html($adminMail, function ($message) use ($admin_mail_id) {
-            $message->to($admin_mail_id)
-                    ->subject("New User Registered");
-        });
-        //customer mail
-       
-        Mail::html($customerMail, function ($message) use ($customer) {
-            $message->to($customer->email)
-                    ->subject('Welcome! Please Verify Your Email');
-        });
-    }catch (\Exception $e) {
-        // Log the error or handle it as needed
-        Log::error('Mail sending failed', [
-                'error' => $e->getMessage(),
-                'user_id' => $customer->id
+    public function edit($id)
+    {
+        try {
+            $user = Auth::user();
+            if (!$user || $id != $user->id) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Unauthorized user'
+                ], 403);
+            }
+            
+            $customer = Customers::findOrFail($id);
+            return response()->json([
+                'status' => true,
+                'message' => 'User Details',
+                'data' => $customer
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => false,
+                'message' => $e->getMessage()
+            ], 404);
+        }
+    }
+    
+    public function update(Request $request, $id)
+    {
+        $user = Auth::user();
+        if (!$user || $id != $user->id) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Unauthorized user'
+            ], 403);
+        }
+        
+        try {
+            $data = $request->validate([
+                'name'          => 'nullable|string',
+                'phone'         => 'nullable',
+                'company_name'  => 'nullable',
+                'gst_number'    => 'nullable',
+                'address'       => 'nullable',
+                'city'          => 'nullable',
+                'state'         => 'nullable',
+                'country'       => 'nullable',
+                'pincode'       => 'nullable',
+            ]);
+            
+            $customer = Customers::findOrFail($id);
+            $customer->update($data);
+            
+            return response()->json([
+                'status' => true,
+                'message' => 'User Updated Successfully',
+                'data' => $customer
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => false,
+                'message' => $e->getMessage()
+            ], 422);
+        }
+    }
+    
+    public function updatePassword($id, Request $request)
+    {
+        try {
+            $user = Auth::user();
+            if (!$user || $id != $user->id) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Unauthorized user'
+                ], 403);
+            }
+
+            $request->validate([
+                'current_password' => 'required',
+                'new_password'     => 'required|min:6',
             ]);
 
+            if (!Hash::check($request->current_password, $user->password)) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Current password is incorrect'
+                ], 422);
+            }
+
+            $user->password = Hash::make($request->new_password);
+            $user->save();
+
+            return response()->json([
+                'status' => true,
+                'message' => 'Password updated successfully'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => false,
+                'message' => $e->getMessage()
+            ], 422);
         }
+    }
+    
+    public function login(Request $request)
+    {
+        $request->validate([
+            'email' => 'required|email',
+            'password' => 'required'
+        ]);
+
+        $user = Customers::where('email', $request->email)->first();
+
+        if (!$user) {
+            return response()->json([
+                'status' => false,
+                'message' => 'User not found'
+            ], 401);
+        }
+
+        if (is_null($user->email_verified_at)) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Please verify your email before login'
+            ], 401);
+        }
+        
+        if (!Hash::check($request->password, $user->password)) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Invalid password'
+            ], 401);
+        }
+
+        // Delete existing tokens
+        $user->tokens()->delete();
+        
+        // Create new token
+        $token = $user->createToken('auth-token')->plainTextToken;
+        
+        // Get cookie domain from env
+        $cookieDomain = env('AUTH_COOKIE_DOMAIN', null);
+        $cookieSecure = env('AUTH_COOKIE_SECURE', false);
+        $cookieSameSite = env('AUTH_COOKIE_SAMESITE', 'lax');
+        
+        // Prepare response with token in body
+        $response = response()->json([
+            'status' => true,
+            'message' => 'Login successful',
+            'token' => $token,
+            'user' => $user
+        ]);
+        
+        // Set HTTP-only cookie for web browsers (enables cross-app auth)
+        if ($cookieDomain) {
+            $response->cookie(
+                'auth_token',
+                $token,
+                60 * 24 * 30, // 30 days
+                '/',
+                $cookieDomain,
+                $cookieSecure,
+                true, // HttpOnly
+                false,
+                $cookieSameSite
+            );
+        }
+        
+        return $response;
+    }
+    
+    public function logout(Request $request)
+    {
+        // Try to get token from cookie first
+        $token = $request->cookie('auth_token');
+        
+        if (!$token) {
+            $authHeader = $request->header('Authorization');
+            if ($authHeader && str_starts_with($authHeader, 'Bearer ')) {
+                $token = substr($authHeader, 7);
+            }
+        }
+        
+        if ($token) {
+            $tokenModel = \Laravel\Sanctum\PersonalAccessToken::findToken($token);
+            if ($tokenModel) {
+                $tokenModel->delete();
+            }
+        }
+        
+        $cookieDomain = env('AUTH_COOKIE_DOMAIN', null);
+        $response = response()->json([
+            'status' => true,
+            'message' => 'Logout successful'
+        ]);
+        
+        if ($cookieDomain) {
+            $response->cookie('auth_token', '', -1, '/', $cookieDomain);
+        }
+        
+        return $response;
+    }
+    
+    public function checkSession(Request $request)
+    {
+        // Try to get token from cookie first
+        $token = $request->cookie('auth_token');
+        
+        if (!$token) {
+            $authHeader = $request->header('Authorization');
+            if ($authHeader && str_starts_with($authHeader, 'Bearer ')) {
+                $token = substr($authHeader, 7);
+            }
+        }
+        
+        if (!$token) {
+            return response()->json([
+                'status' => false,
+                'message' => 'No authentication token found'
+            ], 401);
+        }
+        
+        $tokenModel = \Laravel\Sanctum\PersonalAccessToken::findToken($token);
+        
+        if (!$tokenModel) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Invalid or expired token'
+            ], 401);
+        }
+        
+        $user = $tokenModel->tokenable;
+        
+        if (!$user) {
+            return response()->json([
+                'status' => false,
+                'message' => 'User not found'
+            ], 401);
+        }
+        
         return response()->json([
             'status' => true,
-            'message' => 'User Register Successfully',
-            'data' => $customer
+            'message' => 'Authenticated',
+            'user' => $user
         ]);
-    }catch (\Exception $e) {
-        return response()->json([
-            'status' => false,
-            'message' => $e->getMessage()
+    }
+    
+    public function verifyEmail($token)
+    {
+        $customer = Customers::where('verification_token', $token)->first();
+
+        if (!$customer) {
+            return "Invalid or expired token";
+        }
+
+        $customer->update([
+            'email_verified_at' => now(),
+            'verification_token' => null
         ]);
+        
+        $frontendLoginUrl = env('FRONTEND_LOGIN_URL', 'http://localhost:4000');
+        return redirect($frontendLoginUrl . '/login?verified=true');
     }
 
-    }
-//    public function login(Request $request) //web based 
+// namespace App\Http\Controllers\admin;
+
+// use App\Http\Controllers\Controller;
+// use Illuminate\Http\Request;
+// use App\Models\Customers;
+// use Illuminate\Support\Facades\Hash;
+// use Illuminate\Support\Facades\Auth;
+// use Illuminate\Support\Str;
+// use App\Notifications\VerifyEmailNotification;
+// use Illuminate\Support\Facades\Mail;
+// use Illuminate\Support\Facades\Log;
+// class CustomerController extends Controller
+// {
+
+
+//     public function index() // check logged in user
+//     {
+//         // $customer = Customers::id()->get();
+//         $customer = Auth::user();
+//         return response()->json([
+//             'status' => true,
+//             'message' => 'User List',
+//             'data' => $customer
+//         ]);
+//     }
+//     public function store(Request $request)
+//     {
+//         try{
+//         $data = $request->validate([
+//             'name'          => 'nullable|string',
+//             'email'         => 'required|email',
+//             'phone'         => 'nullable',
+//             'password'      => 'required',
+//             'company_name'  => 'nullable',
+//             'gst_number'    => 'nullable',
+//             'address'       => 'nullable',
+//             'city'          => 'nullable',
+//             'state'         => 'nullable',
+//             'country'       => 'nullable',
+//             'pincode'       => 'nullable',
+//             'created_by'    => 'nullable'
+
+//         ]);
+//          $data['verification_token'] = Str::random(64);
+//         $data['password'] = Hash::make($data['password']);
+//         $customer = Customers::create($data);
+//         // $customer->notify(new VerifyEmailNotification($data['verification_token']));
+//     try{
+//        $customerMail = $this->CustomerMail($customer->id, $data['verification_token']);
+//         $adminMail = $this->AdminMail($customer->id);
+//         $admin_mail_id = config('app.admin_mail');
+//         // Send admin mail
+//         Mail::html($adminMail, function ($message) use ($admin_mail_id) {
+//             $message->to($admin_mail_id)
+//                     ->subject("New User Registered");
+//         });
+//         //customer mail
+       
+//         Mail::html($customerMail, function ($message) use ($customer) {
+//             $message->to($customer->email)
+//                     ->subject('Welcome! Please Verify Your Email');
+//         });
+//     }catch (\Exception $e) {
+//         // Log the error or handle it as needed
+//         Log::error('Mail sending failed', [
+//                 'error' => $e->getMessage(),
+//                 'user_id' => $customer->id
+//             ]);
+
+//         }
+//         return response()->json([
+//             'status' => true,
+//             'message' => 'User Register Successfully',
+//             'data' => $customer
+//         ]);
+//     }catch (\Exception $e) {
+//         return response()->json([
+//             'status' => false,
+//             'message' => $e->getMessage()
+//         ]);
+//     }
+
+//     }
+// //    public function login(Request $request) //web based 
+// // {
+// //     $request->validate([
+// //         'email' => 'required|email',
+// //         'password' => 'required'
+// //     ]);
+
+// //     $user = Customers::where('email', $request->email)->first();
+
+// //     if (!$user || !Hash::check($request->password, $user->password)) {
+// //         return response()->json([
+// //             'status' => false,
+// //             'message' => 'Invalid credentials'
+// //         ]);
+// //     }
+
+// //     Auth::login($user); // create session
+
+// //     return response()->json([
+// //         'status' => true,
+// //         'message' => 'Login successful',
+// //         'user' => $user
+// //     ]);
+// // }
+// public function edit($id){
+//     try{
+//         if (!Auth::check()) {
+//             return response()->json([
+//                 'status' => false,
+//                 'message' => 'User not authenticated',
+//                 'id'=>$id,
+                
+//             ]);
+//         }
+//         $user = Auth::user()->id;
+//         if($id != $user){
+//             return response()->json([
+//                 'status' => false,
+//                 'message' => 'Unauthorized user'
+//             ]);
+//         }
+//         $customer = Customers::findOrFail($id);
+//         return response()->json([
+//             'status' => true,
+//             'message' => 'User Details',
+//             'data' => $customer
+//         ]);
+//     }catch(\Exception $e){
+//         return response()->json([
+//             'status' => false,
+//             'message' => $e->getMessage()
+//         ]);
+//     }
+// }
+// public function update(Request $request, $id){
+//     $user = Auth::user()->id;
+//     if($id != $user){
+//         return response()->json([
+//             'status' => false,
+//             'message' => 'Unauthorized user'
+//         ]);
+//     }
+//     try{
+//         $data = $request->validate([
+//             'name'          => 'nullable|string',
+//             // 'email'         => 'required|email',
+//             'phone'         => 'nullable',
+//             'company_name'  => 'nullable',
+//             'gst_number'    => 'nullable',
+//             'address'       => 'nullable',
+//             'city'          => 'nullable',
+//             'state'         => 'nullable',
+//             'country'       => 'nullable',
+//             'pincode'       => 'nullable',
+//             // 'created_by'    => 'nullable'
+
+//         ]);
+//         $customer = Customers::findOrFail($id);
+//         if(!$customer){
+//             return response()->json([
+//                 'status' => false,
+//                 'message' => 'User not found'
+//             ]);
+//         }
+//         $customer->update($data);
+//         return response()->json([
+//             'status' => true,
+//             'message' => 'User Updated Successfully',
+//             'data' => $customer
+//         ]);
+//     }catch(\Exception $e){
+//         return response()->json([
+//             'status' => false,
+//             'message' => $e->getMessage()
+//         ]);
+//     }
+// }
+// public function updatePassword($id,Request $request)   // update password
+// {
+//     try {
+//         // Check Auth
+//         if (!Auth::check()) {
+//             return response()->json([
+//                 'status' => false,
+//                 'message' => 'User not authenticated'
+//             ], 401);
+//         }
+//         if($id != Auth::user()->id){
+//             return response()->json([
+//                 'status' => false,
+//                 'message' => 'Unauthorized user'
+//             ]);
+//         }
+
+//         // Validate input
+//         $request->validate([
+//             'current_password' => 'required',
+//             'new_password'     => 'required',
+//         ]);
+
+//         $user = Auth::user();
+
+//         // Check current password
+//         if (!Hash::check($request->current_password, $user->password)) {
+//             return response()->json([
+//                 'status' => false,
+//                 'message' => 'Current password is incorrect'
+//             ]);
+//         }
+
+//         // Update password
+//         $user->password = Hash::make($request->new_password);
+//         $user->save();
+
+//         return response()->json([
+//             'status' => true,
+//             'message' => 'Password updated successfully'
+//         ]);
+
+//     } catch (\Exception $e) {
+//         return response()->json([
+//             'status' => false,
+//             'message' => $e->getMessage()
+//         ]);
+//     }
+// }
+// public function login(Request $request)  //postman
 // {
 //     $request->validate([
 //         'email' => 'required|email',
@@ -92,214 +567,68 @@ class CustomerController extends Controller
 
 //     $user = Customers::where('email', $request->email)->first();
 
-//     if (!$user || !Hash::check($request->password, $user->password)) {
+//     if (!$user) {
 //         return response()->json([
 //             'status' => false,
-//             'message' => 'Invalid credentials'
+//             'message' => 'User not found'
+//         ]);
+//     }
+// // Block login if not verified
+// if (is_null($user->email_verified_at)) {
+//     return response()->json([
+//         'status' => false,
+//         'message' => 'Please verify your email before login'
+//     ]);
+// }
+//     if (!Hash::check($request->password, $user->password)) {
+//         return response()->json([
+//             'status' => false,
+//             'message' => 'Invalid password'
 //         ]);
 //     }
 
-//     Auth::login($user); // create session
+//     $token = $user->createToken('customer-token')->plainTextToken;
 
 //     return response()->json([
 //         'status' => true,
 //         'message' => 'Login successful',
+//         'token' => $token,
 //         'user' => $user
 //     ]);
 // }
-public function edit($id){
-    try{
-        if (!Auth::check()) {
-            return response()->json([
-                'status' => false,
-                'message' => 'User not authenticated',
-                'id'=>$id,
-                
-            ]);
-        }
-        $user = Auth::user()->id;
-        if($id != $user){
-            return response()->json([
-                'status' => false,
-                'message' => 'Unauthorized user'
-            ]);
-        }
-        $customer = Customers::findOrFail($id);
-        return response()->json([
-            'status' => true,
-            'message' => 'User Details',
-            'data' => $customer
-        ]);
-    }catch(\Exception $e){
-        return response()->json([
-            'status' => false,
-            'message' => $e->getMessage()
-        ]);
-    }
-}
-public function update(Request $request, $id){
-    $user = Auth::user()->id;
-    if($id != $user){
-        return response()->json([
-            'status' => false,
-            'message' => 'Unauthorized user'
-        ]);
-    }
-    try{
-        $data = $request->validate([
-            'name'          => 'nullable|string',
-            // 'email'         => 'required|email',
-            'phone'         => 'nullable',
-            'company_name'  => 'nullable',
-            'gst_number'    => 'nullable',
-            'address'       => 'nullable',
-            'city'          => 'nullable',
-            'state'         => 'nullable',
-            'country'       => 'nullable',
-            'pincode'       => 'nullable',
-            // 'created_by'    => 'nullable'
+// public function logout(Request $request)
+// {
+//     $user = $request->user();
 
-        ]);
-        $customer = Customers::findOrFail($id);
-        if(!$customer){
-            return response()->json([
-                'status' => false,
-                'message' => 'User not found'
-            ]);
-        }
-        $customer->update($data);
-        return response()->json([
-            'status' => true,
-            'message' => 'User Updated Successfully',
-            'data' => $customer
-        ]);
-    }catch(\Exception $e){
-        return response()->json([
-            'status' => false,
-            'message' => $e->getMessage()
-        ]);
-    }
-}
-public function updatePassword($id,Request $request)   // update password
-{
-    try {
-        // Check Auth
-        if (!Auth::check()) {
-            return response()->json([
-                'status' => false,
-                'message' => 'User not authenticated'
-            ], 401);
-        }
-        if($id != Auth::user()->id){
-            return response()->json([
-                'status' => false,
-                'message' => 'Unauthorized user'
-            ]);
-        }
+//     if (!$user) {
+//         return response()->json([
+//             'status' => false,
+//             'message' => 'User not authenticated'
+//         ], 401);
+//     }
 
-        // Validate input
-        $request->validate([
-            'current_password' => 'required',
-            'new_password'     => 'required',
-        ]);
+//     $user->currentAccessToken()->delete();
 
-        $user = Auth::user();
+//     return response()->json([
+//         'status' => true,
+//         'message' => 'Logout successful'
+//     ]);
+// }
+// public function verifyEmail($token)
+// {
+//     $customer = Customers::where('verification_token', $token)->first();
 
-        // Check current password
-        if (!Hash::check($request->current_password, $user->password)) {
-            return response()->json([
-                'status' => false,
-                'message' => 'Current password is incorrect'
-            ]);
-        }
+//     if (!$customer) {
+//         return "Invalid or expired token";
+//     }
 
-        // Update password
-        $user->password = Hash::make($request->new_password);
-        $user->save();
-
-        return response()->json([
-            'status' => true,
-            'message' => 'Password updated successfully'
-        ]);
-
-    } catch (\Exception $e) {
-        return response()->json([
-            'status' => false,
-            'message' => $e->getMessage()
-        ]);
-    }
-}
-public function login(Request $request)  //postman
-{
-    $request->validate([
-        'email' => 'required|email',
-        'password' => 'required'
-    ]);
-
-    $user = Customers::where('email', $request->email)->first();
-
-    if (!$user) {
-        return response()->json([
-            'status' => false,
-            'message' => 'User not found'
-        ]);
-    }
-// Block login if not verified
-if (is_null($user->email_verified_at)) {
-    return response()->json([
-        'status' => false,
-        'message' => 'Please verify your email before login'
-    ]);
-}
-    if (!Hash::check($request->password, $user->password)) {
-        return response()->json([
-            'status' => false,
-            'message' => 'Invalid password'
-        ]);
-    }
-
-    $token = $user->createToken('customer-token')->plainTextToken;
-
-    return response()->json([
-        'status' => true,
-        'message' => 'Login successful',
-        'token' => $token,
-        'user' => $user
-    ]);
-}
-public function logout(Request $request)
-{
-    $user = $request->user();
-
-    if (!$user) {
-        return response()->json([
-            'status' => false,
-            'message' => 'User not authenticated'
-        ], 401);
-    }
-
-    $user->currentAccessToken()->delete();
-
-    return response()->json([
-        'status' => true,
-        'message' => 'Logout successful'
-    ]);
-}
-public function verifyEmail($token)
-{
-    $customer = Customers::where('verification_token', $token)->first();
-
-    if (!$customer) {
-        return "Invalid or expired token";
-    }
-
-    $customer->update([
-        'email_verified_at' => now(),
-        'verification_token' => null
-    ]);
+//     $customer->update([
+//         'email_verified_at' => now(),
+//         'verification_token' => null
+//     ]);
     
-    return redirect(env('FRONTEND_LOGIN_URL') . '/login')->with('message', 'Email verified successfully. You can now log in.');
-}
+//     return redirect(env('FRONTEND_LOGIN_URL') . '/login')->with('message', 'Email verified successfully. You can now log in.');
+// }
 
 public function CustomerMail($customer_id,$token){
     $customer = Customers::findOrFail($customer_id);
