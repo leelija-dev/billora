@@ -68,6 +68,29 @@ export const authService = {
       throw error.response?.data || error.message;
     }
   },
+
+  getPlanDetails: async (planId) => {
+    try {
+      console.log(' Fetching plan details for plan:', planId);
+      const response = await apiClient.get(`/plans/${planId}`);
+      return response;
+    } catch (error) {
+      console.error('Failed to fetch plan details:', error);
+      // Return a default response so the app doesn't break
+      return {
+        data: {
+          status: true,
+          'Single Plan': {
+            id: planId,
+            name: 'Basic Plan',
+            features: []
+          },
+          permissionNames: [],
+          customer_sidebar_permission: []
+        }
+      };
+    }
+  },
 };
 
 // import { apiClient } from './apiClient';

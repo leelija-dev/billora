@@ -63,7 +63,7 @@ const Dashboard = () => {
 
   useEffect(() => {
     fetchDashboardData()
-  }, [timeRange])
+  }, [timeRange, user])
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -81,7 +81,9 @@ const Dashboard = () => {
       setLoading(true)
       
       if (!user?.id) {
-        throw new Error('User not authenticated')
+        console.warn('User not authenticated, skipping dashboard data fetch')
+        setLoading(false)
+        return
       }
 
       const response = await dashboardAPI.getOverview(user.id)
