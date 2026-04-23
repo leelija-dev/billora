@@ -175,13 +175,24 @@
 // utils/secureApi.js
 import axios from 'axios';
 
-const isDevelopment = process.env.NODE_ENV === 'development';
+const isDevelopment = process.env.PROJECT_ENV_MODE === 'development';
+// Or use your custom env variable
+// const PROJECT_ENV_MODE = process.env.PROJECT_ENV_MODE;
 
 const getApiBaseUrl = () => {
   if (process.env.NEXT_PUBLIC_API_BASE_URL) {
     return process.env.NEXT_PUBLIC_API_BASE_URL;
   }
   return isDevelopment ? 'http://localhost:8000/api' : 'https://api.thefastbill.com/api';
+};
+
+// ✅ FIX: Get the base API URL without /api for CSRF endpoint
+const getCsrfBaseUrl = () => {
+  if (process.env.NEXT_PUBLIC_API_BASE_URL) {
+    // Remove /api from the end if present
+    return process.env.NEXT_PUBLIC_API_BASE_URL.replace(/\/api$/, '');
+  }
+  return isDevelopment ? 'http://localhost:8000' : 'https://api.thefastbill.com';
 };
 
 export const api = axios.create({
@@ -209,10 +220,15 @@ const fetchCsrfCookie = async () => {
   
   csrfPromise = new Promise(async (resolve, reject) => {
     try {
-      // Use a separate axios instance without interceptors to avoid loops
-      const response = await axios.get('http://localhost:8000/api/sanctum/csrf-cookie', {
+      // ✅ FIX: Use dynamic base URL instead of hardcoded localhost
+      const csrfBaseUrl = getCsrfBaseUrl();
+      console.log('🔄 Fetching CSRF cookie from:', `${csrfBaseUrl}/sanctum/csrf-cookie`);
+      
+      const response = await axios.get(`${csrfBaseUrl}/sanctum/csrf-cookie`, {
         withCredentials: true,
-        baseURL: getApiBaseUrl(),
+        headers: {
+          'Accept': 'application/json',
+        },
       });
       csrfFetched = true;
       console.log('✅ CSRF cookie fetched successfully');
@@ -228,6 +244,20 @@ const fetchCsrfCookie = async () => {
   return csrfPromise;
 };
 
+// Get CSRF token from cookie
+const getCsrfToken = () => {
+  if (typeof document === 'undefined') return null;
+  
+  const cookies = document.cookie.split('; ');
+  for (const cookie of cookies) {
+    if (cookie.startsWith('XSRF-TOKEN=')) {
+      const token = cookie.split('=')[1];
+      return decodeURIComponent(token);
+    }
+  }
+  return null;
+};
+
 // Request interceptor for CSRF
 api.interceptors.request.use(async (config) => {
   // Skip CSRF for GET requests and CSRF endpoint itself
@@ -239,15 +269,13 @@ api.interceptors.request.use(async (config) => {
     try {
       await fetchCsrfCookie();
       
-      // Get the CSRF token from cookie
-      const csrfToken = document.cookie
-        .split('; ')
-        .find(row => row.startsWith('XSRF-TOKEN='))
-        ?.split('=')[1];
+      const csrfToken = getCsrfToken();
       
       if (csrfToken) {
-        config.headers['X-XSRF-TOKEN'] = decodeURIComponent(csrfToken);
+        config.headers['X-XSRF-TOKEN'] = csrfToken;
         console.log('✅ CSRF token added to request');
+      } else {
+        console.warn('⚠️ No CSRF token found in cookies');
       }
     } catch (error) {
       console.error('❌ CSRF setup failed:', error);
@@ -262,14 +290,20 @@ api.interceptors.request.use(async (config) => {
     }
   }
   
-  console.log(`📤 ${config.method?.toUpperCase()} ${config.url}`);
+  // Only log in development
+  if (isDevelopment) {
+    console.log(`📤 ${config.method?.toUpperCase()} ${config.url}`);
+  }
+  
   return config;
 });
 
 // Response interceptor
 api.interceptors.response.use(
   (response) => {
-    console.log(`✅ ${response.config.method?.toUpperCase()} ${response.config.url} - ${response.status}`);
+    if (isDevelopment) {
+      console.log(`✅ ${response.config.method?.toUpperCase()} ${response.config.url} - ${response.status}`);
+    }
     return response;
   },
   async (error) => {
@@ -295,6 +329,11 @@ api.interceptors.response.use(
         originalRequest._retry = true;
         try {
           await fetchCsrfCookie();
+          // Also update the CSRF token in headers
+          const newCsrfToken = getCsrfToken();
+          if (newCsrfToken) {
+            originalRequest.headers['X-XSRF-TOKEN'] = newCsrfToken;
+          }
           return api(originalRequest);
         } catch (retryError) {
           return Promise.reject(retryError);

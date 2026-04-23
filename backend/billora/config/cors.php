@@ -4,14 +4,19 @@ return [
     'paths' => ['api/*', 'sanctum/csrf-cookie', 'login', 'logout', 'users/*'],
     'allowed_methods' => ['*'],
     'allowed_origins' => [
-        'http://localhost:3000',
-        'http://localhost:4000',
         'https://thefastbill.com',
         'https://app.thefastbill.com',
         'https://api.thefastbill.com',
     ],
     'allowed_origins_patterns' => [],
-    'allowed_headers' => ['*'],
+    'allowed_headers' => [
+        '*',
+        'Content-Type',
+        'Authorization',
+        'X-Requested-With',
+        'X-CSRF-TOKEN',
+        'Accept',
+    ],
     'exposed_headers' => [],
     'max_age' => 0,
     'supports_credentials' => true, // CRITICAL for cookies
@@ -30,14 +35,14 @@ return [
 
 //     'allowed_origins_patterns' => [],
 
-//     'allowed_headers' => [
-//         '*',
-//         'Content-Type',
-//         'Authorization',
-//         'X-Requested-With',
-//         'X-CSRF-TOKEN',
-//         'Accept',
-//     ],
+    // 'allowed_headers' => [
+    //     '*',
+    //     'Content-Type',
+    //     'Authorization',
+    //     'X-Requested-With',
+    //     'X-CSRF-TOKEN',
+    //     'Accept',
+    // ],
 
 //     'exposed_headers' => [],
 
