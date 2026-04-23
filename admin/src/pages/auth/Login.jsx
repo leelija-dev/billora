@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { useAuthStore } from '../../store/authStore'
@@ -7,8 +7,15 @@ import Input from '../../components/common/Input/Input'
 
 const Login = () => {
   const navigate = useNavigate()
-  const { login, isLoading } = useAuthStore()
+  const { login, isLoading, isAuthenticated } = useAuthStore()
   const [showPassword, setShowPassword] = useState(false)
+  
+  // Redirect authenticated users to dashboard
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/dashboard')
+    }
+  }, [isAuthenticated, navigate])
   
   const {
     register,

@@ -39,28 +39,26 @@ const AppRoutes = () => {
       <Route path="/test-api" element={<APITest />} />
       
       {/* Protected Routes */}
-      <Route element={<ProtectedRoute />}>
-        <Route element={<Layout />}>
-          <Route path="/" element={<Navigate to="/dashboard" replace />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/products" element={<ProtectedRoute feature="products"><Products /></ProtectedRoute>} />
-          <Route path="/categories" element={<ProtectedRoute feature="categories"><Categories /></ProtectedRoute>} />
-          <Route path="/brands" element={<Brands />} />
-          <Route path="/units" element={<ProtectedRoute feature="units"><Units /></ProtectedRoute>} />
-          <Route path="/medicine-types" element={<MedicineTypes />} />
-          <Route path="/stores" element={<ProtectedRoute feature="stores"><Stores /></ProtectedRoute>} />
-          <Route path="/packages" element={<Packages />} />
-          <Route path="/stock" element={<ProtectedRoute feature="stock-management"><Inventory /></ProtectedRoute>} />
-          <Route path="/orders" element={<ProtectedRoute feature="orders"><Orders /></ProtectedRoute>} />
-          <Route path="/customers" element={<ProtectedRoute feature="customers"><Customers /></ProtectedRoute>} />
-          <Route path="/customers/:id" element={<CustomerDetails />} />
-          <Route path="/invoices" element={<ProtectedRoute feature="invoices"><Invoices /></ProtectedRoute>} />
-          <Route path="/invoices/detail/:id" element={<InvoiceDetail />} />
-          <Route path="/reports" element={<ProtectedRoute feature="reports"><Reports /></ProtectedRoute>} />
-          <Route path="/reports/:id" element={<ReportDetails />} />
-          <Route path="/billing" element={<ProtectedRoute feature="billing"><Plans /></ProtectedRoute>} />
-          <Route path="/settings" element={<ProtectedRoute feature="settings"><Settings /></ProtectedRoute>} />
-        </Route>
+      <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
+        <Route index element={<Navigate to="/dashboard" replace />} />
+        <Route path="dashboard" element={<Dashboard />} />
+        <Route path="products" element={<ProtectedRoute feature="products"><Products /></ProtectedRoute>} />
+        <Route path="categories" element={<ProtectedRoute feature="categories"><Categories /></ProtectedRoute>} />
+        <Route path="brands" element={<Brands />} />
+        <Route path="units" element={<ProtectedRoute feature="units"><Units /></ProtectedRoute>} />
+        <Route path="medicine-types" element={<MedicineTypes />} />
+        <Route path="stores" element={<ProtectedRoute feature="stores"><Stores /></ProtectedRoute>} />
+        <Route path="packages" element={<Packages />} />
+        <Route path="stock" element={<ProtectedRoute feature="stock-management"><Inventory /></ProtectedRoute>} />
+        <Route path="orders" element={<ProtectedRoute feature="orders"><Orders /></ProtectedRoute>} />
+        <Route path="customers" element={<ProtectedRoute feature="customers"><Customers /></ProtectedRoute>} />
+        <Route path="customers/:id" element={<CustomerDetails />} />
+        <Route path="invoices" element={<ProtectedRoute feature="invoices"><Invoices /></ProtectedRoute>} />
+        <Route path="invoices/detail/:id" element={<InvoiceDetail />} />
+        <Route path="reports" element={<ProtectedRoute feature="reports"><Reports /></ProtectedRoute>} />
+        <Route path="reports/:id" element={<ReportDetails />} />
+        <Route path="billing" element={<ProtectedRoute feature="billing"><Plans /></ProtectedRoute>} />
+        <Route path="settings" element={<ProtectedRoute feature="settings"><Settings /></ProtectedRoute>} />
       </Route>
       
       {/* 404 - Redirect to dashboard */}

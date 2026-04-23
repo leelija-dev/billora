@@ -17,6 +17,9 @@ const ProtectedRoute = ({
 }) => {
   const location = useLocation()
   const { isAuthenticated, isLoading, hasHydrated, checkAuth } = useAuthStore()
+  
+  console.log('🔍 ProtectedRoute - Current path:', location.pathname)
+  console.log('🔍 ProtectedRoute - Auth state:', { isAuthenticated, isLoading, hasHydrated })
   const { 
     user, 
     permissions, 
@@ -68,8 +71,15 @@ const ProtectedRoute = ({
     }
   }
 
+  // If no user, redirect to login (even if still loading or not hydrated)
+  if (!isAuthenticated && !isLoading) {
+    console.log('🔄 Redirecting to login - User not authenticated, current path:', location.pathname)
+    return <Navigate to="/login" state={{ from: location }} replace />
+  }
+
   // If still loading auth, show spinner (but don't wait for hydration if already authenticated)
   if (isLoading || (isChecking && !isAuthenticated)) {
+    console.log('🔄 Still loading auth...')
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <LoadingSpinner size="lg" />
@@ -77,13 +87,9 @@ const ProtectedRoute = ({
     )
   }
 
-  // If no user, redirect to login
-  if (!isAuthenticated) {
-    return <Navigate to="/login" state={{ from: location }} replace />
-  }
-
   // If permissions are still loading, show spinner
   if (permissionLoading || (feature && featureLoading)) {
+    console.log('🔄 Loading permissions...')
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
