@@ -566,9 +566,20 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
             <textarea
               rows={4}
               className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white resize-none"
-              placeholder="Enter detailed product description..."
-              {...register('description')}
+              placeholder="Enter detailed product description (optional)..."
+              {...register('description', {
+                required: false,
+                maxLength: {
+                  value: 1000,
+                  message: 'Description must be less than 1000 characters'
+                }
+              })}
             />
+            {errors.description && (
+              <p className="mt-1 text-sm text-red-600 dark:text-red-400">
+                {errors.description.message}
+              </p>
+            )}
           </div>
 
           <div className="flex items-center p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-600">
@@ -1044,9 +1055,20 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
             <textarea
               rows={2}
               className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white resize-none"
-              placeholder="Enter short description"
-              {...register('short_description')}
+              placeholder="Enter short description (optional)..."
+              {...register('short_description', {
+                required: false,
+                maxLength: {
+                  value: 200,
+                  message: 'Short description must be less than 200 characters'
+                }
+              })}
             />
+            {errors.short_description && (
+              <p className="mt-1 text-sm text-red-600 dark:text-red-400">
+                {errors.short_description.message}
+              </p>
+            )}
           </div>
         </div>
       ))}

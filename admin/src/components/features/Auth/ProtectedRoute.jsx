@@ -214,6 +214,17 @@ const ProtectedRoute = ({
     // Allow access to features that are available in the user's sidebar API
     const hasBasicAccess = sidebarPermissions.some(p => p.slug === feature)
     
+    // Debug logging for billing access
+    if (feature === 'billing') {
+      console.log('🔍 Billing access check:', {
+        feature,
+        requiredPermission,
+        hasAccess,
+        hasBasicAccess,
+        sidebarPermissions: sidebarPermissions.map(p => p.slug)
+      })
+    }
+    
     if (requiredPermission && !hasAccess && !hasBasicAccess) {
       return (
         <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
