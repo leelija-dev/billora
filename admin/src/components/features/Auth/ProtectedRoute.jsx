@@ -17,9 +17,13 @@ const ProtectedRoute = ({
 }) => {
   const location = useLocation()
   const { isAuthenticated, isLoading, hasHydrated, checkAuth } = useAuthStore()
+  
+  console.log('🔍 ProtectedRoute - Current path:', location.pathname)
+  console.log('🔍 ProtectedRoute - Auth state:', { isAuthenticated, isLoading, hasHydrated })
   const { 
     user, 
     permissions, 
+    sidebarPermissions,
     loading: permissionLoading, 
     fetchUserPermissions, 
     permissionsFetched,
@@ -27,7 +31,10 @@ const ProtectedRoute = ({
     refreshPermissions,
     error: permissionError
   } = usePermissionStore()
-  const { hasAccess, loading: featureLoading, error: featureError } = useFeatureAccess(feature)
+  
+  // Only use feature access if feature is provided
+  const featureAccess = feature ? useFeatureAccess(feature) : { hasAccess: true, loading: false, error: null }
+  const { hasAccess, loading: featureLoading, error: featureError } = featureAccess
   const { debugInfo } = usePermissionDebug()
   const [isChecking, setIsChecking] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
@@ -64,8 +71,15 @@ const ProtectedRoute = ({
     }
   }
 
-  // If still loading auth or hydrating, show spinner
-  if (isLoading || !hasHydrated || isChecking) {
+  // If no user, redirect to login (even if still loading or not hydrated)
+  if (!isAuthenticated && !isLoading) {
+    console.log('🔄 Redirecting to login - User not authenticated, current path:', location.pathname)
+    return <Navigate to="/login" state={{ from: location }} replace />
+  }
+
+  // If still loading auth, show spinner (but don't wait for hydration if already authenticated)
+  if (isLoading || (isChecking && !isAuthenticated)) {
+    console.log('🔄 Still loading auth...')
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <LoadingSpinner size="lg" />
@@ -73,13 +87,9 @@ const ProtectedRoute = ({
     )
   }
 
-  // If no user, redirect to login
-  if (!isAuthenticated) {
-    return <Navigate to="/login" state={{ from: location }} replace />
-  }
-
   // If permissions are still loading, show spinner
   if (permissionLoading || (feature && featureLoading)) {
+    console.log('🔄 Loading permissions...')
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
@@ -200,7 +210,11 @@ const ProtectedRoute = ({
     }
     
     const requiredPermission = permissionMap[feature]
-    if (requiredPermission && !hasAccess) {
+    
+    // Allow access to features that are available in the user's sidebar API
+    const hasBasicAccess = sidebarPermissions.some(p => p.slug === feature)
+    
+    if (requiredPermission && !hasAccess && !hasBasicAccess) {
       return (
         <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
           <EmptyState

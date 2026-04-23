@@ -1,12 +1,39 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { FaCheckCircle, FaRupeeSign, FaUser, FaBuilding } from "react-icons/fa";
+import { 
+  FaCheckCircle, 
+  FaRupeeSign, 
+  FaUser, 
+  FaBuilding, 
+  FaCalendarAlt, 
+  FaIndustry, 
+  FaStar, 
+  FaLock, 
+  FaInfoCircle, 
+  FaCalendar,
+  FaSpinner,
+  FaArrowLeft,
+  FaArrowRight,
+  FaMinus,
+  FaPlus,
+  FaRegBuilding,
+  FaRegEnvelope,
+  FaRegUser,
+  FaPhone,
+  FaRegAddressCard,
+  FaRegClock,
+  FaShieldAlt,
+  FaCreditCard,
+  FaLock as FaLockIcon
+} from "react-icons/fa";
+import { FiCheckCircle as FiCheckCircleIcon } from "react-icons/fi";
 import { useRouter } from "next/navigation";
 import toast, { Toaster } from 'react-hot-toast';
 import { usePaymentStore } from "@/store/paymentStore";
 import { useAuthStore } from "../../store/authStoreZustand";
 import useBusinessStore from "../../store/businessStore";
+import { logger } from '../../utils/logger';
 
 const OrderSummary = () => {
   const router = useRouter();
@@ -37,7 +64,7 @@ const OrderSummary = () => {
   useEffect(() => {
     if (token) {
       fetchBusinessTypes(token).catch(error => {
-        console.error('Failed to fetch business types:', error);
+        logger.error('Failed to fetch business types:', error);
       });
     }
   }, [token, fetchBusinessTypes]);
@@ -59,7 +86,7 @@ const OrderSummary = () => {
         if (user.address) setBillingAddress(user.address);
         if (user.business_type_id) setBusinessTypeId(String(user.business_type_id));
           
-        console.log("Logged-in user loaded:", user);
+        logger.log("Logged-in user loaded:", user);
       }
     };
     
@@ -70,17 +97,21 @@ const OrderSummary = () => {
   useEffect(() => {
     const loadPlanData = () => {
       const planData = localStorage.getItem('selectedPlan');
+      console.log(" Raw plan data from localStorage:", planData);
+      
       if (planData) {
         try {
           const parsedPlan = JSON.parse(planData);
+          console.log(" Parsed plan data:", parsedPlan);
           setSelectedPlan(parsedPlan);
-          console.log("✅ Loaded plan:", parsedPlan);
+          logger.log(" Loaded plan:", parsedPlan);
         } catch (e) {
-          console.error("Error parsing plan:", e);
+          logger.error("Error parsing plan:", e);
           toast.error('Invalid plan data');
           router.push('/pricing');
         }
       } else {
+        console.log(" No plan data found in localStorage");
         toast.error('No plan selected');
         router.push('/pricing');
       }
@@ -105,7 +136,7 @@ const OrderSummary = () => {
   const calculateGST = () => {
     if (!selectedPlan) return 0;
     const price = Number(selectedPlan.price);
-    const gstRate = selectedPlan.gst || 18;
+    const gstRate = selectedPlan.gst || 0;
     return (price * gstRate) / 100;
   };
 
@@ -200,21 +231,20 @@ const OrderSummary = () => {
       // Clean phone number
       const cleanCustomerPhone = customerPhone.replace(/\D/g, '');
       
-      // IMPORTANT: Since backend requires business_type_id, we need to send a default value
-      // Default business type ID (Individual/Sole Proprietorship) - adjust based on your DB
-      const DEFAULT_BUSINESS_TYPE_ID = 1; // Change this to match your default business type ID
+      // Get the first business type from API as default, or fallback to 1
+      const DEFAULT_BUSINESS_TYPE_ID = businessTypes.length > 0 ? businessTypes[0].id : 1;
       
-      // Use selected business type ID if provided, otherwise use default
+      // Use selected business type ID if provided, otherwise use default from API
       const finalBusinessTypeId = businessTypeId ? parseInt(businessTypeId) : DEFAULT_BUSINESS_TYPE_ID;
       
-      console.log("🏢 Business Type - Selected:", businessTypeId, "Final:", finalBusinessTypeId);
+      logger.log("Business Type - Selected:", businessTypeId, "Final:", finalBusinessTypeId);
       
       // Prepare payload
       const payload = {
         // Required fields
         amount: Number(totalAmount.toFixed(2)),
         plan_id: selectedPlan.id,
-        business_type_id: finalBusinessTypeId, // Always send a value
+        business_type_id: finalBusinessTypeId,
         customer_id: String(customerIdValue),
         
         // Optional fields
@@ -227,15 +257,15 @@ const OrderSummary = () => {
       if (billingAddress) payload.billing_address = billingAddress;
       if (selectedBusinessType) payload.business_type_name = selectedBusinessType.name;
 
-      console.log("📤 Sending payload to backend:", JSON.stringify(payload, null, 2));
-      console.log("📞 Customer ID being sent (as string):", String(customerIdValue));
-      console.log("📞 Customer phone being sent:", cleanCustomerPhone);
-      console.log("🏢 Business type ID being sent:", finalBusinessTypeId);
+      logger.log("📤 Sending payload to backend:", JSON.stringify(payload, null, 2));
+      logger.log("📞 Customer ID being sent (as string):", String(customerIdValue));
+      logger.log("📞 Customer phone being sent:", cleanCustomerPhone);
+      logger.log("🏢 Business type ID being sent:", finalBusinessTypeId);
       
       // Call the store action
       const response = await createOrderAction(payload);
       
-      console.log("📥 Full response from createOrderAction:", response);
+      logger.log("📥 Full response from createOrderAction:", response);
       
       toast.dismiss(loadingToast);
 
@@ -261,10 +291,10 @@ const OrderSummary = () => {
         paymentSessionId = response;
       }
       
-      console.log("🔑 Extracted paymentSessionId:", paymentSessionId);
+      logger.log("🔑 Extracted paymentSessionId:", paymentSessionId);
       
       if (!paymentSessionId) {
-        console.error("Response structure:", JSON.stringify(response, null, 2));
+        logger.error("Response structure:", JSON.stringify(response, null, 2));
         throw new Error(response?.message || response?.error || 'Payment session ID not found in response');
       }
       
@@ -305,11 +335,11 @@ const OrderSummary = () => {
         redirectTarget: "_self"
       });
       
-      console.log("Payment checkout result:", paymentResult);
+      logger.log("Payment checkout result:", paymentResult);
       
     } catch (error) {
       toast.dismiss(loadingToast);
-      console.error('❌ Payment error:', error);
+      logger.error('❌ Payment error:', error);
       
       let errorMessage = 'Payment failed. Please try again.';
       if (error.message?.includes('customer_id')) {
@@ -354,7 +384,7 @@ const OrderSummary = () => {
             <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
               <div className="bg-gradient-to-r from-[#2d236b] to-[#5b5bd6] px-6 py-4">
                 <h2 className="text-white text-xl font-bold flex items-center gap-2">
-                  <FaCheckCircle />
+                  <FiCheckCircleIcon />
                   Review Order Summary
                 </h2>
               </div>
@@ -369,12 +399,13 @@ const OrderSummary = () => {
                         <span className="text-xs font-semibold text-green-600">SELECTED PLAN</span>
                       </div>
                       <h4 className="text-2xl font-bold text-[#2d236b]">{selectedPlan.name}</h4>
-                      <p className="text-sm text-gray-500 mt-2">
-                        📅 {selectedPlan.billingCycle === 'monthly' ? 'Monthly Billing' : 'Yearly Billing'}
+                      <p className="text-sm text-gray-500 mt-2 flex items-center gap-1">
+                        <FaCalendarAlt className="w-4 h-4" />
+                        {selectedPlan.billingCycle === 'monthly' ? 'Monthly Billing' : 'Yearly Billing'}
                       </p>
                       {selectedPlan.businessType && (
                         <p className="text-xs text-purple-600 mt-1">
-                          🏢 Business Type: {selectedPlan.businessType.name}
+                          <FaIndustry className="inline mr-1 w-3 h-3" /> Business Type: {selectedPlan.businessType.name}
                         </p>
                       )}
                     </div>
@@ -384,7 +415,7 @@ const OrderSummary = () => {
                       )}
                       <p className="text-3xl font-bold text-[#5b5bd6]">₹{selectedPlan.price}</p>
                       {selectedPlan.discount > 0 && (
-                        <p className="text-xs text-green-600 mt-1">✨ {selectedPlan.discount}% OFF</p>
+                        <p className="text-xs text-green-600 mt-1"><FaStar className="inline mr-1" /> {selectedPlan.discount}% OFF</p>
                       )}
                     </div>
                   </div>
@@ -449,11 +480,11 @@ const OrderSummary = () => {
                       <FaBuilding className="text-[#5b5bd6]" />
                       Add Business Details <span className="text-xs text-gray-500 font-normal">(Recommended)</span>
                     </span>
-                    <span className="text-[#5b5bd6]">{showOptional ? "−" : "+"}</span>
+                    <span className="text-[#5b5bd6]">{showOptional ? <FaMinus /> : <FaPlus />}</span>
                   </button>
                   
                   {showOptional && (
-                    <div className="mt-4 p-6 bg-gray-50 rounded-xl space-y-4">
+                    <div className="mt-4 p-6 bg-[#F0F8FF] rounded-xl space-y-4">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
                           Company Name <span className="text-gray-400 text-xs font-normal">(Optional)</span>
@@ -521,7 +552,7 @@ const OrderSummary = () => {
                 {/* Info note */}
                 <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-100">
                   <p className="text-xs text-blue-700">
-                    ℹ️ <span className="font-semibold">Note:</span> A default business type will be used if you don't select one. You can update this later in your profile.
+                    <FaInfoCircle className="inline mr-1" /> <span className="font-semibold">Note:</span> A default business type will be used if you don't select one. You can update this later in your profile.
                   </p>
                 </div>
               </div>
@@ -572,16 +603,16 @@ const OrderSummary = () => {
                 >
                   {isProcessing || storeLoading ? (
                     <span className="flex items-center justify-center gap-2">
-                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                      <FaSpinner className="animate-spin h-5 w-5" />
                       {storeLoading ? 'Creating Order...' : 'Processing...'}
                     </span>
                   ) : (
-                    `Pay ₹${calculateTotal().toFixed(2)} Securely`
+                    <>Pay ₹{calculateTotal().toFixed(2)} Securely</>
                   )}
                 </button>
 
                 <div className="mt-4 text-center">
-                  <p className="text-xs text-gray-500">🔒 Secured by Cashfree</p>
+                  <p className="text-xs text-gray-500"><FaLockIcon className="inline mr-1" /> Secured by Cashfree</p>
                 </div>
               </div>
             </div>

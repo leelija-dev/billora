@@ -5,12 +5,15 @@ import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FiLogIn, FiLogOut, FiUser, FiSettings, FiChevronDown, FiMenu, FiX, FiGrid } from "react-icons/fi";
-import { logoutUser } from "../services/authService";
 import { useAuthStore } from "../store/authStoreZustand";
 import toast from 'react-hot-toast';
 
 const Navbar = () => {
-  const { isLoggedIn, user, hasActivePlan, logout } = useAuthStore();
+  const { user, isLoggedIn, logout } = useAuthStore();
+  
+  // ✅ Calculate hasActivePlan directly from user data
+  const hasActivePlan = user?.is_active === 1 || false;
+  
   const [scrolled, setScrolled] = useState(false);
   const [activeTab, setActiveTab] = useState(0);
   const [isNavAction, setIsNavAction] = useState(true);
@@ -57,6 +60,17 @@ const Navbar = () => {
   const pathname = usePathname();
   const router = useRouter();
 
+  // ✅ Debug logging
+  useEffect(() => {
+    console.log("Navbar Debug:", {
+      isLoggedIn,
+      hasActivePlan,
+      userIsActive: user?.is_active,
+      userPlanId: user?.plan_id,
+      user
+    });
+  }, [isLoggedIn, hasActivePlan, user]);
+
   const routeMap = {
     "/trymobile": 0,
     "/carrers": 1,
@@ -71,49 +85,12 @@ const Navbar = () => {
     return routeMap.hasOwnProperty(path?.replace(/\/$/, ""));
   };
 
-  // Handle logout with toast notification
+  // Handle logout directly without confirmation
   const handleLogout = async () => {
-    const userName = user?.name || user?.email?.split('@')[0] || 'User';
-    
-    const toastId = toast.custom((t) => (
-      <div className="bg-white rounded-lg shadow-lg border border-gray-200 p-4 max-w-sm w-full">
-        <div className="flex items-start gap-3">
-          <div className="flex-shrink-0">
-            <div className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center">
-              <FiLogOut className="text-red-600" size={16} />
-            </div>
-          </div>
-          <div className="flex-1">
-            <h3 className="text-sm font-semibold text-gray-900 mb-1">Confirm Logout</h3>
-            <p className="text-sm text-gray-600">
-              Logout from <span className="font-medium">{userName}</span>?
-            </p>
-          </div>
-        </div>
-        <div className="flex gap-2 mt-4">
-          <button
-            onClick={() => {
-              toast.dismiss(t.id);
-              performLogout();
-            }}
-            className="flex-1 px-3 py-1.5 bg-red-600 text-white text-sm font-medium rounded-md hover:bg-red-700 transition-colors"
-          >
-            Logout
-          </button>
-          <button
-            onClick={() => toast.dismiss(t.id)}
-            className="flex-1 px-3 py-1.5 bg-gray-100 text-gray-700 text-sm font-medium rounded-md hover:bg-gray-200 transition-colors"
-          >
-            Cancel
-          </button>
-        </div>
-      </div>
-    ), {
-      duration: Infinity,
-      position: 'top-center',
-    });
+    await performLogout();
+  };
 
-    const performLogout = async () => {
+  const performLogout = async () => {
       if (isLoggingOut) return;
       
       setIsLoggingOut(true);
@@ -125,16 +102,6 @@ const Navbar = () => {
       });
       
       try {
-        const userId = user?._id || user?.id;
-        
-        if (userId) {
-          const response = await logoutUser(userId);
-          if (response?.status === true || response?.success === true) {
-            // Success case - handled below
-          }
-        }
-        
-        // Use Zustand logout function
         await logout();
         
         toast.dismiss(loadingToastId);
@@ -155,14 +122,12 @@ const Navbar = () => {
           position: 'top-right',
         });
         
-        // Still logout locally even if API call fails
         await logout();
         router.push("/");
       } finally {
         setIsLoggingOut(false);
       }
     };
-  };
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -552,7 +517,7 @@ const Navbar = () => {
               </ul>
             </div>
             
-            {/* Dashboard Button - Opens external dashboard on port 3000 */}
+            {/* ✅ FIXED: Dashboard Button Logic */}
             {isLoggedIn && hasActivePlan ? (
               <a
                 href={`${DASHBOARD_URL}/dashboard`}
@@ -564,16 +529,15 @@ const Navbar = () => {
                 <FiGrid size={16} />
                 <span>Dashboard</span>
               </a>
-            ) : ( <Link
-              href="/bookdemo"
-              onClick={handleExternalClick}
-              className="px-3 sm:px-4 py-1.5 sm:py-2 bg-gradient-to-r from-indigo-500 to-purple-500 text-white rounded-full text-xs sm:text-sm font-semibold transition-all duration-200 hover:shadow-md hover:scale-105 whitespace-nowrap"
-            >
-              Book Free Demo
-            </Link>
+            ) : (
+              <Link
+                href="/bookdemo"
+                onClick={handleExternalClick}
+                className="px-3 sm:px-4 py-1.5 sm:py-2 bg-gradient-to-r from-indigo-500 to-purple-500 text-white rounded-full text-xs sm:text-sm font-semibold transition-all duration-200 hover:shadow-md hover:scale-105 whitespace-nowrap"
+              >
+                Book Free Demo
+              </Link>
             )}
-            
-           
 
             {/* Desktop Auth Section */}
             {isLoggedIn ? (
@@ -631,7 +595,7 @@ const Navbar = () => {
                       </div>
                     </div>
                     <div className="py-2">
-                      {/* Dashboard link in dropdown menu - opens external dashboard */}
+                      {/* Dashboard link in dropdown menu */}
                       {hasActivePlan && (
                         <a
                           href={`${DASHBOARD_URL}/dashboard`}
@@ -650,24 +614,16 @@ const Navbar = () => {
                         </a>
                       )}
                       <Link
-                        href={`${DASHBOARD_URL}/settings`}
-                          onClick={(e) => {
-                            e.preventDefault();
-                            setShowUserMenu(false);
-                            window.open(`${DASHBOARD_URL}/settings`, '_blank');
-                          }}
+                        href="/profile"
+                        onClick={() => setShowUserMenu(false)}
                         className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
                       >
                         <FiUser size={18} />
                         <span>My Profile</span>
                       </Link>
                       <Link
-                        href={`${DASHBOARD_URL}/settings`}
-                          onClick={(e) => {
-                            e.preventDefault();
-                            setShowUserMenu(false);
-                            window.open(`${DASHBOARD_URL}/settings`, '_blank');
-                          }}
+                        href="/settings"
+                        onClick={() => setShowUserMenu(false)}
                         className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
                       >
                         <FiSettings size={18} />
@@ -805,7 +761,7 @@ const Navbar = () => {
 
           {/* Mobile Action Buttons */}
           <div className="p-4 border-t border-gray-100 space-y-2">
-            {/* Dashboard button for mobile - opens external dashboard */}
+            {/* ✅ FIXED: Dashboard button for mobile */}
             {isLoggedIn && hasActivePlan && (
               <a
                 href={`${DASHBOARD_URL}/dashboard`}

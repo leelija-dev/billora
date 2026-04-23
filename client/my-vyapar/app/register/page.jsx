@@ -4,9 +4,10 @@ import React, { useState } from "react";
 import { FcGoogle } from "react-icons/fc";
 import { FaEye, FaEyeSlash, FaHome } from "react-icons/fa";
 import { useRouter } from "next/navigation";
-import { registerUser } from "../../services/authService";
+import { useAuthStore } from "../../store/authStoreZustand";
 
 const RegisterPage = () => {
+  const { register } = useAuthStore();
   const [showPassword, setShowPassword] = useState(false);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -114,15 +115,12 @@ const RegisterPage = () => {
     setLoading(true);
     
     try {
-      const res = await registerUser({ 
+      // Use authStore's register method directly
+      await register({ 
         name: name.trim(), 
         email: email.trim().toLowerCase(), 
         password: password 
       });
-      
-      if (res.status === false || res.success === false) {
-        throw new Error(res.message || "Registration failed");
-      }
       
       setSuccess("Registration successful! Please check your email to verify your account.");
       

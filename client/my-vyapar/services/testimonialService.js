@@ -1,4 +1,5 @@
 import { apiRequest } from '../utils/api';
+import { logger } from '../utils/logger';
 
 class TestimonialService {
   async getAllTestimonials(params = {}) {
@@ -8,7 +9,7 @@ class TestimonialService {
 
       const response = await apiRequest(endpoint, 'GET');
 
-      console.log("FULL RESPONSE:", response);
+      logger.log("FULL RESPONSE:", response);
 
       let testimonialsData = [];
 
@@ -29,7 +30,7 @@ class TestimonialService {
       };
 
     } catch (error) {
-      console.error("Service Error:", error);
+      logger.error("Service Error:", error);
 
       return {
         success: false,

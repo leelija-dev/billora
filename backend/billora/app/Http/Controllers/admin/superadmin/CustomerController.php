@@ -51,7 +51,7 @@ class CustomerController extends Controller
   public function plans($id)
   {
     $customer = Customers::find($id);
-    $plans = PlanPurchaseHistory::with('plan')->where('user_id', $id)->paginate(15)->withQueryString();
+    $plans = PlanPurchaseHistory::with('plan')->where('user_id', $id)->orderBy('id', 'desc')->paginate(10)->withQueryString();
     return view('admin.customers.customer_plan', compact('customer', 'plans', 'id'));
   }
   public function customerMail(Request $request)

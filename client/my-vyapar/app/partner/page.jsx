@@ -2,6 +2,33 @@
 "use client";
 
 import { useState } from "react";
+import { 
+  FaHandshake, 
+  FaLaptopCode, 
+  FaChartLine, 
+  FaBullhorn, 
+  FaArrowRight, 
+  FaPlay, 
+  FaCheck, 
+  FaUsers, 
+  FaStar, 
+  FaRocket, 
+  FaFileAlt, 
+  FaCheckCircle, 
+  FaHeadset, 
+  FaChartBar,
+  FaAward,
+  FaTrophy,
+  FaUserFriends,
+  FaEnvelope,
+  FaPhone,
+  FaBuilding,
+  FaComments,
+  FaGift,
+  FaQuoteLeft,
+  FaQuoteRight
+} from "react-icons/fa";
+import { MdVerified } from "react-icons/md";
 
 export default function PartnerPage() {
   const [formData, setFormData] = useState({
@@ -26,28 +53,28 @@ export default function PartnerPage() {
   const partnerTypes = [
     {
       title: "Channel Partner",
-      icon: "🤝",
+      icon: <FaHandshake className="w-12 h-12" />,
       description: "Resell Billora to your clients",
       benefits: ["30% commission", "Marketing support", "Dedicated account manager"],
       color: "blue"
     },
     {
       title: "Technology Partner",
-      icon: "💻",
+      icon: <FaLaptopCode className="w-12 h-12" />,
       description: "Integrate your product with Billora",
       benefits: ["API access", "Technical support", "Co-marketing opportunities"],
       color: "purple"
     },
     {
       title: "Consulting Partner",
-      icon: "📊",
+      icon: <FaChartLine className="w-12 h-12" />,
       description: "Provide implementation services",
       benefits: ["Lead sharing", "Training programs", "Revenue share"],
       color: "emerald"
     },
     {
       title: "Affiliate Partner",
-      icon: "📢",
+      icon: <FaBullhorn className="w-12 h-12" />,
       description: "Promote Billora to your audience",
       benefits: ["Recurring commissions", "Marketing materials", "Performance bonuses"],
       color: "orange"
@@ -94,12 +121,11 @@ export default function PartnerPage() {
                   className="group bg-gradient-to-r from-yellow-400 to-pink-500 text-white px-8 py-3 rounded-full font-semibold hover:shadow-2xl transition-all duration-300 transform hover:scale-105 flex items-center gap-2"
                 >
                   Become a Partner
-                  <svg className="w-5 h-5 group-hover:translate-x-1 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
-                  </svg>
+                  <FaArrowRight className="w-5 h-5 group-hover:translate-x-1 transition" />
                 </button>
-                <button className="border-2 border-white/30 text-white px-8 py-3 rounded-full font-semibold hover:bg-white/10 transition-all duration-300">
-                  Watch Video →
+                <button className="border-2 border-white/30 text-white px-8 py-3 rounded-full font-semibold hover:bg-white/10 transition-all duration-300 flex items-center gap-2">
+                  <FaPlay className="w-4 h-4" />
+                  Watch Video
                 </button>
               </div>
               
@@ -107,8 +133,8 @@ export default function PartnerPage() {
               <div className="flex items-center gap-6 mt-8 pt-6 border-t border-white/20">
                 <div className="flex -space-x-2">
                   {[1,2,3,4].map((i) => (
-                    <div key={i} className="w-8 h-8 rounded-full bg-gradient-to-br from-yellow-400 to-pink-500 border-2 border-white flex items-center justify-center text-xs font-bold">
-                      👤
+                    <div key={i} className="w-8 h-8 rounded-full bg-gradient-to-br from-yellow-400 to-pink-500 border-2 border-white flex items-center justify-center">
+                      <FaUserFriends className="w-4 h-4 text-white" />
                     </div>
                   ))}
                 </div>
@@ -121,14 +147,14 @@ export default function PartnerPage() {
             {/* Right Column - Floating Card */}
             <div className="relative">
               <div className="bg-white/10 backdrop-blur-xl rounded-3xl p-8 border border-white/20 shadow-2xl transform rotate-2 hover:rotate-0 transition-all duration-500">
-                <div className="text-6xl mb-4">🎯</div>
+                <div className="text-6xl mb-4">
+                  <FaAward className="text-yellow-400" />
+                </div>
                 <h3 className="text-2xl font-bold text-white mb-2">Partner Benefits</h3>
                 <ul className="space-y-3">
                   {["High Commission Rates", "Priority Support", "Marketing Materials", "Training Programs"].map((benefit, idx) => (
                     <li key={idx} className="flex items-center gap-2 text-indigo-100">
-                      <svg className="w-5 h-5 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                      </svg>
+                      <FaCheck className="w-5 h-5 text-yellow-400" />
                       {benefit}
                     </li>
                   ))}
@@ -181,10 +207,15 @@ export default function PartnerPage() {
               </div>
               <div className="p-8">
                 <div className="flex items-start justify-between mb-4">
-                  <div className="text-6xl transform group-hover:scale-110 transition-transform duration-300">
+                  <div className="text-indigo-600 transform group-hover:scale-110 transition-transform duration-300">
                     {partner.icon}
                   </div>
-                  <div className={`px-3 py-1 rounded-full text-xs font-semibold bg-${partner.color}-100 text-${partner.color}-600`}>
+                  <div className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                    partner.color === 'blue' ? 'bg-blue-100 text-blue-600' : 
+                    partner.color === 'purple' ? 'bg-purple-100 text-purple-600' : 
+                    partner.color === 'emerald' ? 'bg-emerald-100 text-emerald-600' : 
+                    'bg-orange-100 text-orange-600'
+                  }`}>
                     Popular
                   </div>
                 </div>
@@ -193,15 +224,13 @@ export default function PartnerPage() {
                 <ul className="space-y-2 mb-6">
                   {partner.benefits.map((benefit, bidx) => (
                     <li key={bidx} className="text-sm text-gray-700 flex items-center gap-2">
-                      <svg className="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                      </svg>
+                      <FaCheck className="w-4 h-4 text-green-500" />
                       {benefit}
                     </li>
                   ))}
                 </ul>
-                <button className="w-full py-2 rounded-xl border-2 border-gray-200 font-semibold text-gray-700 hover:border-indigo-600 hover:text-indigo-600 transition-all duration-300">
-                  Learn More →
+                <button className="w-full py-2 rounded-xl border-2 border-gray-200 font-semibold text-gray-700 hover:border-indigo-600 hover:text-indigo-600 transition-all duration-300 flex items-center justify-center gap-2">
+                  Learn More <FaArrowRight className="w-4 h-4" />
                 </button>
               </div>
             </div>
@@ -225,9 +254,9 @@ export default function PartnerPage() {
             
             <div className="space-y-12">
               {[
-                { step: "01", title: "Apply Online", desc: "Fill out our quick application form with your details", icon: "📝", side: "left" },
-                { step: "02", title: "Get Reviewed", desc: "Our team reviews and schedules a discovery call", icon: "✅", side: "right" },
-                { step: "03", title: "Start Growing", desc: "Get trained, access resources, and start earning", icon: "🚀", side: "left" },
+                { step: "01", title: "Apply Online", desc: "Fill out our quick application form with your details", icon: <FaFileAlt className="w-8 h-8" />, side: "left" },
+                { step: "02", title: "Get Reviewed", desc: "Our team reviews and schedules a discovery call", icon: <MdVerified className="w-8 h-8" />, side: "right" },
+                { step: "03", title: "Start Growing", desc: "Get trained, access resources, and start earning", icon: <FaRocket className="w-8 h-8" />, side: "left" },
               ].map((item, idx) => (
                 <div key={idx} className={`flex flex-col md:flex-row items-center gap-8 ${item.side === 'right' ? 'md:flex-row-reverse' : ''}`}>
                   <div className="flex-1 text-center md:text-left">
@@ -236,7 +265,7 @@ export default function PartnerPage() {
                     <p className="text-gray-600">{item.desc}</p>
                   </div>
                   <div className="relative z-10">
-                    <div className="w-20 h-20 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-2xl flex items-center justify-center text-3xl shadow-lg transform hover:scale-110 transition-all duration-300">
+                    <div className="w-20 h-20 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-2xl flex items-center justify-center text-white shadow-lg transform hover:scale-110 transition-all duration-300">
                       {item.icon}
                     </div>
                   </div>
@@ -267,19 +296,20 @@ export default function PartnerPage() {
             { name: "Rajesh Kumar", company: "Tech Solutions India", revenue: "+245%", quote: "Billora transformed our business. The support team is incredible!", image: "https://randomuser.me/api/portraits/men/32.jpg" },
             { name: "Priya Sharma", company: "Digital Growth Partners", revenue: "+180%", quote: "Best decision we made. Our clients love the platform.", image: "https://randomuser.me/api/portraits/women/68.jpg" },
           ].map((story, idx) => (
-            <div key={idx} className="bg-white rounded-2xl shadow-xl p-8 transform hover:-translate-y-2 transition-all duration-300 border border-gray-100">
+            <div key={idx} className="bg-white rounded-2xl shadow-xl p-8 transform hover:-translate-y-2 transition-all duration-300 border border-gray-100 relative">
+              <FaQuoteLeft className="absolute text-indigo-100 w-12 h-12 top-6 right-6" />
               <div className="flex items-center gap-4 mb-6">
                 <img src={story.image} alt={story.name} className="w-16 h-16 rounded-full object-cover border-4 border-indigo-100" />
                 <div>
                   <h3 className="font-bold text-xl text-gray-900">{story.name}</h3>
                   <p className="text-gray-500 text-sm">{story.company}</p>
                 </div>
-                <div className="ml-auto text-5xl text-indigo-200">"</div>
               </div>
               <p className="text-gray-600 mb-4 italic leading-relaxed">"{story.quote}"</p>
               <div className="flex items-center justify-between pt-4 border-t border-gray-100">
                 <div className="text-sm text-gray-500">Revenue Growth</div>
-                <div className="text-2xl font-bold bg-gradient-to-r from-green-500 to-emerald-500 bg-clip-text text-transparent">
+                <div className="text-2xl font-bold bg-gradient-to-r from-green-500 to-emerald-500 bg-clip-text text-transparent flex items-center gap-1">
+                  <FaChartBar className="w-5 h-5" />
                   {story.revenue}
                 </div>
               </div>
@@ -294,7 +324,9 @@ export default function PartnerPage() {
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             {/* Left Side - Content */}
             <div className="text-white">
-              <div className="text-6xl mb-6">🤝</div>
+              <div className="text-6xl mb-6">
+                <FaHandshake className="text-yellow-400" />
+              </div>
               <h2 className="text-3xl md:text-4xl font-bold mb-4">
                 Ready to Grow Together?
               </h2>
@@ -303,13 +335,13 @@ export default function PartnerPage() {
               </p>
               <div className="space-y-4">
                 {[
-                  "✓ Dedicated partner success manager",
-                  "✓ Marketing & sales collateral",
-                  "✓ Priority technical support",
-                  "✓ Performance bonuses"
+                  "Dedicated partner success manager",
+                  "Marketing & sales collateral",
+                  "Priority technical support",
+                  "Performance bonuses"
                 ].map((item, idx) => (
                   <div key={idx} className="flex items-center gap-3">
-                    <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center text-xs">✓</div>
+                    <FaCheckCircle className="w-6 h-6 text-green-400" />
                     <span>{item}</span>
                   </div>
                 ))}
@@ -321,63 +353,81 @@ export default function PartnerPage() {
               <h3 className="text-2xl font-bold text-gray-900 mb-6">Partner Application</h3>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <input
-                    type="text"
-                    name="name"
-                    placeholder="Full Name *"
-                    required
-                    onChange={handleChange}
-                    className="p-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
-                  />
-                  <input
-                    type="email"
-                    name="email"
-                    placeholder="Email Address *"
-                    required
-                    onChange={handleChange}
-                    className="p-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
-                  />
-                  <input
-                    type="tel"
-                    name="phone"
-                    placeholder="Phone Number *"
-                    required
-                    onChange={handleChange}
-                    className="p-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
-                  />
-                  <input
-                    type="text"
-                    name="company"
-                    placeholder="Company Name *"
-                    required
-                    onChange={handleChange}
-                    className="p-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
-                  />
-                  <select
-                    name="partnerType"
-                    required
-                    onChange={handleChange}
-                    className="sm:col-span-2 p-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition bg-white"
-                  >
-                    <option value="">Select Partnership Type *</option>
-                    <option value="channel">Channel Partner</option>
-                    <option value="technology">Technology Partner</option>
-                    <option value="consulting">Consulting Partner</option>
-                    <option value="affiliate">Affiliate Partner</option>
-                  </select>
-                  <textarea
-                    name="message"
-                    placeholder="Tell us about your business..."
-                    rows="3"
-                    onChange={handleChange}
-                    className="sm:col-span-2 p-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
-                  ></textarea>
+                  <div className="relative">
+                    <FaUserFriends className="absolute left-3 top-3.5 text-gray-400" />
+                    <input
+                      type="text"
+                      name="name"
+                      placeholder="Full Name *"
+                      required
+                      onChange={handleChange}
+                      className="w-full pl-10 p-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
+                    />
+                  </div>
+                  <div className="relative">
+                    <FaEnvelope className="absolute left-3 top-3.5 text-gray-400" />
+                    <input
+                      type="email"
+                      name="email"
+                      placeholder="Email Address *"
+                      required
+                      onChange={handleChange}
+                      className="w-full pl-10 p-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
+                    />
+                  </div>
+                  <div className="relative">
+                    <FaPhone className="absolute left-3 top-3.5 text-gray-400" />
+                    <input
+                      type="tel"
+                      name="phone"
+                      placeholder="Phone Number *"
+                      required
+                      onChange={handleChange}
+                      className="w-full pl-10 p-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
+                    />
+                  </div>
+                  <div className="relative">
+                    <FaBuilding className="absolute left-3 top-3.5 text-gray-400" />
+                    <input
+                      type="text"
+                      name="company"
+                      placeholder="Company Name *"
+                      required
+                      onChange={handleChange}
+                      className="w-full pl-10 p-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
+                    />
+                  </div>
+                  <div className="relative sm:col-span-2">
+                    <select
+                      name="partnerType"
+                      required
+                      onChange={handleChange}
+                      className="w-full p-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition bg-white appearance-none"
+                    >
+                      <option value="">Select Partnership Type *</option>
+                      <option value="channel">Channel Partner</option>
+                      <option value="technology">Technology Partner</option>
+                      <option value="consulting">Consulting Partner</option>
+                      <option value="affiliate">Affiliate Partner</option>
+                    </select>
+                    <FaHandshake className="absolute right-3 top-3.5 text-gray-400 pointer-events-none" />
+                  </div>
+                  <div className="relative sm:col-span-2">
+                    <FaComments className="absolute left-3 top-3.5 text-gray-400" />
+                    <textarea
+                      name="message"
+                      placeholder="Tell us about your business..."
+                      rows="3"
+                      onChange={handleChange}
+                      className="w-full pl-10 p-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
+                    ></textarea>
+                  </div>
                 </div>
                 <button
                   type="submit"
-                  className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-3 rounded-xl font-semibold hover:shadow-xl transition-all duration-300 transform hover:scale-[1.02]"
+                  className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-3 rounded-xl font-semibold hover:shadow-xl transition-all duration-300 transform hover:scale-[1.02] flex items-center justify-center gap-2"
                 >
-                  Submit Application →
+                  Submit Application <FaArrowRight />
                 </button>
                 <p className="text-center text-xs text-gray-500">
                   No spam, ever. Unsubscribe anytime.

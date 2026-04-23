@@ -7,6 +7,8 @@ use Illuminate\Http\Request;
 use App\Models\Store;
 use Illuminate\Support\Facades\Auth;
 use App\Models\Customers;
+use Illuminate\Support\Facades\File;
+
 class StoreController extends Controller
 {
     public function index(Request $request, $id)
@@ -64,7 +66,7 @@ class StoreController extends Controller
             ]);
         }
         $user = Auth::user()->id;
-        
+
         $store = $request->validate([
             'user_id'     => 'required',
             'name'        => 'required',
@@ -77,6 +79,22 @@ class StoreController extends Controller
             'status'      => 'required',
             'created_by'  => 'required'
         ]);
+        // dd($store);
+        $folderPath = public_path('logos');
+
+        // Create folder if not exists
+        if (!File::exists($folderPath)) {
+            File::makeDirectory($folderPath, 0777, true, true);
+        }
+        $imagePath = null;
+        if ($request->hasFile('logo')) {
+            $image = $request->file('logo');
+            $fileName = time() . '_' . $image->getClientOriginalName();
+            $image->move($folderPath, $fileName);
+
+            $imagePath = 'logos/' . $fileName;
+        }
+        $store['logo'] = $imagePath;
         if ($store['user_id'] != $user) {
             return response()->json([
                 'status' => false,
@@ -84,11 +102,11 @@ class StoreController extends Controller
             ]);
         }
         $customer =  Customers::findOrFail($store['user_id']);
-        if($customer->plan_id == null || $customer->is_active == false){
-                return response()->json([
-                    'status' => false,
-                    'message' =>'You do not have any active plan. Please upgrade your plan.'
-                ]);
+        if ($customer->plan_id == null || $customer->is_active == false) {
+            return response()->json([
+                'status' => false,
+                'message' => 'You do not have any active plan. Please upgrade your plan.'
+            ]);
         }
         try {
             $store = Store::create($store);
@@ -110,11 +128,11 @@ class StoreController extends Controller
 
             $userId = Auth::user()->id;
             $customer =  Customers::findOrFail($userId);
-            if($customer->plan_id == null || $customer->is_active == false){
-                    return response()->json([
-                        'status' => false,
-                        'message' =>'You do not have any active plan. Please upgrade your plan.'
-                    ]);
+            if ($customer->plan_id == null || $customer->is_active == false) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'You do not have any active plan. Please upgrade your plan.'
+                ]);
             }
             $store = Store::where('user_id', $userId)
                 ->where('id', $id)
@@ -139,7 +157,7 @@ class StoreController extends Controller
                 'message' => $e->getMessage()
             ]);
         }
-    } 
+    }
     public function update(Request $request, $id)
     {
         $user = Auth::user()->id;
@@ -153,15 +171,40 @@ class StoreController extends Controller
             'city'    => 'required',
             'status'  => 'required',
         ]);
+       
         try {
             $customer =  Customers::findOrFail($user);
-            if($customer->plan_id == null || $customer->is_active == false){
-                    return response()->json([
-                        'status' => false,
-                        'message' =>'You do not have any active plan. Please upgrade your plan.'
-                    ]);
+            if ($customer->plan_id == null || $customer->is_active == false) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'You do not have any active plan. Please upgrade your plan.'
+                ]);
             }
+
             $store = Store::where('user_id', $user)->where('id', $id)->first();
+
+            $folderPath = public_path('logos');
+
+            // Create folder if not exists
+            if (!File::exists($folderPath)) {
+                File::makeDirectory($folderPath, 0777, true, true);
+            }
+            // $imagePath = null;
+            if ($request->hasFile('logo')) {
+
+                // delete old image
+                if ($store->logo && File::exists(public_path($store->logo))) {
+                    File::delete(public_path($store->logo));
+                }
+
+                // upload new image
+                $image = $request->file('logo');
+                $fileName = time() . '_' . $image->getClientOriginalName();
+                $image->move($folderPath, $fileName);
+
+                // update only if new image exists
+                $data['logo'] = 'logos/' . $fileName;
+            }
             $store->update($data);
             return response()->json([
                 'status' => true,
@@ -180,11 +223,11 @@ class StoreController extends Controller
         try {
             $user = Auth::user()->id;
             $customer =  Customers::findOrFail($user);
-            if($customer->plan_id == null || $customer->is_active == false){
-                    return response()->json([
-                        'status' => false,
-                        'message' =>'You do not have any active plan. Please upgrade your plan.'
-                    ]);
+            if ($customer->plan_id == null || $customer->is_active == false) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'You do not have any active plan. Please upgrade your plan.'
+                ]);
             }
             $store = Store::where('user_id', $user)->where('id', $id)->first();
             $store->delete();

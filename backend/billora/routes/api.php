@@ -27,6 +27,12 @@ use App\Http\Controllers\admin\TestimonialsController;
 use App\Models\User;
 use App\Models\UserOrders;
 
+
+// Public routes
+Route::get('/sanctum/csrf-cookie', function () {
+    return response()->json(['message' => 'CSRF cookie set']);
+});
+
 Route::get('/test', function () {
    return response()->json([
        'message' => 'Hello World',
@@ -35,22 +41,41 @@ Route::get('/test', function () {
 
    ]);
 });
-//admin user
-Route::prefix('users')->group(function () {
-   //    Route::get('/', [CustomerController::class, 'index']);
-   Route::middleware('auth:sanctum')->get('/', [CustomerController::class, 'index']);
 
-   Route::post('/register', [CustomerController::class, 'store']);
-   Route::post('/login', [CustomerController::class, 'login']);
-   Route::middleware('auth:sanctum')->get('/edit/{id}', [CustomerController::class, 'edit']);
-   Route::middleware('auth:sanctum')->put('/update/{id}', [CustomerController::class, 'update']);
-   Route::middleware('auth:sanctum')->put('/update-password/{id}', [CustomerController::class, 'updatePassword']);
-   // Route::get
-   //    Route::post('/logout', [CustomerController::class, 'logout']);
-   Route::middleware('auth:sanctum')->post('/logout', [CustomerController::class, 'logout']);
-   //due RBAC
+Route::post('/users/login', [CustomerController::class, 'login']);
+Route::post('/users/register', [CustomerController::class, 'store']);
+Route::get('/verify-email/{token}', [CustomerController::class, 'verifyEmail']);
 
+// Protected routes (require authentication)
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/users', [CustomerController::class, 'index']);
+    Route::get('/users/check-session', [CustomerController::class, 'checkSession']);
+    Route::post('/users/logout', [CustomerController::class, 'logout']);
+    Route::get('/users/edit/{id}', [CustomerController::class, 'edit']);
+    Route::put('/users/update/{id}', [CustomerController::class, 'update']);
+    Route::put('/users/update-password/{id}', [CustomerController::class, 'updatePassword']);
 });
+// Route::prefix('auth/session')->group(function () {
+//     Route::post('/login', [CustomerController::class, 'login']);
+//     Route::post('/logout', [CustomerController::class, 'logout']);
+//     Route::get('/check', [CustomerController::class, 'checkSession']);
+// });
+//admin user
+// Route::prefix('users')->group(function () {
+//    //    Route::get('/', [CustomerController::class, 'index']);
+//    Route::middleware('auth:sanctum')->get('/', [CustomerController::class, 'index']);
+
+//    Route::post('/register', [CustomerController::class, 'store']);
+//    Route::post('/login', [CustomerController::class, 'login']);
+//    Route::middleware('auth:sanctum')->get('/edit/{id}', [CustomerController::class, 'edit']);
+//    Route::middleware('auth:sanctum')->put('/update/{id}', [CustomerController::class, 'update']);
+//    Route::middleware('auth:sanctum')->put('/update-password/{id}', [CustomerController::class, 'updatePassword']);
+//    // Route::get
+//    //    Route::post('/logout', [CustomerController::class, 'logout']);
+//    Route::middleware('auth:sanctum')->post('/logout', [CustomerController::class, 'logout']);
+//    //due RBAC
+
+// });
 // 
 // Route::middleware('auth:sanctum')->group(function () {
 //     Route::get('/', [CustomerController::class, 'index']);
@@ -191,6 +216,7 @@ Route::middleware('auth:sanctum')->prefix('plans-purchase-history')->group(funct
 //payment 
 Route::prefix('cashfree')->group(function () {
     Route::post('/create-order', [PaymentController::class, 'createOrder']);
+    Route::post('/upgrade-plan', [PaymentController::class, 'upgradePlan']);
     Route::get('/verify/{order_id}', [PaymentController::class, 'verifyPayment']);
 });
 

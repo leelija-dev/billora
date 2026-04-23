@@ -1,15 +1,16 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { FcGoogle } from "react-icons/fc";
 import { FaEye, FaEyeSlash, FaHome } from "react-icons/fa";
-import { loginUser } from "../../services/authService";
 import { useAuthStore } from "../../store/authStoreZustand";
 import { useRouter, useSearchParams } from "next/navigation";
 import toast, { Toaster } from 'react-hot-toast';
+import { logger } from '../../utils/logger';
+import { loginUser } from '../../services/authService';
 
 const Login = () => {
-  const { login } = useAuthStore();
+  const { login, isLoggedIn, user } = useAuthStore();
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -20,36 +21,69 @@ const Login = () => {
   const [passwordError, setPasswordError] = useState("");
   const router = useRouter();
   const searchParams = useSearchParams();
+  
+  // ✅ Add ref to prevent double login
+  const loginAttempted = useRef(false);
+  const redirectHandled = useRef(false);
 
-  // ✅ Check for pending plan on mount - DON'T clear it immediately
+  // Check for pending plan on mount
   useEffect(() => {
     const from = searchParams.get("from");
     const pendingPlan = localStorage.getItem("pendingPlan");
     
-    console.log("🔍 Login page loaded");
-    console.log("🔍 from param:", from);
-    console.log("🔍 pendingPlan exists:", !!pendingPlan);
+    logger.log("🔍 Login page loaded");
+    logger.log("🔍 from param:", from);
+    logger.log("🔍 pendingPlan exists:", !!pendingPlan);
     
     if (pendingPlan) {
       try {
         const planData = JSON.parse(pendingPlan);
-        console.log("📋 Found pending plan:", planData.name);
+        logger.log("📋 Found pending plan:", planData.name);
         toast.success(`Complete your ${planData.name} plan purchase!`, {
           duration: 4000,
         });
       } catch (e) {
-        console.error("Error parsing pending plan:", e);
+        logger.error("Error parsing pending plan:", e);
         localStorage.removeItem("pendingPlan");
       }
     }
     
-    // Only clear pending plan if this is a normal login (not from pricing)
-    // AND there's no pending plan in the URL
     if (from !== "pricing" && !pendingPlan) {
-      console.log("🗑️ Normal login - clearing any old pending plan");
+      logger.log("🗑️ Normal login - clearing any old pending plan");
       localStorage.removeItem("pendingPlan");
     }
+    
+    // Reset login attempt flag when component mounts
+    loginAttempted.current = false;
+    redirectHandled.current = false;
   }, [searchParams]);
+
+  // ✅ Handle redirect after login (using useEffect instead of direct call)
+  useEffect(() => {
+    if (isLoggedIn && user && !redirectHandled.current) {
+      redirectHandled.current = true;
+      
+      const pendingPlan = localStorage.getItem("pendingPlan");
+      
+      if (pendingPlan) {
+        try {
+          const planData = JSON.parse(pendingPlan);
+          toast.success(`Proceeding to ${planData.name} checkout!`);
+          router.push("/order-summary");
+          return;
+        } catch (e) {
+          localStorage.removeItem("pendingPlan");
+        }
+      }
+      
+      const redirectUrl = searchParams.get("redirect");
+      if (redirectUrl) {
+        router.push(redirectUrl);
+      } else {
+        router.push("/pricing");
+      }
+    }
+  }, [isLoggedIn, user, router, searchParams]);
 
   const validateEmail = (value) => {
     if (!value.trim()) {
@@ -84,117 +118,84 @@ const Login = () => {
     return isEmailValid && isPasswordValid;
   };
 
-  const handleLogin = async (e) => {
-    e.preventDefault();
+ const handleLogin = async (e) => {
+  e.preventDefault();
+  
+  // Prevent double login attempts
+  if (loginAttempted.current || loading) {
+    logger.log("⚠️ Login already in progress, skipping...");
+    return;
+  }
+  
+  setError("");
+  
+  if (!validateForm()) {
+    toast.error("Please fix the validation errors");
+    return;
+  }
+  
+  loginAttempted.current = true;
+  setLoading(true);
+  const loadingToast = toast.loading("Logging in...");
+  
+  try {
+    // Call loginUser API directly
+    const response = await loginUser({ email, password });
+    const responseData = response.data;
     
-    setError("");
-    
-    if (!validateForm()) {
-      toast.error("Please fix the validation errors");
-      return;
+    if (!responseData.status) {
+      loginAttempted.current = false;
+      throw new Error(responseData.message || "Login failed");
     }
     
-    setLoading(true);
-    const loadingToast = toast.loading("Logging in...");
+    const userData = responseData.user;
+    const token = responseData.token;
     
-    try {
-      const res = await loginUser({ email, password });
-      
-      if (res.status === false || res.success === false) {
-        if (res.message && res.message.includes("User not found")) {
-          throw new Error("No account found with this email. Please register first.");
-        } else if (res.message && res.message.includes("password")) {
-          throw new Error("Invalid password. Please try again.");
-        } else if (res.message && res.message.includes("verify")) {
-          throw new Error("Please verify your email before logging in. Check your inbox.");
-        } else {
-          throw new Error(res.message || "Invalid credentials");
-        }
-      }
-      
-      const userData = res.user || res.data?.user || res;
-      const token = res.token || res.data?.token || null;
-      
-      // Use Zustand login method
-      login(userData, token);
-      
-      toast.dismiss(loadingToast);
-      toast.success("Login Successful! ✅", {
-        duration: 3000,
-        position: "top-center",
-        icon: '🎉',
-        style: {
-          background: '#4caf50',
-          color: '#fff',
-          fontWeight: 'bold',
-        },
-      });
-      
-      // Handle redirect after login
-      await handleRedirectAfterLogin();
-      
-    } catch (error) {
-      toast.dismiss(loadingToast);
-      
-      let errorMessage = "";
-      if (error.message.includes("No account")) {
-        errorMessage = "❌ No account found with this email. Please register first.";
-      } else if (error.message.includes("password")) {
-        errorMessage = "❌ Invalid password. Please try again.";
-      } else if (error.message.includes("Failed to fetch")) {
-        errorMessage = "Cannot connect to server. Please make sure the backend is running.";
-      } else {
-        errorMessage = error.message || "❌ Login failed. Please try again.";
-      }
-      
-      setError(errorMessage);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // ✅ Critical: Handle redirect with pending plan
-  const handleRedirectAfterLogin = () => {
-    // Check for pendingPlan IMMEDIATELY
-    const pendingPlan = localStorage.getItem("pendingPlan");
-    const fromParam = searchParams.get("from");
-    
-    console.log("🔄 handleRedirectAfterLogin called");
-    console.log("🔄 pendingPlan exists:", !!pendingPlan);
-    console.log("🔄 from param:", fromParam);
-    
-    if (pendingPlan) {
-      try {
-        const planData = JSON.parse(pendingPlan);
-        console.log("✅ Found pending plan, redirecting to order summary for:", planData.name);
-        
-        toast.success(`Proceeding to ${planData.name} checkout!`, {
-          duration: 2000,
-          position: "top-center",
-        });
-        
-        // DON'T remove pendingPlan here - keep it for order summary page
-        // Just redirect
-        router.push("/order-summary");
-        return;
-      } catch (error) {
-        console.error("Error parsing pending plan:", error);
-        localStorage.removeItem("pendingPlan");
-      }
+    if (!userData || !token) {
+      loginAttempted.current = false;
+      throw new Error("Invalid response from server");
     }
     
-    // Check for redirect parameter
-    const redirectUrl = searchParams.get("redirect");
-    if (redirectUrl) {
-      console.log("🔄 Redirecting to:", redirectUrl);
-      router.push(redirectUrl);
-      return;
+    logger.log("✅ User data:", userData);
+    logger.log("✅ Token received:", token.substring(0, 20) + "...");
+    
+    // ✅ Call store login with user data and token (NO API CALL inside)
+    const result = login(userData, token);
+    
+    toast.dismiss(loadingToast);
+    
+    if (result.success) {
+      toast.success("Login Successful!");
+      // The useEffect will handle redirect
+    } else {
+      throw new Error(result.error || "Login failed");
     }
     
-    // Default to pricing
-    console.log("🔄 No pending plan, going to pricing page");
-    router.push("/pricing");
-  };
+  } catch (error) {
+    loginAttempted.current = false;
+    toast.dismiss(loadingToast);
+    
+    logger.error("❌ Login error:", error);
+    
+    let errorMessage = "";
+    if (error.message?.includes("No account") || error.message?.includes("User not found")) {
+      errorMessage = "❌ No account found with this email. Please register first.";
+    } else if (error.message?.includes("password") || error.message?.includes("Invalid password")) {
+      errorMessage = "❌ Invalid password. Please try again.";
+    } else if (error.message?.includes("verify")) {
+      errorMessage = "❌ Please verify your email before logging in.";
+    } else if (error.message?.includes("Failed to fetch")) {
+      errorMessage = "Cannot connect to server. Please make sure the backend is running.";
+    } else {
+      errorMessage = error.message || "❌ Login failed. Please try again.";
+    }
+    
+    setError(errorMessage);
+    toast.error(errorMessage);
+  } finally {
+    setLoading(false);
+  }
+};
 
   const handleEmailChange = (e) => {
     const value = e.target.value;
@@ -209,6 +210,18 @@ const Login = () => {
     if (value !== "") validatePassword(value);
     else setPasswordError("");
   };
+
+  // ✅ If already logged in, show loading or redirect
+  if (isLoggedIn && user && !redirectHandled.current) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Redirecting...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#ece9f1] to-[#dfe3f8] flex flex-col">
@@ -245,14 +258,6 @@ const Login = () => {
       />
       
       <div className="flex-1 flex justify-center items-center font-sans relative py-8">
-        {/* <button
-          onClick={() => router.push("/")}
-          className="absolute top-6 left-6 flex items-center gap-2 px-4 py-2 bg-white rounded-lg shadow-md hover:shadow-lg transition-all duration-300 hover:scale-105 text-[#2d236b] font-medium z-10"
-        >
-          <FaHome className="text-[#5b5bd6]" size={20} />
-          <span>Back to Home</span>
-        </button> */}
-
         <form onSubmit={handleLogin} className="w-[550px] bg-white py-10 px-[50px] rounded-[25px] shadow-[0_10px_25px_rgba(0,0,0,0.08)] max-md:w-[450px] max-md:px-8 max-sm:w-[90%] max-sm:px-5 max-sm:py-8">
           
           <h1 className="text-center text-[#2d236b] my-6 text-3xl font-bold max-sm:text-2xl">
@@ -360,7 +365,6 @@ const Login = () => {
                   const redirect = searchParams.get("redirect");
                   const pendingPlan = localStorage.getItem('pendingPlan');
                   
-                  // If there's a pending plan, preserve it for registration redirect
                   if (pendingPlan) {
                     router.push("/register?redirect=/order-summary");
                   } else if (redirect) {

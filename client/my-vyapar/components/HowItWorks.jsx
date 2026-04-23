@@ -3,6 +3,7 @@
 import React, { useEffect, useRef } from 'react';
 import Container from "../components/Container";
 import SectionTitle from './SectionTitle';
+import { FaEnvelope, FaBolt, FaRocket } from "react-icons/fa";
 
 const HowItWorks = () => {
     const stepRefs = useRef([]);
@@ -24,7 +25,7 @@ const HowItWorks = () => {
             number: '01',
             title: 'Create Account',
             description: 'Sign up for free in under 2 minutes. No credit card required. Get instant access to all basic features.',
-            icon: '📝',
+            icon: <FaEnvelope className="w-6 h-6" />,
             color: '#3b82f6',
             buttonText: 'Sign Up Now'
         },
@@ -32,7 +33,7 @@ const HowItWorks = () => {
             number: '02',
             title: 'Choose Plan',
             description: 'Select the plan that fits your business needs. Upgrade, downgrade, or cancel anytime with no questions asked.',
-            icon: '⚡',
+            icon: <FaBolt className="w-6 h-6" />,
             color: '#8b5cf6',
             buttonText: 'View Plans'
         },
@@ -40,7 +41,7 @@ const HowItWorks = () => {
             number: '03',
             title: 'Start Billing',
             description: 'Begin creating professional GST invoices immediately. Invite your team and start managing your business.',
-            icon: '🚀',
+            icon: <FaRocket className="w-6 h-6" />,
             color: '#10b981',
             buttonText: 'Get Started'
         }

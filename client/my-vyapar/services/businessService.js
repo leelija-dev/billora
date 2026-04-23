@@ -1,4 +1,5 @@
 import { toast } from 'react-hot-toast';
+import { logger } from '../utils/logger';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000/api';
 
@@ -47,11 +48,11 @@ export const businessService = {
       } else if (Array.isArray(data)) {
         return data;
       } else {
-        console.warn('Unexpected response format:', data);
+        logger.warn('Unexpected response format:', data);
         return [];
       }
     } catch (error) {
-      console.error('Error fetching business types:', error);
+      logger.error('Error fetching business types:', error);
       
       // Show user-friendly error message
       if (error.message.includes('Failed to fetch')) {
@@ -104,7 +105,7 @@ export const businessService = {
         return data;
       }
     } catch (error) {
-      console.error('Error fetching business type:', error);
+      logger.error('Error fetching business type:', error);
       toast.error('Failed to load business type');
       throw error;
     }
@@ -140,7 +141,7 @@ export const businessService = {
       toast.success('Business type created successfully');
       return data;
     } catch (error) {
-      console.error('Error creating business type:', error);
+      logger.error('Error creating business type:', error);
       toast.error('Failed to create business type');
       throw error;
     }
@@ -177,7 +178,7 @@ export const businessService = {
       toast.success('Business type updated successfully');
       return data;
     } catch (error) {
-      console.error('Error updating business type:', error);
+      logger.error('Error updating business type:', error);
       toast.error('Failed to update business type');
       throw error;
     }
@@ -210,7 +211,7 @@ export const businessService = {
 
       toast.success('Business type deleted successfully');
     } catch (error) {
-      console.error('Error deleting business type:', error);
+      logger.error('Error deleting business type:', error);
       toast.error('Failed to delete business type');
       throw error;
     }
