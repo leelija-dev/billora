@@ -1,7 +1,7 @@
 // store/authStoreZustand.js
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import { logoutUser, checkSession } from '../services/authService';
+import { logoutUser, checkSession, registerUser } from '../services/authService';
 
 export const useAuthStore = create(
   persist(
@@ -60,6 +60,41 @@ export const useAuthStore = create(
         
         console.log('✅ Store login successful');
         return { success: true };
+      },
+
+      register: async (userData) => {
+        console.log('📝 Store register called with user:', userData?.email);
+        set({ isLoading: true, error: null });
+        
+        try {
+          const response = await registerUser(userData);
+          console.log('📦 Store register response:', response);
+          
+          if (response?.data?.user || response?.status === true) {
+            const userData = response.data?.user || response.data;
+            set({
+              user: userData,
+              isLoggedIn: true,
+              isLoading: false,
+              error: null,
+            });
+            
+            localStorage.setItem('user', JSON.stringify(userData));
+            
+            window.dispatchEvent(new Event("userLoggedIn"));
+            
+            console.log('✅ Store register successful');
+            return { success: true, user: userData };
+          } else {
+            throw new Error(response?.data?.message || response?.message || 'Registration failed');
+          }
+        } catch (error) {
+          console.error('❌ Store register error:', error);
+          set({
+            isLoading: false,
+            error: error.message || 'Registration failed',
+          });
+        }
       },
 
       logout: async () => {
