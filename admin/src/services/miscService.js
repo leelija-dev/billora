@@ -26,6 +26,19 @@ export const plansAPI = {
       throw error.response?.data || error.message;
     }
   },
+
+  // Get business types
+  getBusinessTypes: async () => {
+    try {
+      console.log('📋 Fetching business types');
+      const response = await apiClient.get('/business-type');
+      console.log('📋 Business types fetched successfully:', response.data);
+      return response;
+    } catch (error) {
+      console.error('❌ Failed to fetch business types:', error);
+      throw error.response?.data || error.message;
+    }
+  },
 }
 
 export const dashboardAPI = {
@@ -139,6 +152,19 @@ export const billingAPI = {
       return response;
     } catch (error) {
       console.error('❌ Failed to create Cashfree order:', error);
+      throw error.response?.data || error.message;
+    }
+  },
+
+  // Upgrade plan using Cashfree
+  upgradePlan: async (upgradeData) => {
+    try {
+      console.log('🔄 Upgrading plan:', upgradeData);
+      const response = await apiClient.post('/cashfree/upgradePlan', upgradeData);
+      console.log('🔄 Plan upgrade initiated:', response.data);
+      return response;
+    } catch (error) {
+      console.error('❌ Failed to upgrade plan:', error);
       throw error.response?.data || error.message;
     }
   },

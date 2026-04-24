@@ -5,20 +5,14 @@ import Input from '../../common/Input/Input'
 import Button from '../../common/Button/Button'
 import Select from '../../common/Select/Select'
 import EmptyState from '../../common/EmptyState/EmptyState'
-import Modal from '../../common/Modal/Modal' // Use your existing Modal component
+import Modal from '../../common/Modal/Modal'
 import { invoiceAPI } from '../../../services/invoiceService'
 import { stockAPI } from '../../../services/stockService'
 import { packagesAPI } from '../../../services/packagesService'
 import usePackageStore from '../../../store/packageStore'
 import { useAuthStore } from '../../../store/authStore'
-import { useCustomerStore } from '../../../store/customerStore' // Import customer store
-import toast from 'react-hot-toast' // Import toast for notifications
-
-// Import mock data as fallback
-import { mockCustomers } from '../../../services/mockData/mockCustomers'
-import { mockStores } from '../../../services/mockData/mockStores'
-import { mockProducts } from '../../../services/mockData/mockProducts'
-import { mockUnits } from '../../../services/mockData/mockUnits'
+import { useCustomerStore } from '../../../store/customerStore'
+import toast from 'react-hot-toast'
 
 // Cache for bill generate data
 let billGenerateCache = null
@@ -28,17 +22,15 @@ const CACHE_EXPIRY = 30 * 1000 // 30 seconds
 const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting }) => {
   const { user } = useAuthStore()
   const { packages, fetchPackages, loading: packagesLoading } = usePackageStore()
-  const { createCustomer, fetchCustomers } = useCustomerStore() // Add customer store methods
+  const { createCustomer, fetchCustomers } = useCustomerStore()
   
   // Get current user ID
   const getUserId = () => {
-    // First try to get from auth store (most reliable)
     if (user?.id) {
       console.log('Using user ID from auth store:', user.id)
       return user.id
     }
     
-    // Fallback to localStorage if store is not available
     const authData = localStorage.getItem('auth')
     if (authData) {
       try {
@@ -50,7 +42,6 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
       }
     }
     
-    // Last resort - throw error instead of returning hardcoded ID
     throw new Error('User ID not found in auth store or localStorage')
   }
 
@@ -75,6 +66,7 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
   const [units, setUnits] = useState([])
   const [productSearch, setProductSearch] = useState('')
   const [showProductList, setShowProductList] = useState(false)
+  const [dataFetchError, setDataFetchError] = useState(false) // Track if data fetch failed
   
   // Search states for customer and store
   const [customerSearch, setCustomerSearch] = useState('')
@@ -128,10 +120,10 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
       const productsList = data.products || data.product || []
       const unitsList = data.units || data.unit || []
       
-      setCustomers(customersList.length > 0 ? customersList : mockCustomers)
-      setStores(storesList.length > 0 ? storesList : mockStores)
-      setProducts(productsList.length > 0 ? productsList : mockProducts)
-      setUnits(unitsList.length > 0 ? unitsList : mockUnits)
+      setCustomers(customersList.length > 0 ? customersList : [])
+      setStores(storesList.length > 0 ? storesList : [])
+      setProducts(productsList.length > 0 ? productsList : [])
+      setUnits(unitsList.length > 0 ? unitsList : [])
       
       if (storesList.length > 0 && !formData.store_id) {
         const firstStoreId = storesList[0].id
@@ -145,6 +137,8 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
     }
 
     setLoading(true)
+    setDataFetchError(false)
+    
     try {
       const response = await invoiceAPI.getBillGenerateData(currentUserId)
       console.log('Full API response:', response)
@@ -166,10 +160,10 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
       const productsList = data.products || data.product || []
       const unitsList = data.units || data.unit || []
       
-      setCustomers(customersList.length > 0 ? customersList : mockCustomers)
-      setStores(storesList.length > 0 ? storesList : mockStores)
-      setProducts(productsList.length > 0 ? productsList : mockProducts)
-      setUnits(unitsList.length > 0 ? unitsList : mockUnits)
+      setCustomers(customersList.length > 0 ? customersList : [])
+      setStores(storesList.length > 0 ? storesList : [])
+      setProducts(productsList.length > 0 ? productsList : [])
+      setUnits(unitsList.length > 0 ? unitsList : [])
       
       if (storesList.length > 0 && !formData.store_id) {
         const firstStoreId = storesList[0].id
@@ -179,12 +173,27 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
         }))
       }
       
+      // Success toast
+      toast.success('Data loaded successfully')
+      
     } catch (error) {
       console.error('Failed to fetch bill generate data:', error)
-      setCustomers(mockCustomers)
-      setStores(mockStores)
-      setProducts(mockProducts)
-      setUnits(mockUnits)
+      setDataFetchError(true)
+      
+      // Show error toast
+      if (error.code === 'ERR_NETWORK') {
+        toast.error('Network error: Unable to connect to server. Please check if backend is running.')
+      } else if (error.response?.status === 404) {
+        toast.error('API endpoint not found. Please check backend configuration.')
+      } else {
+        toast.error('Failed to load form data. Please try again later.')
+      }
+      
+      // Set empty arrays instead of error strings
+      setCustomers([])
+      setStores([])
+      setProducts([])
+      setUnits([])
     } finally {
       setLoading(false)
     }
@@ -193,11 +202,23 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
   useEffect(() => {
     fetchInitialData()
     // Fetch packages for current user
-    fetchPackages(currentUserId)
+    fetchPackages(currentUserId).catch(error => {
+      console.error('Failed to fetch packages:', error)
+      if (error.code === 'ERR_NETWORK') {
+        toast.error('Network error: Unable to fetch packages. Please check server connection.')
+      } else {
+        toast.error('Failed to load packages. Please try again later.')
+      }
+    })
   }, [currentUserId])
 
   // Filter customers based on search
   useEffect(() => {
+    if (!Array.isArray(customers) || customers.length === 0) {
+      setFilteredCustomers([])
+      return
+    }
+    
     if (customerSearch.trim() === '') {
       setFilteredCustomers(customers)
     } else {
@@ -215,6 +236,11 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
 
   // Filter stores based on search
   useEffect(() => {
+    if (!Array.isArray(stores) || stores.length === 0) {
+      setFilteredStores([])
+      return
+    }
+    
     if (storeSearch.trim() === '') {
       setFilteredStores(stores)
     } else {
@@ -233,6 +259,11 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
 
   // Filter products based on search
   useEffect(() => {
+    if (!Array.isArray(products) || products.length === 0) {
+      setFilteredProducts([])
+      return
+    }
+    
     if (productSearch.trim() === '') {
       setFilteredProducts(products)
     } else {
@@ -253,6 +284,11 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
 
   // Filter packages based on search
   useEffect(() => {
+    if (!Array.isArray(packages) || packages.length === 0) {
+      setFilteredPackages([])
+      return
+    }
+    
     if (packageSearch.trim() === '') {
       setFilteredPackages(packages)
     } else {
@@ -268,13 +304,13 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
 
   // Initialize search values when data is loaded
   useEffect(() => {
-    if (customers.length > 0 && formData.customer_id) {
+    if (Array.isArray(customers) && customers.length > 0 && formData.customer_id) {
       const customer = customers.find(c => c.id === formData.customer_id)
       if (customer) {
         setCustomerSearch(customer.name || customer.customer_name)
       }
     }
-    if (stores.length > 0 && formData.store_id) {
+    if (Array.isArray(stores) && stores.length > 0 && formData.store_id) {
       const store = stores.find(s => s.id === formData.store_id)
       if (store) {
         setStoreSearch(store.name || store.store_name)
@@ -308,11 +344,17 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
         console.log('🔄 Updated existing product quantity:', updatedItems[existingItemIndex])
       } else {
         // Fetch stock data for this product
-        const stockResponse = await stockAPI.getAll(product.name || product.product_name)
-        const stockList = stockResponse.data?.data?.data || stockResponse.data?.data || []
-        const stockItem = stockList.find(stock => stock.product_id === product.id)
+        let stockItem = null
+        try {
+          const stockResponse = await stockAPI.getAll(product.name || product.product_name)
+          const stockList = stockResponse.data?.data?.data || stockResponse.data?.data || []
+          stockItem = stockList.find(stock => stock.product_id === product.id)
+        } catch (error) {
+          console.error('Failed to fetch stock data:', error)
+          // Continue without stock data
+        }
         
-        const unit = units.find(u => u.id === product.unit_id)
+        const unit = Array.isArray(units) ? units.find(u => u.id === product.unit_id) : null
         
         const sellingPrice = parseFloat(stockItem?.selling_price) || parseFloat(product.selling_price) || parseFloat(product.price) || 0
         const purchasePrice = parseFloat(stockItem?.purchase_price) || parseFloat(product.purchase_price) || parseFloat(product.cost) || 0
@@ -350,44 +392,11 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
         
         setShowProductList(false)
         setProductSearch('')
+        toast.success(`${newItem.product_name} added to invoice`)
       }
     } catch (error) {
-      console.error('Failed to fetch stock data:', error)
-      // Fallback to product data if stock fetch fails
-      const unit = units.find(u => u.id === product.unit_id)
-      
-      const sellingPrice = parseFloat(product.selling_price) || parseFloat(product.price) || 0
-      const purchasePrice = parseFloat(product.purchase_price) || parseFloat(product.cost) || 0
-      const gst = parseFloat(product.gst_percentage) || parseFloat(product.gst) || 0
-      const discount = parseFloat(product.discount_percentage) || parseFloat(product.discount) || 0
-      const quantity = 1
-      const totalPrice = calculateItemTotal(sellingPrice, quantity, gst, discount)
-      
-      const newItem = {
-        product_id: product.id,
-        product_name: product.name || product.product_name,
-        product_code: product.sku || product.code || product.product_code,
-        quantity: quantity,
-        item_count: quantity,
-        unit_id: product.unit_id,
-        unit_name: unit?.short_name || unit?.name || 'pcs',
-        price: sellingPrice,
-        purchase_price: purchasePrice,
-        gst: gst,
-        discount: discount,
-        total_price: totalPrice,
-        status: 'completed',
-        stock_quantity: 0,
-        stock_id: null
-      }
-      
-      setFormData(prev => ({
-        ...prev,
-        items: [...prev.items, newItem]
-      }))
-      
-      setShowProductList(false)
-      setProductSearch('')
+      console.error('Failed to add item:', error)
+      toast.error('Failed to add product. Please try again.')
     }
   }
 
@@ -401,7 +410,7 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
         
         // Validate against stock quantity
         if (item.stock_quantity > 0 && newQuantity > item.stock_quantity) {
-          console.warn(`Cannot add more than available stock. Available: ${item.stock_quantity}, Requested: ${newQuantity}`)
+          toast.error(`Cannot add more than available stock. Available: ${item.stock_quantity}`)
           return prev
         }
         
@@ -431,10 +440,12 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
   }
 
   const handleRemoveItem = (index) => {
+    const removedItem = formData.items[index]
     setFormData(prev => ({
       ...prev,
       items: prev.items.filter((_, i) => i !== index)
     }))
+    toast.success(`${removedItem.product_name} removed from invoice`)
   }
 
   // Validate customer form
@@ -476,26 +487,31 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
         await fetchCustomers(currentUserId, '')
         
         // Fetch updated customers from API
-        const response = await invoiceAPI.getBillGenerateData(currentUserId)
-        let updatedData = response.data?.data || response.data || {}
-        const updatedCustomersList = updatedData.customers || updatedData.bill_customer || updatedData.customer || []
-        setCustomers(updatedCustomersList.length > 0 ? updatedCustomersList : mockCustomers)
-        
-        // Find the newly created customer (by name or phone)
-        const newCustomer = updatedCustomersList.find(c => 
-          c.name === newCustomerData.name || 
-          c.phone === newCustomerData.phone
-        )
-        
-        if (newCustomer) {
-          // Auto-select the new customer
-          setFormData(prev => ({
-            ...prev,
-            customer_id: newCustomer.id
-          }))
-          setCustomerSearch(newCustomer.name || newCustomer.customer_name)
-          toast.success('Customer created and selected successfully')
-        } else {
+        try {
+          const response = await invoiceAPI.getBillGenerateData(currentUserId)
+          let updatedData = response.data?.data || response.data || {}
+          const updatedCustomersList = updatedData.customers || updatedData.bill_customer || updatedData.customer || []
+          setCustomers(Array.isArray(updatedCustomersList) ? updatedCustomersList : [])
+          
+          // Find the newly created customer
+          const newCustomer = updatedCustomersList.find(c => 
+            c.name === newCustomerData.name || 
+            c.phone === newCustomerData.phone
+          )
+          
+          if (newCustomer) {
+            // Auto-select the new customer
+            setFormData(prev => ({
+              ...prev,
+              customer_id: newCustomer.id
+            }))
+            setCustomerSearch(newCustomer.name || newCustomer.customer_name)
+            toast.success('Customer created and selected successfully')
+          } else {
+            toast.success('Customer created successfully')
+          }
+        } catch (error) {
+          console.error('Failed to refresh customer list:', error)
           toast.success('Customer created successfully')
         }
         
@@ -529,6 +545,7 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
     }))
     setCustomerSearch(customer.name || customer.customer_name)
     setShowCustomerDropdown(false)
+    toast.success(`Customer selected: ${customer.name || customer.customer_name}`)
   }
 
   const handleCustomerSearchChange = (value) => {
@@ -544,6 +561,7 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
     }))
     setStoreSearch(store.name || store.store_name)
     setShowStoreDropdown(false)
+    toast.success(`Store selected: ${store.name || store.store_name}`)
   }
 
   const handleStoreSearchChange = (value) => {
@@ -566,7 +584,7 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
 
   const handleAddPackageToInvoice = () => {
     if (!selectedPackage || packageQuantity <= 0) {
-      setError('Please select a package and enter a valid quantity')
+      toast.error('Please select a package and enter a valid quantity')
       return
     }
 
@@ -580,13 +598,13 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
       unit_id: null,
       unit_name: selectedPackage.package_size || 'Package',
       price: parseFloat(selectedPackage.package_price) || 0,
-      gst: 0, // Packages typically don't have GST
-      discount: 0, // Packages typically don't have discount
+      gst: 0,
+      discount: 0,
       total_price: (parseFloat(selectedPackage.package_price) || 0) * packageQuantity,
       status: 'completed',
       stock_quantity: 0,
       stock_id: null,
-      is_package: true // Mark as package item
+      is_package: true
     }
 
     setFormData(prev => ({
@@ -599,16 +617,19 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
     setPackageSearch('')
     setPackageQuantity(1)
     
+    toast.success(`Package added: ${packageItem.product_name} x${packageItem.quantity}`)
     console.log('Added package to invoice:', packageItem)
   }
 
   // Get display names for selected customer and store
   const getSelectedCustomerName = () => {
+    if (!Array.isArray(customers)) return customerSearch
     const customer = customers.find(c => c.id === formData.customer_id)
     return customer?.name || customer?.customer_name || customerSearch
   }
 
   const getSelectedStoreName = () => {
+    if (!Array.isArray(stores)) return storeSearch
     const store = stores.find(s => s.id === formData.store_id)
     return store?.name || store?.store_name || storeSearch
   }
@@ -620,6 +641,7 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
     const newQuantity = parseFloat(item.quantity) + 1
     
     if (maxValue && newQuantity > maxValue) {
+      toast.error(`Cannot exceed available stock. Maximum: ${maxValue}`)
       return
     }
     
@@ -673,7 +695,7 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
     }
   }
 
-  // Calculate totals correctly - discount first, then GST, then add packages
+  // Calculate totals correctly
   const calculateTotals = () => {
     // Separate products and packages
     const productItems = formData.items.filter(item => !item.is_package)
@@ -691,10 +713,10 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
       return sum + (discountedPrice * (item.gst / 100))
     }, 0)
     
-    // Calculate package totals (no discount or GST for packages)
+    // Calculate package totals
     const packageTotal = packageItems.reduce((sum, item) => sum + (item.price * item.quantity), 0)
     
-    // Final calculation: (product subtotal - product discount + product GST) + package total
+    // Final calculation
     const subtotal = productSubtotal
     const totalDiscount = productDiscount
     const totalGst = productGst
@@ -707,7 +729,7 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
     e.preventDefault()
     
     if (!formData.customer_id || !formData.store_id || formData.items.length === 0) {
-      setError('Please fill all required fields and add at least one item')
+      toast.error('Please fill all required fields and add at least one item')
       return
     }
     
@@ -717,7 +739,7 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
     )
     
     if (stockIssues.length > 0) {
-      setError(`Cannot proceed. ${stockIssues.length} item(s) exceed available stock. Please adjust quantities.`)
+      toast.error(`Cannot proceed. ${stockIssues.length} item(s) exceed available stock. Please adjust quantities.`)
       return
     }
     
@@ -726,7 +748,7 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
     // Validate payment amount for semi-paid
     if (formData.payment_status === 'semi_paid') {
       if (!formData.payment_amount || formData.payment_amount <= 0) {
-        setError('Please enter a valid payment amount for semi-paid option')
+        toast.error('Please enter a valid payment amount for semi-paid option')
         return
       }
     }
@@ -746,8 +768,8 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
 
     const submissionData = {
       ...formData,
-      items: productItems, // Only send product items in items array
-      packages: packages, // Send packages in separate packages array
+      items: productItems,
+      packages: packages,
       paid_amount: formData.payment_status === 'paid' ? totals.totalAmount.toString() : 
                   formData.payment_status === 'semi_paid' ? formData.payment_amount.toString() : '0',
       total_amount: totals.totalAmount.toString()
@@ -835,7 +857,7 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
               variant="primary"
               icon={FiSave}
               loading={isSubmitting}
-              disabled={formData.items.length === 0}
+              disabled={formData.items.length === 0 || dataFetchError}
             >
               Generate Invoice
             </Button>
@@ -849,6 +871,21 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
             className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-4 text-red-700 dark:text-red-300"
           >
             {error}
+          </motion.div>
+        )}
+
+        {dataFetchError && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-xl p-4 text-yellow-700 dark:text-yellow-300"
+          >
+            <div className="flex items-center">
+              <FiAlertCircle className="w-5 h-5 mr-2" />
+              <span>
+                Unable to load data from server. Please check your backend connection.
+              </span>
+            </div>
           </motion.div>
         )}
 
@@ -892,12 +929,13 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
                       onFocus={() => setShowCustomerDropdown(true)}
                       className="pr-10"
                       required
+                      disabled={dataFetchError}
                     />
                     <FiSearch className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                   </div>
                   
                   {/* Customer Dropdown */}
-                  {showCustomerDropdown && (
+                  {showCustomerDropdown && !dataFetchError && (
                     <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg max-h-60 overflow-y-auto">
                       {filteredCustomers.length > 0 ? (
                         filteredCustomers.map(customer => (
@@ -952,6 +990,12 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
                       )}
                     </div>
                   )}
+                  
+                  {dataFetchError && (
+                    <div className="mt-2 text-sm text-red-600 dark:text-red-400">
+                      Unable to load customers. Please check server connection.
+                    </div>
+                  )}
                 </div>
 
                 {/* Store Searchable Dropdown */}
@@ -968,12 +1012,13 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
                       onFocus={() => setShowStoreDropdown(true)}
                       className="pr-10"
                       required
+                      disabled={dataFetchError}
                     />
                     <FiSearch className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                   </div>
                   
                   {/* Store Dropdown */}
-                  {showStoreDropdown && (
+                  {showStoreDropdown && !dataFetchError && (
                     <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg max-h-60 overflow-y-auto">
                       {filteredStores.length > 0 ? (
                         filteredStores.map(store => (
@@ -1005,9 +1050,15 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
                       )}
                     </div>
                   )}
+                  
+                  {dataFetchError && (
+                    <div className="mt-2 text-sm text-red-600 dark:text-red-400">
+                      Unable to load stores. Please check server connection.
+                    </div>
+                  )}
                 </div>
 
-                {formData.customer_id && (
+                {formData.customer_id && !dataFetchError && (
                   <motion.div
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -1050,10 +1101,11 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
                       }}
                       onFocus={() => setShowProductList(true)}
                       className="pl-10"
+                      disabled={dataFetchError}
                     />
                   </div>
                   <AnimatePresence>
-                  {showProductList && productSearch && (
+                  {showProductList && productSearch && !dataFetchError && (
                     <motion.div
                       initial={{ opacity: 0, y: -10 }}
                       animate={{ opacity: 1, y: 0 }}
@@ -1116,6 +1168,12 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
                     </motion.div>
                   )}
                 </AnimatePresence>
+                
+                {dataFetchError && (
+                  <div className="mt-2 text-sm text-red-600 dark:text-red-400">
+                    Unable to load products. Please check server connection.
+                  </div>
+                )}
                 </div>
 
                 {formData.items.length > 0 && (
@@ -1176,11 +1234,12 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
                       onChange={(e) => handlePackageSearchChange(e.target.value)}
                       onFocus={() => setShowPackageDropdown(true)}
                       className="pl-10"
+                      disabled={dataFetchError}
                     />
                   </div>
                   
                   {/* Package Dropdown */}
-                  {showPackageDropdown && (
+                  {showPackageDropdown && !dataFetchError && (
                     <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg max-h-60 overflow-y-auto">
                       {filteredPackages.length > 0 ? (
                         filteredPackages.map(pkg => (
@@ -1213,10 +1272,16 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
                       )}
                     </div>
                   )}
+                  
+                  {dataFetchError && (
+                    <div className="mt-2 text-sm text-red-600 dark:text-red-400">
+                      Unable to load packages. Please check server connection.
+                    </div>
+                  )}
                 </div>
 
                 {/* Package Quantity and Add Button */}
-                {selectedPackage && (
+                {selectedPackage && !dataFetchError && (
                   <motion.div
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -1260,7 +1325,7 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
                   </motion.div>
                 )}
 
-                {packagesLoading && (
+                {packagesLoading && !dataFetchError && (
                   <div className="flex items-center justify-center py-8">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500"></div>
                   </div>
@@ -1451,7 +1516,6 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
             className="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-4"
           >
             <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4 flex items-center">
-              {/* <FiDollarSign className="w-4 h-4 mr-2" /> */}
               Payment Options & Invoice Summary
             </h3>
 
@@ -1473,6 +1537,7 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
                       payment_amount: e.target.value === 'semi_paid' ? prev.payment_amount : 0
                     }))}
                     required
+                    disabled={dataFetchError}
                   />
                 </div>
 
