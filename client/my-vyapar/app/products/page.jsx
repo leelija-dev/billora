@@ -31,10 +31,21 @@ const ProductsPage = () => {
   const [isAuthReady, setIsAuthReady] = useState(false);
   
   useEffect(() => {
+    console.log('🔍 Setting up auth subscription');
     const unsubscribe = useAuthStore.subscribe((state) => {
-      const hasAuth = !!(state.user && state.token);
+      console.log('🔍 Auth store state changed:', { 
+        user: !!state.user, 
+        token: !!state.token, 
+        isLoggedIn: state.isLoggedIn,
+        isAuthReady 
+      });
+      
+      // For cookie-based auth, we only need user and isLoggedIn
+      const hasAuth = !!(state.user && state.isLoggedIn);
+      console.log('🔍 hasAuth calculated:', hasAuth, 'current isAuthReady:', isAuthReady);
+      
       if (hasAuth && !isAuthReady) {
-        console.log(' Auth store updated - User:', !!state.user, 'Token:', !!state.token);
+        console.log('✅ Setting isAuthReady to true');
         setIsAuthReady(true);
       }
     });
@@ -401,7 +412,10 @@ const ProductsPage = () => {
     const loadingToast = toast.loading('Processing...');
 
     try {
-      const token = token;
+      // Fetch CSRF token first for stateful requests
+      await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000/api'}/sanctum/csrf-cookie`, {
+        credentials: 'include'
+      });
 
       if (paymentMethod === 'online') {
         const orderData = {
@@ -419,8 +433,9 @@ const ProductsPage = () => {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': token ? `Bearer ${token}` : '',
+            'Accept': 'application/json'
           },
+          credentials: 'include', // Include cookies for authentication
           body: JSON.stringify(orderData)
         });
 
@@ -472,8 +487,9 @@ const ProductsPage = () => {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': token ? `Bearer ${token}` : '',
+            'Accept': 'application/json'
           },
+          credentials: 'include', // Include cookies for authentication
           body: JSON.stringify(orderData)
         });
 
@@ -520,6 +536,9 @@ const ProductsPage = () => {
 
   const fetchProductsData = async (page = 1, categoryId = "All", term = "") => {
     try {
+      console.log('🔍 fetchProductsData called with:', { page, categoryId, term });
+      console.log('🔍 Current state:', { isAuthReady, user: !!user, token: !!token });
+      
       // Clear any previous errors
       clearError();
       
@@ -531,12 +550,13 @@ const ProductsPage = () => {
       }
       
       console.log('✅ Auth ready, proceeding to fetch products');
+      console.log('🔍 User data:', { userId: user?.id, userName: user?.name });
       
       // Use Zustand store to fetch products
       await fetchProducts(page, categoryId, term, user, token);
       
     } catch (error) {
-      console.error("Fetch error:", error);
+      console.error("❌ Fetch error:", error);
       toast.error("Failed to load products: " + error.message);
       
       // Only redirect on critical authentication errors
@@ -622,8 +642,12 @@ const ProductsPage = () => {
   // };
 
   useEffect(() => {
+    console.log('🔍 useEffect triggered, isAuthReady:', isAuthReady);
     if (isAuthReady) {
+      console.log('🔍 Calling fetchProductsData from useEffect');
       fetchProductsData(1);
+    } else {
+      console.log('🔍 Not ready yet, waiting for auth...');
     }
   }, [isAuthReady]);
 
@@ -646,7 +670,7 @@ const ProductsPage = () => {
   const productId = container?.dataset?.productId;
   
   if (productId) {
-    const product = currentProducts.find(p => p.id.toString() === productId);
+    const product = products.find(p => p.id.toString() === productId);
     if (product?.isDriveImage && product?.fileId) {
       const currentSrc = imgElement.src;
       

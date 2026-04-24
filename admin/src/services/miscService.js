@@ -160,7 +160,7 @@ export const billingAPI = {
   upgradePlan: async (upgradeData) => {
     try {
       console.log('🔄 Upgrading plan:', upgradeData);
-      const response = await apiClient.post('/cashfree/upgradePlan', upgradeData);
+      const response = await apiClient.post('/cashfree/upgrade-plan', upgradeData);
       console.log('🔄 Plan upgrade initiated:', response.data);
       return response;
     } catch (error) {

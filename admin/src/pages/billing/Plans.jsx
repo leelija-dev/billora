@@ -366,8 +366,9 @@ const Plans = () => {
       const finalAmount = upgradeAmount + gstAmount - discountAmount
 
       const upgradePayload = {
-        amount: finalAmount,
+        amount: upgradeData.amount,
         plan_id: upgradeData.plan_id,
+        business_type_id: upgradeData.business_type_id,
         customer_id: upgradeData.customer_id,
         customer_phone: upgradeData.customer_phone
       }

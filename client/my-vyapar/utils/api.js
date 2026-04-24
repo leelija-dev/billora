@@ -4,7 +4,6 @@ import { logger } from './logger';
 
 export const apiRequest = async (endpoint, method = "GET", body = null) => {
   try {
-    const token = localStorage.getItem("token");
     const fullUrl = `${BASE_URL}${endpoint.startsWith('/') ? endpoint : '/' + endpoint}`;
 
     logger.log("=" .repeat(50));
@@ -17,9 +16,9 @@ export const apiRequest = async (endpoint, method = "GET", body = null) => {
       method,
       headers: {
         "Content-Type": "application/json",
-        "Accept": "application/json", 
-        ...(token && { Authorization: `Bearer ${token}` }),
+        "Accept": "application/json"
       },
+      credentials: 'include' // Include cookies for authentication
     };
     
     if (body) {

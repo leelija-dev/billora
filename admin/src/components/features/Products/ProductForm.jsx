@@ -339,7 +339,9 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
       ...processedData,
       user_id: user.id,
       created_by: user.id,
-      images: selectedImages,
+      // Handle main image and additional images separately
+      image: selectedImages.length > 0 ? selectedImages[0] : null, // Main image
+      images: selectedImages.length > 1 ? selectedImages.slice(1) : [], // Additional images
       variants: variants,
       attributes: attributesArray.length > 0 ? attributesArray : [],
       // Convert boolean fields to integers for backend
