@@ -60,6 +60,9 @@ const Navbar = () => {
   const pathname = usePathname();
   const router = useRouter();
 
+  // ✅ Hide navbar on specific pages
+  const shouldHideNavbar = pathname === '/login' || pathname === '/register' || pathname === '/products';
+
   // ✅ Debug logging
   useEffect(() => {
     console.log("Navbar Debug:", {
@@ -67,9 +70,11 @@ const Navbar = () => {
       hasActivePlan,
       userIsActive: user?.is_active,
       userPlanId: user?.plan_id,
-      user
+      user,
+      pathname,
+      shouldHideNavbar
     });
-  }, [isLoggedIn, hasActivePlan, user]);
+  }, [isLoggedIn, hasActivePlan, user, pathname, shouldHideNavbar]);
 
   const routeMap = {
     "/trymobile": 0,
@@ -427,6 +432,11 @@ const Navbar = () => {
     window.open(`${DASHBOARD_URL}/dashboard`, '_blank');
   };
 
+  // ✅ Return null to hide navbar completely on specified pages
+  if (shouldHideNavbar) {
+    return null;
+  }
+
   return (
     <>
       <nav
@@ -516,7 +526,7 @@ const Navbar = () => {
                 ))}
               </ul>
             </div>
-            
+
             {/* ✅ FIXED: Dashboard Button Logic */}
             {isLoggedIn && hasActivePlan ? (
               <a
