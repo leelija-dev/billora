@@ -266,7 +266,7 @@ const RegisterPage = () => {
       
       <div className="flex-1 flex justify-center items-center py-20 px-4 relative">
         
-        <form onSubmit={handleRegister} className="w-[550px] bg-white py-10 px-[50px] rounded-[25px] shadow-[0_8px_25px_rgba(0,0,0,0.08)] max-md:w-[450px] max-md:px-8 max-sm:w-[90%] max-sm:px-5 max-sm:py-8">
+        <form onSubmit={handleRegister} className=" bg-white py-10 px-[50px] rounded-[25px] shadow-[0_8px_25px_rgba(0,0,0,0.08)]  max-md:px-8  max-sm:px-5 max-sm:py-8">
           
           <h1 className="text-center text-[#2d236b] text-4xl font-bold mb-6 max-sm:text-3xl">
             Register

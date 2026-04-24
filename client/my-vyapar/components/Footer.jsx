@@ -2,9 +2,20 @@
 
 import React from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import Container from '../components/Container';
 
 const Footer = () => {
+  const pathname = usePathname();
+  
+  // Hide footer on specific pages (same as navbar)
+  const shouldHideFooter = pathname === '/login' || pathname === '/register' || pathname === '/products';
+  
+  // Return null to hide footer completely on specified pages
+  if (shouldHideFooter) {
+    return null;
+  }
+
   const socialLinks = [
     { name: 'Twitter', icon: '𝕏', url: '#' },
     { name: 'LinkedIn', icon: 'in', url: '#' },
