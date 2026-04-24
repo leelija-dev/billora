@@ -417,6 +417,21 @@ const ProductsPage = () => {
         credentials: 'include'
       });
 
+      // Get CSRF token from cookies
+      const getCookie = (name) => {
+        const value = `; ${document.cookie}`;
+        const parts = value.split(`; ${name}=`);
+        if (parts.length === 2) return parts.pop().split(';').shift();
+      };
+      
+      // Debug CSRF token
+      const csrfToken = getCookie('XSRF-TOKEN');
+      // Decode URL-encoded CSRF token
+      const decodedCsrfToken = decodeURIComponent(csrfToken);
+      console.log('🔒 CSRF Token extracted:', csrfToken);
+      console.log('🔒 CSRF Token decoded:', decodedCsrfToken);
+      console.log('🔒 All cookies:', document.cookie);
+
       if (paymentMethod === 'online') {
         const orderData = {
           user_id: user.id,
@@ -429,11 +444,19 @@ const ProductsPage = () => {
           payment_mode: 'online'
         };
 
+        console.log('📤 Order request payload:', orderData);
+        console.log('📤 Order request headers:', {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'X-XSRF-TOKEN': decodedCsrfToken
+        });
+        
         const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000/api'}/orders/store`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Accept': 'application/json'
+            'Accept': 'application/json',
+            'X-XSRF-TOKEN': decodedCsrfToken
           },
           credentials: 'include', // Include cookies for authentication
           body: JSON.stringify(orderData)
@@ -483,11 +506,19 @@ const ProductsPage = () => {
           payment_mode: 'cash'
         };
 
+        console.log('📤 Order request payload:', orderData);
+        console.log('📤 Order request headers:', {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'X-XSRF-TOKEN': decodedCsrfToken
+        });
+        
         const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000/api'}/orders/store`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Accept': 'application/json'
+            'Accept': 'application/json',
+            'X-XSRF-TOKEN': decodedCsrfToken
           },
           credentials: 'include', // Include cookies for authentication
           body: JSON.stringify(orderData)
