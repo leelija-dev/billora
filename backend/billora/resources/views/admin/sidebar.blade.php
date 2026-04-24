@@ -43,6 +43,71 @@
                         <span class="ml-3">Dashboard</span>
                     </a>
                 @endif
+                 {{-- <a href="#"
+                    class="flex items-center px-4 py-3 {{ request()->routeIs('admin.business-types.index', 'admin.business-types.create', 'admin.business-types.edit') ? 'bg-blue-100 text-blue-600 font-semibold' : 'hover:bg-blue-100' }}">
+                    <i class="fa fa-hotel"></i>
+                    <span class="ml-3">Blog</span>
+                </a> --}}
+                @php
+                    $isBlogMenuActive =
+                        request()->routeIs('admin.blogs.*') ||
+                        request()->routeIs(
+                            'admin.blogs.index',
+                           
+                        );
+                @endphp
+                    <div class="group">
+
+                        <!-- Parent -->
+                        <div
+                            class="flex items-center justify-between px-4 py-3 cursor-pointer rounded-lg
+                        {{ $isBlogMenuActive ? 'bg-blue-100 text-blue-600 font-semibold' : 'hover:bg-blue-100' }}">
+
+                            <div class="flex items-center">
+                                <i data-feather="users" class="w-5 h-5"></i>
+                                <span class="ml-3">Blog Management</span>
+                            </div>
+
+                            <span
+                                class="transition-transform 
+                            {{ $isBlogMenuActive ? 'rotate-180' : 'group-hover:rotate-180' }}">
+                                ▾
+                            </span>
+                        </div>
+
+                        <!-- Dropdown -->
+                        <div
+                            class="ml-8 mt-1 
+                        {{ $isBlogMenuActive ? 'block' : 'hidden group-hover:block' }}">
+
+                            <!-- Admin User -->
+                            <a href="{{ route('admin.blogs.index') }}"
+                                class="flex items-center px-4 py-2 text-sm rounded-lg 
+                            {{ request()->routeIs('admin.blogs.*') ? 'bg-blue-100 text-blue-600 font-semibold' : 'hover:bg-blue-100' }}">
+
+                                <i data-feather="user" class="w-4 h-4"></i>
+                                <span class="ml-2">Blog</span>
+                            </a>
+                            <!-- Role -->
+                            <a href="{{ route('admin.roles.index') }}"
+                                class="flex items-center px-4 py-2 text-sm rounded-lg 
+                            {{ request()->routeIs('admin.roles.index', 'admin.roles.create', 'admin.roles.edit') ? 'bg-blue-100 text-blue-600 font-semibold' : 'hover:bg-blue-100' }}">
+
+                                <i data-feather="user-check" class="w-4 h-4"></i>
+                                <span class="ml-2">Categories</span>
+                            </a>
+                            <!-- Permission -->
+                            <a href="{{ route('admin.permissions.index') }}"
+                                class="flex items-center px-4 py-2 text-sm rounded-lg 
+                            {{ request()->routeIs('admin.permissions.index', 'admin.permissions.create') ? 'bg-blue-100 text-blue-600 font-semibold' : 'hover:bg-blue-100' }}">
+
+                                <i data-feather="lock" class="w-4 h-4"></i>
+                                <span class="ml-2">Tags</span>
+                            </a>
+
+                        </div>
+                    </div>
+                
                 @if ($admin && $admin->can('view customers'))
                     <a href="{{ route('admin.customers.index') }}"
                         class="flex items-center px-4 py-3 {{ request()->routeIs('admin.customers.index', 'admin.customers.plans', 'admin.customers.customer-mail') ? 'bg-blue-100 text-blue-600 font-semibold' : 'hover:bg-blue-100' }}">

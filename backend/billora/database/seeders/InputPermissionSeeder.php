@@ -14,7 +14,7 @@ class InputPermissionSeeder extends Seeder
      */
     public function run(): void
     {
-         InputPermission::truncate();
+        //  InputPermission::truncate();
         $permissions = [
             //Clothes/Apparel Fields    
             'size',
