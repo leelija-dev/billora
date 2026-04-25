@@ -110,15 +110,16 @@ export const productsAPI = {
       if (productData.warehouse_location) formData.append('warehouse_location', productData.warehouse_location);
       if (productData.supplier_id) formData.append('supplier_id', productData.supplier_id);
       if (productData.updated_by) formData.append('updated_by', productData.updated_by);
+      if (productData.image) formData.append('image', productData.image);
       
       // Handle images (multiple)
-      if (productData.images && Array.isArray(productData.images)) {
-        productData.images.forEach((image, index) => {
-          if (image instanceof File) {
-            formData.append(`images[${index}]`, image);
-          }
-        });
-      }
+      // if (productData.image && Array.isArray(productData.image)) {
+      //   productData.images.forEach((image, index) => {
+      //     if (image instanceof File) {
+      //       formData.append(`images[${index}]`, productData.image);
+      //     }
+      //   });
+      // }
       
       // Handle QR code (backend will generate, but allow upload if needed)
       if (productData.qr_code instanceof File) {
