@@ -751,7 +751,7 @@ public function upgradePlan(Request $request)
             "order_amount" => $totalAmount,//$request->amount,
             "order_currency" => "INR",
             "customer_details" => [
-                "customer_id" => $request->customer_id,
+                "customer_id" => (string) $request->customer_id,
                 "customer_email" => $customer->email,
                 "customer_phone" => $request->customer_phone
             ],
