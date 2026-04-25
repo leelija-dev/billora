@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { useContactStore } from "../../store/contactStore";
+import { useAuthStore } from "../../store/authStoreZustand";
 import toast from 'react-hot-toast';
 import { logger } from '../../utils/logger';
 import { 
@@ -9,7 +10,8 @@ import {
   FaFacebookF, FaInstagram, FaLinkedinIn, FaTwitter, FaYoutube,
   FaStar, FaCheckCircle, FaArrowRight, FaSpinner, FaClock,
   FaShieldAlt, FaRegSmile, FaBuilding, FaWhatsapp, FaRegBuilding,
-  FaGlobe, FaRegEnvelope, FaPhoneAlt, FaFileInvoice
+  FaGlobe, FaRegEnvelope, FaPhoneAlt, FaFileInvoice,
+  FaRocket
 } from 'react-icons/fa';
 import { HiOutlineLocationMarker } from 'react-icons/hi';
 import { BiSend } from 'react-icons/bi';
@@ -28,7 +30,14 @@ export default function Contact() {
     clearSuccess
   } = useContactStore();
 
+  // Get user auth state
+  const { user, isLoggedIn } = useAuthStore();
+  
+  // Calculate hasActivePlan directly from user data
+  const hasActivePlan = user?.is_active === 1 || false;
+
   const [validationErrors, setValidationErrors] = useState({});
+  const [showFullMap, setShowFullMap] = useState(false);
 
   const validateForm = () => {
     const errors = {};
@@ -170,16 +179,18 @@ export default function Contact() {
               </div>
             </div>
             
-            {/* Free Trial Button */}
-            <Link href="/start-free-trial">
-              <button className="group relative bg-white text-blue-600 hover:text-blue-700 px-6 sm:px-7 md:px-8 lg:px-8 xl:px-9 2xl:px-10 py-3 sm:py-3.5 md:py-4 lg:py-4 xl:py-4.5 2xl:py-5 rounded-xl sm:rounded-2xl font-semibold transition-all hover:scale-105 shadow-xl hover:shadow-2xl text-sm sm:text-base md:text-base lg:text-base xl:text-lg 2xl:text-xl">
-                <span className="relative z-10 flex items-center gap-1 sm:gap-2">
-                  🚀 Start Free Trial
-                  <FaArrowRight className="group-hover:translate-x-1 transition-transform" />
-                </span>
-                <div className="absolute inset-0 bg-gradient-to-r from-yellow-300 to-yellow-400 rounded-xl sm:rounded-2xl opacity-0 group-hover:opacity-20 transition-opacity"></div>
-              </button>
-            </Link>
+            {/* Conditional Free Trial Button - Only show if user doesn't have active plan */}
+            {!isLoggedIn || !hasActivePlan ? (
+              <Link href="/start-free-trial">
+                <button className="group relative bg-white text-blue-600 hover:text-blue-700 px-6 sm:px-7 md:px-8 lg:px-8 xl:px-9 2xl:px-10 py-3 sm:py-3.5 md:py-4 lg:py-4 xl:py-4.5 2xl:py-5 rounded-xl sm:rounded-2xl font-semibold transition-all hover:scale-105 shadow-xl hover:shadow-2xl text-sm sm:text-base md:text-base lg:text-base xl:text-lg 2xl:text-xl">
+                  <span className="relative z-10 flex items-center gap-1 sm:gap-2">
+                    <FaRocket /> Start Free Trial
+                    <FaArrowRight className="group-hover:translate-x-1 transition-transform" />
+                  </span>
+                  <div className="absolute inset-0 bg-gradient-to-r from-yellow-300 to-yellow-400 rounded-xl sm:rounded-2xl opacity-0 group-hover:opacity-20 transition-opacity"></div>
+                </button>
+              </Link>
+            ) : null}
           </div>
         </div>
       </div>
@@ -376,7 +387,8 @@ export default function Contact() {
                   </div>
                   <div>
                     <p className="text-xs sm:text-sm text-blue-600 font-semibold mb-1">Call Us Anytime</p>
-                    <p className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 mb-1">704-314-6478</p>
+                    <a href="tel:+917003150015" className="text-lg sm:text-xl  font-bold text-gray-900 mb-1 hover:text-blue-600 transition-colors">+91 7003150015</a> <br />
+                    <a href="tel:+913325849017" className="text-lg sm:text-xl  font-bold text-gray-900 mb-1 hover:text-blue-600 transition-colors">+91 332 584 9017</a>
                     <p className="text-xs sm:text-sm text-gray-500 flex items-center gap-2">
                       <span className="w-1.5 sm:w-2 h-1.5 sm:h-2 bg-green-500 rounded-full animate-pulse"></span>
                       9 AM To 7 PM (Everyday)
@@ -393,7 +405,7 @@ export default function Contact() {
                   </div>
                   <div>
                     <p className="text-xs sm:text-sm text-purple-600 font-semibold mb-1">Email Us</p>
-                    <p className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 mb-1">help@billora.com</p>
+                    <a href="mailto:info@leelija.com" className="text-lg sm:text-xl  font-bold text-gray-900 mb-1 hover:text-purple-600 transition-colors">info@leelija.com</a>
                     <p className="text-xs sm:text-sm text-gray-500">We reply within 24 hours</p>
                   </div>
                 </div>
@@ -407,43 +419,86 @@ export default function Contact() {
                   </div>
                   <div>
                     <p className="text-xs sm:text-sm text-indigo-600 font-semibold mb-1 sm:mb-2">Visit Us</p>
-                    <p className="font-bold text-gray-900 text-sm sm:text-base mb-1 sm:mb-2">Lelija Technolabs Pvt. Ltd.</p>
+                    <p className="font-bold text-gray-900 text-sm sm:text-base mb-1 sm:mb-2">Leelija Web Solution Pvt Ltd</p>
                     <p className="text-gray-600 leading-relaxed text-xs sm:text-sm">
-                      B-426 Sumel Business Park 7,<br />
-                      Near Soni Ni Chali, Barasat,<br />
-                      West Bengal - 700121
+                      Taki Road, Bamunmura, Barasat,<br />
+                      Kolkata - 700125, West Bengal, India
                     </p>
 
-                    {/* Business Details */}
-                    <div className="mt-3 sm:mt-4 p-3 sm:p-4 bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl border border-gray-200">
-                      <div className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm mb-1.5 sm:mb-2">
-                        <FaFileInvoice className="text-blue-600 text-xs" />
-                        <span className="font-semibold text-gray-700">GSTIN:</span>
-                        <span className="text-gray-600 text-xs sm:text-sm">24AAFCF7281A1ZX</span>
-                      </div>
-                      <div className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm">
-                        <MdBusinessCenter className="text-purple-600 text-sm" />
-                        <span className="font-semibold text-gray-700">CIN:</span>
-                        <span className="text-gray-600 text-xs sm:text-sm">U62091GJ2023PTC146763</span>
-                      </div>
-                    </div>
+                   
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Map Preview */}
-            <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-xl sm:rounded-2xl overflow-hidden shadow-2xl">
-              <div className="h-36 sm:h-40 md:h-48 bg-gray-800 relative flex items-center justify-center">
-                <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1526778548025-fa2f459cd5c1?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80')] bg-cover bg-center opacity-30"></div>
-                <div className="relative z-10 text-center">
-                  <div className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 bg-white/10 backdrop-blur rounded-full flex items-center justify-center mx-auto mb-2 sm:mb-3">
-                    <HiOutlineLocationMarker className="text-2xl text-white" />
+            {/* Google Map Section */}
+            <div className="bg-white rounded-xl sm:rounded-2xl overflow-hidden shadow-lg border border-gray-100">
+              <div className="relative">
+                {!showFullMap ? (
+                  <>
+                    <div className="h-64 sm:h-72 md:h-80 bg-gray-200 relative">
+                      <iframe 
+                        src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d18267.049967134488!2d88.50490553383787!3d22.719129095451922!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x39f8a94193290919%3A0xa386ccb40a9d040a!2sLeelija!5e1!3m2!1sen!2sin!4v1777100081884!5m2!1sen!2sin" 
+                        width="100%" 
+                        height="100%" 
+                        style={{ border: 0 }}
+                        allowFullScreen 
+                        loading="lazy" 
+                        referrerPolicy="no-referrer-when-downgrade"
+                        className="absolute inset-0 w-full h-full"
+                        title="Leelija Office Location"
+                      ></iframe>
+                    </div>
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none"></div>
+                    <button 
+                      onClick={() => setShowFullMap(true)}
+                      className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-white text-gray-900 px-4 sm:px-6 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-semibold hover:bg-gray-100 transition-all shadow-lg hover:shadow-xl flex items-center gap-2 z-10"
+                    >
+                      <HiOutlineLocationMarker className="text-lg" />
+                      View Full Map
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <div className="h-[500px] sm:h-[550px] md:h-[600px] bg-gray-200 relative">
+                      <iframe 
+                        src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d18267.049967134488!2d88.50490553383787!3d22.719129095451922!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x39f8a94193290919%3A0xa386ccb40a9d040a!2sLeelija!5e1!3m2!1sen!2sin!4v1777100081884!5m2!1sen!2sin" 
+                        width="100%" 
+                        height="100%" 
+                        style={{ border: 0 }}
+                        allowFullScreen 
+                        loading="lazy" 
+                        referrerPolicy="no-referrer-when-downgrade"
+                        className="absolute inset-0 w-full h-full"
+                        title="Leelija Office Location - Full View"
+                      ></iframe>
+                    </div>
+                    <button 
+                      onClick={() => setShowFullMap(false)}
+                      className="absolute top-4 right-4 bg-white text-gray-900 p-2 rounded-full shadow-lg hover:bg-gray-100 transition-all z-10"
+                    >
+                      ✕
+                    </button>
+                  </>
+                )}
+              </div>
+              
+              {/* Map Footer Info */}
+              <div className="p-3 sm:p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border-t border-gray-100">
+                <div className="flex items-center justify-between text-xs sm:text-sm">
+                  <div className="flex items-center gap-2">
+                    <MdLocationOn className="text-blue-600" />
+                    <span className="text-gray-700 font-medium">Leelija Web Solution Pvt Ltd</span>
                   </div>
-                  <p className="text-white font-semibold text-sm sm:text-base">Find us on Google Maps</p>
-                  <button className="mt-2 sm:mt-3 px-4 sm:px-5 md:px-6 py-1.5 sm:py-2 bg-white text-gray-900 rounded-full text-xs sm:text-sm font-semibold hover:bg-gray-100 transition-colors">
-                    Open Map
-                  </button>
+                  <a 
+                    href="https://www.google.com/maps/place/Leelija/@22.7191291,88.5049055,15z/data=!4m6!3m5!1s0x39f8a94193290919:0xa386ccb40a9d040a!8m2!3d22.7191291!4d88.5049055!16s%2Fg%2F11w_pbrmgh?entry=ttu" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-blue-600 hover:text-blue-700 font-semibold flex items-center gap-1"
+                  >
+                    Get Directions 
+                    <FaArrowRight className="text-xs" />
+                  </a>
                 </div>
               </div>
             </div>
