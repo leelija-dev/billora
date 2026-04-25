@@ -3,9 +3,16 @@ import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import Container from "../components/Container";
+import { useAuthStore } from "../store/authStoreZustand";
 import { FaStar, FaUsers, FaChartBar } from "react-icons/fa";
 
 const Hero = () => {
+  // Get user auth state
+  const { user, isLoggedIn } = useAuthStore();
+  
+  // Calculate hasActivePlan directly from user data
+  const hasActivePlan = user?.is_active === 1 || false;
+
   const [screenState, setScreenState] = useState(0);
 
   useEffect(() => {
@@ -197,18 +204,31 @@ const Hero = () => {
               
               {/* SIMPLE BUTTONS - No complex animations */}
               <div className="flex flex-col sm:flex-row gap-4 sm:gap-5 md:gap-6 justify-center lg:justify-start items-center animate-fadeInUp">
-                <Link 
-                  href="/start-free-trial" 
-                  className="btn-simple"
-                >
-                  Start Free Trial →
-                </Link>
-                <Link 
-                  href="/bookdemo" 
-                  className="btn-simple"
-                >
-                  Book Free Demo →
-                </Link>
+                {isLoggedIn && hasActivePlan ? (
+                  <Link 
+                    href={`${process.env.NEXT_PUBLIC_DASHBOARD_URL || 'http://localhost:3000'}/dashboard`}
+                    className="btn-simple"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    Go to Dashboard →
+                  </Link>
+                ) : (
+                  <>
+                    <Link 
+                      href="/start-free-trial" 
+                      className="btn-simple"
+                    >
+                      Start Free Trial →
+                    </Link>
+                    <Link 
+                      href="/bookdemo" 
+                      className="btn-simple"
+                    >
+                      Book Free Demo →
+                    </Link>
+                  </>
+                )}
               </div>
             </div>
 
