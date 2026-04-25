@@ -33,7 +33,7 @@ class ContactUsController extends Controller
         if($contact){
         $admin_mail_id = config('app.admin_mail');
         $customerMail = $this->customerMail($data['name'], $data['email'], $data['phone'], $data['subject'], $data['message']);
-        $adminMail = $this->adminMail($data['name'], $data['email'], $data['phone'], $data['subject'], $data['message']);
+        $adminMail = $this->adminMail($data['name'], $data['email'], $data['phone'], $data['subject'], $data['message'],$contact);
         $subject = "Message Confirmation";
         Mail::html($customerMail, function ($message) use ($data,$subject) {
                 $message->to($data['email'])
@@ -58,7 +58,7 @@ class ContactUsController extends Controller
 
 
     }
-    public function adminMail($name, $email, $phone, $subject, $message){
+    public function adminMail($name, $email, $phone, $subject, $message,$contact){
       $html ="<!DOCTYPE html>
 <html lang='en'>
 <head>
@@ -409,7 +409,7 @@ class ContactUsController extends Controller
                 Reply to Customer
             </a>
 
-            <a href='#' class='btn-secondary'>
+            <a href='".route('admin.contacts.view', $contact->id)."' class='btn-secondary'>
                 View in Dashboard
             </a>
         </div>
