@@ -821,9 +821,9 @@ body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height
         ]);
         $sessionId = $data['payment_session_id'];
         // Remove any extra "paymentpayment" suffix if present
-        if (str_ends_with($sessionId, 'paymentpayment')) {
-            $sessionId = str_replace('paymentpayment', '', $sessionId);
-        }
+        // if (str_ends_with($sessionId, 'paymentpayment')) {
+        //     $sessionId = str_replace('paymentpayment', '', $sessionId);
+        // }
 
         $encodedSessionId = urlencode($sessionId);
         // Create correct payment URL
