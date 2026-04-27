@@ -2,6 +2,10 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { logoutUser, checkSession, registerUser } from '../services/authService';
+import toast from 'react-hot-toast';
+
+// ✅ Generate unique tab ID to prevent self-broadcast
+const TAB_ID = Math.random().toString(36).substring(7);
 
 export const useAuthStore = create(
   persist(
@@ -56,6 +60,16 @@ export const useAuthStore = create(
         localStorage.setItem('user', JSON.stringify(userData));
         if (token) localStorage.setItem('auth_token', token);
         
+        // ✅ Broadcast to other tabs when Next.js logs in
+        const channel = new BroadcastChannel('auth_channel');
+        channel.postMessage({
+          type: 'LOGIN',
+          user: userData,
+          token: token,
+          sourceTabId: TAB_ID
+        });
+        setTimeout(() => channel.close(), 100);
+        
         window.dispatchEvent(new Event("userLoggedIn"));
         
         console.log('✅ Store login successful');
@@ -72,6 +86,8 @@ export const useAuthStore = create(
           
           if (response?.data?.user || response?.status === true) {
             const userData = response.data?.user || response.data;
+            const token = response.data?.token;
+            
             set({
               user: userData,
               isLoggedIn: true,
@@ -80,6 +96,17 @@ export const useAuthStore = create(
             });
             
             localStorage.setItem('user', JSON.stringify(userData));
+            if (token) localStorage.setItem('auth_token', token);
+            
+            // ✅ Broadcast to other tabs on register
+            const channel = new BroadcastChannel('auth_channel');
+            channel.postMessage({
+              type: 'LOGIN',
+              user: userData,
+              token: token,
+              sourceTabId: TAB_ID
+            });
+            setTimeout(() => channel.close(), 100);
             
             window.dispatchEvent(new Event("userLoggedIn"));
             
@@ -94,6 +121,7 @@ export const useAuthStore = create(
             isLoading: false,
             error: error.message || 'Registration failed',
           });
+          return { success: false, error: error.message };
         }
       },
 
@@ -116,6 +144,14 @@ export const useAuthStore = create(
         localStorage.removeItem('auth-storage');
         localStorage.removeItem('user');
         localStorage.removeItem('auth_token');
+        
+        // ✅ Broadcast logout to other tabs
+        const channel = new BroadcastChannel('auth_channel');
+        channel.postMessage({
+          type: 'LOGOUT',
+          sourceTabId: TAB_ID
+        });
+        setTimeout(() => channel.close(), 100);
         
         window.dispatchEvent(new Event("userLoggedOut"));
       },
@@ -187,6 +223,58 @@ export const useAuthStore = create(
   )
 );
 
+// ✅ FIX: Cross-tab synchronization - DIRECTLY UPDATE STATE (NO API CALL)
+if (typeof window !== 'undefined') {
+  const channel = new BroadcastChannel('auth_channel');
+  
+  channel.onmessage = (event) => {
+    // ✅ Ignore messages from the same tab
+    if (event.data.sourceTabId === TAB_ID) {
+      console.log('📢 Ignoring self-broadcast message');
+      return;
+    }
+    
+    console.log('📢 Received message from another tab:', event.data.type);
+    
+    if (event.data.type === 'LOGIN') {
+      const { user, token } = event.data;
+      
+      console.log('✅ Login detected from another tab/app');
+      console.log('👤 User:', user?.email);
+      console.log('🔑 Token received:', token?.substring(0, 20) + '...');
+      
+      if (token && user) {
+        // ✅ Store the token in localStorage
+        localStorage.setItem('auth_token', token);
+        localStorage.setItem('user', JSON.stringify(user));
+        
+        // ✅ DIRECTLY update Zustand store (NO API CALL!)
+        useAuthStore.setState({
+          user: user,
+          isLoggedIn: true,
+          isLoading: false,
+        });
+        
+        // ✅ Show notification
+        toast.success(`Logged in as ${user?.email} from React app!`);
+      } else {
+        // Fallback: check via API if token not provided
+        console.log('⚠️ No token in broadcast, falling back to API check');
+        useAuthStore.getState().checkAuthStatus();
+      }
+    } else if (event.data.type === 'LOGOUT') {
+      console.log('🔓 Logout detected from another tab - clearing state');
+      useAuthStore.getState().logout();
+      toast.success('Logged out from another app');
+    }
+  };
+  
+  // Keep channel open
+  window.addEventListener('beforeunload', () => {
+    channel.close();
+  });
+}
+
 // ✅ Add hasActivePlan as a selector (computed property)
 export const useHasActivePlan = () => {
   const user = useAuthStore((state) => state.user);
@@ -197,7 +285,6 @@ export const useHasActivePlan = () => {
 export const useAuth = () => useAuthStore();
 export const useUser = () => useAuthStore((state) => state.user);
 export const useIsLoggedIn = () => useAuthStore((state) => state.isLoggedIn);
-
 
 // // store/authStoreZustand.js - Industry-standard Zustand store for authentication
 // import { create } from 'zustand';

@@ -14,12 +14,12 @@ return Application::configure(basePath: dirname(__DIR__))
         api: __DIR__.'/../routes/api.php',
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
-        then: function () {
-            // Define rate limiters
-            RateLimiter::for('api', function ($job) {
-                return Limit::perMinute(60)->by($job->user()?->id ?: $job->ip());
-            });
-        }
+        // then: function () {
+        //     // Define rate limiters
+        //     RateLimiter::for('api', function ($job) {
+        //         return Limit::perMinute(60)->by($job->user()?->id ?: $job->ip());
+        //     });
+        // }
     )
     ->withMiddleware(function (Middleware $middleware): void {
         // Add Sanctum middleware to API group
