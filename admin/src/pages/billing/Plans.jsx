@@ -32,6 +32,7 @@ import EmptyState from '../../components/common/EmptyState/EmptyState'
 import StatusBadge from '../../components/common/StatusBadge/StatusBadge'
 import Input from '../../components/common/Input/Input'
 import ProtectedRoute from '../../components/features/Auth/ProtectedRoute'
+import toast from 'react-hot-toast'
 
 const Plans = () => {
   const { canAccess, user, permissions } = usePermissionStore()
@@ -92,6 +93,29 @@ const Plans = () => {
   const getUserId = () => {
     return user?.id || localStorage.getItem('user_id') || localStorage.getItem('userId') || 1
   }
+
+  // Load Cashfree SDK - same as order summary page
+  const loadCashfreeSDK = () => {
+    return new Promise((resolve, reject) => {
+      if (window.Cashfree) {
+        resolve(window.Cashfree);
+        return;
+      }
+
+      const script = document.createElement('script');
+      script.src = 'https://sdk.cashfree.com/js/v3/cashfree.js';
+      script.async = true;
+      script.onload = () => {
+        if (window.Cashfree) {
+          resolve(window.Cashfree);
+        } else {
+          reject(new Error('Cashfree SDK failed to load'));
+        }
+      };
+      script.onerror = () => reject(new Error('Failed to load Cashfree SDK'));
+      document.body.appendChild(script);
+    });
+  };
 
   const fetchAll = async () => {
     setLoading(true)
@@ -200,6 +224,8 @@ const Plans = () => {
 
     setActionLoading(true)
     setError(null)
+    const loadingToast = toast.loading('Creating order...')
+    
     try {
       // Create Cashfree order using service
       const orderResponse = await billingAPI.createCashfreeOrder({
@@ -210,27 +236,54 @@ const Plans = () => {
       
       const orderData = orderResponse?.data
       
-      if (orderData?.status) {
-        // Redirect to payment gateway or handle payment
-        if (orderData.payment_url) {
-          window.open(orderData.payment_url, '_blank')
-        }
+      if (orderData?.payment_session_id) {
+        toast.success('Order created! Redirecting to payment...', { id: loadingToast })
         
-        setSuccessMessage('Order created successfully! Please complete the payment.')
-        setShowPurchaseForm(false)
-        setSelectedPlan(null)
-        setPurchaseData({ plan_id: '', customer_id: '', amount: 0 })
+        // Load and initialize Cashfree SDK
+        const Cashfree = await loadCashfreeSDK();
+        const cashfree = new Cashfree({
+          mode: process.env.REACT_APP_CASHFREE_MODE === 'production' ? 'production' : 'sandbox',
+        });
         
-        // Refresh data after a delay
-        setTimeout(() => {
-          fetchAll()
-        }, 3000)
+        // Store order info before redirect
+        const orderInfo = {
+          paymentSessionId: orderData.payment_session_id,
+          planName: selectedPlan?.name || 'Plan Purchase',
+          amount: purchaseData.amount,
+          customerId: purchaseData.customer_id,
+          timestamp: Date.now()
+        };
+        localStorage.setItem('pendingPayment', JSON.stringify(orderInfo));
+        
+        // Open checkout using SDK
+        const paymentResult = await cashfree.checkout({
+          paymentSessionId: orderData.payment_session_id,
+          redirectTarget: "_self"
+        });
+        
+        console.log("Payment checkout result:", paymentResult);
+        
       } else {
+        toast.dismiss(loadingToast)
         setError(orderData?.message || 'Failed to create order')
       }
     } catch (error) {
+      toast.dismiss(loadingToast)
       console.error('Failed to purchase plan:', error)
-      setError('Failed to purchase plan. Please try again.')
+      
+      let errorMessage = 'Payment failed. Please try again.'
+      if (error.message?.includes('customer_id')) {
+        errorMessage = 'Invalid customer ID format. Please try again.'
+      } else if (error.message?.includes('plan_id')) {
+        errorMessage = 'Invalid plan selected. Please try again.'
+      } else if (error.message?.includes('amount')) {
+        errorMessage = 'Invalid amount. Please try again.'
+      } else if (error.message) {
+        errorMessage = error.message
+      }
+      
+      setError(errorMessage)
+      toast.error(errorMessage)
     } finally {
       setActionLoading(false)
     }
@@ -465,13 +518,16 @@ const Plans = () => {
       return
     }
 
-    if (upgradeData.upgrade_amount <= 0) {
-      setError('Upgrade amount must be greater than 0')
+    // Allow 0 upgrade amount for free upgrades (when current plan credit covers the cost)
+    if (upgradeData.upgrade_amount < 0) {
+      setError('Invalid upgrade amount calculation')
       return
     }
 
     setActionLoading(true)
     setError(null)
+    const loadingToast = toast.loading('Processing upgrade...')
+    
     try {
       // Calculate final amount using prorated upgrade amount with GST and discount
       const upgradeAmount = parseFloat(upgradeData.upgrade_amount || 0)
@@ -479,8 +535,11 @@ const Plans = () => {
       const discountAmount = parseFloat(upgradeData.discount) || 0
       const finalAmount = upgradeAmount + gstAmount - discountAmount
 
+      // For free upgrades (0 amount), still send the total_amount which includes GST
+      const amountToSend = upgradeData.total_amount || finalAmount
+
       const upgradePayload = {
-        amount: upgradeData.total_amount, // Send final amount (discounted amount + GST) to backend
+        amount: amountToSend, // Send final amount (discounted amount + GST) to backend
         plan_id: upgradeData.plan_id,
         business_type_id: upgradeData.business_type_id,
         customer_id: upgradeData.customer_id,
@@ -493,35 +552,76 @@ const Plans = () => {
       const upgradeResponse = await billingAPI.upgradePlan(upgradePayload)
       const responseData = upgradeResponse?.data
       
-      if (responseData?.status || responseData?.payment_url) {
-        // Redirect to payment gateway if payment URL is provided
-        if (responseData.payment_url) {
-          window.open(responseData.payment_url, '_blank')
+      if (responseData?.payment_session_id) {
+        toast.success('Upgrade initiated! Redirecting to payment...', { id: loadingToast })
+        
+        // Load and initialize Cashfree SDK
+        const Cashfree = await loadCashfreeSDK();
+        const cashfree = new Cashfree({
+          mode: process.env.REACT_APP_CASHFREE_MODE === 'production' ? 'production' : 'sandbox',
+        });
+        
+        // Store order info before redirect
+        const orderInfo = {
+          paymentSessionId: responseData.payment_session_id,
+          planName: selectedPlan?.name || 'Plan Upgrade',
+          amount: amountToSend,
+          customerId: upgradeData.customer_id,
+          timestamp: Date.now(),
+          isUpgrade: true
+        };
+        localStorage.setItem('pendingPayment', JSON.stringify(orderInfo));
+        
+        // Handle both paid and free upgrades
+        if (amountToSend > 0) {
+          // Open checkout using SDK for paid upgrades
+          const paymentResult = await cashfree.checkout({
+            paymentSessionId: responseData.payment_session_id,
+            redirectTarget: "_self"
+          });
+          
+          console.log("Payment checkout result:", paymentResult);
+        } else {
+          // Free upgrade - no payment needed
+          toast.success('Plan upgraded successfully! Your new plan is now active.')
+          setShowUpgradeForm(false)
+          setSelectedPlan(null)
+          setUpgradeData({
+            plan_id: '',
+            business_type_id: '',
+            customer_id: '',
+            customer_phone: '',
+            amount: 0,
+            gst: 0,
+            discount: 0
+          })
+          
+          // Refresh data after a delay
+          setTimeout(() => {
+            fetchAll()
+          }, 3000)
         }
-        
-        setSuccessMessage('Plan upgrade initiated! Please complete the payment.')
-        setShowUpgradeForm(false)
-        setSelectedPlan(null)
-        setUpgradeData({
-          plan_id: '',
-          business_type_id: '',
-          customer_id: '',
-          customer_phone: '',
-          amount: 0,
-          gst: 0,
-          discount: 0
-        })
-        
-        // Refresh data after a delay
-        setTimeout(() => {
-          fetchAll()
-        }, 3000)
       } else {
+        toast.dismiss(loadingToast)
         setError(responseData?.message || 'Failed to initiate plan upgrade')
       }
     } catch (error) {
+      toast.dismiss(loadingToast)
       console.error('Failed to upgrade plan:', error)
-      setError(error.response?.data?.message || 'Failed to upgrade plan. Please try again.')
+      
+      let errorMessage = 'Upgrade failed. Please try again.'
+      if (error.message?.includes('customer_id')) {
+        errorMessage = 'Invalid customer ID format. Please try again.'
+      } else if (error.message?.includes('plan_id')) {
+        errorMessage = 'Invalid plan selected. Please try again.'
+      } else if (error.message?.includes('amount')) {
+        errorMessage = 'Invalid upgrade amount. Please try again.'
+      } else if (error.message) {
+        errorMessage = error.message
+      }
+      
+      setError(errorMessage)
+      toast.error(errorMessage)
     } finally {
       setActionLoading(false)
     }
