@@ -236,18 +236,20 @@ const Plans = () => {
       
       const orderData = orderResponse?.data
       
-      if (orderData?.payment_session_id) {
+      if (orderData?.session_id) {
         toast.success('Order created! Redirecting to payment...', { id: loadingToast })
         
         // Load and initialize Cashfree SDK
         const Cashfree = await loadCashfreeSDK();
         const cashfree = new Cashfree({
-          mode: process.env.REACT_APP_CASHFREE_MODE === 'production' ? 'production' : 'sandbox',
+          // mode: process.env.REACT_APP_CASHFREE_MODE === 'production' ? 'production' : 'sandbox',
+          mode: import.meta.env.VITE_CASHFREE_MODE === 'production' ? 'production' : 'sandbox',
+
         });
         
         // Store order info before redirect
         const orderInfo = {
-          paymentSessionId: orderData.payment_session_id,
+          paymentSessionId: orderData.session_id,
           planName: selectedPlan?.name || 'Plan Purchase',
           amount: purchaseData.amount,
           customerId: purchaseData.customer_id,
@@ -257,7 +259,7 @@ const Plans = () => {
         
         // Open checkout using SDK
         const paymentResult = await cashfree.checkout({
-          paymentSessionId: orderData.payment_session_id,
+          paymentSessionId: orderData.session_id,
           redirectTarget: "_self"
         });
         
@@ -552,18 +554,19 @@ const Plans = () => {
       const upgradeResponse = await billingAPI.upgradePlan(upgradePayload)
       const responseData = upgradeResponse?.data
       
-      if (responseData?.payment_session_id) {
+      if (responseData?.session_id) {
         toast.success('Upgrade initiated! Redirecting to payment...', { id: loadingToast })
         
         // Load and initialize Cashfree SDK
         const Cashfree = await loadCashfreeSDK();
         const cashfree = new Cashfree({
-          mode: process.env.REACT_APP_CASHFREE_MODE === 'production' ? 'production' : 'sandbox',
+          // mode: process.env.REACT_APP_CASHFREE_MODE === 'production' ? 'production' : 'sandbox',
+          mode: import.meta.env.VITE_CASHFREE_MODE === 'production' ? 'production' : 'sandbox',
         });
         
         // Store order info before redirect
         const orderInfo = {
-          paymentSessionId: responseData.payment_session_id,
+          paymentSessionId: responseData.session_id,
           planName: selectedPlan?.name || 'Plan Upgrade',
           amount: amountToSend,
           customerId: upgradeData.customer_id,
@@ -576,7 +579,7 @@ const Plans = () => {
         if (amountToSend > 0) {
           // Open checkout using SDK for paid upgrades
           const paymentResult = await cashfree.checkout({
-            paymentSessionId: responseData.payment_session_id,
+            paymentSessionId: responseData.session_id,
             redirectTarget: "_self"
           });
           
