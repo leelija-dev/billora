@@ -734,12 +734,12 @@ body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height
             'customer_phone' => 'required',
         ]);
         $customer = Customers::find($request->customer_id);
-
+        $plan = Plans::findOrFail($request->plan_id);
         $lastPlanPurchase = PlanPurchaseHistory::where('user_id', $request->customer_id)
             ->where('plan_id', $customer->plan_id)
             ->latest()
             ->first();
-        Log::info('last plan id is ' . $lastPlanPurchase->plan_id);
+        Log::info('last plan  amount ' . $request->amount);
         $orderId = 'order_' . uniqid();
         $url = config('cashfree.base_url') . '/orders';
 
@@ -760,6 +760,8 @@ body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height
 
         // Final payable (no negative)
         $totalAmount = max(0, $request->amount - $remainingAmount);
+        $planDiscount = ($plan->price - ($plan->price * $plan->discount / 100));
+        $totalAmount = $plan->price *
         Log::info("Upgrade Plan Calculation: Remaining Days: {$remaningDays}, Duration: {$duration}, Per Day Price: {$perDayPrice}, Remaining Amount: {$remainingAmount}, Total Amount to Pay: {$totalAmount}");
         Log::info('total amount: ' . $request->amount);
         $response = Http::withHeaders([
