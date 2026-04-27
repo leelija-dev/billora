@@ -2,7 +2,7 @@ import { apiRequest } from "@/utils/api";
 
 // Get all plans
 export const getPlans = () => {
-  return apiRequest("/plans/", "GET");
+  return apiRequest("/plans", "GET");
 };
 
 // Get single plan

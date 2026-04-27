@@ -200,7 +200,7 @@ class CustomerController extends Controller
         }
 
         // Delete existing tokens
-        $user->tokens()->delete();
+        // $user->tokens()->delete();
         
         // Create new token
         $token = $user->createToken('auth-token')->plainTextToken;
