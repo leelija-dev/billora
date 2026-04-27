@@ -58,55 +58,53 @@ export const useAuthStore = create(
         }
       },
 
-      // In React src/store/authStore.js - Update the login function
-
-login: async (credentials) => {
-  set({ isLoading: true });
-  try {
-    console.log('Login attempt with:', credentials.email);
-    const response = await authService.login(credentials);
-    
-    const data = response.data;
-    const user = data.user;
-    const token = data.token;  // ✅ Get the token
-    
-    set({
-      user: user,
-      isAuthenticated: true,
-      isLoading: false,
-    });
-    
-    localStorage.setItem('user', JSON.stringify(user));
-    localStorage.setItem('auth_token', token);  // ✅ Store token
-    
-    const { setUser: setPermissionUser, fetchUserPermissions } = usePermissionStore.getState();
-    setPermissionUser(user);
-    
-    if (user && user.plan_id) {
-      fetchUserPermissions(user.id);
-    }
-    
-    // ✅ Broadcast to OTHER tabs with TOKEN
-    const channel = new BroadcastChannel('auth_channel');
-    channel.postMessage({ 
-      type: 'LOGIN', 
-      user: user,
-      token: token,  // ✅ ADD THIS - Send the token!
-      sourceTabId: TAB_ID 
-    });
-    setTimeout(() => channel.close(), 100);
-    
-    toast.success('Login successful!');
-    return { success: true };
-  } catch (error) {
-    console.error('Login error:', error);
-    set({ isLoading: false });
-    
-    const errorMessage = error.message || 'Login failed';
-    toast.error(errorMessage);
-    return { success: false, error: error };
-  }
-},
+      login: async (credentials) => {
+        set({ isLoading: true });
+        try {
+          console.log('Login attempt with:', credentials.email);
+          const response = await authService.login(credentials);
+          
+          const data = response.data;
+          const user = data.user;
+          const token = data.token;
+          
+          set({
+            user: user,
+            isAuthenticated: true,
+            isLoading: false,
+          });
+          
+          localStorage.setItem('user', JSON.stringify(user));
+          localStorage.setItem('auth_token', token);
+          
+          const { setUser: setPermissionUser, fetchUserPermissions } = usePermissionStore.getState();
+          setPermissionUser(user);
+          
+          if (user && user.plan_id) {
+            fetchUserPermissions(user.id);
+          }
+          
+          // ✅ Broadcast to OTHER tabs with TOKEN
+          const channel = new BroadcastChannel('auth_channel');
+          channel.postMessage({ 
+            type: 'LOGIN', 
+            user: user,
+            token: token,
+            sourceTabId: TAB_ID 
+          });
+          setTimeout(() => channel.close(), 100);
+          
+          toast.success('Login successful!');
+          return { success: true };
+        } catch (error) {
+          console.error('Login error:', error);
+          set({ isLoading: false });
+          
+          const errorMessage = error.message || 'Login failed';
+          toast.error(errorMessage);
+          return { success: false, error: error };
+        }
+      },
 
       logout: async () => {
         const { user } = get();
@@ -193,7 +191,7 @@ login: async (credentials) => {
   )
 );
 
-// ✅ Fix: Cross-tab synchronization - Don't reload current tab
+// ✅ FIX: Cross-tab synchronization - DIRECTLY UPDATE STATE (NO API CALL)
 if (typeof window !== 'undefined') {
   const channel = new BroadcastChannel('auth_channel');
   
@@ -207,13 +205,43 @@ if (typeof window !== 'undefined') {
     console.log('📢 Received message from another tab:', event.data.type);
     
     if (event.data.type === 'LOGIN') {
-      console.log('✅ Login detected from another tab - updating state');
-      // Just update state, don't reload
-      useAuthStore.getState().checkAuth();
+      const { user, token } = event.data;
+      
+      console.log('✅ Login detected from another tab/app');
+      console.log('👤 User:', user?.email);
+      console.log('🔑 Token received:', token?.substring(0, 20) + '...');
+      
+      if (token && user) {
+        // ✅ Store the token in localStorage
+        localStorage.setItem('auth_token', token);
+        localStorage.setItem('user', JSON.stringify(user));
+        
+        // ✅ DIRECTLY update Zustand store (NO API CALL!)
+        useAuthStore.setState({
+          user: user,
+          isAuthenticated: true,
+          isLoading: false,
+        });
+        
+        // ✅ Also update permission store
+        const { setUser: setPermissionUser, fetchUserPermissions } = usePermissionStore.getState();
+        setPermissionUser(user);
+        
+        if (user && user.plan_id) {
+          fetchUserPermissions(user.id);
+        }
+        
+        // ✅ Show notification
+        toast.success(`Logged in as ${user?.email} from another app!`);
+      } else {
+        // Fallback: check via API if token not provided
+        console.log('⚠️ No token in broadcast, falling back to API check');
+        useAuthStore.getState().checkAuth();
+      }
     } else if (event.data.type === 'LOGOUT') {
       console.log('🔓 Logout detected from another tab - clearing state');
-      // Clear local state without API call
       useAuthStore.getState().logout();
+      toast.success('Logged out from another app');
     }
   };
   

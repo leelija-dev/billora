@@ -223,7 +223,7 @@ export const useAuthStore = create(
   )
 );
 
-// ✅ Cross-tab synchronization - Listen for messages from React or other Next.js tabs
+// ✅ FIX: Cross-tab synchronization - DIRECTLY UPDATE STATE (NO API CALL)
 if (typeof window !== 'undefined') {
   const channel = new BroadcastChannel('auth_channel');
   
@@ -248,11 +248,15 @@ if (typeof window !== 'undefined') {
         localStorage.setItem('auth_token', token);
         localStorage.setItem('user', JSON.stringify(user));
         
-        // ✅ Update Zustand store with the token
-        useAuthStore.getState().login(user, token);
+        // ✅ DIRECTLY update Zustand store (NO API CALL!)
+        useAuthStore.setState({
+          user: user,
+          isLoggedIn: true,
+          isLoading: false,
+        });
         
         // ✅ Show notification
-        toast.success(`Logged in as ${user?.email} from another app!`);
+        toast.success(`Logged in as ${user?.email} from React app!`);
       } else {
         // Fallback: check via API if token not provided
         console.log('⚠️ No token in broadcast, falling back to API check');
