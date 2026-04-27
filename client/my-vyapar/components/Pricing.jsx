@@ -8,7 +8,6 @@ import { useAuthStore } from "../store/authStoreZustand";
 import { useFilterStore } from "../store/filterStore";
 import { useRouter } from "next/navigation";
 import businessService from "../services/businessService";
-import { apiRequest } from "../utils/api";
 
 const Pricing = ({ limit = 3, showFilters = true, showViewAllButton = true }) => {
   const [showLoginModal, setShowLoginModal] = useState(false);
@@ -57,37 +56,36 @@ const Pricing = ({ limit = 3, showFilters = true, showViewAllButton = true }) =>
     return () => clearTimeout(timer);
   }, []);
 
-  // Load business types from API
+  // Load business types from service
   useEffect(() => {
     const loadBusinessTypes = async () => {
       try {
-        // Use the correct business types endpoint
-        const response = await apiRequest("/business-type/", "GET");
+        // Try without token first (if endpoint is public)
+        let businessTypeData;
         
-        let businessTypeData = [];
-        
-        // Handle different response formats from backend
-        if (response?.status === true && Array.isArray(response?.data)) {
-          businessTypeData = response.data;
-        } else if (Array.isArray(response)) {
-          businessTypeData = response;
-        } else if (response?.data && Array.isArray(response.data)) {
-          businessTypeData = response.data;
+        if (token) {
+          // With token (authenticated)
+          businessTypeData = await businessService.getBusinessTypes(token);
+        } else {
+          // Without token (public endpoint)
+          businessTypeData = await businessService.getBusinessTypes();
         }
         
-        if (businessTypeData.length > 0) {
+        if (businessTypeData && businessTypeData.length > 0) {
           setAllBusinessTypes(businessTypeData);
           console.log("Business types loaded:", businessTypeData);
         } else {
-          console.warn("No business types found in API response");
+          console.warn("No business types found");
         }
       } catch (err) {
         console.error("Business type fetch error:", err);
+        // Set empty array to prevent infinite loading
+        setAllBusinessTypes([]);
       }
     };
 
     loadBusinessTypes();
-  }, []);
+  }, [token]);
 
   // Fetch plans from Laravel API
   const transformPlan = (plan, index) => {

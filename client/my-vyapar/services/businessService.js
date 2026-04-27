@@ -11,21 +11,23 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8
 export const businessService = {
   /**
    * Fetch all business types from the backend
-   * @param {string} token - Authentication token
+   * @param {string} token - Authentication token (optional for public endpoints)
    * @returns {Promise<Array>} Array of business types
    */
   async getBusinessTypes(token) {
     try {
-      if (!token) {
-        throw new Error('Authentication token is required');
+      const headers = {
+        'Content-Type': 'application/json',
+      };
+
+      // Add authorization header only if token is provided
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
       }
 
       const response = await fetch(`${API_BASE_URL}/business-type`, {
         method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
+        headers,
       });
 
       if (!response.ok) {
