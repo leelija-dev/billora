@@ -325,7 +325,7 @@ class CustomerController extends Controller
             'verification_token' => null
         ]);
         
-        $frontendLoginUrl = env('FRONTEND_LOGIN_URL', 'http://localhost:4000');
+        $frontendLoginUrl = env('REACT_APP_URL', 'http://localhost:4000');
         return redirect($frontendLoginUrl . '/login?verified=true');
     }
 
