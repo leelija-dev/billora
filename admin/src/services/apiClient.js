@@ -14,7 +14,7 @@ const fetchCsrfCookie = async () => {
   
   csrfPromise = new Promise(async (resolve, reject) => {
     try {
-      await axios.get('http://localhost:8000/api/sanctum/csrf-cookie', {
+    await axios.get(`${API_BASE_URL}/sanctum/csrf-cookie`, {
         withCredentials: true,
         baseURL: API_BASE_URL,
       });
