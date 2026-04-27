@@ -4,16 +4,6 @@ return [
     'paths' => ['api/*', 'sanctum/csrf-cookie', 'login', 'logout', 'users/*'],
     'allowed_methods' => ['*'],
     'allowed_origins' => [
-        'http://localhost:3000',    // Next.js MyVyapar app
-        'http://localhost:3001',    // React Admin app
-        'http://localhost:4000', 
-        'http://localhost:5173',
-        'http://127.0.0.1:3000',
-        'http://127.0.0.1:3001',    // React Admin app
-        'http://127.0.0.1:4000',
-        'http://127.0.0.1:5173',
-        'http://localhost:8000',
-        'http://127.0.0.1:8000',
         'https://thefastbill.com',
         'https://app.thefastbill.com',
         'https://api.thefastbill.com',
@@ -28,7 +18,7 @@ return [
         'Accept',
     ],
     'exposed_headers' => [],
-    'max_age' => 0,
+    'max_age' => 86400,
     'supports_credentials' => true, // CRITICAL for cookies
 ];
 
