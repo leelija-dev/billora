@@ -58,50 +58,55 @@ export const useAuthStore = create(
         }
       },
 
-      login: async (credentials) => {
-        set({ isLoading: true });
-        try {
-          console.log('Login attempt with:', credentials.email);
-          const response = await authService.login(credentials);
-          
-          const data = response.data;
-          const user = data.user;
-          
-          set({
-            user: user,
-            isAuthenticated: true,
-            isLoading: false,
-          });
-          
-          localStorage.setItem('user', JSON.stringify(user));
-          
-          const { setUser: setPermissionUser, fetchUserPermissions } = usePermissionStore.getState();
-          setPermissionUser(user);
-          
-          if (user && user.plan_id) {
-            fetchUserPermissions(user.id);
-          }
-          
-          // ✅ Broadcast to OTHER tabs only
-          const channel = new BroadcastChannel('auth_channel');
-          channel.postMessage({ 
-            type: 'LOGIN', 
-            user: user,
-            sourceTabId: TAB_ID 
-          });
-          setTimeout(() => channel.close(), 100);
-          
-          toast.success('Login successful!');
-          return { success: true };
-        } catch (error) {
-          console.error('Login error:', error);
-          set({ isLoading: false });
-          
-          const errorMessage = error.message || 'Login failed';
-          toast.error(errorMessage);
-          return { success: false, error: error };
-        }
-      },
+      // In React src/store/authStore.js - Update the login function
+
+login: async (credentials) => {
+  set({ isLoading: true });
+  try {
+    console.log('Login attempt with:', credentials.email);
+    const response = await authService.login(credentials);
+    
+    const data = response.data;
+    const user = data.user;
+    const token = data.token;  // ✅ Get the token
+    
+    set({
+      user: user,
+      isAuthenticated: true,
+      isLoading: false,
+    });
+    
+    localStorage.setItem('user', JSON.stringify(user));
+    localStorage.setItem('auth_token', token);  // ✅ Store token
+    
+    const { setUser: setPermissionUser, fetchUserPermissions } = usePermissionStore.getState();
+    setPermissionUser(user);
+    
+    if (user && user.plan_id) {
+      fetchUserPermissions(user.id);
+    }
+    
+    // ✅ Broadcast to OTHER tabs with TOKEN
+    const channel = new BroadcastChannel('auth_channel');
+    channel.postMessage({ 
+      type: 'LOGIN', 
+      user: user,
+      token: token,  // ✅ ADD THIS - Send the token!
+      sourceTabId: TAB_ID 
+    });
+    setTimeout(() => channel.close(), 100);
+    
+    toast.success('Login successful!');
+    return { success: true };
+  } catch (error) {
+    console.error('Login error:', error);
+    set({ isLoading: false });
+    
+    const errorMessage = error.message || 'Login failed';
+    toast.error(errorMessage);
+    return { success: false, error: error };
+  }
+},
 
       logout: async () => {
         const { user } = get();
