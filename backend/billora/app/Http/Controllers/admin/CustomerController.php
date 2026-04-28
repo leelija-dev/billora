@@ -208,7 +208,7 @@ class CustomerController extends Controller
         // Get cookie domain from env
         $cookieDomain = env('AUTH_COOKIE_DOMAIN', null);
         $cookieSecure = env('AUTH_COOKIE_SECURE', false);
-        $cookieSameSite = env('AUTH_COOKIE_SAMESITE', 'lax');
+        $cookieSameSite = env('AUTH_COOKIE_SAMESITE', 'none');
         
         // Prepare response with token in body
         $response = response()->json([
