@@ -192,24 +192,29 @@ export const useAuthStore = create(
 );
 
 // ✅ FIX: Cross-tab synchronization - DIRECTLY UPDATE STATE (NO API CALL)
+// In React src/store/authStore.js - Update the broadcast listener
 if (typeof window !== 'undefined') {
+  console.log('🟢🔴 REACT: Setting up BroadcastChannel listener');
   const channel = new BroadcastChannel('auth_channel');
   
   channel.onmessage = (event) => {
+    console.log('🟢🔴 REACT: Raw message received:', event.data);
+    
     // ✅ Ignore messages from the same tab
     if (event.data.sourceTabId === TAB_ID) {
-      console.log('📢 Ignoring self-broadcast message');
+      console.log('🟢🔴 REACT: Ignoring self-broadcast message');
       return;
     }
     
-    console.log('📢 Received message from another tab:', event.data.type);
+    console.log('🟢🔴 REACT: Processing message type:', event.data.type);
     
     if (event.data.type === 'LOGIN') {
       const { user, token } = event.data;
       
-      console.log('✅ Login detected from another tab/app');
+      console.log('✅ REACT: Login detected from another tab/app!');
       console.log('👤 User:', user?.email);
       console.log('🔑 Token received:', token?.substring(0, 20) + '...');
+      console.log('🕐 Timestamp:', event.data.timestamp);
       
       if (token && user) {
         // ✅ Store the token in localStorage
@@ -225,25 +230,26 @@ if (typeof window !== 'undefined') {
         
         // ✅ Also update permission store
         const { setUser: setPermissionUser, fetchUserPermissions } = usePermissionStore.getState();
-        setPermissionUser(user);
-        
-        if (user && user.plan_id) {
+        if (setPermissionUser) setPermissionUser(user);
+        if (user?.plan_id && fetchUserPermissions) {
           fetchUserPermissions(user.id);
         }
         
         // ✅ Show notification
-        toast.success(`Logged in as ${user?.email} from another app!`);
+        toast.success(`Logged in as ${user?.email} from Next.js!`);
+        console.log('✅ REACT: Successfully synced login!');
       } else {
-        // Fallback: check via API if token not provided
-        console.log('⚠️ No token in broadcast, falling back to API check');
+        console.log('⚠️ REACT: Missing token or user in broadcast');
         useAuthStore.getState().checkAuth();
       }
     } else if (event.data.type === 'LOGOUT') {
-      console.log('🔓 Logout detected from another tab - clearing state');
+      console.log('🔓 REACT: Logout detected from another tab - clearing state');
       useAuthStore.getState().logout();
       toast.success('Logged out from another app');
     }
   };
+  
+  console.log('🟢🔴 REACT: BroadcastChannel listener ready');
   
   // Keep channel open
   window.addEventListener('beforeunload', () => {
@@ -251,172 +257,3 @@ if (typeof window !== 'undefined') {
   });
 }
 
-
-// import { create } from 'zustand'
-// import { persist, createJSONStorage } from 'zustand/middleware'
-// import { authService } from '../services/authService'
-// import { usePermissionStore } from './permissionStore'
-// import toast from 'react-hot-toast'
-
-// export const useAuthStore = create(
-//   persist(
-//     (set, get) => ({
-//       user: null,
-//       company: null,
-//       tokens: null,
-//       isAuthenticated: false,
-//       isLoading: false,
-//       hasHydrated: false,
-
-//       setTokens: (tokens) => {
-//         set({ 
-//           tokens: {
-//             ...get().tokens,
-//             ...tokens
-//           }
-//         })
-//       },
-
-//       setHasHydrated: (state) => {
-//         set({ hasHydrated: state })
-//       },
-
-//       // Helper function to check if user is authenticated
-//       checkAuth: () => {
-//         const { tokens, user } = get()
-//         const hasToken = !!tokens?.access || !!tokens?.token
-//         const hasUser = !!user
-//         const isAuthenticated = hasToken && hasUser
-        
-//         // Update auth state if needed
-//         if (get().isAuthenticated !== isAuthenticated) {
-//           set({ isAuthenticated })
-//         }
-        
-//         return isAuthenticated
-//       },
-
-//       login: async (credentials) => {
-//         set({ isLoading: true })
-//         try {
-//           console.log('Login attempt with:', credentials)
-//           const response = await authService.login(credentials)
-//           console.log('Login response:', response)
-          
-//           // Handle your API's token structure
-//           const data = response.data
-//           const token = data.token // Your API returns a single token
-//           const user = data.user
-          
-//           set({
-//             user,
-//             company: null, // Your API doesn't return company info
-//             tokens: { access: token, token: token }, // Store token in both formats for compatibility
-//             isAuthenticated: true,
-//             isLoading: false,
-//           })
-          
-//           // Set user in permission store
-//           const { setUser: setPermissionUser, fetchUserPermissions } = usePermissionStore.getState()
-//           setPermissionUser(user)
-          
-//           // Fetch user permissions only if user exists and has plan_id
-//           if (user && user.plan_id) {
-//             fetchUserPermissions(user.id)
-//           }
-          
-//           toast.success('Login successful!')
-//           return { success: true }
-//         } catch (error) {
-//           console.error('Login error:', error)
-//           set({ isLoading: false })
-          
-//           const errorMessage = error.response?.data?.message || error.message || 'Login failed'
-//           toast.error(errorMessage)
-//           return { success: false, error: error.response?.data }
-//         }
-//       },
-
-//       logout: async () => {
-//         const { user } = get()
-        
-//         // Try to call logout API but don't wait for it since token might be invalid
-//         if (user?.id) {
-//           authService.logout(user.id).catch(err => {
-//             console.log('Logout API call failed (expected if token expired):', err)
-//           })
-//         }
-        
-//         // Clear local state immediately
-//         set({
-//           user: null,
-//           company: null,
-//           tokens: null,
-//           isAuthenticated: false,
-//         })
-//         localStorage.removeItem('auth-storage')
-        
-//         // Clear permission store
-//         const { clearPermissions } = usePermissionStore.getState()
-//         clearPermissions()
-        
-//         toast.success('Logged out successfully')
-//       },
-
-//       refreshToken: async () => {
-//         const { tokens } = get()
-//         if (!tokens?.refresh) return false
-
-//         try {
-//           const response = await authService.refreshToken(tokens.refresh)
-//           set({
-//             tokens: {
-//               ...tokens,
-//               access: response.data.access,
-//             },
-//           })
-//           return true
-//         } catch (error) {
-//           get().logout()
-//           return false
-//         }
-//       },
-
-//       updateUser: (userData) => {
-//         set({ user: { ...get().user, ...userData } })
-//       },
-
-//       updateCompany: (companyData) => {
-//         set({ company: { ...get().company, ...companyData } })
-//       },
-//     }),
-//     {
-//       name: 'auth-storage',
-//       storage: createJSONStorage(() => localStorage),
-//       onRehydrateStorage: () => (state) => {
-//         console.log('🔄 Auth store rehydrating...', state)
-        
-//         if (state) {
-//           // Check authentication state after rehydration
-//           const hasToken = !!state.tokens?.access || !!state.tokens?.token
-//           const hasUser = !!state.user
-//           const isAuthenticated = hasToken && hasUser
-          
-//           console.log('🔐 Rehydration check:', {
-//             hasToken,
-//             hasUser,
-//             isAuthenticated,
-//             tokens: state.tokens,
-//             user: state.user
-//           })
-          
-//           // Update isAuthenticated based on actual data
-//           state.isAuthenticated = isAuthenticated
-//           state.hasHydrated = true
-//         }
-        
-//         console.log('✅ Auth store rehydrated')
-//       },
-//     }
-//   )
-// )
