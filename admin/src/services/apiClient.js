@@ -44,6 +44,18 @@ export const apiClient = axios.create({
 });
 
 apiClient.interceptors.request.use(async (config) => {
+  console.log('🔍 REACT API Request:', {
+    method: config.method?.toUpperCase(),
+    url: config.url,
+    baseURL: config.baseURL,
+    fullUrl: `${config.baseURL}${config.url}`,
+    withCredentials: config.withCredentials,
+    currentDomain: window.location.hostname
+  });
+  
+  // Log all cookies for debugging
+  console.log('🍪 REACT Current cookies:', document.cookie);
+  
   const skipCsrf = config.method === 'get' || 
                    config.url.includes('csrf-cookie') ||
                    config.url.includes('check-session');
@@ -59,6 +71,9 @@ apiClient.interceptors.request.use(async (config) => {
       
       if (csrfToken) {
         config.headers['X-XSRF-TOKEN'] = decodeURIComponent(csrfToken);
+        console.log('🔐 REACT CSRF token added:', csrfToken.substring(0, 20) + '...');
+      } else {
+        console.log('⚠️ REACT No CSRF token found in cookies');
       }
     } catch (error) {
       console.error('CSRF setup failed:', error);
@@ -68,7 +83,15 @@ apiClient.interceptors.request.use(async (config) => {
   const token = localStorage.getItem('auth_token');
   if (token && !config.headers.Authorization) {
     config.headers.Authorization = `Bearer ${token}`;
+    console.log('🔑 REACT Using localStorage token:', token.substring(0, 20) + '...');
   }
+  
+  console.log('📤 REACT Final request headers:', {
+    ...config.headers,
+    Authorization: config.headers.Authorization ? 
+      `Bearer ${config.headers.Authorization.replace('Bearer ', '').substring(0, 20)}...` : 
+      'none'
+  });
   
   return config;
 });
