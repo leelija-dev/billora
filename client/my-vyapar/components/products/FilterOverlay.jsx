@@ -1,6 +1,5 @@
 import { FiFilter, FiX } from 'react-icons/fi';
-import { MdOutlineCategory, MdSort, MdOutlinePriceChange } from 'react-icons/md';
-import { FaRupeeSign } from 'react-icons/fa';
+import { MdOutlineCategory, MdSort } from 'react-icons/md';
 
 const FilterOverlay = ({ 
   isOpen, 
@@ -9,9 +8,7 @@ const FilterOverlay = ({
   selectedCategory, 
   onCategoryChange, 
   sort, 
-  onSortChange, 
-  maxPrice, 
-  onMaxPriceChange,
+  onSortChange,
   onReset 
 }) => {
   if (!isOpen) return null;
@@ -72,29 +69,6 @@ const FilterOverlay = ({
                   <span>{cat.name}</span>
                 </button>
               ))}
-            </div>
-          </div>
-
-          {/* Price Range */}
-          <div>
-            <h3 className="font-medium text-gray-800 mb-3 flex items-center gap-2">
-              <MdOutlinePriceChange className="w-5 h-5" />
-              Max Price
-            </h3>
-            <input
-              type="range"
-              min="0"
-              max="100000"
-              value={maxPrice}
-              onChange={(e) => onMaxPriceChange(Number(e.target.value))}
-              className="w-full accent-blue-600"
-            />
-            <div className="flex justify-between text-sm mt-2 text-gray-500">
-              <span>₹0</span>
-              <span className="font-medium text-gray-700 flex items-center gap-1">
-                <FaRupeeSign className="w-3 h-3" />
-                Up to {maxPrice.toLocaleString()}
-              </span>
             </div>
           </div>
 

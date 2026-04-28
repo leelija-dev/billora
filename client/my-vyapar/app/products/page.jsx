@@ -1,15 +1,15 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useAuthStore } from '../../store/authStoreZustand';
 import { useProductsStore } from '../../store/productsStore';
 import { createProductOrder } from '../../services/productPaymentService';
 import toast, { Toaster } from 'react-hot-toast';
 import { useRouter } from 'next/navigation';
 import { FiFilter, FiShoppingCart, FiClock, FiGrid } from 'react-icons/fi';
+import { FaSearch } from 'react-icons/fa';
 
 // Import components
-import LoadingSpinner from '../../components/products/LoadingSpinner';
 import ProductGrid from '../../components/products/ProductGrid';
 import SearchBar from '../../components/products/SearchBar';
 import CategoryTabs from '../../components/products/CategoryTabs';
@@ -20,27 +20,36 @@ import CartSidebar from '../../components/products/CartSidebar';
 import ProductModal from '../../components/products/ProductModal';
 import RecentOrderModal from '../../components/products/RecentOrderModal';
 import PopupNotification from '../../components/products/PopupNotification';
-import { FaSearch } from 'react-icons/fa';
 
 const ProductsPage = () => {
   const router = useRouter();
   const { user, token } = useAuthStore();
   
+  // Subscribe to store changes to ensure state synchronization
+  const productsStore = useProductsStore();
+  
+  // Force re-render when store changes
+  useEffect(() => {
+    console.log("🔄 Store state changed:", { 
+      loading: productsStore.loading, 
+      productsLength: productsStore.products?.length || 0 
+    });
+  }, [productsStore.loading, productsStore.products]);
+
   const {
     products,
     pagination,
     loading,
-    error,
+    error: storeError,
     storeId,
     fetchProducts,
     categories,
     clearError
-  } = useProductsStore();
+  } = productsStore;
   
   const [isAuthReady, setIsAuthReady] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [sort, setSort] = useState("");
-  const [maxPrice, setMaxPrice] = useState(100000);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [cart, setCart] = useState([]);
@@ -60,6 +69,7 @@ const ProductsPage = () => {
   const [formData, setFormData] = useState({ fullName: "", phone: "" });
   const [validationErrors, setValidationErrors] = useState({ fullName: '', phone: '' });
   const [isMobile, setIsMobile] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
 
   // Mobile detection
   useEffect(() => {
@@ -386,29 +396,37 @@ const ProductsPage = () => {
     }
   };
 
-  const fetchProductsData = async (page = 1, categoryId = "All", term = "") => {
+  const fetchProductsData = useCallback(async (page = 1, categoryId = "All", term = "") => {
     try {
       clearError();
       if (!isAuthReady) {
-        toast.loading("Initializing authentication...");
         return;
       }
       await fetchProducts(page, categoryId, term, user, token);
     } catch (error) {
-      toast.error("Failed to load products: " + error.message);
-      if (error.message && error.message.includes('User not authenticated')) {
-        setTimeout(() => router.push('/login'), 1000);
-      }
+      console.error("Fetch error:", error);
     }
+  }, [isAuthReady, user, token, fetchProducts, clearError]);
+
+  const handleRetry = () => {
+    setRetryCount(prev => prev + 1);
+    clearError();
+    fetchProductsData(1, selectedCategory, searchTerm);
   };
 
   useEffect(() => {
     if (isAuthReady) {
       fetchProductsData(1, selectedCategory, searchTerm);
     }
-  }, [isAuthReady, selectedCategory, searchTerm]);
+  }, [isAuthReady, selectedCategory, searchTerm, retryCount, fetchProductsData]);
 
   const handleCategoryChange = (categoryId) => {
+    console.log("🔄 handleCategoryChange called:", {
+      categoryId,
+      previousCategory: selectedCategory,
+      searchTerm,
+      willFetch: true
+    });
     setSelectedCategory(categoryId);
     fetchProductsData(1, categoryId, searchTerm);
   };
@@ -416,6 +434,11 @@ const ProductsPage = () => {
   const handleSearchSubmit = () => {
     const term = searchInput.trim();
     setSearchTerm(term);
+    console.log("🔍 handleSearchSubmit called:", {
+      term,
+      previousTerm: searchTerm,
+      willFetch: true
+    });
     fetchProductsData(1, selectedCategory, term);
   };
 
@@ -438,7 +461,23 @@ const ProductsPage = () => {
 
   const cartQuantities = cart.reduce((acc, item) => ({ ...acc, [item.id]: item.quantity }), {});
 
-  if (loading) return <LoadingSpinner />;
+  // Debug logging
+  console.log("🔍 Page render state:", { 
+    loading, 
+    productsLength: products?.length || 0,
+    storeError,
+    isProductsArray: Array.isArray(products)
+  });
+
+  // Sort products only (no price filtering)
+  const sortedProducts = [...products].sort((a, b) => {
+    if (sort === "low") {
+      return (a.selling_price || a.price) - (b.selling_price || b.price);
+    } else if (sort === "high") {
+      return (b.selling_price || b.price) - (a.selling_price || a.price);
+    }
+    return 0;
+  });
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -532,9 +571,9 @@ const ProductsPage = () => {
                 onSortChange={setSort}
               />
 
-              {/* Product Grid */}
+              {/* Product Grid with Loading, Error, and Empty States */}
               <ProductGrid
-                products={products}
+                products={sortedProducts}
                 cartQuantities={cartQuantities}
                 selectedItems={selectedItems}
                 onAddToCart={addToCart}
@@ -545,14 +584,19 @@ const ProductsPage = () => {
                 expandedDescriptions={expandedDescriptions}
                 onToggleDescription={toggleDescription}
                 showCart={showCart}
+                isLoading={loading && !storeError}
+                error={storeError}
+                onRetry={handleRetry}
               />
 
-              {/* Pagination */}
-              <Pagination
-                pagination={pagination}
-                onPageChange={(page) => fetchProductsData(page, selectedCategory, searchTerm)}
-                loading={loading}
-              />
+              {/* Pagination - Only show when products exist and not loading */}
+              {!loading && !storeError && sortedProducts.length > 0 && pagination?.last_page > 1 && (
+                <Pagination
+                  pagination={pagination}
+                  onPageChange={(page) => fetchProductsData(page, selectedCategory, searchTerm)}
+                  loading={loading}
+                />
+              )}
             </div>
           </div>
         </div>
@@ -569,13 +613,13 @@ const ProductsPage = () => {
           }}
           sort={sort}
           onSortChange={setSort}
-          maxPrice={maxPrice}
-          onMaxPriceChange={setMaxPrice}
           onReset={() => {
             setSelectedCategory("All");
             setSort("");
-            setMaxPrice(100000);
-            fetchProductsData(1, "All", searchTerm);
+            setSearchInput("");
+            setSearchTerm("");
+            fetchProductsData(1, "All", "");
+            setShowFilterOverlay(false);
           }}
         />
 
@@ -632,16 +676,6 @@ const ProductsPage = () => {
         {/* Popup Notification */}
         <PopupNotification message={popupMessage} isVisible={popup} />
       </div>
-
-      <style jsx global>{`
-        @keyframes slide-up {
-          0% { opacity: 0; transform: translateY(20px); }
-          10% { opacity: 1; transform: translateY(0); }
-          90% { opacity: 1; transform: translateY(0); }
-          100% { opacity: 0; transform: translateY(20px); }
-        }
-        .animate-slide-up { animation: slide-up 2s ease-in-out forwards; }
-      `}</style>
     </div>
   );
 };
