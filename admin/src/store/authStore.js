@@ -66,7 +66,7 @@ export const useAuthStore = create(
           
           const data = response.data;
           const user = data.user;
-          const token = data.token;
+          // const token = data.token;
           
           set({
             user: user,
@@ -75,7 +75,7 @@ export const useAuthStore = create(
           });
           
           localStorage.setItem('user', JSON.stringify(user));
-          localStorage.setItem('auth_token', token);
+          // localStorage.setItem('auth_token', token);
           
           const { setUser: setPermissionUser, fetchUserPermissions } = usePermissionStore.getState();
           setPermissionUser(user);
@@ -89,11 +89,11 @@ export const useAuthStore = create(
           channel.postMessage({ 
             type: 'LOGIN', 
             user: user,
-            token: token,
+            // token: token,
             sourceTabId: TAB_ID 
           });
           setTimeout(() => channel.close(), 100);
-          
+          localStorage.removeItem('manual_logout');
           toast.success('Login successful!');
           return { success: true };
         } catch (error) {
@@ -104,45 +104,43 @@ export const useAuthStore = create(
           toast.error(errorMessage);
           return { success: false, error: error };
         }
+        // sessionStorage.removeItem('manual_logout');
       },
+ 
+     logout: async () => {
+  set({ isLoading: true });
 
-      logout: async () => {
-        const { user } = get();
-        
-        set({ isLoading: true });
-        
-        try {
-          if (user?.id) {
-            await authService.logout(user.id);
-          }
-        } catch (err) {
-          console.log('Logout API call failed:', err);
-        }
-        
-        set({
-          user: null,
-          company: null,
-          isAuthenticated: false,
-          isLoading: false,
-        });
-        
-        localStorage.removeItem('auth-storage');
-        localStorage.removeItem('user');
-        localStorage.removeItem('auth_token');
-        
-        const { clearPermissions } = usePermissionStore.getState();
-        clearPermissions();
-        
-        // ✅ Broadcast to OTHER tabs only
-        const channel = new BroadcastChannel('auth_channel');
-        channel.postMessage({ 
-          type: 'LOGOUT',
-          sourceTabId: TAB_ID 
-        });
-        setTimeout(() => channel.close(), 100);
-        
-        toast.success('Logged out successfully');
-      },
+  try {
+    await authService.logout();
+  } catch (err) {
+    console.log('Logout API failed:', err);
+  }
+
+  // ✅ STOP interval
+  if (window.sessionCheckInterval) {
+    clearInterval(window.sessionCheckInterval);
+  }
+
+  // ✅ CLEAR STATE
+  set({
+    user: null,
+    company: null,
+    isAuthenticated: false,
+    isLoading: false,
+  });
+
+  // ✅ CLEAR STORAGE
+  localStorage.removeItem('auth-storage');
+  localStorage.removeItem('user');
+
+  // ✅ CLEAR PERMISSIONS
+  usePermissionStore.getState().clearPermissions();
+sessionStorage.setItem('manual_logout', 'true');
+  // ✅ BROADCAST (no recursion)
+  const channel = new BroadcastChannel('auth_channel');
+  channel.postMessage({ type: 'LOGOUT' });
+  channel.close();
+},
 
       updateUser: (userData) => {
         set({ user: { ...get().user, ...userData } });
@@ -220,7 +218,7 @@ if (typeof window !== 'undefined') {
           if (token && user) {
             try {
               // Store in localStorage
-              localStorage.setItem('auth_token', token);
+              // localStorage.setItem('auth_token', token);
               localStorage.setItem('user', JSON.stringify(user));
               console.log('Token and user stored from localStorage event');
               
@@ -259,17 +257,29 @@ if (typeof window !== 'undefined') {
   
   // ✅ Add periodic session check for server-side sync
   console.log('🟢🔴 REACT: Setting up periodic session check...');
-  let sessionCheckInterval;
+  window.sessionCheckInterval = null;
   
   const startSessionCheck = () => {
-    if (sessionCheckInterval) clearInterval(sessionCheckInterval);
+    if (window.sessionCheckInterval) {
+    clearInterval(window.sessionCheckInterval);
+  }
+
+    // if (sessionCheckInterval) clearInterval(sessionCheckInterval);
     
-    sessionCheckInterval = setInterval(async () => {
+    window.sessionCheckInterval = setInterval(async () => {
       try {
         const currentState = useAuthStore.getState();
         
         // Only check if not authenticated
-        if (!currentState.isAuthenticated && !currentState.isLoading) {
+        // if (!currentState.isAuthenticated && !currentState.isLoading) {
+      const isManualLogout = sessionStorage.getItem('manual_logout');
+
+if (
+  !currentState.isAuthenticated &&
+  !currentState.isLoading &&
+  document.visibilityState === 'visible' &&
+  !isManualLogout
+){
           console.log('🟢🔴 REACT: Periodic session check...');
           const response = await authService.checkSession();
           
@@ -294,7 +304,7 @@ if (typeof window !== 'undefined') {
             console.log('🟢🔴 REACT: Session sync successful!');
             
             // Stop checking once authenticated
-            clearInterval(sessionCheckInterval);
+            clearInterval(window.sessionCheckInterval);
           }
         }
       } catch (error) {
@@ -309,8 +319,8 @@ if (typeof window !== 'undefined') {
   
   // Stop checking when authenticated
   const unsubscribe = useAuthStore.subscribe((state) => {
-    if (state.isAuthenticated && sessionCheckInterval) {
-      clearInterval(sessionCheckInterval);
+    if (state.isAuthenticated && window.sessionCheckInterval) {
+      clearInterval(window.sessionCheckInterval);
       console.log('🟢🔴 REACT: Stopping periodic session check - authenticated');
     }
   });
@@ -333,60 +343,55 @@ if (typeof window !== 'undefined') {
       console.log('Processing message from another tab/app');
       
       if (event.data.type === 'LOGIN') {
-        const { user, token } = event.data;
-        
-        console.log('Login detected from another tab/app!');
-        console.log('User:', user?.email);
-        console.log('Token received:', token?.substring(0, 20) + '...');
-        console.log('Timestamp:', event.data.timestamp);
-        console.log('Current time:', Date.now());
-        console.log('Age of message:', Date.now() - event.data.timestamp, 'ms');
-        
-        if (token && user) {
-          try {
-            // Store token in localStorage
-            localStorage.setItem('auth_token', token);
-            localStorage.setItem('user', JSON.stringify(user));
-            console.log('Token and user stored in localStorage');
-            
-            // DIRECTLY update Zustand store (NO API CALL!)
-            useAuthStore.setState({
-              user: user,
-              isAuthenticated: true,
-              isLoading: false,
-            });
-            console.log('Zustand store updated directly');
-            
-            // Also update permission store
-            const { setUser: setPermissionUser, fetchUserPermissions } = usePermissionStore.getState();
-            if (setPermissionUser) {
-              setPermissionUser(user);
-              console.log('Permission store user updated');
-            }
-            if (user?.plan_id && fetchUserPermissions) {
-              fetchUserPermissions(user.id);
-              console.log('User permissions fetched');
-            }
-            
-            // Show notification
-            toast.success(`Logged in as ${user?.email} from Next.js!`);
-            console.log('Successfully synced login!');
-            
-          } catch (error) {
-            console.error('Error processing login broadcast:', error);
-          }
-        } else {
-          console.log('Missing token or user in broadcast');
-          console.log('Token exists:', !!token);
-          console.log('User exists:', !!user);
-          console.log('Falling back to auth check');
-          useAuthStore.getState().checkAuth();
-        }
-      } else if (event.data.type === 'LOGOUT') {
-        console.log('Logout detected from another tab - clearing state');
-        useAuthStore.getState().logout();
-        toast.success('Logged out from another app');
-      } else {
+  const { user } = event.data; // ✅ FIX
+
+  console.log('Login detected from another tab/app!');
+  console.log('User:', user?.email);
+
+  if (user) {
+    try {
+      // ✅ Save user
+      localStorage.setItem('user', JSON.stringify(user));
+
+      // ✅ Update Zustand directly
+      useAuthStore.setState({
+        user: user,
+        isAuthenticated: true,
+        isLoading: false,
+      });
+
+      // ✅ Update permissions
+      const { setUser, fetchUserPermissions } = usePermissionStore.getState();
+      if (setUser) setUser(user);
+      if (user?.plan_id) fetchUserPermissions(user.id);
+
+      toast.success(`Logged in as ${user?.email}`);
+      console.log('✅ Login sync successful');
+
+    } catch (error) {
+      console.error('Error processing login broadcast:', error);
+    }
+  } else {
+    console.log('❌ Missing user in broadcast');
+    useAuthStore.getState().checkAuth(); // fallback
+  }
+}else if (event.data.type === 'LOGOUT') {
+  console.log('Logout detected from another tab');
+
+  useAuthStore.setState({
+    user: null,
+    isAuthenticated: false,
+    isLoading: false,
+  });
+
+  localStorage.removeItem('auth-storage');
+  localStorage.removeItem('user');
+
+  // ✅ IMPORTANT (prevent auto-login bug)
+  localStorage.setItem('manual_logout', 'true');
+
+  toast.success('Logged out from another app');
+} else {
         console.log('Unknown message type:', event.data?.type);
       }
     };

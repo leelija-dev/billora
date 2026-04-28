@@ -298,34 +298,57 @@ class CustomerController extends Controller
         return $response;
     }
     
+    // public function logout(Request $request)
+    // {
+    //     // ✅ Use Laravel's built-in session logout
+    //     // This will invalidate the 'thefastbill-session' cookie
+    //     // Auth::logout();
+    //     Auth::guard('web')->logout(); 
+    //     // Also clear Sanctum tokens for backward compatibility
+    //     $token = $request->cookie('auth_token');
+    //     if ($token) {
+    //         $tokenModel = \Laravel\Sanctum\PersonalAccessToken::findToken($token);
+    //         if ($tokenModel) {
+    //             $tokenModel->delete();
+    //         }
+    //     }
+       
+    //     $cookieDomain = env('AUTH_COOKIE_DOMAIN', null);
+    //     $response = response()->json([
+    //         'status' => true,
+    //         'message' => 'Logout successful'
+    //     ]);
+        
+    //     // Clear all auth cookies
+    //     if ($cookieDomain) {
+    //         $response->cookie('auth_token', '', -1, '/', $cookieDomain);
+    //     }
+        
+    //     return $response;
+    // }
     public function logout(Request $request)
-    {
-        // ✅ Use Laravel's built-in session logout
-        // This will invalidate the 'thefastbill-session' cookie
-        Auth::logout();
-        
-        // Also clear Sanctum tokens for backward compatibility
-        $token = $request->cookie('auth_token');
-        if ($token) {
-            $tokenModel = \Laravel\Sanctum\PersonalAccessToken::findToken($token);
-            if ($tokenModel) {
-                $tokenModel->delete();
-            }
-        }
-       Auth::guard('web')->logout(); 
-        $cookieDomain = env('AUTH_COOKIE_DOMAIN', null);
-        $response = response()->json([
-            'status' => true,
-            'message' => 'Logout successful'
-        ]);
-        
-        // Clear all auth cookies
-        if ($cookieDomain) {
-            $response->cookie('auth_token', '', -1, '/', $cookieDomain);
-        }
-        
-        return $response;
-    }
+{
+    // 🔥 1. Logout user (web session)
+    Auth::guard('web')->logout();
+
+    // 🔥 2. Destroy session completely
+    $request->session()->invalidate();
+    $request->session()->regenerateToken();
+
+    // 🔥 3. Prepare response
+    $response = response()->json([
+        'status' => true,
+        'message' => 'Logout successful'
+    ]);
+
+    // 🔥 4. Delete session cookie (VERY IMPORTANT)
+    $response->withCookie(cookie()->forget('billora-session'));
+
+    // 🔥 5. (Optional) remove old token system
+    $response->withCookie(cookie()->forget('auth_token'));
+
+    return $response;
+}
     
     public function checkSession(Request $request)
     {
