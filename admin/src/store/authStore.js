@@ -191,98 +191,153 @@ export const useAuthStore = create(
   )
 );
 
-// ✅ FIX: Cross-tab synchronization - DIRECTLY UPDATE STATE (NO API CALL)
-// In React src/store/authStore.js - Update the broadcast listener
+// FIX: Cross-tab synchronization - DIRECTLY UPDATE STATE (NO API CALL)
+// In React src/store/authStore.js - Update broadcast listener
 if (typeof window !== 'undefined') {
-  console.log('🟢🔴 REACT: Setting up BroadcastChannel listener');
-  console.log('🟢🔴 REACT: TAB_ID:', TAB_ID);
+  console.log('Setting up BroadcastChannel listener');
+  console.log('TAB_ID:', TAB_ID);
+  
+  // Add localStorage event listener for cross-origin sync
+  window.addEventListener('storage', (event) => {
+    console.log('Storage event detected:', {
+      key: event.key,
+      oldValue: event.oldValue,
+      newValue: event.newValue,
+      url: event.url
+    });
+    
+    if (event.key === 'auth_sync_event' && event.newValue) {
+      try {
+        const syncData = JSON.parse(event.newValue);
+        console.log('Auth sync event received:', syncData);
+        
+        // Only process events from Next.js
+        if (syncData.origin === 'nextjs' && syncData.sourceTabId !== TAB_ID) {
+          console.log('Processing cross-origin login from Next.js');
+          
+          const { user, token } = syncData;
+          
+          if (token && user) {
+            try {
+              // Store in localStorage
+              localStorage.setItem('auth_token', token);
+              localStorage.setItem('user', JSON.stringify(user));
+              console.log('Token and user stored from localStorage event');
+              
+              // Update Zustand store
+              useAuthStore.setState({
+                user: user,
+                isAuthenticated: true,
+                isLoading: false,
+              });
+              console.log('Zustand store updated from localStorage event');
+              
+              // Update permission store
+              const { setUser: setPermissionUser, fetchUserPermissions } = usePermissionStore.getState();
+              if (setPermissionUser) {
+                setPermissionUser(user);
+                console.log('Permission store updated from localStorage event');
+              }
+              if (user?.plan_id && fetchUserPermissions) {
+                fetchUserPermissions(user.id);
+                console.log('User permissions fetched from localStorage event');
+              }
+              
+              toast.success(`Logged in as ${user?.email} from Next.js!`);
+              console.log('Cross-origin login sync successful!');
+              
+            } catch (error) {
+              console.error('Error processing localStorage sync:', error);
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Error parsing localStorage sync event:', error);
+      }
+    }
+  });
   
   try {
     const channel = new BroadcastChannel('auth_channel');
     
     channel.onmessage = (event) => {
-      console.log('🟢🔴 REACT: Raw message received:', event.data);
-      console.log('🟢🔴 REACT: Message type:', event.data?.type);
-      console.log('🟢🔴 REACT: Source tab ID:', event.data?.sourceTabId);
-      console.log('🟢🔴 REACT: My tab ID:', TAB_ID);
+      console.log('Raw message received:', event.data);
+      console.log('Message type:', event.data?.type);
+      console.log('Source tab ID:', event.data?.sourceTabId);
+      console.log('My tab ID:', TAB_ID);
       
-      // ✅ Ignore messages from the same tab
+      // Ignore messages from same tab
       if (event.data.sourceTabId === TAB_ID) {
-        console.log('🟢🔴 REACT: Ignoring self-broadcast message');
+        console.log('Ignoring self-broadcast message');
         return;
       }
       
-      console.log('🟢🔴 REACT: Processing message from another tab/app');
+      console.log('Processing message from another tab/app');
       
       if (event.data.type === 'LOGIN') {
         const { user, token } = event.data;
         
-        console.log('✅ REACT: Login detected from another tab/app!');
-        console.log('👤 User:', user?.email);
-        console.log('🔑 Token received:', token?.substring(0, 20) + '...');
-        console.log('🕐 Timestamp:', event.data.timestamp);
-        console.log('🕐 Current time:', Date.now());
-        console.log('🕐 Age of message:', Date.now() - event.data.timestamp, 'ms');
+        console.log('Login detected from another tab/app!');
+        console.log('User:', user?.email);
+        console.log('Token received:', token?.substring(0, 20) + '...');
+        console.log('Timestamp:', event.data.timestamp);
+        console.log('Current time:', Date.now());
+        console.log('Age of message:', Date.now() - event.data.timestamp, 'ms');
         
         if (token && user) {
           try {
-            // ✅ Store the token in localStorage
+            // Store token in localStorage
             localStorage.setItem('auth_token', token);
             localStorage.setItem('user', JSON.stringify(user));
-            console.log('✅ REACT: Token and user stored in localStorage');
+            console.log('Token and user stored in localStorage');
             
-            // ✅ DIRECTLY update Zustand store (NO API CALL!)
+            // DIRECTLY update Zustand store (NO API CALL!)
             useAuthStore.setState({
               user: user,
               isAuthenticated: true,
               isLoading: false,
             });
-            console.log('✅ REACT: Zustand store updated directly');
+            console.log('Zustand store updated directly');
             
-            // ✅ Also update permission store
+            // Also update permission store
             const { setUser: setPermissionUser, fetchUserPermissions } = usePermissionStore.getState();
             if (setPermissionUser) {
               setPermissionUser(user);
-              console.log('✅ REACT: Permission store user updated');
+              console.log('Permission store user updated');
             }
             if (user?.plan_id && fetchUserPermissions) {
               fetchUserPermissions(user.id);
-              console.log('✅ REACT: User permissions fetched');
+              console.log('User permissions fetched');
             }
             
-            // ✅ Show notification
+            // Show notification
             toast.success(`Logged in as ${user?.email} from Next.js!`);
-            console.log('✅ REACT: Successfully synced login!');
+            console.log('Successfully synced login!');
             
           } catch (error) {
-            console.error('❌ REACT: Error processing login broadcast:', error);
+            console.error('Error processing login broadcast:', error);
           }
         } else {
-          console.log('⚠️ REACT: Missing token or user in broadcast');
-          console.log('⚠️ REACT: Token exists:', !!token);
-          console.log('⚠️ REACT: User exists:', !!user);
-          console.log('⚠️ REACT: Falling back to auth check');
+          console.log('Missing token or user in broadcast');
+          console.log('Token exists:', !!token);
+          console.log('User exists:', !!user);
+          console.log('Falling back to auth check');
           useAuthStore.getState().checkAuth();
         }
       } else if (event.data.type === 'LOGOUT') {
-        console.log('🔓 REACT: Logout detected from another tab - clearing state');
+        console.log('Logout detected from another tab - clearing state');
         useAuthStore.getState().logout();
         toast.success('Logged out from another app');
       } else {
-        console.log('❓ REACT: Unknown message type:', event.data?.type);
+        console.log('Unknown message type:', event.data?.type);
       }
     };
     
-    console.log('🟢🔴 REACT: BroadcastChannel listener setup complete');
+    console.log('BroadcastChannel listener setup complete');
     
   } catch (error) {
-    console.error('🟢🔴 REACT: Error setting up BroadcastChannel:', error);
+    console.error('Error setting up BroadcastChannel:', error);
   }
   
-  console.log('🟢🔴 REACT: BroadcastChannel listener ready');
-  
-  // Keep channel open
-  window.addEventListener('beforeunload', () => {
-    channel.close();
-  });
+  console.log('All listeners ready - BroadcastChannel + localStorage events');
 }

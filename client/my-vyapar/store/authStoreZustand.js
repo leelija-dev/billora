@@ -101,6 +101,37 @@ export const useAuthStore = create(
     console.error('📢🔵 NEXT.js: Broadcast error:', error);
   }
   
+  // ✅ Also emit localStorage event for cross-origin sync
+  try {
+    console.log('📢🔵 NEXT.js: Emitting localStorage event...');
+    const syncEvent = {
+      type: 'LOGIN',
+      user: userData,
+      token: token,
+      sourceTabId: TAB_ID,
+      timestamp: Date.now(),
+      origin: 'nextjs'
+    };
+    
+    console.log('📢🔵 NEXT.js: Sync event data:', syncEvent);
+    console.log('📢🔵 NEXT.js: Current domain:', window.location.hostname);
+    console.log('📢🔵 NEXT.js: Setting auth_sync_event...');
+    
+    localStorage.setItem('auth_sync_event', JSON.stringify(syncEvent));
+    console.log('📢🔵 NEXT.js: auth_sync_event set in localStorage');
+    
+    // Trigger storage event by removing and setting again
+    setTimeout(() => {
+      console.log('📢🔵 NEXT.js: Triggering storage event...');
+      localStorage.removeItem('auth_sync_event');
+      console.log('📢🔵 NEXT.js: auth_sync_event removed - should trigger event');
+    }, 100);
+    
+    console.log('📢🔵 NEXT.js: localStorage event emitted!');
+  } catch (error) {
+    console.error('📢🔵 NEXT.js: localStorage event error:', error);
+  }
+  
   window.dispatchEvent(new Event("userLoggedIn"));
   
   console.log('✅ Store login successful');
