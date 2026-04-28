@@ -35,7 +35,7 @@ const fetchCsrfCookie = async () => {
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,
   timeout: 30000,
-  withCredentials: true,
+  withCredentials: true, // ✅ Let browser handle HttpOnly cookies automatically
   headers: {
     'Content-Type': 'application/json',
     'Accept': 'application/json',
@@ -53,8 +53,8 @@ apiClient.interceptors.request.use(async (config) => {
     currentDomain: window.location.hostname
   });
   
-  // Log all cookies for debugging
-  console.log('🍪 REACT Current cookies:', document.cookie);
+  // ✅ Let browser handle HttpOnly cookies automatically - no manual cookie handling
+  console.log('🍪 Browser will handle HttpOnly cookies automatically');
   
   const skipCsrf = config.method === 'get' || 
                    config.url.includes('csrf-cookie') ||
@@ -78,12 +78,6 @@ apiClient.interceptors.request.use(async (config) => {
     } catch (error) {
       console.error('CSRF setup failed:', error);
     }
-  }
-  
-  const token = localStorage.getItem('auth_token');
-  if (token && !config.headers.Authorization) {
-    config.headers.Authorization = `Bearer ${token}`;
-    console.log('🔑 REACT Using localStorage token:', token.substring(0, 20) + '...');
   }
   
   console.log('📤 REACT Final request headers:', {
