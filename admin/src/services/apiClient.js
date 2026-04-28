@@ -53,8 +53,17 @@ apiClient.interceptors.request.use(async (config) => {
     currentDomain: window.location.hostname
   });
   
-  // ✅ Let browser handle HttpOnly cookies automatically - no manual cookie handling
-  console.log('🍪 Browser will handle HttpOnly cookies automatically');
+  // ✅ Debug: Log all cookies React admin can access
+  console.log('🍪 REACT Current cookies:', document.cookie);
+  
+  // ✅ Debug: Check if session cookie exists
+  const hasSessionCookie = document.cookie.includes('thefastbill-session');
+  const hasXsrfCookie = document.cookie.includes('XSRF-TOKEN');
+  console.log('🔍 Cookie Check:', {
+    hasSessionCookie,
+    hasXsrfCookie,
+    cookieCount: document.cookie.split(';').length
+  });
   
   const skipCsrf = config.method === 'get' || 
                    config.url.includes('csrf-cookie') ||
@@ -91,8 +100,24 @@ apiClient.interceptors.request.use(async (config) => {
 });
 
 apiClient.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    console.log('✅ REACT API Response:', {
+      status: response.status,
+      statusText: response.statusText,
+      url: response.config.url,
+      headers: response.headers
+    });
+    return response;
+  },
   async (error) => {
+    console.log('❌ REACT API Error:', {
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      url: error.config?.url,
+      message: error.message,
+      responseHeaders: error.response?.headers
+    });
+    
     const originalRequest = error.config;
     
     // ✅ Handle 419 CSRF mismatch - retry once
