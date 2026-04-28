@@ -35,7 +35,7 @@ const fetchCsrfCookie = async () => {
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,
   timeout: 30000,
-  withCredentials: true,
+  withCredentials: true, // ✅ Let browser handle HttpOnly cookies automatically
   headers: {
     'Content-Type': 'application/json',
     'Accept': 'application/json',
@@ -44,6 +44,27 @@ export const apiClient = axios.create({
 });
 
 apiClient.interceptors.request.use(async (config) => {
+  console.log('🔍 REACT API Request:', {
+    method: config.method?.toUpperCase(),
+    url: config.url,
+    baseURL: config.baseURL,
+    fullUrl: `${config.baseURL}${config.url}`,
+    withCredentials: config.withCredentials,
+    currentDomain: window.location.hostname
+  });
+  
+  // ✅ Debug: Log all cookies React admin can access
+  console.log('🍪 REACT Current cookies:', document.cookie);
+  
+  // ✅ Debug: Check if session cookie exists
+  const hasSessionCookie = document.cookie.includes('thefastbill-session');
+  const hasXsrfCookie = document.cookie.includes('XSRF-TOKEN');
+  console.log('🔍 Cookie Check:', {
+    hasSessionCookie,
+    hasXsrfCookie,
+    cookieCount: document.cookie.split(';').length
+  });
+  
   const skipCsrf = config.method === 'get' || 
                    config.url.includes('csrf-cookie') ||
                    config.url.includes('check-session');
@@ -59,23 +80,44 @@ apiClient.interceptors.request.use(async (config) => {
       
       if (csrfToken) {
         config.headers['X-XSRF-TOKEN'] = decodeURIComponent(csrfToken);
+        console.log('🔐 REACT CSRF token added:', csrfToken.substring(0, 20) + '...');
+      } else {
+        console.log('⚠️ REACT No CSRF token found in cookies');
       }
     } catch (error) {
       console.error('CSRF setup failed:', error);
     }
   }
   
-  const token = localStorage.getItem('auth_token');
-  if (token && !config.headers.Authorization) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
+  console.log('📤 REACT Final request headers:', {
+    ...config.headers,
+    Authorization: config.headers.Authorization ? 
+      `Bearer ${config.headers.Authorization.replace('Bearer ', '').substring(0, 20)}...` : 
+      'none'
+  });
   
   return config;
 });
 
 apiClient.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    console.log('✅ REACT API Response:', {
+      status: response.status,
+      statusText: response.statusText,
+      url: response.config.url,
+      headers: response.headers
+    });
+    return response;
+  },
   async (error) => {
+    console.log('❌ REACT API Error:', {
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      url: error.config?.url,
+      message: error.message,
+      responseHeaders: error.response?.headers
+    });
+    
     const originalRequest = error.config;
     
     // ✅ Handle 419 CSRF mismatch - retry once

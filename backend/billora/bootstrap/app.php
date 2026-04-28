@@ -25,7 +25,7 @@ return Application::configure(basePath: dirname(__DIR__))
         // Add Sanctum middleware to API group
         $middleware->group('api', [
             EnsureFrontendRequestsAreStateful::class,
-            'throttle:api',
+            // 'throttle:api',
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
         ]);
         

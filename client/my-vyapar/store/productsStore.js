@@ -91,15 +91,17 @@ export const useProductsStore = create(
           if (productsData?.products?.data && Array.isArray(productsData.products.data)) {
             productsArray = productsData.products.data;
             console.log("✅ Using products.data array:", productsArray.length, "products");
+          } else if (productsData?.data && Array.isArray(productsData.data)) {
+            productsArray = productsData.data;
+            console.log("✅ Using data array:", productsArray.length, "products");
           } else if (Array.isArray(productsData)) {
             productsArray = productsData;
             console.log("✅ Using direct array:", productsArray.length, "products");
-          } else if (productsData?.data) {
-            productsArray = productsData.data;
-            console.log("✅ Using data array:", productsArray.length, "products");
           } else {
             console.log("❌ No products found in response structure");
             console.log("Available keys:", Object.keys(productsData));
+            console.log("Products structure:", productsData?.products);
+            console.log("Data structure:", productsData?.data);
           }
 
           // Transform products
@@ -151,25 +153,36 @@ export const useProductsStore = create(
           });
 
           // Update state
-          set({
+          // Force immediate state update
+          const newState = {
             products: transformedProducts,
             pagination: {
-              current_page: productsData.products?.current_page || 1,
-              last_page: productsData.products?.last_page || 1,
-              per_page: productsData.products?.per_page || 15,
-              total: productsData.products?.total || 0,
-              next_page_url: productsData.products?.next_page_url,
-              prev_page_url: productsData.products?.prev_page_url,
-              first_page_url: productsData.products?.first_page_url,
-              last_page_url: productsData.products?.last_page_url,
-              links: productsData.products?.links || []
+              current_page: productsData.current_page || productsData.products?.current_page || 1,
+              last_page: productsData.last_page || productsData.products?.last_page || 1,
+              per_page: productsData.per_page || productsData.products?.per_page || 15,
+              total: productsData.total || productsData.products?.total || 0,
+              next_page_url: productsData.next_page_url || productsData.products?.next_page_url,
+              prev_page_url: productsData.prev_page_url || productsData.products?.prev_page_url,
+              first_page_url: productsData.first_page_url || productsData.products?.first_page_url,
+              last_page_url: productsData.last_page_url || productsData.products?.last_page_url,
+              links: productsData.links || productsData.products?.links || []
             },
             categories: productsData.categories && Array.isArray(productsData.categories) 
               ? [{ id: "All", name: "All" }, ...productsData.categories] 
               : [{ id: "All", name: "All" }],
             loading: false,
             error: null
-          });
+          };
+          
+          set(newState);
+          console.log("✅ Loading set to false, products count:", transformedProducts.length);
+          
+          // Force a re-render in development
+          if (process.env.NODE_ENV === 'development') {
+            setTimeout(() => {
+              console.log("🔄 Forced re-render check");
+            }, 100);
+          }
 
           logger.log("Successfully loaded", transformedProducts.length, "products");
           
