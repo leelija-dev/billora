@@ -257,6 +257,64 @@ if (typeof window !== 'undefined') {
     }
   });
   
+  // ✅ Add periodic session check for server-side sync
+  console.log('🟢🔴 REACT: Setting up periodic session check...');
+  let sessionCheckInterval;
+  
+  const startSessionCheck = () => {
+    if (sessionCheckInterval) clearInterval(sessionCheckInterval);
+    
+    sessionCheckInterval = setInterval(async () => {
+      try {
+        const currentState = useAuthStore.getState();
+        
+        // Only check if not authenticated
+        if (!currentState.isAuthenticated && !currentState.isLoading) {
+          console.log('🟢🔴 REACT: Periodic session check...');
+          const response = await authService.checkSession();
+          
+          if (response.status && response.user) {
+            console.log('🟢🔴 REACT: Session found via periodic check!');
+            
+            // Update store directly without API call
+            useAuthStore.setState({
+              user: response.user,
+              isAuthenticated: true,
+              isLoading: false,
+            });
+            
+            // Update permissions
+            const { setUser: setPermissionUser, fetchUserPermissions } = usePermissionStore.getState();
+            if (setPermissionUser) setPermissionUser(response.user);
+            if (response.user?.plan_id && fetchUserPermissions) {
+              fetchUserPermissions(response.user.id);
+            }
+            
+            toast.success(`Logged in as ${response.user.email}!`);
+            console.log('🟢🔴 REACT: Session sync successful!');
+            
+            // Stop checking once authenticated
+            clearInterval(sessionCheckInterval);
+          }
+        }
+      } catch (error) {
+        // Silent fail for periodic checks
+        console.log('🟢🔴 REACT: Periodic check failed (expected if not logged in)');
+      }
+    }, 3000); // Check every 3 seconds
+  };
+  
+  // Start periodic checking
+  startSessionCheck();
+  
+  // Stop checking when authenticated
+  const unsubscribe = useAuthStore.subscribe((state) => {
+    if (state.isAuthenticated && sessionCheckInterval) {
+      clearInterval(sessionCheckInterval);
+      console.log('🟢🔴 REACT: Stopping periodic session check - authenticated');
+    }
+  });
+  
   try {
     const channel = new BroadcastChannel('auth_channel');
     
