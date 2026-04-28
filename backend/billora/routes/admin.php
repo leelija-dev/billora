@@ -14,7 +14,7 @@ use App\Http\Controllers\admin\superadmin\TestimonialsController;
 use App\Models\AdminMailHistory;
 use App\Models\AdminUser;
 use App\Models\SuperAdminPermission;
-
+use App\Http\Controllers\admin\superadmin\BlogController;
 Route::middleware(['web', 'admin.guest'])->prefix('admin')->group(function () {
     Route::view('/login', 'admin.login')->name('login');
     Route::post('/login', [AuthController::class, 'login'])->name('admin.login');
@@ -114,5 +114,12 @@ Route::middleware(['web', 'admin.auth'])->prefix('admin')->group(function () {
         Route::get('/edit/{id}', [TestimonialsController::class, 'edit'])->name('admin.testimonial.edit');
         Route::post('/update/{id}', [TestimonialsController::class, 'update'])->name('admin.testimonial.update');
         Route::delete('/delete/{id}', [TestimonialsController::class, 'delete'])->name('admin.testimonial.delete');
+    });
+    Route::prefix('blogs')->group(function () {
+        Route::get('/',[BlogController::class,'index'])->name('admin.blogs.index');
+        Route::get('/create',[BlogController::class,'create'])->name('admin.blogs.create');
+
+        Route::get('/trashed',[BlogController::class,'trashed'])->name('admin.blogs.trash');
+        Route::post('/store',[BlogController::class,'store'])->name('admin.blogs.store');
     });
 });

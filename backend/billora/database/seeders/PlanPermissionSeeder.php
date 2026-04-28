@@ -23,7 +23,7 @@ class PlanPermissionSeeder extends Seeder
                 'description' => 'Generate and manage bills/invoices',
             ],
         ];
-        DB::table('plan_permission')->truncate();
+        // DB::table('plan_permission')->truncate();
         foreach ($permissions as $permission) {
             DB::table('plan_permission')->updateOrInsert(
                 ['slug' => Str::slug($permission['permission_name'])],

@@ -32,39 +32,97 @@ class CustomerController extends Controller
         ]);
     }
     
+    // public function store(Request $request)
+    // {
+    //     try {
+    //         $data = $request->validate([
+    //             'name'          => 'nullable|string',
+    //             'email'         => 'required|email|unique:customers,email',
+    //             'phone'         => 'nullable',
+    //             'password'      => 'required|min:6',
+    //             'company_name'  => 'nullable',
+    //             'gst_number'    => 'nullable',
+    //             'address'       => 'nullable',
+    //             'city'          => 'nullable',
+    //             'state'         => 'nullable',
+    //             'country'       => 'nullable',
+    //             'pincode'       => 'nullable',
+    //             'created_by'    => 'nullable'
+    //         ]);
+            
+    //         $data['verification_token'] = Str::random(64);
+    //         $data['password'] = Hash::make($data['password']);
+    //         $customer = Customers::create($data);
+            
+    //         return response()->json([
+    //             'status' => true,
+    //             'message' => 'User Registered Successfully',
+    //             'data' => $customer
+    //         ]);
+    //     } catch (\Exception $e) {
+    //         return response()->json([
+    //             'status' => false,
+    //             'message' => $e->getMessage()
+    //         ], 422);
+    //     }
+    // }
     public function store(Request $request)
     {
-        try {
-            $data = $request->validate([
-                'name'          => 'nullable|string',
-                'email'         => 'required|email|unique:customers,email',
-                'phone'         => 'nullable',
-                'password'      => 'required|min:6',
-                'company_name'  => 'nullable',
-                'gst_number'    => 'nullable',
-                'address'       => 'nullable',
-                'city'          => 'nullable',
-                'state'         => 'nullable',
-                'country'       => 'nullable',
-                'pincode'       => 'nullable',
-                'created_by'    => 'nullable'
+        try{
+        $data = $request->validate([
+            'name'          => 'nullable|string',
+            'email'         => 'required|email|unique:customers,email',
+            'phone'         => 'nullable',
+            'password'      => 'required',
+            'company_name'  => 'nullable',
+            'gst_number'    => 'nullable',
+            'address'       => 'nullable',
+            'city'          => 'nullable',
+            'state'         => 'nullable',
+            'country'       => 'nullable',
+            'pincode'       => 'nullable',
+            'created_by'    => 'nullable'
+
+        ]);
+         $data['verification_token'] = Str::random(64);
+        $data['password'] = Hash::make($data['password']);
+        $customer = Customers::create($data);
+        // $customer->notify(new VerifyEmailNotification($data['verification_token']));
+    try{
+       $customerMail = $this->CustomerMail($customer->id, $data['verification_token']);
+        $adminMail = $this->AdminMail($customer->id);
+        $admin_mail_id = config('app.admin_mail');
+        // Send admin mail
+        Mail::html($adminMail, function ($message) use ($admin_mail_id) {
+            $message->to($admin_mail_id)
+                    ->subject("New User Registered");
+        });
+        //customer mail
+       
+        Mail::html($customerMail, function ($message) use ($customer) {
+            $message->to($customer->email)
+                    ->subject('Welcome! Please Verify Your Email');
+        });
+    }catch (\Exception $e) {
+        // Log the error or handle it as needed
+        Log::error('Mail sending failed', [
+                'error' => $e->getMessage(),
+                'user_id' => $customer->id
             ]);
-            
-            $data['verification_token'] = Str::random(64);
-            $data['password'] = Hash::make($data['password']);
-            $customer = Customers::create($data);
-            
-            return response()->json([
-                'status' => true,
-                'message' => 'User Registered Successfully',
-                'data' => $customer
-            ]);
-        } catch (\Exception $e) {
-            return response()->json([
-                'status' => false,
-                'message' => $e->getMessage()
-            ], 422);
+
         }
+        return response()->json([
+            'status' => true,
+            'message' => 'User Register Successfully',
+            'data' => $customer
+        ]);
+    }catch (\Exception $e) {
+        return response()->json([
+            'status' => false,
+            'message' => $e->getMessage()
+        ]);
+    }
+
     }
 
     public function edit($id)
@@ -202,8 +260,12 @@ class CustomerController extends Controller
         // Delete existing tokens
         // $user->tokens()->delete();
         
-        // Create new token
+        // Create new token for backward compatibility
         $token = $user->createToken('auth-token')->plainTextToken;
+        
+        // Use Laravel's built-in session authentication
+        // This will create the 'thefastbill-session' cookie automatically
+        Auth::login($user);
         
         // Get cookie domain from env
         $cookieDomain = env('AUTH_COOKIE_DOMAIN', null);
@@ -218,7 +280,7 @@ class CustomerController extends Controller
             'user' => $user
         ]);
         
-        // Set HTTP-only cookie for web browsers (enables cross-app auth)
+        // Set HTTP-only auth_token cookie for backward compatibility
         if ($cookieDomain) {
             $response->cookie(
                 'auth_token',
@@ -236,72 +298,68 @@ class CustomerController extends Controller
         return $response;
     }
     
+    // public function logout(Request $request)
+    // {
+    //     // ✅ Use Laravel's built-in session logout
+    //     // This will invalidate the 'thefastbill-session' cookie
+    //     // Auth::logout();
+    //     Auth::guard('web')->logout(); 
+    //     // Also clear Sanctum tokens for backward compatibility
+    //     $token = $request->cookie('auth_token');
+    //     if ($token) {
+    //         $tokenModel = \Laravel\Sanctum\PersonalAccessToken::findToken($token);
+    //         if ($tokenModel) {
+    //             $tokenModel->delete();
+    //         }
+    //     }
+       
+    //     $cookieDomain = env('AUTH_COOKIE_DOMAIN', null);
+    //     $response = response()->json([
+    //         'status' => true,
+    //         'message' => 'Logout successful'
+    //     ]);
+        
+    //     // Clear all auth cookies
+    //     if ($cookieDomain) {
+    //         $response->cookie('auth_token', '', -1, '/', $cookieDomain);
+    //     }
+        
+    //     return $response;
+    // }
     public function logout(Request $request)
-    {
-        // Try to get token from cookie first
-        $token = $request->cookie('auth_token');
-        
-        if (!$token) {
-            $authHeader = $request->header('Authorization');
-            if ($authHeader && str_starts_with($authHeader, 'Bearer ')) {
-                $token = substr($authHeader, 7);
-            }
-        }
-        
-        if ($token) {
-            $tokenModel = \Laravel\Sanctum\PersonalAccessToken::findToken($token);
-            if ($tokenModel) {
-                $tokenModel->delete();
-            }
-        }
-        
-        $cookieDomain = env('AUTH_COOKIE_DOMAIN', null);
-        $response = response()->json([
-            'status' => true,
-            'message' => 'Logout successful'
-        ]);
-        
-        if ($cookieDomain) {
-            $response->cookie('auth_token', '', -1, '/', $cookieDomain);
-        }
-        
-        return $response;
-    }
+{
+    // 🔥 1. Logout user (web session)
+    Auth::guard('web')->logout();
+
+    // 🔥 2. Destroy session completely
+    $request->session()->invalidate();
+    $request->session()->regenerateToken();
+
+    // 🔥 3. Prepare response
+    $response = response()->json([
+        'status' => true,
+        'message' => 'Logout successful'
+    ]);
+
+    // 🔥 4. Delete session cookie (VERY IMPORTANT)
+    $response->withCookie(cookie()->forget('billora-session'));
+
+    // 🔥 5. (Optional) remove old token system
+    $response->withCookie(cookie()->forget('auth_token'));
+
+    return $response;
+}
     
     public function checkSession(Request $request)
     {
-        // Try to get token from cookie first
-        $token = $request->cookie('auth_token');
-        
-        if (!$token) {
-            $authHeader = $request->header('Authorization');
-            if ($authHeader && str_starts_with($authHeader, 'Bearer ')) {
-                $token = substr($authHeader, 7);
-            }
-        }
-        
-        if (!$token) {
-            return response()->json([
-                'status' => false,
-                'message' => 'No authentication token found'
-            ], 401);
-        }
-        
-        $tokenModel = \Laravel\Sanctum\PersonalAccessToken::findToken($token);
-        
-        if (!$tokenModel) {
-            return response()->json([
-                'status' => false,
-                'message' => 'Invalid or expired token'
-            ], 401);
-        }
-        
-        $user = $tokenModel->tokenable;
+        // Use Laravel's built-in session authentication
+        // This will automatically check the 'thefastbill-session' cookie
+        $user = Auth::user();
         
         if (!$user) {
             return response()->json([
                 'status' => false,
-                'message' => 'User not found'
+                'message' => 'User not authenticated'
             ], 401);
         }
         
