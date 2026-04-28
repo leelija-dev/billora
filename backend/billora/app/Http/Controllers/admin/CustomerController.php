@@ -242,16 +242,12 @@ class CustomerController extends Controller
     
     public function logout(Request $request)
     {
-        // Try to get token from cookie first
+        // ✅ Use Laravel's built-in session logout
+        // This will invalidate the 'thefastbill-session' cookie
+        Auth::logout();
+        
+        // Also clear Sanctum tokens for backward compatibility
         $token = $request->cookie('auth_token');
-        
-        if (!$token) {
-            $authHeader = $request->header('Authorization');
-            if ($authHeader && str_starts_with($authHeader, 'Bearer ')) {
-                $token = substr($authHeader, 7);
-            }
-        }
-        
         if ($token) {
             $tokenModel = \Laravel\Sanctum\PersonalAccessToken::findToken($token);
             if ($tokenModel) {
@@ -265,6 +261,7 @@ class CustomerController extends Controller
             'message' => 'Logout successful'
         ]);
         
+        // Clear all auth cookies
         if ($cookieDomain) {
             $response->cookie('auth_token', '', -1, '/', $cookieDomain);
         }
