@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { useAuthStore } from '../../store/authStore'
 import Button from '../../components/common/Button/Button'
@@ -7,15 +7,17 @@ import Input from '../../components/common/Input/Input'
 
 const Login = () => {
   const navigate = useNavigate()
+  const location = useLocation()
   const { login, isLoading, isAuthenticated } = useAuthStore()
   const [showPassword, setShowPassword] = useState(false)
   
-  // Redirect authenticated users to dashboard
+  // Redirect authenticated users to the page they were trying to access
   useEffect(() => {
     if (isAuthenticated) {
-      navigate('/dashboard')
+      const from = location.state?.from?.pathname || '/dashboard'
+      navigate(from, { replace: true })
     }
-  }, [isAuthenticated, navigate])
+  }, [isAuthenticated, navigate, location])
   
   const {
     register,
@@ -26,7 +28,8 @@ const Login = () => {
   const onSubmit = async (data) => {
     const result = await login(data)
     if (result.success) {
-      navigate('/dashboard')
+      const from = location.state?.from?.pathname || '/dashboard'
+      navigate(from, { replace: true })
     }
   }
 

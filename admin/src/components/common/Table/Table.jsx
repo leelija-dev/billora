@@ -52,6 +52,8 @@ const Table = ({
     )
   }
 
+  // console.log("Table data:", data)
+
   const handleSort = (column) => {
     if (!sortable || !onSort || !column.sortable) return
     

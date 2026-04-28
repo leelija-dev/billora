@@ -1,5 +1,5 @@
 // services/paymentService.js
-import { apiRequest } from "../utils/api";
+import { api } from "../utils/secureApi";
 import { logger } from '../utils/logger';
 
 export const createOrder = async (orderData) => {
@@ -7,10 +7,10 @@ export const createOrder = async (orderData) => {
     logger.log("Payment Service - Sending request to:", "/cashfree/create-order");
     logger.log("Payment Service - Payload:", orderData);
     
-    const response = await apiRequest("/cashfree/create-order", "POST", orderData);
+    const response = await api.post("/cashfree/create-order", orderData);
     
-    logger.log("Payment Service - Response:", response);
-    return response;
+    logger.log("Payment Service - Response:", response.data);
+    return response.data;
   } catch (error) {
     logger.log("Payment Service - Error:", error);
     logger.log("Payment Service - Error message:", error.message);

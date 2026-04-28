@@ -97,7 +97,7 @@ class SendPlanExpiryReminderJob implements ShouldQueue
             $daysAfterExpiry = $expireDate->diffInDays($today, false);
 
             // Only Day 1 to Day 7 after expiry
-            if ($daysAfterExpiry >= 1 && $daysAfterExpiry <= 60) {
+            if ($daysAfterExpiry >= 1 && $daysAfterExpiry <= 7) {
 
                 // Check already sent today
                 // $alreadySent = PlanExpireNotification::where('user_id', $plan->user_id)

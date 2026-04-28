@@ -8,7 +8,6 @@ import { useAuthStore } from "../store/authStoreZustand";
 import { useFilterStore } from "../store/filterStore";
 import { useRouter } from "next/navigation";
 import businessService from "../services/businessService";
-import { apiRequest } from "../utils/api";
 
 const Pricing = ({ limit = 3, showFilters = true, showViewAllButton = true }) => {
   const [showLoginModal, setShowLoginModal] = useState(false);
@@ -57,37 +56,36 @@ const Pricing = ({ limit = 3, showFilters = true, showViewAllButton = true }) =>
     return () => clearTimeout(timer);
   }, []);
 
-  // Load business types from API
+  // Load business types from service
   useEffect(() => {
     const loadBusinessTypes = async () => {
       try {
-        // Use the correct business types endpoint
-        const response = await apiRequest("/business-type/", "GET");
+        // Try without token first (if endpoint is public)
+        let businessTypeData;
         
-        let businessTypeData = [];
-        
-        // Handle different response formats from backend
-        if (response?.status === true && Array.isArray(response?.data)) {
-          businessTypeData = response.data;
-        } else if (Array.isArray(response)) {
-          businessTypeData = response;
-        } else if (response?.data && Array.isArray(response.data)) {
-          businessTypeData = response.data;
+        if (token) {
+          // With token (authenticated)
+          businessTypeData = await businessService.getBusinessTypes(token);
+        } else {
+          // Without token (public endpoint)
+          businessTypeData = await businessService.getBusinessTypes();
         }
         
-        if (businessTypeData.length > 0) {
+        if (businessTypeData && businessTypeData.length > 0) {
           setAllBusinessTypes(businessTypeData);
           console.log("Business types loaded:", businessTypeData);
         } else {
-          console.warn("No business types found in API response");
+          console.warn("No business types found");
         }
       } catch (err) {
         console.error("Business type fetch error:", err);
+        // Set empty array to prevent infinite loading
+        setAllBusinessTypes([]);
       }
     };
 
     loadBusinessTypes();
-  }, []);
+  }, [token]);
 
   // Fetch plans from Laravel API
   const transformPlan = (plan, index) => {
@@ -370,10 +368,21 @@ const Pricing = ({ limit = 3, showFilters = true, showViewAllButton = true }) =>
       return;
     }
 
-    console.log("User is logged in, proceeding to order summary");
-    selectPlan(selectedPlanData);
-    localStorage.setItem('selectedPlan', JSON.stringify(selectedPlanData));
-    router.push("/order-summary");
+    // Check if this is an upgrade action
+    const eligibility = planEligibility[plan.id];
+    const isUpgrade = eligibility && eligibility.action === 'upgrade';
+    
+    if (isUpgrade) {
+      console.log("User is upgrading plan, redirecting to dashboard");
+      // For upgrade, redirect to dashboard instead of order summary
+      const dashboardUrl = process.env.NEXT_PUBLIC_DASHBOARD_URL || 'http://localhost:3000';
+      window.open(`${dashboardUrl}/billing`, '_blank');
+    } else {
+      console.log("User is purchasing new plan, proceeding to order summary");
+      selectPlan(selectedPlanData);
+      localStorage.setItem('selectedPlan', JSON.stringify(selectedPlanData));
+      router.push("/order-summary");
+    }
   };
 
   const proceedToOrderSummary = (selectedPlan) => {
@@ -548,7 +557,7 @@ const Pricing = ({ limit = 3, showFilters = true, showViewAllButton = true }) =>
         </div>
 
         {/* Pricing Cards Grid */}
-        {displayPlans.length === 0 ? (
+        {displayPlans.length === 0 && !loading ? (
           <div className="text-center py-20">
             <div className="text-6xl mb-4">🔍</div>
             <h3 className="text-xl font-bold text-gray-800 mb-2">No Plans Found</h3>
@@ -566,7 +575,7 @@ const Pricing = ({ limit = 3, showFilters = true, showViewAllButton = true }) =>
                 <div
                   key={plan.id}
                   ref={(el) => (cardRefs.current[index] = el)}
-                  className={`bg-white rounded-2xl p-8 shadow-lg relative transition-all duration-500 border flex flex-col opacity-0 translate-y-10 hover:-translate-y-2 hover:shadow-2xl
+                  className={`bg-white rounded-2xl p-8 shadow-lg relative transition-all duration-500 border flex flex-col  translate-y-10 hover:-translate-y-2 hover:shadow-2xl
                     ${isPopular 
                       ? 'border-2 border-purple-500 shadow-purple-100 scale-100 lg:scale-105 z-20 pt-10' 
                       : 'border-gray-200 hover:border-gray-300 z-10'

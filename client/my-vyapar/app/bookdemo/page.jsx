@@ -3,6 +3,8 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useAuthStore } from "../../store/authStoreZustand";
+import Link from "next/link";
 import { 
   Calendar, 
   ChevronLeft, 
@@ -36,6 +38,12 @@ const ClientTimeOnly = ({ children }) => {
 };
 
 const AppointmentPage = () => {
+  // Get user auth state
+  const { user, isLoggedIn } = useAuthStore();
+  
+  // Calculate hasActivePlan directly from user data
+  const hasActivePlan = user?.is_active === 1 || false;
+
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(null);
   const [selectedTime, setSelectedTime] = useState(null);
@@ -344,6 +352,44 @@ const AppointmentPage = () => {
     day: 'numeric',
     year: 'numeric'
   });
+
+  // ✅ If user has active plan, show message instead of booking form
+  if (isLoggedIn && hasActivePlan) {
+    return (
+      <div className="min-h-screen bg-[#F0F7FF] flex items-center justify-center px-4">
+        <div className="max-w-2xl w-full bg-white rounded-2xl shadow-2xl p-8 sm:p-12 text-center">
+          <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+            <CheckCircle className="w-10 h-10 text-green-600" />
+          </div>
+          <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
+            You Already Have an Active Plan!
+          </h1>
+          <p className="text-lg text-gray-600 mb-8">
+            You currently have an active premium plan. No need to book a demo - you already have access to all features!
+          </p>
+          <div className="space-y-4">
+            <Link
+              href={`${process.env.NEXT_PUBLIC_DASHBOARD_URL || 'http://localhost:3000'}/dashboard`}
+              className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white font-semibold rounded-xl hover:shadow-lg transition-all duration-200 hover:scale-105"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <Calendar className="w-5 h-5" />
+              Go to Dashboard
+            </Link>
+            <div>
+              <Link
+                href="/"
+                className="inline-block text-blue-600 hover:text-blue-700 font-medium transition-colors"
+              >
+                ← Back to Home
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#F0F7FF] relative">

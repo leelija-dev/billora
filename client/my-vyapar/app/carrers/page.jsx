@@ -2,6 +2,45 @@
 "use client";
 
 import { useState } from "react";
+import { 
+  FaMapMarkerAlt, FaBriefcase, FaGraduationCap, FaTags, 
+  FaMoneyBillWave, FaArrowRight, FaRocket, FaHeart, 
+  FaHome, FaChartLine, FaUserFriends, FaLightbulb,
+  FaShieldAlt, FaHandshake, FaSmile, FaStar, FaStarHalfAlt,
+  FaUsers, FaGlobe, FaClock, FaCalendarAlt, FaFilter,
+  FaSearch, FaChevronRight, FaBuilding, FaLaptopCode,
+  FaTrophy, FaGift, FaPlane, FaBookOpen, FaMedkit,
+  FaRegSmile, FaAward, FaLeaf, FaMicrophone, FaVideo,
+  FaCoffee, FaPaintBrush, FaChartBar, FaCode, FaCloud,
+  FaDatabase, FaMobile, FaServer, FaTools, FaWhatsapp,
+  FaLinkedin, FaTwitter, FaGithub, FaYoutube, FaInstagram
+} from 'react-icons/fa';
+import { 
+  HiOutlineLocationMarker, HiOutlineOfficeBuilding, HiOutlineUserGroup 
+} from 'react-icons/hi';
+import { 
+  MdLocationOn, MdWork, MdSchool, MdAttachMoney, MdArrowForward,
+  MdStar, MdStarHalf, MdPeople, MdLanguage, MdAccessTime,
+  MdEvent, MdFilterList, MdSearch, MdChevronRight, MdBusinessCenter,
+  MdComputer, MdEmojiEvents, MdCardGiftcard, MdFlightTakeoff,
+  MdMenuBook, MdHealthAndSafety, MdSentimentSatisfied, MdEmojiObjects,
+  MdVerified, MdPark, MdMic, MdVideocam, MdFreeBreakfast,
+  MdBrush, MdBarChart, MdCode, MdCloud, MdStorage, MdPhoneAndroid,
+  MdDevices, MdBuild, MdChat
+} from 'react-icons/md';
+import { 
+  RiRemoteControlLine, RiTeamLine, RiUserStarLine, RiLightbulbFlashLine,
+  RiShieldStarLine, RiHandHeartLine, RiSmileLine, RiStarSmileFill,
+  RiGroupLine, RiGlobalLine, RiTimeLine, RiCalendarTodoLine,
+  RiFilterLine, RiSearchLine, RiArrowRightSLine, RiBuildingLine,
+  RiComputerLine, RiTrophyLine, RiGiftLine, RiPlaneLine, RiBookOpenLine,
+  RiHospitalLine, RiEmotionHappyLine, RiAwardLine, RiLeafLine,
+  RiMicrophoneLine, RiVideoLine, RiCupLine, RiPaletteLine, RiBarChartLine,
+  RiCodeBoxLine, RiCloudLine, RiDatabaseLine, RiSmartphoneLine,
+  RiDeviceLine, RiSettingsLine, RiWhatsappLine, RiLinkedinBoxLine,
+  RiTwitterXLine, RiGithubLine, RiYoutubeLine, RiInstagramLine
+} from 'react-icons/ri';
+import { SiGooglemaps } from 'react-icons/si';
 
 export default function JoinTeamPage() {
   const [activeTab, setActiveTab] = useState("openings");
@@ -71,19 +110,26 @@ export default function JoinTeamPage() {
   ];
 
   const benefits = [
-    { icon: "🏠", title: "Remote First", desc: "Work from anywhere", color: "from-blue-500 to-cyan-500" },
-    { icon: "💰", title: "Competitive Salary", desc: "Best in industry", color: "from-emerald-500 to-teal-500" },
-    { icon: "📈", title: "ESOPs", desc: "Own the company", color: "from-purple-500 to-pink-500" },
-    { icon: "🏥", title: "Health Insurance", desc: "For you and family", color: "from-red-500 to-orange-500" },
-    { icon: "🎓", title: "Learning Budget", desc: "$1000/year for courses", color: "from-indigo-500 to-blue-500" },
-    { icon: "🌴", title: "Unlimited PTO", desc: "Take time when needed", color: "from-rose-500 to-pink-500" },
+    { icon: <FaHome className="text-4xl" />, title: "Remote First", desc: "Work from anywhere", color: "from-blue-500 to-cyan-500" },
+    { icon: <FaMoneyBillWave className="text-4xl" />, title: "Competitive Salary", desc: "Best in industry", color: "from-emerald-500 to-teal-500" },
+    { icon: <FaChartLine className="text-4xl" />, title: "ESOPs", desc: "Own the company", color: "from-purple-500 to-pink-500" },
+    { icon: <FaMedkit className="text-4xl" />, title: "Health Insurance", desc: "For you and family", color: "from-red-500 to-orange-500" },
+    { icon: <FaBookOpen className="text-4xl" />, title: "Learning Budget", desc: "$1000/year for courses", color: "from-indigo-500 to-blue-500" },
+    { icon: <FaPlane className="text-4xl" />, title: "Unlimited PTO", desc: "Take time when needed", color: "from-rose-500 to-pink-500" },
   ];
 
   const values = [
-    { title: "Customer First", desc: "Everything we do is for our customers", icon: "", color: "bg-blue-50" },
-    { title: "Innovation", desc: "Constantly improve and innovate", icon: "", color: "bg-purple-50" },
-    { title: "Integrity", desc: "Do the right thing, always", icon: "", color: "bg-emerald-50" },
-    { title: "Teamwork", desc: "Together we achieve more", icon: "", color: "bg-amber-50" },
+    { title: "Customer First", desc: "Everything we do is for our customers", icon: <FaHeart className="text-2xl" />, color: "bg-blue-50" },
+    { title: "Innovation", desc: "Constantly improve and innovate", icon: <FaLightbulb className="text-2xl" />, color: "bg-purple-50" },
+    { title: "Integrity", desc: "Do the right thing, always", icon: <FaShieldAlt className="text-2xl" />, color: "bg-emerald-50" },
+    { title: "Teamwork", desc: "Together we achieve more", icon: <FaUsers className="text-2xl" />, color: "bg-amber-50" },
+  ];
+
+  const stats = [
+    { value: "50+", label: "Team Members", icon: <FaUsers className="text-3xl" />, gradient: "from-blue-600 to-cyan-600" },
+    { value: "10+", label: "Open Roles", icon: <FaBriefcase className="text-3xl" />, gradient: "from-purple-600 to-pink-600" },
+    { value: "4.9", label: "Glassdoor Rating", icon: <FaStar className="text-3xl" />, gradient: "from-yellow-500 to-orange-500" },
+    { value: "100%", label: "Remote Friendly", icon: <FaGlobe className="text-3xl" />, gradient: "from-emerald-500 to-teal-500" }
   ];
 
   return (
@@ -117,9 +163,7 @@ export default function JoinTeamPage() {
               className="group bg-white text-gray-900 px-8 py-3 rounded-full font-semibold hover:shadow-2xl transition-all duration-300 transform hover:scale-105 flex items-center justify-center gap-2"
             >
               View Openings
-              <svg className="w-5 h-5 group-hover:translate-x-1 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
-              </svg>
+              <FaArrowRight className="w-5 h-5 group-hover:translate-x-1 transition" />
             </button>
             <button className="border-2 border-white text-white px-8 py-3 rounded-full font-semibold hover:bg-white hover:text-blue-600 transition-all duration-300">
               Learn More
@@ -138,14 +182,11 @@ export default function JoinTeamPage() {
       {/* Stats Section with Enhanced Cards */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-8 mb-16 relative z-10">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
-          {[
-            { value: "50+", label: "Team Members", icon: "", gradient: "from-blue-600 to-cyan-600" },
-            { value: "10+", label: "Open Roles", icon: "", gradient: "from-purple-600 to-pink-600" },
-            { value: "4.9", label: "Glassdoor Rating", icon: "", gradient: "from-yellow-500 to-orange-500" },
-            { value: "100%", label: "Remote Friendly", icon: "", gradient: "from-emerald-500 to-teal-500" }
-          ].map((stat, idx) => (
+          {stats.map((stat, idx) => (
             <div key={idx} className="bg-white rounded-2xl shadow-xl p-5 text-center transform hover:scale-105 transition-all duration-300 border border-gray-100">
-              <div className="text-3xl mb-2">{stat.icon}</div>
+              <div className="flex justify-center mb-2 text-blue-600">
+                {stat.icon}
+              </div>
               <div className={`text-2xl sm:text-3xl font-bold bg-gradient-to-r ${stat.gradient} bg-clip-text text-transparent`}>
                 {stat.value}
               </div>
@@ -167,8 +208,8 @@ export default function JoinTeamPage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {values.map((value, idx) => (
             <div key={idx} className="group bg-white rounded-2xl p-6 shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 border border-gray-100">
-              <div className={`w-14 h-14 ${value.color} rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300`}>
-                <span className="text-3xl">{value.icon}</span>
+              <div className={`w-14 h-14 ${value.color} rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300 text-blue-600`}>
+                {value.icon}
               </div>
               <h3 className="text-xl font-bold mb-2 text-gray-900">{value.title}</h3>
               <p className="text-gray-600 leading-relaxed">{value.desc}</p>
@@ -191,7 +232,7 @@ export default function JoinTeamPage() {
               <div key={idx} className="group relative bg-white rounded-2xl p-6 shadow-md hover:shadow-2xl transition-all duration-300 overflow-hidden">
                 <div className={`absolute inset-0 bg-gradient-to-br ${benefit.color} opacity-0 group-hover:opacity-5 transition-opacity duration-300`}></div>
                 <div className="relative">
-                  <div className="text-5xl mb-4 transform group-hover:scale-110 transition-transform duration-300 inline-block">
+                  <div className="text-5xl mb-4 transform group-hover:scale-110 transition-transform duration-300 inline-block text-blue-600">
                     {benefit.icon}
                   </div>
                   <h3 className="text-xl font-bold mb-2 text-gray-900">{benefit.title}</h3>
@@ -230,16 +271,11 @@ export default function JoinTeamPage() {
                     </h3>
                     <div className="flex flex-wrap gap-3 text-sm">
                       <span className="flex items-center gap-1 text-gray-500">
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                        </svg>
+                        <HiOutlineLocationMarker className="w-4 h-4" />
                         {job.location}
                       </span>
                       <span className="flex items-center gap-1 text-gray-500">
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                        </svg>
+                        <FaBriefcase className="w-4 h-4" />
                         {job.experience}
                       </span>
                     </div>
@@ -278,8 +314,8 @@ export default function JoinTeamPage() {
                     <div className="text-xs text-gray-500">Expected Salary</div>
                     <div className="text-sm font-semibold text-gray-900">{job.salary || "Competitive"}</div>
                   </div>
-                  <button className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-2 rounded-xl font-semibold hover:shadow-lg transition-all duration-300 transform hover:scale-105">
-                    Apply Now →
+                  <button className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-2 rounded-xl font-semibold hover:shadow-lg transition-all duration-300 transform hover:scale-105 flex items-center gap-2">
+                    Apply Now <FaArrowRight className="w-4 h-4" />
                   </button>
                 </div>
               </div>
@@ -291,10 +327,9 @@ export default function JoinTeamPage() {
         </div>
       </div>
 
-      {/* CTA Section with Enhanced Design - FIXED VERSION */}
+      {/* CTA Section with Enhanced Design */}
       <div className="relative mx-4 sm:mx-6 lg:mx-auto max-w-6xl rounded-3xl overflow-hidden my-16">
         <div className="absolute inset-0 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600"></div>
-        {/* Fixed: Removed the problematic SVG data URL and replaced with a cleaner pattern */}
         <div className="absolute inset-0 bg-black opacity-10"></div>
         <div className="relative px-6 py-14 md:py-16 text-center text-white">
           <h2 className="text-3xl md:text-4xl font-bold mb-4">
@@ -305,9 +340,7 @@ export default function JoinTeamPage() {
           </p>
           <button className="bg-white text-blue-600 px-8 py-3 rounded-full font-semibold hover:shadow-2xl transition-all duration-300 transform hover:scale-105 inline-flex items-center gap-2">
             Submit General Application
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-            </svg>
+            <FaArrowRight className="w-5 h-5" />
           </button>
         </div>
       </div>

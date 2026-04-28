@@ -12,6 +12,11 @@ const RegisterPage = () => {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [phone, setPhone] = useState("");
+  const [city, setCity] = useState("");
+  const [state, setState] = useState("");
+  const [country, setCountry] = useState("");
+  const [pincode, setPincode] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -20,6 +25,11 @@ const RegisterPage = () => {
   const [nameError, setNameError] = useState("");
   const [emailError, setEmailError] = useState("");
   const [passwordError, setPasswordError] = useState("");
+  const [phoneError, setPhoneError] = useState("");
+  const [cityError, setCityError] = useState("");
+  const [stateError, setStateError] = useState("");
+  const [countryError, setCountryError] = useState("");
+  const [pincodeError, setPincodeError] = useState("");
 
   const router = useRouter();
 
@@ -92,12 +102,73 @@ const RegisterPage = () => {
     return true;
   };
 
+  const validatePhone = (value) => {
+    if (!value.trim()) {
+      setPhoneError("Phone number is required");
+      return false;
+    }
+    const phoneRegex = /^\d{10}$/;
+    const cleanPhone = value.replace(/\D/g, '');
+    if (!phoneRegex.test(cleanPhone)) {
+      setPhoneError("Please enter a valid 10-digit phone number");
+      return false;
+    }
+    setPhoneError("");
+    return true;
+  };
+
+  const validateCity = (value) => {
+    if (!value.trim()) {
+      setCityError("City is required");
+      return false;
+    }
+    setCityError("");
+    return true;
+  };
+
+  const validateState = (value) => {
+    if (!value.trim()) {
+      setStateError("State is required");
+      return false;
+    }
+    setStateError("");
+    return true;
+  };
+
+  const validateCountry = (value) => {
+    if (!value.trim()) {
+      setCountryError("Country is required");
+      return false;
+    }
+    setCountryError("");
+    return true;
+  };
+
+  const validatePincode = (value) => {
+    if (!value.trim()) {
+      setPincodeError("Pincode is required");
+      return false;
+    }
+    const pincodeRegex = /^\d{6}$/;
+    if (!pincodeRegex.test(value.trim())) {
+      setPincodeError("Please enter a valid 6-digit pincode");
+      return false;
+    }
+    setPincodeError("");
+    return true;
+  };
+
   const validateForm = () => {
     const isNameValid = validateName(name);
     const isEmailValid = validateEmail(email);
     const isPasswordValid = validatePassword(password);
+    const isPhoneValid = validatePhone(phone);
+    const isCityValid = validateCity(city);
+    const isStateValid = validateState(state);
+    const isCountryValid = validateCountry(country);
+    const isPincodeValid = validatePincode(pincode);
     
-    return isNameValid && isEmailValid && isPasswordValid;
+    return isNameValid && isEmailValid && isPasswordValid && isPhoneValid && isCityValid && isStateValid && isCountryValid && isPincodeValid;
   };
 
   const handleRegister = async (e) => {
@@ -119,7 +190,12 @@ const RegisterPage = () => {
       await register({ 
         name: name.trim(), 
         email: email.trim().toLowerCase(), 
-        password: password 
+        password: password,
+        phone: phone.replace(/\D/g, ''),
+        city: city.trim(),
+        state: state.trim(),
+        country: country.trim(),
+        pincode: pincode.trim()
       });
       
       setSuccess("Registration successful! Please check your email to verify your account.");
@@ -128,11 +204,21 @@ const RegisterPage = () => {
       setName("");
       setEmail("");
       setPassword("");
+      setPhone("");
+      setCity("");
+      setState("");
+      setCountry("");
+      setPincode("");
       
       // Clear validation errors
       setNameError("");
       setEmailError("");
       setPasswordError("");
+      setPhoneError("");
+      setCityError("");
+      setStateError("");
+      setCountryError("");
+      setPincodeError("");
       
       // Redirect to login after 3 seconds
       setTimeout(() => {
@@ -180,7 +266,7 @@ const RegisterPage = () => {
       
       <div className="flex-1 flex justify-center items-center py-20 px-4 relative">
         
-        <form onSubmit={handleRegister} className="w-[550px] bg-white py-10 px-[50px] rounded-[25px] shadow-[0_8px_25px_rgba(0,0,0,0.08)] max-md:w-[450px] max-md:px-8 max-sm:w-[90%] max-sm:px-5 max-sm:py-8">
+        <form onSubmit={handleRegister} className=" bg-white py-10 px-[50px] rounded-[25px] shadow-[0_8px_25px_rgba(0,0,0,0.08)]  max-md:px-8  max-sm:px-5 max-sm:py-8">
           
           <h1 className="text-center text-[#2d236b] text-4xl font-bold mb-6 max-sm:text-3xl">
             Register
@@ -287,6 +373,131 @@ const RegisterPage = () => {
             <p className="text-gray-400 text-xs mt-1 ml-2">
               Password requirements: 8+ chars, uppercase, lowercase, number, special char (!@#$%^&*)
             </p>
+          </div>
+
+          {/* Phone Field */}
+          <div className="flex flex-col mb-5">
+            <label className="mb-1.5 text-sm text-gray-700 font-medium">Phone Number *</label>
+            <input 
+              type="tel" 
+              value={phone}
+              onChange={(e) => {
+                setPhone(e.target.value);
+                if (e.target.value !== "") validatePhone(e.target.value);
+                else setPhoneError("");
+              }}
+              onBlur={() => validatePhone(phone)}
+              className={`p-3 rounded-xl border-2 outline-none text-sm focus:border-[#5b5bd6] transition-colors ${
+                phoneError ? "border-red-500 bg-red-50" : "border-[#ddd]"
+              }`}
+              placeholder="Enter 10-digit mobile number"
+              maxLength="10"
+              required
+              disabled={loading}
+            />
+            {phoneError && (
+              <p className="text-red-500 text-xs mt-1 ml-2">{phoneError}</p>
+            )}
+            <p className="text-gray-400 text-xs mt-1 ml-2">Enter 10-digit mobile number (e.g., 9876543210)</p>
+          </div>
+
+          {/* City, State, Country Fields */}
+          <div className="grid grid-cols-3 gap-3 mb-5">
+            <div className="flex flex-col">
+              <label className="mb-1.5 text-sm text-gray-700 font-medium">City *</label>
+              <input 
+                type="text" 
+                value={city}
+                onChange={(e) => {
+                  setCity(e.target.value);
+                  if (e.target.value !== "") validateCity(e.target.value);
+                  else setCityError("");
+                }}
+                onBlur={() => validateCity(city)}
+                className={`p-3 rounded-xl border-2 outline-none text-sm focus:border-[#5b5bd6] transition-colors ${
+                  cityError ? "border-red-500 bg-red-50" : "border-[#ddd]"
+                }`}
+                placeholder="City"
+                required
+                disabled={loading}
+              />
+              {cityError && (
+                <p className="text-red-500 text-xs mt-1">{cityError}</p>
+              )}
+            </div>
+
+            <div className="flex flex-col">
+              <label className="mb-1.5 text-sm text-gray-700 font-medium">State *</label>
+              <input 
+                type="text" 
+                value={state}
+                onChange={(e) => {
+                  setState(e.target.value);
+                  if (e.target.value !== "") validateState(e.target.value);
+                  else setStateError("");
+                }}
+                onBlur={() => validateState(state)}
+                className={`p-3 rounded-xl border-2 outline-none text-sm focus:border-[#5b5bd6] transition-colors ${
+                  stateError ? "border-red-500 bg-red-50" : "border-[#ddd]"
+                }`}
+                placeholder="State"
+                required
+                disabled={loading}
+              />
+              {stateError && (
+                <p className="text-red-500 text-xs mt-1">{stateError}</p>
+              )}
+            </div>
+
+            <div className="flex flex-col">
+              <label className="mb-1.5 text-sm text-gray-700 font-medium">Country *</label>
+              <input 
+                type="text" 
+                value={country}
+                onChange={(e) => {
+                  setCountry(e.target.value);
+                  if (e.target.value !== "") validateCountry(e.target.value);
+                  else setCountryError("");
+                }}
+                onBlur={() => validateCountry(country)}
+                className={`p-3 rounded-xl border-2 outline-none text-sm focus:border-[#5b5bd6] transition-colors ${
+                  countryError ? "border-red-500 bg-red-50" : "border-[#ddd]"
+                }`}
+                placeholder="Country"
+                required
+                disabled={loading}
+              />
+              {countryError && (
+                <p className="text-red-500 text-xs mt-1">{countryError}</p>
+              )}
+            </div>
+          </div>
+
+          {/* Pincode Field */}
+          <div className="flex flex-col mb-5">
+            <label className="mb-1.5 text-sm text-gray-700 font-medium">Pincode *</label>
+            <input 
+              type="text" 
+              value={pincode}
+              onChange={(e) => {
+                const value = e.target.value.replace(/\D/g, '').slice(0, 6);
+                setPincode(value);
+                if (value !== "") validatePincode(value);
+                else setPincodeError("");
+              }}
+              onBlur={() => validatePincode(pincode)}
+              className={`p-3 rounded-xl border-2 outline-none text-sm focus:border-[#5b5bd6] transition-colors ${
+                pincodeError ? "border-red-500 bg-red-50" : "border-[#ddd]"
+              }`}
+              placeholder="Enter 6-digit pincode"
+              maxLength="6"
+              required
+              disabled={loading}
+            />
+            {pincodeError && (
+              <p className="text-red-500 text-xs mt-1 ml-2">{pincodeError}</p>
+            )}
+            <p className="text-gray-400 text-xs mt-1 ml-2">Enter 6-digit pincode (e.g., 110001)</p>
           </div>
 
           {/* Register Button */}

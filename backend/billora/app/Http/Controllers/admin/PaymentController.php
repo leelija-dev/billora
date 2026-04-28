@@ -11,6 +11,7 @@ use App\Models\Plans;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 
 class PaymentController extends Controller
@@ -22,7 +23,7 @@ class PaymentController extends Controller
             'plan_id' => 'required|exists:plans,id',
             'business_type_id' => 'required',
             'customer_id' => 'required|exists:customers,id',
-            'customer_phone'=>'required',
+            'customer_phone' => 'required',
         ]);
         $customer = Customers::find($request->customer_id);
         $orderId = 'order_' . uniqid();
@@ -100,158 +101,158 @@ class PaymentController extends Controller
             'data' => $data
         ]);
     }
-public function paymentSuccess(Request $request)
-{
-    $orderId = $request->query('order_id');
+    public function paymentSuccess(Request $request)
+    {
+        $orderId = $request->query('order_id');
 
-    if (!$orderId) {
-        return response()->json([
-            'success' => false,
-            'message' => 'order_id missing'
-        ], 422);
+        if (!$orderId) {
+            return response()->json([
+                'success' => false,
+                'message' => 'order_id missing'
+            ], 422);
+        }
+
+        return $this->verifyPayment($orderId);
     }
-
-    return $this->verifyPayment($orderId);
-}
     // VERIFY PAYMENT
     public function verifyPayment($order_id)
-{
-    $url = config('cashfree.base_url') . '/orders/' . $order_id;
+    {
+        $url = config('cashfree.base_url') . '/orders/' . $order_id;
 
-    $response = Http::withHeaders([
-        'x-client-id' => config('cashfree.app_id'),
-        'x-client-secret' => config('cashfree.secret_key'),
-        'x-api-version' => '2022-09-01',
-    ])->get($url);
+        $response = Http::withHeaders([
+            'x-client-id' => config('cashfree.app_id'),
+            'x-client-secret' => config('cashfree.secret_key'),
+            'x-api-version' => '2022-09-01',
+        ])->get($url);
 
-    $data = $response->json();
+        $data = $response->json();
 
-    if ($response->failed()) {
-        return response()->json([
-            'success' => false,
-            'message' => 'Cashfree verify API failed',
-            'error' => $data
-        ]);
-    }
+        if ($response->failed()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Cashfree verify API failed',
+                'error' => $data
+            ]);
+        }
 
-    $payment = PaymentHistory::where('transaction_id', $order_id)->first();
-    $planPurchase = PlanPurchaseHistory::where('payment_id', $order_id)->first();
+        $payment = PaymentHistory::where('transaction_id', $order_id)->first();
+        $planPurchase = PlanPurchaseHistory::where('payment_id', $order_id)->first();
 
-    if (!$payment || !$planPurchase) {
-        return response()->json([
-            'success' => false,
-            'message' => 'Payment or Plan not found'
-        ]);
-    }
+        if (!$payment || !$planPurchase) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Payment or Plan not found'
+            ]);
+        }
 
-    // Safe fetch
-    $customer = Customers::find($planPurchase->user_id);
-    $plan = Plans::find($planPurchase->plan_id);
-    $bussiness_type = PlanBusinessType::where('plan_id',$plan->id)->first();
+        // Safe fetch
+        $customer = Customers::find($planPurchase->user_id);
+        $plan = Plans::find($planPurchase->plan_id);
+        $bussiness_type = PlanBusinessType::where('plan_id', $plan->id)->first();
 
-    // Prevent duplicate
-    if ($planPurchase->payment_status === 'success') {
-        return response()->json([
-            'success' => true,
-            'message' => 'Already processed'
-        ]);
-    }
+        // Prevent duplicate
+        if ($planPurchase->payment_status === 'success') {
+            return response()->json([
+                'success' => true,
+                'message' => 'Already processed'
+            ]);
+        }
 
-    $orderStatus = $data['order_status'] ?? '';
+        $orderStatus = $data['order_status'] ?? '';
 
-    // PAYMENT SUCCESS
-    if ($orderStatus === 'PAID') {
+        // PAYMENT SUCCESS
+        if ($orderStatus === 'PAID') {
 
+            $payment->update([
+                'status' => 'SUCCESS'
+            ]);
+
+            $planPurchase->update([
+                'status' => 'active',
+                'payment_status' => 'success',
+                'start_date' => Carbon::now(),
+                'end_date' => Carbon::now()->addDays($plan->duration_days ?? 30)
+            ]);
+            //customer plan activate
+            $customer->update([
+                'plan_id' => $plan->id,
+                'business_type_id' => $bussiness_type->business_type_id,
+                'is_active' => true
+            ]);
+            // Generate mail
+            $adminMail = $this->adminMail(
+                $customer->id,
+                $planPurchase->id,
+                $plan->id,
+                $plan->name,
+                $planPurchase->price
+            );
+
+            $customerMail = $this->customerMail(
+                $customer->id,
+                $plan->id,
+                $planPurchase->id
+            );
+            $admin_mail_id = config('app.admin_mail');
+            // Send admin mail
+            Mail::html($adminMail, function ($message) use ($admin_mail_id, $plan) {
+                $message->to($admin_mail_id)
+                    ->subject("New Plan {$plan->name} Purchase Notification");
+            });
+
+            //  Send customer mail
+            Mail::html($customerMail, function ($message) use ($customer, $plan) {
+                $message->to($customer->email)
+                    ->subject("Your plan {$plan->name} is activated!");
+            });
+
+            // return response()->json([
+            //     'success' => true,
+            //     'message' => 'Payment successful',
+            //     'data' => $data
+            // ]);
+            $redirectUrl = rtrim(env('FRONTEND_LOGIN_URL', 'http://localhost:3000'), '/') . '/dashboard';
+            return redirect()->away($redirectUrl);
+        }
+
+        //  PENDING
+        if ($orderStatus === 'ACTIVE') {
+
+            $payment->update([
+                'status' => 'PENDING'
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Payment still pending',
+                'data' => $data
+            ]);
+        }
+
+        //  FAILED
         $payment->update([
-            'status' => 'SUCCESS'
+            'status' => 'FAILED'
         ]);
 
         $planPurchase->update([
-            'status' => 'active',
-            'payment_status' => 'success',
-            'start_date' => Carbon::now(),
-            'end_date' => Carbon::now()->addDays($plan->duration_days ?? 30)
-        ]);
-        //customer plan activate
-        $customer->update([
-            'plan_id' => $plan->id,
-            'business_type_id' => $bussiness_type->business_type_id,
-            'is_active' => true
-        ]);
-        // Generate mail
-        $adminMail = $this->adminMail(
-            $customer->id,
-            $planPurchase->id,
-            $plan->id,
-            $plan->name,
-            $planPurchase->price
-        );
-
-        $customerMail = $this->customerMail(
-            $customer->id,
-            $plan->id,
-            $planPurchase->id
-        );
-        $admin_mail_id = config('app.admin_mail');
-        // Send admin mail
-        Mail::html($adminMail, function ($message) use ($admin_mail_id, $plan) {
-            $message->to($admin_mail_id)
-                    ->subject("New Plan {$plan->name} Purchase Notification");
-        });
-
-        //  Send customer mail
-        Mail::html($customerMail, function ($message) use ($customer, $plan) {
-            $message->to($customer->email)
-                    ->subject("Your plan {$plan->name} is activated!");
-        });
-
-        // return response()->json([
-        //     'success' => true,
-        //     'message' => 'Payment successful',
-        //     'data' => $data
-        // ]);
-        $redirectUrl = rtrim(env('FRONTEND_LOGIN_URL', 'http://localhost:3000'), '/') . '/dashboard';
-        return redirect()->away($redirectUrl);
-    }
-
-    //  PENDING
-    if ($orderStatus === 'ACTIVE') {
-
-        $payment->update([
-            'status' => 'PENDING'
+            'status' => 'cancelled',
+            'payment_status' => 'failed'
         ]);
 
         return response()->json([
             'success' => true,
-            'message' => 'Payment still pending',
+            'message' => 'Payment failed',
             'data' => $data
         ]);
     }
 
-    //  FAILED
-    $payment->update([
-        'status' => 'FAILED'
-    ]);
-
-    $planPurchase->update([
-        'status' => 'cancelled',
-        'payment_status' => 'failed'
-    ]);
-
-    return response()->json([
-        'success' => true,
-        'message' => 'Payment failed',
-        'data' => $data
-    ]);
-}
-
     public function adminMail($customer_id, $order_id, $plan_id, $planName, $amount)
-{
-    $customer = Customers::find($customer_id);
-    $planPurchase = PlanPurchaseHistory::find($order_id);
-    $plan = Plans::find($plan_id);
+    {
+        $customer = Customers::find($customer_id);
+        $planPurchase = PlanPurchaseHistory::find($order_id);
+        $plan = Plans::find($plan_id);
 
-    $html = "
+        $html = "
 <!DOCTYPE html>
 <html lang='en'>
 <head>
@@ -583,9 +584,9 @@ body {
         </div>
 
         <div class='action-buttons'>
-            <a href=". route('admin.customers.plans',$customer->id) ." class='btn btn-primary'>View Customer Profile</a>
-            <a href=".route('admin.plans.purchase-history')." class='btn btn-primary'>View Transaction Details</a>
-            <a href=".route('admin.dashboard')." class='btn btn-secondary'>Go to Dashboard</a>
+            <a href=" . route('admin.customers.plans', $customer->id) . " class='btn btn-primary'>View Customer Profile</a>
+            <a href=" . route('admin.plans.purchase-history') . " class='btn btn-primary'>View Transaction Details</a>
+            <a href=" . route('admin.dashboard') . " class='btn btn-secondary'>Go to Dashboard</a>
         </div>
 
         <div class='notes-section'>
@@ -617,16 +618,16 @@ body {
 </html>
 ";
 
-    return $html;
-}
+        return $html;
+    }
 
     public function customerMail($customer_id, $plan_id, $purchase_id)
-{
-    $customer = Customers::findOrFail($customer_id);
-    $plan = Plans::findOrFail($plan_id);
-    $planPurchase = PlanPurchaseHistory::find($purchase_id);
-    $admin_mail_id = config('app.admin_mail');
-    $html = "
+    {
+        $customer = Customers::findOrFail($customer_id);
+        $plan = Plans::findOrFail($plan_id);
+        $planPurchase = PlanPurchaseHistory::find($purchase_id);
+        $admin_mail_id = config('app.admin_mail');
+        $html = "
 <!DOCTYPE html>
 <html lang='en'>
 <head>
@@ -707,7 +708,7 @@ body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height
     </div>
 
     <div class='footer'>
-        <p>Need help? Contact us at <a href='mailto:".($admin_mail_id).">".($admin_mail_id)."</a></p>
+        <p>Need help? Contact us at <a href='mailto:" . ($admin_mail_id) . ">" . ($admin_mail_id) . "</a></p>
         <p>&copy; " . date('Y') . " All rights reserved.</p>
         <p>
             <a href='#'>Terms of Service</a> | 
@@ -719,28 +720,48 @@ body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height
 </html>
 ";
 
-    return $html;
-}
+        return $html;
+    }
 
-//upgrade plan 
-public function upgradePlan(Request $request)
-{
+    //upgrade plan 
+    public function upgradePlan(Request $request)
+    {
         $request->validate([
             'amount' => 'required|numeric|min:1',
             'plan_id' => 'required|exists:plans,id',
             'business_type_id' => 'required',
             'customer_id' => 'required|exists:customers,id',
-            'customer_phone'=>'required',
+            'customer_phone' => 'required',
         ]);
         $customer = Customers::find($request->customer_id);
-        $lastPlanPurchase = PlanPurchaseHistory::where('user_id', $request->customer_id)->where('plan_id', $customer->plan_id)->latest()->first();
+
+        $lastPlanPurchase = PlanPurchaseHistory::where('user_id', $request->customer_id)
+            ->where('plan_id', $customer->plan_id)
+            ->latest()
+            ->first();
+        Log::info('last plan id is ' . $lastPlanPurchase->plan_id);
         $orderId = 'order_' . uniqid();
         $url = config('cashfree.base_url') . '/orders';
-        $remaningDays = Carbon::parse($lastPlanPurchase->end_date)->diffInDays(Carbon::now(), false);
-        $duration = Carbon::parse($lastPlanPurchase->end_date)->diffInDays(Carbon::parse($lastPlanPurchase->start_date));
-        $perDayPrice = $lastPlanPurchase->price / (float)$duration;
+
+        $startDate = Carbon::parse($lastPlanPurchase->start_date)->startOfDay();
+        $endDate   = Carbon::parse($lastPlanPurchase->end_date)->startOfDay();
+
+        // Remaining days (no negative, no decimal)
+        $remaningDays = max(0, now()->startOfDay()->diffInDays($endDate));
+
+        // Duration (correct order)
+        $duration = max(1, $startDate->diffInDays($endDate));
+
+        // Per day price
+        $perDayPrice = $lastPlanPurchase->price / $duration;
+
+        // Remaining value
         $remainingAmount = $perDayPrice * $remaningDays;
-        $totalAmount = $request->amount - $remainingAmount;
+
+        // Final payable (no negative)
+        $totalAmount = max(0, $request->amount - $remainingAmount);
+        Log::info("Upgrade Plan Calculation: Remaining Days: {$remaningDays}, Duration: {$duration}, Per Day Price: {$perDayPrice}, Remaining Amount: {$remainingAmount}, Total Amount to Pay: {$totalAmount}");
+        Log::info('total amount: ' . $request->amount);
         $response = Http::withHeaders([
             'x-client-id' => config('cashfree.app_id'),
             'x-client-secret' => config('cashfree.secret_key'),
@@ -748,10 +769,10 @@ public function upgradePlan(Request $request)
             'Content-Type' => 'application/json'
         ])->post($url, [
             "order_id" => $orderId,
-            "order_amount" => $totalAmount,//$request->amount,
+            "order_amount" => $totalAmount, //$request->amount,
             "order_currency" => "INR",
             "customer_details" => [
-                "customer_id" => $request->customer_id,
+                "customer_id" => (string) $request->customer_id,
                 "customer_email" => $customer->email,
                 "customer_phone" => $request->customer_phone
             ],
@@ -771,13 +792,13 @@ public function upgradePlan(Request $request)
                 'error' => $data
             ]);
         }
-        
+
 
         // Store Payment (PENDING)
         PaymentHistory::create([
             'customer_id' => $request->customer_id,
             'plan_id' => $request->plan_id,
-            'amount' => $totalAmount,//$request->amount,
+            'amount' => $totalAmount, //$request->amount,
             'payment_method' => 'cashfree',
             'transaction_id' => $orderId,
             'status' => 'PENDING'
@@ -788,7 +809,7 @@ public function upgradePlan(Request $request)
         $planPurchase = PlanPurchaseHistory::create([
             'user_id' => $request->customer_id,
             'plan_id' => $request->plan_id,
-            'price' => $totalAmount,//$request->amount,
+            'price' => $totalAmount, //$request->amount,
             'currency' => 'INR',
             'start_date' => null,
             'end_date' => null,
@@ -800,9 +821,9 @@ public function upgradePlan(Request $request)
         ]);
         $sessionId = $data['payment_session_id'];
         // Remove any extra "paymentpayment" suffix if present
-        if (str_ends_with($sessionId, 'paymentpayment')) {
-            $sessionId = str_replace('paymentpayment', '', $sessionId);
-        }
+        // if (str_ends_with($sessionId, 'paymentpayment')) {
+        //     $sessionId = str_replace('paymentpayment', '', $sessionId);
+        // }
 
         $encodedSessionId = urlencode($sessionId);
         // Create correct payment URL
@@ -815,4 +836,3 @@ public function upgradePlan(Request $request)
         ]);
     }
 }
-

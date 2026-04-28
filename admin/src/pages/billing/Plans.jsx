@@ -32,6 +32,7 @@ import EmptyState from '../../components/common/EmptyState/EmptyState'
 import StatusBadge from '../../components/common/StatusBadge/StatusBadge'
 import Input from '../../components/common/Input/Input'
 import ProtectedRoute from '../../components/features/Auth/ProtectedRoute'
+import toast from 'react-hot-toast'
 
 const Plans = () => {
   const { canAccess, user, permissions } = usePermissionStore()
@@ -62,6 +63,16 @@ const Plans = () => {
     customer_id: '',
     amount: 0
   })
+  const [showUpgradeForm, setShowUpgradeForm] = useState(false)
+  const [upgradeData, setUpgradeData] = useState({
+    plan_id: '',
+    business_type_id: '',
+    customer_id: '',
+    customer_phone: '',
+    amount: 0,
+    gst: 0,
+    discount: 0
+  })
   
   const pageSize = 10
 
@@ -82,6 +93,29 @@ const Plans = () => {
   const getUserId = () => {
     return user?.id || localStorage.getItem('user_id') || localStorage.getItem('userId') || 1
   }
+
+  // Load Cashfree SDK - same as order summary page
+  const loadCashfreeSDK = () => {
+    return new Promise((resolve, reject) => {
+      if (window.Cashfree) {
+        resolve(window.Cashfree);
+        return;
+      }
+
+      const script = document.createElement('script');
+      script.src = 'https://sdk.cashfree.com/js/v3/cashfree.js';
+      script.async = true;
+      script.onload = () => {
+        if (window.Cashfree) {
+          resolve(window.Cashfree);
+        } else {
+          reject(new Error('Cashfree SDK failed to load'));
+        }
+      };
+      script.onerror = () => reject(new Error('Failed to load Cashfree SDK'));
+      document.body.appendChild(script);
+    });
+  };
 
   const fetchAll = async () => {
     setLoading(true)
@@ -118,9 +152,9 @@ const Plans = () => {
       // Fetch user plan purchase history using service
       try {
         const historyRes = await billingAPI.getPlanPurchaseHistory(userId)
-        const historyData = historyRes?.data?.data && Array.isArray(historyRes.data.data) 
-          ? historyRes.data.data 
-          : []
+        const historyData = historyRes?.data?.data?.data && Array.isArray(historyRes.data.data.data) 
+          ? historyRes.data.data.data 
+          : historyRes?.data?.data || []
         setPayments(historyData)
         setPaymentsCount(historyData?.length || 0)
         
@@ -190,6 +224,8 @@ const Plans = () => {
 
     setActionLoading(true)
     setError(null)
+    const loadingToast = toast.loading('Creating order...')
+    
     try {
       // Create Cashfree order using service
       const orderResponse = await billingAPI.createCashfreeOrder({
@@ -200,36 +236,397 @@ const Plans = () => {
       
       const orderData = orderResponse?.data
       
-      if (orderData?.status) {
-        // Redirect to payment gateway or handle payment
-        if (orderData.payment_url) {
-          window.open(orderData.payment_url, '_blank')
-        }
+      if (orderData?.session_id) {
+        toast.success('Order created! Redirecting to payment...', { id: loadingToast })
         
-        setSuccessMessage('Order created successfully! Please complete the payment.')
-        setShowPurchaseForm(false)
-        setSelectedPlan(null)
-        setPurchaseData({ plan_id: '', customer_id: '', amount: 0 })
+        // Load and initialize Cashfree SDK
+        const Cashfree = await loadCashfreeSDK();
+        const cashfree = new Cashfree({
+          // mode: process.env.REACT_APP_CASHFREE_MODE === 'production' ? 'production' : 'sandbox',
+          mode: import.meta.env.VITE_CASHFREE_MODE === 'production' ? 'production' : 'sandbox',
+
+        });
         
-        // Refresh data after a delay
-        setTimeout(() => {
-          fetchAll()
-        }, 3000)
+        // Store order info before redirect
+        const orderInfo = {
+          paymentSessionId: orderData.session_id,
+          planName: selectedPlan?.name || 'Plan Purchase',
+          amount: purchaseData.amount,
+          customerId: purchaseData.customer_id,
+          timestamp: Date.now()
+        };
+        localStorage.setItem('pendingPayment', JSON.stringify(orderInfo));
+        
+        // Open checkout using SDK
+        const paymentResult = await cashfree.checkout({
+          paymentSessionId: orderData.session_id,
+          redirectTarget: "_self"
+        });
+        
+        console.log("Payment checkout result:", paymentResult);
+        
       } else {
+        toast.dismiss(loadingToast)
         setError(orderData?.message || 'Failed to create order')
       }
     } catch (error) {
+      toast.dismiss(loadingToast)
       console.error('Failed to purchase plan:', error)
-      setError('Failed to purchase plan. Please try again.')
+      
+      let errorMessage = 'Payment failed. Please try again.'
+      if (error.message?.includes('customer_id')) {
+        errorMessage = 'Invalid customer ID format. Please try again.'
+      } else if (error.message?.includes('plan_id')) {
+        errorMessage = 'Invalid plan selected. Please try again.'
+      } else if (error.message?.includes('amount')) {
+        errorMessage = 'Invalid amount. Please try again.'
+      } else if (error.message) {
+        errorMessage = error.message
+      }
+      
+      setError(errorMessage)
+      toast.error(errorMessage)
     } finally {
       setActionLoading(false)
     }
   }
 
-  const handleUpgrade = async (planId) => {
-    const plan = plans.find(p => p.id === planId)
-    if (plan) {
-      handlePurchasePlan(plan)
+  // Calculate prorated upgrade amount using new workflow
+  const calculateProratedUpgrade = async (newPlan, currentPlan, subscription) => {
+    console.log(' Calculating prorated upgrade with new workflow:', { newPlan, currentPlan, subscription })
+    
+    // Extract new plan price from multiple possible fields
+    const newPlanPrice = parseFloat(newPlan?.price) || parseFloat(newPlan?.amount) || parseFloat(newPlan?.base_price) || 0
+    console.log(' New plan price:', newPlanPrice)
+    
+    if (!currentPlan || !subscription) {
+      // No current plan, treat as new purchase
+      const gst = newPlanPrice * 0.18
+      console.log(' No current plan - treating as new purchase:', { baseAmount: newPlanPrice, gst })
+      return {
+        baseAmount: newPlanPrice,
+        currentPlanRemaining: 0,
+        upgradeAmount: newPlanPrice,
+        gst,
+        totalAmount: newPlanPrice + gst,
+        daysRemaining: 0,
+        monthsRemaining: 0
+      }
+    }
+
+    // Extract current plan price from multiple possible fields
+    const currentPlanPrice = parseFloat(currentPlan?.price) || parseFloat(currentPlan?.amount) || parseFloat(currentPlan?.base_price) || 0
+    const currentPlanDuration = parseInt(currentPlan?.duration) || 12 // Default 12 months
+    
+    console.log(' Current plan details:', { price: currentPlanPrice, duration: currentPlanDuration })
+    
+    try {
+      // Fetch user's plan purchase history to get actual paid amount and remaining days
+      const userId = getUserId()
+      const historyResponse = await billingAPI.getPlanPurchaseHistory(userId)
+      
+      // Handle paginated response structure: response.data.data contains the array
+      const purchaseHistory = historyResponse?.data?.data?.data || []
+      
+      console.log(' Purchase history response structure:', {
+        fullResponse: historyResponse,
+        data: historyResponse?.data,
+        innerData: historyResponse?.data?.data,
+        purchaseArray: purchaseHistory
+      })
+      
+      if (purchaseHistory.length === 0) {
+        console.warn(' No purchase history found, falling back to basic calculation')
+        return fallbackCalculation(newPlanPrice, currentPlanPrice, currentPlanDuration, subscription)
+      }
+      
+      // Get the most recent active purchase
+      const latestPurchase = purchaseHistory[0]
+      console.log(' Latest purchase:', latestPurchase)
+      
+      // Calculate remaining days based on purchase history
+      const endDate = new Date(latestPurchase.end_date)
+      const today = new Date()
+      const daysRemaining = Math.max(0, Math.ceil((endDate - today) / (1000 * 60 * 60 * 24)))
+      
+      console.log(' Period calculation:', { endDate, today, daysRemaining })
+      
+      // Calculate current plan remaining value based on actual paid amount from purchase history
+      const actualPaidAmount = parseFloat(latestPurchase.price) || 0 // Use the actual paid amount from purchase history
+      const currentPlanDailyPrice = actualPaidAmount / (currentPlanDuration * 30) // 30 days per month
+      const currentPlanRemainingValue = currentPlanDailyPrice * daysRemaining
+      
+      console.log(' Current plan value calculation:', {
+        actualPaidAmount,
+        dailyPrice: currentPlanDailyPrice,
+        remainingValue: currentPlanRemainingValue,
+        daysRemaining
+      })
+      
+      // NEW WORKFLOW: Base Amount → Discount → Previous Plan Deduction → GST
+      
+      // Step 1: Base Amount (new plan price)
+      const baseAmount = newPlanPrice
+      
+      // Step 2: Apply 14% Discount (from new plan data)
+      const discountPercentage = parseFloat(newPlan?.discount) || 14 // Default 14%
+      const discountAmount = baseAmount * (discountPercentage / 100)
+      const discountedAmount = baseAmount - discountAmount
+      
+      console.log(' Discount calculation:', {
+        baseAmount,
+        discountPercentage,
+        discountAmount,
+        discountedAmount
+      })
+      
+      // Step 3: Deduct Current Plan Remaining
+      const upgradeBaseAmount = discountedAmount - currentPlanRemainingValue
+      
+      // Ensure upgrade amount is not negative
+      const finalUpgradeAmount = Math.max(0, upgradeBaseAmount)
+      
+      console.log(' Upgrade amount calculation:', {
+        discountedAmount,
+        currentPlanRemainingValue,
+        upgradeBaseAmount,
+        finalUpgradeAmount
+      })
+      
+      // Step 4: Apply 18% GST on discounted amount
+      const gst = discountedAmount * 0.18
+      const totalAmount = discountedAmount + gst
+      
+      const result = {
+        baseAmount,
+        discountPercentage,
+        discountAmount,
+        discountedAmount,
+        currentPlanRemaining: currentPlanRemainingValue,
+        upgradeAmount: finalUpgradeAmount,
+        gst,
+        totalAmount,
+        daysRemaining,
+        monthsRemaining: Math.ceil(daysRemaining / 30),
+        actualPaidAmount
+      }
+      
+      console.log(' Final upgrade calculation (NEW WORKFLOW):', result)
+      return result
+      
+    } catch (error) {
+      console.error(' Failed to fetch purchase history, using fallback calculation:', error)
+      return fallbackCalculation(newPlanPrice, currentPlanPrice, currentPlanDuration, subscription)
+    }
+  }
+
+  // Fallback calculation method
+  const fallbackCalculation = (newPlanPrice, currentPlanPrice, currentPlanDuration, subscription) => {
+    console.log(' Using fallback calculation method')
+    
+    // Calculate subscription period
+    let startDate, endDate, totalDays, daysUsed, daysRemaining
+    
+    if (subscription.currentPeriodStart && subscription.currentPeriodEnd) {
+      startDate = new Date(subscription.currentPeriodStart)
+      endDate = new Date(subscription.currentPeriodEnd)
+      totalDays = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24))
+      daysUsed = Math.ceil((new Date() - startDate) / (1000 * 60 * 60 * 24))
+      daysRemaining = Math.max(0, totalDays - daysUsed)
+    } else {
+      // Fallback: assume 12-month period starting from subscription creation or 1 month ago
+      startDate = subscription.createdAt ? new Date(subscription.createdAt) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
+      endDate = new Date(startDate.getTime() + 12 * 30 * 24 * 60 * 60 * 1000) // 12 months later
+      totalDays = 365 // Approximate 12 months
+      daysUsed = Math.ceil((new Date() - startDate) / (1000 * 60 * 60 * 24))
+      daysRemaining = Math.max(0, totalDays - daysUsed)
+    }
+    
+    // Calculate remaining value of current plan (prorated)
+    const currentPlanMonthlyPrice = currentPlanPrice / currentPlanDuration
+    const currentPlanDailyPrice = currentPlanMonthlyPrice / 30 // Approximate 30 days per month
+    const currentPlanRemainingValue = currentPlanDailyPrice * daysRemaining
+    
+    // NEW WORKFLOW: Base Amount → Discount → Previous Plan Deduction → GST
+    
+    // Step 1: Base Amount
+    const baseAmount = newPlanPrice
+    
+    // Step 2: Apply 14% Discount
+    const discountPercentage = 14 // Default 14%
+    const discountAmount = baseAmount * (discountPercentage / 100)
+    const discountedAmount = baseAmount - discountAmount
+    
+    // Step 3: Deduct Current Plan Remaining
+    const upgradeBaseAmount = discountedAmount - currentPlanRemainingValue
+    const finalUpgradeAmount = Math.max(0, upgradeBaseAmount)
+    
+    // Step 4: Apply 18% GST
+    const gst = finalUpgradeAmount * 0.18
+    const totalAmount = finalUpgradeAmount + gst
+    
+    return {
+      baseAmount,
+      discountPercentage,
+      discountAmount,
+      discountedAmount,
+      currentPlanRemaining: currentPlanRemainingValue,
+      upgradeAmount: finalUpgradeAmount,
+      gst,
+      totalAmount,
+      daysRemaining,
+      monthsRemaining: Math.ceil(daysRemaining / 30),
+      actualPaidAmount: currentPlanPrice
+    }
+  }
+
+  const handleUpgrade = async (plan) => {
+    setSelectedPlan(plan)
+    
+    try {
+      // Calculate prorated upgrade using new async function
+      const pricing = await calculateProratedUpgrade(plan, currentPlan, subscription)
+      
+      setUpgradeData({
+        plan_id: plan.id,
+        business_type_id: user?.business_type_id || '', // Will be set by user
+        customer_id: user?.customer_id || getUserId(), // Use current user ID
+        customer_phone: user?.phone || '', // Will be set by user
+        amount: pricing.baseAmount,
+        discount_percentage: pricing.discountPercentage,
+        discount_amount: pricing.discountAmount,
+        discounted_amount: pricing.discountedAmount,
+        current_plan_remaining: pricing.currentPlanRemaining,
+        upgrade_amount: pricing.upgradeAmount,
+        gst: pricing.gst,
+        total_amount: pricing.totalAmount,
+        days_remaining: pricing.daysRemaining,
+        months_remaining: pricing.monthsRemaining,
+        actual_paid_amount: pricing.actualPaidAmount
+      })
+      setShowUpgradeForm(true)
+    } catch (error) {
+      console.error(' Failed to calculate upgrade pricing:', error)
+      setError('Failed to calculate upgrade pricing. Please try again.')
+    }
+  }
+
+  const handlePlanUpgrade = async (e) => {
+    e.preventDefault()
+    
+    // Validation
+    if (!upgradeData.plan_id || !upgradeData.customer_id || !upgradeData.customer_phone) {
+      setError('Please fill all required fields')
+      return
+    }
+
+    // Allow 0 upgrade amount for free upgrades (when current plan credit covers the cost)
+    if (upgradeData.upgrade_amount < 0) {
+      setError('Invalid upgrade amount calculation')
+      return
+    }
+
+    setActionLoading(true)
+    setError(null)
+    const loadingToast = toast.loading('Processing upgrade...')
+    
+    try {
+      // Calculate final amount using prorated upgrade amount with GST and discount
+      const upgradeAmount = parseFloat(upgradeData.upgrade_amount || 0)
+      const gstAmount = parseFloat(upgradeData.gst) || (upgradeAmount * 0.18)
+      const discountAmount = parseFloat(upgradeData.discount) || 0
+      const finalAmount = upgradeAmount + gstAmount - discountAmount
+
+      // For free upgrades (0 amount), still send the total_amount which includes GST
+      const amountToSend = upgradeData.total_amount || finalAmount
+
+      const upgradePayload = {
+        amount: amountToSend, // Send final amount (discounted amount + GST) to backend
+        plan_id: upgradeData.plan_id,
+        business_type_id: upgradeData.business_type_id,
+        customer_id: upgradeData.customer_id,
+        customer_phone: upgradeData.customer_phone
+      }
+
+      console.log(' Initiating plan upgrade:', upgradePayload)
+      
+      // Call upgrade plan API
+      const upgradeResponse = await billingAPI.upgradePlan(upgradePayload)
+      const responseData = upgradeResponse?.data
+      
+      if (responseData?.session_id) {
+        toast.success('Upgrade initiated! Redirecting to payment...', { id: loadingToast })
+        
+        // Load and initialize Cashfree SDK
+        const Cashfree = await loadCashfreeSDK();
+        const cashfree = new Cashfree({
+          // mode: process.env.REACT_APP_CASHFREE_MODE === 'production' ? 'production' : 'sandbox',
+          mode: import.meta.env.VITE_CASHFREE_MODE === 'production' ? 'production' : 'sandbox',
+        });
+        
+        // Store order info before redirect
+        const orderInfo = {
+          paymentSessionId: responseData.session_id,
+          planName: selectedPlan?.name || 'Plan Upgrade',
+          amount: amountToSend,
+          customerId: upgradeData.customer_id,
+          timestamp: Date.now(),
+          isUpgrade: true
+        };
+        localStorage.setItem('pendingPayment', JSON.stringify(orderInfo));
+        
+        // Handle both paid and free upgrades
+        if (amountToSend > 0) {
+          // Open checkout using SDK for paid upgrades
+          const paymentResult = await cashfree.checkout({
+            paymentSessionId: responseData.session_id,
+            redirectTarget: "_self"
+          });
+          
+          console.log("Payment checkout result:", paymentResult);
+        } else {
+          // Free upgrade - no payment needed
+          toast.success('Plan upgraded successfully! Your new plan is now active.')
+          setShowUpgradeForm(false)
+          setSelectedPlan(null)
+          setUpgradeData({
+            plan_id: '',
+            business_type_id: '',
+            customer_id: '',
+            customer_phone: '',
+            amount: 0,
+            gst: 0,
+            discount: 0
+          })
+          
+          // Refresh data after a delay
+          setTimeout(() => {
+            fetchAll()
+          }, 3000)
+        }
+      } else {
+        toast.dismiss(loadingToast)
+        setError(responseData?.message || 'Failed to initiate plan upgrade')
+      }
+    } catch (error) {
+      toast.dismiss(loadingToast)
+      console.error('Failed to upgrade plan:', error)
+      
+      let errorMessage = 'Upgrade failed. Please try again.'
+      if (error.message?.includes('customer_id')) {
+        errorMessage = 'Invalid customer ID format. Please try again.'
+      } else if (error.message?.includes('plan_id')) {
+        errorMessage = 'Invalid plan selected. Please try again.'
+      } else if (error.message?.includes('amount')) {
+        errorMessage = 'Invalid upgrade amount. Please try again.'
+      } else if (error.message) {
+        errorMessage = error.message
+      }
+      
+      setError(errorMessage)
+      toast.error(errorMessage)
+    } finally {
+      setActionLoading(false)
     }
   }
 
@@ -574,6 +971,236 @@ const Plans = () => {
                     onCancel={() => setShowChangePlanForm(false)}
                     isSubmitting={actionLoading}
                   />
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* Upgrade Plan Form */}
+            <AnimatePresence mode="wait">
+              {showUpgradeForm && (
+                <motion.div
+                  key="upgrade-form"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6">
+                    <div className="flex items-center justify-between mb-6">
+                      <div>
+                        <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+                          Upgrade Plan
+                        </h2>
+                        <p className="text-gray-600 dark:text-gray-400 mt-1">
+                          Upgrade to {selectedPlan?.name || 'Selected Plan'}
+                        </p>
+                      </div>
+                      <Button
+                        variant="outline"
+                        onClick={() => setShowUpgradeForm(false)}
+                        icon={FiX}
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+
+                    <form onSubmit={handlePlanUpgrade} className="space-y-6">
+                      {/* Plan Details */}
+                      {selectedPlan && (
+                        <div className="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-4">
+                          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">
+                            Plan Details
+                          </h3>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                              <p className="text-sm text-gray-600 dark:text-gray-400">Plan Name</p>
+                              <p className="font-medium text-gray-900 dark:text-white">
+                                {selectedPlan.name}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-sm text-gray-600 dark:text-gray-400">Base Price</p>
+                              <p className="font-medium text-gray-900 dark:text-white">
+                                ${parseFloat(selectedPlan.price || selectedPlan.amount || 0).toFixed(2)}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Customer ID */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          Customer ID *
+                        </label>
+                        <Input
+                          type="text"
+                          value={upgradeData.customer_id}
+                          onChange={(e) => setUpgradeData(prev => ({ ...prev, customer_id: e.target.value }))}
+                          placeholder="Enter customer ID"
+                          required
+                        />
+                      </div>
+
+                      {/* Customer Phone */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          Customer Phone *
+                        </label>
+                        <Input
+                          type="tel"
+                          value={upgradeData.customer_phone}
+                          onChange={(e) => setUpgradeData(prev => ({ ...prev, customer_phone: e.target.value }))}
+                          placeholder="Enter customer phone number"
+                          required
+                        />
+                      </div>
+
+                      {/* Amount Calculation - NEW WORKFLOW */}
+                      <div className="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-4">
+                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                          Upgrade Calculation (New Workflow)
+                        </h3>
+                        <div className="space-y-3">
+                          {/* Step 1: Base Amount */}
+                          <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3">
+                            <p className="text-sm text-blue-800 dark:text-blue-200 font-medium mb-2">
+                              Step 1: Base Amount
+                            </p>
+                            <div className="flex justify-between items-center">
+                              <span className="text-blue-700 dark:text-blue-300">New Plan Price:</span>
+                              <span className="font-medium text-blue-800 dark:text-blue-200">
+                                ${parseFloat(upgradeData.amount || 0).toFixed(2)}
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Step 2: Discount */}
+                          <div className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-3">
+                            <p className="text-sm text-purple-800 dark:text-purple-200 font-medium mb-2">
+                              Step 2: Apply {upgradeData.discount_percentage || 14}% Discount
+                            </p>
+                            <div className="flex justify-between items-center">
+                              <span className="text-purple-700 dark:text-purple-300">Discount Amount:</span>
+                              <span className="font-medium text-purple-800 dark:text-purple-200">
+                                -${parseFloat(upgradeData.discount_amount || 0).toFixed(2)}
+                              </span>
+                            </div>
+                            <div className="flex justify-between items-center mt-1">
+                              <span className="text-purple-700 dark:text-purple-300">After Discount:</span>
+                              <span className="font-medium text-purple-800 dark:text-purple-200">
+                                ${parseFloat(upgradeData.discounted_amount || 0).toFixed(2)}
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Step 3: Current Plan Deduction */}
+                          {upgradeData.current_plan_remaining > 0 && (
+                            <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-3">
+                              <p className="text-sm text-green-800 dark:text-green-200 font-medium mb-2">
+                                Step 3: Deduct Current Plan Remaining ({upgradeData.months_remaining || 0} months left)
+                              </p>
+                              <div className="flex justify-between items-center">
+                                <span className="text-green-700 dark:text-green-300">Current Plan Credit:</span>
+                                <span className="font-medium text-green-800 dark:text-green-200">
+                                  -${parseFloat(upgradeData.current_plan_remaining || 0).toFixed(2)}
+                                </span>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Step 4: GST (Backend Calculation) */}
+                          <div className="bg-orange-50 dark:bg-orange-900/20 rounded-lg p-3">
+                            <p className="text-sm text-orange-800 dark:text-orange-200 font-medium mb-2">
+                              Step 4: GST (18%) - Calculated by Backend
+                            </p>
+                            <div className="flex justify-between items-center">
+                              <span className="text-orange-700 dark:text-orange-300">GST Amount:</span>
+                              <span className="font-medium text-orange-800 dark:text-orange-200">
+                                Will be calculated by backend
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Final Amount */}
+                          <div className="border-t border-gray-200 dark:border-gray-600 pt-3">
+                            <div className="flex justify-between items-center">
+                              <span className="text-lg font-semibold text-gray-900 dark:text-white">
+                                Amount to Backend (After Discount)
+                              </span>
+                              <span className="text-lg font-bold text-primary-600 dark:text-primary-400">
+                                ${parseFloat(upgradeData.discounted_amount || 0).toFixed(2)}
+                              </span>
+                            </div>
+                            <div className="flex justify-between items-center mt-2">
+                              <span className="text-sm text-gray-600 dark:text-gray-400">
+                                GST will be applied on this amount:
+                              </span>
+                              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                18% of ${parseFloat(upgradeData.discounted_amount || 0).toFixed(2)}
+                              </span>
+                            </div>
+                            <div className="flex justify-between items-center mt-2">
+                              <span className="text-sm text-gray-600 dark:text-gray-400">
+                                Final Amount (with GST):
+                              </span>
+                              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                Will be calculated by backend
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Summary */}
+                          <div className="bg-gray-100 dark:bg-gray-700 rounded-lg p-3 mt-4">
+                            <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">
+                              <strong>Calculation Summary:</strong>
+                            </p>
+                            <div className="text-xs text-gray-500 dark:text-gray-400 space-y-1">
+                              <p>• Base: ${parseFloat(upgradeData.amount || 0).toFixed(2)}</p>
+                              <p>• Discount: -${parseFloat(upgradeData.discount_amount || 0).toFixed(2)}</p>
+                              {upgradeData.current_plan_remaining > 0 && (
+                                <p>• Current Plan Credit: -${parseFloat(upgradeData.current_plan_remaining || 0).toFixed(2)}</p>
+                              )}
+                              <p>• GST: +${parseFloat(upgradeData.gst || 0).toFixed(2)}</p>
+                              <p className="font-semibold text-primary-600 dark:text-primary-400">
+                                • Total: ${parseFloat(upgradeData.total_amount || 0).toFixed(2)}
+                              </p>
+                            </div>
+                          </div>
+
+                          {/* Savings Information */}
+                          {upgradeData.current_plan_remaining > 0 && (
+                            <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-3 mt-4">
+                              <p className="text-sm text-green-800 dark:text-green-200">
+                                <strong>💰 You're saving:</strong> ${parseFloat(upgradeData.current_plan_remaining || 0).toFixed(2)} 
+                                {' '}from your current plan remaining value!
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Action Buttons */}
+                      <div className="flex items-center justify-end space-x-3">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => setShowUpgradeForm(false)}
+                          disabled={actionLoading}
+                        >
+                          Cancel
+                        </Button>
+                        <Button
+                          type="submit"
+                          variant="primary"
+                          loading={actionLoading}
+                          disabled={actionLoading}
+                        >
+                          {actionLoading ? 'Processing...' : 'Proceed to Payment'}
+                        </Button>
+                      </div>
+                    </form>
+                  </div>
                 </motion.div>
               )}
             </AnimatePresence>
