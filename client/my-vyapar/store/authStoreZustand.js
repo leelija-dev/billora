@@ -62,23 +62,44 @@ export const useAuthStore = create(
   
   // ✅ Broadcast to other tabs when Next.js logs in
   console.log('📢🔵 NEXT.js: Preparing to broadcast LOGIN...');
-  const channel = new BroadcastChannel('auth_channel');
-  const broadcastMessage = {
-    type: 'LOGIN',
-    user: userData,
-    token: token,
-    sourceTabId: TAB_ID,
-    timestamp: Date.now()
-  };
-  console.log('📢🔵 NEXT.js: Broadcasting message:', {
-    type: broadcastMessage.type,
-    userEmail: userData?.email,
-    tokenPreview: token?.substring(0, 30) + '...',
-    sourceTabId: TAB_ID
-  });
-  channel.postMessage(broadcastMessage);
-  console.log('📢🔵 NEXT.js: Broadcast sent!');
-  setTimeout(() => channel.close(), 100);
+  console.log('📢🔵 NEXT.js: TAB_ID:', TAB_ID);
+  console.log('📢🔵 NEXT.js: User data:', userData);
+  console.log('📢🔵 NEXT.js: Token length:', token?.length || 0);
+  
+  try {
+    const channel = new BroadcastChannel('auth_channel');
+    const broadcastMessage = {
+      type: 'LOGIN',
+      user: userData,
+      token: token,
+      sourceTabId: TAB_ID,
+      timestamp: Date.now()
+    };
+    
+    console.log('📢🔵 NEXT.js: Broadcasting message:', {
+      type: broadcastMessage.type,
+      userEmail: userData?.email,
+      tokenPreview: token?.substring(0, 30) + '...',
+      sourceTabId: TAB_ID,
+      timestamp: broadcastMessage.timestamp
+    });
+    
+    // Verify channel is supported
+    if (channel.postMessage) {
+      channel.postMessage(broadcastMessage);
+      console.log('📢🔵 NEXT.js: Broadcast sent successfully!');
+    } else {
+      console.error('📢🔵 NEXT.js: BroadcastChannel not supported!');
+    }
+    
+    setTimeout(() => {
+      channel.close();
+      console.log('📢🔵 NEXT.js: Broadcast channel closed');
+    }, 100);
+    
+  } catch (error) {
+    console.error('📢🔵 NEXT.js: Broadcast error:', error);
+  }
   
   window.dispatchEvent(new Event("userLoggedIn"));
   
