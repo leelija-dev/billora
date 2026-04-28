@@ -202,13 +202,17 @@ class CustomerController extends Controller
         // Delete existing tokens
         // $user->tokens()->delete();
         
-        // Create new token
+        // Create new token for backward compatibility
         $token = $user->createToken('auth-token')->plainTextToken;
+        
+        // ✅ Use Laravel's built-in session authentication
+        // This will create the 'thefastbill-session' cookie automatically
+        Auth::login($user);
         
         // Get cookie domain from env
         $cookieDomain = env('AUTH_COOKIE_DOMAIN', null);
         $cookieSecure = env('AUTH_COOKIE_SECURE', false);
-        $cookieSameSite = env('AUTH_COOKIE_SAMESITE', 'none');
+        $cookieSameSite = env('AUTH_COOKIE_SAMESITE', 'lax');
         
         // Prepare response with token in body
         $response = response()->json([
@@ -218,7 +222,7 @@ class CustomerController extends Controller
             'user' => $user
         ]);
         
-        // Set HTTP-only cookie for web browsers (enables cross-app auth)
+        // Set HTTP-only auth_token cookie for backward compatibility
         if ($cookieDomain) {
             $response->cookie(
                 'auth_token',
@@ -270,38 +274,14 @@ class CustomerController extends Controller
     
     public function checkSession(Request $request)
     {
-        // Try to get token from cookie first
-        $token = $request->cookie('auth_token');
-        
-        if (!$token) {
-            $authHeader = $request->header('Authorization');
-            if ($authHeader && str_starts_with($authHeader, 'Bearer ')) {
-                $token = substr($authHeader, 7);
-            }
-        }
-        
-        if (!$token) {
-            return response()->json([
-                'status' => false,
-                'message' => 'No authentication token found'
-            ], 401);
-        }
-        
-        $tokenModel = \Laravel\Sanctum\PersonalAccessToken::findToken($token);
-        
-        if (!$tokenModel) {
-            return response()->json([
-                'status' => false,
-                'message' => 'Invalid or expired token'
-            ], 401);
-        }
-        
-        $user = $tokenModel->tokenable;
+        // ✅ Use Laravel's built-in session authentication
+        // This will automatically check the 'thefastbill-session' cookie
+        $user = Auth::user();
         
         if (!$user) {
             return response()->json([
                 'status' => false,
-                'message' => 'User not found'
+                'message' => 'User not authenticated'
             ], 401);
         }
         
