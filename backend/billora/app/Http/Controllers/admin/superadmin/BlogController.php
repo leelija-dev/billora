@@ -15,9 +15,24 @@ use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
 class BlogController extends Controller
 {
-    public function index(){
-        $blogs =  Blog::where('status',true)->paginate(10);
-        return view('admin.blogs.index',compact('blogs'));
+    public function index(Request $request){
+         $blogs = Blog::when($request->search, function ($query) use ($request) {
+            $query->where('title', 'like', '%' . $request->search . '%')  
+                  ->orWhere('slug', 'like', '%' . $request->search . '%')
+                  ->orWhere('content', 'like', '%' . $request->search . '%')
+                  ->orWhere('meta_title', 'like', '%' . $request->search . '%')
+                  ->orWhere('meta_description', 'like', '%' . $request->search . '%')
+                  ->orWhere('keywords', 'like', '%' . $request->search . '%')
+                  ->orWhere('schema', 'like', '%' . $request->search . '%')
+                  ->orWhere('feature_image_alt', 'like', '%' . $request->search . '%');
+        })->paginate(10);
+        // $blogs =  Blog::paginate(10);
+
+        $deletedBlog =Blog::onlyTrashed()->count();
+        $totalBlog=Blog::withTrashed()->count();
+        $activeBlog=Blog::where('status',true)->count();
+        $inactiveBlog=Blog::where('status',false)->count();
+        return view('admin.blogs.index',compact('blogs', 'deletedBlog', 'totalBlog', 'activeBlog', 'inactiveBlog'));
     }
     public function create(){
         $categories = Category::where('status',true)->get();
@@ -167,14 +182,14 @@ public function store(Request $request)
 }
 
     public function edit($id){
-        $blog =  Blog::with('categories','tags')->findOrFail($id);
+        $blog =  Blog::with('categories','tags')->withTrashed()->findOrFail($id);
         $categories = Category::where('status',true)->get();
         $tags = Tags::where('status',true)->get();
         return view('admin.blogs.edit',compact('blog','categories','tags'));
     }
     public function update(Request $request, $id)
 {
-    $blog = Blog::findOrFail($id);
+    $blog = Blog::withTrashed()->findOrFail($id);
 
     $validated = $request->validate([
         'title'               => 'required|string|max:255',
@@ -314,19 +329,39 @@ public function store(Request $request)
 }
 public function destroy($id){
     try{
-        $blog = Blog::findorFind($id);
+        $blog = Blog::findorFail($id);
         if($blog->feature_image && file_exists(public_path($blog->feature_image))){
             unlink(public_path($blog->feature_image));
 
     }
     $blog->delete();
-    return redirect()->route('admin.blogs.index')->with('sucess','Blog deleted successfully');
+    return redirect()->route('admin.blogs.index')->with('success','Blog deleted successfully');
     }catch(\Exception $e){
         return back()->with('error', $e->getMessage());
     }
 }
-public function trashedBlog(){
-    $blogs = Blog::withTrashed()->where('status',true)->paginate(10);
+public function trashed(Request $request){
+
+    // $blogs = Blog::onlyTrashed()->paginate(10);
+    $blogs = Blog::onlyTrashed()
+    ->when($request->search, function ($query) use ($request) {
+
+        $query->where(function ($q) use ($request) {
+
+            $q->where('title', 'like', '%' . $request->search . '%')
+              ->orWhere('slug', 'like', '%' . $request->search . '%')
+              ->orWhere('content', 'like', '%' . $request->search . '%')
+              ->orWhere('meta_title', 'like', '%' . $request->search . '%')
+              ->orWhere('meta_description', 'like', '%' . $request->search . '%')
+              ->orWhere('keywords', 'like', '%' . $request->search . '%')
+              ->orWhere('schema', 'like', '%' . $request->search . '%')
+              ->orWhere('feature_image_alt', 'like', '%' . $request->search . '%');
+
+        });
+
+    })
+    ->paginate(10);
+    
     return view('admin.blogs.trashed',compact('blogs'));
 
 }
@@ -334,19 +369,19 @@ public function restore($id){
     $blog = Blog::withTrashed()->findOrFail($id);
     if($blog->trashed()){
         $blog->restore();
-        return redirect()->route('admin.blogs.trashed')->with('success','Blog restored ');
+        return redirect()->route('admin.blogs.trash')->with('success','Blog restored successfully');
     }else{
-        return redirect()->route('admin.blogs.trashed')->with('error','Blog is not in trashed state');
+        return redirect()->route('admin.blogs.trash')->with('error','Blog is not in trashed state');
     }
 }
-public function delete($id){ //permanently delete
+public function forceDelete($id){ //permanently delete
     try{
         $blog = Blog::withTrashed()->findOrFail($id);
         if($blog->feature_image && file_exists(public_path($blog->feature_image))){
             unlink(public_path($blog->feature_image));
         }
         $blog->forceDelete();
-        return redirect()->route('admin.blogs.trashed')->with('success','Blog permanently deleted successfully');
+        return redirect()->route('admin.blogs.trash')->with('success','Blog permanently deleted successfully');
     }catch(\Exception $e){
         return back()->with('error', $e->getMessage());
     }

@@ -56,7 +56,9 @@
                             'admin.blog-tag.index',
                             'admin.blog-tag.create',
                             'admin.category.index',
-                            'admin.category.edit'
+                            'admin.category.edit',
+                            'admin.blog-tag.edit',
+                            'admin.category.create'
                            
                         );
                 @endphp
@@ -103,7 +105,7 @@
                             <!-- Permission -->
                             <a href="{{ route('admin.blog-tag.index') }}"
                                 class="flex items-center px-4 py-2 text-sm rounded-lg 
-                            {{ request()->routeIs('admin.blog-tag.index','admin.blog-tag.create') ? 'bg-blue-100 text-blue-600 font-semibold' : 'hover:bg-blue-100' }}">
+                            {{ request()->routeIs('admin.blog-tag.index','admin.blog-tag.create','admin.blog-tag.edit') ? 'bg-blue-100 text-blue-600 font-semibold' : 'hover:bg-blue-100' }}">
 
                                 <i data-feather="lock" class="w-4 h-4"></i>
                                 <span class="ml-2">Tags</span>

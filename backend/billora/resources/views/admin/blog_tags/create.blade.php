@@ -447,10 +447,10 @@
         <!-- Page Header -->
         <div class="page-header">
             <div class="header-left">
-                <h1>Create Business Type</h1>
+                <h1>Create Tag</h1>
                 <p>Add a new category / tag for business listings</p>
             </div>
-            <a href="{{ route('admin.business-types.index') }}" class="back-btn">
+            <a href="{{ route('admin.blog-tag.index') }}" class="back-btn">
                 <svg viewBox="0 0 24 24">
                     <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z" />
                 </svg>
@@ -528,7 +528,7 @@
                         <svg viewBox="0 0 24 24" width="16" height="16" fill="white">
                             <path d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm4-10H5V5h11v4z"/>
                         </svg>
-                        Create Business Type
+                        Create Tag
                     </button>
                 </div>
             </form>

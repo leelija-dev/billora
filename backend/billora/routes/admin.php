@@ -123,7 +123,10 @@ Route::middleware(['web', 'admin.auth'])->prefix('admin')->group(function () {
         Route::post('/store',[BlogController::class,'store'])->name('admin.blogs.store');
         Route::get('/edit/{id}',[BlogController::class,'edit'])->name('admin.blogs.edit');
         Route::post('/update/{id}',[BlogController::class,'update'])->name('admin.blogs.update');
+        Route::delete('/delete/{id}',[BlogController::class,'destroy'])->name('admin.blogs.destroy');
         Route::get('/trashed',[BlogController::class,'trashed'])->name('admin.blogs.trash');
+        Route::delete('/force-delete/{id}',[BlogController::class,'forceDelete'])->name('admin.blogs.force-delete');
+         Route::post('/restore/{id}',[BlogController::class,'restore'])->name('admin.blogs.restore');
         
     });
     Route::prefix('blog-tag')->group(function (){

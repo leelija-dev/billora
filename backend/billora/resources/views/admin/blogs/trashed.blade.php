@@ -1,5 +1,5 @@
 @extends('admin.main-layout')
-@section('title', 'All Tags')
+@section('title', 'All Deleted Blogs')
 @section('content')
 
 <style>
@@ -235,7 +235,7 @@
         text-transform: uppercase;
         letter-spacing: 0.5px;
         background: #f8fafc;
-       
+        {{-- border-radius: 12px; --}}
     }
 
     .contacts-table-modern thead th.text-center {
@@ -618,35 +618,53 @@
     .text-center {
         text-align: center;
     }
-    .add-tag-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+    .add-btn-modern {
+    background: linear-gradient(135deg, #2563eb, #1d4ed8);
     color: white;
-    padding: 11px 18px;
-    border-radius: 14px;
-    text-decoration: none;
+    border: none;
+    padding: 10px 18px;
+    border-radius: 12px;
     font-size: 14px;
     font-weight: 600;
-    transition: all 0.2s ease;
-    box-shadow: 0 6px 14px rgba(37, 99, 235, 0.18);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    transition: all 0.25s ease;
 }
 
-.add-tag-btn:hover {
+.add-btn-modern:hover {
     transform: translateY(-2px);
-    color: white;
-    box-shadow: 0 10px 20px rgba(37, 99, 235, 0.25);
+    box-shadow: 0 8px 18px rgba(37, 99, 235, 0.25);
 }
 
-.add-tag-btn i {
-    font-size: 13px;
+.trash-btn-modern {
+    background: #f1f5f9;
+    color: #ef4444;
+    border: 1px solid #fecaca;
+    padding: 10px 18px;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    transition: all 0.25s ease;
+}
+
+.trash-btn-modern:hover {
+    background: #ef4444;
+    color: white;
+    transform: translateY(-2px);
 }
 </style>
 
 <div class="content-wrapper">
     <div class="modern-card">
-    <!-- Success/Error Messages -->
+    
+
+        <!-- Success/Error Messages -->
         @if(session('success'))
             <div class="success-message">
                 {{ session('success') }}
@@ -660,32 +678,34 @@
         @endif
         <!-- Header Section -->
         <div class="header-section">
-            <div class="header-title">
-                <h1>All Tags</h1>
-            </div>
-            
-            <div style="display: flex; align-items: center; gap: 14px; flex-wrap: wrap;">
+    <div class="header-title">
+        <h1>All Deleted Blogs</h1>
+    </div>
 
-    <!-- Add Tag Button -->
-    <a href="{{ route('admin.blog-tag.create') }}" class="add-tag-btn">
-        <i class="fa-solid fa-plus"></i>
-        Add Tag
-    </a>
+    <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
+        
+        <!-- Add Blog Button -->
+        <a href="{{ route('admin.blogs.index') }}">
+            <button class="add-btn-modern" style="background:gray;">
+                <i class="fa-solid fa-arrow-left"></i> Back to Blogs
+            </button>
+        </a>
 
-    <!-- Search -->
-    <div class="header-search">
-                <div class="search-wrapper">
-                    <svg viewBox="0 0 24 24">
-                        <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zM9.5 14C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
-                    </svg>
-                    <form action="{{ route('admin.blog-tag.index') }}" method="GET" style="flex: 1;">
-                        <input type="text" name="search" placeholder="Search by tag name and slug..." value="{{ request('search') }}">
-                    </form>
-                   
-                </div>
+        <!-- Search -->
+        <div class="header-search">
+            <div class="search-wrapper">
+                <svg viewBox="0 0 24 24">
+                    <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5z"/>
+                </svg>
+                <form action="{{ route('admin.blogs.trash') }}" method="GET" style="flex: 1;">
+                    <input type="text" name="search" placeholder="Search..." value="{{ request('search') }}">
+                </form>
             </div>
         </div>
-        
+
+    </div>
+</div>
+
 
         <!-- Table -->
         <div class="table-container-modern">
@@ -695,65 +715,100 @@
         <th style="width: 60px; text-align: center;">
             Sl. No
         </th>
-        <th style="text-align: center;">Tag Name</th>
+        <th style="text-align: center;">Blog Name</th>
         <th style="text-align: center;">Slug</th>
+        <th style="text-align: center;">Description</th>
         <th style="text-align: center;">Status</th>
-        <th style="text-align: center; width: 120px;">Date</th>
+        <th style="text-align: center; width: 120px;">Deleted At</th>
         <th style="text-align: center; width: 100px;">Actions</th>
     </tr>
 </thead>
                 <tbody>
-                    @if (isset($tags) && count($tags) > 0)
-                        @foreach ($tags as $tag)
+                    @if (isset($blogs) && count($blogs) > 0)
+                        @foreach ($blogs as $blog)
                             <tr>
                                 <td>
                                     {{$loop->iteration}}
                                 </td>
                                 <td class="text-center">
-                                    {{$tag->name ? $tag->name : ''}}
+                                    {{$blog->title ? $blog->title : ''}}
                                 </td>
                                 <td class="text-center">
-                                    {{ $tag->slug ? $tag->slug : '' }}
+                                    {{ $blog->slug ? $blog->slug : '' }}
                                 </td>
                                 <td class="text-center">
-                                   
-                                    @if($tag->status)
-                                        <span class="new-badge-modern" style="background: #30e93f;">Active</span>
-                                    @else
-                                        <span class="new-badge-modern" style="background: #ef4444;">Inactive</span>
-                                    @endif
+                                    {!! \Illuminate\Support\Str::limit($blog->content, 35, '...') ?? $blog->content !!}
                                 </td>
                                 <td class="text-center">
-                                    {{ $tag->created_at->format('d M Y h:i A') }}
+                                @if($blog->status)
+                                    <span class="new-badge-modern" style="background: #10b981;">Active</span>
+                                @else
+                                    <span class="new-badge-modern" style="background: #ef4444;">
+                                        Inactive
+                                    </span>
+                                @endif
                                 </td>
                                 <td class="text-center">
+                                    {{ $blog->deleted_at->format('d M Y h:i A') }}
+                                </td>
+                          <td class="text-center">
     <div class="flex items-center justify-center gap-2">
 
+        <!-- Restore Button -->
+<form id="restore-form-{{ $blog->id }}"
+      action="{{ route('admin.blogs.restore', $blog->id) }}"
+      method="POST">
+    @csrf
+
+    <button type="button"
+            onclick="confirmRestore({{ $blog->id }})"
+            class="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-green-100 text-green-600 hover:bg-green-600 hover:text-white transition-all duration-300 shadow-sm hover:shadow-md"
+            title="Restore Blog">
+
+        <!-- Restore Icon -->
+        <svg xmlns="http://www.w3.org/2000/svg"
+             class="w-5 h-5"
+             fill="none"
+             viewBox="0 0 24 24"
+             stroke="currentColor">
+
+            <path stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M4 4v6h6M20 20v-6h-6
+                     M20 9A8 8 0 005.46 5.46L4 10
+                     M4 15a8 8 0 0014.54 3.54L20 14"/>
+        </svg>
+    </button>
+</form>
+
         <!-- Edit Button -->
-        <a href="{{ route('admin.blog-tag.edit', $tag->id) }}"
-           class="inline-flex items-center justify-center w-10 h-10 rounded-lg bg-blue-100 text-blue-600 hover:bg-blue-600 hover:text-white transition-all duration-200 shadow-sm"
+        <a href="{{ route('admin.blogs.edit', $blog->id) }}"
+           class="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-blue-100 text-blue-600 hover:bg-blue-600 hover:text-white transition-all duration-300 shadow-sm hover:shadow-md"
            title="Edit Blog">
 
             <i class="fa-regular fa-pen-to-square text-sm"></i>
         </a>
 
         <!-- Delete Button -->
-        <form id="delete-form-{{ $tag->id }}"
-              action="{{ route('admin.blog-tag.destroy', $tag->id) }}"
+        <form id="delete-form-{{ $blog->id }}"
+              action="{{ route('admin.blogs.force-delete', $blog->id) }}"
               method="POST">
 
             @csrf
+            @method('DELETE')
 
             <button type="button"
-                    onclick="confirmDelete({{ $tag->id }})"
-                    class="inline-flex items-center justify-center w-10 h-10 rounded-lg bg-red-100 text-red-600 hover:bg-red-600 hover:text-white transition-all duration-200 shadow-sm"
-                    title="Delete Blog">
+                    onclick="confirmDelete({{ $blog->id }})"
+                    class="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-red-100 text-red-600 hover:bg-red-600 hover:text-white transition-all duration-300 shadow-sm hover:shadow-md"
+                    title="Delete Permanently">
 
                 <svg xmlns="http://www.w3.org/2000/svg"
                      class="w-5 h-5"
                      fill="none"
                      viewBox="0 0 24 24"
                      stroke="currentColor">
+
                     <path stroke-linecap="round"
                           stroke-linejoin="round"
                           stroke-width="2"
@@ -761,12 +816,12 @@
                              a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6
                              M9 7V4a1 1 0 011-1h4a1 1 0 011 1v3m-7 0h10"/>
                 </svg>
-
             </button>
         </form>
 
     </div>
 </td>
+
 
                             </tr>
                         @endforeach
@@ -776,14 +831,14 @@
                                 <svg width="64" height="64" viewBox="0 0 24 24" fill="currentColor" style="margin: 0 auto 16px; opacity: 0.5; color: #94a3b8;">
                                     <path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h4v2c0 .55.45 1 1 1h.59c.26 0 .52-.11.71-.29L14.59 18H20c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2z"/>
                                 </svg>
-                                <h3>No tags found</h3>
+                                <h3>No trashed blogs found</h3>
                                 @if(request('search'))
-                                    <p>No tags found for "<strong>{{ request('search') }}</strong>"</p>
+                                    <p>No blogs found for "<strong>{{ request('search') }}</strong>"</p>
                                     <p style="font-size: 12px; margin-top: 8px;">
-                                        <a href="{{ route('admin.blog-tag.index') }}" style="color: #2563eb;">Clear search</a>
+                                        <a href="{{ route('admin.blogs.trash') }}" style="color: #2563eb;">Clear search</a>
                                     </p>
                                 @else
-                                    <p>No messages available</p>
+                                    <p>No trashed blogs available</p>
                                 @endif
                             </td>
                         </tr>
@@ -793,13 +848,13 @@
         </div>
 
         <!-- Pagination -->
-        @if($tags->hasPages())
+        @if($blogs->hasPages())
         <div class="pagination-modern">
             <div class="pagination-info">
-                Showing <strong>{{ $tags->firstItem() }}</strong> to <strong>{{ $tags->lastItem() }}</strong> of <strong>{{ $tags->total() }}</strong> results
+                Showing <strong>{{ $blogs->firstItem() }}</strong> to <strong>{{ $blogs->lastItem() }}</strong> of <strong>{{ $blogs->total() }}</strong> results
             </div>
             <div>
-                {{ $tags->appends(request()->query())->links('pagination::tailwind') }}
+                {{ $blogs->appends(request()->query())->links('pagination::tailwind') }}
             </div>
         </div>
         @endif
@@ -901,25 +956,46 @@
 
 <!-- Font Awesome for icons -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+
 <script>
- function confirmDelete(id) {
+    function confirmDelete(id) {
         Swal.fire({
             title: 'Are you sure?',
             text: "This blog will be permanently deleted!",
             icon: 'warning',
             showCancelButton: true,
-            cancelButtonColor: '#6b7280',
             confirmButtonColor: '#dc2626',
+            cancelButtonColor: '#64748b',
+            confirmButtonText: 'Yes, Delete',
             cancelButtonText: 'Cancel',
-            confirmButtonText: 'Yes, Delete It!',
-            reverseButtons: true
+            borderRadius: '16px'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                document.getElementById('delete-form-' + id).submit();
+            }
+        });
+    }
+</script>
+<script>
+    function confirmRestore(id) {
+        Swal.fire({
+            title: 'Restore Blog?',
+            text: "This blog will be restored successfully.",
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#16a34a',
+            cancelButtonColor: '#64748b',
+            confirmButtonText: 'Yes, Restore',
+            cancelButtonText: 'Cancel',
+            borderRadius: '16px'
         }).then((result) => {
             if (result.isConfirmed) {
 
-                document.getElementById('delete-form-' + id).submit();
+                document.getElementById('restore-form-' + id).submit();
 
             }
         });
     }
-    </script>
+</script>
 @endsection

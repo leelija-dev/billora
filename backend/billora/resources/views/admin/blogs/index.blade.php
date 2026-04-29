@@ -662,6 +662,20 @@
 
 <div class="content-wrapper">
     <div class="modern-card">
+    
+
+        <!-- Success/Error Messages -->
+        @if(session('success'))
+            <div class="success-message">
+                {{ session('success') }}
+            </div>
+        @endif
+
+        @if(session('error'))
+            <div class="error-message">
+                {{ session('error') }}
+            </div>
+        @endif
         <!-- Header Section -->
         <div class="header-section">
     <div class="header-title">
@@ -680,7 +694,7 @@
         <!-- Trashed Blog Button -->
         <a href="{{ route('admin.blogs.trash') }}">
             <button class="trash-btn-modern">
-                <i class="fa-solid fa-trash"></i> Trashed
+                <i class="fa-solid fa-trash"></i> Trashed Blog
             </button>
         </a>
 
@@ -690,7 +704,7 @@
                 <svg viewBox="0 0 24 24">
                     <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5z"/>
                 </svg>
-                <form action="{{ route('admin.contacts.index') }}" method="GET" style="flex: 1;">
+                <form action="{{ route('admin.blogs.index') }}" method="GET" style="flex: 1;">
                     <input type="text" name="search" placeholder="Search..." value="{{ request('search') }}">
                 </form>
             </div>
@@ -704,73 +718,104 @@
             <div class="stat-card-modern">
                 <div class="stat-info-modern">
                     <h3>Total Blog</h3>
-                    <div class="stat-number-modern">{{ $totalContacts ?? 0 }}</div>
+                    <div class="stat-number-modern">{{ $totalBlog ?? 0 }}</div>
                 </div>
-                <div class="stat-icon-modern">
-                    <svg viewBox="0 0 24 24">
-                        <path d="M20 2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h4v2c0 .55.45 1 1 1h.59c.26 0 .52-.11.71-.29L14.59 18H20c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/>
-                    </svg>
-                </div>
+       <!-- BLUE -->
+<div class="stat-icon-modern bg-blue-100 text-blue-600 flex items-center justify-center rounded-xl w-14 h-14" style="background: #dbeafe; color: #2563eb;">
+    <svg xmlns="http://www.w3.org/2000/svg"
+         class="w-7 h-7"
+         fill="none"
+         style="fill: #2563eb;"
+         viewBox="0 0 24 24"
+         stroke="currentColor">
+        <path stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M19 21H9a2 2 0 01-2-2V5a2 2 0 012-2h7l5 5v11a2 2 0 01-2 2z"/>
+        <path stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M13 3v5h5"/>
+    </svg>
+</div>
             </div>
             <div class="stat-card-modern">
                 <div class="stat-info-modern">
                     <h3>Active Blog</h3>
-                    <div class="stat-number-modern">{{ $unreadContacts ?? 0 }}</div>
+                    <div class="stat-number-modern">{{ $activeBlog ?? 0 }}</div>
                 </div>
-                <div class="stat-icon-modern">
-                    <svg viewBox="0 0 24 24">
-                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
-                    </svg>
-                </div>
+               <!-- GREEN -->
+<div class="stat-icon-modern bg-green-100 text-green-600 flex items-center justify-center rounded-xl w-14 h-14" style="background: #d1fae5; color: #10b981;">
+      <svg xmlns="http://www.w3.org/2000/svg"
+         class="w-7 h-7"
+         fill="none"
+         viewBox="0 0 24 24"
+         style="fill: #10b981;"
+         stroke="currentColor">
+        <path stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M19 21H9a2 2 0 01-2-2V5a2 2 0 012-2h7l5 5v11a2 2 0 01-2 2z"/>
+        <path stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M13 3v5h5"/>
+    </svg>
+</div>
             </div>
             <div class="stat-card-modern">
                 <div class="stat-info-modern">
                     <h3>Inactive Blog</h3>
-                    <div class="stat-number-modern">{{ $readContacts ?? 0 }}</div>
+                    <div class="stat-number-modern">{{ $inactiveBlog ?? 0 }}</div>
                 </div>
-                <div class="stat-icon-modern">
-                    <svg viewBox="0 0 24 24">
-                        <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/>
-                    </svg>
-                </div>
+                <!-- WARNING / YELLOW -->
+<div class="stat-icon-modern bg-yellow-100 text-yellow-600 flex items-center justify-center rounded-xl w-14 h-14" style="background: #fef3c7; color: #f59e0b;">
+     <svg xmlns="http://www.w3.org/2000/svg"
+         class="w-7 h-7"
+         fill="none"
+         viewBox="0 0 24 24"
+         style="fill: #f59e0b;"
+         stroke="currentColor">
+        <path stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M19 21H9a2 2 0 01-2-2V5a2 2 0 012-2h7l5 5v11a2 2 0 01-2 2z"/>
+        <path stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M13 3v5h5"/>
+    </svg>
+</div>
             </div>
+             <a href="{{ route('admin.blogs.trash') }}">
             <div class="stat-card-modern">
                 <div class="stat-info-modern">
                     <h3>Deleted Blog</h3>
-                    <div class="stat-number-modern">{{ $repliedContacts ?? 0 }}</div>
+                    <div class="stat-number-modern">{{ $deletedBlog ?? 0 }}</div>
                 </div>
-                <div class="stat-icon-modern">
-                    <svg viewBox="0 0 24 24">
-                        <path d="M22 6c0-1.1-.9-2-2-2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6zm-2 0l-8 5-8-5h16zm0 12H4V8l8 5 8-5v10z"/>
-                    </svg>
-                </div>
+                
+                <!-- DELETED / RED -->
+<div class="stat-icon-modern bg-red-100 text-red-600 flex items-center justify-center rounded-xl w-14 h-14" style="background: #fee2e2; color: #ef4444;">
+     <svg xmlns="http://www.w3.org/2000/svg"
+         class="w-7 h-7"
+         fill="none"
+         viewBox="0 0 24 24"
+         style="fill: #ef4444;"
+         stroke="currentColor">
+        <path stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M19 21H9a2 2 0 01-2-2V5a2 2 0 012-2h7l5 5v11a2 2 0 01-2 2z"/>
+        <path stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M13 3v5h5"/>
+    </svg>
+</div>
             </div>
+            </a>
         </div>
 
-       
-
-        <!-- Search Results Info -->
-        @if(request('search'))
-            <div class="search-results-info">
-                <div class="search-results-badge">
-                    🔍 Showing results for: <strong>"{{ request('search') }}"</strong>
-                    <a href="{{ route('admin.contacts.index') }}" style="margin-left: 12px; color: #2563eb; text-decoration: none;">Clear search</a>
-                </div>
-            </div>
-        @endif
-
-        <!-- Success/Error Messages -->
-        @if(session('success'))
-            <div class="success-message">
-                {{ session('success') }}
-            </div>
-        @endif
-
-        @if(session('error'))
-            <div class="error-message">
-                {{ session('error') }}
-            </div>
-        @endif
 
         <!-- Table -->
         <div class="table-container-modern">
@@ -816,22 +861,49 @@
                                 <td class="text-center">
                                     {{ $blog->created_at->format('d M Y h:i A') }}
                                 </td>
-                                <td class="text-center">
-                                    <div class="action-buttons-modern">
-                                        <a href="#">
-                                            <button class="action-btn-modern" title="View Blog">
-                                                <svg viewBox="0 0 24 24">
-                                                    <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>
-                                                </svg>
-                                            </button>
-                                        </a>
-                                        <a href="{{route('admin.blogs.edit', $blog->id)}}">
-                                            <button class="edit-btn-modern" title="Edit Blog">
-                                                <i class="fa-regular fa-pen-to-square"></i>
-                                            </button>
-                                        </a>
-                                    </div>
-                                </td>
+                               <td class="text-center">
+    <div class="flex items-center justify-center gap-2">
+
+        
+        <!-- Edit Button -->
+        <a href="{{ route('admin.blogs.edit', $blog->id) }}"
+           class="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-blue-100 text-blue-600 hover:bg-blue-600 hover:text-white transition-all duration-300 shadow-sm hover:shadow-md"
+           title="Edit Blog">
+
+            <i class="fa-regular fa-pen-to-square text-sm"></i>
+        </a>
+
+        <!-- Delete Button -->
+        <form id="delete-form-{{ $blog->id }}"
+              action="{{ route('admin.blogs.destroy', $blog->id) }}"
+              method="POST">
+
+            @csrf
+            @method('DELETE')
+
+            <button type="button"
+                    onclick="confirmDelete({{ $blog->id }})"
+                    class="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-red-100 text-red-600 hover:bg-red-600 hover:text-white transition-all duration-300 shadow-sm hover:shadow-md"
+                    title="Delete Blog">
+
+                <svg xmlns="http://www.w3.org/2000/svg"
+                     class="w-5 h-5"
+                     fill="none"
+                     viewBox="0 0 24 24"
+                     stroke="currentColor">
+
+                    <path stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2"
+                          d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862
+                             a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6
+                             M9 7V4a1 1 0 011-1h4a1 1 0 011 1v3m-7 0h10"/>
+                </svg>
+            </button>
+        </form>
+
+    </div>
+</td>
                             </tr>
                         @endforeach
                     @else
@@ -966,4 +1038,29 @@
 <!-- Font Awesome for icons -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 
+<script>
+    function confirmDelete(id) {
+
+        Swal.fire({
+            title: 'Are you sure?',
+            text: "This blog will be moved to trash!",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#dc2626',
+            cancelButtonColor: '#6b7280',
+            confirmButtonText: 'Yes, Delete It!',
+            cancelButtonText: 'Cancel',
+            reverseButtons: true,
+            focusCancel: true
+        }).then((result) => {
+
+            if (result.isConfirmed) {
+
+                document.getElementById('delete-form-' + id).submit();
+
+            }
+
+        });
+    }
+</script>
 @endsection
