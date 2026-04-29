@@ -780,11 +780,11 @@
         <th style="width: 60px; text-align: center;">
             Sl. No
         </th>
-        <th style="text-align: left;">Blog Name</th>
-        <th style="text-align: left;">Slug</th>
-        <th style="text-align: left;">Description</th>
-        <th style="text-align: left;">Status</th>
-        <th style="text-align: left; width: 120px;">Date</th>
+        <th style="text-align: center;">Blog Name</th>
+        <th style="text-align: center;">Slug</th>
+        <th style="text-align: center;">Description</th>
+        <th style="text-align: center;">Status</th>
+        <th style="text-align: center; width: 120px;">Date</th>
         <th style="text-align: center; width: 100px;">Actions</th>
     </tr>
 </thead>
@@ -795,28 +795,37 @@
                                 <td>
                                     {{$loop->iteration}}
                                 </td>
-                                <td>
-                                    {{$blog->name ? $blog->name : ''}}
+                                <td class="text-center">
+                                    {{$blog->title ? $blog->title : ''}}
                                 </td>
                                 <td class="text-center">
                                     {{ $blog->slug ? $blog->slug : '' }}
                                 </td>
                                 <td class="text-center">
-                                    {{ \Illuminate\Support\Str::limit($blog->description, 35, '...') ?? $blog->description }}
+                                    {!! \Illuminate\Support\Str::limit($blog->content, 35, '...') ?? $blog->content !!}
+                                </td>
+                                <td class="text-center">
+                                @if($blog->status)
+                                    <span class="new-badge-modern" style="background: #10b981;">Active</span>
+                                @else
+                                    <span class="new-badge-modern" style="background: #ef4444;">
+                                        Inactive
+                                    </span>
+                                @endif
                                 </td>
                                 <td class="text-center">
                                     {{ $blog->created_at->format('d M Y h:i A') }}
                                 </td>
                                 <td class="text-center">
                                     <div class="action-buttons-modern">
-                                        <a href="{{ route('admin.blogs.view', $blog->id) }}">
+                                        <a href="#">
                                             <button class="action-btn-modern" title="View Blog">
                                                 <svg viewBox="0 0 24 24">
                                                     <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>
                                                 </svg>
                                             </button>
                                         </a>
-                                        <a href="{{ route('admin.blogs.edit', $blog->id) }}">
+                                        <a href="{{route('admin.blogs.edit', $blog->id)}}">
                                             <button class="edit-btn-modern" title="Edit Blog">
                                                 <i class="fa-regular fa-pen-to-square"></i>
                                             </button>

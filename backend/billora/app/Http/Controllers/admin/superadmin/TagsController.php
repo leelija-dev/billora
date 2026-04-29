@@ -5,24 +5,28 @@ namespace App\Http\Controllers\admin\superadmin;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Tags;
+use Illuminate\Support\Str;
 class TagsController extends Controller
 {
     public function index(){
-        $tags = Tags::where('status',true)->get();
+        $tags = Tags::where('status',true)->paginate(10);
         return view('admin.blog_tags.index',compact('tags'));
+    }
+    public function create(){
+        return view('admin.blog_tags.create');
     }
     public function store(Request $request){
         $data = $request->validate([
             'name' => 'required|string|max:255',
-            'slug' => 'required|string|max:255|unique:tags,slug',
-            'status' => 'required|boolean'
+            'status' => 'required|boolean',
+            // 'slug' => 'required|string|max:255|unique:tags,slug'
             
         ]);
-
+        $data['slug'] = Str::slug($data['name']);
         try {
             Tags::create($data);
 
-            return redirect()->route('admin.blog_tags.index')
+            return redirect()->route('admin.blog-tag.index')
                 ->with('success', 'Tag created successfully.');
         } catch (\Exception $e) {
             return back()->withErrors(['error' => 'An error occurred while creating the tag.']);

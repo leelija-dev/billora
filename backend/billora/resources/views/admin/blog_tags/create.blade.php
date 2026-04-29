@@ -1,5 +1,5 @@
 @extends('admin.main-layout')
-@section('title', 'Create ')
+@section('title', 'Create Business Type')
 @section('content')
     <style>
         * {
@@ -111,15 +111,8 @@
             gap: 32px;
         }
 
-        /* Left Column */
-        .left-column {
-            background: #fafcff;
-            border-radius: 20px;
-            padding: 8px;
-        }
-
-        /* Right Column */
-        .right-column {
+        /* Left & Right Column */
+        .left-column, .right-column {
             background: #fafcff;
             border-radius: 20px;
             padding: 8px;
@@ -216,7 +209,7 @@
             fill: currentColor;
         }
 
-        .form-input {
+        .form-input, .form-textarea, .form-select {
             width: 100%;
             padding: 14px 16px;
             border: 1.5px solid #e2e8f0;
@@ -232,32 +225,23 @@
             padding-left: 44px;
         }
 
-        .form-input:hover {
+        .form-input:hover, .form-textarea:hover, .form-select:hover {
             border-color: #cbd5e1;
             background: #fafcff;
         }
 
-        .form-input:focus {
+        .form-input:focus, .form-textarea:focus, .form-select:focus {
             border-color: #2563EB;
             background: white;
             box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
         }
 
-        .form-input::placeholder {
-            color: #cbd5e1;
-            font-size: 14px;
+        .form-textarea {
+            resize: vertical;
+            min-height: 100px;
         }
 
-        /* Error Styling */
-        .text-danger {
-            color: #ef4444;
-            font-size: 12px;
-            margin-top: 6px;
-            display: block;
-            padding-left: 4px;
-        }
-
-        /* Toggle Switch - Premium */
+        /* Toggle Switch */
         .toggle-group {
             display: flex;
             align-items: center;
@@ -332,100 +316,29 @@
             transform: translateX(26px);
         }
 
-        /* Permissions Section */
-        .permissions-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-            padding-bottom: 12px;
-            border-bottom: 1px solid #eef2f6;
-        }
-
-        .permissions-header h4 {
-            font-size: 14px;
-            font-weight: 600;
-            color: #475569;
-        }
-
-        .select-all-btn {
+        /* Helper Text */
+        .helper-text {
+            font-size: 12px;
+            color: #94a3b8;
+            margin-top: 8px;
             display: flex;
             align-items: center;
-            gap: 10px;
-            cursor: pointer;
-            padding: 6px 14px;
-            background: #f1f5f9;
-            border-radius: 30px;
-            transition: all 0.2s ease;
+            gap: 6px;
         }
 
-        .select-all-btn:hover {
-            background: #e6f0ff;
+        .helper-text svg {
+            width: 14px;
+            height: 14px;
+            fill: #94a3b8;
         }
 
-        .select-all-btn span {
-            font-size: 13px;
-            font-weight: 500;
-            color: #2563eb;
-        }
-
-        .permissions-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 12px;
-            max-height: 380px;
-            overflow-y: auto;
-            padding-right: 8px;
-        }
-
-        /* Custom Scrollbar */
-        .permissions-grid::-webkit-scrollbar {
-            width: 6px;
-        }
-
-        .permissions-grid::-webkit-scrollbar-track {
-            background: #f1f5f9;
-            border-radius: 10px;
-        }
-
-        .permissions-grid::-webkit-scrollbar-thumb {
-            background: #cbd5e1;
-            border-radius: 10px;
-        }
-
-        .permissions-grid::-webkit-scrollbar-thumb:hover {
-            background: #94a3b8;
-        }
-
-        .permission-card {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            background: #fafcff;
-            border: 1.5px solid #eef2f6;
-            padding: 12px 16px;
-            border-radius: 14px;
-            cursor: pointer;
-            transition: all 0.25s ease;
-        }
-
-        .permission-card:hover {
-            border-color: #2563eb;
-            background: #f0f7ff;
-            transform: translateX(2px);
-        }
-
-        .permission-card input[type="checkbox"] {
-            width: 18px;
-            height: 18px;
-            accent-color: #2563eb;
-            cursor: pointer;
-        }
-
-        .permission-title {
-            font-size: 14px;
-            font-weight: 500;
-            color: #1e293b;
+        /* Error Styling */
+        .text-danger {
+            color: #ef4444;
+            font-size: 12px;
+            margin-top: 6px;
+            display: block;
+            padding-left: 4px;
         }
 
         /* Form Actions */
@@ -449,6 +362,7 @@
             display: inline-flex;
             align-items: center;
             gap: 10px;
+            text-decoration: none;
         }
 
         .btn-primary {
@@ -460,10 +374,6 @@
         .btn-primary:hover {
             transform: translateY(-2px);
             box-shadow: 0 8px 20px rgba(37, 99, 235, 0.35);
-        }
-
-        .btn-primary:active {
-            transform: translateY(0);
         }
 
         .btn-secondary {
@@ -479,23 +389,7 @@
             transform: translateY(-1px);
         }
 
-        /* Helper Text */
-        .helper-text {
-            font-size: 12px;
-            color: #94a3b8;
-            margin-top: 8px;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-        .helper-text svg {
-            width: 14px;
-            height: 14px;
-            fill: #94a3b8;
-        }
-
-        /* Responsive Design */
+        /* Responsive */
         @media (max-width: 1024px) {
             .two-column-layout {
                 grid-template-columns: 1fr;
@@ -507,35 +401,25 @@
             .main-content {
                 padding: 16px;
             }
-
             .page-header {
                 flex-direction: column;
                 align-items: flex-start;
                 gap: 16px;
                 padding: 20px;
             }
-
             .form-container {
                 padding: 20px;
             }
-
             .section-card {
                 padding: 18px;
             }
-
-            .permissions-grid {
-                grid-template-columns: 1fr;
-            }
-
             .form-actions {
                 flex-direction: column;
             }
-
             .btn {
                 width: 100%;
                 justify-content: center;
             }
-
             .toggle-group {
                 flex-direction: column;
                 gap: 12px;
@@ -543,7 +427,6 @@
             }
         }
 
-        /* Animation */
         @keyframes fadeInUp {
             from {
                 opacity: 0;
@@ -558,52 +441,36 @@
         .form-container {
             animation: fadeInUp 0.4s ease-out;
         }
-
-        .section-card {
-            animation: fadeInUp 0.5s ease-out;
-        }
     </style>
 
-    <!-- Main Content - Full Width -->
     <div class="main-content">
-
         <!-- Page Header -->
         <div class="page-header">
             <div class="header-left">
-                <h1>Create New Blog</h1>
+                <h1>Create Business Type</h1>
+                <p>Add a new category / tag for business listings</p>
             </div>
             <a href="{{ route('admin.business-types.index') }}" class="back-btn">
                 <svg viewBox="0 0 24 24">
                     <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z" />
                 </svg>
-                Back to Blogs
+                Back to Tags
             </a>
         </div>
 
         <!-- Form Container -->
         <div class="form-container">
-            <form id="planForm" action="{{ route('admin.business-types.store') }}" method="POST"
-                enctype="multipart/form-data" novalidate>
+            <form action="{{ route('admin.blog-tag.store') }}" method="POST" enctype="multipart/form-data">
                 @csrf
 
-                <div class="two-column-layout">
-                    <!-- Left Column -->
-                    <div class="left-column">
-                        <!-- Basic Information Section -->
+                <div>
+                    <!-- LEFT COLUMN -->
+                    <div >
+                        <!-- Basic Information -->
                         <div class="section-card">
-                            <div class="section-title">
-                                <div class="section-title-icon">
-                                    <svg viewBox="0 0 24 24">
-                                        <path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2z" />
-                                    </svg>
-                                </div>
-                                Basic Information
-                            </div>
 
                             <div class="form-group">
-                                <label class="form-label">
-                                    Title<span>*</span>
-                                </label>
+                                <label class="form-label">Tag Name <span>*</span></label>
                                 <div class="input-wrapper">
                                     <span class="input-icon">
                                         <svg viewBox="0 0 24 24">
@@ -611,107 +478,54 @@
                                         </svg>
                                     </span>
                                     <input type="text" name="name" class="form-input with-icon" 
-                                        placeholder="e.g., Retail, Healthcare, Technology" 
+                                        placeholder="Enter Tag Name" 
                                         value="{{ old('name') }}" required>
                                 </div>
                                 @error('name')
                                     <span class="text-danger">{{ $message }}</span>
                                 @enderror
-                                <div class="helper-text">
-                                    <svg viewBox="0 0 24 24">
-                                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
-                                    </svg>
-                                    This will be displayed across the system
-                                </div>
                             </div>
                         </div>
 
-                        <!-- Status Section -->
+                        <!-- Status Toggle -->
                         <div class="section-card">
                             <div class="section-title">
                                 <div class="section-title-icon">
                                     <svg viewBox="0 0 24 24">
-                                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
+                                        <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/>
                                     </svg>
                                 </div>
-                                Status & Availability
+                                <span>Status</span>
                             </div>
-
                             <div class="toggle-group">
                                 <div>
                                     <div class="toggle-label">Active Status</div>
-                                    <div class="toggle-desc">Make this business type available throughout the system</div>
+                                    
                                 </div>
                                 <label class="switch">
-                                    <input type="hidden" name="is_active" value="0">
-                                    <input type="checkbox" name="is_active" value="1" checked>
+                                    <input type="hidden" name="status" value="0">
+                                    <input type="checkbox" name="status" value="1" {{ old('status', '1') == '1' ? 'checked' : '' }}>
                                     <span class="slider"></span>
                                 </label>
                             </div>
-                            @error('is_active')
+                            @error('status')
                                 <span class="text-danger">{{ $message }}</span>
                             @enderror
                         </div>
                     </div>
 
-                    <!-- Right Column -->
-                    <div class="right-column">
-                        <!-- Permissions Section -->
-                        <div class="section-card">
-                            <div class="section-title">
-                                <div class="section-title-icon">
-                                    <svg viewBox="0 0 24 24">
-                                        <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/>
-                                    </svg>
-                                </div>
-                                Permissions & Access
-                            </div>
-
-                            <div class="permissions-header">
-                                <h4>Select permissions for this business type</h4>
-                                <div class="select-all-btn" id="selectAllBtn">
-                                    <input type="checkbox" id="selectAll" style="width: 16px; height: 16px; accent-color: #2563eb;">
-                                    <span>Select All Permissions</span>
-                                </div>
-                            </div>
-
-                            <div class="permissions-grid">
-                                @foreach ($inputPermissions as $permission)
-                                    <label class="permission-card">
-                                        <input type="checkbox" name="permissions[]" value="{{ $permission->id }}"
-                                            {{ in_array($permission->name, old('permissions', [])) ? 'checked' : '' }}>
-                                        <span class="permission-title">
-                                            {{ ucfirst($permission->name) }}
-                                        </span>
-                                    </label>
-                                @endforeach
-                            </div>
-
-                            @error('permissions')
-                                <span class="text-danger">{{ $message }}</span>
-                            @enderror
-                            <div class="helper-text">
-                                <svg viewBox="0 0 24 24">
-                                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
-                                </svg>
-                                Select the permissions that users with this business type will inherit
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                   
 
                 <!-- Form Actions -->
                 <div class="form-actions">
-                    <a href="{{ route('admin.business-types.index') }}">
-                        <button type="button" class="btn btn-secondary">
-                            <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: currentColor;">
-                                <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
-                            </svg>
-                            Cancel
-                        </button>
+                    <a href="{{ route('admin.business-types.index') }}" class="btn btn-secondary">
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                            <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+                        </svg>
+                        Cancel
                     </a>
                     <button type="submit" class="btn btn-primary">
-                        <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: white;">
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="white">
                             <path d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm4-10H5V5h11v4z"/>
                         </svg>
                         Create Business Type
@@ -722,9 +536,24 @@
     </div>
 
     <script>
-    document.getElementById('selectAll').addEventListener('click', function () {
-        let checkboxes = document.querySelectorAll('input[name="permissions[]"]');
-        checkboxes.forEach(cb => cb.checked = this.checked);
-    });
+        // Auto-generate slug preview based on tag name
+        const nameInput = document.querySelector('input[name="name"]');
+        const slugPreview = document.getElementById('slugPreview');
+
+        function generateSlug(value) {
+            if (!value) return '';
+            return value.toLowerCase()
+                .replace(/[^a-z0-9]+/g, '-')
+                .replace(/^-+|-+$/g, '');
+        }
+
+        function updateSlug() {
+            const rawName = nameInput.value.trim();
+            const slug = generateSlug(rawName) || 'business-type';
+            slugPreview.value = slug;
+        }
+
+        nameInput.addEventListener('input', updateSlug);
+        updateSlug(); // initial load
     </script>
 @endsection

@@ -14,7 +14,9 @@ use App\Http\Controllers\admin\superadmin\TestimonialsController;
 use App\Models\AdminMailHistory;
 use App\Models\AdminUser;
 use App\Models\SuperAdminPermission;
+use App\Http\Controllers\admin\superadmin\TagsController;
 use App\Http\Controllers\admin\superadmin\BlogController;
+use App\Http\Controllers\admin\superadmin\BlogCategoriesController;
 Route::middleware(['web', 'admin.guest'])->prefix('admin')->group(function () {
     Route::view('/login', 'admin.login')->name('login');
     Route::post('/login', [AuthController::class, 'login'])->name('admin.login');
@@ -118,8 +120,27 @@ Route::middleware(['web', 'admin.auth'])->prefix('admin')->group(function () {
     Route::prefix('blogs')->group(function () {
         Route::get('/',[BlogController::class,'index'])->name('admin.blogs.index');
         Route::get('/create',[BlogController::class,'create'])->name('admin.blogs.create');
-
-        Route::get('/trashed',[BlogController::class,'trashed'])->name('admin.blogs.trash');
         Route::post('/store',[BlogController::class,'store'])->name('admin.blogs.store');
+        Route::get('/edit/{id}',[BlogController::class,'edit'])->name('admin.blogs.edit');
+        Route::post('/update/{id}',[BlogController::class,'update'])->name('admin.blogs.update');
+        Route::get('/trashed',[BlogController::class,'trashed'])->name('admin.blogs.trash');
+        
     });
+    Route::prefix('blog-tag')->group(function (){
+        Route::get('/',[TagsController::class,'index'])->name('admin.blog-tag.index');
+        Route::get('/create',[TagsController::class,'create'])->name('admin.blog-tag.create');
+        Route::post('/store',[TagsController::class,'store'])->name('admin.blog-tag.store');
+        Route::get('/edit/{id}',[TagsController::class,'edit'])->name('admin.blog-tag.edit');
+        Route::post('/update/{id}',[TagsController::class,'update'])->name('admin.blog-tag.update');
+        Route::post('/delete/{id}',[TagsController::class,'destroy'])->name('admin.blog-tag.destroy');
+    });
+    Route::prefix('category')->group(function () {
+        Route::get('/', [BlogCategoriesController::class, 'index'])->name('admin.category.index');
+        Route::get('/create', [BlogCategoriesController::class, 'create'])->name('admin.category.create');
+        Route::post('/store', [BlogCategoriesController::class, 'store'])->name('admin.category.store');
+        Route::get('/edit/{id}', [BlogCategoriesController::class, 'edit'])->name('admin.category.edit');
+        Route::post('/update/{id}', [BlogCategoriesController::class, 'update'])->name('admin.category.update');
+        Route::post('/delete/{id}', [BlogCategoriesController::class, 'destroy'])->name('admin.category.destroy');    
+    
+    });  
 });

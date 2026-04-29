@@ -1,5 +1,5 @@
 @extends('admin.main-layout')
-    @section('title', 'Create New Plan')
+    @section('title', 'Edit blog')
     @section('content')
     <style>
         * {
@@ -590,20 +590,20 @@
         <!-- Page Header -->
         <div class="page-header">
             <div class="header-left">
-                <h1>Create New Plan</h1>
-                <p>Add a new subscription plan for your customers</p>
+                <h1>Edit blog</h1>
+
             </div>
-            <a href="{{route('admin.plans.index')}}" class="back-btn">
+            <a href="{{route('admin.blogs.index')}}" class="back-btn">
                 <svg viewBox="0 0 24 24">
                     <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z" />
                 </svg>
-                Back to Plans
+                Back to Blogs
             </a>
         </div>
 
         <!-- Form Container - Full Width -->
         <div class="form-container">
-            <form id="planForm" action="{{ route('admin.plans.store') }}" method="POST" enctype="multipart/form-data"
+            <form id="planForm" action="{{ route('admin.blogs.update', $blog->id) }}" method="POST" enctype="multipart/form-data"
                 novalidate>
                 @csrf
 
@@ -624,7 +624,7 @@
                                 </svg>
                             </span>
                             <input type="text" name="title" class="form-input with-icon"
-                                placeholder="Enter title.." value="{{ old('title') }}"
+                                placeholder="Enter title.." value="{{$blog->title ?? old('title') }}"
                                 required>
                             @error('title')
                                 <span class="text-danger">{{ $message }}</span>
@@ -637,44 +637,32 @@
                         </label>
 
                        <input type="text" name="slug" class="form-input with-icon"
-                                placeholder="Enter slug.." value="{{ old('slug') }}"
+                                placeholder="Enter slug.." value="{{$blog->slug ?? old('slug') }}"
                                 required>
                             @error('slug')
                                 <span class="text-danger">{{ $message }}</span>
                             @enderror
 
                     </div>
-                    <!-- Price and Currency -->
-                    <div class="form-group">
-                        <label class="form-label">
-                             Excerpt<span>*</span>
-                        </label>
-                       
-                           
-                            <input type="text" name="excerpt" class="form-input currency-input"
-                                placeholder="Enter plan excerpt" value="{{ old('excerpt') }}"
-                                required>
-                            @error('excerpt')
-                                <span class="text-danger">{{ $message }}</span>
-                            @enderror
-
-
-                    </div>
+                    
                      <div class="form-group">
                         <label class="form-label">
                              Category<span>*</span>
                         </label>
                         <div >
                             
-                            <select name="categories[]" class="form-select" multiple required id="category">
+                            <select name="category_id[]" class="form-select" multiple id="category">
+                                @php
+                                    $selectedCategories = old('category_id', $blog->categories->pluck('id')->toArray());
+                                @endphp
                                 @foreach ($categories as $category)
                                     <option value="{{ $category->id }}"
-                                        {{ in_array($category->id, old('categories', [])) ? 'selected' : '' }}>
+                                        {{ in_array($category->id, $selectedCategories) ? 'selected' : '' }}>
                                         {{ $category->name }}
                                     </option>
                                 @endforeach
                             </select>
-                            @error('categories')
+                            @error('category_id')
                                 <span class="text-danger">{{ $message }}</span>
                             @enderror
 
@@ -684,17 +672,52 @@
                         <label class="form-label">
                              Tags<span>*</span>
                         </label>
-                        <div >
-                            
-                            <select name="tags[]" class="form-select" multiple required id="tags">
+                       <div>
+                            <select name="tags_id[]" class="form-select" multiple required id="tags">
+                                
+                                @php
+                                    $selectedTags = old('tags_id', $blog->tags->pluck('id')->toArray());
+                                @endphp
+
                                 @foreach ($tags as $tag)
                                     <option value="{{ $tag->id }}"
-                                        {{ in_array($tag->id, old('tags', [])) ? 'selected' : '' }}>
+                                        {{ in_array($tag->id, $selectedTags) ? 'selected' : '' }}>
                                         {{ $tag->name }}
                                     </option>
                                 @endforeach
+
                             </select>
-                            @error('tags')
+
+                            @error('tags_id')
+                                <span class="text-danger">{{ $message }}</span>
+                            @enderror
+</div>
+                     </div>
+                     <!-- Price and Currency -->
+                    <div class="form-group">
+                        <label class="form-label">
+                             Excerpt
+                        </label>
+                       
+                           
+                            <textarea name="excerpt" class="form-input currency-input" rows="3"
+                                placeholder="Enter plan excerpt" required>{{ $blog->excerpt ?? old('excerpt') }}</textarea>
+                            @error('excerpt')
+                                <span class="text-danger">{{ $message }}</span>
+                            @enderror
+
+
+                    </div>
+                     <div class="form-group">
+                        <label class="form-label">
+                           Feature Image Alt
+                        </label>
+                        <div >
+                            
+                            <input type="text" name="feature_image_alt" class="form-input currency-input"
+                                placeholder="Enter feature image alt" value="{{ $blog->feature_image_alt ?? old('feature_image_alt') }}"
+                                required>
+                            @error('feature_image_alt')
                                 <span class="text-danger">{{ $message }}</span>
                             @enderror
 
@@ -702,12 +725,26 @@
                      </div>
                      <div class="form-group">
                         <label class="form-label">
+                            Feature Image<span>*</span>
+                        </label>
+
+                        <div>
+                            <input type="file" name="feature_image" class="form-input"
+                                accept="image/*" required>
+
+                            @error('feature_image')
+                                <span class="text-danger">{{ $message }}</span>
+                            @enderror
+                        </div>
+                    </div>
+                     <div class="form-group">
+                        <label class="form-label">
                            Meta Title<span>*</span>
                         </label>
                         <div >
                             
                             <input type="text" name="meta_title" class="form-input currency-input"
-                                placeholder="Enter meta title" value="{{ old('meta_title') }}"
+                                placeholder="Enter meta title" value="{{ $blog->meta_title ?? old('meta_title') }}"
                                 required>
                             @error('meta_title')
                                 <span class="text-danger">{{ $message }}</span>
@@ -723,7 +760,7 @@
                        
                            
                             <input type="text" name="keywords" class="form-input currency-input"
-                                placeholder="Enter keywords" value="{{ old('keywords') }}"
+                                placeholder="Enter keywords" value="{{ $blog->keywords ?? old('keywords') }}"
                                 required>
                             @error('keywords')
                                 <span class="text-danger">{{ $message }}</span>
@@ -735,7 +772,7 @@
                     <div class="form-group">
                         <label class="form-label">Meta Description</label>
                         <textarea name="meta_description" id="meta_description" class="form-textarea"
-                            placeholder="Enter meta description..">{{ old('meta_description') }}</textarea>
+                            placeholder="Enter meta description..">{{ $blog->meta_description ?? old('meta_description') }}</textarea>
 
                         @error('meta_description')
                             <span class="text-danger" style="color: red">{{ $message }}</span>
@@ -744,7 +781,7 @@
                     <div class="form-group">
                         <label class="form-label">Schema</label>
                         <textarea name="schema" id="schema" class="form-textarea"
-                            placeholder="Enter schema..">{{ old('schema') }}</textarea>
+                            placeholder="Enter schema..">{{ $blog->schema ?? old('schema') }}</textarea>
 
                         @error('schema')
                             <span class="text-danger" style="color: red">{{ $message }}</span>
@@ -755,7 +792,7 @@
                 <div class="form-group">
                         <label class="form-label">Content</label>
                         <textarea name="content" id="description" class="form-textarea"
-                            placeholder="Enter content..">{{ old('content') }}</textarea>
+                            placeholder="Enter content..">{{ $blog->content ?? old('content') }}</textarea>
 
                         @error('content')
                             <span class="text-danger" style="color: red">{{ $message }}</span>
@@ -769,12 +806,12 @@
                             <div class="toggle-desc">Make this plan available for customers</div>
                         </div>
                         <label class="switch">
-                            <input type="hidden" name="is_active" value="0">
-                            <input type="checkbox" name="is_active" value="1" checked>
+                            <input type="hidden" name="status" value="0">
+                            <input type="checkbox" name="status" value="1" {{ $blog->status ? 'checked' : '' }}>
                             <span class="slider"></span>
                         </label>
                     </div>
-                    @error('is_active')
+                    @error('status')
                         <span class="text-danger" style="color: red">{{ $message }}</span>
                     @enderror
                 </div>
@@ -787,7 +824,7 @@
                             <path
                                 d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm4-10H5V5h11v4z" />
                         </svg>
-                        Create Plan
+                        Update blog
                     </button>
                 </div>
             </form>
@@ -927,6 +964,36 @@
             placeholder: "Select Tags ",
             allowClear: true
         });
+    });
+</script>
+<script>
+    $(document).ready(function () {
+
+        let isSlugEdited = false;
+
+        // Detect manual slug edit
+        $('input[name="slug"]').on('input', function () {
+            isSlugEdited = true;
+        });
+
+        // Auto generate slug from title
+        $('input[name="title"]').on('input', function () {
+
+            // Stop auto-update if slug manually edited
+            if (isSlugEdited) {
+                return;
+            }
+
+            let slug = $(this).val()
+                .toLowerCase()
+                .trim()
+                .replace(/[^a-z0-9\s-]/g, '') // remove special chars
+                .replace(/\s+/g, '-')         // spaces to hyphen
+                .replace(/-+/g, '-');         // remove duplicate hyphen
+
+            $('input[name="slug"]').val(slug);
+        });
+
     });
 </script>
 @endsection

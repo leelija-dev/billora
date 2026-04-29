@@ -23,4 +23,23 @@ class Blog extends Model
         'created_by',
         'status'
     ];
+ public function tags()
+{
+    return $this->belongsToMany(
+        Tags::class,
+        'blog_tags',
+        'blog_id',
+        'tag_id'
+    );
+}
+
+public function categories()
+{
+    return $this->belongsToMany(
+        Category::class,
+        'blog_categories',
+        'blog_id',
+        'category_id'
+    );
+}
 }

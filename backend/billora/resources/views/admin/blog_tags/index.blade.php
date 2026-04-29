@@ -235,7 +235,7 @@
         text-transform: uppercase;
         letter-spacing: 0.5px;
         background: #f8fafc;
-        border-radius: 12px;
+       
     }
 
     .contacts-table-modern thead th.text-center {
@@ -618,6 +618,30 @@
     .text-center {
         text-align: center;
     }
+    .add-tag-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+    color: white;
+    padding: 11px 18px;
+    border-radius: 14px;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 600;
+    transition: all 0.2s ease;
+    box-shadow: 0 6px 14px rgba(37, 99, 235, 0.18);
+}
+
+.add-tag-btn:hover {
+    transform: translateY(-2px);
+    color: white;
+    box-shadow: 0 10px 20px rgba(37, 99, 235, 0.25);
+}
+
+.add-tag-btn i {
+    font-size: 13px;
+}
 </style>
 
 <div class="content-wrapper">
@@ -628,12 +652,21 @@
                 <h1>All Tags</h1>
             </div>
             
-            <div class="header-search">
+            <div style="display: flex; align-items: center; gap: 14px; flex-wrap: wrap;">
+
+    <!-- Add Tag Button -->
+    <a href="{{ route('admin.category.create') }}" class="add-tag-btn">
+        <i class="fa-solid fa-plus"></i>
+        Add Tag
+    </a>
+
+    <!-- Search -->
+    <div class="header-search">
                 <div class="search-wrapper">
                     <svg viewBox="0 0 24 24">
                         <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zM9.5 14C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
                     </svg>
-                    <form action="{{ route('admin.contacts.index') }}" method="GET" style="flex: 1;">
+                    <form action="{{ route('admin.blog-tag.index') }}" method="GET" style="flex: 1;">
                         <input type="text" name="search" placeholder="Search by name, email, subject..." value="{{ request('search') }}">
                     </form>
                     @if(request('search'))
@@ -695,16 +728,6 @@
             </div> --}}
         </div>
 
-        <!-- TABS SECTION -->
-        <div class="tabs-section-modern">
-            <div class="tabs-container">
-                <button class="tab-btn-modern {{ !request('status') || request('status') == 'all' ? 'active' : '' }}" onclick="filterByStatus('all')">All Messages</button>
-                <button class="tab-btn-modern {{ request('status') == 'unread' ? 'active' : '' }}" onclick="filterByStatus('unread')">Unread</button>
-                <button class="tab-btn-modern {{ request('status') == 'read' ? 'active' : '' }}" onclick="filterByStatus('read')">Read</button>
-                <button class="tab-btn-modern {{ request('status') == 'replied' ? 'active' : '' }}" onclick="filterByStatus('replied')">Replied</button>
-            </div>
-        </div>
-
         <!-- Search Results Info -->
         @if(request('search'))
             <div class="search-results-info">
@@ -736,43 +759,47 @@
         <th style="width: 60px; text-align: center;">
             Sl. No
         </th>
-        <th style="text-align: left;">Blog Name</th>
+        <th style="text-align: left;">Tag Name</th>
         <th style="text-align: left;">Slug</th>
-        <th style="text-align: left;">Description</th>
         <th style="text-align: left;">Status</th>
         <th style="text-align: left; width: 120px;">Date</th>
         <th style="text-align: center; width: 100px;">Actions</th>
     </tr>
 </thead>
                 <tbody>
-                    @if (isset($blogs) && count($blogs) > 0)
-                        @foreach ($blogs as $blog)
+                    @if (isset($tags) && count($tags) > 0)
+                        @foreach ($tags as $tag)
                             <tr>
                                 <td>
                                     {{$loop->iteration}}
                                 </td>
                                 <td>
-                                    {{$blog->name ? $blog->name : ''}}
+                                    {{$tag->name ? $tag->name : ''}}
                                 </td>
                                 <td class="text-center">
-                                    {{ $blog->slug ? $blog->slug : '' }}
+                                    {{ $tag->slug ? $tag->slug : '' }}
                                 </td>
                                 <td class="text-center">
-                                    {{ \Illuminate\Support\Str::limit($blog->description, 35, '...') ?? $blog->description }}
+                                   
+                                    @if($tag->status)
+                                        <span class="new-badge-modern" style="background: #30e93f;">Active</span>
+                                    @else
+                                        <span class="new-badge-modern" style="background: #ef4444;">Inactive</span>
+                                    @endif
                                 </td>
                                 <td class="text-center">
-                                    {{ $blog->created_at->format('d M Y h:i A') }}
+                                    {{ $tag->created_at->format('d M Y h:i A') }}
                                 </td>
                                 <td class="text-center">
                                     <div class="action-buttons-modern">
-                                        <a href="{{ route('admin.blogs.view', $blog->id) }}">
+                                        <a href="#">
                                             <button class="action-btn-modern" title="View Blog">
                                                 <svg viewBox="0 0 24 24">
                                                     <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>
                                                 </svg>
                                             </button>
                                         </a>
-                                        <a href="{{ route('admin.blogs.edit', $blog->id) }}">
+                                        <a href="{{ route('admin.blogs.edit', $tag->id) }}">
                                             <button class="edit-btn-modern" title="Edit Blog">
                                                 <i class="fa-regular fa-pen-to-square"></i>
                                             </button>
@@ -804,13 +831,13 @@
         </div>
 
         <!-- Pagination -->
-        @if($contacts->hasPages())
+        @if($tags->hasPages())
         <div class="pagination-modern">
             <div class="pagination-info">
-                Showing <strong>{{ $contacts->firstItem() }}</strong> to <strong>{{ $contacts->lastItem() }}</strong> of <strong>{{ $contacts->total() }}</strong> results
+                Showing <strong>{{ $tags->firstItem() }}</strong> to <strong>{{ $tags->lastItem() }}</strong> of <strong>{{ $tags->total() }}</strong> results
             </div>
             <div>
-                {{ $contacts->appends(request()->query())->links('pagination::tailwind') }}
+                {{ $tags->appends(request()->query())->links('pagination::tailwind') }}
             </div>
         </div>
         @endif

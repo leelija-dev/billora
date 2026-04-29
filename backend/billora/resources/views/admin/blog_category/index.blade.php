@@ -235,7 +235,6 @@
         text-transform: uppercase;
         letter-spacing: 0.5px;
         background: #f8fafc;
-        border-radius: 12px;
     }
 
     .contacts-table-modern thead th.text-center {
@@ -618,104 +617,35 @@
     .text-center {
         text-align: center;
     }
+    .add-tag-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+    color: white;
+    padding: 11px 18px;
+    border-radius: 14px;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 600;
+    transition: all 0.2s ease;
+    box-shadow: 0 6px 14px rgba(37, 99, 235, 0.18);
+}
+
+.add-tag-btn:hover {
+    transform: translateY(-2px);
+    color: white;
+    box-shadow: 0 10px 20px rgba(37, 99, 235, 0.25);
+}
+
+.add-tag-btn i {
+    font-size: 13px;
+}
 </style>
 
 <div class="content-wrapper">
     <div class="modern-card">
-        <!-- Header Section -->
-        <div class="header-section">
-            <div class="header-title">
-                <h1>All Blog</h1>
-            </div>
-            
-            <div class="header-search">
-                <div class="search-wrapper">
-                    <svg viewBox="0 0 24 24">
-                        <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zM9.5 14C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
-                    </svg>
-                    <form action="{{ route('admin.contacts.index') }}" method="GET" style="flex: 1;">
-                        <input type="text" name="search" placeholder="Search by name, email, subject..." value="{{ request('search') }}">
-                    </form>
-                    @if(request('search'))
-                        <button type="button" class="clear-search-btn" onclick="clearSearch()">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="#94a3b8">
-                                <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
-                            </svg>
-                        </button>
-                    @endif
-                </div>
-            </div>
-        </div>
-
-        <!-- STATS CARDS -->
-        <div class="stats-grid-modern">
-            <div class="stat-card-modern">
-                <div class="stat-info-modern">
-                    <h3>Total Blog Categories</h3>
-                    <div class="stat-number-modern">{{ $totalContacts ?? 0 }}</div>
-                </div>
-                <div class="stat-icon-modern">
-                    <svg viewBox="0 0 24 24">
-                        <path d="M20 2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h4v2c0 .55.45 1 1 1h.59c.26 0 .52-.11.71-.29L14.59 18H20c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/>
-                    </svg>
-                </div>
-            </div>
-            <div class="stat-card-modern">
-                <div class="stat-info-modern">
-                    <h3>Active Blog Categories</h3>
-                    <div class="stat-number-modern">{{ $unreadContacts ?? 0 }}</div>
-                </div>
-                <div class="stat-icon-modern">
-                    <svg viewBox="0 0 24 24">
-                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
-                    </svg>
-                </div>
-            </div>
-            <div class="stat-card-modern">
-                <div class="stat-info-modern">
-                    <h3>Inactive Blog Categories</h3>
-                    <div class="stat-number-modern">{{ $readContacts ?? 0 }}</div>
-                </div>
-                <div class="stat-icon-modern">
-                    <svg viewBox="0 0 24 24">
-                        <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/>
-                    </svg>
-                </div>
-            </div>
-            <div class="stat-card-modern">
-                <div class="stat-info-modern">
-                    <h3>Deleted Blog Categories</h3>
-                    <div class="stat-number-modern">{{ $repliedContacts ?? 0 }}</div>
-                </div>
-                <div class="stat-icon-modern">
-                    <svg viewBox="0 0 24 24">
-                        <path d="M22 6c0-1.1-.9-2-2-2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6zm-2 0l-8 5-8-5h16zm0 12H4V8l8 5 8-5v10z"/>
-                    </svg>
-                </div>
-            </div>
-        </div>
-
-        <!-- TABS SECTION -->
-        <div class="tabs-section-modern">
-            <div class="tabs-container">
-                <button class="tab-btn-modern {{ !request('status') || request('status') == 'all' ? 'active' : '' }}" onclick="filterByStatus('all')">All Messages</button>
-                <button class="tab-btn-modern {{ request('status') == 'unread' ? 'active' : '' }}" onclick="filterByStatus('unread')">Unread</button>
-                <button class="tab-btn-modern {{ request('status') == 'read' ? 'active' : '' }}" onclick="filterByStatus('read')">Read</button>
-                <button class="tab-btn-modern {{ request('status') == 'replied' ? 'active' : '' }}" onclick="filterByStatus('replied')">Replied</button>
-            </div>
-        </div>
-
-        <!-- Search Results Info -->
-        @if(request('search'))
-            <div class="search-results-info">
-                <div class="search-results-badge">
-                    🔍 Showing results for: <strong>"{{ request('search') }}"</strong>
-                    <a href="{{ route('admin.contacts.index') }}" style="margin-left: 12px; color: #2563eb; text-decoration: none;">Clear search</a>
-                </div>
-            </div>
-        @endif
-
-        <!-- Success/Error Messages -->
+    <!-- Success/Error Messages -->
         @if(session('success'))
             <div class="success-message">
                 {{ session('success') }}
@@ -727,6 +657,35 @@
                 {{ session('error') }}
             </div>
         @endif
+        <!-- Header Section -->
+        <div class="header-section">
+            <div class="header-title">
+                <h1>All Blog</h1>
+            </div>
+            <div style="display: flex; align-items: center; gap: 14px; flex-wrap: wrap;">
+
+    <!-- Add Tag Button -->
+    <a href="{{ route('admin.category.create') }}" class="add-tag-btn">
+        <i class="fa-solid fa-plus"></i>
+        Add Tag
+    </a>
+
+            <div class="header-search">
+                <div class="search-wrapper">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zM9.5 14C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
+                    </svg>
+                    <form action="{{ route('admin.category.index') }}" method="GET" style="flex: 1;">
+                        <input type="text" name="search" placeholder="Search Category name..." value="{{ request('search') }}">
+                    </form>
+                    
+                </div>
+            </div>
+        </div>
+
+     
+
+        
 
         <!-- Table -->
         <div class="table-container-modern">
@@ -736,11 +695,11 @@
         <th style="width: 60px; text-align: center;">
             Sl. No
         </th>
-        <th style="text-align: left;">Category Name</th>
-        <th style="text-align: left;">Slug</th>
-        <th style="text-align: left;">Description</th>
-        <th style="text-align: left;">Status</th>
-        <th style="text-align: left; width: 120px;">Date</th>
+        <th style="text-align: center;">Category Name</th>
+        <th style="text-align: center;">Slug</th>
+        <th style="text-align: center;">Description</th>
+        <th style="text-align: center;">Status</th>
+        <th style="text-align: center; width: 120px;">Date</th>
         <th style="text-align: center; width: 100px;">Actions</th>
     </tr>
 </thead>
@@ -751,7 +710,7 @@
                                 <td>
                                     {{$loop->iteration}}
                                 </td>
-                                <td>
+                                <td class="text-center">
                                     {{$category->name ? $category->name : ''}}
                                 </td>
                                 <td class="text-center">
@@ -761,24 +720,64 @@
                                     {{ \Illuminate\Support\Str::limit($category->description, 35, '...') ?? $category->description }}
                                 </td>
                                 <td class="text-center">
-                                    {{ $category->created_at->format('d M Y h:i A') }}
+                                    @if($category->status)
+                                        <span class="new-badge-modern" style="background: #10b981;">Active</span>
+                                    @else
+                                        <span class="new-badge-modern" style="background: #ef4444; font-weight: 600;">Inactive</span>
+                                    @endif
                                 </td>
                                 <td class="text-center">
-                                    <div class="action-buttons-modern">
-                                        <a href="{{ route('admin.categories.view', $category->id) }}">
-                                            <button class="action-btn-modern" title="View Category">
-                                                <svg viewBox="0 0 24 24">
-                                                    <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>
-                                                </svg>
-                                            </button>
-                                        </a>
-                                        <a href="{{ route('admin.categories.edit', $category->id) }}">
-                                            <button class="edit-btn-modern" title="Edit Category">
-                                                <i class="fa-regular fa-pen-to-square"></i>
-                                            </button>
-                                        </a>
-                                    </div>
+                                    {{ $category->created_at->format('d M Y h:i A') }}
                                 </td>
+         <td class="text-center">
+    <div class="flex items-center justify-center gap-2">
+
+        <!-- Edit Button -->
+        <a href="{{ route('admin.category.edit', $category->id) }}"
+           class="inline-flex items-center justify-center w-10 h-10 rounded-lg bg-blue-100 text-blue-600 hover:bg-blue-600 hover:text-white transition-all duration-200 shadow-sm"
+           title="Edit Category">
+
+            <svg xmlns="http://www.w3.org/2000/svg"
+                 class="w-5 h-5"
+                 fill="none"
+                 viewBox="0 0 24 24"
+                 stroke="currentColor">
+                <path stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M11 5h2m-1-1v2m-7 9l9-9 3 3-9 9H5v-3z"/>
+            </svg>
+        </a>
+
+        <!-- Delete Button -->
+        <form id="delete-form-{{ $category->id }}"
+              action="{{ route('admin.category.destroy', $category->id) }}"
+              method="POST">
+
+            @csrf
+            @method('DELETE')
+
+            <button type="button"
+                    onclick="confirmDelete({{ $category->id }})"
+                    class="inline-flex items-center justify-center w-10 h-10 rounded-lg bg-red-100 text-red-600 hover:bg-red-600 hover:text-white transition-all duration-200 shadow-sm"
+                    title="Delete Category">
+
+                <svg xmlns="http://www.w3.org/2000/svg"
+                     class="w-5 h-5"
+                     fill="none"
+                     viewBox="0 0 24 24"
+                     stroke="currentColor">
+                    <path stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2"
+                          d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7V4a1 1 0 011-1h4a1 1 0 011 1v3m-7 0h10"/>
+                </svg>
+
+            </button>
+        </form>
+
+    </div>
+</td>
                             </tr>
                         @endforeach
                     @else
@@ -791,7 +790,7 @@
                                 @if(request('search'))
                                     <p>No categories found for "<strong>{{ request('search') }}</strong>"</p>
                                     <p style="font-size: 12px; margin-top: 8px;">
-                                        <a href="{{ route('admin.contacts.index') }}" style="color: #2563eb;">Clear search</a>
+                                        <a href="{{ route('admin.category.index') }}" style="color: #2563eb;">Clear search</a>
                                     </p>
                                 @else
                                     <p>No Categories available</p>
@@ -804,13 +803,13 @@
         </div>
 
         <!-- Pagination -->
-        @if($contacts->hasPages())
+        @if($Categories->hasPages())
         <div class="pagination-modern">
             <div class="pagination-info">
-                Showing <strong>{{ $contacts->firstItem() }}</strong> to <strong>{{ $contacts->lastItem() }}</strong> of <strong>{{ $contacts->total() }}</strong> results
+                Showing <strong>{{ $Categories->firstItem() }}</strong> to <strong>{{ $Categories->lastItem() }}</strong> of <strong>{{ $Categories->total() }}</strong> results
             </div>
             <div>
-                {{ $contacts->appends(request()->query())->links('pagination::tailwind') }}
+                {{ $Categories->appends(request()->query())->links('pagination::tailwind') }}
             </div>
         </div>
         @endif
@@ -818,13 +817,14 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
 <script>
     // Initialize Feather Icons
     feather.replace();
 
     // Clear Search Function
     function clearSearch() {
-        window.location.href = "{{ route('admin.contacts.index') }}";
+        window.location.href = "{{ route('admin.category.index') }}";
     }
 
     // Filter by Status
@@ -912,5 +912,21 @@
 
 <!-- Font Awesome for icons -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-
+<script>
+    function confirmDelete(id) {
+        Swal.fire({
+            title: 'Are you sure?',
+            text: "You won't be able to revert this!",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#dc2626',
+            cancelButtonColor: '#6b7280',
+            confirmButtonText: 'Yes, delete it!'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                document.getElementById('delete-form-' + id).submit();
+            }
+        });
+    }
+</script>
 @endsection

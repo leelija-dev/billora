@@ -53,6 +53,10 @@
                         request()->routeIs('admin.blogs.*') ||
                         request()->routeIs(
                             'admin.blogs.index',
+                            'admin.blog-tag.index',
+                            'admin.blog-tag.create',
+                            'admin.category.index',
+                            'admin.category.edit'
                            
                         );
                 @endphp
@@ -89,17 +93,17 @@
                                 <span class="ml-2">Blog</span>
                             </a>
                             <!-- Role -->
-                            <a href="{{ route('admin.roles.index') }}"
+                            <a href="{{ route('admin.category.index') }}"
                                 class="flex items-center px-4 py-2 text-sm rounded-lg 
-                            {{ request()->routeIs('admin.roles.index', 'admin.roles.create', 'admin.roles.edit') ? 'bg-blue-100 text-blue-600 font-semibold' : 'hover:bg-blue-100' }}">
+                            {{ request()->routeIs('admin.category.index', 'admin.category.create', 'admin.category.edit') ? 'bg-blue-100 text-blue-600 font-semibold' : 'hover:bg-blue-100' }}">
 
                                 <i data-feather="user-check" class="w-4 h-4"></i>
                                 <span class="ml-2">Categories</span>
                             </a>
                             <!-- Permission -->
-                            <a href="{{ route('admin.permissions.index') }}"
+                            <a href="{{ route('admin.blog-tag.index') }}"
                                 class="flex items-center px-4 py-2 text-sm rounded-lg 
-                            {{ request()->routeIs('admin.permissions.index', 'admin.permissions.create') ? 'bg-blue-100 text-blue-600 font-semibold' : 'hover:bg-blue-100' }}">
+                            {{ request()->routeIs('admin.blog-tag.index','admin.blog-tag.create') ? 'bg-blue-100 text-blue-600 font-semibold' : 'hover:bg-blue-100' }}">
 
                                 <i data-feather="lock" class="w-4 h-4"></i>
                                 <span class="ml-2">Tags</span>
