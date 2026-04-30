@@ -593,7 +593,7 @@
                 <h1>Create New blog</h1>
 
             </div>
-            <a href="{{route('admin.plans.index')}}" class="back-btn">
+            <a href="{{route('admin.blogs.index')}}" class="back-btn">
                 <svg viewBox="0 0 24 24">
                     <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z" />
                 </svg>
@@ -795,7 +795,7 @@
                     <div class="toggle-group">
                         <div>
                             <div class="toggle-label">Active Status</div>
-                            <div class="toggle-desc">Make this plan available for customers</div>
+
                         </div>
                         <label class="switch">
                             <input type="hidden" name="status" value="0">
@@ -810,13 +810,13 @@
 
                 <!-- Form Actions -->
                 <div class="form-actions">
-                    <button type="button" class="btn btn-secondary">Cancel</button>
+                    <button type="button" class="btn btn-white" style="background: red;"><span style="color: white">Cancel</span></button>
                     <button type="submit" class="btn btn-primary">
                         <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: white;">
                             <path
                                 d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm4-10H5V5h11v4z" />
                         </svg>
-                        Create Plan
+                        Create
                     </button>
                 </div>
             </form>
