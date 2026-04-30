@@ -631,6 +631,46 @@ if ($request->has('variants')) {
                 }
             }
             $product->update($data);
+            if($product){
+                $stocks = [
+            'product_id'        => $product->id,
+            'quantity'          => 0,
+            'selling_price'     => $product->selling_price ?? 0,
+            'product_package_id' => null,
+            'purchase_price'    => $product->purchase_price ?? 0,
+            'unit_id'           => $product->unit_id,
+
+            ];
+            $stocksProduct = Stocks::where('product_id', $product->id)->first();
+            
+            // check permission 
+            $customer =  Customers::findOrFail(Auth::user()->id);
+            $permissions = DB::table('plan_permission_details as ppd')
+                ->join('plan_permission as pp', 'pp.id', '=', 'ppd.permission_id')
+                ->where('ppd.plan_id', $customer->plan_id)
+                ->pluck('pp.slug')
+                ->toArray();
+
+            $hasStockPermission = in_array('stock-management', $permissions);
+
+            Log::info('hasStockPermission'. $hasStockPermission);
+            if ($hasStockPermission) {
+                $stocks['user_id'] = $user;
+                $stocks['created_by'] = $user;
+                if($stocksProduct){
+                $stocksProduct->update([
+                    'selling_price'     => $product->selling_price ?? 0,
+                    'purchase_price'    => $product->purchase_price ?? 0,
+                    'unit_id'           => $product->unit_id,
+                ]);
+                }else{
+                      $stock = Stocks::create($stocks);
+                $stocks = Stocks::where('user_id', $user)->get();
+                }
+              
+            Log::info('stocks created'. $stocks);
+            } 
+            }
             //update multiple images
             if ($request->hasFile('images')) {
 
@@ -698,7 +738,7 @@ if ($request->has('variants')) {
                 'message' => 'Product Updated Successfully',
                 'data' => $product
             ]);
-        } catch (\Exception $e) {
+        } catch(\Exception $e) {
             DB::rollBack();
             return response()->json([
                 'status' => false,
