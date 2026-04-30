@@ -16,7 +16,7 @@ class BlogController extends Controller
         $search = $request->search;
         $categoryId = $request->category_id;
 
-        $blogs = Blog::with('categories','tags')
+        $blogs = Blog::with(['categories','tags'])
             ->where('status', true)
             // Search
             ->when($search, function ($query) use ($search) {
@@ -74,6 +74,23 @@ class BlogController extends Controller
         'message'=>'All categories',
         'categories'=>$categories
     ]);
+    }catch(\Exception $e){
+        return response()->json([
+            'status'=>false,
+            'message'=>$e->getMessage()
+        ]);
+    }
+ }
+ public function show($slug){
+    try{
+        $blog = Blog::with(['categories','tags'])->where('status',true)->where('slug',$slug)->first();
+        
+        return response()->json([
+            'status'=>true,
+            'message'=>'Blog details',
+            'blog'=>$blog
+        ]);
+
     }catch(\Exception $e){
         return response()->json([
             'status'=>false,
