@@ -47,7 +47,8 @@ class BlogController extends Controller
             })
 
             ->latest()
-            ->paginate(12);
+            ->orderBy('created_at', 'desc')
+            ->paginate(6);
 
         $categories = Category::where('status', true)->get();
 
@@ -84,7 +85,7 @@ class BlogController extends Controller
  public function show($slug){
     try{
         $blog = Blog::with(['categories','tags'])->where('status',true)->where('slug',$slug)->first();
-        
+
         return response()->json([
             'status'=>true,
             'message'=>'Blog details',
