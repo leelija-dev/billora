@@ -71,7 +71,8 @@ const Plans = () => {
     customer_phone: '',
     amount: 0,
     gst: 0,
-    discount: 0
+    discount: 0,
+    gstPercentage: 0,
   })
   
   const pageSize = 10
@@ -179,6 +180,7 @@ const Plans = () => {
         } else if (historyData && historyData.length > 0) {
           // Fallback to purchase history if available
           const latestPurchase = historyData[0] // Assuming first is latest
+          
           setSubscription({
             plan: latestPurchase.plan_id,
             status: latestPurchase.status || 'active',
@@ -298,10 +300,10 @@ const Plans = () => {
     // Extract new plan price from multiple possible fields
     const newPlanPrice = parseFloat(newPlan?.price) || parseFloat(newPlan?.amount) || parseFloat(newPlan?.base_price) || 0
     console.log(' New plan price:', newPlanPrice)
-    
+    const gstPercentage = parseFloat(newPlan?.gst)
     if (!currentPlan || !subscription) {
       // No current plan, treat as new purchase
-      const gst = newPlanPrice * 0.18
+      const gst = newPlanPrice * gstPercentage //0.18
       console.log(' No current plan - treating as new purchase:', { baseAmount: newPlanPrice, gst })
       return {
         baseAmount: newPlanPrice,
@@ -310,13 +312,14 @@ const Plans = () => {
         gst,
         totalAmount: newPlanPrice + gst,
         daysRemaining: 0,
-        monthsRemaining: 0
+        monthsRemaining: 0,
+        gstPercentage: gstPercentage
       }
     }
 
     // Extract current plan price from multiple possible fields
     const currentPlanPrice = parseFloat(currentPlan?.price) || parseFloat(currentPlan?.amount) || parseFloat(currentPlan?.base_price) || 0
-    const currentPlanDuration = parseInt(currentPlan?.duration) || 12 // Default 12 months
+    const currentPlanDuration = parseInt(currentPlan?.duration_days) || 0 // Default 12 months
     
     console.log(' Current plan details:', { price: currentPlanPrice, duration: currentPlanDuration })
     
@@ -337,11 +340,30 @@ const Plans = () => {
       
       if (purchaseHistory.length === 0) {
         console.warn(' No purchase history found, falling back to basic calculation')
-        return fallbackCalculation(newPlanPrice, currentPlanPrice, currentPlanDuration, subscription)
+        return fallbackCalculation(newPlan,newPlanPrice, currentPlanPrice, currentPlanDuration, subscription)
       }
       
       // Get the most recent active purchase
-      const latestPurchase = purchaseHistory[0]
+      // const latestPurchase = purchaseHistory[0]
+      // Filter purchases with success payment, active/expired status, and valid dates
+const validPurchases = purchaseHistory.filter(purchase => 
+  purchase.payment_status === 'success' &&
+  (purchase.status === 'active' || purchase.status === 'expired') &&
+  purchase.start_date !== null &&
+  purchase.end_date !== null
+)
+
+if (validPurchases.length === 0) {
+  console.warn(' No valid purchase found with success payment and valid dates, falling back to basic calculation')
+  return fallbackCalculation(newPlanPrice, currentPlanPrice, currentPlanDuration, subscription)
+}
+
+// Get the most recent valid purchase (sort by created_at descending)
+const latestPurchase = validPurchases.sort((a, b) => 
+  new Date(b.created_at) - new Date(a.created_at)
+)[0]
+
+console.log(' Latest valid purchase for upgrade calculation:', latestPurchase)
       console.log(' Latest purchase:', latestPurchase)
       
       // Calculate remaining days based on purchase history
@@ -353,7 +375,7 @@ const Plans = () => {
       
       // Calculate current plan remaining value based on actual paid amount from purchase history
       const actualPaidAmount = parseFloat(latestPurchase.price) || 0 // Use the actual paid amount from purchase history
-      const currentPlanDailyPrice = actualPaidAmount / (currentPlanDuration * 30) // 30 days per month
+      const currentPlanDailyPrice = (actualPaidAmount / currentPlanDuration)//actualPaidAmount / (currentPlanDuration * 30) // 30 days per month
       const currentPlanRemainingValue = currentPlanDailyPrice * daysRemaining
       
       console.log(' Current plan value calculation:', {
@@ -369,10 +391,10 @@ const Plans = () => {
       const baseAmount = newPlanPrice
       
       // Step 2: Apply 14% Discount (from new plan data)
-      const discountPercentage = parseFloat(newPlan?.discount) || 14 // Default 14%
+      const discountPercentage = parseFloat(newPlan?.discount) || 0 // Default 14%
       const discountAmount = baseAmount * (discountPercentage / 100)
       const discountedAmount = baseAmount - discountAmount
-      
+      const gstPercentage = parseFloat(newPlan?.gst) // 
       console.log(' Discount calculation:', {
         baseAmount,
         discountPercentage,
@@ -394,8 +416,8 @@ const Plans = () => {
       })
       
       // Step 4: Apply 18% GST on discounted amount
-      const gst = discountedAmount * 0.18
-      const totalAmount = discountedAmount + gst
+      const gst = (finalUpgradeAmount * gstPercentage)/100 //0.18
+      const totalAmount = finalUpgradeAmount  + gst
       
       const result = {
         baseAmount,
@@ -408,7 +430,8 @@ const Plans = () => {
         totalAmount,
         daysRemaining,
         monthsRemaining: Math.ceil(daysRemaining / 30),
-        actualPaidAmount
+        actualPaidAmount,
+        gstPercentage
       }
       
       console.log(' Final upgrade calculation (NEW WORKFLOW):', result)
@@ -416,12 +439,12 @@ const Plans = () => {
       
     } catch (error) {
       console.error(' Failed to fetch purchase history, using fallback calculation:', error)
-      return fallbackCalculation(newPlanPrice, currentPlanPrice, currentPlanDuration, subscription)
+      return fallbackCalculation(newPlan,newPlanPrice, currentPlanPrice, currentPlanDuration, subscription)
     }
   }
 
   // Fallback calculation method
-  const fallbackCalculation = (newPlanPrice, currentPlanPrice, currentPlanDuration, subscription) => {
+  const fallbackCalculation = (newPlan,newPlanPrice, currentPlanPrice, currentPlanDuration, subscription) => {
     console.log(' Using fallback calculation method')
     
     // Calculate subscription period
@@ -444,8 +467,8 @@ const Plans = () => {
     
     // Calculate remaining value of current plan (prorated)
     const currentPlanMonthlyPrice = currentPlanPrice / currentPlanDuration
-    const currentPlanDailyPrice = currentPlanMonthlyPrice / 30 // Approximate 30 days per month
-    const currentPlanRemainingValue = currentPlanDailyPrice * daysRemaining
+    const currentPlanDailyPrice = currentPlanMonthlyPrice /// 30 // Approximate 30 days per month
+    const currentPlanRemainingValue = daysRemaining * currentPlanDailyPrice//currentPlanDailyPrice * daysRemaining
     
     // NEW WORKFLOW: Base Amount → Discount → Previous Plan Deduction → GST
     
@@ -462,7 +485,7 @@ const Plans = () => {
     const finalUpgradeAmount = Math.max(0, upgradeBaseAmount)
     
     // Step 4: Apply 18% GST
-    const gst = finalUpgradeAmount * 0.18
+   const gst = (finalUpgradeAmount * gstPercentage) / 100
     const totalAmount = finalUpgradeAmount + gst
     
     return {
@@ -476,7 +499,8 @@ const Plans = () => {
       totalAmount,
       daysRemaining,
       monthsRemaining: Math.ceil(daysRemaining / 30),
-      actualPaidAmount: currentPlanPrice
+      actualPaidAmount: currentPlanPrice,
+      gstPercentage: parseFloat(newPlan?.gst) || 0
     }
   }
 
@@ -502,7 +526,8 @@ const Plans = () => {
         total_amount: pricing.totalAmount,
         days_remaining: pricing.daysRemaining,
         months_remaining: pricing.monthsRemaining,
-        actual_paid_amount: pricing.actualPaidAmount
+        actual_paid_amount: pricing.actualPaidAmount,
+        gstPercentage: pricing.gstPercentage
       })
       setShowUpgradeForm(true)
     } catch (error) {
@@ -533,12 +558,12 @@ const Plans = () => {
     try {
       // Calculate final amount using prorated upgrade amount with GST and discount
       const upgradeAmount = parseFloat(upgradeData.upgrade_amount || 0)
-      const gstAmount = parseFloat(upgradeData.gst) || (upgradeAmount * 0.18)
+      const gstAmount = parseFloat(upgradeData.gst) || (upgradeAmount * 0)
       const discountAmount = parseFloat(upgradeData.discount) || 0
-      const finalAmount = upgradeAmount + gstAmount - discountAmount
-
+      const finalAmount = upgradeAmount  - discountAmount + gstAmount
+        console.log(' Final upgrade amount:', finalAmount)
       // For free upgrades (0 amount), still send the total_amount which includes GST
-      const amountToSend = upgradeData.total_amount || finalAmount
+    const amountToSend = parseFloat(upgradeData.total_amount || 0)
 
       const upgradePayload = {
         amount: amountToSend, // Send final amount (discounted amount + GST) to backend
@@ -596,7 +621,8 @@ const Plans = () => {
             customer_phone: '',
             amount: 0,
             gst: 0,
-            discount: 0
+            discount: 0,
+            gstPercentage: 0,
           })
           
           // Refresh data after a delay
@@ -1030,15 +1056,17 @@ const Plans = () => {
 
                       {/* Customer ID */}
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        {/*<label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                           Customer ID *
-                        </label>
+                        </label>  */}
                         <Input
                           type="text"
+                          
                           value={upgradeData.customer_id}
                           onChange={(e) => setUpgradeData(prev => ({ ...prev, customer_id: e.target.value }))}
                           placeholder="Enter customer ID"
                           required
+                          hidden
                         />
                       </div>
 
@@ -1098,7 +1126,7 @@ const Plans = () => {
                           {upgradeData.current_plan_remaining > 0 && (
                             <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-3">
                               <p className="text-sm text-green-800 dark:text-green-200 font-medium mb-2">
-                                Step 3: Deduct Current Plan Remaining ({upgradeData.months_remaining || 0} months left)
+                                Step 3: Deduct Current Plan Remaining ({upgradeData.days_remaining || 0} months left)
                               </p>
                               <div className="flex justify-between items-center">
                                 <span className="text-green-700 dark:text-green-300">Current Plan Credit:</span>
@@ -1112,7 +1140,7 @@ const Plans = () => {
                           {/* Step 4: GST (Backend Calculation) */}
                           <div className="bg-orange-50 dark:bg-orange-900/20 rounded-lg p-3">
                             <p className="text-sm text-orange-800 dark:text-orange-200 font-medium mb-2">
-                              Step 4: GST (18%) - Calculated by Backend
+                              Step 4: GST ({upgradeData.gstPercentage}%) - Calculated by Backend
                             </p>
                             <div className="flex justify-between items-center">
                               <span className="text-orange-700 dark:text-orange-300">GST Amount:</span>
@@ -1137,7 +1165,7 @@ const Plans = () => {
                                 GST will be applied on this amount:
                               </span>
                               <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                                18% of ${parseFloat(upgradeData.discounted_amount || 0).toFixed(2)}
+                                {upgradeData.gstPercentage || 0}% of ${parseFloat(upgradeData.discounted_amount || 0).toFixed(2)}
                               </span>
                             </div>
                             <div className="flex justify-between items-center mt-2">

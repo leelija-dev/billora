@@ -112,7 +112,8 @@
         }
 
         /* Left & Right Column */
-        .left-column, .right-column {
+        .left-column,
+        .right-column {
             background: #fafcff;
             border-radius: 20px;
             padding: 8px;
@@ -209,7 +210,9 @@
             fill: currentColor;
         }
 
-        .form-input, .form-textarea, .form-select {
+        .form-input,
+        .form-textarea,
+        .form-select {
             width: 100%;
             padding: 14px 16px;
             border: 1.5px solid #e2e8f0;
@@ -225,12 +228,16 @@
             padding-left: 44px;
         }
 
-        .form-input:hover, .form-textarea:hover, .form-select:hover {
+        .form-input:hover,
+        .form-textarea:hover,
+        .form-select:hover {
             border-color: #cbd5e1;
             background: #fafcff;
         }
 
-        .form-input:focus, .form-textarea:focus, .form-select:focus {
+        .form-input:focus,
+        .form-textarea:focus,
+        .form-select:focus {
             border-color: #2563EB;
             background: white;
             box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
@@ -401,25 +408,31 @@
             .main-content {
                 padding: 16px;
             }
+
             .page-header {
                 flex-direction: column;
                 align-items: flex-start;
                 gap: 16px;
                 padding: 20px;
             }
+
             .form-container {
                 padding: 20px;
             }
+
             .section-card {
                 padding: 18px;
             }
+
             .form-actions {
                 flex-direction: column;
             }
+
             .btn {
                 width: 100%;
                 justify-content: center;
             }
+
             .toggle-group {
                 flex-direction: column;
                 gap: 12px;
@@ -432,6 +445,7 @@
                 opacity: 0;
                 transform: translateY(20px);
             }
+
             to {
                 opacity: 1;
                 transform: translateY(0);
@@ -465,7 +479,7 @@
 
                 <div>
                     <!-- LEFT COLUMN -->
-                    <div >
+                    <div>
                         <!-- Basic Information -->
                         <div class="section-card">
 
@@ -473,13 +487,13 @@
                                 <label class="form-label">Tag Name <span>*</span></label>
                                 <div class="input-wrapper">
                                     <span class="input-icon">
-    <svg viewBox="0 0 24 24" fill="currentColor">
-        <path d="M20.59 13.41L11 3.83V3H4v7h.83l9.58 9.59a2 2 0 002.83 0l3.35-3.35a2 2 0 000-2.83zM7.5 8A1.5 1.5 0 119 6.5 1.5 1.5 0 017.5 8z"/>
-    </svg>
-</span>
-                                    <input type="text" name="name" class="form-input with-icon" 
-                                        placeholder="Enter Tag Name" 
-                                        value="{{ $tag->name }}" required>
+                                        <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+                                            <path
+                                                d="M20.59 13.41 11 3H4v7l9.59 9.59a2 2 0 0 0 2.82 0l4.18-4.18a2 2 0 0 0 0-2.82zM7.5 8A1.5 1.5 0 1 1 9 6.5 1.5 1.5 0 0 1 7.5 8z" />
+                                        </svg>
+                                    </span>
+                                    <input type="text" name="name" class="form-input with-icon"
+                                        placeholder="Enter Tag Name" value="{{ $tag->name }}" required>
                                 </div>
                                 @error('name')
                                     <span class="text-danger">{{ $message }}</span>
@@ -492,7 +506,7 @@
                             <div class="section-title">
                                 <div class="section-title-icon">
                                     <svg viewBox="0 0 24 24">
-                                        <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/>
+                                        <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z" />
                                     </svg>
                                 </div>
                                 <span>Status</span>
@@ -500,11 +514,12 @@
                             <div class="toggle-group">
                                 <div>
                                     <div class="toggle-label">Active Status</div>
-                                    
+
                                 </div>
                                 <label class="switch">
                                     <input type="hidden" name="status" value="0">
-                                    <input type="checkbox" name="status" value="1" {{ old('status', $tag->status) == '1' ? 'checked' : '' }}>
+                                    <input type="checkbox" name="status" value="1"
+                                        {{ old('status', $tag->status) == '1' ? 'checked' : '' }}>
                                     <span class="slider"></span>
                                 </label>
                             </div>
@@ -514,23 +529,25 @@
                         </div>
                     </div>
 
-                   
 
-                <!-- Form Actions -->
-                <div class="form-actions">
-                    <a href="{{ route('admin.blog-tag.index') }}" class="btn btn-secondary">
-                        <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
-                            <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
-                        </svg>
-                        Cancel
-                    </a>
-                    <button type="submit" class="btn btn-primary">
-                        <svg viewBox="0 0 24 24" width="16" height="16" fill="white">
-                            <path d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm4-10H5V5h11v4z"/>
-                        </svg>
-                        Update
-                    </button>
-                </div>
+
+                    <!-- Form Actions -->
+                    <div class="form-actions">
+                        <a href="{{ route('admin.blog-tag.index') }}" class="btn btn-secondary">
+                            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                                <path
+                                    d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
+                            </svg>
+                            Cancel
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <svg viewBox="0 0 24 24" width="16" height="16" fill="white">
+                                <path
+                                    d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm4-10H5V5h11v4z" />
+                            </svg>
+                            Update
+                        </button>
+                    </div>
             </form>
         </div>
     </div>

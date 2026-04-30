@@ -328,23 +328,23 @@ class CustomerController extends Controller
     // }
     public function logout(Request $request)
 {
-    // 🔥 1. Logout user (web session)
+    //Logout user (web session)
     Auth::guard('web')->logout();
 
-    // 🔥 2. Destroy session completely
+    //  Destroy session completely
     $request->session()->invalidate();
     $request->session()->regenerateToken();
 
-    // 🔥 3. Prepare response
+    // Prepare response
     $response = response()->json([
         'status' => true,
         'message' => 'Logout successful'
     ]);
 
-    // 🔥 4. Delete session cookie (VERY IMPORTANT)
+    //  Delete session cookie (VERY IMPORTANT)
     $response->withCookie(cookie()->forget('billora-session'));
 
-    // 🔥 5. (Optional) remove old token system
+    // (Optional) remove old token system
     $response->withCookie(cookie()->forget('auth_token'));
 
     return $response;
