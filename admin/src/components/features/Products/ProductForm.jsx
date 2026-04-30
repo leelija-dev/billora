@@ -9,6 +9,11 @@ import Input from '../../common/Input/Input'
 import Button from '../../common/Button/Button'
 import Select from '../../common/Select/Select'
 import SearchSelect from '../../common/SearchSelect/SearchSelect' // Import the new component
+import CategoryModal from '../../common/CreateModals/CategoryModal'
+import BrandModal from '../../common/CreateModals/BrandModal'
+import UnitModal from '../../common/CreateModals/UnitModal'
+import MedicineTypeModal from '../../common/CreateModals/MedicineTypeModal'
+import { categoriesAPI, brandsAPI, unitsAPI, medicineTypeAPI } from '../../../services'
 import toast from 'react-hot-toast'
 import { FiUpload, FiX, FiPlus, FiTrash2 } from 'react-icons/fi'
 
@@ -37,6 +42,12 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
   const [attributes, setAttributes] = useState([
     { key: '', value: '' }
   ])
+
+  // State for create modals
+  const [showCategoryModal, setShowCategoryModal] = useState(false)
+  const [showBrandModal, setShowBrandModal] = useState(false)
+  const [showUnitModal, setShowUnitModal] = useState(false)
+  const [showMedicineTypeModal, setShowMedicineTypeModal] = useState(false)
 
   const {
     register,
@@ -369,6 +380,92 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
     setAttributes(prev => prev.filter((_, i) => i !== index))
   }
 
+  // Create functions for modals
+  const handleCreateCategory = async (categoryData) => {
+    try {
+      const response = await categoriesAPI.create(categoryData)
+      if (response.data?.status === true || response.data?.data) {
+        const newCategory = response.data.data || response.data
+        // Update categories list
+        setCreatePageData(prev => ({
+          ...prev,
+          categories: [...prev.categories, newCategory]
+        }))
+        toast.success('Category created successfully!')
+        // Set the newly created category as selected
+        setValue('category_id', newCategory.id)
+      } else {
+        toast.error('Failed to create category')
+      }
+    } catch (error) {
+      console.error('Error creating category:', error)
+      toast.error('Failed to create category')
+    }
+  }
+
+  const handleCreateBrand = async (brandData) => {
+    try {
+      const response = await brandsAPI.create(brandData)
+      if (response.data?.status === true || response.data?.data) {
+        const newBrand = response.data.data || response.data
+        // Update brands list
+        setCreatePageData(prev => ({
+          ...prev,
+          brands: [...prev.brands, newBrand]
+        }))
+        toast.success('Brand created successfully!')
+        // Set the newly created brand as selected
+        setValue('brand_id', newBrand.id)
+      } else {
+        toast.error('Failed to create brand')
+      }
+    } catch (error) {
+      console.error('Error creating brand:', error)
+      toast.error('Failed to create brand')
+    }
+  }
+
+  const handleCreateUnit = async (unitData) => {
+    try {
+      const response = await unitsAPI.create(unitData)
+      if (response.data?.status === true || response.data?.data) {
+        const newUnit = response.data.data || response.data
+        // Update units list
+        setCreatePageData(prev => ({
+          ...prev,
+          units: [...prev.units, newUnit]
+        }))
+        toast.success('Unit created successfully!')
+        // Set the newly created unit as selected
+        setValue('unit_id', newUnit.id)
+      } else {
+        toast.error('Failed to create unit')
+      }
+    } catch (error) {
+      console.error('Error creating unit:', error)
+      toast.error('Failed to create unit')
+    }
+  }
+
+  const handleCreateMedicineType = async (medicineTypeData) => {
+    try {
+      const response = await medicineTypeAPI.create(medicineTypeData)
+      if (response.data?.status === true || response.data?.data) {
+        const newMedicineType = response.data.data || response.data
+        // Refresh medicine types from store
+        await fetchMedicineTypes(user.id)
+        toast.success('Medicine type created successfully!')
+        // Set the newly created medicine type as selected
+        setValue('medicine_type_id', newMedicineType.id)
+      } else {
+        toast.error('Failed to create medicine type')
+      }
+    } catch (error) {
+      console.error('Error creating medicine type:', error)
+      toast.error('Failed to create medicine type')
+    }
+  }
+
   // Form submission
   const onFormSubmit = (data) => {
     console.log('🚀 Form submission triggered!', data)
@@ -559,10 +656,13 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
             error={errors.brand_id?.message}
             placeholder="Search for a brand..."
             required
+            onCreateNew={(searchTerm) => {
+              setShowBrandModal(true)
+            }}
           />
           <input
             type="hidden"
-            {...register('brand_id', { required: 'Brand is required' })}
+            {...register('brand_id')}
             value={watch('brand_id') || ''}
           />
 
@@ -579,6 +679,9 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
             error={errors.category_id?.message}
             placeholder="Search for a category..."
             required
+            onCreateNew={(searchTerm) => {
+              setShowCategoryModal(true)
+            }}
           />
           <input
             type="hidden"
@@ -621,6 +724,9 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
   error={errors.unit_id?.message}
   placeholder="Search for a unit..."
   required
+  onCreateNew={(searchTerm) => {
+    setShowUnitModal(true)
+  }}
 />
 
           <input
@@ -683,13 +789,7 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
               rows={4}
               className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white resize-none"
               placeholder="Enter detailed product description (optional)..."
-              {...register('description', {
-                required: false,
-                maxLength: {
-                  value: 1000,
-                  message: 'Description must be less than 1000 characters'
-                }
-              })}
+              {...register('description')}
             />
             {errors.description && (
               <p className="mt-1 text-sm text-red-600 dark:text-red-400">
@@ -931,10 +1031,6 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
                 <input
                   type="hidden"
                   {...register('medicine_type_id')}
-                />
-                <input
-                  type="hidden"
-                  {...register('medicine_type_id', { required: 'Medicine type is required' })}
                   value={watch('medicine_type_id') || ''}
                 />
                <SearchSelect
@@ -949,6 +1045,9 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
   onChange={(value) => setValue('medicine_type_id', value, { shouldValidate: true })}
   error={errors.medicine_type_id?.message}
   placeholder="Search for a medicine type..."
+  onCreateNew={(searchTerm) => {
+    setShowMedicineTypeModal(true)
+  }}
 />
               </>
             ))}
@@ -1174,13 +1273,7 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
               rows={2}
               className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white resize-none"
               placeholder="Enter short description (optional)..."
-              {...register('short_description', {
-                required: false,
-                maxLength: {
-                  value: 200,
-                  message: 'Short description must be less than 200 characters'
-                }
-              })}
+              {...register('short_description')}
             />
             {errors.short_description && (
               <p className="mt-1 text-sm text-red-600 dark:text-red-400">
@@ -1296,6 +1389,31 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
           </div>
         </div>
       </div>
+
+      {/* Create Modals */}
+      <CategoryModal
+        isOpen={showCategoryModal}
+        onClose={() => setShowCategoryModal(false)}
+        onCreate={handleCreateCategory}
+      />
+
+      <BrandModal
+        isOpen={showBrandModal}
+        onClose={() => setShowBrandModal(false)}
+        onCreate={handleCreateBrand}
+      />
+
+      <UnitModal
+        isOpen={showUnitModal}
+        onClose={() => setShowUnitModal(false)}
+        onCreate={handleCreateUnit}
+      />
+
+      <MedicineTypeModal
+        isOpen={showMedicineTypeModal}
+        onClose={() => setShowMedicineTypeModal(false)}
+        onCreate={handleCreateMedicineType}
+      />
     </motion.div>
   )
 }
