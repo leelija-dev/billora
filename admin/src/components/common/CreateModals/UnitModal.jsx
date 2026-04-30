@@ -23,7 +23,7 @@ const UnitModal = ({ isOpen, onClose, onCreate, initialData = null }) => {
     setIsSubmitting(true)
     
     try {
-      await onCreate(formData)
+      const result = await onCreate(formData)
       onClose()
       // Reset form
       setFormData({
@@ -35,8 +35,10 @@ const UnitModal = ({ isOpen, onClose, onCreate, initialData = null }) => {
         user_id: user?.id || '',
         is_active: true
       })
+      return result
     } catch (error) {
       console.error('Error creating unit:', error)
+      throw error
     } finally {
       setIsSubmitting(false)
     }

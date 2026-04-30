@@ -422,22 +422,50 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
     } catch (error) {
       console.error('Error creating brand:', error)
       toast.error('Failed to create brand')
-    }
+    } // Added closing bracket here
   }
 
   const handleCreateUnit = async (unitData) => {
     try {
+      console.log('Creating unit with data:', unitData)
       const response = await unitsAPI.create(unitData)
+      console.log('Unit API response:', response)
+      
       if (response.data?.status === true || response.data?.data) {
-        const newUnit = response.data.data || response.data
+        let newUnit
+        
+        // Handle different response formats
+        if (Array.isArray(response.data.data)) {
+          // If API returns all units, find the newly created one (last one)
+          newUnit = response.data.data[response.data.data.length - 1]
+          console.log('Extracted new unit from array:', newUnit)
+        } else {
+          // If API returns just the new unit
+          newUnit = response.data.data || response.data
+          console.log('New unit from single response:', newUnit)
+        }
+        
+        if (!newUnit || !newUnit.id) {
+          console.error('Invalid unit data received:', newUnit)
+          toast.error('Invalid unit data received')
+          return
+        }
+        
         // Update units list
-        setCreatePageData(prev => ({
-          ...prev,
-          units: [...prev.units, newUnit]
-        }))
+        setCreatePageData(prev => {
+          console.log('Previous units:', prev.units)
+          const updatedUnits = [...prev.units, newUnit]
+          console.log('Updated units:', updatedUnits)
+          return {
+            ...prev,
+            units: updatedUnits
+          }
+        })
+        
         toast.success('Unit created successfully!')
         // Set the newly created unit as selected
         setValue('unit_id', newUnit.id)
+        console.log('Set unit_id to:', newUnit.id)
       } else {
         toast.error('Failed to create unit')
       }
