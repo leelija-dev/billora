@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Auth;
 class BlogController extends Controller
 {
     public function index(Request $request){
@@ -66,8 +67,7 @@ public function store(Request $request)
 
     try {
 
-        $validated['created_by'] = auth()->id();
-
+        $validated['created_by'] = Auth::guard('admin')->user()->id;
         
         //Feature Image Upload
         

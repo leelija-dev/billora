@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Tags;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 class TagsController extends Controller
 {
     public function index(Request $request){
@@ -27,6 +29,8 @@ class TagsController extends Controller
             // 'slug' => 'required|string|max:255|unique:tags,slug'
             
         ]);
+        $user = Auth::guard('admin')->user();
+        Log::info('logged in super admin user id', ['user_id' => $user]);
         $data['slug'] = Str::slug($data['name']);
         try {
             Tags::create($data);
