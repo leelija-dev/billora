@@ -13,4 +13,13 @@ class Category extends Model
         'description',
         'status'
     ];
+    public function blogs()
+{
+    return $this->belongsToMany(
+        Blog::class,
+        'blog_categories',
+        'category_id',
+        'blog_id'
+    );
+}
 }
