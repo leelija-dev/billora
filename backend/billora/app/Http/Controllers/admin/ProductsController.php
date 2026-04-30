@@ -96,15 +96,15 @@ class ProductsController extends Controller
             $brand = Brand::where('user_id', $id)->where('is_active', true)->get();
             $category = Categories::where('user_id', $id)->where('is_active', true)->get();
             $unit = Unit::where('user_id', $id)->get();
-            if($customer->plan_id == null || $customer->plan_id == 0  || $customer->is_active == false){
+            if ($customer->plan_id == null || $customer->plan_id == 0  || $customer->is_active == false) {
                 return response()->json([
                     'status' => false,
                     'message' => 'You do not have any active plan. Please upgrade your plan.'
                 ]);
-            }elseif($customer->is_active == 0){
+            } elseif ($customer->is_active == 0) {
                 return response()->json([
                     'status' => false,
-                    'message' => 'Your plan is expired. Please upgrade your plan.'  
+                    'message' => 'Your plan is expired. Please upgrade your plan.'
                 ]);
             }
             // $inputPermission = PlanBusinessType::where('business_type_id',$customer->business_type_id)->where('plan_id',$customer->plan_id)->first();
@@ -116,7 +116,7 @@ class ProductsController extends Controller
                 'brand' => $brand,
                 'category' => $category,
                 'unit' => $unit,
-                'inputPermission'=>$inputPermission
+                'inputPermission' => $inputPermission
             ]);
         } catch (\Exception $e) {
             return response()->json([
@@ -135,8 +135,8 @@ class ProductsController extends Controller
 
         $service = new Drive($client);
         $name = method_exists($file, 'getClientOriginalName')
-        ? $file->getClientOriginalName()
-        : basename($file->getPathname());
+            ? $file->getClientOriginalName()
+            : basename($file->getPathname());
 
 
         $fileMetadata = new DriveFile([
@@ -258,13 +258,13 @@ class ProductsController extends Controller
         DB::beginTransaction();
         try {
             $user = Auth::user()->id;
-          $variants = $request->input('variants');
+            $variants = $request->input('variants');
 
-        // if not array → remove it completely
-        if (!is_array($variants)) {
-            $request->request->remove('variants');
-            $variants = [];
-        }
+            // if not array → remove it completely
+            if (!is_array($variants)) {
+                $request->request->remove('variants');
+                $variants = [];
+            }
             $data = $request->validate([
                 // 'sku'                   => 'required|unique:products',
                 'user_id'               => 'nullable',
@@ -333,7 +333,7 @@ class ProductsController extends Controller
                     'message' => 'Authentication required. Please login first.'
                 ]);
             }
-            if($user != $request->user_id){
+            if ($user != $request->user_id) {
                 return response()->json([
                     'status' => false,
                     'message' => 'Authentication required. Please login first.',
@@ -360,36 +360,35 @@ class ProductsController extends Controller
             $data['user_id'] = $user;
             $data['created_by'] = $user;
             $product = Products::create($data);
-            if($product){
+            if ($product) {
                 $stocks = [
-            'product_id'        => $product->id,
-            'quantity'          => 0,
-            'selling_price'     => $product->selling_price ?? 0,
-            'product_package_id' => null,
-            'purchase_price'    => $product->purchase_price ?? 0,
-            'unit_id'           => $product->unit_id,
+                    'product_id'        => $product->id,
+                    'quantity'          => 0,
+                    'selling_price'     => $product->selling_price ?? 0,
+                    'product_package_id' => null,
+                    'purchase_price'    => $product->purchase_price ?? 0,
+                    'unit_id'           => $product->unit_id,
 
-            ];
-        
-            // check permission 
-            $customer =  Customers::findOrFail(Auth::user()->id);
-            $permissions = DB::table('plan_permission_details as ppd')
-                ->join('plan_permission as pp', 'pp.id', '=', 'ppd.permission_id')
-                ->where('ppd.plan_id', $customer->plan_id)
-                ->pluck('pp.slug')
-                ->toArray();
+                ];
 
-            $hasStockPermission = in_array('stock-management', $permissions);
+                // check permission 
+                $customer =  Customers::findOrFail(Auth::user()->id);
+                $permissions = DB::table('plan_permission_details as ppd')
+                    ->join('plan_permission as pp', 'pp.id', '=', 'ppd.permission_id')
+                    ->where('ppd.plan_id', $customer->plan_id)
+                    ->pluck('pp.slug')
+                    ->toArray();
 
-            Log::info('hasStockPermission'. $hasStockPermission);
-            if ($hasStockPermission) {
-                $stocks['user_id'] = $user;
-                $stocks['created_by'] = $user;
-                $stock = Stocks::create($stocks);
-                $stocks = Stocks::where('user_id', $user)->get();
-            Log::info('stocks created'. $stocks);
-            } 
-        
+                $hasStockPermission = in_array('stock-management', $permissions);
+
+                Log::info('hasStockPermission' . $hasStockPermission);
+                if ($hasStockPermission) {
+                    $stocks['user_id'] = $user;
+                    $stocks['created_by'] = $user;
+                    $stock = Stocks::create($stocks);
+                    $stocks = Stocks::where('user_id', $user)->get();
+                    Log::info('stocks created' . $stocks);
+                }
             }
             $qrUrl = $this->generateQrAndUpload($product);
             // BARCODE (no local file)
@@ -425,43 +424,43 @@ class ProductsController extends Controller
             //product variants
             // $variants = $request->input('variants');
             //  CLEAN INVALID VARIANTS INPUT
-if ($request->has('variants')) {
+            if ($request->has('variants')) {
 
-    $variants = $request->input('variants');
+                $variants = $request->input('variants');
 
-    // if variants is not array → remove it completely
-    if (!is_array($variants)) {
-        $request->request->remove('variants');
-    }
-}
-        if (!empty($variants) && is_array($variants)) {
-
-            foreach ($variants as $variant) {
-
-                if (!is_array($variant)) {
-                    continue;
+                // if variants is not array → remove it completely
+                if (!is_array($variants)) {
+                    $request->request->remove('variants');
                 }
-
-                if (
-                    empty($variant['size']) &&
-                    empty($variant['color']) &&
-                    empty($variant['material']) &&
-                    empty($variant['gender'])
-                ) {
-                    continue;
-                }
-
-                ProductVariant::create([
-                    'user_id'    => $user,
-                    'product_id' => $product->id,
-                    'size'       => $variant['size'] ?? null,
-                    'color'      => $variant['color'] ?? null,
-                    'material'   => $variant['material'] ?? null,
-                    'gender'     => $variant['gender'] ?? null,
-                    'created_by' => $user,
-                ]);
             }
-        }
+            if (!empty($variants) && is_array($variants)) {
+
+                foreach ($variants as $variant) {
+
+                    if (!is_array($variant)) {
+                        continue;
+                    }
+
+                    if (
+                        empty($variant['size']) &&
+                        empty($variant['color']) &&
+                        empty($variant['material']) &&
+                        empty($variant['gender'])
+                    ) {
+                        continue;
+                    }
+
+                    ProductVariant::create([
+                        'user_id'    => $user,
+                        'product_id' => $product->id,
+                        'size'       => $variant['size'] ?? null,
+                        'color'      => $variant['color'] ?? null,
+                        'material'   => $variant['material'] ?? null,
+                        'gender'     => $variant['gender'] ?? null,
+                        'created_by' => $user,
+                    ]);
+                }
+            }
 
             DB::commit();
             return response()->json([
@@ -631,45 +630,45 @@ if ($request->has('variants')) {
                 }
             }
             $product->update($data);
-            if($product){
+            if ($product) {
                 $stocks = [
-            'product_id'        => $product->id,
-            'quantity'          => 0,
-            'selling_price'     => $product->selling_price ?? 0,
-            'product_package_id' => null,
-            'purchase_price'    => $product->purchase_price ?? 0,
-            'unit_id'           => $product->unit_id,
-
-            ];
-            $stocksProduct = Stocks::where('product_id', $product->id)->first();
-            
-            // check permission 
-            $customer =  Customers::findOrFail(Auth::user()->id);
-            $permissions = DB::table('plan_permission_details as ppd')
-                ->join('plan_permission as pp', 'pp.id', '=', 'ppd.permission_id')
-                ->where('ppd.plan_id', $customer->plan_id)
-                ->pluck('pp.slug')
-                ->toArray();
-
-            $hasStockPermission = in_array('stock-management', $permissions);
-
-            Log::info('hasStockPermission'. $hasStockPermission);
-            if ($hasStockPermission) {
-                $stocks['user_id'] = $user;
-                $stocks['created_by'] = $user;
-                if($stocksProduct){
-                $stocksProduct->update([
+                    'product_id'        => $product->id,
+                    'quantity'          => 0,
                     'selling_price'     => $product->selling_price ?? 0,
+                    'product_package_id' => null,
                     'purchase_price'    => $product->purchase_price ?? 0,
                     'unit_id'           => $product->unit_id,
-                ]);
-                }else{
-                      $stock = Stocks::create($stocks);
-                // $stocks = Stocks::where('user_id', $user)->get();
+
+                ];
+                $stocksProduct = Stocks::where('product_id', $product->id)->first();
+
+                // check permission 
+                $customer =  Customers::findOrFail(Auth::user()->id);
+                $permissions = DB::table('plan_permission_details as ppd')
+                    ->join('plan_permission as pp', 'pp.id', '=', 'ppd.permission_id')
+                    ->where('ppd.plan_id', $customer->plan_id)
+                    ->pluck('pp.slug')
+                    ->toArray();
+
+                $hasStockPermission = in_array('stock-management', $permissions);
+
+                Log::info('hasStockPermission' . $hasStockPermission);
+                if ($hasStockPermission) {
+                    $stocks['user_id'] = $user;
+                    $stocks['created_by'] = $user;
+                    if ($stocksProduct) {
+                        $stocksProduct->update([
+                            'selling_price'     => $product->selling_price ?? 0,
+                            'purchase_price'    => $product->purchase_price ?? 0,
+                            'unit_id'           => $product->unit_id,
+                        ]);
+                    } else {
+                        $stock = Stocks::create($stocks);
+                        // $stocks = Stocks::where('user_id', $user)->get();
+                    }
+
+                    // Log::info('stocks created'. $stocks);
                 }
-              
-            // Log::info('stocks created'. $stocks);
-            } 
             }
             //update multiple images
             if ($request->hasFile('images')) {
@@ -738,7 +737,7 @@ if ($request->has('variants')) {
                 'message' => 'Product Updated Successfully',
                 'data' => $product
             ]);
-        } catch(\Exception $e) {
+        } catch (\Exception $e) {
             DB::rollBack();
             return response()->json([
                 'status' => false,
@@ -925,8 +924,8 @@ if ($request->has('variants')) {
 
             $products = Products::with('brand', 'category', 'unit')->where('category_id', $id)->where('user_id', $user_id)->paginate(12);
             $categories = Categories::where('user_id', $user_id)
-            ->where('is_active', 1)
-            ->get();
+                ->where('is_active', 1)
+                ->get();
             if (!$products) {
                 return response()->json([
                     'status'  => false,
