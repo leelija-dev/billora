@@ -107,6 +107,12 @@ const Products = () => {
     return stock ? parseFloat(stock.quantity) || 0 : 0
   }
 
+  // Function to get stock record for a specific product
+  const getProductStockRecord = (productId) => {
+    if (!Array.isArray(stocks)) return null
+    return stocks.find(s => s.product_id === productId) || null
+  }
+
   useEffect(() => {
     const fetchData = async () => {
       // Prevent multiple initial loads using ref
@@ -237,16 +243,67 @@ const Products = () => {
     try {
       if (showEditForm && selectedProduct) {
         await updateProduct(selectedProduct.id, productData)
+        toast.success('Product updated successfully!')
       } else {
         await createProduct(productData)
+        toast.success('Product created successfully!')
       }
-      // Refresh the product list
+      
+      // Clear all caches to ensure fresh data
+      stockCache.delete('all')
+      
+      // Refresh the product list with fresh data
       await fetchProducts()
+      
+      // Refresh stocks data to get latest stock information
+      try {
+        const stocksResponse = await stockAPI.getAll()
+        const stocksData = stocksResponse.data?.data?.data || stocksResponse.data?.data || []
+        setStocks(stocksData)
+        setCachedStocks(stocksData)
+        console.log('Stocks refreshed after product operation:', stocksData)
+      } catch (error) {
+        console.error('Error refreshing stocks after product operation:', error)
+      }
+      
+      // Refresh categories and brands in case they were updated
+      try {
+        const [categoriesRes, brandsRes] = await Promise.all([
+          categoriesAPI.getAll(),
+          brandsAPI.getAll()
+        ])
+        
+        let categoriesData = []
+        if (categoriesRes?.data?.data) {
+          categoriesData = Array.isArray(categoriesRes.data.data) 
+            ? categoriesRes.data.data 
+            : categoriesRes.data.data.data || []
+        } else {
+          categoriesData = categoriesRes?.data || []
+        }
+        
+        let brandsData = []
+        if (brandsRes?.data?.data) {
+          brandsData = Array.isArray(brandsRes.data.data)
+            ? brandsRes.data.data
+            : brandsRes.data.data.data || []
+        } else {
+          brandsData = brandsRes?.data || []
+        }
+        
+        setCategories(categoriesData)
+        setBrands(brandsData)
+        console.log('Categories and brands refreshed after product operation')
+      } catch (error) {
+        console.error('Error refreshing categories and brands:', error)
+      }
+      
       // Hide the form
       handleCancelForm()
+      
     } catch (error) {
       console.error('Error saving product:', error)
-      // Handle error (show toast notification, etc.)
+      toast.error('Failed to save product. Please try again.')
     } finally {
       setFormSubmitting(false)
     }
@@ -254,7 +311,31 @@ const Products = () => {
 
   const handleDelete = async (id) => {
     if (window.confirm('Are you sure you want to delete this product?')) {
-      await deleteProduct(id)
+      try {
+        await deleteProduct(id)
+        toast.success('Product deleted successfully!')
+        
+        // Clear all caches to ensure fresh data
+        stockCache.delete('all')
+        
+        // Refresh the product list
+        await fetchProducts()
+        
+        // Refresh stocks data
+        try {
+          const stocksResponse = await stockAPI.getAll()
+          const stocksData = stocksResponse.data?.data?.data || stocksResponse.data?.data || []
+          setStocks(stocksData)
+          setCachedStocks(stocksData)
+          console.log('Stocks refreshed after product deletion:', stocksData)
+        } catch (error) {
+          console.error('Error refreshing stocks after product deletion:', error)
+        }
+        
+      } catch (error) {
+        console.error('Error deleting product:', error)
+        toast.error('Failed to delete product. Please try again.')
+      }
     }
   }
 
@@ -266,14 +347,25 @@ const Products = () => {
   const handleAddStock = async (stockData) => {
     try {
       console.log('handleAddStock - stockData:', stockData);
+      
+      // Get the stock record to get the stock_id
+      const stockRecord = getProductStockRecord(stockData.product_id);
+      console.log('handleAddStock - stockRecord:', stockRecord);
+      
+      if (!stockRecord) {
+        console.error('No stock record found for product:', stockData.product_id);
+        toast.error('No stock record found for this product. Please create a stock record first.');
+        return;
+      }
+      
       console.log('handleAddStock - API call params:', {
-        productId: stockData.product_id,
+        stockId: stockRecord.id,
         userId: stockData.user_id,
         quantity: stockData.quantity
       });
       
-      // Call the stock API to add stock with correct parameters
-      await stockAPI.addStock(stockData.product_id, stockData.user_id, stockData.quantity)
+      // Call the stock API with stock_id instead of product_id
+      await stockAPI.addStock(stockRecord.id, stockData.user_id, stockData.quantity)
       
       // Show success message
       toast.success(`Stock added successfully! New stock: ${stockData.new_stock}`)
