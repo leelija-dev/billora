@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
+import toast from 'react-hot-toast'
 import { 
   FiPlus, 
   FiSearch, 
@@ -34,6 +35,7 @@ import EmptyState from '../../components/common/EmptyState/EmptyState'
 import ProductModal from '../../components/features/Products/ProductModal'
 import Select from '../../components/common/Select/Select'
 import ProductForm from '../../components/features/Products/ProductForm' // You'll need to create this component
+import StockAddModal from '../../components/common/CreateModals/StockAddModal'
 
 // Stock cache to prevent duplicate requests
 const stockCache = new Map()
@@ -95,6 +97,8 @@ const Products = () => {
   const [brands, setBrands] = useState([])
   const [categoriesLoading, setCategoriesLoading] = useState(false)
   const [brandsLoading, setBrandsLoading] = useState(false)
+  const [showStockModal, setShowStockModal] = useState(false)
+  const [selectedStockProduct, setSelectedStockProduct] = useState(null)
 
   // Function to get stock for a specific product
   const getProductStock = (productId) => {
@@ -251,6 +255,45 @@ const Products = () => {
   const handleDelete = async (id) => {
     if (window.confirm('Are you sure you want to delete this product?')) {
       await deleteProduct(id)
+    }
+  }
+
+  const openStockModal = (product) => {
+    setSelectedStockProduct(product)
+    setShowStockModal(true)
+  }
+
+  const handleAddStock = async (stockData) => {
+    try {
+      console.log('handleAddStock - stockData:', stockData);
+      console.log('handleAddStock - API call params:', {
+        productId: stockData.product_id,
+        userId: stockData.user_id,
+        quantity: stockData.quantity
+      });
+      
+      // Call the stock API to add stock with correct parameters
+      await stockAPI.addStock(stockData.product_id, stockData.user_id, stockData.quantity)
+      
+      // Show success message
+      toast.success(`Stock added successfully! New stock: ${stockData.new_stock}`)
+      
+      // Refresh the products list to show updated stock
+      await fetchProducts()
+      
+      // Refresh stocks data
+      try {
+        const stocksResponse = await stockAPI.getAll()
+        const stocksData = stocksResponse.data?.data?.data || stocksResponse.data?.data || []
+        setStocks(stocksData)
+        setCachedStocks(stocksData)
+      } catch (error) {
+        console.error('Error refreshing stocks:', error)
+      }
+      
+    } catch (error) {
+      console.error('Error adding stock:', error)
+      toast.error('Failed to add stock. Please try again.')
     }
   }
 
@@ -420,7 +463,7 @@ const Products = () => {
         const lowStockThreshold = 10 // You can adjust this based on your needs
         
         return (
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center gap-2">
             <div className="w-16 h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
               <motion.div
                 initial={{ width: 0 }}
@@ -435,15 +478,31 @@ const Products = () => {
                 }`}
               />
             </div>
-            <span className={`text-sm font-medium ${
-              stockQuantity <= lowStockThreshold 
+            <span className={`
+              text-sm font-medium
+              ${stockQuantity <= lowStockThreshold 
                 ? 'text-red-600 dark:text-red-400' 
+                : stockQuantity === 0
+                ? 'text-orange-600 dark:text-orange-400'
                 : stockQuantity <= lowStockThreshold * 2
                 ? 'text-yellow-600 dark:text-yellow-400'
                 : 'text-gray-900 dark:text-white'
-            }`}>
+              }
+            `}>
               {stockQuantity}
             </span>
+            {stockQuantity === 0 && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => openStockModal(row)}
+                icon={FiPlus}
+                className="!px-2 !py-1 text-orange-600 border-orange-300 hover:bg-orange-50 dark:text-orange-400 dark:border-orange-700 dark:hover:bg-orange-900/20"
+                title="Add Stock"
+              >
+                <FiPlus className="w-3 h-3" />
+              </Button>
+            )}
           </div>
         )
       },
@@ -801,6 +860,9 @@ const Products = () => {
                       columns={columns}
                       data={products}
                       loading={loading}
+                      onEdit={handleEditProduct}
+                      onDelete={handleDelete}
+                      onAddStock={handleAddStock}
                     />
                   </div>
                   <Pagination
@@ -1024,6 +1086,15 @@ const Products = () => {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Stock Add Modal */}
+      <StockAddModal
+        isOpen={showStockModal}
+        onClose={() => setShowStockModal(false)}
+        onAddStock={handleAddStock}
+        product={selectedStockProduct}
+        currentStock={selectedStockProduct ? getProductStock(selectedStockProduct.id) : 0}
+      />
     </motion.div>
   )
 }

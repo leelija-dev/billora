@@ -1,10 +1,24 @@
-import React from 'react'
-import { FiEdit2, FiTrash2, FiPackage } from 'react-icons/fi'
+import React, { useState } from 'react'
+import { FiEdit2, FiTrash2, FiPackage, FiPlus } from 'react-icons/fi'
 import Table from '../../common/Table/Table'
 import StatusBadge from '../../common/StatusBadge/StatusBadge'
 import Button from '../../common/Button/Button'
+import StockAddModal from '../../common/CreateModals/StockAddModal'
 
-const ProductTable = ({ products, loading, onEdit, onDelete }) => {
+const ProductTable = ({ products, loading, onEdit, onDelete, onAddStock }) => {
+  const [showStockModal, setShowStockModal] = useState(false)
+  const [selectedProduct, setSelectedProduct] = useState(null)
+
+  const handleAddStock = (stockData) => {
+    if (onAddStock) {
+      onAddStock(stockData)
+    }
+  }
+
+  const openStockModal = (product) => {
+    setSelectedProduct(product)
+    setShowStockModal(true)
+  }
   const columns = [
     {
       header: 'Product',
@@ -51,18 +65,32 @@ const ProductTable = ({ products, loading, onEdit, onDelete }) => {
       header: 'Stock',
       accessor: 'stock',
       cell: (value, row) => (
-        <div>
+        <div className="flex items-center gap-2">
           <span className={`
             text-sm font-medium
             ${value <= row.lowStockThreshold 
               ? 'text-red-600 dark:text-red-400' 
+              : value === 0
+              ? 'text-orange-600 dark:text-orange-400'
               : 'text-gray-900 dark:text-white'
             }
           `}>
             {value}
           </span>
-          {value <= row.lowStockThreshold && (
-            <span className="ml-2 text-xs text-red-600 dark:text-red-400">
+          {value === 0 && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => openStockModal(row)}
+              icon={FiPlus}
+              className="!px-2 !py-1 text-orange-600 border-orange-300 hover:bg-orange-50 dark:text-orange-400 dark:border-orange-700 dark:hover:bg-orange-900/20"
+              title="Add Stock"
+            >
+              <FiPlus className="w-3 h-3" />
+            </Button>
+          )}
+          {value > 0 && value <= row.lowStockThreshold && (
+            <span className="text-xs text-red-600 dark:text-red-400">
               Low stock
             </span>
           )}
@@ -108,11 +136,21 @@ const ProductTable = ({ products, loading, onEdit, onDelete }) => {
   ]
 
   return (
-    <Table
-      columns={columns}
-      data={products}
-      loading={loading}
-    />
+    <>
+      <Table
+        columns={columns}
+        data={products}
+        loading={loading}
+      />
+      
+      {/* Stock Add Modal */}
+      <StockAddModal
+        isOpen={showStockModal}
+        onClose={() => setShowStockModal(false)}
+        onAddStock={handleAddStock}
+        product={selectedProduct}
+      />
+    </>
   )
 }
 
