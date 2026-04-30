@@ -70,7 +70,7 @@
                         {{ $isBlogMenuActive ? 'bg-blue-100 text-blue-600 font-semibold' : 'hover:bg-blue-100' }}">
 
                             <div class="flex items-center">
-                                <i data-feather="users" class="w-5 h-5"></i>
+                              <i data-feather="clipboard" class="w-5 h-5"></i>
                                 <span class="ml-3">Blog Management</span>
                             </div>
 
@@ -91,7 +91,7 @@
                                 class="flex items-center px-4 py-2 text-sm rounded-lg 
                             {{ request()->routeIs('admin.blogs.*') ? 'bg-blue-100 text-blue-600 font-semibold' : 'hover:bg-blue-100' }}">
 
-                                <i data-feather="user" class="w-4 h-4"></i>
+                                <i data-feather="clipboard" class="w-5 h-5"></i>
                                 <span class="ml-2">Blog</span>
                             </a>
                             <!-- Role -->
@@ -99,7 +99,7 @@
                                 class="flex items-center px-4 py-2 text-sm rounded-lg 
                             {{ request()->routeIs('admin.category.index', 'admin.category.create', 'admin.category.edit') ? 'bg-blue-100 text-blue-600 font-semibold' : 'hover:bg-blue-100' }}">
 
-                                <i data-feather="user-check" class="w-4 h-4"></i>
+                                <i data-feather="grid" class="w-5 h-5"></i>
                                 <span class="ml-2">Categories</span>
                             </a>
                             <!-- Permission -->
@@ -107,7 +107,7 @@
                                 class="flex items-center px-4 py-2 text-sm rounded-lg 
                             {{ request()->routeIs('admin.blog-tag.index','admin.blog-tag.create','admin.blog-tag.edit') ? 'bg-blue-100 text-blue-600 font-semibold' : 'hover:bg-blue-100' }}">
 
-                                <i data-feather="lock" class="w-4 h-4"></i>
+                                <i data-feather="tag" class="w-5 h-5"></i>
                                 <span class="ml-2">Tags</span>
                             </a>
 
@@ -156,6 +156,7 @@
                         <span class="ml-3">Mail History</span>
                     </a>
                 @endif
+                
                 @php
                     $isUserMenuActive =
                         request()->routeIs('admin.admin-users.*') ||

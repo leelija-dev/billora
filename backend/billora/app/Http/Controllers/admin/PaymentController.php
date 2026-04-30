@@ -734,12 +734,12 @@ body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height
             'customer_phone' => 'required',
         ]);
         $customer = Customers::find($request->customer_id);
-
+        $plan = Plans::findOrFail($request->plan_id);
         $lastPlanPurchase = PlanPurchaseHistory::where('user_id', $request->customer_id)
             ->where('plan_id', $customer->plan_id)
             ->latest()
             ->first();
-        Log::info('last plan id is ' . $lastPlanPurchase->plan_id);
+        Log::info('last plan  amount ' . $request->amount);
         $orderId = 'order_' . uniqid();
         $url = config('cashfree.base_url') . '/orders';
 
@@ -759,8 +759,15 @@ body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height
         $remainingAmount = $perDayPrice * $remaningDays;
 
         // Final payable (no negative)
-        $totalAmount = max(0, $request->amount - $remainingAmount);
-        Log::info("Upgrade Plan Calculation: Remaining Days: {$remaningDays}, Duration: {$duration}, Per Day Price: {$perDayPrice}, Remaining Amount: {$remainingAmount}, Total Amount to Pay: {$totalAmount}");
+        // $totalAmount = max(0, $request->amount - $remainingAmount);
+        $planDiscount = ($plan->price - ($plan->price * $plan->discount / 100));
+        $discount = $plan->price * $plan->discount / 100;
+        $totalAmount = ($plan->price - $discount) - $remainingAmount;
+        $gstAmount = ($totalAmount * $plan->gst) / 100;
+        $totalPriceWithGst = $totalAmount + $gstAmount;
+       
+         Log::info("Upgrade Plan Calculation: Remaining Days: {$remaningDays}, Duration: {$duration}, Per Day Price: {$perDayPrice}, Remaining Amount: {$remainingAmount}, Total Amount to Pay: {$totalPriceWithGst}");
+        Log::info('last paln purchase price '.$lastPlanPurchase->price);
         Log::info('total amount: ' . $request->amount);
         $response = Http::withHeaders([
             'x-client-id' => config('cashfree.app_id'),
@@ -769,7 +776,7 @@ body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height
             'Content-Type' => 'application/json'
         ])->post($url, [
             "order_id" => $orderId,
-            "order_amount" => $totalAmount, //$request->amount,
+            "order_amount" => $totalPriceWithGst, //$request->amount,
             "order_currency" => "INR",
             "customer_details" => [
                 "customer_id" => (string) $request->customer_id,
@@ -798,7 +805,7 @@ body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height
         PaymentHistory::create([
             'customer_id' => $request->customer_id,
             'plan_id' => $request->plan_id,
-            'amount' => $totalAmount, //$request->amount,
+            'amount' => $totalPriceWithGst, //$request->amount,
             'payment_method' => 'cashfree',
             'transaction_id' => $orderId,
             'status' => 'PENDING'
@@ -809,7 +816,7 @@ body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height
         $planPurchase = PlanPurchaseHistory::create([
             'user_id' => $request->customer_id,
             'plan_id' => $request->plan_id,
-            'price' => $totalAmount, //$request->amount,
+            'price' => $totalPriceWithGst, //$request->amount,
             'currency' => 'INR',
             'start_date' => null,
             'end_date' => null,

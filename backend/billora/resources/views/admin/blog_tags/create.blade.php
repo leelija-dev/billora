@@ -1,5 +1,5 @@
 @extends('admin.main-layout')
-@section('title', 'Create Business Type')
+@section('title', 'Create new tag')
 @section('content')
     <style>
         * {
@@ -448,7 +448,6 @@
         <div class="page-header">
             <div class="header-left">
                 <h1>Create Tag</h1>
-                <p>Add a new category / tag for business listings</p>
             </div>
             <a href="{{ route('admin.blog-tag.index') }}" class="back-btn">
                 <svg viewBox="0 0 24 24">
@@ -473,10 +472,10 @@
                                 <label class="form-label">Tag Name <span>*</span></label>
                                 <div class="input-wrapper">
                                     <span class="input-icon">
-                                        <svg viewBox="0 0 24 24">
-                                            <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
-                                        </svg>
-                                    </span>
+    <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+        <path d="M20.59 13.41 11 3H4v7l9.59 9.59a2 2 0 0 0 2.82 0l4.18-4.18a2 2 0 0 0 0-2.82zM7.5 8A1.5 1.5 0 1 1 9 6.5 1.5 1.5 0 0 1 7.5 8z"/>
+    </svg>
+</span>
                                     <input type="text" name="name" class="form-input with-icon" 
                                         placeholder="Enter Tag Name" 
                                         value="{{ old('name') }}" required>
@@ -518,7 +517,7 @@
 
                 <!-- Form Actions -->
                 <div class="form-actions">
-                    <a href="{{ route('admin.business-types.index') }}" class="btn btn-secondary">
+                    <a href="{{ route('admin.blog-tag.index') }}" class="btn btn-secondary">
                         <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
                             <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
                         </svg>
