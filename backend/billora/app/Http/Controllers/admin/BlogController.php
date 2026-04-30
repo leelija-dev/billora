@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Blog;
 use App\Models\Category;
+use App\Models\Tags;
 
 class BlogController extends Controller
 {
@@ -16,7 +17,7 @@ class BlogController extends Controller
         $search = $request->search;
         $categoryId = $request->category_id;
 
-        $blogs = Blog::with(['categories','tags'])
+        $blogs = Blog::with(['categories','tags','faqs','user'])
             ->where('status', true)
             // Search
             ->when($search, function ($query) use ($search) {
@@ -51,12 +52,13 @@ class BlogController extends Controller
             ->paginate(6);
 
         $categories = Category::where('status', true)->get();
-
+        $tags = Tags::where('status', true)->get();
         return response()->json([
             'status' => true,
             'message' => 'All Blogs list with pagination',
             'categories' => $categories,
             'blogs' => $blogs,
+            'tags' => $tags
         ]);
 
     } catch (\Exception $e) {
@@ -84,7 +86,7 @@ class BlogController extends Controller
  }
  public function show($slug){
     try{
-        $blog = Blog::with(['categories','tags'])->where('status',true)->where('slug',$slug)->first();
+        $blog = Blog::with(['categories','tags','faqs','user'])->where('status',true)->where('slug',$slug)->first();
 
         return response()->json([
             'status'=>true,

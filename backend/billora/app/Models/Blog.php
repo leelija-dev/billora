@@ -42,4 +42,11 @@ public function categories()
         'category_id'
     );
 }
+public function faqs()
+{
+    return $this->hasMany(BlogFaq::class , 'blog_id');
+}
+public function user(){
+    return $this->belongsTo(AdminUser::class , 'created_by');
+}
 }
