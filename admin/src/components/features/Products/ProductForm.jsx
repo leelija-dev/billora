@@ -8,8 +8,11 @@ import { productsAPI } from '../../../services/productsService'
 import Input from '../../common/Input/Input'
 import Button from '../../common/Button/Button'
 import Select from '../../common/Select/Select'
+import SearchSelect from '../../common/SearchSelect/SearchSelect' // Import the new component
 import toast from 'react-hot-toast'
 import { FiUpload, FiX, FiPlus, FiTrash2 } from 'react-icons/fi'
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api'
 
 const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
   const { user } = useAuthStore()
@@ -203,14 +206,77 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
         setValue('attributes', {})
       }
       
-      // Handle images
-      if (product.images && Array.isArray(product.images)) {
+      // Debug: Log the entire product object to see what we're working with
+      console.log('Product object for image processing:', product)
+      console.log('product.images:', product.images)
+      console.log('product.image:', product.image)
+      
+      // Handle images - fix for both localhost and server
+      if (product.images && Array.isArray(product.images) && product.images.length > 0) {
+        console.log('Processing multiple images array')
         setSelectedImages(product.images)
-        setImagePreviews(product.images.map(img => img.url || img))
+        // Handle different image URL formats for localhost vs server
+        const previews = product.images.map((img, index) => {
+          console.log(`Processing image ${index}:`, img, typeof img)
+          
+          if (typeof img === 'string') {
+            // If it's already a URL string, use it directly
+            const url = img.startsWith('http') ? img : `${API_BASE_URL.replace('/api', '')}/storage/${img}`
+            console.log(`String image URL: ${url}`)
+            return url
+          } else if (img && typeof img === 'object') {
+            // If it's an object, extract the URL from different possible properties
+            const imageUrl = img.url || img.path || img.src || img.image || img.name
+            if (imageUrl) {
+              const fullUrl = imageUrl.startsWith('http') ? imageUrl : `${API_BASE_URL.replace('/api', '')}/storage/${imageUrl}`
+              console.log(`Object image URL: ${fullUrl}`)
+              return fullUrl
+            } else {
+              console.warn(`Image object ${index} has no recognizable URL property:`, img)
+              // Return a placeholder or skip this image
+              return null
+            }
+          } else {
+            console.warn(`Unsupported image format at index ${index}:`, img)
+            return null
+          }
+        }).filter(url => url !== null) // Filter out null values
+        
+        console.log('Final image previews (multiple):', previews)
+        setImagePreviews(previews)
+      } else if (product.image) {
+        // Handle single image case
+        console.log('Processing single image:', product.image)
+        let singleImage
+        if (typeof product.image === 'string') {
+          singleImage = product.image
+        } else if (product.image && typeof product.image === 'object') {
+          singleImage = product.image.url || product.image.path || product.image.src || product.image.name
+        } else {
+          console.warn('Unsupported single image format:', product.image)
+          singleImage = null
+        }
+        
+        if (singleImage) {
+          let imageUrl = singleImage.startsWith('http') ? singleImage : `${API_BASE_URL.replace('/api', '')}/storage/${singleImage}`
+          console.log(`Single image URL: ${imageUrl}`)
+          setSelectedImages([product.image])
+          setImagePreviews([imageUrl]) // Set preview directly, let img tag handle errors
+        } else {
+          console.warn('Could not extract single image URL')
+          setSelectedImages([])
+          setImagePreviews([])
+        }
+      } else {
+        console.log('No images found in product object')
+        // Clear any existing images
+        setSelectedImages([])
+        setImagePreviews([])
       }
     }
   }, [product, createPageData.brands, setValue])
 
+  // ... rest of the code remains the same ...
   // Check if user has permission for a specific field
   const hasPermission = (fieldSlug) => {
     if (!createPageData.inputPermissions.length) return false
@@ -305,6 +371,8 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
 
   // Form submission
   const onFormSubmit = (data) => {
+    console.log('🚀 Form submission triggered!', data)
+    
     // Convert attributes to array format expected by backend
     const attributesArray = attributes
       .filter(attr => attr.key.trim() !== '')
@@ -397,6 +465,30 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
                   src={preview} 
                   alt={`Product ${index + 1}`} 
                   className="w-full h-full object-cover"
+                  onError={(e) => {
+                    console.error(`Failed to load image ${index}:`, preview)
+                    // If it's a Google Drive URL, show a message instead of trying to load it
+                    if (preview.includes('drive.google.com')) {
+                      // Create a placeholder with message
+                      e.target.style.display = 'none'
+                      const parent = e.target.parentElement
+                      const placeholder = document.createElement('div')
+                      placeholder.className = 'w-full h-full flex flex-col items-center justify-center bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 text-xs p-2 text-center'
+                      placeholder.innerHTML = `
+                        <svg class="w-8 h-8 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                        </svg>
+                        <div>Google Drive Image</div>
+                        <div class="text-xs mt-1">Cannot display due to CORS</div>
+                        <div class="text-xs mt-1 opacity-60">Re-upload image to fix</div>
+                      `
+                      parent.appendChild(placeholder)
+                    } else {
+                      // For other failed images, show a simple placeholder
+                      e.target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgdmlld0JveD0iMCAwIDIwMCAyMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIyMDAiIGhlaWdodD0iMjAwIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik04NSA3NUgxMTVWMTI1SDg1Vjc1WiIgZmlsbD0iI0QxRDVEQiIvPgo8Y2lyY2xlIGN4PSI5MCIgY3k9IjkwIiByPSI1IiBmaWxsPSIjOUJBM0FGIi8+CjxwYXRoIGQ9Ik05NSAxMDBWMTA1SDEwMFY5OUg5NVoiIGZpbGw9IiM5QkEzQUYiLz4KPC9zdmc+'
+                    }
+                    e.target.onerror = null
+                  }}
                 />
               </div>
               <button
@@ -454,30 +546,44 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
             {...register('sku', { required: 'Product code is required' })}
           />
 
-          <Select
+          <SearchSelect
             label="Brand"
-            options={[
-              { value: '', label: 'Select Brand' },
-              ...(createPageData.brands?.map(brand => ({
-                value: brand.id,
-                label: brand.name,
-              })) || [])
-            ]}
+            options={createPageData.brands?.map(brand => ({
+              value: brand.id,
+              label: brand.name,
+              description: brand.code ? `Code: ${brand.code}` : null,
+              subtext: brand.category ? `Category: ${brand.category}` : null
+            })) || []}
+            value={watch('brand_id') || ''}
+            onChange={(value) => setValue('brand_id', value, { shouldValidate: true })}
             error={errors.brand_id?.message}
+            placeholder="Search for a brand..."
+            required
+          />
+          <input
+            type="hidden"
             {...register('brand_id', { required: 'Brand is required' })}
+            value={watch('brand_id') || ''}
           />
 
-          <Select
+          <SearchSelect
             label="Category"
-            options={[
-              { value: '', label: 'Select Category' },
-              ...(createPageData.categories?.map(category => ({
-                value: category.id,
-                label: category.name,
-              })) || [])
-            ]}
+            options={createPageData.categories?.map(category => ({
+              value: category.id,
+              label: category.name,
+              description: category.code ? `Code: ${category.code}` : null,
+              subtext: category.parent_name ? `Parent: ${category.parent_name}` : null
+            })) || []}
+            value={watch('category_id') || ''}
+            onChange={(value) => setValue('category_id', value, { shouldValidate: true })}
             error={errors.category_id?.message}
+            placeholder="Search for a category..."
+            required
+          />
+          <input
+            type="hidden"
             {...register('category_id', { required: 'Category is required' })}
+            value={watch('category_id') || ''}
           />
         </div>
       </div>
@@ -502,17 +608,25 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
             })}
           />
 
-          <Select
-            label="Unit"
-            options={[
-              { value: '', label: 'Select Unit' },
-              ...(createPageData.units?.map(unit => ({
-                value: unit.id,
-                label: `${unit.name} (${unit.code})`,
-              })) || [])
-            ]}
-            error={errors.unit_id?.message}
+          <SearchSelect
+  label="Unit"
+  options={createPageData.units?.map(unit => ({
+    value: unit.id,
+    label: `${unit.name} (${unit.code})`,
+    description: unit.code ? `Code: ${unit.code}` : null,
+    subtext: unit.base_unit ? `Base: ${unit.base_unit}` : null
+  })) || []}
+  value={watch('unit_id') || ''}
+  onChange={(value) => setValue('unit_id', value, { shouldValidate: true })}
+  error={errors.unit_id?.message}
+  placeholder="Search for a unit..."
+  required
+/>
+
+          <input
+            type="hidden"
             {...register('unit_id', { required: 'Unit is required' })}
+            value={watch('unit_id') || ''}
           />
 
           <Input
@@ -796,8 +910,7 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
             error={errors.gst_hsn_code?.message}
             {...register('gst_hsn_code', { 
               valueAsNumber: true,
-              pattern: /^[0-9]*$/,
-              validate: value => !isNaN(value) || 'GST HSN Code must be a number'
+              pattern: /^[0-9]*$/
             })}
           />
         </div>
@@ -819,21 +932,24 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
                   type="hidden"
                   {...register('medicine_type_id')}
                 />
-                <Select
-                  label="Medicine Type"
-                  options={[
-                    { value: '', label: 'Select medicine type' },
-                    ...(medicineTypes?.map(type => ({
-                      value: type.id,
-                      label: type.name
-                    })) || [])
-                  ]}
+                <input
+                  type="hidden"
+                  {...register('medicine_type_id', { required: 'Medicine type is required' })}
                   value={watch('medicine_type_id') || ''}
-                  onChange={(e) => {
-                    setValue('medicine_type_id', e.target.value, { shouldValidate: true })
-                  }}
-                  error={errors.medicine_type_id?.message}
                 />
+               <SearchSelect
+  label="Medicine Type"
+  options={medicineTypes?.map(type => ({
+    value: type.id,
+    label: type.name,
+    description: type.code ? `Code: ${type.code}` : null,
+    subtext: type.category ? `Category: ${type.category}` : null
+  })) || []}
+  value={watch('medicine_type_id') || ''}
+  onChange={(value) => setValue('medicine_type_id', value, { shouldValidate: true })}
+  error={errors.medicine_type_id?.message}
+  placeholder="Search for a medicine type..."
+/>
               </>
             ))}
 
@@ -1159,11 +1275,23 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
             <Button
               type="button"
               variant="primary"
-              onClick={handleSubmit(onFormSubmit)}
+              onClick={() => {
+                console.log('🔘 Update button clicked!')
+                console.log('🔍 Form errors:', errors)
+                console.log('🔍 Form values:', {
+                  brand_id: watch('brand_id'),
+                  category_id: watch('category_id'),
+                  unit_id: watch('unit_id'),
+                  medicine_type_id: watch('medicine_type_id'),
+                  name: watch('name'),
+                  sku: watch('sku')
+                })
+                handleSubmit(onFormSubmit)()
+              }}
               isLoading={isSubmitting}
               disabled={isSubmitting}
             >
-              {isSubmitting ? (product ? 'Updating...' : 'Creating...') : (product ? 'Update Product' : 'Create Product')}
+              {product ? 'Update Product' : 'Create Product'}
             </Button>
           </div>
         </div>
