@@ -347,6 +347,27 @@ const Products = () => {
                 src={row.image}
                 alt={value}
                 className="w-12 h-12 rounded-xl object-cover mr-3 ring-2 ring-gray-200 dark:ring-gray-700"
+                onError={(e) => {
+                  console.error(`Failed to load product image:`, row.image)
+                  // If it's a Google Drive URL, show a special placeholder
+                  if (row.image && row.image.includes('drive.google.com')) {
+                    e.target.style.display = 'none'
+                    const parent = e.target.parentElement
+                    const placeholder = document.createElement('div')
+                    placeholder.className = 'w-12 h-12 bg-gradient-to-br from-red-50 to-orange-50 dark:from-red-900/20 dark:to-orange-900/20 rounded-xl mr-3 flex flex-col items-center justify-center ring-2 ring-red-200 dark:ring-red-800'
+                    placeholder.innerHTML = `
+                      <svg class="w-4 h-4 text-red-500 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                      </svg>
+                      <span class="text-[8px] text-red-600 dark:text-red-400 mt-1">Drive</span>
+                    `
+                    parent.appendChild(placeholder)
+                  } else {
+                    // For other failed images, show default placeholder
+                    e.target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDgiIGhlaWdodD0iNDgiIHZpZXdCb3g9IjAgMCA0OCA0OCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjQ4IiBoZWlnaHQ9IjQ4IiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0yMCAyMEgzOFYzMEgyMFYyMFoiIGZpbGw9IiNEMUQ1REIiLz4KPGNpcmNsZSBjeD0iMjkiIGN5PSIyNSIgcj0iMiIgZmlsbD0iIzlCQTNBRiIvPgo8cGF0aCBkPSJNMzAgMzBWMzJIMzJWMzBIMzJWMzBaIiBmaWxsPSIjOUJBM0FGIi8+Cjwvc3ZnPg=='
+                  }
+                  e.target.onerror = null
+                }}
               />
             ) : (
               <div className="w-12 h-12 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-600 rounded-xl mr-3 flex items-center justify-center ring-2 ring-gray-200 dark:ring-gray-700">
@@ -810,6 +831,28 @@ const Products = () => {
                               src={product.image}
                               alt={product.name}
                               className="w-full h-full object-cover"
+                              onError={(e) => {
+                                console.error(`Failed to load product grid image:`, product.image)
+                                // If it's a Google Drive URL, show a special placeholder
+                                if (product.image && product.image.includes('drive.google.com')) {
+                                  e.target.style.display = 'none'
+                                  const parent = e.target.parentElement
+                                  const placeholder = document.createElement('div')
+                                  placeholder.className = 'w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-red-50 to-orange-50 dark:from-red-900/20 dark:to-orange-900/20'
+                                  placeholder.innerHTML = `
+                                    <svg class="w-12 h-12 text-red-500 dark:text-red-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                                    </svg>
+                                    <span class="text-sm text-red-600 dark:text-red-400 font-medium">Google Drive</span>
+                                    <span class="text-xs text-red-500 dark:text-red-500 mt-1">Image not available</span>
+                                  `
+                                  parent.appendChild(placeholder)
+                                } else {
+                                  // For other failed images, show default placeholder
+                                  e.target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgdmlld0JveD0iMCAwIDIwMCAyMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIyMDAiIGhlaWdodD0iMjAwIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik04NSA3NUgxMTVWMTI1SDg1Vjc1WiIgZmlsbD0iI0QxRDVEQiIvPgo8Y2lyY2xlIGN4PSI5MCIgY3k9IjkwIiByPSI1IiBmaWxsPSIjOUJBM0FGIi8+CjxwYXRoIGQ9Ik05NSAxMDBWMTA1SDEwMFY5OUg5NVoiIGZpbGw9IiM5QkEzQUYiLz4KPC9zdmc+'
+                                }
+                                e.target.onerror = null
+                              }}
                             />
                           ) : (
                             <div className="w-full h-full flex items-center justify-center">

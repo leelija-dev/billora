@@ -7,6 +7,7 @@ import { brandsAPI } from './brandsService';
 import { categoriesAPI } from './categoriesService';
 import { unitsAPI } from './unitsService';
 import { stocksAPI } from './stocksService';
+import { medicineTypeAPI } from './medicineTypeService';
 import { invoiceAPI } from './invoiceService';
 import { storeAPI } from './storeService';
 import { customerAPI } from './customerService';
@@ -20,6 +21,7 @@ export {
   categoriesAPI,
   unitsAPI,
   stocksAPI,
+  medicineTypeAPI,
   invoiceAPI,
   storeAPI,
   customerAPI,
@@ -42,6 +44,7 @@ export default {
   categoriesAPI,
   unitsAPI,
   stocksAPI,
+  medicineTypeAPI,
   invoiceAPI,
   storeAPI,
   customerAPI,
