@@ -485,7 +485,7 @@
                                 @enderror
                             </div>
                             <div class="form-group">
-                                <label class="form-label">Category Description <span>*</span></label>
+                                <label class="form-label">Category Description</label>
                                 <div class="input-group">
                                     
                                     <textarea name="description" class="form-input" rows="4"
