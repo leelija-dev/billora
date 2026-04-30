@@ -665,10 +665,10 @@ if ($request->has('variants')) {
                 ]);
                 }else{
                       $stock = Stocks::create($stocks);
-                $stocks = Stocks::where('user_id', $user)->get();
+                // $stocks = Stocks::where('user_id', $user)->get();
                 }
               
-            Log::info('stocks created'. $stocks);
+            // Log::info('stocks created'. $stocks);
             } 
             }
             //update multiple images
