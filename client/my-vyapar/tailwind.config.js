@@ -1,10 +1,15 @@
 /** @type {import('tailwindcss').Config} */
 export default {
     content: [
-        "./resources/**/*.blade.php",
-        "./resources/**/*.js",
-        "./resources/**/*.css",
-        "./resources/**/*.vue",
+        "./app/**/*.{js,jsx,ts,tsx}",
+        "./pages/**/*.{js,jsx,ts,tsx}",
+        "./components/**/*.{js,jsx,ts,tsx}",
+        "./data/**/*.{js,jsx,ts,tsx}",
+        "./services/**/*.{js,jsx,ts,tsx}",
+        "./store/**/*.{js,jsx,ts,tsx}",
+        "./utils/**/*.{js,jsx,ts,tsx}",
+        "./hooks/**/*.{js,jsx,ts,tsx}",
+        "./contexts/**/*.{js,jsx,ts,tsx}",
         "./public/**/*.js",
         "./public/**/*.css",
     ],
@@ -150,6 +155,8 @@ fontSize: {
         ],
     },
     plugins: [
+        require('@tailwindcss/line-clamp'),
+        require('@tailwindcss/typography'),
         function ({ addComponents }) {
             addComponents({
                 ".btn-primary": {
