@@ -777,11 +777,7 @@
                                                     class="inline-flex items-center justify-center w-10 h-10 rounded-lg bg-blue-100 text-blue-600 hover:bg-blue-600 hover:text-white transition-all duration-200 shadow-sm"
                                                     title="Edit Category">
 
-                                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none"
-                                                        viewBox="0 0 24 24" stroke="currentColor">
-                                                        <path stroke-linecap="round" stroke-linejoin="round"
-                                                            stroke-width="2" d="M11 5h2m-1-1v2m-7 9l9-9 3 3-9 9H5v-3z" />
-                                                    </svg>
+                                                    <i class="fa-regular fa-pen-to-square text-sm"></i>
                                                 </a>
 
                                                 <!-- Delete Button -->
