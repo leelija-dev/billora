@@ -91,4 +91,7 @@ class Products extends Model
     {
         return $this->hasMany( Stocks::class, 'product_id');
     }
+    public function medicine_type(){
+        return $this->belongsTo(MedicineType::class,'medicine_type_id');
+    }
 }

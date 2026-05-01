@@ -39,7 +39,9 @@ Route::middleware(['web', 'admin.auth'])->prefix('admin')->group(function () {
         Route::get('all-plans/{id}', [CustomerController::class, 'plans'])->name('admin.customers.plans');
         Route::get('/send-mail', [CustomerController::class, 'customerMail'])->name('admin.customers.customer-mail');
         Route::post('/send-mail', [CustomerController::class, 'sendMail'])->name('admin.customers.send-mail');
-    });
+        // Route::get('mail-verify/{id}', [App\Http\Controllers\admin\CustomerController::class, 'mailVerify'])->name('admin.customers.mail-verify');
+        Route::get('/send-verification-mail/{id}', [CustomerController::class, 'sendVerificationMail'])->name('customer.sendVerificationMail');
+        });
     Route::prefix('plans')->group(function () {
         Route::get('/', [PlansController::class, 'index'])->name('admin.plans.index');
         Route::get('/create', [PlansController::class, 'create'])->name('admin.plans.create');

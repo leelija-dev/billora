@@ -447,8 +447,8 @@
             </div>
             <div class="stat-card">
                 <div class="stat-info">
-                    <h3>Total Revenue</h3>
-                    <div class="stat-number">₹24.5L</div>
+                    <h3>Inactive Customer</h3>
+                    <div class="stat-number">{{ $customers->where('is_active', 0)->count() }}</div>
                 </div>
                 <div class="stat-icon">
                     <svg viewBox="0 0 24 24">
@@ -519,6 +519,7 @@
                         <th>Customer Information</th>
                         <th>Recent Plans</th>
                         <th>Status</th>
+                        <th>Verify Status</th>
                         <th>Joined Date</th>
                         <th>Plans</th>
                         <th style="width: 100px;">Actions</th>
@@ -554,6 +555,18 @@
                                         <span class="badge badge-active">Active</span>
                                     @else
                                         <span class="badge badge-inactive">Inactive</span>
+                                    @endif
+                                </td>
+                                
+                                <td>
+                                    @if ($customer->email_verified_at)
+                                        <span class="badge badge-verified" style="background-color: #48bb78; color: white;">Verified</span>
+                                    @else
+                                        <a href="{{ route('customer.sendVerificationMail', $customer->id) }}">
+                                            <button class="action-btn" title="Not Verified">
+                                                Send Mail
+                                            </button>
+                                        </a>
                                     @endif
                                 </td>
                                 <td>
@@ -710,5 +723,34 @@
 </script>
 
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+ @if (session('success'))
+            <script>
+                Swal.fire({
+                    toast: true,
+                    position: 'top-end',
+                    icon: 'success',
+                    title: "{{ session('success') }}",
+                    showConfirmButton: false,
+                    timer: 3000,
+                    background: 'white',
+                    backdrop: false
+                });
+            </script>
+        @endif
 
+        @if (session('error'))
+            <script>
+                Swal.fire({
+                    toast: true,
+                    position: 'top-end',
+                    icon: 'error',
+                    title: "{{ session('error') }}",
+                    showConfirmButton: false,
+                    timer: 3000,
+                    background: 'white',
+                    backdrop: false
+                });
+            </script>
+        @endif
+        
 @endsection

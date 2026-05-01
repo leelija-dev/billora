@@ -387,6 +387,80 @@ class CustomerController extends Controller
         return redirect($frontendLoginUrl . '/login?verified=true');
     }
 
+    public function resendVerificationEmail(Request $request)
+    {
+        try {
+            $request->validate([
+                'email' => 'required|email|exists:customers,email'
+            ]);
+
+            $customer = Customers::where('email', $request->email)->first();
+
+            // Check if email is already verified
+            if (!is_null($customer->email_verified_at)) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Email is already verified'
+                ], 400);
+            }
+
+            // Generate new verification token
+            $newToken = Str::random(64);
+            $customer->update([
+                'verification_token' => $newToken
+            ]);
+
+            // Send verification email
+            try {
+                $customerMail = $this->CustomerMail($customer->id, $newToken);
+                
+                Mail::html($customerMail, function ($message) use ($customer) {
+                    $message->to($customer->email)
+                            ->subject('Verify Your Email Address');
+                });
+
+                Log::info('Verification email resent successfully', [
+                    'customer_id' => $customer->id,
+                    'email' => $customer->email
+                ]);
+
+                return response()->json([
+                    'status' => true,
+                    'message' => 'Verification email sent successfully. Please check your inbox.'
+                ]);
+
+            } catch (\Exception $e) {
+                Log::error('Failed to resend verification email', [
+                    'error' => $e->getMessage(),
+                    'customer_id' => $customer->id,
+                    'email' => $customer->email
+                ]);
+
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Failed to send verification email. Please try again later.'
+                ], 500);
+            }
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Validation failed',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            Log::error('Resend verification email error', [
+                'error' => $e->getMessage(),
+                'email' => $request->email ?? null
+            ]);
+
+            return response()->json([
+                'status' => false,
+                'message' => 'An error occurred. Please try again later.'
+            ], 500);
+        }
+    }
+
 // namespace App\Http\Controllers\admin;
 
 // use App\Http\Controllers\Controller;
