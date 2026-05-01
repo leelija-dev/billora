@@ -26,6 +26,7 @@ import { useProductStore } from '../../store/productStore'
 import { stockAPI } from '../../services/stockService'
 import { categoriesAPI } from '../../services/categoriesService'
 import { brandsAPI } from '../../services/brandsService'
+import { unitsAPI } from '../../services/unitsService'
 import Button from '../../components/common/Button/Button'
 import Input from '../../components/common/Input/Input'
 import Table from '../../components/common/Table/Table'
@@ -95,8 +96,10 @@ const Products = () => {
   const [stocksLoading, setStocksLoading] = useState(false)
   const [categories, setCategories] = useState([])
   const [brands, setBrands] = useState([])
+  const [units, setUnits] = useState([])
   const [categoriesLoading, setCategoriesLoading] = useState(false)
   const [brandsLoading, setBrandsLoading] = useState(false)
+  const [unitsLoading, setUnitsLoading] = useState(false)
   const [showStockModal, setShowStockModal] = useState(false)
   const [selectedProductToDelete, setSelectedProductToDelete] = useState(null)
   const [selectedStockProduct, setSelectedStockProduct] = useState(null)
@@ -162,26 +165,28 @@ const Products = () => {
     return () => clearTimeout(debounceTimer)
   }, [searchTerm, setFilters])
 
-  // Fetch categories and brands data
+  // Fetch categories, brands and units data
   useEffect(() => {
-    const fetchCategoriesAndBrands = async () => {
+    const fetchCategoriesBrandsAndUnits = async () => {
       // Prevent duplicate calls using refs
       if (categoriesInitializedRef.current || brandsInitializedRef.current) return
       categoriesInitializedRef.current = true
       brandsInitializedRef.current = true
       
       // Prevent duplicate calls if already loading or data exists
-      if (categoriesLoading || brandsLoading || (categories.length > 0 && brands.length > 0)) {
+      if (categoriesLoading || brandsLoading || unitsLoading || (categories.length > 0 && brands.length > 0 && units.length > 0)) {
         return
       }
       
       setCategoriesLoading(true)
       setBrandsLoading(true)
+      setUnitsLoading(true)
       
       try {
-        const [categoriesRes, brandsRes] = await Promise.all([
+        const [categoriesRes, brandsRes, unitsRes] = await Promise.all([
           categoriesAPI.getAll(),
-          brandsAPI.getAll()
+          brandsAPI.getAll(),
+          unitsAPI.getAll()
         ])
         
         // FIX: Extract the data array from the paginated response
@@ -206,22 +211,36 @@ const Products = () => {
           brandsData = brandsRes?.data || []
         }
         
+        // Units API might return array directly or nested
+        let unitsData = []
+        if (unitsRes?.data?.data) {
+          unitsData = Array.isArray(unitsRes.data.data)
+            ? unitsRes.data.data
+            : unitsRes.data.data.data || []
+        } else {
+          unitsData = unitsRes?.data || []
+        }
+        
         console.log('Categories fetched:', categoriesData)
         console.log('Brands fetched:', brandsData)
+        console.log('Units fetched:', unitsData)
         
         setCategories(categoriesData)
         setBrands(brandsData)
+        setUnits(unitsData)
       } catch (error) {
-        console.error('Error fetching categories and brands:', error)
+        console.error('Error fetching categories, brands and units:', error)
         setCategories([])
         setBrands([])
+        setUnits([])
       } finally {
         setCategoriesLoading(false)
         setBrandsLoading(false)
+        setUnitsLoading(false)
       }
     }
     
-    fetchCategoriesAndBrands()
+    fetchCategoriesBrandsAndUnits()
   }, [])
 
   const handleAddProduct = () => {
@@ -514,12 +533,106 @@ const Products = () => {
               <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full ring-2 ring-white dark:ring-gray-800" />
             )}
           </motion.div>
-          <div>
+          <div className="flex-1">
             <p className="font-medium text-gray-900 dark:text-white">{value}</p>
             <p className="text-sm text-gray-500 dark:text-gray-400">SKU: {row.sku}</p>
+            
+            {/* Unit Information */}
+            {row.unit_id && (
+              <div className="flex items-center mt-1">
+                <span className="text-xs text-gray-500 dark:text-gray-400">
+                  {(() => {
+                    const unit = Array.isArray(units) ? units.find(u => u.id === row.unit_id) : null
+                    return unit ? `${row.unit_amount || '1'} ${unit.name}` : `Unit ${row.unit_id}`
+                  })()}
+                </span>
+              </div>
+            )}
+            
+            {/* Attributes */}
+            {row.attributes && (
+              <div className="mt-1">
+                {(() => {
+                  let attributes = row.attributes
+                  if (typeof attributes === 'string') {
+                    try {
+                      attributes = JSON.parse(attributes)
+                    } catch (e) {
+                      return null
+                    }
+                  }
+                  
+                  if (typeof attributes === 'object' && attributes !== null) {
+                    const attrEntries = Object.entries(attributes).slice(0, 2) // Show max 2 attributes
+                    if (attrEntries.length > 0) {
+                      return (
+                        <div className="flex flex-wrap gap-1">
+                          {attrEntries.map(([key, val]) => (
+                            <span key={key} className="inline-block px-1.5 py-0.5 text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded">
+                              {key}: {typeof val === 'object' ? JSON.stringify(val) : String(val)}
+                            </span>
+                          ))}
+                          {Object.keys(attributes).length > 2 && (
+                            <span className="inline-block px-1.5 py-0.5 text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded">
+                              +{Object.keys(attributes).length - 2} more
+                            </span>
+                          )}
+                        </div>
+                      )
+                    }
+                  }
+                  return null
+                })()}
+              </div>
+            )}
+            
+            {/* Variants */}
+            {row.variants && Array.isArray(row.variants) && row.variants.length > 0 && (
+              <div className="mt-1">
+                <div className="flex flex-wrap gap-1">
+                  {row.variants.slice(0, 3).map((variant, index) => (
+                    <span key={index} className="inline-block px-1.5 py-0.5 text-xs bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded">
+                      {variant.size && `Size: ${String(variant.size)}`}
+                      {variant.color && `, Color: ${String(variant.color)}`}
+                      {variant.material && `, Material: ${String(variant.material)}`}
+                      {!variant.size && !variant.color && !variant.material && `Variant ${index + 1}`}
+                    </span>
+                  ))}
+                  {row.variants.length > 3 && (
+                    <span className="inline-block px-1.5 py-0.5 text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded">
+                      +{row.variants.length - 3} more
+                    </span>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       ),
+    },
+    {
+      header: 'Selling Price',
+      accessor: 'selling_price',
+      cell: (value) => {
+        const price = typeof value === 'string' ? parseFloat(value) : (typeof value === 'number' ? value : 0);
+        return (
+          <span className="px-3 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded-lg text-sm font-medium">
+            ${isNaN(price) ? '0.00' : price.toFixed(2)}
+          </span>
+        );
+      },
+    },
+    {
+      header: 'Purchase Price',
+      accessor: 'purchase_price',
+      cell: (value) => {
+        const price = typeof value === 'string' ? parseFloat(value) : (typeof value === 'number' ? value : 0);
+        return (
+          <span className="px-3 py-1 bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 rounded-lg text-sm font-medium">
+            ${isNaN(price) ? '0.00' : price.toFixed(2)}
+          </span>
+        );
+      },
     },
     {
       header: 'Category',
