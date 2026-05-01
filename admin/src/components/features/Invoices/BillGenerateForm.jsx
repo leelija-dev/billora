@@ -4,15 +4,20 @@ import { FiSave, FiX, FiPlus, FiTrash2, FiUser, FiShoppingCart, FiDollarSign, Fi
 import Input from '../../common/Input/Input'
 import Button from '../../common/Button/Button'
 import Select from '../../common/Select/Select'
+import SearchSelect from '../../common/SearchSelect/SearchSelect'
 import EmptyState from '../../common/EmptyState/EmptyState'
 import Modal from '../../common/Modal/Modal'
+import StoreModal from './StoreModal'
+import CustomerModal from './CustomerModal'
 import { invoiceAPI } from '../../../services/invoiceService'
 import { stockAPI } from '../../../services/stockService'
 import { packagesAPI } from '../../../services/packagesService'
+import { storeAPI } from '../../../services/storeService'
 import usePackageStore from '../../../store/packageStore'
 import { useAuthStore } from '../../../store/authStore'
 import { useCustomerStore } from '../../../store/customerStore'
 import toast from 'react-hot-toast'
+import { LucideStore } from 'lucide-react'
 
 // Cache for bill generate data
 let billGenerateCache = null
@@ -93,6 +98,10 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
     gst: ''
   })
   const [customerErrors, setCustomerErrors] = useState({})
+  
+  // Add store modal state
+  const [showAddStoreModal, setShowAddStoreModal] = useState(false)
+  const [isCreatingStore, setIsCreatingStore] = useState(false)
   
   // Enhanced product search state
   const [filteredProducts, setFilteredProducts] = useState([])
@@ -469,71 +478,69 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
   }
 
   // Handle customer creation from modal
-  const handleCreateCustomer = async () => {
-    if (!validateCustomerForm()) {
-      return
-    }
-
-    setIsCreatingCustomer(true)
+  const handleCreateCustomer = async (customerData) => {
     try {
-      const result = await createCustomer({
-        ...newCustomerData,
-        admin_id: currentUserId,
-        created_by: currentUserId
-      })
+      // Refresh customers list
+      await fetchCustomers(currentUserId, '')
       
-      if (result.success) {
-        // Refresh customers list
-        await fetchCustomers(currentUserId, '')
+      // Fetch updated customers from API
+      try {
+        const response = await invoiceAPI.getBillGenerateData(currentUserId)
+        let updatedData = response.data?.data || response.data || {}
+        const updatedCustomersList = updatedData.customers || updatedData.bill_customer || updatedData.customer || []
+        setCustomers(Array.isArray(updatedCustomersList) ? updatedCustomersList : [])
         
-        // Fetch updated customers from API
-        try {
-          const response = await invoiceAPI.getBillGenerateData(currentUserId)
-          let updatedData = response.data?.data || response.data || {}
-          const updatedCustomersList = updatedData.customers || updatedData.bill_customer || updatedData.customer || []
-          setCustomers(Array.isArray(updatedCustomersList) ? updatedCustomersList : [])
-          
-          // Find the newly created customer
-          const newCustomer = updatedCustomersList.find(c => 
-            c.name === newCustomerData.name || 
-            c.phone === newCustomerData.phone
-          )
-          
-          if (newCustomer) {
-            // Auto-select the new customer
-            setFormData(prev => ({
-              ...prev,
-              customer_id: newCustomer.id
-            }))
-            setCustomerSearch(newCustomer.name || newCustomer.customer_name)
-            toast.success('Customer created and selected successfully')
-          } else {
-            toast.success('Customer created successfully')
-          }
-        } catch (error) {
-          console.error('Failed to refresh customer list:', error)
+        // Find the newly created customer
+        const newCustomer = updatedCustomersList.find(c => 
+          c.name === customerData.name || 
+          c.phone === customerData.phone
+        )
+        
+        if (newCustomer) {
+          // Auto-select the new customer
+          setFormData(prev => ({
+            ...prev,
+            customer_id: newCustomer.id
+          }))
+          toast.success('Customer created and selected successfully')
+        } else {
+          // Fallback: use the returned customer data
+          setFormData(prev => ({
+            ...prev,
+            customer_id: customerData.id
+          }))
           toast.success('Customer created successfully')
         }
-        
-        // Reset modal and form
-        setShowAddCustomerModal(false)
-        setNewCustomerData({
-          name: '',
-          email: '',
-          phone: '',
-          address: '',
-          city: '',
-          gst: ''
-        })
-        setCustomerErrors({})
-      } else {
-        toast.error(result.error?.message || 'Failed to create customer')
+      } catch (error) {
+        console.error('Failed to refresh customer list:', error)
+        // Fallback: use the returned customer data
+        setFormData(prev => ({
+          ...prev,
+          customer_id: customerData.id
+        }))
+        toast.success('Customer created successfully')
       }
-    } catch (error) {
-      console.error('Error creating customer:', error)
-      toast.error('Failed to create customer')
-    } finally {
-      setIsCreatingCustomer(false)
+      
+      // Close the customer modal
+      setShowAddCustomerModal(false)
+    } catch (err) {
+      console.error('Customer refresh error:', err)
+      toast.error('Customer created but failed to refresh list')
+    }
+  }
+
+  // Handle store creation from modal
+  const handleCreateStore = async (storeData) => {
+    try {
+      // Refresh stores list
+      await fetchStores()
+      // Set the new store as selected
+      setFormData(prev => ({ ...prev, store_id: storeData.id }))
+      // Close the store modal
+      setShowAddStoreModal(false)
+    } catch (err) {
+      console.error('Store refresh error:', err)
+      toast.error('Store created but failed to refresh list')
     }
   }
 
@@ -904,7 +911,7 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
             </div>
           </motion.div>
         )}
-
+        
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Left Column - Customer Info */}
           <div className="lg:col-span-1 space-y-4">
@@ -915,148 +922,56 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
               </h3>
 
               <div className="space-y-4">
-                {/* Customer Searchable Dropdown */}
-                <div className="relative customer-dropdown">
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Select Customer
-                  </label>
-                  <div className="relative">
-                    <Input
-                      type="text"
-                      placeholder="Search customer by name, phone, email..."
-                      value={customerSearch}
-                      onChange={(e) => handleCustomerSearchChange(e.target.value)}
-                      onFocus={() => setShowCustomerDropdown(true)}
-                      className="pr-10"
-                      required
-                      disabled={dataFetchError}
-                    />
-                    <FiSearch className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                  </div>
-                  
-                  {/* Customer Dropdown */}
-                  {showCustomerDropdown && !dataFetchError && (
-                    <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg max-h-60 overflow-y-auto">
-                      {filteredCustomers.length > 0 ? (
-                        filteredCustomers.map(customer => (
-                          <div
-                            key={customer.id}
-                            onClick={() => handleCustomerSelect(customer)}
-                            className="px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer border-b border-gray-100 dark:border-gray-700 last:border-b-0"
-                          >
-                            <div className="font-medium text-gray-900 dark:text-white">
-                              {customer.name || customer.customer_name}
-                            </div>
-                            <div className="text-sm text-gray-500 dark:text-gray-400">
-                              📞 {customer.phone || 'N/A'} | 📧 {customer.email || 'N/A'}
-                            </div>
-                            {customer.gst && (
-                              <div className="text-xs text-gray-400 dark:text-gray-500">
-                                GST: {customer.gst}
-                              </div>
-                            )}
-                          </div>
-                        ))
-                      ) : (
-                        <div className="px-4 py-3">
-                          {customerSearch.trim() !== '' ? (
-                            <div className="text-center">
-                              <p className="text-gray-500 dark:text-gray-400 mb-2">
-                                No customers found matching "{customerSearch}"
-                              </p>
-                              <button
-                                type="button"
-                                onClick={() => setShowAddCustomerModal(true)}
-                                className="inline-flex items-center px-3 py-2 text-sm font-medium text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 bg-primary-50 hover:bg-primary-100 dark:bg-primary-900/20 dark:hover:bg-primary-900/30 rounded-lg transition-colors"
-                              >
-                                <FiUserPlus className="w-4 h-4 mr-2" />
-                                Add New Customer "{customerSearch}"
-                              </button>
-                            </div>
-                          ) : (
-                            <div className="text-center text-gray-500 dark:text-gray-400">
-                              <p className="mb-2">No customers available</p>
-                              <button
-                                type="button"
-                                onClick={() => setShowAddCustomerModal(true)}
-                                className="inline-flex items-center px-3 py-2 text-sm font-medium text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 bg-primary-50 hover:bg-primary-100 dark:bg-primary-900/20 dark:hover:bg-primary-900/30 rounded-lg transition-colors"
-                              >
-                                <FiUserPlus className="w-4 h-4 mr-2" />
-                                Add New Customer
-                              </button>
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  )}
-                  
-                  {dataFetchError && (
-                    <div className="mt-2 text-sm text-red-600 dark:text-red-400">
-                      Unable to load customers. Please check server connection.
-                    </div>
-                  )}
-                </div>
+                {/* Customer SearchSelect */}
+                <SearchSelect
+                  label="Select Customer"
+                  options={customers?.map(customer => ({
+                    value: customer.id,
+                    label: customer.name || customer.customer_name,
+                    description: customer.phone || customer.email ? `📞 ${customer.phone || 'N/A'} | 📧 ${customer.email || 'N/A'}` : null,
+                    subtext: customer.gst ? `GST: ${customer.gst}` : null
+                  })) || []}
+                  value={formData.customer_id || ''}
+                  onChange={(value) => {
+                    setFormData(prev => ({ ...prev, customer_id: value }))
+                    const customer = customers.find(c => c.id === value)
+                    if (customer) {
+                      toast.success(`Customer selected: ${customer.name || customer.customer_name}`)
+                    }
+                  }}
+                  placeholder="Search customer by name, phone, email..."
+                  required
+                  disabled={dataFetchError}
+                  onCreateNew={(searchTerm) => {
+                    setNewCustomerData(prev => ({ ...prev, name: searchTerm }))
+                    setShowAddCustomerModal(true)
+                  }}
+                />
 
-                {/* Store Searchable Dropdown */}
-                <div className="relative store-dropdown">
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Select Store
-                  </label>
-                  <div className="relative">
-                    <Input
-                      type="text"
-                      placeholder="Search store by name, phone, email..."
-                      value={storeSearch}
-                      onChange={(e) => handleStoreSearchChange(e.target.value)}
-                      onFocus={() => setShowStoreDropdown(true)}
-                      className="pr-10"
-                      required
-                      disabled={dataFetchError}
-                    />
-                    <FiSearch className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                  </div>
-                  
-                  {/* Store Dropdown */}
-                  {showStoreDropdown && !dataFetchError && (
-                    <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg max-h-60 overflow-y-auto">
-                      {filteredStores.length > 0 ? (
-                        filteredStores.map(store => (
-                          <div
-                            key={store.id}
-                            onClick={() => handleStoreSelect(store)}
-                            className="px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer border-b border-gray-100 dark:border-gray-700 last:border-b-0"
-                          >
-                            <div className="font-medium text-gray-900 dark:text-white">
-                              {store.name || store.store_name}
-                            </div>
-                            <div className="text-sm text-gray-500 dark:text-gray-400">
-                              📞 {store.mobile || store.phone || 'N/A'} | 📧 {store.email || 'N/A'}
-                            </div>
-                            <div className="text-sm text-gray-500 dark:text-gray-400">
-                              📍 {store.address}, {store.city}
-                            </div>
-                            {store.gst && (
-                              <div className="text-xs text-gray-400 dark:text-gray-500">
-                                GST: {store.gst}
-                              </div>
-                            )}
-                          </div>
-                        ))
-                      ) : (
-                        <div className="px-4 py-3 text-gray-500 dark:text-gray-400 text-center">
-                          No stores found
-                        </div>
-                      )}
-                    </div>
-                  )}
-                  
-                  {dataFetchError && (
-                    <div className="mt-2 text-sm text-red-600 dark:text-red-400">
-                      Unable to load stores. Please check server connection.
-                    </div>
-                  )}
-                </div>
+                {/* Store SearchSelect */}
+                <SearchSelect
+                  label="Select Store"
+                  options={stores?.map(store => ({
+                    value: store.id,
+                    label: store.name || store.store_name,
+                    description: store.mobile || store.phone || store.email ? `📞 ${store.mobile || store.phone || 'N/A'} | 📧 ${store.email || 'N/A'}` : null,
+                    subtext: store.address && store.city ? `📍 ${store.address}, ${store.city}` : null
+                  })) || []}
+                  value={formData.store_id || ''}
+                  onChange={(value) => {
+                    setFormData(prev => ({ ...prev, store_id: value }))
+                    const store = stores.find(s => s.id === value)
+                    if (store) {
+                      toast.success(`Store selected: ${store.name || store.store_name}`)
+                    }
+                  }}
+                  placeholder="Search store by name, phone, email..."
+                  required
+                  disabled={dataFetchError}
+                  onCreateNew={(searchTerm) => {
+                    setShowAddStoreModal(true)
+                  }}
+                />
 
                 {formData.customer_id && !dataFetchError && (
                   <motion.div
@@ -1076,7 +991,134 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
             </div>
           </div>
 
-          {/* Middle Column - Product Search */}
+         
+
+          {/* Package Selection */}
+          <div className="lg:col-span-1 space-y-4">
+            <div className="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-4">
+              <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4 flex items-center">
+                <FiPackage className="w-4 h-4 mr-2" />
+                Add Packages
+              </h3>
+
+              <div className="space-y-4">
+                {/* Package Searchable Dropdown */}
+                <div className="relative package-dropdown">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Search Packages
+                  </label>
+                  <div className="relative">
+                    <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                    <Input
+                      type="text"
+                      placeholder="Search packages by name, size, price..."
+                      value={packageSearch}
+                      onChange={(e) => handlePackageSearchChange(e.target.value)}
+                      onFocus={() => setShowPackageDropdown(true)}
+                      className="pl-10"
+                      disabled={dataFetchError}
+                    />
+                  </div>
+                  
+                  {/* Package Dropdown */}
+                  {showPackageDropdown && !dataFetchError && (
+                    <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                      {filteredPackages.length > 0 ? (
+                        filteredPackages.map(pkg => (
+                          <div
+                            key={pkg.id}
+                            onClick={() => handlePackageSelect(pkg)}
+                            className="px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer border-b border-gray-100 dark:border-gray-700 last:border-b-0"
+                          >
+                            <div className="flex justify-between items-start">
+                              <div className="flex-1">
+                                <div className="font-medium text-gray-900 dark:text-white">
+                                  {pkg.package_name}
+                                </div>
+                                <div className="text-sm text-gray-500 dark:text-gray-400">
+                                  Size: {pkg.package_size || 'Standard'}
+                                </div>
+                              </div>
+                              <div className="text-right ml-4">
+                                <div className="font-semibold text-gray-900 dark:text-white">
+                                  ¥{parseFloat(pkg.package_price || 0).toFixed(2)}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="px-4 py-3 text-gray-500 dark:text-gray-400 text-center">
+                          No packages found
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  
+                  {dataFetchError && (
+                    <div className="mt-2 text-sm text-red-600 dark:text-red-400">
+                      Unable to load packages. Please check server connection.
+                    </div>
+                  )}
+                </div>
+
+                {/* Package Quantity and Add Button */}
+                {selectedPackage && !dataFetchError && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="p-4 bg-white dark:bg-gray-600 rounded-lg border border-gray-200 dark:border-gray-500"
+                  >
+                    <div className="flex justify-between items-start mb-3">
+                      <div>
+                        <h4 className="font-medium text-gray-900 dark:text-white">{selectedPackage.package_name}</h4>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">
+                          Size: {selectedPackage.package_size || 'Standard'}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-lg font-bold text-primary-600 dark:text-primary-400">
+                          ¥{parseFloat(selectedPackage.package_price || 0).toFixed(2)}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-3">
+                      <div className="flex items-center space-x-2">
+                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Quantity:</label>
+                        <Input
+                          type="number"
+                          min="1"
+                          value={packageQuantity}
+                          onChange={(e) => setPackageQuantity(parseInt(e.target.value) || 1)}
+                          className="w-20"
+                        />
+                      </div>
+                      <Button
+                        type="button"
+                        variant="primary"
+                        size="sm"
+                        onClick={handleAddPackageToInvoice}
+                        disabled={packageQuantity <= 0}
+                      >
+                        <FiPlus className="w-4 h-4" />
+                        Add to Invoice
+                      </Button>
+                    </div>
+                  </motion.div>
+                )}
+
+                {packagesLoading && !dataFetchError && (
+                  <div className="flex items-center justify-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500"></div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+        </div>
+        <div className='w-full'>
+           {/* Middle Column - Product Search */}
           <div className="lg:col-span-1 space-y-4">
             <div className="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-4">
               <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4 flex items-center">
@@ -1210,130 +1252,6 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
               </div>
             </div>
           </div>
-
-          {/* Package Selection */}
-          <div className="lg:col-span-1 space-y-4">
-            <div className="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-4">
-              <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4 flex items-center">
-                <FiPackage className="w-4 h-4 mr-2" />
-                Add Packages
-              </h3>
-
-              <div className="space-y-4">
-                {/* Package Searchable Dropdown */}
-                <div className="relative package-dropdown">
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Search Packages
-                  </label>
-                  <div className="relative">
-                    <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                    <Input
-                      type="text"
-                      placeholder="Search packages by name, size, price..."
-                      value={packageSearch}
-                      onChange={(e) => handlePackageSearchChange(e.target.value)}
-                      onFocus={() => setShowPackageDropdown(true)}
-                      className="pl-10"
-                      disabled={dataFetchError}
-                    />
-                  </div>
-                  
-                  {/* Package Dropdown */}
-                  {showPackageDropdown && !dataFetchError && (
-                    <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg max-h-60 overflow-y-auto">
-                      {filteredPackages.length > 0 ? (
-                        filteredPackages.map(pkg => (
-                          <div
-                            key={pkg.id}
-                            onClick={() => handlePackageSelect(pkg)}
-                            className="px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer border-b border-gray-100 dark:border-gray-700 last:border-b-0"
-                          >
-                            <div className="flex justify-between items-start">
-                              <div className="flex-1">
-                                <div className="font-medium text-gray-900 dark:text-white">
-                                  {pkg.package_name}
-                                </div>
-                                <div className="text-sm text-gray-500 dark:text-gray-400">
-                                  Size: {pkg.package_size || 'Standard'}
-                                </div>
-                              </div>
-                              <div className="text-right ml-4">
-                                <div className="font-semibold text-gray-900 dark:text-white">
-                                  ¥{parseFloat(pkg.package_price || 0).toFixed(2)}
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        ))
-                      ) : (
-                        <div className="px-4 py-3 text-gray-500 dark:text-gray-400 text-center">
-                          No packages found
-                        </div>
-                      )}
-                    </div>
-                  )}
-                  
-                  {dataFetchError && (
-                    <div className="mt-2 text-sm text-red-600 dark:text-red-400">
-                      Unable to load packages. Please check server connection.
-                    </div>
-                  )}
-                </div>
-
-                {/* Package Quantity and Add Button */}
-                {selectedPackage && !dataFetchError && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="p-4 bg-white dark:bg-gray-600 rounded-lg border border-gray-200 dark:border-gray-500"
-                  >
-                    <div className="flex justify-between items-start mb-3">
-                      <div>
-                        <h4 className="font-medium text-gray-900 dark:text-white">{selectedPackage.package_name}</h4>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">
-                          Size: {selectedPackage.package_size || 'Standard'}
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-lg font-bold text-primary-600 dark:text-primary-400">
-                          ¥{parseFloat(selectedPackage.package_price || 0).toFixed(2)}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-center space-x-3">
-                      <div className="flex items-center space-x-2">
-                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Quantity:</label>
-                        <Input
-                          type="number"
-                          min="1"
-                          value={packageQuantity}
-                          onChange={(e) => setPackageQuantity(parseInt(e.target.value) || 1)}
-                          className="w-20"
-                        />
-                      </div>
-                      <Button
-                        type="button"
-                        variant="primary"
-                        size="sm"
-                        onClick={handleAddPackageToInvoice}
-                        disabled={packageQuantity <= 0}
-                      >
-                        <FiPlus className="w-4 h-4" />
-                        Add to Invoice
-                      </Button>
-                    </div>
-                  </motion.div>
-                )}
-
-                {packagesLoading && !dataFetchError && (
-                  <div className="flex items-center justify-center py-8">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500"></div>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-
         </div>
 
         {/* Invoice Items Table */}
@@ -1640,110 +1558,18 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
       </motion.form>
 
       {/* Add Customer Modal */}
-      <Modal
+      <CustomerModal
         isOpen={showAddCustomerModal}
-        onClose={() => {
-          setShowAddCustomerModal(false)
-          setNewCustomerData({
-            name: '',
-            email: '',
-            phone: '',
-            address: '',
-            city: '',
-            gst: ''
-          })
-          setCustomerErrors({})
-        }}
-        title="Add New Customer"
-        size="md"
-        footer={
-          <div className="flex justify-end space-x-3">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => {
-                setShowAddCustomerModal(false)
-                setNewCustomerData({
-                  name: '',
-                  email: '',
-                  phone: '',
-                  address: '',
-                  city: '',
-                  gst: ''
-                })
-                setCustomerErrors({})
-              }}
-              disabled={isCreatingCustomer}
-            >
-              Cancel
-            </Button>
-            <Button
-              type="button"
-              variant="primary"
-              onClick={handleCreateCustomer}
-              loading={isCreatingCustomer}
-              icon={FiUserPlus}
-            >
-              Create Customer
-            </Button>
-          </div>
-        }
-      >
-        <div className="space-y-4">
-          <Input
-            label="Full Name *"
-            name="name"
-            value={newCustomerData.name}
-            onChange={(e) => setNewCustomerData(prev => ({ ...prev, name: e.target.value }))}
-            error={customerErrors.name}
-            placeholder="Enter customer's full name"
-            autoFocus
-          />
-          
-          <Input
-            label="Email Address"
-            name="email"
-            type="email"
-            value={newCustomerData.email}
-            onChange={(e) => setNewCustomerData(prev => ({ ...prev, email: e.target.value }))}
-            error={customerErrors.email}
-            placeholder="customer@example.com"
-          />
-          
-          <Input
-            label="Phone Number"
-            name="phone"
-            value={newCustomerData.phone}
-            onChange={(e) => setNewCustomerData(prev => ({ ...prev, phone: e.target.value }))}
-            error={customerErrors.phone}
-            placeholder="Phone number"
-          />
-          
-          <Input
-            label="Address"
-            name="address"
-            value={newCustomerData.address}
-            onChange={(e) => setNewCustomerData(prev => ({ ...prev, address: e.target.value }))}
-            placeholder="Street address"
-          />
-          
-          <Input
-            label="City"
-            name="city"
-            value={newCustomerData.city}
-            onChange={(e) => setNewCustomerData(prev => ({ ...prev, city: e.target.value }))}
-            placeholder="City"
-          />
-          
-          <Input
-            label="GST Number"
-            name="gst"
-            value={newCustomerData.gst}
-            onChange={(e) => setNewCustomerData(prev => ({ ...prev, gst: e.target.value }))}
-            placeholder="GST number (optional)"
-          />
-        </div>
-      </Modal>
+        onClose={() => setShowAddCustomerModal(false)}
+        onCustomerCreated={handleCreateCustomer}
+      />
+
+      {/* Add Store Modal */}
+      <StoreModal
+        isOpen={showAddStoreModal}
+        onClose={() => setShowAddStoreModal(false)}
+        onStoreCreated={handleCreateStore}
+      />
     </>
   )
 }
