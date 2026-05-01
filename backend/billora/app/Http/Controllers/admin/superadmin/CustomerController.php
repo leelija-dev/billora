@@ -9,7 +9,7 @@ use App\Models\PlanPurchaseHistory;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Log;
 use App\Jobs\SendCustomerMailJob;
-
+use Illuminate\Support\Str;
 class CustomerController extends Controller
 {
   public function index(Request $request)

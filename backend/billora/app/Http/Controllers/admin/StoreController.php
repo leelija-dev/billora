@@ -71,11 +71,11 @@ class StoreController extends Controller
             'user_id'     => 'required',
             'name'        => 'required',
             'gst'         => 'nullable',
-            'email'       => 'required',
+            'email'       => 'nullable',
             'logo'        => 'nullable',
             'mobile'      => 'nullable',
-            'address'     => 'required',
-            'city'        => 'required',
+            'address'     => 'nullable',
+            'city'        => 'nullable',
             'status'      => 'required',
             'created_by'  => 'required'
         ]);
@@ -164,11 +164,11 @@ class StoreController extends Controller
         $data = $request->validate([
             'name'    => 'required',
             'gst'     => 'nullable',
-            'email'   => 'required',
+            'email'   => 'nullable',
             'logo'    => 'nullable',
             'mobile'  => 'nullable',
-            'address' => 'required',
-            'city'    => 'required',
+            'address' => 'nullable',
+            'city'    => 'nullable',
             'status'  => 'required',
         ]);
        
