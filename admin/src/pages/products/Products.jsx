@@ -98,6 +98,7 @@ const Products = () => {
   const [categoriesLoading, setCategoriesLoading] = useState(false)
   const [brandsLoading, setBrandsLoading] = useState(false)
   const [showStockModal, setShowStockModal] = useState(false)
+  const [selectedProductToDelete, setSelectedProductToDelete] = useState(null)
   const [selectedStockProduct, setSelectedStockProduct] = useState(null)
 
   // Function to get stock for a specific product
@@ -243,10 +244,8 @@ const Products = () => {
     try {
       if (showEditForm && selectedProduct) {
         await updateProduct(selectedProduct.id, productData)
-        toast.success('Product updated successfully!')
       } else {
         await createProduct(productData)
-        toast.success('Product created successfully!')
       }
       
       // Clear all caches to ensure fresh data
@@ -310,15 +309,17 @@ const Products = () => {
   }
 
   const handleDelete = async (id) => {
-    if (window.confirm('Are you sure you want to delete this product?')) {
+    setSelectedProductToDelete(id)
+    setShowDeleteConfirm(true)
+  }
+
+  const confirmDelete = async () => {
+    if (selectedProductToDelete) {
       try {
-        await deleteProduct(id)
-        toast.success('Product deleted successfully!')
+        await deleteProduct(selectedProductToDelete)
+        setShowDeleteConfirm(false)
+        setSelectedProductToDelete(null)
         
-        // Clear all caches to ensure fresh data
-        stockCache.delete('all')
-        
-        // Refresh the product list
         await fetchProducts()
         
         // Refresh stocks data
@@ -1152,22 +1153,28 @@ const Products = () => {
                   <FiTrash2 className="w-8 h-8 text-red-600 dark:text-red-400" />
                 </div>
                 <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
-                  Delete Products
+                  {selectedProductToDelete ? 'Delete Product' : 'Delete Products'}
                 </h3>
                 <p className="text-gray-600 dark:text-gray-400 mb-6">
-                  Are you sure you want to delete {selectedProducts.length} selected products? This action cannot be undone.
+                  {selectedProductToDelete 
+                    ? 'Are you sure you want to delete this product? This action cannot be undone.'
+                    : `Are you sure you want to delete ${selectedProducts.length} selected products? This action cannot be undone.`
+                  }
                 </p>
                 <div className="flex space-x-3">
                   <Button
                     variant="outline"
-                    onClick={() => setShowDeleteConfirm(false)}
+                    onClick={() => {
+                      setShowDeleteConfirm(false)
+                      setSelectedProductToDelete(null)
+                    }}
                     className="flex-1"
                   >
                     Cancel
                   </Button>
                   <Button
                     variant="danger"
-                    onClick={handleBulkDelete}
+                    onClick={selectedProductToDelete ? confirmDelete : handleBulkDelete}
                     className="flex-1"
                   >
                     Delete

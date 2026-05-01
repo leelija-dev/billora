@@ -114,7 +114,14 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
 
   // Update create page data when medicine types are loaded
   useEffect(() => {
+    console.log('Medicine types update useEffect:', {
+      medicineTypes,
+      medicineTypesCount: medicineTypes?.length || 0,
+      currentMedicineTypesInState: createPageData.medicineTypes.length
+    })
+    
     if (medicineTypes && medicineTypes.length > 0) {
+      console.log('Setting medicine types in createPageData:', medicineTypes)
       setCreatePageData(prev => ({
         ...prev,
         medicineTypes: [...medicineTypes]
@@ -152,10 +159,21 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
 
   // Set form values when editing
   useEffect(() => {
-    if (product && createPageData.brands.length > 0) {
+    console.log('Editing useEffect triggered:', {
+      product: !!product,
+      brandsCount: createPageData.brands.length,
+      medicineTypesCount: createPageData.medicineTypes.length,
+      productMedicineTypeId: product?.medicine_type_id
+    })
+    
+    if (product && createPageData.brands.length > 0 && createPageData.medicineTypes.length > 0) {
+      console.log('Setting form values for editing. Medicine types available:', createPageData.medicineTypes)
+      console.log('Product medicine_type_id:', product.medicine_type_id)
+      
       // Set all form values for editing
       Object.keys(product).forEach(key => {
         if (key !== 'images' && key !== 'variants' && key !== 'attributes') {
+          console.log(`Setting ${key}:`, product[key])
           setValue(key, product[key] || '')
         }
       })
@@ -285,7 +303,7 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
         setImagePreviews([])
       }
     }
-  }, [product, createPageData.brands, setValue])
+  }, [product, createPageData.brands, createPageData.medicineTypes, setValue])
 
   // ... rest of the code remains the same ...
   // Check if user has permission for a specific field
