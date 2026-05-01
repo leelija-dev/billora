@@ -18,7 +18,7 @@ const StoreModal = ({ isOpen, onClose, onStoreCreated, initialData = {} }) => {
     city: initialData.city || '',
     state: initialData.state || '',
     pincode: initialData.pincode || '',
-    status: 'active'
+    status: true
   })
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState('')
@@ -57,7 +57,8 @@ const StoreModal = ({ isOpen, onClose, onStoreCreated, initialData = {} }) => {
       const storeData = {
         ...formData,
         user_id: userId,
-        status: formData.status || 'active'
+        created_by: userId,
+        status: true
       }
 
       const response = await storeAPI.create(storeData)
@@ -89,7 +90,7 @@ const StoreModal = ({ isOpen, onClose, onStoreCreated, initialData = {} }) => {
       city: '',
       state: '',
       pincode: '',
-      status: 'active'
+      status: true
     })
     setError('')
     onClose()
@@ -135,6 +136,13 @@ const StoreModal = ({ isOpen, onClose, onStoreCreated, initialData = {} }) => {
             type="tel"
           />
         </div>
+
+        {/* Hidden status field */}
+        <input
+          type="hidden"
+          name="status"
+          value="true"
+        />
 
         <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200 dark:border-gray-700">
           <Button

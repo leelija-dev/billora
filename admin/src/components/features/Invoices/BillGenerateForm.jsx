@@ -524,40 +524,55 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
       // Close the customer modal
       setShowAddCustomerModal(false)
     } catch (err) {
-      console.error('Customer refresh error:', err)
-      toast.error('Customer created but failed to refresh list')
+      console.error('Customer creation error:', err)
+      toast.error('Failed to create customer')
     }
   }
 
   // Handle store creation from modal
   const handleCreateStore = async (storeData) => {
     try {
+      console.log('🏪 Store created:', storeData)
+      
+      // Extract store info from response - check multiple possible structures
+      let storeInfo, storeName, storeId
+      
+      if (storeData.data) {
+        // Nested structure: { data: { id, name, ... } }
+        storeInfo = storeData.data
+      } else if (storeData.id && storeData.name) {
+        // Direct structure: { id, name, ... }
+        storeInfo = storeData
+      } else {
+        console.error('Unexpected store response structure:', storeData)
+        toast.error('Store created but with unexpected response format')
+        return
+      }
+      
+      storeName = storeInfo.name || storeInfo.store_name || 'New Store'
+      storeId = storeInfo.id
+      
+      console.log('🏪 Extracted store info:', { storeId, storeName, storeInfo })
+      
       // Refresh stores list
-      await fetchStores()
+      await fetchInitialData()
+      
       // Set the new store as selected
-      setFormData(prev => ({ ...prev, store_id: storeData.id }))
+      console.log('🏪 Setting store_id to:', storeId)
+      setFormData(prev => ({ ...prev, store_id: storeId }))
+      
+      // Update store search field to show the new store name
+      console.log('🏪 Setting store search to:', storeName)
+      setStoreSearch(storeName)
+      
       // Close the store modal
       setShowAddStoreModal(false)
+      
+      toast.success(`Store "${storeName}" selected successfully`)
     } catch (err) {
       console.error('Store refresh error:', err)
       toast.error('Store created but failed to refresh list')
     }
-  }
-
-  // Customer selection handlers
-  const handleCustomerSelect = (customer) => {
-    setFormData(prev => ({
-      ...prev,
-      customer_id: customer.id
-    }))
-    setCustomerSearch(customer.name || customer.customer_name)
-    setShowCustomerDropdown(false)
-    toast.success(`Customer selected: ${customer.name || customer.customer_name}`)
-  }
-
-  const handleCustomerSearchChange = (value) => {
-    setCustomerSearch(value)
-    setShowCustomerDropdown(true)
   }
 
   // Store selection handlers

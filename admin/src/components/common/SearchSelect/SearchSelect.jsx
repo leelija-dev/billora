@@ -119,6 +119,8 @@ const SearchSelect = ({
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
+  
+
   // Focus search input when dropdown opens
   useEffect(() => {
     if (isOpen && searchInputRef.current) {
