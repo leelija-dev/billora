@@ -480,8 +480,11 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
       const response = await medicineTypeAPI.create(medicineTypeData)
       if (response.data?.status === true || response.data?.data) {
         const newMedicineType = response.data.data || response.data
-        // Refresh medicine types from store
-        await fetchMedicineTypes(user.id)
+        // Update medicine types list
+        setCreatePageData(prev => ({
+          ...prev,
+          medicineTypes: [...prev.medicineTypes, newMedicineType]
+        }))
         toast.success('Medicine type created successfully!')
         // Set the newly created medicine type as selected
         setValue('medicine_type_id', newMedicineType.id)
@@ -1063,7 +1066,7 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
                 />
                <SearchSelect
   label="Medicine Type"
-  options={medicineTypes?.map(type => ({
+  options={createPageData.medicineTypes?.map(type => ({
     value: type.id,
     label: type.name,
     description: type.code ? `Code: ${type.code}` : null,

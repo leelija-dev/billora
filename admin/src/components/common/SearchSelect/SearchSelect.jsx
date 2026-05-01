@@ -272,9 +272,21 @@ const SearchSelect = ({
                         )}
                       </div>
                     ) : (
-                      <p className="text-gray-500 dark:text-gray-400">
-                        No options available
-                      </p>
+                      <div>
+                        <p className="text-gray-500 dark:text-gray-400 mb-2">
+                          No {label?.toLowerCase() || 'options'} available
+                        </p>
+                        {props.onCreateNew && (
+                          <button
+                            type="button"
+                            onClick={() => props.onCreateNew('')}
+                            className="inline-flex items-center px-3 py-2 text-sm font-medium text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 bg-primary-50 hover:bg-primary-100 dark:bg-primary-900/20 dark:hover:bg-primary-900/30 rounded-lg transition-colors"
+                          >
+                            <FiSearch className="w-4 h-4 mr-2" />
+                            Add New {label}
+                          </button>
+                        )}
+                      </div>
                     )}
                   </div>
                 )}
