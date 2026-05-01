@@ -48,10 +48,10 @@ class BillCustomerController extends Controller
         
         $data = $request->validate([
             'admin_id'      => 'required',
-            'name'          => 'required',
+            'name'          => 'nullable',
             'email'         => 'nullable',
             'phone'         => 'required',
-            'address'       => 'required',
+            'address'       => 'nullable',
             'city'          => 'nullable',
             'created_by'    => 'required'
         ]);
@@ -129,10 +129,10 @@ class BillCustomerController extends Controller
     public function update(Request $request, $id){
         $data = $request->validate([
             'user_id'   => 'required',
-            'name'      => 'required',
+            'name'      => 'nullable',
             'email'     => 'nullable',
             'phone'     => 'required',
-            'address'   => 'required',
+            'address'   => 'nullable',
             'city'      => 'nullable',
  
         ]);

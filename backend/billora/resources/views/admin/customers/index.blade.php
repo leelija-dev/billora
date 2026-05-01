@@ -564,7 +564,7 @@
                                     @else
                                         <a href="{{ route('customer.sendVerificationMail', $customer->id) }}">
                                             <button class="action-btn" title="Not Verified">
-                                                Send Mail
+                                                Send Verification Mail
                                             </button>
                                         </a>
                                     @endif
