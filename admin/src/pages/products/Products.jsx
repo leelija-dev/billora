@@ -593,7 +593,7 @@ const Products = () => {
                 className="!px-2 !py-1 text-orange-600 border-orange-300 hover:bg-orange-50 dark:text-orange-400 dark:border-orange-700 dark:hover:bg-orange-900/20"
                 title="Add Stock"
               >
-                <FiPlus className="w-3 h-3" />
+                
               </Button>
             )}
           </div>
