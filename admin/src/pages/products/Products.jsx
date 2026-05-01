@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
+import toast from 'react-hot-toast'
 import { 
   FiPlus, 
   FiSearch, 
@@ -34,6 +35,7 @@ import EmptyState from '../../components/common/EmptyState/EmptyState'
 import ProductModal from '../../components/features/Products/ProductModal'
 import Select from '../../components/common/Select/Select'
 import ProductForm from '../../components/features/Products/ProductForm' // You'll need to create this component
+import StockAddModal from '../../components/common/CreateModals/StockAddModal'
 
 // Stock cache to prevent duplicate requests
 const stockCache = new Map()
@@ -95,12 +97,20 @@ const Products = () => {
   const [brands, setBrands] = useState([])
   const [categoriesLoading, setCategoriesLoading] = useState(false)
   const [brandsLoading, setBrandsLoading] = useState(false)
+  const [showStockModal, setShowStockModal] = useState(false)
+  const [selectedStockProduct, setSelectedStockProduct] = useState(null)
 
   // Function to get stock for a specific product
   const getProductStock = (productId) => {
     if (!Array.isArray(stocks)) return 0
     const stock = stocks.find(s => s.product_id === productId)
     return stock ? parseFloat(stock.quantity) || 0 : 0
+  }
+
+  // Function to get stock record for a specific product
+  const getProductStockRecord = (productId) => {
+    if (!Array.isArray(stocks)) return null
+    return stocks.find(s => s.product_id === productId) || null
   }
 
   useEffect(() => {
@@ -233,16 +243,67 @@ const Products = () => {
     try {
       if (showEditForm && selectedProduct) {
         await updateProduct(selectedProduct.id, productData)
+        toast.success('Product updated successfully!')
       } else {
         await createProduct(productData)
+        toast.success('Product created successfully!')
       }
-      // Refresh the product list
+      
+      // Clear all caches to ensure fresh data
+      stockCache.delete('all')
+      
+      // Refresh the product list with fresh data
       await fetchProducts()
+      
+      // Refresh stocks data to get latest stock information
+      try {
+        const stocksResponse = await stockAPI.getAll()
+        const stocksData = stocksResponse.data?.data?.data || stocksResponse.data?.data || []
+        setStocks(stocksData)
+        setCachedStocks(stocksData)
+        console.log('Stocks refreshed after product operation:', stocksData)
+      } catch (error) {
+        console.error('Error refreshing stocks after product operation:', error)
+      }
+      
+      // Refresh categories and brands in case they were updated
+      try {
+        const [categoriesRes, brandsRes] = await Promise.all([
+          categoriesAPI.getAll(),
+          brandsAPI.getAll()
+        ])
+        
+        let categoriesData = []
+        if (categoriesRes?.data?.data) {
+          categoriesData = Array.isArray(categoriesRes.data.data) 
+            ? categoriesRes.data.data 
+            : categoriesRes.data.data.data || []
+        } else {
+          categoriesData = categoriesRes?.data || []
+        }
+        
+        let brandsData = []
+        if (brandsRes?.data?.data) {
+          brandsData = Array.isArray(brandsRes.data.data)
+            ? brandsRes.data.data
+            : brandsRes.data.data.data || []
+        } else {
+          brandsData = brandsRes?.data || []
+        }
+        
+        setCategories(categoriesData)
+        setBrands(brandsData)
+        console.log('Categories and brands refreshed after product operation')
+      } catch (error) {
+        console.error('Error refreshing categories and brands:', error)
+      }
+      
       // Hide the form
       handleCancelForm()
+      
     } catch (error) {
       console.error('Error saving product:', error)
-      // Handle error (show toast notification, etc.)
+      toast.error('Failed to save product. Please try again.')
     } finally {
       setFormSubmitting(false)
     }
@@ -250,7 +311,81 @@ const Products = () => {
 
   const handleDelete = async (id) => {
     if (window.confirm('Are you sure you want to delete this product?')) {
-      await deleteProduct(id)
+      try {
+        await deleteProduct(id)
+        toast.success('Product deleted successfully!')
+        
+        // Clear all caches to ensure fresh data
+        stockCache.delete('all')
+        
+        // Refresh the product list
+        await fetchProducts()
+        
+        // Refresh stocks data
+        try {
+          const stocksResponse = await stockAPI.getAll()
+          const stocksData = stocksResponse.data?.data?.data || stocksResponse.data?.data || []
+          setStocks(stocksData)
+          setCachedStocks(stocksData)
+          console.log('Stocks refreshed after product deletion:', stocksData)
+        } catch (error) {
+          console.error('Error refreshing stocks after product deletion:', error)
+        }
+        
+      } catch (error) {
+        console.error('Error deleting product:', error)
+        toast.error('Failed to delete product. Please try again.')
+      }
+    }
+  }
+
+  const openStockModal = (product) => {
+    setSelectedStockProduct(product)
+    setShowStockModal(true)
+  }
+
+  const handleAddStock = async (stockData) => {
+    try {
+      console.log('handleAddStock - stockData:', stockData);
+      
+      // Get the stock record to get the stock_id
+      const stockRecord = getProductStockRecord(stockData.product_id);
+      console.log('handleAddStock - stockRecord:', stockRecord);
+      
+      if (!stockRecord) {
+        console.error('No stock record found for product:', stockData.product_id);
+        toast.error('No stock record found for this product. Please create a stock record first.');
+        return;
+      }
+      
+      console.log('handleAddStock - API call params:', {
+        stockId: stockRecord.id,
+        userId: stockData.user_id,
+        quantity: stockData.quantity
+      });
+      
+      // Call the stock API with stock_id instead of product_id
+      await stockAPI.addStock(stockRecord.id, stockData.user_id, stockData.quantity)
+      
+      // Show success message
+      toast.success(`Stock added successfully! New stock: ${stockData.new_stock}`)
+      
+      // Refresh the products list to show updated stock
+      await fetchProducts()
+      
+      // Refresh stocks data
+      try {
+        const stocksResponse = await stockAPI.getAll()
+        const stocksData = stocksResponse.data?.data?.data || stocksResponse.data?.data || []
+        setStocks(stocksData)
+        setCachedStocks(stocksData)
+      } catch (error) {
+        console.error('Error refreshing stocks:', error)
+      }
+      
+    } catch (error) {
+      console.error('Error adding stock:', error)
+      toast.error('Failed to add stock. Please try again.')
     }
   }
 
@@ -347,6 +482,27 @@ const Products = () => {
                 src={row.image}
                 alt={value}
                 className="w-12 h-12 rounded-xl object-cover mr-3 ring-2 ring-gray-200 dark:ring-gray-700"
+                onError={(e) => {
+                  console.error(`Failed to load product image:`, row.image)
+                  // If it's a Google Drive URL, show a special placeholder
+                  if (row.image && row.image.includes('drive.google.com')) {
+                    e.target.style.display = 'none'
+                    const parent = e.target.parentElement
+                    const placeholder = document.createElement('div')
+                    placeholder.className = 'w-12 h-12 bg-gradient-to-br from-red-50 to-orange-50 dark:from-red-900/20 dark:to-orange-900/20 rounded-xl mr-3 flex flex-col items-center justify-center ring-2 ring-red-200 dark:ring-red-800'
+                    placeholder.innerHTML = `
+                      <svg class="w-4 h-4 text-red-500 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                      </svg>
+                      <span class="text-[8px] text-red-600 dark:text-red-400 mt-1">Drive</span>
+                    `
+                    parent.appendChild(placeholder)
+                  } else {
+                    // For other failed images, show default placeholder
+                    e.target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDgiIGhlaWdodD0iNDgiIHZpZXdCb3g9IjAgMCA0OCA0OCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjQ4IiBoZWlnaHQ9IjQ4IiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0yMCAyMEgzOFYzMEgyMFYyMFoiIGZpbGw9IiNEMUQ1REIiLz4KPGNpcmNsZSBjeD0iMjkiIGN5PSIyNSIgcj0iMiIgZmlsbD0iIzlCQTNBRiIvPgo8cGF0aCBkPSJNMzAgMzBWMzJIMzJWMzBIMzJWMzBaIiBmaWxsPSIjOUJBM0FGIi8+Cjwvc3ZnPg=='
+                  }
+                  e.target.onerror = null
+                }}
               />
             ) : (
               <div className="w-12 h-12 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-600 rounded-xl mr-3 flex items-center justify-center ring-2 ring-gray-200 dark:ring-gray-700">
@@ -399,7 +555,7 @@ const Products = () => {
         const lowStockThreshold = 10 // You can adjust this based on your needs
         
         return (
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center gap-2">
             <div className="w-16 h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
               <motion.div
                 initial={{ width: 0 }}
@@ -414,15 +570,31 @@ const Products = () => {
                 }`}
               />
             </div>
-            <span className={`text-sm font-medium ${
-              stockQuantity <= lowStockThreshold 
+            <span className={`
+              text-sm font-medium
+              ${stockQuantity <= lowStockThreshold 
                 ? 'text-red-600 dark:text-red-400' 
+                : stockQuantity === 0
+                ? 'text-orange-600 dark:text-orange-400'
                 : stockQuantity <= lowStockThreshold * 2
                 ? 'text-yellow-600 dark:text-yellow-400'
                 : 'text-gray-900 dark:text-white'
-            }`}>
+              }
+            `}>
               {stockQuantity}
             </span>
+            {stockQuantity === 0 && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => openStockModal(row)}
+                icon={FiPlus}
+                className="!px-2 !py-1 text-orange-600 border-orange-300 hover:bg-orange-50 dark:text-orange-400 dark:border-orange-700 dark:hover:bg-orange-900/20"
+                title="Add Stock"
+              >
+                <FiPlus className="w-3 h-3" />
+              </Button>
+            )}
           </div>
         )
       },
@@ -780,6 +952,9 @@ const Products = () => {
                       columns={columns}
                       data={products}
                       loading={loading}
+                      onEdit={handleEditProduct}
+                      onDelete={handleDelete}
+                      onAddStock={handleAddStock}
                     />
                   </div>
                   <Pagination
@@ -810,6 +985,28 @@ const Products = () => {
                               src={product.image}
                               alt={product.name}
                               className="w-full h-full object-cover"
+                              onError={(e) => {
+                                console.error(`Failed to load product grid image:`, product.image)
+                                // If it's a Google Drive URL, show a special placeholder
+                                if (product.image && product.image.includes('drive.google.com')) {
+                                  e.target.style.display = 'none'
+                                  const parent = e.target.parentElement
+                                  const placeholder = document.createElement('div')
+                                  placeholder.className = 'w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-red-50 to-orange-50 dark:from-red-900/20 dark:to-orange-900/20'
+                                  placeholder.innerHTML = `
+                                    <svg class="w-12 h-12 text-red-500 dark:text-red-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                                    </svg>
+                                    <span class="text-sm text-red-600 dark:text-red-400 font-medium">Google Drive</span>
+                                    <span class="text-xs text-red-500 dark:text-red-500 mt-1">Image not available</span>
+                                  `
+                                  parent.appendChild(placeholder)
+                                } else {
+                                  // For other failed images, show default placeholder
+                                  e.target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgdmlld0JveD0iMCAwIDIwMCAyMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIyMDAiIGhlaWdodD0iMjAwIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik04NSA3NUgxMTVWMTI1SDg1Vjc1WiIgZmlsbD0iI0QxRDVEQiIvPgo8Y2lyY2xlIGN4PSI5MCIgY3k9IjkwIiByPSI1IiBmaWxsPSIjOUJBM0FGIi8+CjxwYXRoIGQ9Ik05NSAxMDBWMTA1SDEwMFY5OUg5NVoiIGZpbGw9IiM5QkEzQUYiLz4KPC9zdmc+'
+                                }
+                                e.target.onerror = null
+                              }}
                             />
                           ) : (
                             <div className="w-full h-full flex items-center justify-center">
@@ -981,6 +1178,15 @@ const Products = () => {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Stock Add Modal */}
+      <StockAddModal
+        isOpen={showStockModal}
+        onClose={() => setShowStockModal(false)}
+        onAddStock={handleAddStock}
+        product={selectedStockProduct}
+        currentStock={selectedStockProduct ? getProductStock(selectedStockProduct.id) : 0}
+      />
     </motion.div>
   )
 }

@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\admin\BillCustomerController;
+use App\Http\Controllers\admin\BlogController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\admin\CustomerController;
 use App\Http\Controllers\admin\ProductsController;
@@ -262,4 +263,10 @@ Route::middleware('auth:sanctum')->prefix('medicine-type')->group(function () {
 });
 Route::prefix('testimonial')->group(function () {
    Route::get('/', [TestimonialsController::class, 'index']);
+});
+Route::prefix('/blog')->group(function (){
+   Route::get('/', [BlogController::class, 'index']);
+   Route::get('/{slug}', [BlogController::class, 'show']);
+   Route::get('/all-categories', [BlogController::class, 'allCategrories']);
+   
 });

@@ -1,6 +1,6 @@
 @extends('admin.main-layout')
-    @section('title', 'Create New Plan')
-    @section('content')
+@section('title', 'Create a new blog')
+@section('content')
     <style>
         * {
             margin: 0;
@@ -95,11 +95,11 @@
         }
 
         .form-grid {
-        display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 20px;
-        align-items: start; 
-    }
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            align-items: start;
+        }
 
         .form-group {
             margin-bottom: 0;
@@ -578,9 +578,10 @@
                 /* Single column on mobile */
             }
         }
+
         .form-grid {
-    gap: 25px;
-}
+            gap: 25px;
+        }
     </style>
 
     {{-- @include('admin.sidebar') --}}
@@ -590,20 +591,20 @@
         <!-- Page Header -->
         <div class="page-header">
             <div class="header-left">
-                <h1>Create New Plan</h1>
-                <p>Add a new subscription plan for your customers</p>
+                <h1>Create New blog</h1>
+
             </div>
-            <a href="{{route('admin.plans.index')}}" class="back-btn">
+            <a href="{{ route('admin.blogs.index') }}" class="back-btn">
                 <svg viewBox="0 0 24 24">
                     <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z" />
                 </svg>
-                Back to Plans
+                Back to Blogs
             </a>
         </div>
 
         <!-- Form Container - Full Width -->
         <div class="form-container">
-            <form id="planForm" action="{{ route('admin.plans.store') }}" method="POST" enctype="multipart/form-data"
+            <form id="planForm" action="{{ route('admin.blogs.store') }}" method="POST" enctype="multipart/form-data"
                 novalidate>
                 @csrf
 
@@ -623,9 +624,8 @@
                                         d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2z" />
                                 </svg>
                             </span>
-                            <input type="text" name="title" class="form-input with-icon"
-                                placeholder="Enter title.." value="{{ old('title') }}"
-                                required>
+                            <input type="text" name="title" class="form-input with-icon" placeholder="Enter title.."
+                                value="{{ old('title') }}" required>
                             @error('title')
                                 <span class="text-danger">{{ $message }}</span>
                             @enderror
@@ -633,101 +633,124 @@
                     </div>
                     <div class="form-group">
                         <label class="form-label">
-                           Slug<span>*</span>
+                            Slug<span>*</span>
                         </label>
 
-                       <input type="text" name="slug" class="form-input with-icon"
-                                placeholder="Enter slug.." value="{{ old('slug') }}"
-                                required>
-                            @error('slug')
-                                <span class="text-danger">{{ $message }}</span>
-                            @enderror
+                        <input type="text" name="slug" class="form-input with-icon" placeholder="Enter slug.."
+                            value="{{ old('slug') }}" required>
+                        @error('slug')
+                            <span class="text-danger">{{ $message }}</span>
+                        @enderror
 
                     </div>
-                    <!-- Price and Currency -->
+
                     <div class="form-group">
                         <label class="form-label">
-                             Excerpt<span>*</span>
+                            Category
                         </label>
-                       
-                           
-                            <input type="text" name="excerpt" class="form-input currency-input"
-                                placeholder="Enter plan excerpt" value="{{ old('excerpt') }}"
-                                required>
-                            @error('excerpt')
-                                <span class="text-danger">{{ $message }}</span>
-                            @enderror
+                        <div>
 
-
-                    </div>
-                     <div class="form-group">
-                        <label class="form-label">
-                             Category<span>*</span>
-                        </label>
-                        <div >
-                            
-                            <select name="categories[]" class="form-select" multiple required id="category">
+                            <select name="category_id[]" class="form-select" multiple id="category">
                                 @foreach ($categories as $category)
                                     <option value="{{ $category->id }}"
-                                        {{ in_array($category->id, old('categories', [])) ? 'selected' : '' }}>
+                                        {{ in_array($category->id, old('category_id', [])) ? 'selected' : '' }}>
                                         {{ $category->name }}
                                     </option>
                                 @endforeach
                             </select>
-                            @error('categories')
+                            @error('category_id')
                                 <span class="text-danger">{{ $message }}</span>
                             @enderror
 
                         </div>
-                     </div>
-                       <div class="form-group">
+                    </div>
+                    <div class="form-group">
                         <label class="form-label">
-                             Tags<span>*</span>
+                            Tags<span>*</span>
                         </label>
-                        <div >
-                            
-                            <select name="tags[]" class="form-select" multiple required id="tags">
+                        <div>
+
+                            <select name="tags_id[]" class="form-select" multiple required id="tags">
                                 @foreach ($tags as $tag)
                                     <option value="{{ $tag->id }}"
-                                        {{ in_array($tag->id, old('tags', [])) ? 'selected' : '' }}>
+                                        {{ in_array($tag->id, old('tags_id', [])) ? 'selected' : '' }}>
                                         {{ $tag->name }}
                                     </option>
                                 @endforeach
                             </select>
-                            @error('tags')
+                            @error('tags_id')
                                 <span class="text-danger">{{ $message }}</span>
                             @enderror
 
                         </div>
-                     </div>
-                     <div class="form-group">
+                    </div>
+                    <!-- Price and Currency -->
+                    <div class="form-group">
                         <label class="form-label">
-                           Meta Title<span>*</span>
+                            Excerpt
                         </label>
-                        <div >
-                            
+
+
+                        <textarea name="excerpt" class="form-input currency-input" rows="3" placeholder="Enter plan excerpt" required>{{ old('excerpt') }}</textarea>
+                        @error('excerpt')
+                            <span class="text-danger">{{ $message }}</span>
+                        @enderror
+
+
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">
+                            Feature Image Alt
+                        </label>
+                        <div>
+
+                            <input type="text" name="feature_image_alt" class="form-input currency-input"
+                                placeholder="Enter feature image alt" value="{{ old('feature_image_alt') }}" required>
+                            @error('feature_image_alt')
+                                <span class="text-danger">{{ $message }}</span>
+                            @enderror
+
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">
+                            Feature Image<span>*</span>
+                        </label>
+
+                        <div>
+                            <input type="file" name="feature_image" class="form-input" accept="image/*" required>
+
+                            @error('feature_image')
+                                <span class="text-danger">{{ $message }}</span>
+                            @enderror
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">
+                            Meta Title<span>*</span>
+                        </label>
+                        <div>
+
                             <input type="text" name="meta_title" class="form-input currency-input"
-                                placeholder="Enter meta title" value="{{ old('meta_title') }}"
-                                required>
+                                placeholder="Enter meta title" value="{{ old('meta_title') }}" required>
                             @error('meta_title')
                                 <span class="text-danger">{{ $message }}</span>
                             @enderror
 
                         </div>
-                     </div>
+                    </div>
 
-                   <div class="form-group">
+                    <div class="form-group">
                         <label class="form-label">
-                             Keywords<span>*</span>
+                            Keywords<span>*</span>
                         </label>
-                       
-                           
-                            <input type="text" name="keywords" class="form-input currency-input"
-                                placeholder="Enter keywords" value="{{ old('keywords') }}"
-                                required>
-                            @error('keywords')
-                                <span class="text-danger">{{ $message }}</span>
-                            @enderror
+
+
+                        <input type="text" name="keywords" class="form-input currency-input" placeholder="Enter keywords"
+                            value="{{ old('keywords') }}" required>
+                        @error('keywords')
+                            <span class="text-danger">{{ $message }}</span>
+                        @enderror
 
 
                     </div>
@@ -743,8 +766,7 @@
                     </div>
                     <div class="form-group">
                         <label class="form-label">Schema</label>
-                        <textarea name="schema" id="schema" class="form-textarea"
-                            placeholder="Enter schema..">{{ old('schema') }}</textarea>
+                        <textarea name="schema" id="schema" class="form-textarea" placeholder="Enter schema..">{{ old('schema') }}</textarea>
 
                         @error('schema')
                             <span class="text-danger" style="color: red">{{ $message }}</span>
@@ -753,41 +775,94 @@
 
                 </div>
                 <div class="form-group">
-                        <label class="form-label">Content</label>
-                        <textarea name="content" id="description" class="form-textarea"
-                            placeholder="Enter content..">{{ old('content') }}</textarea>
+                    <label class="form-label">Content</label>
+                    <textarea name="content" id="description" class="form-textarea" placeholder="Enter content..">{{ old('content') }}</textarea>
 
-                        @error('content')
-                            <span class="text-danger" style="color: red">{{ $message }}</span>
-                        @enderror
+                    @error('content')
+                        <span class="text-danger" style="color: red">{{ $message }}</span>
+                    @enderror
+                </div>
+                
+                <!-- FAQ Heading -->
+                <div class="mt-4 flex items-center">
+                    <div class="flex-grow border-t border-gray-300"></div>
+
+                    <span class="mx-4 text-gray-600 font-semibold text-lg">
+                        FAQs
+                    </span>
+
+                    <div class="flex-grow border-t border-gray-300"></div>
+                </div>
+
+               
+
+                <!-- FAQ Container -->
+                <div id="faq-container" class="mt-4 space-y-4">
+
+                    <!-- First FAQ -->
+                    <div class="faq-item border border-gray-200 rounded-xl p-4 bg-gray-50">
+
+                        <div class="flex justify-between items-center mb-3">
+                            <h3 class="font-semibold text-gray-700">FAQ</h3>
+
+                            <button type="button" onclick="removeFaq(this)"
+                                class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded">
+                                Remove
+                            </button>
+                        </div>
+
+                        <!-- Question -->
+                        <div class="form-group mt-2">
+                            <label class="form-label">Question</label>
+
+                            <input type="text" name="question[]" class="form-input" placeholder="Enter question..">
+                        </div>
+
+                        <!-- Answer -->
+                        <div class="form-group mt-2">
+                            <label class="form-label">Answer</label>
+
+                            <textarea name="answer[]" class="form-textarea faq-answer" placeholder="Enter answer.."></textarea>
+                        </div>
+
                     </div>
+
+                </div>
+                 <!-- Add FAQ Button -->
+                <div class="mt-4">
+                    <button type="button" onclick="addFaq()"
+                        class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg">
+                        + Add FAQ
+                    </button>
+                </div>
                 <!-- Status Toggle -->
                 <div class="form-group mt-2">
                     <div class="toggle-group">
                         <div>
                             <div class="toggle-label">Active Status</div>
-                            <div class="toggle-desc">Make this plan available for customers</div>
+
                         </div>
                         <label class="switch">
-                            <input type="hidden" name="is_active" value="0">
-                            <input type="checkbox" name="is_active" value="1" checked>
+                            <input type="hidden" name="status" value="0">
+                            <input type="checkbox" name="status" value="1" checked>
                             <span class="slider"></span>
                         </label>
                     </div>
-                    @error('is_active')
+                    @error('status')
                         <span class="text-danger" style="color: red">{{ $message }}</span>
                     @enderror
                 </div>
 
                 <!-- Form Actions -->
                 <div class="form-actions">
-                    <button type="button" class="btn btn-secondary">Cancel</button>
+                    <button type="button" class="btn btn-white" style="background: red;"><span
+                            style="color: white">Cancel</span></button>
                     <button type="submit" class="btn btn-primary">
                         <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: white;">
                             <path
                                 d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm4-10H5V5h11v4z" />
                         </svg>
-                        Create Plan
+                        Create
                     </button>
                 </div>
             </form>
@@ -802,7 +877,7 @@
     <!-- Summernote JS -->
     <script src="https://cdn.jsdelivr.net/npm/summernote@0.8.20/dist/summernote-lite.min.js"></script>
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <script>
         function addFeature() {
             const container = document.getElementById('features-container');
@@ -842,6 +917,7 @@
             });
 
         });
+        
     </script>
     <script>
         document.addEventListener("DOMContentLoaded", function() {
@@ -914,19 +990,117 @@
         });
     </script>
     <script>
-    $(document).ready(function() {
-        $('#category').select2({
-            placeholder: "Select Category ",
-            allowClear: true
+        $(document).ready(function() {
+            $('#category').select2({
+                placeholder: "Select Category ",
+                allowClear: true
+            });
         });
-    });
-</script>
-<script>
-    $(document).ready(function() {
-        $('#tags').select2({
-            placeholder: "Select Tags ",
-            allowClear: true
+    </script>
+    <script>
+        $(document).ready(function() {
+            $('#tags').select2({
+                placeholder: "Select Tags ",
+                allowClear: true,
+                height: '200px'
+            });
         });
-    });
-</script>
+    </script>
+    <script>
+        $(document).ready(function() {
+
+            let isSlugEdited = false;
+
+            // Detect manual slug edit
+            $('input[name="slug"]').on('input', function() {
+                isSlugEdited = true;
+            });
+
+            // Auto generate slug from title
+            $('input[name="title"]').on('input', function() {
+
+                // Stop auto-update if slug manually edited
+                if (isSlugEdited) {
+                    return;
+                }
+
+                let slug = $(this).val()
+                    .toLowerCase()
+                    .trim()
+                    .replace(/[^a-z0-9\s-]/g, '') // remove special chars
+                    .replace(/\s+/g, '-') // spaces to hyphen
+                    .replace(/-+/g, '-'); // remove duplicate hyphen
+
+                $('input[name="slug"]').val(slug);
+            });
+
+        });
+    </script>
+    <script>
+        function addFaq() {
+
+            let faqContainer = document.getElementById('faq-container');
+
+            let faqHtml = `
+            <div class="faq-item border border-gray-200 rounded-xl p-4 bg-gray-50 mt-4">
+
+                <div class="flex justify-between items-center mb-3">
+                    <h3 class="font-semibold text-gray-700">FAQ</h3>
+
+                    <button type="button" onclick="removeFaq(this)"
+                        class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded">
+                        Remove
+                    </button>
+                </div>
+
+                <div class="form-group mt-2">
+                    <label class="form-label">Question</label>
+
+                    <input type="text"
+                        name="question[]"
+                        class="form-input"
+                        placeholder="Enter question..">
+                </div>
+
+                <div class="form-group mt-2">
+                    <label class="form-label">Answer</label>
+
+                    <textarea name="answer[]"
+                        class="form-textarea faq-answer"
+                        placeholder="Enter answer.."></textarea>
+                </div>
+
+            </div>
+        `;
+
+            faqContainer.insertAdjacentHTML('beforeend', faqHtml);
+
+            // Initialize summernote for newly added textarea
+            $('.faq-answer').summernote({
+                height: 100,
+                placeholder: 'Enter answer..'
+            });
+        }
+
+        function removeFaq(button) {
+
+            let faqItems = document.querySelectorAll('.faq-item');
+
+            if (faqItems.length > 1) {
+                button.closest('.faq-item').remove();
+            } else {
+                alert('At least one FAQ is required');
+            }
+        }
+
+        // Initial Summernote
+        $(document).ready(function() {
+
+            $('.faq-answer').summernote({
+                height: 100,
+                placeholder: 'Enter answer..'
+            });
+
+        });
+    </script>
 @endsection

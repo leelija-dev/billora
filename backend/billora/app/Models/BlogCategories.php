@@ -11,5 +11,6 @@ class BlogCategories extends Model
         'blog_id',
         'category_id'
     ];
-  
+    
+    public $timestamps = true;
 }
