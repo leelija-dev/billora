@@ -3,7 +3,7 @@ import { medicineTypeAPI } from '../services/medicineTypeService'
 
 // Cache for medicine types data
 const medicineTypeCache = new Map()
-const CACHE_EXPIRY = 5 * 60 * 1000 // 5 minutes
+const CACHE_EXPIRY = 30 * 1000 // 30 seconds (reduced from 5 minutes)
 
 const isCacheValid = (cacheEntry) => {
   return cacheEntry && (Date.now() - cacheEntry.timestamp) < CACHE_EXPIRY
@@ -34,10 +34,10 @@ const useMedicineTypeStore = create((set, get) => ({
     const cacheKey = `user_${userId}`
     const currentState = get()
     
-    // Avoid duplicate requests if same data was fetched recently
+    // Avoid duplicate requests if same data was fetched recently (reduced to 100ms)
     if (currentState.cacheKey === cacheKey && 
         currentState.lastFetchTime && 
-        (Date.now() - currentState.lastFetchTime) < 2000) {
+        (Date.now() - currentState.lastFetchTime) < 100) {
       console.log('Using cached medicine types data, skipping duplicate request')
       return
     }
@@ -61,7 +61,20 @@ const useMedicineTypeStore = create((set, get) => ({
       console.log('API Response in store:', response)
       
       // Extract medicine types array from response
-      const medicineTypesArray = response.data.data || []
+      // Handle both array and object response formats
+      let medicineTypesArray = []
+      if (Array.isArray(response.data.data)) {
+        medicineTypesArray = response.data.data
+      } else if (typeof response.data.data === 'object' && response.data.data !== null) {
+        // Convert object with numeric keys to array
+        medicineTypesArray = Object.values(response.data.data)
+      } else if (Array.isArray(response.data)) {
+        // Handle case where data is directly an array
+        medicineTypesArray = response.data
+      } else if (typeof response.data === 'object' && response.data !== null) {
+        // Handle case where data is directly an object with numeric keys
+        medicineTypesArray = Object.values(response.data)
+      }
       console.log('Medicine types data:', medicineTypesArray)
       
       // Cache the results
@@ -75,6 +88,50 @@ const useMedicineTypeStore = create((set, get) => ({
       return response.data
     } catch (error) {
       console.log('Error in fetchMedicineTypes:', error)
+      set({
+        error: error.response?.data?.message || 'Failed to fetch medicine types',
+        loading: false,
+      })
+      throw error
+    }
+  },
+
+  // Force refresh medicine types (bypass cache)
+  forceRefreshMedicineTypes: async (userId) => {
+    const cacheKey = `user_${userId}`
+    
+    // Clear cache for this user
+    medicineTypeCache.delete(cacheKey)
+    
+    set({ loading: true, cacheKey })
+    try {
+      const response = await medicineTypeAPI.getAll(userId)
+      console.log('Force refresh API Response in store:', response)
+      
+      // Extract medicine types array from response
+      let medicineTypesArray = []
+      if (Array.isArray(response.data.data)) {
+        medicineTypesArray = response.data.data
+      } else if (typeof response.data.data === 'object' && response.data.data !== null) {
+        medicineTypesArray = Object.values(response.data.data)
+      } else if (Array.isArray(response.data)) {
+        medicineTypesArray = response.data
+      } else if (typeof response.data === 'object' && response.data !== null) {
+        medicineTypesArray = Object.values(response.data)
+      }
+      console.log('Force refresh medicine types data:', medicineTypesArray)
+      
+      // Cache the results
+      setCachedData(cacheKey, medicineTypesArray)
+      
+      set({
+        medicineTypes: medicineTypesArray,
+        loading: false,
+        lastFetchTime: Date.now()
+      })
+      return response.data
+    } catch (error) {
+      console.log('Error in forceRefreshMedicineTypes:', error)
       set({
         error: error.response?.data?.message || 'Failed to fetch medicine types',
         loading: false,

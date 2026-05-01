@@ -21,7 +21,7 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000
 
 const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
   const { user } = useAuthStore()
-  const { fetchMedicineTypes, medicineTypes } = useMedicineTypeStore()
+  const { forceRefreshMedicineTypes, medicineTypes } = useMedicineTypeStore()
   
   // State for create page data
   const [createPageData, setCreatePageData] = useState({
@@ -108,16 +108,16 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
   useEffect(() => {
     if (user?.id) {
       fetchCreatePageData()
-      fetchMedicineTypes(user.id)
+      forceRefreshMedicineTypes(user.id)
     }
-  }, [user?.id, fetchMedicineTypes])
+  }, [user?.id, forceRefreshMedicineTypes])
 
   // Update create page data when medicine types are loaded
   useEffect(() => {
     if (medicineTypes && medicineTypes.length > 0) {
       setCreatePageData(prev => ({
         ...prev,
-        medicineTypes
+        medicineTypes: [...medicineTypes]
       }))
     }
   }, [medicineTypes])
@@ -488,22 +488,22 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
         toast.success('Medicine type created successfully!')
         // Set the newly created medicine type as selected
         setValue('medicine_type_id', newMedicineType.id)
+        
+
       } else {
         toast.error('Failed to create medicine type')
       }
     } catch (error) {
-      console.error('Error creating medicine type:', error)
       toast.error('Failed to create medicine type')
     }
   }
 
   // Form submission
   const onFormSubmit = (data) => {
-    console.log('🚀 Form submission triggered!', data)
-    
     // Convert attributes to array format expected by backend
     const attributesArray = attributes
       .filter(attr => attr.key.trim() !== '')
+      // ... (rest of the code remains the same)
       .reduce((acc, attr) => {
         // Group attributes by creating objects with multiple key-value pairs
         if (acc.length === 0) {
@@ -1058,30 +1058,28 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {renderField('medicine_type_id', (
-              <>
-                <input
-                  type="hidden"
-                  {...register('medicine_type_id')}
-                  value={watch('medicine_type_id') || ''}
-                />
-               <SearchSelect
-  label="Medicine Type"
-  options={createPageData.medicineTypes?.map(type => ({
-    value: type.id,
-    label: type.name,
-    description: type.code ? `Code: ${type.code}` : null,
-    subtext: type.category ? `Category: ${type.category}` : null
-  })) || []}
-  value={watch('medicine_type_id') || ''}
-  onChange={(value) => setValue('medicine_type_id', value, { shouldValidate: true })}
-  error={errors.medicine_type_id?.message}
-  placeholder="Search for a medicine type..."
-  onCreateNew={(searchTerm) => {
-    setShowMedicineTypeModal(true)
-  }}
-/>
-              </>
+              <SearchSelect
+                label="Medicine Type"
+                options={createPageData.medicineTypes?.map(type => ({
+                  value: type.id,
+                  label: type.name,
+                  description: type.code ? `Code: ${type.code}` : null,
+                  subtext: type.category ? `Category: ${type.category}` : null
+                })) || []}
+                value={watch('medicine_type_id') || ''}
+                onChange={(value) => setValue('medicine_type_id', value, { shouldValidate: true })}
+                error={errors.medicine_type_id?.message}
+                placeholder="Search for a medicine type..."
+                onCreateNew={(searchTerm) => {
+                  setShowMedicineTypeModal(true)
+                }}
+              />
             ))}
+            <input
+              type="hidden"
+              {...register('medicine_type_id')}
+              value={watch('medicine_type_id') || ''}
+            />
 
             {renderField('expiry-date', (
               <Input
@@ -1399,19 +1397,7 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
             <Button
               type="button"
               variant="primary"
-              onClick={() => {
-                console.log('🔘 Update button clicked!')
-                console.log('🔍 Form errors:', errors)
-                console.log('🔍 Form values:', {
-                  brand_id: watch('brand_id'),
-                  category_id: watch('category_id'),
-                  unit_id: watch('unit_id'),
-                  medicine_type_id: watch('medicine_type_id'),
-                  name: watch('name'),
-                  sku: watch('sku')
-                })
-                handleSubmit(onFormSubmit)()
-              }}
+              onClick={handleSubmit(onFormSubmit)}
               isLoading={isSubmitting}
               disabled={isSubmitting}
             >
