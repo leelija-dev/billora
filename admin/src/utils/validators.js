@@ -76,6 +76,13 @@ export const validateDecimal = (value, maxDecimalPlaces = 2) => {
   return !decimalPart || decimalPart.length <= maxDecimalPlaces
 }
 
+export const validateSellingPrice = (sellingPrice, purchasePrice) => {
+  const selling = parseFloat(sellingPrice)
+  const purchase = parseFloat(purchasePrice)
+  if (isNaN(selling) || isNaN(purchase)) return true // Allow if either is empty
+  return selling >= purchase
+}
+
 // Input handlers to prevent invalid input
 export const handleNumberInput = (e) => {
   const value = e.target.value

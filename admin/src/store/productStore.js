@@ -156,25 +156,25 @@ export const useProductStore = create((set, get) => ({
       console.log(' Determined status:', status)
       console.log(' Error message:', message)
       
-      if (status === true && !message) {
+      if (status === true) {
         // Extract actual product data from response structure
         const newProduct = responseData?.data || response.data?.data || response.data
         console.log(' Product created successfully:', newProduct)
-        
+
         // Get current state before clearing cache
         const currentState = get()
-        
+
         // Clear cache to ensure fresh data on next fetch
         get().clearCache()
-        
+
         // Update local state immediately for better UX
         set({
           products: [newProduct, ...(currentState.products || [])],
           totalProducts: (currentState.products?.length || 0) + 1,
           loading: false,
         })
-        
-        toast.success('Product created successfully')
+
+        toast.success(message || 'Product created successfully')
         return { success: true, data: newProduct }
       } else {
         // Backend returned failure (like Google Drive auth error or validation error)
