@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { motion } from 'framer-motion'
 import { useAuthStore } from '../../../store/authStore'
+import { productsAPI } from '../../../services/productsService'
 import Input from '../../common/Input/Input'
 import Button from '../../common/Button/Button'
 import Select from '../../common/Select/Select'
@@ -12,6 +13,8 @@ import toast from 'react-hot-toast'
 const StockForm = ({ stock, onSubmit, onCancel, isSubmitting, products, units }) => {
   const { user } = useAuthStore()
   const [selectedProduct, setSelectedProduct] = useState(null)
+  const [searchResults, setSearchResults] = useState([])
+  const [isSearching, setIsSearching] = useState(false)
 
   const {
     register,
@@ -23,7 +26,7 @@ const StockForm = ({ stock, onSubmit, onCancel, isSubmitting, products, units })
 
   // Handle product selection
   const handleProductSelect = (productId) => {
-    const product = products?.find(p => p.id === productId)
+    const product = searchResults.length > 0 ? searchResults.find(p => p.id === productId) : products?.find(p => p.id === productId)
     if (product) {
       setSelectedProduct(product)
       setValue('product_id', productId)
@@ -32,6 +35,26 @@ const StockForm = ({ stock, onSubmit, onCancel, isSubmitting, products, units })
       setValue('selling_price', product.selling_price || product.price || '')
       setValue('purchase_price', product.purchase_price || product.cost || '')
       setValue('unit_id', product.unit_id || '')
+    }
+  }
+
+  // Handle product search
+  const handleProductSearch = async (searchTerm) => {
+    if (searchTerm.length < 2) {
+      setSearchResults([])
+      return
+    }
+
+    setIsSearching(true)
+    try {
+      const response = await productsAPI.search(searchTerm)
+      const productsData = response.data?.data?.data || response.data?.data || []
+      setSearchResults(productsData)
+    } catch (error) {
+      console.error('Failed to search products:', error)
+      setSearchResults([])
+    } finally {
+      setIsSearching(false)
     }
   }
 
@@ -184,7 +207,12 @@ const StockForm = ({ stock, onSubmit, onCancel, isSubmitting, products, units })
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <SearchSelect
           label="Product"
-          options={products?.map(product => ({
+          options={searchResults.length > 0 ? searchResults.map(product => ({
+            value: product.id,
+            label: product.name || product.product_name,
+            description: `📦 SKU: ${product.sku || product.code || product.product_code || 'N/A'}`,
+            subtext: product.brand?.name ? `🏷️ Brand: ${product.brand.name}` : null
+          })) : products?.map(product => ({
             value: product.id,
             label: product.name || product.product_name,
             description: `📦 SKU: ${product.sku || product.code || product.product_code || 'N/A'}`,
@@ -195,6 +223,9 @@ const StockForm = ({ stock, onSubmit, onCancel, isSubmitting, products, units })
           placeholder="Search product by name, SKU, brand..."
           required
           renderOption={renderProductOption}
+          onSearchChange={handleProductSearch}
+          isLoading={isSearching}
+          minSearchLength={2}
         />
 
         <Input
