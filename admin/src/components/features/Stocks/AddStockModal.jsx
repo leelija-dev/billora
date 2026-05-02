@@ -4,6 +4,7 @@ import Modal from '../../common/Modal/Modal'
 import Button from '../../common/Button/Button'
 import Input from '../../common/Input/Input'
 import toast from 'react-hot-toast'
+import { handleNumberInput } from '../../../utils/validators'
 
 const AddStockModal = ({ isOpen, onClose, stock, onAddStock, isSubmitting }) => {
   const [addQuantity, setAddQuantity] = useState(0)
@@ -103,7 +104,7 @@ const AddStockModal = ({ isOpen, onClose, stock, onAddStock, isSubmitting }) => 
 
         <Input
           label="Quantity to Add"
-          type="number"
+          type="text"
           min="1"
           step="1"
           placeholder="Enter quantity to add"
@@ -117,7 +118,8 @@ const AddStockModal = ({ isOpen, onClose, stock, onAddStock, isSubmitting }) => 
             validate: value => {
               const num = parseInt(value)
               return num > 0 || 'Quantity must be greater than 0'
-            }
+            },
+            onChange: (e) => handleNumberInput(e)
           })}
         />
 

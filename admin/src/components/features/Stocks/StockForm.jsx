@@ -9,6 +9,7 @@ import Button from '../../common/Button/Button'
 import Select from '../../common/Select/Select'
 import SearchSelect from '../../common/SearchSelect/SearchSelect'
 import toast from 'react-hot-toast'
+import { handleNumberInput, handleDecimalInput } from '../../../utils/validators'
 
 const StockForm = ({ stock, onSubmit, onCancel, isSubmitting, products, units }) => {
   const { user } = useAuthStore()
@@ -230,14 +231,15 @@ const StockForm = ({ stock, onSubmit, onCancel, isSubmitting, products, units })
 
         <Input
           label="Quantity"
-          type="number"
+          type="text"
           min="1"
           step="1"
           placeholder="Enter quantity"
           error={errors.quantity?.message}
           {...register('quantity', { 
             required: 'Quantity is required',
-            valueAsNumber: true 
+            valueAsNumber: true,
+            onChange: (e) => handleNumberInput(e)
           })}
         />
       </div>
@@ -245,23 +247,25 @@ const StockForm = ({ stock, onSubmit, onCancel, isSubmitting, products, units })
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Input
           label="Selling Price"
-          type="number"
+          type="text"
           step="0.01"
           placeholder="Enter selling price"
           error={errors.selling_price?.message}
           {...register('selling_price', { 
-            valueAsNumber: true 
+            valueAsNumber: true,
+            onChange: (e) => handleDecimalInput(e)
           })}
         />
 
         <Input
           label="Purchase Price"
-          type="number"
+          type="text"
           step="0.01"
           placeholder="Enter purchase price"
           error={errors.purchase_price?.message}
           {...register('purchase_price', { 
-            valueAsNumber: true 
+            valueAsNumber: true,
+            onChange: (e) => handleDecimalInput(e)
           })}
         />
       </div>
