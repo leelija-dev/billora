@@ -108,9 +108,14 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
   useEffect(() => {
     if (user?.id) {
       fetchCreatePageData()
-      forceRefreshMedicineTypes(user.id)
+      // Only fetch medicine types if they're available on this server
+      try {
+        forceRefreshMedicineTypes(user.id)
+      } catch (error) {
+        console.log('Medicine types not available on this server:', error.message)
+      }
     }
-  }, [user?.id, forceRefreshMedicineTypes])
+  }, [user?.id])
 
   // Update create page data when medicine types are loaded
   useEffect(() => {
@@ -166,9 +171,14 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
       productMedicineTypeId: product?.medicine_type_id
     })
     
-    if (product && createPageData.brands.length > 0 && createPageData.medicineTypes.length > 0) {
-      console.log('Setting form values for editing. Medicine types available:', createPageData.medicineTypes)
-      console.log('Product medicine_type_id:', product.medicine_type_id)
+    // Try to pre-fill even if some data is still loading
+    // Don't depend on medicine types since server might not have them
+    if (product && (createPageData.brands.length > 0 || loadingData === false)) {
+      console.log('✅ Setting form values for editing')
+      console.log('📊 Available brands:', createPageData.brands.length)
+      console.log('📊 Available medicine types:', createPageData.medicineTypes.length)
+      console.log('💊 Product medicine_type_id:', product.medicine_type_id)
+      console.log('🏥 Medicine types enabled on this server:', createPageData.medicineTypes.length > 0)
       
       // Set all form values for editing
       Object.keys(product).forEach(key => {
@@ -303,7 +313,7 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
         setImagePreviews([])
       }
     }
-  }, [product, createPageData.brands, createPageData.medicineTypes, setValue])
+  }, [product, createPageData.brands, loadingData, setValue])
 
   // ... rest of the code remains the same ...
   // Check if user has permission for a specific field
