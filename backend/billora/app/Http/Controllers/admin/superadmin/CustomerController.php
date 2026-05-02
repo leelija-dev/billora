@@ -45,8 +45,12 @@ class CustomerController extends Controller
     }
 
     $customers = $query->paginate(10)->withQueryString();
+    $totalCustomers = Customers::all()->count();
+    $activeCustomers = Customers::where('is_active', true)->count();
+    $inactiveCustomers = Customers::where('is_active', false)->count();
+    $verifiedCustomers = Customers::where('email_verified_at', '!=', null)->count();
 
-    return view('admin.customers.index', compact('customers'));
+    return view('admin.customers.index', compact('customers','activeCustomers', 'inactiveCustomers', 'totalCustomers','verifiedCustomers'));
   }
   public function plans($id)
   {
