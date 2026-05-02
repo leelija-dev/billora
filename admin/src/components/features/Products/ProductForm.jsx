@@ -16,6 +16,13 @@ import MedicineTypeModal from '../../common/CreateModals/MedicineTypeModal'
 import { categoriesAPI, brandsAPI, unitsAPI, medicineTypeAPI } from '../../../services'
 import toast from 'react-hot-toast'
 import { FiUpload, FiX, FiPlus, FiTrash2 } from 'react-icons/fi'
+import {
+  handleNumberInput,
+  handleDecimalInput,
+  handlePhoneInput,
+  handleMaxLength,
+  validationRules
+} from '../../../utils/validators'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api'
 
@@ -582,6 +589,9 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
     console.log('🔍 Form submission variants:', variants);
     console.log('🔍 Valid variants after filtering:', validVariants);
 
+    // Check if user has permission to edit warranty_months
+    const hasWarrantyPermission = hasPermission('warranty_months');
+
     const productData = {
       ...processedData,
       user_id: user.id,
@@ -591,6 +601,8 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
       images: selectedImages.length > 1 ? selectedImages.slice(1) : [], // Additional images
       variants: validVariants,
       attributes: attributesArray.length > 0 ? attributesArray : [],
+      // Only include warranty_months if user has permission to edit it
+      ...(hasWarrantyPermission && { warranty_months: processedData.warranty_months }),
       // Convert boolean fields to integers for backend
       is_active: data.is_active ? 1 : 0,
       prescription_required: data.prescription_required ? 1 : 0,
@@ -715,14 +727,27 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
             label="Product Name"
             placeholder="Enter product name"
             error={errors.name?.message}
-            {...register('name', { required: 'Product name is required' })}
+            maxLength={validationRules.productName.maxLength}
+            {...register('name', { 
+              required: 'Product name is required',
+              minLength: { value: validationRules.productName.minLength, message: 'Product name must be at least 2 characters' },
+              maxLength: { value: validationRules.productName.maxLength, message: 'Product name must not exceed 255 characters' }
+            })}
           />
 
           <Input
             label="Product Code (SKU)"
             placeholder="Enter product code"
             error={errors.sku?.message}
-            {...register('sku', { required: 'Product code is required' })}
+            maxLength={validationRules.sku.maxLength}
+            onInput={(e) => {
+              e.target.value = e.target.value.toUpperCase().replace(/[^A-Z0-9-]/g, '')
+            }}
+            {...register('sku', { 
+              required: 'Product code is required',
+              pattern: { value: validationRules.sku.pattern, message: 'SKU must contain only uppercase letters, numbers, and hyphens' },
+              maxLength: { value: validationRules.sku.maxLength, message: 'SKU must not exceed 100 characters' }
+            })}
           />
 
           <SearchSelect
@@ -784,12 +809,14 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
           <Input
             label="Unit Amount"
             type="number"
-            step="0.01"
+            step="0.0001"
             placeholder="Enter unit amount"
             error={errors.unit_amount?.message}
-            {...register('unit_amount', { 
+            onInput={(e) => handleDecimalInput(e, 4)}
+            {...register('unit_amount', {
               required: 'Unit amount is required',
-              valueAsNumber: true 
+              valueAsNumber: true,
+              min: { value: 0, message: 'Unit amount must be positive' }
             })}
           />
 
@@ -823,7 +850,11 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
             step="0.01"
             placeholder="Enter selling price"
             error={errors.selling_price?.message}
-            {...register('selling_price', { valueAsNumber: true })}
+            onInput={(e) => handleDecimalInput(e, 2)}
+            {...register('selling_price', {
+              valueAsNumber: true,
+              min: { value: 0, message: 'Selling price must be positive' }
+            })}
           />
 
           <Input
@@ -832,7 +863,11 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
             step="0.01"
             placeholder="Enter purchase price"
             error={errors.purchase_price?.message}
-            {...register('purchase_price', { valueAsNumber: true })}
+            onInput={(e) => handleDecimalInput(e, 2)}
+            {...register('purchase_price', {
+              valueAsNumber: true,
+              min: { value: 0, message: 'Purchase price must be positive' }
+            })}
           />
 
           <Input
@@ -841,7 +876,12 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
             step="0.01"
             placeholder="Enter GST percentage"
             error={errors.gst_percentage?.message}
-            {...register('gst_percentage', { valueAsNumber: true })}
+            onInput={(e) => handleDecimalInput(e, 2)}
+            {...register('gst_percentage', {
+              valueAsNumber: true,
+              min: { value: 0, message: 'GST percentage must be positive' },
+              max: { value: 100, message: 'GST percentage cannot exceed 100' }
+            })}
           />
 
           <Input
@@ -850,7 +890,12 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
             step="0.01"
             placeholder="Enter discount percentage"
             error={errors.discount_percentage?.message}
-            {...register('discount_percentage', { valueAsNumber: true })}
+            onInput={(e) => handleDecimalInput(e, 2)}
+            {...register('discount_percentage', {
+              valueAsNumber: true,
+              min: { value: 0, message: 'Discount percentage must be positive' },
+              max: { value: 100, message: 'Discount percentage cannot exceed 100' }
+            })}
           />
         </div>
       </div>
@@ -974,10 +1019,14 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
               <Input
                 label="Conversion Factor"
                 type="number"
-                step="0.01"
+                step="0.0001"
                 placeholder="Enter conversion factor"
                 error={errors.conversion_factor?.message}
-                {...register('conversion_factor', { valueAsNumber: true })}
+                onInput={(e) => handleDecimalInput(e, 4)}
+                {...register('conversion_factor', {
+                  valueAsNumber: true,
+                  min: { value: 0, message: 'Conversion factor must be positive' }
+                })}
               />
             ))}
 
@@ -985,10 +1034,14 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
               <Input
                 label="Minimum Stock Quantity"
                 type="number"
-                step="1"
+                step="0.0001"
                 placeholder="Enter minimum stock"
                 error={errors.minimum_stock_quantity?.message}
-                {...register('minimum_stock_quantity', { valueAsNumber: true })}
+                onInput={(e) => handleDecimalInput(e, 4)}
+                {...register('minimum_stock_quantity', {
+                  valueAsNumber: true,
+                  min: { value: 0, message: 'Minimum stock must be positive' }
+                })}
               />
             ))}
 
@@ -996,10 +1049,14 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
               <Input
                 label="Maximum Stock Quantity"
                 type="number"
-                step="1"
+                step="0.0001"
                 placeholder="Enter maximum stock"
                 error={errors.maximum_stock_quantity?.message}
-                {...register('maximum_stock_quantity', { valueAsNumber: true })}
+                onInput={(e) => handleDecimalInput(e, 4)}
+                {...register('maximum_stock_quantity', {
+                  valueAsNumber: true,
+                  min: { value: 0, message: 'Maximum stock must be positive' }
+                })}
               />
             ))}
 
@@ -1007,10 +1064,14 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
               <Input
                 label="Current Stock"
                 type="number"
-                step="1"
+                step="0.0001"
                 placeholder="Enter current stock"
                 error={errors.current_stock?.message}
-                {...register('current_stock', { valueAsNumber: true })}
+                onInput={(e) => handleDecimalInput(e, 4)}
+                {...register('current_stock', {
+                  valueAsNumber: true,
+                  min: { value: 0, message: 'Current stock must be positive' }
+                })}
               />
             ))}
 
@@ -1019,7 +1080,11 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
                 label="Warehouse Location"
                 placeholder="Enter warehouse location"
                 error={errors.warehouse_location?.message}
-                {...register('warehouse_location')}
+                maxLength={validationRules.warehouseLocation.maxLength}
+                onInput={(e) => handleMaxLength(e, validationRules.warehouseLocation.maxLength)}
+                {...register('warehouse_location', {
+                  maxLength: { value: validationRules.warehouseLocation.maxLength, message: 'Warehouse location must not exceed 100 characters' }
+                })}
               />
             ))}
           </div>
@@ -1040,7 +1105,11 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
                 step="0.01"
                 placeholder="Enter MRP"
                 error={errors.mrp?.message}
-                {...register('mrp', { valueAsNumber: true })}
+                onInput={(e) => handleDecimalInput(e, 2)}
+                {...register('mrp', {
+                  valueAsNumber: true,
+                  min: { value: 0, message: 'MRP must be positive' }
+                })}
               />
             ))}
 
@@ -1051,7 +1120,11 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
                 step="0.01"
                 placeholder="Enter wholesale price"
                 error={errors.wholesale_price?.message}
-                {...register('wholesale_price', { valueAsNumber: true })}
+                onInput={(e) => handleDecimalInput(e, 2)}
+                {...register('wholesale_price', {
+                  valueAsNumber: true,
+                  min: { value: 0, message: 'Wholesale price must be positive' }
+                })}
               />
             ))}
 
@@ -1062,7 +1135,11 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
                 step="0.01"
                 placeholder="Enter discount amount"
                 error={errors.discount_amount?.message}
-                {...register('discount_amount', { valueAsNumber: true })}
+                onInput={(e) => handleDecimalInput(e, 2)}
+                {...register('discount_amount', {
+                  valueAsNumber: true,
+                  min: { value: 0, message: 'Discount amount must be positive' }
+                })}
               />
             ))}
 
@@ -1073,7 +1150,12 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
                 step="0.01"
                 placeholder="Enter CESS percentage"
                 error={errors.cess_percentage?.message}
-                {...register('cess_percentage', { valueAsNumber: true })}
+                onInput={(e) => handleDecimalInput(e, 2)}
+                {...register('cess_percentage', {
+                  valueAsNumber: true,
+                  min: { value: 0, message: 'CESS percentage must be positive' },
+                  max: { value: 100, message: 'CESS percentage cannot exceed 100' }
+                })}
               />
             ))}
           </div>
@@ -1084,29 +1166,35 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
       {renderField('gst-hsn-code', (
         <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700">
           <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6">Tax Information</h3>
-          
+
           <Input
             label="GST HSN Code"
             type="number"
             placeholder="Enter GST HSN code (numeric only)"
             error={errors.gst_hsn_code?.message}
-            {...register('gst_hsn_code', { 
+            maxLength={validationRules.gstHsnCode.maxLength}
+            onInput={(e) => {
+              handleNumberInput(e)
+              handleMaxLength(e, validationRules.gstHsnCode.maxLength)
+            }}
+            {...register('gst_hsn_code', {
               valueAsNumber: true,
-              pattern: /^[0-9]*$/
+              pattern: { value: validationRules.gstHsnCode.pattern, message: 'GST HSN code must be numeric only' },
+              maxLength: { value: validationRules.gstHsnCode.maxLength, message: 'GST HSN code must not exceed 12 digits' }
             })}
           />
         </div>
       ))}
 
       {/* Medicine Specific Fields */}
-      {(hasPermission('medicine_type_id') || 
-        hasPermission('expiry_date') || hasPermission('batch_number') || 
-        hasPermission('manufacturer_name') || hasPermission('prescription_required') || 
-        hasPermission('schedule_type') || hasPermission('salt_composition') || 
+      {(hasPermission('medicine_type_id') ||
+        hasPermission('expiry_date') || hasPermission('batch_number') ||
+        hasPermission('manufacturer_name') || hasPermission('prescription_required') ||
+        hasPermission('schedule_type') || hasPermission('salt_composition') ||
         hasPermission('warranty_months')) && (
         <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700">
           <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6">Medicine Information</h3>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {renderField('medicine_type_id', (
               <SearchSelect
@@ -1146,7 +1234,11 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
                 label="Batch Number"
                 placeholder="Enter batch number"
                 error={errors.batch_number?.message}
-                {...register('batch_number')}
+                maxLength={validationRules.batchNumber.maxLength}
+                onInput={(e) => handleMaxLength(e, validationRules.batchNumber.maxLength)}
+                {...register('batch_number', {
+                  maxLength: { value: validationRules.batchNumber.maxLength, message: 'Batch number must not exceed 100 characters' }
+                })}
               />
             ))}
 
@@ -1155,7 +1247,11 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
                 label="Manufacturer Name"
                 placeholder="Enter manufacturer name"
                 error={errors.manufacturer_name?.message}
-                {...register('manufacturer_name')}
+                maxLength={validationRules.manufacturerName.maxLength}
+                onInput={(e) => handleMaxLength(e, validationRules.manufacturerName.maxLength)}
+                {...register('manufacturer_name', {
+                  maxLength: { value: validationRules.manufacturerName.maxLength, message: 'Manufacturer name must not exceed 255 characters' }
+                })}
               />
             ))}
 
@@ -1175,9 +1271,17 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
             {renderField('schedule-type', (
               <Input
                 label="Schedule Type"
-                placeholder="Enter schedule type"
+                placeholder="Enter schedule type (H, X, G, etc.)"
                 error={errors.schedule_type?.message}
-                {...register('schedule_type')}
+                maxLength={validationRules.scheduleType.maxLength}
+                onInput={(e) => {
+                  e.target.value = e.target.value.toUpperCase()
+                  handleMaxLength(e, validationRules.scheduleType.maxLength)
+                }}
+                {...register('schedule_type', {
+                  pattern: { value: validationRules.scheduleType.pattern, message: 'Schedule type must be uppercase letters only (H, X, G, etc.)' },
+                  maxLength: { value: validationRules.scheduleType.maxLength, message: 'Schedule type must not exceed 5 characters' }
+                })}
               />
             ))}
 
@@ -1196,7 +1300,12 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
                 type="number"
                 placeholder="Enter warranty months"
                 error={errors.warranty_months?.message}
-                {...register('warranty_months', { valueAsNumber: true })}
+                onInput={(e) => handleNumberInput(e)}
+                {...register('warranty_months', {
+                  valueAsNumber: true,
+                  min: { value: 0, message: 'Warranty months must be positive' },
+                  max: { value: 120, message: 'Warranty months cannot exceed 120' }
+                })}
               />
             ))}
           </div>
@@ -1351,9 +1460,13 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
             </label>
             <textarea
               rows={2}
+              maxLength={validationRules.shortDescription.maxLength}
               className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white resize-none"
               placeholder="Enter short description (optional)..."
-              {...register('short_description')}
+              onInput={(e) => handleMaxLength(e, validationRules.shortDescription.maxLength)}
+              {...register('short_description', {
+                maxLength: { value: validationRules.shortDescription.maxLength, message: 'Short description must not exceed 500 characters' }
+              })}
             />
             {errors.short_description && (
               <p className="mt-1 text-sm text-red-600 dark:text-red-400">
@@ -1416,12 +1529,17 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
       {renderField('supplier_id', (
         <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700">
           <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6">Supplier Information</h3>
-          
+
           <Input
             label="Supplier ID"
+            type="number"
             placeholder="Enter supplier ID"
             error={errors.supplier_id?.message}
-            {...register('supplier_id')}
+            onInput={(e) => handleNumberInput(e)}
+            {...register('supplier_id', {
+              valueAsNumber: true,
+              min: { value: 1, message: 'Supplier ID must be positive' }
+            })}
           />
         </div>
       ))}

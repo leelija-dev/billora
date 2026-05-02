@@ -106,7 +106,7 @@ export const productsAPI = {
       if (productData.is_featured) formData.append('is_featured', productData.is_featured);
       if (productData.is_returnable) formData.append('is_returnable', productData.is_returnable);
       if (productData.is_refundable) formData.append('is_refundable', productData.is_refundable);
-      if (productData.warranty_months !== undefined && productData.warranty_months !== null && !isNaN(productData.warranty_months)) {
+      if (productData.warranty_months !== undefined && productData.warranty_months !== null && productData.warranty_months !== '' && !isNaN(productData.warranty_months)) {
         formData.append('warranty_months', productData.warranty_months);
       }
       if (productData.warehouse_location) formData.append('warehouse_location', productData.warehouse_location);
@@ -224,7 +224,9 @@ export const productsAPI = {
         if (productData.is_featured !== undefined) formData.append('is_featured', productData.is_featured);
         if (productData.is_returnable !== undefined) formData.append('is_returnable', productData.is_returnable);
         if (productData.is_refundable !== undefined) formData.append('is_refundable', productData.is_refundable);
-        if (productData.warranty_months) formData.append('warranty_months', productData.warranty_months);
+        if (productData.warranty_months !== undefined && productData.warranty_months !== null && productData.warranty_months !== '' && !isNaN(productData.warranty_months)) {
+          formData.append('warranty_months', productData.warranty_months);
+        }
         if (productData.warehouse_location) formData.append('warehouse_location', productData.warehouse_location);
         if (productData.supplier_id) formData.append('supplier_id', productData.supplier_id);
         
