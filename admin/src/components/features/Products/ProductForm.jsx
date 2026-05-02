@@ -380,17 +380,32 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
 
   // Variant handling
   const addVariant = () => {
-    setVariants(prev => [...prev, { size: '', color: '', material: '', gender: '' }])
+    console.log('➕ Adding variant');
+    setVariants(prev => {
+      const newVariants = [...prev, { size: '', color: '', material: '', gender: '' }];
+      console.log('🔍 Variants after add:', newVariants);
+      return newVariants;
+    })
   }
 
   const updateVariant = (index, field, value) => {
-    setVariants(prev => prev.map((variant, i) => 
-      i === index ? { ...variant, [field]: value } : variant
-    ))
+    console.log(`📝 Updating variant ${index}, ${field}: ${value}`);
+    setVariants(prev => {
+      const newVariants = prev.map((variant, i) => 
+        i === index ? { ...variant, [field]: value } : variant
+      );
+      console.log('🔍 Variants after update:', newVariants);
+      return newVariants;
+    })
   }
 
   const removeVariant = (index) => {
-    setVariants(prev => prev.filter((_, i) => i !== index))
+    console.log(`🗑️ Removing variant ${index}`);
+    setVariants(prev => {
+      const newVariants = prev.filter((_, i) => i !== index);
+      console.log('🔍 Variants after remove:', newVariants);
+      return newVariants;
+    })
   }
 
   // Attribute handling functions
@@ -559,6 +574,14 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
       processedData[field] = processedData[field] === null || processedData[field] === '' || processedData[field] === undefined ? 0 : processedData[field]
     })
 
+    // Filter variants to only include those with actual data
+    const validVariants = variants.filter(variant => 
+      variant.size || variant.color || variant.material || variant.gender
+    );
+    
+    console.log('🔍 Form submission variants:', variants);
+    console.log('🔍 Valid variants after filtering:', validVariants);
+
     const productData = {
       ...processedData,
       user_id: user.id,
@@ -566,7 +589,7 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
       // Handle main image and additional images separately
       image: selectedImages.length > 0 ? selectedImages[0] : null, // Main image
       images: selectedImages.length > 1 ? selectedImages.slice(1) : [], // Additional images
-      variants: variants,
+      variants: validVariants,
       attributes: attributesArray.length > 0 ? attributesArray : [],
       // Convert boolean fields to integers for backend
       is_active: data.is_active ? 1 : 0,

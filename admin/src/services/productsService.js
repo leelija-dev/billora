@@ -255,9 +255,9 @@ export const productsAPI = {
         // Use JSON for updates without new images (cleaner and faster)
         const cleanedData = { ...productData };
         
-        // Remove fields that shouldn't be sent in update (images, variants arrays, etc.)
+        // Remove fields that shouldn't be sent in update (images arrays, etc.)
         delete cleanedData.images;
-        delete cleanedData.variants;
+        // Keep variants - they should be sent to backend for proper update handling
         delete cleanedData.created_at;
         delete cleanedData.updated_at;
         delete cleanedData.deleted_at;

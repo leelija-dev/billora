@@ -211,7 +211,7 @@ const StockAddModal = ({ isOpen, onClose, onAddStock, product = null, currentSto
                     placeholder="Enter selling price"
                     className="pl-8"
                   />
-                  <span className="absolute left-3 top-9 text-gray-500 font-medium">$</span>
+                  <span className="absolute left-3 top-9 text-gray-500 font-medium">₹</span>
                 </div>
                 <div className="relative">
                   <Input
@@ -225,7 +225,7 @@ const StockAddModal = ({ isOpen, onClose, onAddStock, product = null, currentSto
                     placeholder="Enter purchase price"
                     className="pl-8"
                   />
-                  <span className="absolute left-3 top-9 text-gray-500 font-medium">$</span>
+                  <span className="absolute left-3 top-9 text-gray-500 font-medium">₹</span>
                 </div>
               </div>
 
