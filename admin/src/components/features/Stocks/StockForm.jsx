@@ -27,12 +27,114 @@ const StockForm = ({ stock, onSubmit, onCancel, isSubmitting, products, units })
     if (product) {
       setSelectedProduct(product)
       setValue('product_id', productId)
-      
+
       // Pre-fill other fields except quantity
       setValue('selling_price', product.selling_price || product.price || '')
       setValue('purchase_price', product.purchase_price || product.cost || '')
       setValue('unit_id', product.unit_id || '')
     }
+  }
+
+  // Custom render function for product options
+  const renderProductOption = (option, index, isHighlighted, isSelected) => {
+    const product = products?.find(p => p.id === option.value)
+    return (
+      <div
+        key={option.value}
+        className={`px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer border-b border-gray-100 dark:border-gray-700 last:border-b-0 transition-colors ${
+          isSelected ? 'bg-primary-50 dark:bg-primary-900/20' : ''
+        } ${isHighlighted ? 'bg-gray-100 dark:bg-gray-700' : ''}`}
+      >
+        <div className="flex justify-between items-start">
+          <div className="flex-1">
+            <div className="font-medium text-gray-900 dark:text-white">
+              {option.label}
+            </div>
+            {option.description && (
+              <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                {option.description}
+              </div>
+            )}
+            {product && (
+              <div className="mt-2 space-y-1">
+                {/* Brand & Category */}
+                <div className="flex flex-wrap gap-2 text-xs">
+                  {product.brand?.name && (
+                    <span className="inline-block px-2 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded">
+                      🏷️ {product.brand.name}
+                    </span>
+                  )}
+                  {product.category?.name && (
+                    <span className="inline-block px-2 py-0.5 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded">
+                      📂 {product.category.name}
+                    </span>
+                  )}
+                  {product.unit?.name && (
+                    <span className="inline-block px-2 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded">
+                      📦 {product.unit.name} ({product.unit.code})
+                    </span>
+                  )}
+                </div>
+
+                {/* Attributes */}
+                {product.attributes && Array.isArray(product.attributes) && product.attributes.length > 0 && (
+                  <div className="flex flex-wrap gap-1 mt-1">
+                    {product.attributes.map((attr, idx) => {
+                      if (typeof attr === 'object' && attr !== null) {
+                        return Object.entries(attr).map(([key, value]) => (
+                          <span key={`${idx}-${key}`} className="inline-block px-2 py-0.5 text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded">
+                            {key}: {value}
+                          </span>
+                        ))
+                      }
+                      return null
+                    })}
+                  </div>
+                )}
+
+                {/* Variants */}
+                {product.variants && Array.isArray(product.variants) && product.variants.length > 0 && (
+                  <div className="flex flex-wrap gap-1 mt-1">
+                    {product.variants.slice(0, 3).map((variant, idx) => {
+                      const variantValues = []
+                      if (variant.size) variantValues.push(`Size: ${variant.size}`)
+                      if (variant.color) variantValues.push(`Color: ${variant.color}`)
+                      if (variant.material) variantValues.push(`Material: ${variant.material}`)
+                      if (variant.gender) variantValues.push(`Gender: ${variant.gender}`)
+
+                      return variantValues.map((val, valIdx) => (
+                        <span key={`${idx}-${valIdx}`} className="inline-block px-2 py-0.5 text-xs bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 rounded">
+                          {val}
+                        </span>
+                      ))
+                    })}
+                    {product.variants.length > 3 && (
+                      <span className="inline-block px-2 py-0.5 text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded">
+                        +{product.variants.length - 3} more
+                      </span>
+                    )}
+                  </div>
+                )}
+
+                {/* Prices */}
+                <div className="flex items-center gap-3 mt-1 text-xs">
+                  {product.selling_price && (
+                    <span className="text-green-600 dark:text-green-400 font-medium">
+                      Selling: ₹{product.selling_price}
+                    </span>
+                  )}
+                  {product.purchase_price && (
+                    <span className="text-red-600 dark:text-red-400">
+                      Purchase: ₹{product.purchase_price}
+                    </span>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    )
   }
 
   useEffect(() => {
@@ -92,6 +194,7 @@ const StockForm = ({ stock, onSubmit, onCancel, isSubmitting, products, units })
           onChange={handleProductSelect}
           placeholder="Search product by name, SKU, brand..."
           required
+          renderOption={renderProductOption}
         />
 
         <Input
