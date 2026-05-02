@@ -90,7 +90,7 @@ export const productsAPI = {
         });
       }
       
-      if (productData.medicine_type) formData.append('medicine_type', productData.medicine_type);
+      if (productData.medicine_type_id) formData.append('medicine_type_id', productData.medicine_type_id);
       if (productData.other_medicine_type) formData.append('other_medicine_type', productData.other_medicine_type);
       if (productData.expiry_date) formData.append('expiry_date', productData.expiry_date);
       if (productData.batch_number) formData.append('batch_number', productData.batch_number);
@@ -106,7 +106,9 @@ export const productsAPI = {
       if (productData.is_featured) formData.append('is_featured', productData.is_featured);
       if (productData.is_returnable) formData.append('is_returnable', productData.is_returnable);
       if (productData.is_refundable) formData.append('is_refundable', productData.is_refundable);
-      if (productData.warranty_months) formData.append('warranty_months', productData.warranty_months);
+      if (productData.warranty_months !== undefined && productData.warranty_months !== null && !isNaN(productData.warranty_months)) {
+        formData.append('warranty_months', productData.warranty_months);
+      }
       if (productData.warehouse_location) formData.append('warehouse_location', productData.warehouse_location);
       if (productData.supplier_id) formData.append('supplier_id', productData.supplier_id);
       if (productData.updated_by) formData.append('updated_by', productData.updated_by);

@@ -9,6 +9,7 @@ Route::get('/', function () {
     return view('welcome');
 });
 Route::get('/verify-email/{token}', [CustomerController::class, 'verifyEmail']);
+Route::post('/resend-verification', [CustomerController::class, 'resendVerificationEmail']);
 
 Route::get('/google-drive-token', function () {
     $client = new Client();

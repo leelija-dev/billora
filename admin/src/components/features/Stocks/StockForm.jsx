@@ -6,10 +6,12 @@ import { useAuthStore } from '../../../store/authStore'
 import Input from '../../common/Input/Input'
 import Button from '../../common/Button/Button'
 import Select from '../../common/Select/Select'
+import SearchSelect from '../../common/SearchSelect/SearchSelect'
 import toast from 'react-hot-toast'
 
 const StockForm = ({ stock, onSubmit, onCancel, isSubmitting, products, units }) => {
   const { user } = useAuthStore()
+  const [selectedProduct, setSelectedProduct] = useState(null)
 
   const {
     register,
@@ -18,6 +20,20 @@ const StockForm = ({ stock, onSubmit, onCancel, isSubmitting, products, units })
     setValue,
     reset,
   } = useForm()
+
+  // Handle product selection
+  const handleProductSelect = (productId) => {
+    const product = products?.find(p => p.id === productId)
+    if (product) {
+      setSelectedProduct(product)
+      setValue('product_id', productId)
+      
+      // Pre-fill other fields except quantity
+      setValue('selling_price', product.selling_price || product.price || '')
+      setValue('purchase_price', product.purchase_price || product.cost || '')
+      setValue('unit_id', product.unit_id || '')
+    }
+  }
 
   useEffect(() => {
     if (stock) {
@@ -64,17 +80,18 @@ const StockForm = ({ stock, onSubmit, onCancel, isSubmitting, products, units })
       <input type="hidden" {...register('user_id')} value={user.id} />
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Select
+        <SearchSelect
           label="Product"
-          options={[
-            { value: '', label: 'Select Product' },
-            ...(products?.map(product => ({
-              value: product.id,
-              label: `${product.name} (SKU: ${product.sku})`,
-            })) || [])
-          ]}
-          error={errors.product_id?.message}
-          {...register('product_id', { required: 'Product is required' })}
+          options={products?.map(product => ({
+            value: product.id,
+            label: product.name || product.product_name,
+            description: `📦 SKU: ${product.sku || product.code || product.product_code || 'N/A'}`,
+            subtext: product.brand?.name ? `🏷️ Brand: ${product.brand.name}` : null
+          })) || []}
+          value={selectedProduct?.id || ''}
+          onChange={handleProductSelect}
+          placeholder="Search product by name, SKU, brand..."
+          required
         />
 
         <Input
@@ -135,15 +152,9 @@ const StockForm = ({ stock, onSubmit, onCancel, isSubmitting, products, units })
           }}
         />
 
-        <Select
-          label="Product Package"
-          options={[
-            { value: '', label: 'Select Package' },
-            // Add package options if available
-          ]}
-          error={errors.product_package_id?.message}
-          {...register('product_package_id')}
-        />
+        <div>
+          {/* Product Package field removed */}
+        </div>
       </div>
 
       <div className="flex justify-end space-x-4">

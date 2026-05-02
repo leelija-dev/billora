@@ -45,7 +45,7 @@ class ProductsController extends Controller
                 ]);
             }
             $user = Auth::user()->id;
-            $product = Products::with(['variants', 'images'])->where('user_id', $user)->where('is_active', true)->paginate(15);
+            $product = Products::with(['variants', 'images', 'medicine_type'])->where('user_id', $user)->where('is_active', true)->paginate(15);
             if ($request->has('search')) {
                 $product = Products::where('user_id', $user)->where('name', 'like', '%' . $request->search . '%')
                     ->orWhere('sku', 'like', '%' . $request->search . '%')
@@ -764,6 +764,10 @@ class ProductsController extends Controller
             }
             $product = Products::where('user_id', $user)->where('id', $id)->first();
             $product->delete();
+            $stocksProduct = Stocks::where('user_id',$user)->where('product_id', $product->id)->first();
+            if($stocksProduct){
+                $stocksProduct->delete();
+            }
             return response()->json([
                 'status' => true,
                 'message' => 'Product Deleted Successfully',
@@ -796,6 +800,33 @@ class ProductsController extends Controller
             }
             $product = Products::withTrashed()->where('user_id', $user)->where('id', $id)->get();
             $product->restore();
+            // check permission 
+             if($product){
+                $stocks = [
+            'product_id'        => $product->id,
+            'quantity'          => 0,
+            'selling_price'     => $product->selling_price ?? 0,
+            'product_package_id' => null,
+            'purchase_price'    => $product->purchase_price ?? 0,
+            'unit_id'           => $product->unit_id,
+
+            ];
+            }
+            $permissions = DB::table('plan_permission_details as ppd')
+                ->join('plan_permission as pp', 'pp.id', '=', 'ppd.permission_id')
+                ->where('ppd.plan_id', $customer->plan_id)
+                ->pluck('pp.slug')
+                ->toArray();
+
+            $hasStockPermission = in_array('stock-management', $permissions);
+
+            Log::info('hasStockPermission'. $hasStockPermission);
+            if ($hasStockPermission) {
+                $stocks['user_id'] = $user;
+                $stocks['created_by'] = $user;
+                $stock = Stocks::create($stocks);
+          
+            } 
             return response()->json([
                 'status' => true,
                 'message' => 'Product Restored Successfully',
