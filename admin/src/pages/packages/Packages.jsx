@@ -235,6 +235,7 @@ const Packages = () => {
   ]
 
   return (
+    <>
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
@@ -458,7 +459,10 @@ const Packages = () => {
         </>
       )}
 
-      {/* Delete Confirmation Modal */}
+      
+    </motion.div>
+
+    {/* Delete Confirmation Modal */}
       <AnimatePresence>
         {showDeleteConfirm && (
           <motion.div
@@ -524,7 +528,7 @@ const Packages = () => {
           </motion.div>
         )}
       </AnimatePresence>
-    </motion.div>
+    </>
   )
 }
 

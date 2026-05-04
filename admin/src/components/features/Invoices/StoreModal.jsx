@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
-import { motion } from 'framer-motion'
-import { FiX, FiSave,  FiMapPin, FiPhone, FiMail, FiGlobe } from 'react-icons/fi'
+import { motion, AnimatePresence } from 'framer-motion'
+import { FiX, FiSave, FiMapPin, FiPhone, FiMail, FiGlobe, FiChevronDown, FiChevronUp, FiUpload } from 'react-icons/fi'
 import Input from '../../common/Input/Input'
 import Button from '../../common/Button/Button'
 import Modal from '../../common/Modal/Modal'
@@ -22,13 +22,21 @@ const StoreModal = ({ isOpen, onClose, onStoreCreated, initialData = {} }) => {
   })
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState('')
+  const [showMoreDetails, setShowMoreDetails] = useState(false)
 
   const handleInputChange = (e) => {
-    const { name, value } = e.target
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }))
+    const { name, value, type, files } = e.target
+    if (type === 'file') {
+      setFormData(prev => ({
+        ...prev,
+        [name]: files[0] || null
+      }))
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        [name]: value
+      }))
+    }
     // Clear error when user starts typing
     if (error) setError('')
   }
@@ -90,9 +98,11 @@ const StoreModal = ({ isOpen, onClose, onStoreCreated, initialData = {} }) => {
       city: '',
       state: '',
       pincode: '',
+
       status: true
     })
     setError('')
+    setShowMoreDetails(false)
     onClose()
   }
 
@@ -114,6 +124,7 @@ const StoreModal = ({ isOpen, onClose, onStoreCreated, initialData = {} }) => {
           </motion.div>
         )}
 
+        {/* Basic Fields */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Input
             label="Store Name"
@@ -136,6 +147,97 @@ const StoreModal = ({ isOpen, onClose, onStoreCreated, initialData = {} }) => {
             type="tel"
           />
         </div>
+
+        {/* Add More Details Button */}
+        <div className="flex justify-center">
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => setShowMoreDetails(!showMoreDetails)}
+            className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+            icon={showMoreDetails ? FiChevronUp : FiChevronDown}
+          >
+            {showMoreDetails ? 'Hide' : 'Add'} More Details
+          </Button>
+        </div>
+
+        {/* Collapsible Additional Fields */}
+        <AnimatePresence>
+          {showMoreDetails && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.3 }}
+              className="space-y-4 border-t border-gray-200 dark:border-gray-700 pt-4"
+            >
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Input
+                  label="Email Address"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleInputChange}
+                  placeholder="Enter email address"
+                  icon={FiMail}
+                  type="email"
+                />
+
+                <Input
+                  label="GST Number"
+                  name="gst"
+                  value={formData.gst}
+                  onChange={handleInputChange}
+                  placeholder="Enter GST number"
+                  icon={FiGlobe}
+                />
+              </div>
+
+              <div className="space-y-4">
+                <Input
+                  label="Address"
+                  name="address"
+                  value={formData.address}
+                  onChange={handleInputChange}
+                  placeholder="Enter store address"
+                  icon={FiMapPin}
+                />
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <Input
+                    label="City"
+                    name="city"
+                    value={formData.city}
+                    onChange={handleInputChange}
+                    placeholder="Enter city"
+                    icon={FiMapPin}
+                  />
+
+                  <Input
+                    label="State"
+                    name="state"
+                    value={formData.state}
+                    onChange={handleInputChange}
+                    placeholder="Enter state"
+                    icon={FiMapPin}
+                  />
+
+                  <Input
+                    label="Pincode"
+                    name="pincode"
+                    value={formData.pincode}
+                    onChange={handleInputChange}
+                    placeholder="Enter pincode"
+                    icon={FiMapPin}
+                    type="text"
+                  />
+                </div>
+              </div>
+
+              
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Hidden status field */}
         <input

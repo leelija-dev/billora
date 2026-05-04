@@ -63,6 +63,7 @@ const Stores = () => {
   const [viewMode, setViewMode] = useState('table') // 'table' or 'grid'
   const [selectedStores, setSelectedStores] = useState([])
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [storeToDelete, setStoreToDelete] = useState(null)
   const [refreshing, setRefreshing] = useState(false)
   const [formSubmitting, setFormSubmitting] = useState(false)
   const [initialLoading, setInitialLoading] = useState(true)
@@ -174,10 +175,21 @@ const Stores = () => {
     }
   }
 
-  const handleDelete = async (id) => {
-    if (window.confirm('Are you sure you want to delete this store?')) {
-      await deleteStore(id)
-      await fetchStores(currentUserId)
+  const handleDeleteClick = (store) => {
+    setStoreToDelete(store)
+    setShowDeleteConfirm(true)
+  }
+
+  const handleDelete = async () => {
+    if (storeToDelete) {
+      try {
+        await deleteStore(storeToDelete.id)
+        await fetchStores(currentUserId)
+        setShowDeleteConfirm(false)
+        setStoreToDelete(null)
+      } catch (error) {
+        console.error('Error deleting store:', error)
+      }
     }
   }
 
@@ -340,7 +352,7 @@ const Stores = () => {
           <motion.button
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.95 }}
-            onClick={() => handleDelete(value)}
+            onClick={() => handleDeleteClick(row)}
             className="p-2 text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20 rounded-lg transition-colors"
             title="Delete store"
           >
@@ -365,6 +377,7 @@ const Stores = () => {
   )
 
   return (
+   <>
     <motion.div 
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
@@ -726,7 +739,7 @@ const Stores = () => {
                               <motion.button
                                 whileHover={{ scale: 1.1 }}
                                 whileTap={{ scale: 0.95 }}
-                                onClick={() => handleDelete(store.id)}
+                                onClick={() => handleDeleteClick(store)}
                                 className="p-2 bg-white rounded-lg text-red-600 hover:bg-red-50"
                               >
                                 <FiTrash2 className="w-4 h-4" />
@@ -818,7 +831,9 @@ const Stores = () => {
         </>
       )}
 
-      {/* Delete Confirmation Modal */}
+     
+    </motion.div>
+     {/* Delete Confirmation Modal */}
       <AnimatePresence>
         {showDeleteConfirm && (
           <motion.div
@@ -826,36 +841,57 @@ const Stores = () => {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
-            onClick={() => setShowDeleteConfirm(false)}
+            onClick={() => {
+              setShowDeleteConfirm(false)
+              setStoreToDelete(null)
+            }}
           >
             <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full p-6"
-              onClick={e => e.stopPropagation()}
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              transition={{ type: "spring", duration: 0.5 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-6 max-w-md w-full mx-4"
             >
               <div className="text-center">
                 <div className="w-16 h-16 bg-red-100 dark:bg-red-900/20 rounded-full flex items-center justify-center mx-auto mb-4">
                   <FiTrash2 className="w-8 h-8 text-red-600 dark:text-red-400" />
                 </div>
                 <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
-                  Delete {selectedStores.length > 1 ? 'Stores' : 'Store'}
+                  {storeToDelete ? 'Delete Store' : `Delete ${selectedStores.length > 1 ? 'Stores' : 'Store'}`}
                 </h3>
-                <p className="text-gray-600 dark:text-gray-400 mb-6">
-                  Are you sure you want to delete {selectedStores.length} selected {selectedStores.length === 1 ? 'store' : 'stores'}? This action cannot be undone.
+                {storeToDelete ? (
+                  <>
+                    <p className="text-gray-600 dark:text-gray-400 mb-2">
+                      Are you sure you want to delete this store?
+                    </p>
+                    <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-6">
+                      "{storeToDelete.name}"
+                    </p>
+                  </>
+                ) : (
+                  <p className="text-gray-600 dark:text-gray-400 mb-6">
+                    Are you sure you want to delete {selectedStores.length} selected {selectedStores.length === 1 ? 'store' : 'stores'}?
+                  </p>
+                )}
+                <p className="text-xs text-gray-500 dark:text-gray-400 mb-6">
+                  This action cannot be undone.
                 </p>
                 <div className="flex space-x-3">
                   <Button
                     variant="outline"
-                    onClick={() => setShowDeleteConfirm(false)}
+                    onClick={() => {
+                      setShowDeleteConfirm(false)
+                      setStoreToDelete(null)
+                    }}
                     className="flex-1"
                   >
                     Cancel
                   </Button>
                   <Button
                     variant="danger"
-                    onClick={handleBulkDelete}
+                    onClick={storeToDelete ? handleDelete : handleBulkDelete}
                     className="flex-1"
                   >
                     Delete
@@ -866,7 +902,7 @@ const Stores = () => {
           </motion.div>
         )}
       </AnimatePresence>
-    </motion.div>
+   </>
   )
 }
 
