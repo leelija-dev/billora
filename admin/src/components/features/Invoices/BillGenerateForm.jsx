@@ -18,6 +18,7 @@ import { useAuthStore } from '../../../store/authStore'
 import { useCustomerStore } from '../../../store/customerStore'
 import toast from 'react-hot-toast'
 import { LucideStore } from 'lucide-react'
+import { printA4Invoice, printThermalInvoice } from '../../../templates/PrintUtils'
 
 // Cache for bill generate data
 let billGenerateCache = null
@@ -85,6 +86,8 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
   const [filteredPackages, setFilteredPackages] = useState([])
   const [selectedPackage, setSelectedPackage] = useState(null)
   const [packageQuantity, setPackageQuantity] = useState(1)
+  const [showBillDialog, setShowBillDialog] = useState(false)
+  const [generatedBillData, setGeneratedBillData] = useState(null)
   
   // Add customer modal state
   const [showAddCustomerModal, setShowAddCustomerModal] = useState(false)
@@ -833,7 +836,9 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
       items: formData.items.length
     })
     
-    onSubmit(submissionData)
+    // Show bill generation dialog instead of direct submission
+    setGeneratedBillData(submissionData)
+    setShowBillDialog(true)
   }
 
   // Click outside handlers
@@ -877,7 +882,7 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
         className="space-y-6"
       >
         {/* Header */}
-        <div className="flex items-center justify-between pb-4 border-b border-gray-200 dark:border-gray-700 sticky top-[62px] bg-white z-[100] pt-4">
+        <div className="flex items-center justify-between pb-4 border-b border-gray-200 dark:border-gray-700 sticky top-[62px] bg-white z-50 pt-4">
           <div className="flex items-center space-x-3">
             <div className="p-2 bg-primary-100 dark:bg-primary-900/20 rounded-lg">
               <FiShoppingCart className="w-5 h-5 text-primary-600 dark:text-primary-400" />
@@ -1231,12 +1236,12 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
                                 <div className="text-xs text-gray-500 dark:text-gray-400 space-y-1 mt-2">
                                   {product.gst_percentage && (
                                     <div>
-                                      📈 GST: {parseFloat(product.gst_percentage).toFixed(1)}%
+                                      GST: {parseFloat(product.gst_percentage).toFixed(1)}%
                                     </div>
                                   )}
                                   {product.discount_percentage && (
                                     <div>
-                                      🎁 Discount: {parseFloat(product.discount_percentage).toFixed(1)}%
+                                      Discount: {parseFloat(product.discount_percentage).toFixed(1)}%
                                     </div>
                                   )}
                                 </div>
@@ -1612,6 +1617,108 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
         onClose={() => setShowAddStoreModal(false)}
         onStoreCreated={handleCreateStore}
       />
+
+      {/* Bill Generation Dialog */}
+      <AnimatePresence>
+        {showBillDialog && generatedBillData && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+            onClick={() => setShowBillDialog(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              transition={{ type: "spring", duration: 0.5 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-6 max-w-md w-full mx-4"
+            >
+              <div className="text-center">
+                <div className="w-16 h-16 bg-green-100 dark:bg-green-900/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <FiShoppingCart className="w-8 h-8 text-green-600 dark:text-green-400" />
+                </div>
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
+                  Invoice Generated Successfully!
+                </h3>
+                <p className="text-gray-600 dark:text-gray-400 mb-6">
+                  Your invoice has been generated. What would you like to do next?
+                </p>
+                
+                <div className="space-y-3">
+                  <Button
+                    variant="primary"
+                    onClick={async () => {
+                      try {
+                        // Submit the bill data first
+                        const response = await onSubmit(generatedBillData)
+                        console.log('📄 Invoice submitted successfully:', response)
+                        
+                        // Get the created invoice data from response
+                        const createdInvoice = response?.data?.data || response?.data || generatedBillData
+                        
+                        // Trigger A4 print
+                        printA4Invoice(createdInvoice)
+                        
+                        // Close dialog
+                        setShowBillDialog(false)
+                        
+                        toast.success('Invoice generated and printed successfully')
+                      } catch (error) {
+                        console.error('Error generating invoice:', error)
+                        toast.error('Failed to generate invoice. Please try again.')
+                      }
+                    }}
+                    className="w-full"
+                  >
+                    🖨️ A4 Print
+                  </Button>
+                  
+                  <Button
+                    variant="outline"
+                    onClick={async () => {
+                      try {
+                        // Submit the bill data first
+                        const response = await onSubmit(generatedBillData)
+                        console.log('🧾 Invoice submitted successfully:', response)
+                        
+                        // Get the created invoice data from response
+                        const createdInvoice = response?.data?.data || response?.data || generatedBillData
+                        
+                        // Trigger thermal print
+                        printThermalInvoice(createdInvoice)
+                        
+                        // Close dialog
+                        setShowBillDialog(false)
+                        
+                        toast.success('Invoice generated and printed successfully')
+                      } catch (error) {
+                        console.error('Error generating invoice:', error)
+                        toast.error('Failed to generate invoice. Please try again.')
+                      }
+                    }}
+                    className="w-full"
+                  >
+                    🧾 Thermal Print
+                  </Button>
+                  
+                  <Button
+                    variant="secondary"
+                    onClick={() => {
+                      setShowBillDialog(false)
+                    }}
+                    className="w-full"
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </>
   )
 }
