@@ -44,22 +44,38 @@ const Navbar = () => {
   }, [user?.id, initializeNotifications]);
 
   // Handle click outside
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (userMenuRef.current && !userMenuRef.current.contains(event.target)) {
-        setShowUserMenu(false);
-      }
-      if (notificationsRef.current && !notificationsRef.current.contains(event.target)) {
-        setShowNotifications(false);
-      }
-      if (mobileSearchRef.current && !mobileSearchRef.current.contains(event.target)) {
-        setShowMobileSearch(false);
-      }
-    };
+  // useEffect(() => {
+    
+  //   const handleClickOutside = (event) => {
+  //     if (userMenuRef.current && !userMenuRef.current.contains(event.target)) {
+  //       setShowUserMenu(false);
+  //     }
+  //     if (notificationsRef.current && !notificationsRef.current.contains(event.target)) {
+  //       setShowNotifications(false);
+  //     }
+  //     if (mobileSearchRef.current && !mobileSearchRef.current.contains(event.target)) {
+  //       setShowMobileSearch(false);
+  //     }
+  //   };
 
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+  //   document.addEventListener('mousedown', handleClickOutside);
+  //   return () => document.removeEventListener('mousedown', handleClickOutside);
+  // }, []);
+  // 🔥 Sync logout across apps
+useEffect(() => {
+  const syncLogout = (event) => {
+    if (event.key === "logout-event") {
+      logout();
+      navigate('/login');
+    }
+  };
+
+  window.addEventListener("storage", syncLogout);
+
+  return () => {
+    window.removeEventListener("storage", syncLogout);
+  };
+}, [logout, navigate]);
 
   // Handle fullscreen
   const toggleFullscreen = () => {
@@ -85,6 +101,7 @@ const Navbar = () => {
 
   const handleLogout = () => {
     logout();
+      localStorage.setItem("logout-event", Date.now().toString());
     navigate('/login');
   };
 
