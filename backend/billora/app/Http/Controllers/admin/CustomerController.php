@@ -328,24 +328,33 @@ class CustomerController extends Controller
     // }
     public function logout(Request $request)
 {
-    //Logout user (web session)
+    // Delete sanctum tokens
+    if ($request->user()) {
+        $request->user()->tokens()->delete();
+    }
+
+    // Logout web guard
     Auth::guard('web')->logout();
 
-    //  Destroy session completely
+    // Destroy session
     $request->session()->invalidate();
     $request->session()->regenerateToken();
 
-    // Prepare response
+    // Create response
     $response = response()->json([
         'status' => true,
         'message' => 'Logout successful'
     ]);
 
-    //  Delete session cookie (VERY IMPORTANT)
-    $response->withCookie(cookie()->forget('billora-session'));
+    // Remove session cookie
+    $response->withCookie(
+        cookie()->forget(config('session.cookie'))
+    );
 
-    // (Optional) remove old token system
-    $response->withCookie(cookie()->forget('auth_token'));
+    // Remove auth token cookie
+    $response->withCookie(
+        cookie()->forget('auth_token')
+    );
 
     return $response;
 }
