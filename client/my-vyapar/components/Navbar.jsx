@@ -11,7 +11,7 @@ import toast from 'react-hot-toast';
 const Navbar = () => {
   const { user, isLoggedIn, logout } = useAuthStore();
   
-  // ✅ Calculate hasActivePlan directly from user data
+  // Calculate hasActivePlan directly from user data
   const hasActivePlan = user?.is_active === 1 || false;
   
   const [scrolled, setScrolled] = useState(false);
@@ -59,7 +59,22 @@ const Navbar = () => {
 
   const pathname = usePathname();
   const router = useRouter();
+// 🔥 Sync logout across apps
+useEffect(() => {
+  const syncLogout = async (event) => {
+    if (event.key === "logout-event") {
+      await logout();
 
+      router.push("/login");
+    }
+  };
+
+  window.addEventListener("storage", syncLogout);
+
+  return () => {
+    window.removeEventListener("storage", syncLogout);
+  };
+}, [logout, router]);
   // ✅ Hide navbar on specific pages
   const shouldHideNavbar = pathname === '/login' || pathname === '/register' || pathname === '/products';
 
@@ -108,7 +123,8 @@ const Navbar = () => {
       
       try {
         await logout();
-        
+        // Broadcast logout to all apps/tabs
+        localStorage.setItem("logout-event", Date.now().toString());
         toast.dismiss(loadingToastId);
         toast.success(`Successfully logged out. See you soon!`, {
           duration: 3000,
