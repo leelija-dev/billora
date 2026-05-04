@@ -137,7 +137,7 @@
                 @endif
                 @if ($admin && $admin->can('view plan permissions'))
                     <a href="{{ route('admin.plan-permission.index') }}"
-                        class="flex items-center px-4 py-3 {{ request()->routeIs('admin.plan-permission.index', 'admin.plan-permission.create') ? 'bg-blue-100 text-blue-600 font-semibold' : 'hover:bg-blue-100' }} hover:bg-blue-100">
+                        class="flex items-center px-4 py-3 {{ request()->routeIs('admin.plan-permission.index', 'admin.plan-permission.create','admin.plan-permission.edit') ? 'bg-blue-100 text-blue-600 font-semibold' : 'hover:bg-blue-100' }} hover:bg-blue-100">
                         <i data-feather="file-text" class="w-5 h-5"></i>
                         <span class="ml-3">Plans Permission</span>
                     </a>
