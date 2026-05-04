@@ -517,7 +517,7 @@
         }
 
         .filter-pill.custom-date {
-            background: linear-gradient(135deg, var(--accent-blue), var(--accent-indigo));
+            /* background: linear-gradient(135deg, var(--accent-blue), var(--accent-indigo)); */
             color: white;
             border-color: transparent;
         }
@@ -1528,8 +1528,8 @@
                         <div class="chart-title">HEADCOUNT METRICS</div>
                         <div class="chart-filter-controls">
                             <button class="filter-pill" data-range="today">Today</button>
-                            <button class="filter-pill active" data-range="month">This Month</button>
-                            <button class="filter-pill custom-date" id="customDateBtn">
+                            <button class="filter-pill " data-range="month">Last Month</button>
+                            <button class="filter-pill " id="customDateBtn">
                                 <i class="fa-regular fa-calendar"></i> Custom
                             </button>
                         </div>
@@ -1545,6 +1545,7 @@
                     </div>
                     <div class="custom-donut-legend" id="donutLegend"></div>
                 </div>
+
             </div>
 
             <!-- Info Cards -->
@@ -1559,19 +1560,19 @@
                             $count = 0;
                         @endphp
                         @foreach ($totalUsers as $user)
-                        <a href="{{route('admin.customers.plans',$user->id)}}">
-                            <div class="list-item">
-                                <div>
-                                    <div class="item-name">{{ $user->name ? $user->name : '' }}</div>
-                                    <div class="item-detail">{{ $user->email ? $user->email : '' }}</div>
+                            <a href="{{ route('admin.customers.plans', $user->id) }}">
+                                <div class="list-item">
+                                    <div>
+                                        <div class="item-name">{{ $user->name ? $user->name : '' }}</div>
+                                        <div class="item-detail">{{ $user->email ? $user->email : '' }}</div>
+                                    </div>
+                                    @if ($user->is_active)
+                                        <span class="item-status status-active">Active</span>
+                                    @else
+                                        <span class="item-status status-inactive">Inactive</span>
+                                    @endif
                                 </div>
-                                @if ($user->is_active)
-                                    <span class="item-status status-active">Active</span>
-                                @else
-                                    <span class="item-status status-inactive">Inactive</span>
-                                @endif
-                            </div>
-                        </a>
+                            </a>
                             @php $count++ @endphp
                             @if ($count == 5)
                                 @break
@@ -1582,7 +1583,7 @@
                                 No Users found
                             </div>
                         @endif
-                        
+
 
                     </div>
                     <a href="{{ route('admin.customers.index') }}"><button class="see-all-btn">See All
@@ -1599,19 +1600,19 @@
                             $planCount = 0;
                         @endphp
                         @foreach ($toalPlan as $plan)
-                           <a href="{{route('admin.plans.edit',$plan->id)}}">
-                            <div class="list-item">
-                                <div>
-                                    <div class="item-name">{{ $plan->name ? ucfirst($plan->name) : '' }}</div>
-                                    <div class="item-detail">{!! $plan->description ? ucfirst(Str::limit($plan->description, 28)) : '' !!}</div>
+                            <a href="{{ route('admin.plans.edit', $plan->id) }}">
+                                <div class="list-item">
+                                    <div>
+                                        <div class="item-name">{{ $plan->name ? ucfirst($plan->name) : '' }}</div>
+                                        <div class="item-detail">{!! $plan->description ? ucfirst(Str::limit($plan->description, 28)) : '' !!}</div>
+                                    </div>
+                                    @if ($plan->is_active)
+                                        <span class="item-status status-active">Active</span>
+                                    @else
+                                        <span class="item-status status-inactive">Inactive</span>
+                                    @endif
                                 </div>
-                                @if ($plan->is_active)
-                                    <span class="item-status status-active">Active</span>
-                                @else
-                                    <span class="item-status status-inactive">Inactive</span>
-                                @endif
-                            </div>
-                           </a>
+                            </a>
                             @php $planCount++ @endphp
                             @if ($planCount == 5)
                                 @break
@@ -1633,10 +1634,9 @@
                         <span>Recent Plan Purchases</span>
                     </div>
                     <div class="item-list" id="ordersList">
-                        
+
                         @php $orderCount = 0; @endphp
                         @foreach ($totalPlanPurchase as $order)
-                        
                             <div class="list-item">
                                 <div>
                                     <div class="item-name">#{{ $order->id }} - {{ $order->plan->name }}</div>
@@ -1682,21 +1682,21 @@
                                         New
                                     </div>
                                 @endif
-                                <a href="{{route('admin.contacts.view', $contact->id)}}">
-                                <div class="item-content">
-                                    <div class="item-email">
-                                        {{ $contact->email ?: 'No email provided' }}
+                                <a href="{{ route('admin.contacts.view', $contact->id) }}">
+                                    <div class="item-content">
+                                        <div class="item-email">
+                                            {{ $contact->email ?: 'No email provided' }}
+                                        </div>
+                                        <div class="item-details">
+                                            <span class="item-subject">
+                                                {{ ucfirst(Str::limit($contact->subject, 28)) }}
+                                            </span>
+                                            <span class="item-separator">•</span>
+                                            <span class="item-date">
+                                                {{ $contact->created_at->format('d M Y h:i A') }}
+                                            </span>
+                                        </div>
                                     </div>
-                                    <div class="item-details">
-                                        <span class="item-subject">
-                                            {{ ucfirst(Str::limit($contact->subject, 28)) }}
-                                        </span>
-                                        <span class="item-separator">•</span>
-                                        <span class="item-date">
-                                            {{ $contact->created_at->format('d M Y h:i A') }}
-                                        </span>
-                                    </div>
-                                </div>
                                 </a>
                             </div>
 
@@ -1709,7 +1709,8 @@
                             </div>
                         @endif
                     </div>
-                    <a href="{{route('admin.contacts.index')}}"><button class="see-all-btn">See All Contacts</button></a>
+                    <a href="{{ route('admin.contacts.index') }}"><button class="see-all-btn">See All
+                            Contacts</button></a>
                 </div>
             </div>
 
@@ -1807,33 +1808,75 @@
         modal?.addEventListener('click', (e) => {
             if (e.target === modal) modal.classList.remove('active');
         });
-        applyDateBtn?.addEventListener('click', () => {
-            const startDate = document.getElementById('startDate').value;
-            const endDate = document.getElementById('endDate').value;
-            if (!startDate || !endDate) {
-                alert('Please select both dates');
-                return;
+        applyDateBtn?.addEventListener('click', async () => {
+    document.querySelectorAll('.filter-pill')
+        .forEach(b => b.classList.remove('active'));
+
+    customDateBtn.classList.add('active');
+
+    const startDate = document.getElementById('startDate').value;
+    const endDate = document.getElementById('endDate').value;
+
+    if (!startDate || !endDate) {
+        alert('Please select both dates');
+        return;
+    }
+    
+    // REMOVE THIS LINE: "remo" is a typo that's causing an error
+    // remo
+    
+    try {
+        const response = await fetch(
+            `?type=custom&start_date=${startDate}&end_date=${endDate}`, {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
             }
-            console.log(`Custom Range: ${startDate} to ${endDate}`);
+        );
+
+        const result = await response.json();
+
+        if (result.status) {
+            const newData = result.data;
+
+            // BAR CHART
+            barChart.data.datasets[0].data = newData;
+            barChart.update();
+
+            // DONUT CHART
+            donutChart.data.datasets[0].data = newData;
+            donutChart.update();
+
+            // UPDATE LEGEND
+            updateDonutLegend(newData);
+            
+            // Close modal after successful update
             modal.classList.remove('active');
-            alert(`Custom date range applied: ${startDate} to ${endDate}`);
-        });
+        } else {
+            alert(result.message || 'Error fetching data');
+        }
+        
+    } catch (error) {
+        console.error('Custom date fetch error:', error);
+        alert('Error fetching data. Please try again.');
+    }
+});
 
         // Chart Data
         const donutColors = ['#4f46e5', '#6366f1', '#818cf8', '#a5b4fc', '#c7d2fe'];
         const dataLabels = ['Customers', 'Plan Purchases', 'Contacts'];
         const baseData = [
-    {{ $customerCount }},
-    {{ $planPurchaseCount }},
-    {{ $contactCount }}
-];
+            {{ $customerCount }},
+            {{ $planPurchaseCount }},
+            {{ $contactCount }}
+        ];
         const total = baseData.reduce((a, b) => a + b, 0);
-        const filterData = {
-            start: [8, 18, 28, 12, 4],
-            end: [15, 30, 45, 22, 9],
-            today: [5, 12, 18, 8, 3],
-            month: [12, 25, 38, 18, 7]
-        };
+        // const filterData = {
+        //     start: [8, 18, 28, 12, 4],
+        //     end: [15, 30, 45, 22, 9],
+        //     today: [5, 12, 18, 8, 3],
+        //     month: [12, 25, 38, 18, 7]
+        // };
 
         // Donut Chart
         const donutCtx = document.getElementById('donutChart').getContext('2d');
@@ -1861,7 +1904,12 @@
                     tooltip: {
                         backgroundColor: '#1f2937',
                         callbacks: {
-                            label: (ctx) => `${ctx.label}: ${ctx.raw} (${((ctx.raw / total) * 100).toFixed(1)}%)`
+                            label: (ctx) => {
+
+                                const total = ctx.dataset.data.reduce((a, b) => a + b, 0);
+
+                                return `${ctx.label}: ${ctx.raw} (${((ctx.raw / total) * 100).toFixed(1)}%)`;
+                            }
                         }
                     }
                 },
@@ -1874,14 +1922,14 @@
             }
         });
 
-        function updateDonutLegend() {
+        function updateDonutLegend(chartData = baseData) {
             const legendContainer = document.getElementById('donutLegend');
             if (!legendContainer) return;
             legendContainer.innerHTML = '';
             dataLabels.forEach((label, i) => {
-                const val = baseData[i];
+                const val = chartData[i];
                 legendContainer.innerHTML +=
-                    `<div class="legend-item"><div class="legend-color" style="background: ${donutColors[i]}"></div><span>${label}: ${val} (${((val / total) * 100).toFixed(1)}%)</span></div>`;
+                    `<div class="legend-item"><div class="legend-color" style="background: ${donutColors[i]}"></div><span>${label}: ${val} (${((val / chartData.reduce((a, b) => a + b, 0)) * 100).toFixed(1)}%)</span></div>`;
             });
         }
         updateDonutLegend();
@@ -1910,7 +1958,7 @@
             data: {
                 labels: dataLabels,
                 datasets: [{
-                    data: [0, 0, 0, 0, 0],
+                    data: [0, 0, 0],
                     backgroundColor: function(context) {
                         const chart = context.chart;
                         const {
@@ -1919,7 +1967,7 @@
                         } = chart;
                         if (!chartArea) return barGradientColors[context.dataIndex];
                         const gradient = ctx.createLinearGradient(0, chartArea.top, 0, chartArea
-                        .bottom);
+                            .bottom);
                         gradient.addColorStop(0, barGradientColors[context.dataIndex]);
                         gradient.addColorStop(1, barGradientColors[context.dataIndex] + 'aa');
                         return gradient;
@@ -1945,7 +1993,7 @@
                 scales: {
                     y: {
                         beginAtZero: true,
-                        max: 50,
+                        suggestedMax: 50,
                         grid: {
                             color: '#e2e8f0',
                             drawBorder: false
@@ -1976,8 +2024,10 @@
                     delay: (context) => context.dataIndex * 200
                 }
             },
-            plugins: [barGlowPlugin]
+            plugins: [barGlowPlugin],
+
         });
+
 
         setTimeout(() => {
             barChart.data.datasets[0].data = baseData;
@@ -1986,29 +2036,54 @@
 
         // Filter Controls
         document.querySelectorAll('.filter-pill:not(#customDateBtn)').forEach(btn => {
-            btn.addEventListener('click', function() {
-                document.querySelectorAll('.filter-pill').forEach(b => b.classList.remove('active'));
+
+            btn.addEventListener('click', async function() {
+
+                document.querySelectorAll('.filter-pill')
+                    .forEach(b => b.classList.remove('active'));
+
                 this.classList.add('active');
+
                 const range = this.dataset.range;
-                if (filterData[range]) {
-                    const newData = filterData[range];
-                    const currentData = [...barChart.data.datasets[0].data];
-                    let step = 0;
-                    const steps = 40;
-                    const animateTransition = setInterval(() => {
-                        step++;
-                        const progress = Math.min(1, step / steps);
-                        const easeProgress = 1 - Math.pow(1 - progress, 3);
-                        barChart.data.datasets[0].data = currentData.map((val, idx) =>
-                            currentData[idx] + (newData[idx] - currentData[idx]) * easeProgress
-                        );
-                        barChart.update();
-                        if (step >= steps) {
-                            barChart.data.datasets[0].data = newData;
-                            barChart.update();
-                            clearInterval(animateTransition);
+
+                try {
+
+                    const response = await fetch(
+                        `?type=${range}`, {
+                            headers: {
+                                'X-Requested-With': 'XMLHttpRequest'
+                            }
                         }
-                    }, 16);
+                    );
+
+                    const result = await response.json();
+
+                    if (result.status) {
+
+                        const newData = result.data;
+
+                        // BAR CHART
+                        barChart.data.datasets[0].data = newData;
+                        barChart.update();
+
+                        // DONUT CHART
+                        donutChart.data.datasets[0].data = newData;
+                        donutChart.update();
+
+                        // LINE CHART
+                        lineChart.data.labels = result.trend_labels;
+                        lineChart.data.datasets[0].data = result.trend_data;
+                        lineChart.update();
+
+                        // UPDATE LEGEND
+                        updateDonutLegend(newData);
+
+                        modal.classList.remove('active');
+                    }
+
+                } catch (error) {
+
+                    console.error('Filter fetch error:', error);
                 }
             });
         });
