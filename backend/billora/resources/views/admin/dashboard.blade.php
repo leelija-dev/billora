@@ -1821,8 +1821,12 @@
 
         // Chart Data
         const donutColors = ['#4f46e5', '#6366f1', '#818cf8', '#a5b4fc', '#c7d2fe'];
-        const dataLabels = ['Entry', 'Junior', 'Mid-Weight', 'Senior', 'Director'];
-        const baseData = [12, 25, 38, 18, 7];
+        const dataLabels = ['Customers', 'Plan Purchases', 'Contacts'];
+        const baseData = [
+    {{ $customerCount }},
+    {{ $planPurchaseCount }},
+    {{ $contactCount }}
+];
         const total = baseData.reduce((a, b) => a + b, 0);
         const filterData = {
             start: [8, 18, 28, 12, 4],
