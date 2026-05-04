@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react'
 import toast from 'react-hot-toast'
-import { 
-  FiPlus, 
-  FiSearch, 
-  FiEdit2, 
-  FiTrash2, 
-  FiFilter, 
+import {
+  FiPlus,
+  FiSearch,
+  FiEdit2,
+  FiTrash2,
+  FiFilter,
   FiPackage,
   FiGrid,
   FiList,
@@ -122,10 +122,10 @@ const Products = () => {
       // Prevent multiple initial loads using ref
       if (initializedRef.current) return
       initializedRef.current = true
-      
+
       try {
         await fetchProducts()
-        
+
         // Check cache first
         const cachedStocks = getCachedStocks()
         if (cachedStocks) {
@@ -134,7 +134,7 @@ const Products = () => {
           setInitialLoading(false)
           return
         }
-        
+
         // Only fetch stocks if not already loaded, no valid cache, and not already loading
         if (stocks.length === 0 && !stocksLoading) {
           setStocksLoading(true)
@@ -172,35 +172,35 @@ const Products = () => {
       if (categoriesInitializedRef.current || brandsInitializedRef.current) return
       categoriesInitializedRef.current = true
       brandsInitializedRef.current = true
-      
+
       // Prevent duplicate calls if already loading or data exists
       if (categoriesLoading || brandsLoading || unitsLoading || (categories.length > 0 && brands.length > 0 && units.length > 0)) {
         return
       }
-      
+
       setCategoriesLoading(true)
       setBrandsLoading(true)
       setUnitsLoading(true)
-      
+
       try {
         const [categoriesRes, brandsRes, unitsRes] = await Promise.all([
           categoriesAPI.getAll(),
           brandsAPI.getAll(),
           unitsAPI.getAll()
         ])
-        
+
         // FIX: Extract the data array from the paginated response
         // The categories API returns a paginated object with the actual array in the 'data' property
         let categoriesData = []
         if (categoriesRes?.data?.data) {
           // If it's a paginated response with data property containing the array
-          categoriesData = Array.isArray(categoriesRes.data.data) 
-            ? categoriesRes.data.data 
+          categoriesData = Array.isArray(categoriesRes.data.data)
+            ? categoriesRes.data.data
             : categoriesRes.data.data.data || []
         } else {
           categoriesData = categoriesRes?.data || []
         }
-        
+
         // Brands API might return array directly or nested
         let brandsData = []
         if (brandsRes?.data?.data) {
@@ -210,7 +210,7 @@ const Products = () => {
         } else {
           brandsData = brandsRes?.data || []
         }
-        
+
         // Units API might return array directly or nested
         let unitsData = []
         if (unitsRes?.data?.data) {
@@ -220,11 +220,11 @@ const Products = () => {
         } else {
           unitsData = unitsRes?.data || []
         }
-        
+
         console.log('Categories fetched:', categoriesData)
         console.log('Brands fetched:', brandsData)
         console.log('Units fetched:', unitsData)
-        
+
         setCategories(categoriesData)
         setBrands(brandsData)
         setUnits(unitsData)
@@ -239,7 +239,7 @@ const Products = () => {
         setUnitsLoading(false)
       }
     }
-    
+
     fetchCategoriesBrandsAndUnits()
   }, [])
 
@@ -262,17 +262,18 @@ const Products = () => {
     setFormSubmitting(true)
     try {
       if (showEditForm && selectedProduct) {
+        console.log("........................................",productData)
         await updateProduct(selectedProduct.id, productData)
       } else {
         await createProduct(productData)
       }
-      
+
       // Clear all caches to ensure fresh data
       stockCache.delete('all')
-      
+
       // Refresh the product list with fresh data
       await fetchProducts()
-      
+
       // Refresh stocks data to get latest stock information
       try {
         const stocksResponse = await stockAPI.getAll()
@@ -283,23 +284,23 @@ const Products = () => {
       } catch (error) {
         console.error('Error refreshing stocks after product operation:', error)
       }
-      
+
       // Refresh categories and brands in case they were updated
       try {
         const [categoriesRes, brandsRes] = await Promise.all([
           categoriesAPI.getAll(),
           brandsAPI.getAll()
         ])
-        
+
         let categoriesData = []
         if (categoriesRes?.data?.data) {
-          categoriesData = Array.isArray(categoriesRes.data.data) 
-            ? categoriesRes.data.data 
+          categoriesData = Array.isArray(categoriesRes.data.data)
+            ? categoriesRes.data.data
             : categoriesRes.data.data.data || []
         } else {
           categoriesData = categoriesRes?.data || []
         }
-        
+
         let brandsData = []
         if (brandsRes?.data?.data) {
           brandsData = Array.isArray(brandsRes.data.data)
@@ -308,17 +309,17 @@ const Products = () => {
         } else {
           brandsData = brandsRes?.data || []
         }
-        
+
         setCategories(categoriesData)
         setBrands(brandsData)
         console.log('Categories and brands refreshed after product operation')
       } catch (error) {
         console.error('Error refreshing categories and brands:', error)
       }
-      
+
       // Hide the form
       handleCancelForm()
-      
+
     } catch (error) {
       console.error('Error saving product:', error)
       toast.error('Failed to save product. Please try again.')
@@ -338,9 +339,9 @@ const Products = () => {
         await deleteProduct(selectedProductToDelete)
         setShowDeleteConfirm(false)
         setSelectedProductToDelete(null)
-        
+
         await fetchProducts()
-        
+
         // Refresh stocks data
         try {
           const stocksResponse = await stockAPI.getAll()
@@ -351,7 +352,7 @@ const Products = () => {
         } catch (error) {
           console.error('Error refreshing stocks after product deletion:', error)
         }
-        
+
       } catch (error) {
         console.error('Error deleting product:', error)
         toast.error('Failed to delete product. Please try again.')
@@ -367,32 +368,32 @@ const Products = () => {
   const handleAddStock = async (stockData) => {
     try {
       console.log('handleAddStock - stockData:', stockData);
-      
+
       // Get the stock record to get the stock_id
       const stockRecord = getProductStockRecord(stockData.product_id);
       console.log('handleAddStock - stockRecord:', stockRecord);
-      
+
       if (!stockRecord) {
         console.error('No stock record found for product:', stockData.product_id);
         toast.error('No stock record found for this product. Please create a stock record first.');
         return;
       }
-      
+
       console.log('handleAddStock - API call params:', {
         stockId: stockRecord.id,
         userId: stockData.user_id,
         quantity: stockData.quantity
       });
-      
+
       // Call the stock API with stock_id instead of product_id
       await stockAPI.addStock(stockRecord.id, stockData.user_id, stockData.quantity)
-      
+
       // Show success message
       toast.success(`Stock added successfully! New stock: ${stockData.new_stock}`)
-      
+
       // Refresh the products list to show updated stock
       await fetchProducts()
-      
+
       // Refresh stocks data
       try {
         const stocksResponse = await stockAPI.getAll()
@@ -402,7 +403,7 @@ const Products = () => {
       } catch (error) {
         console.error('Error refreshing stocks:', error)
       }
-      
+
     } catch (error) {
       console.error('Error adding stock:', error)
       toast.error('Failed to add stock. Please try again.')
@@ -426,7 +427,7 @@ const Products = () => {
   const handleRefresh = async () => {
     // Prevent multiple simultaneous refresh calls
     if (refreshing) return
-    
+
     setRefreshing(true)
     // Clear stock cache to force fresh data
     stockCache.delete('all')
@@ -536,7 +537,7 @@ const Products = () => {
           <div className="flex-1">
             <p className="font-medium text-gray-900 dark:text-white">{value}</p>
             <p className="text-sm text-gray-500 dark:text-gray-400">SKU: {row.sku}</p>
-            
+
             {/* Unit Information */}
             {row.unit_id && (
               <div className="flex items-center mt-1">
@@ -548,56 +549,108 @@ const Products = () => {
                 </span>
               </div>
             )}
-            
+
             {/* Attributes */}
             {row.attributes && (
               <div className="mt-1">
                 {(() => {
-                  let attributes = row.attributes
-                  if (typeof attributes === 'string') {
+                  let attributes = row.attributes;
+                  
+                  // Function to safely parse JSON (handles double-encoded JSON and arrays)
+                  const safeJSONParse = (data) => {
                     try {
-                      attributes = JSON.parse(attributes)
+                      // If it's a string, parse it
+                      if (typeof data === 'string') {
+                        const parsed = JSON.parse(data);
+                        // If the parsed result is still a string, parse again
+                        if (typeof parsed === 'string') {
+                          return safeJSONParse(parsed);
+                        }
+                        return parsed;
+                      }
+                      return data;
                     } catch (e) {
-                      return null
+                      return null;
+                    }
+                  };
+                  
+                  // Parse if it's a string
+                  if (typeof attributes === 'string') {
+                    attributes = safeJSONParse(attributes);
+                  }
+                  
+                  // Handle different attribute formats
+                  let values = [];
+                  
+                  if (attributes && typeof attributes === 'object') {
+                    if (Array.isArray(attributes)) {
+                      // If it's an array of objects, extract all values
+                      attributes.forEach(item => {
+                        if (typeof item === 'object' && item !== null) {
+                          values.push(...Object.values(item));
+                        } else {
+                          values.push(item);
+                        }
+                      });
+                    } else {
+                      // If it's a single object, extract values
+                      values = Object.values(attributes);
                     }
                   }
                   
-                  if (typeof attributes === 'object' && attributes !== null) {
-                    const attrEntries = Object.entries(attributes).slice(0, 2) // Show max 2 attributes
-                    if (attrEntries.length > 0) {
-                      return (
-                        <div className="flex flex-wrap gap-1">
-                          {attrEntries.map(([key, val]) => (
-                            <span key={key} className="inline-block px-1.5 py-0.5 text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded">
-                              {key}: {typeof val === 'object' ? JSON.stringify(val) : String(val)}
-                            </span>
-                          ))}
-                          {Object.keys(attributes).length > 2 && (
-                            <span className="inline-block px-1.5 py-0.5 text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded">
-                              +{Object.keys(attributes).length - 2} more
-                            </span>
-                          )}
-                        </div>
-                      )
-                    }
+                  // Filter out empty/null values and convert to strings
+                  values = values
+                    .filter(val => val !== null && val !== undefined && val !== '')
+                    .map(val => {
+                      if (typeof val === 'object') {
+                        return JSON.stringify(val);
+                      }
+                      return String(val);
+                    });
+                  
+                  if (values.length > 0) {
+                    const displayValues = values.slice(0, 2);
+                    
+                    return (
+                      <div className="flex flex-wrap gap-1">
+                        {displayValues.map((val, idx) => (
+                          <span 
+                            key={idx} 
+                            className="inline-block px-1.5 py-0.5 text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded"
+                          >
+                            {val}
+                          </span>
+                        ))}
+                        {values.length > 2 && (
+                          <span className="inline-block px-1.5 py-0.5 text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded">
+                            +{values.length - 2} more
+                          </span>
+                        )}
+                      </div>
+                    );
                   }
-                  return null
+                  
+                  return null;
                 })()}
               </div>
             )}
-            
+
             {/* Variants */}
             {row.variants && Array.isArray(row.variants) && row.variants.length > 0 && (
               <div className="mt-1">
                 <div className="flex flex-wrap gap-1">
-                  {row.variants.slice(0, 3).map((variant, index) => (
-                    <span key={index} className="inline-block px-1.5 py-0.5 text-xs bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded">
-                      {variant.size && `Size: ${String(variant.size)}`}
-                      {variant.color && `, Color: ${String(variant.color)}`}
-                      {variant.material && `, Material: ${String(variant.material)}`}
-                      {!variant.size && !variant.color && !variant.material && `Variant ${index + 1}`}
-                    </span>
-                  ))}
+                  {row.variants.slice(0, 3).flatMap((variant, index) => {
+                    const variantValues = [];
+                    if (variant.size) variantValues.push(String(variant.size));
+                    if (variant.color) variantValues.push(String(variant.color));
+                    if (variant.material) variantValues.push(String(variant.material));
+                    
+                    return variantValues.map((val, valIndex) => (
+                      <span key={`${index}-${valIndex}`} className="inline-block px-1.5 py-0.5 text-xs bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded">
+                        {val}
+                      </span>
+                    ));
+                  })}
                   {row.variants.length > 3 && (
                     <span className="inline-block px-1.5 py-0.5 text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded">
                       +{row.variants.length - 3} more
@@ -617,7 +670,7 @@ const Products = () => {
         const price = typeof value === 'string' ? parseFloat(value) : (typeof value === 'number' ? value : 0);
         return (
           <span className="px-3 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded-lg text-sm font-medium">
-            ${isNaN(price) ? '0.00' : price.toFixed(2)}
+            ₹{isNaN(price) ? '0.00' : price.toFixed(2)}
           </span>
         );
       },
@@ -629,7 +682,7 @@ const Products = () => {
         const price = typeof value === 'string' ? parseFloat(value) : (typeof value === 'number' ? value : 0);
         return (
           <span className="px-3 py-1 bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 rounded-lg text-sm font-medium">
-            ${isNaN(price) ? '0.00' : price.toFixed(2)}
+            ₹{isNaN(price) ? '0.00' : price.toFixed(2)}
           </span>
         );
       },
@@ -667,7 +720,7 @@ const Products = () => {
         const stockQuantity = getProductStock(row.id)
         const maxStock = 100 // You can adjust this based on your needs
         const lowStockThreshold = 10 // You can adjust this based on your needs
-        
+
         return (
           <div className="flex items-center gap-2">
             <div className="w-16 h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
@@ -675,24 +728,23 @@ const Products = () => {
                 initial={{ width: 0 }}
                 animate={{ width: `${Math.min((stockQuantity / maxStock) * 100, 100)}%` }}
                 transition={{ duration: 0.5 }}
-                className={`h-full rounded-full ${
-                  stockQuantity <= lowStockThreshold 
-                    ? 'bg-red-500' 
+                className={`h-full rounded-full ${stockQuantity <= lowStockThreshold
+                    ? 'bg-red-500'
                     : stockQuantity <= lowStockThreshold * 2
-                    ? 'bg-yellow-500'
-                    : 'bg-green-500'
-                }`}
+                      ? 'bg-yellow-500'
+                      : 'bg-green-500'
+                  }`}
               />
             </div>
             <span className={`
               text-sm font-medium
-              ${stockQuantity <= lowStockThreshold 
-                ? 'text-red-600 dark:text-red-400' 
+              ${stockQuantity <= lowStockThreshold
+                ? 'text-red-600 dark:text-red-400'
                 : stockQuantity === 0
-                ? 'text-orange-600 dark:text-orange-400'
-                : stockQuantity <= lowStockThreshold * 2
-                ? 'text-yellow-600 dark:text-yellow-400'
-                : 'text-gray-900 dark:text-white'
+                  ? 'text-orange-600 dark:text-orange-400'
+                  : stockQuantity <= lowStockThreshold * 2
+                    ? 'text-yellow-600 dark:text-yellow-400'
+                    : 'text-gray-900 dark:text-white'
               }
             `}>
               {stockQuantity}
@@ -706,7 +758,7 @@ const Products = () => {
                 className="!px-2 !py-1 text-orange-600 border-orange-300 hover:bg-orange-50 dark:text-orange-400 dark:border-orange-700 dark:hover:bg-orange-900/20"
                 title="Add Stock"
               >
-                
+
               </Button>
             )}
           </div>
@@ -746,14 +798,14 @@ const Products = () => {
           >
             <FiTrash2 className="w-4 h-4" />
           </motion.button>
-          
+
         </div>
       ),
     },
   ]
 
   return (
-    <motion.div 
+    <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       className="space-y-6 p-6"
@@ -774,7 +826,7 @@ const Products = () => {
             Manage your product catalog and inventory
           </p>
         </div>
-        
+
         <div className="flex items-center space-x-3">
           {/* Only show these buttons when not in form mode */}
           {!showAddForm && !showEditForm && (
@@ -785,11 +837,10 @@ const Products = () => {
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   onClick={() => setViewMode('table')}
-                  className={`p-2 rounded-lg transition-colors ${
-                    viewMode === 'table' 
-                      ? 'bg-white dark:bg-gray-700 shadow-sm text-primary-600' 
+                  className={`p-2 rounded-lg transition-colors ${viewMode === 'table'
+                      ? 'bg-white dark:bg-gray-700 shadow-sm text-primary-600'
                       : 'text-gray-600 dark:text-gray-400'
-                  }`}
+                    }`}
                 >
                   <FiList className="w-4 h-4" />
                 </motion.button>
@@ -797,11 +848,10 @@ const Products = () => {
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   onClick={() => setViewMode('grid')}
-                  className={`p-2 rounded-lg transition-colors ${
-                    viewMode === 'grid' 
-                      ? 'bg-white dark:bg-gray-700 shadow-sm text-primary-600' 
+                  className={`p-2 rounded-lg transition-colors ${viewMode === 'grid'
+                      ? 'bg-white dark:bg-gray-700 shadow-sm text-primary-600'
                       : 'text-gray-600 dark:text-gray-400'
-                  }`}
+                    }`}
                 >
                   <FiGrid className="w-4 h-4" />
                 </motion.button>
@@ -957,17 +1007,16 @@ const Products = () => {
                     className="pl-10"
                   />
                 </div>
-                
+
                 <div className="flex items-center space-x-2">
                   <motion.button
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                     onClick={() => setShowFilters(!showFilters)}
-                    className={`px-4 py-2 rounded-xl border transition-colors flex items-center space-x-2 ${
-                      showFilters 
+                    className={`px-4 py-2 rounded-xl border transition-colors flex items-center space-x-2 ${showFilters
                         ? 'bg-primary-50 border-primary-200 text-primary-600 dark:bg-primary-900/20 dark:border-primary-800 dark:text-primary-400'
                         : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'
-                    }`}
+                      }`}
                   >
                     <FiFilter className="w-4 h-4" />
                     <span>Filters</span>
@@ -1127,7 +1176,7 @@ const Products = () => {
                               <FiPackage className="w-16 h-16 text-gray-400 dark:text-gray-500" />
                             </div>
                           )}
-                          
+
                           {/* Quick Actions Overlay */}
                           <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center space-x-2">
                             <motion.button
@@ -1172,10 +1221,10 @@ const Products = () => {
                           <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">
                             SKU: {product.sku}
                           </p>
-                          
+
                           <div className="flex items-center justify-between mb-3">
                             <span className="text-lg font-bold text-gray-900 dark:text-white">
-                              ${product.selling_price ? parseFloat(product.selling_price).toFixed(2) : '0.00'}
+                              ₹{product.selling_price ? parseFloat(product.selling_price).toFixed(2) : '0.00'}
                             </span>
                             <StatusBadge
                               status={product.is_active ? 'active' : 'inactive'}
@@ -1188,11 +1237,10 @@ const Products = () => {
                           <div className="space-y-1">
                             <div className="flex justify-between text-xs">
                               <span className="text-gray-500 dark:text-gray-400">Stock</span>
-                              <span className={`font-medium ${
-                                product.stock <= product.lowStockThreshold 
-                                  ? 'text-red-600 dark:text-red-400' 
+                              <span className={`font-medium ${product.stock <= product.lowStockThreshold
+                                  ? 'text-red-600 dark:text-red-400'
                                   : 'text-gray-700 dark:text-gray-300'
-                              }`}>
+                                }`}>
                                 {getProductStock(product.id)} / {product.maxStock || 100}
                               </span>
                             </div>
@@ -1201,13 +1249,12 @@ const Products = () => {
                                 initial={{ width: 0 }}
                                 animate={{ width: `${Math.min((getProductStock(product.id) / (product.maxStock || 100)) * 100, 100)}%` }}
                                 transition={{ duration: 0.5 }}
-                                className={`h-full rounded-full ${
-                                  getProductStock(product.id) <= (product.lowStockThreshold || 10)
-                                    ? 'bg-red-500' 
+                                className={`h-full rounded-full ${getProductStock(product.id) <= (product.lowStockThreshold || 10)
+                                    ? 'bg-red-500'
                                     : getProductStock(product.id) <= (product.lowStockThreshold || 10) * 2
-                                    ? 'bg-yellow-500'
-                                    : 'bg-green-500'
-                                }`}
+                                      ? 'bg-yellow-500'
+                                      : 'bg-green-500'
+                                  }`}
                               />
                             </div>
                           </div>
@@ -1230,7 +1277,7 @@ const Products = () => {
                 title="No products yet"
                 description="Get started by adding your first product to the catalog. You can add products individually or import them in bulk."
                 action={
-                  <Button 
+                  <Button
                     onClick={handleAddProduct}
                     icon={FiPlus}
                     size="lg"
@@ -1269,7 +1316,7 @@ const Products = () => {
                   {selectedProductToDelete ? 'Delete Product' : 'Delete Products'}
                 </h3>
                 <p className="text-gray-600 dark:text-gray-400 mb-6">
-                  {selectedProductToDelete 
+                  {selectedProductToDelete
                     ? 'Are you sure you want to delete this product? This action cannot be undone.'
                     : `Are you sure you want to delete ${selectedProducts.length} selected products? This action cannot be undone.`
                   }

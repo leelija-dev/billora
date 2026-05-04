@@ -45,7 +45,7 @@ class ProductsController extends Controller
                 ]);
             }
             $user = Auth::user()->id;
-            $product = Products::with(['variants', 'images', 'medicine_type'])->where('user_id', $user)->where('is_active', true)->paginate(15);
+            $product = Products::with(['variants', 'images', 'medicine_type'])->where('user_id', $user)->where('is_active', true) ->orderBy('id', 'desc')->paginate(15);
             if ($request->has('search')) {
                 $product = Products::where('user_id', $user)->where('name', 'like', '%' . $request->search . '%')
                     ->orWhere('sku', 'like', '%' . $request->search . '%')

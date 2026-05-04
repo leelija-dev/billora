@@ -1,6 +1,7 @@
 import React from 'react'
 import Table from '../../common/Table/Table'
 import StatusBadge from '../../common/StatusBadge/StatusBadge'
+import { handleNumberInput } from '../../../utils/validators'
 
 const StockTable = ({ logs, loading }) => {
   const columns = [
@@ -40,7 +41,7 @@ const StockTable = ({ logs, loading }) => {
         <span className={`text-sm font-medium ${
           row.type === 'IN' ? 'text-green-600' : 'text-red-600'
         }`}>
-          {row.type === 'IN' ? '+' : '-'}{value}
+          {row.type === 'IN' ? '+₹' : '-₹'}{value}
         </span>
       ),
     },

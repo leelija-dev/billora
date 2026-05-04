@@ -16,13 +16,21 @@ import MedicineTypeModal from '../../common/CreateModals/MedicineTypeModal'
 import { categoriesAPI, brandsAPI, unitsAPI, medicineTypeAPI } from '../../../services'
 import toast from 'react-hot-toast'
 import { FiUpload, FiX, FiPlus, FiTrash2 } from 'react-icons/fi'
+import {
+  handleNumberInput,
+  handleDecimalInput,
+  handlePhoneInput,
+  handleMaxLength,
+  validationRules,
+  validateSellingPrice
+} from '../../../utils/validators'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api'
 
 const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
   const { user } = useAuthStore()
   const { forceRefreshMedicineTypes, medicineTypes } = useMedicineTypeStore()
-  
+
   // State for create page data
   const [createPageData, setCreatePageData] = useState({
     brands: [],
@@ -32,12 +40,12 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
     inputPermissions: []
   })
   const [loadingData, setLoadingData] = useState(false)
-  
+
   // State for images and variants
   const [selectedImages, setSelectedImages] = useState([])
   const [imagePreviews, setImagePreviews] = useState([])
   const [variants, setVariants] = useState([])
-  
+
   // State for dynamic attributes
   const [attributes, setAttributes] = useState([
     { key: '', value: '' }
@@ -55,7 +63,10 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
     formState: { errors },
     setValue,
     watch,
+    setError,
+    clearErrors,
   } = useForm({
+    mode: 'onChange',
     defaultValues: {
       user_id: user?.id || '',
       name: '',
@@ -108,9 +119,14 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
   useEffect(() => {
     if (user?.id) {
       fetchCreatePageData()
-      forceRefreshMedicineTypes(user.id)
+      // Only fetch medicine types if they're available on this server
+      try {
+        forceRefreshMedicineTypes(user.id)
+      } catch (error) {
+        console.log('Medicine types not available on this server:', error.message)
+      }
     }
-  }, [user?.id, forceRefreshMedicineTypes])
+  }, [user?.id])
 
   // Update create page data when medicine types are loaded
   useEffect(() => {
@@ -119,7 +135,7 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
       medicineTypesCount: medicineTypes?.length || 0,
       currentMedicineTypesInState: createPageData.medicineTypes.length
     })
-    
+
     if (medicineTypes && medicineTypes.length > 0) {
       console.log('Setting medicine types in createPageData:', medicineTypes)
       setCreatePageData(prev => ({
@@ -135,10 +151,10 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
     try {
       const response = await productsAPI.getCreatePage(user.id)
       const data = response.data
-      
+
       // Extract input permissions properly
       const inputPermissions = data.inputPermission || []
-      
+
       setCreatePageData({
         brands: data.brand || [],
         categories: data.category || [],
@@ -146,7 +162,7 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
         medicineTypes: [], // Will be populated by medicine type store
         inputPermissions: inputPermissions
       })
-      
+
       console.log('Create page data loaded:', data)
       console.log('Input permissions:', inputPermissions)
     } catch (error) {
@@ -165,11 +181,16 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
       medicineTypesCount: createPageData.medicineTypes.length,
       productMedicineTypeId: product?.medicine_type_id
     })
-    
-    if (product && createPageData.brands.length > 0 && createPageData.medicineTypes.length > 0) {
-      console.log('Setting form values for editing. Medicine types available:', createPageData.medicineTypes)
-      console.log('Product medicine_type_id:', product.medicine_type_id)
-      
+
+    // Try to pre-fill even if some data is still loading
+    // Don't depend on medicine types since server might not have them
+    if (product && (createPageData.brands.length > 0 || loadingData === false)) {
+      console.log('✅ Setting form values for editing')
+      console.log('📊 Available brands:', createPageData.brands.length)
+      console.log('📊 Available medicine types:', createPageData.medicineTypes.length)
+      console.log('💊 Product medicine_type_id:', product.medicine_type_id)
+      console.log('🏥 Medicine types enabled on this server:', createPageData.medicineTypes.length > 0)
+
       // Set all form values for editing
       Object.keys(product).forEach(key => {
         if (key !== 'images' && key !== 'variants' && key !== 'attributes') {
@@ -177,7 +198,7 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
           setValue(key, product[key] || '')
         }
       })
-      
+
       // Set variants in form state
       if (product.variants && Array.isArray(product.variants)) {
         setVariants(product.variants)
@@ -186,11 +207,11 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
         setVariants([])
         setValue('variants', [])
       }
-      
+
       // Set attributes in form state
       if (product.attributes) {
         let parsedAttributes = product.attributes
-        
+
         // Parse attributes if it's a JSON string
         if (typeof product.attributes === 'string') {
           try {
@@ -200,7 +221,7 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
             parsedAttributes = {}
           }
         }
-        
+
         // Handle API response format (array of objects)
         if (Array.isArray(parsedAttributes)) {
           // If it's already an array, merge all objects into one
@@ -210,7 +231,7 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
               Object.assign(mergedAttributes, attrObj)
             }
           })
-          
+
           // Convert to array format for form display
           const attrsArray = Object.entries(mergedAttributes).map(([key, value]) => ({
             key,
@@ -234,12 +255,12 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
         setAttributes([{ key: '', value: '' }])
         setValue('attributes', {})
       }
-      
+
       // Debug: Log the entire product object to see what we're working with
       console.log('Product object for image processing:', product)
       console.log('product.images:', product.images)
       console.log('product.image:', product.image)
-      
+
       // Handle images - fix for both localhost and server
       if (product.images && Array.isArray(product.images) && product.images.length > 0) {
         console.log('Processing multiple images array')
@@ -247,7 +268,7 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
         // Handle different image URL formats for localhost vs server
         const previews = product.images.map((img, index) => {
           console.log(`Processing image ${index}:`, img, typeof img)
-          
+
           if (typeof img === 'string') {
             // If it's already a URL string, use it directly
             const url = img.startsWith('http') ? img : `${API_BASE_URL.replace('/api', '')}/storage/${img}`
@@ -270,7 +291,7 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
             return null
           }
         }).filter(url => url !== null) // Filter out null values
-        
+
         console.log('Final image previews (multiple):', previews)
         setImagePreviews(previews)
       } else if (product.image) {
@@ -285,7 +306,7 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
           console.warn('Unsupported single image format:', product.image)
           singleImage = null
         }
-        
+
         if (singleImage) {
           let imageUrl = singleImage.startsWith('http') ? singleImage : `${API_BASE_URL.replace('/api', '')}/storage/${singleImage}`
           console.log(`Single image URL: ${imageUrl}`)
@@ -303,24 +324,24 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
         setImagePreviews([])
       }
     }
-  }, [product, createPageData.brands, createPageData.medicineTypes, setValue])
+  }, [product, createPageData.brands, loadingData, setValue])
 
   // ... rest of the code remains the same ...
   // Check if user has permission for a specific field
   const hasPermission = (fieldSlug) => {
     if (!createPageData.inputPermissions.length) return false
-    
+
     const hasPerm = createPageData.inputPermissions.some(permission => {
       // Access the nested input_permission object's slug
       const permSlug = permission?.input_permission?.slug
-      
+
       // Check both underscore and hyphen versions
       const underscoreVersion = fieldSlug.replace(/-/g, '_')
       const hyphenVersion = fieldSlug.replace(/_/g, '-')
-      
+
       return permSlug === fieldSlug || permSlug === underscoreVersion || permSlug === hyphenVersion
     })
-    
+
     return hasPerm
   }
 
@@ -370,17 +391,32 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
 
   // Variant handling
   const addVariant = () => {
-    setVariants(prev => [...prev, { size: '', color: '', material: '', gender: '' }])
+    console.log('➕ Adding variant');
+    setVariants(prev => {
+      const newVariants = [...prev, { size: '', color: '', material: '', gender: '' }];
+      console.log('🔍 Variants after add:', newVariants);
+      return newVariants;
+    })
   }
 
   const updateVariant = (index, field, value) => {
-    setVariants(prev => prev.map((variant, i) => 
-      i === index ? { ...variant, [field]: value } : variant
-    ))
+    console.log(`📝 Updating variant ${index}, ${field}: ${value}`);
+    setVariants(prev => {
+      const newVariants = prev.map((variant, i) =>
+        i === index ? { ...variant, [field]: value } : variant
+      );
+      console.log('🔍 Variants after update:', newVariants);
+      return newVariants;
+    })
   }
 
   const removeVariant = (index) => {
-    setVariants(prev => prev.filter((_, i) => i !== index))
+    console.log(`🗑️ Removing variant ${index}`);
+    setVariants(prev => {
+      const newVariants = prev.filter((_, i) => i !== index);
+      console.log('🔍 Variants after remove:', newVariants);
+      return newVariants;
+    })
   }
 
   // Attribute handling functions
@@ -389,7 +425,7 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
   }
 
   const updateAttribute = (index, field, value) => {
-    setAttributes(prev => prev.map((attr, i) => 
+    setAttributes(prev => prev.map((attr, i) =>
       i === index ? { ...attr, [field]: value } : attr
     ))
   }
@@ -448,10 +484,10 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
       console.log('Creating unit with data:', unitData)
       const response = await unitsAPI.create(unitData)
       console.log('Unit API response:', response)
-      
+
       if (response.data?.status === true || response.data?.data) {
         let newUnit
-        
+
         // Handle different response formats
         if (Array.isArray(response.data.data)) {
           // If API returns all units, find the newly created one (last one)
@@ -462,13 +498,13 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
           newUnit = response.data.data || response.data
           console.log('New unit from single response:', newUnit)
         }
-        
+
         if (!newUnit || !newUnit.id) {
           console.error('Invalid unit data received:', newUnit)
           toast.error('Invalid unit data received')
           return
         }
-        
+
         // Update units list
         setCreatePageData(prev => {
           console.log('Previous units:', prev.units)
@@ -479,7 +515,7 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
             units: updatedUnits
           }
         })
-        
+
         toast.success('Unit created successfully!')
         // Set the newly created unit as selected
         setValue('unit_id', newUnit.id)
@@ -506,7 +542,7 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
         toast.success('Medicine type created successfully!')
         // Set the newly created medicine type as selected
         setValue('medicine_type_id', newMedicineType.id)
-        
+
 
       } else {
         toast.error('Failed to create medicine type')
@@ -518,6 +554,17 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
 
   // Form submission
   const onFormSubmit = (data) => {
+    // Validate selling_price >= purchase_price
+    const sellingPrice = parseFloat(data.selling_price)
+    const purchasePrice = parseFloat(data.purchase_price)
+    if (sellingPrice && purchasePrice && sellingPrice < purchasePrice) {
+      setError('selling_price', {
+        type: 'manual',
+        message: 'Selling price must be greater than or equal to purchase price'
+      })
+      return
+    }
+
     // Convert attributes to array format expected by backend
     const attributesArray = attributes
       .filter(attr => attr.key.trim() !== '')
@@ -534,7 +581,7 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
     // Convert empty/null numeric fields to 0
     const numericFieldsToZero = [
       'current_stock',
-      'discount_amount', 
+      'discount_amount',
       'discount_percentage',
       'cess_percentage',
       'supplier_id',
@@ -549,6 +596,17 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
       processedData[field] = processedData[field] === null || processedData[field] === '' || processedData[field] === undefined ? 0 : processedData[field]
     })
 
+    // Filter variants to only include those with actual data
+    const validVariants = variants.filter(variant =>
+      variant.size || variant.color || variant.material || variant.gender
+    );
+
+    console.log('🔍 Form submission variants:', variants);
+    console.log('🔍 Valid variants after filtering:', validVariants);
+
+    // Check if user has permission to edit warranty_months
+    const hasWarrantyPermission = hasPermission('warranty_months');
+
     const productData = {
       ...processedData,
       user_id: user.id,
@@ -556,8 +614,10 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
       // Handle main image and additional images separately
       image: selectedImages.length > 0 ? selectedImages[0] : null, // Main image
       images: selectedImages.length > 1 ? selectedImages.slice(1) : [], // Additional images
-      variants: variants,
+      variants: validVariants,
       attributes: attributesArray.length > 0 ? attributesArray : [],
+      // Only include warranty_months if user has permission to edit it
+      ...(hasWarrantyPermission && { warranty_months: processedData.warranty_months }),
       // Convert boolean fields to integers for backend
       is_active: data.is_active ? 1 : 0,
       prescription_required: data.prescription_required ? 1 : 0,
@@ -602,14 +662,14 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
             </span>
           )}
         </div>
-        
+
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {imagePreviews.map((preview, index) => (
             <div key={index} className="relative group">
               <div className="aspect-square rounded-lg overflow-hidden border-2 border-gray-200 dark:border-gray-600 transition-all duration-200 group-hover:border-blue-300 dark:group-hover:border-blue-500">
-                <img 
-                  src={preview} 
-                  alt={`Product ${index + 1}`} 
+                <img
+                  src={preview}
+                  alt={`Product ${index + 1}`}
                   className="w-full h-full object-cover"
                   onError={(e) => {
                     console.error(`Failed to load image ${index}:`, preview)
@@ -646,7 +706,7 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
               </button>
             </div>
           ))}
-          
+
           <div className="relative border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl p-4 hover:border-blue-400 dark:hover:border-blue-500 transition-all duration-200 group cursor-pointer">
             <input
               type="file"
@@ -669,27 +729,40 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
           </div>
         </div>
       </div>
-      
+
       {/* Basic Product Information */}
       <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700">
         <div className="mb-6">
           <h3 className="text-xl font-bold text-gray-900 dark:text-white">Basic Information</h3>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Core product details and identifiers</p>
         </div>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <Input
             label="Product Name"
             placeholder="Enter product name"
             error={errors.name?.message}
-            {...register('name', { required: 'Product name is required' })}
+            maxLength={validationRules.productName.maxLength}
+            {...register('name', {
+              required: 'Product name is required',
+              minLength: { value: validationRules.productName.minLength, message: 'Product name must be at least 2 characters' },
+              maxLength: { value: validationRules.productName.maxLength, message: 'Product name must not exceed 255 characters' }
+            })}
           />
 
           <Input
             label="Product Code (SKU)"
             placeholder="Enter product code"
             error={errors.sku?.message}
-            {...register('sku', { required: 'Product code is required' })}
+            maxLength={validationRules.sku.maxLength}
+            onInput={(e) => {
+              e.target.value = e.target.value.toUpperCase().replace(/[^A-Z0-9-]/g, '')
+            }}
+            {...register('sku', {
+              required: 'Product code is required',
+              pattern: { value: validationRules.sku.pattern, message: 'SKU must contain only uppercase letters, numbers, and hyphens' },
+              maxLength: { value: validationRules.sku.maxLength, message: 'SKU must not exceed 100 characters' }
+            })}
           />
 
           <SearchSelect
@@ -746,37 +819,39 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
           <h3 className="text-xl font-bold text-gray-900 dark:text-white">Pricing Information</h3>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Set product prices and tax details</p>
         </div>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <Input
             label="Unit Amount"
             type="number"
-            step="0.01"
+            step="0.0001"
             placeholder="Enter unit amount"
             error={errors.unit_amount?.message}
-            {...register('unit_amount', { 
+            onInput={(e) => handleDecimalInput(e, 4)}
+            {...register('unit_amount', {
               required: 'Unit amount is required',
-              valueAsNumber: true 
+              valueAsNumber: true,
+              min: { value: 0, message: 'Unit amount must be positive' }
             })}
           />
 
           <SearchSelect
-  label="Unit"
-  options={createPageData.units?.map(unit => ({
-    value: unit.id,
-    label: `${unit.name} (${unit.code})`,
-    description: unit.code ? `Code: ${unit.code}` : null,
-    subtext: unit.base_unit ? `Base: ${unit.base_unit}` : null
-  })) || []}
-  value={watch('unit_id') || ''}
-  onChange={(value) => setValue('unit_id', value, { shouldValidate: true })}
-  error={errors.unit_id?.message}
-  placeholder="Search for a unit..."
-  required
-  onCreateNew={(searchTerm) => {
-    setShowUnitModal(true)
-  }}
-/>
+            label="Unit"
+            options={createPageData.units?.map(unit => ({
+              value: unit.id,
+              label: `${unit.name} (${unit.code})`,
+              description: unit.code ? `Code: ${unit.code}` : null,
+              subtext: unit.base_unit ? `Base: ${unit.base_unit}` : null
+            })) || []}
+            value={watch('unit_id') || ''}
+            onChange={(value) => setValue('unit_id', value, { shouldValidate: true })}
+            error={errors.unit_id?.message}
+            placeholder="Search for a unit..."
+            required
+            onCreateNew={(searchTerm) => {
+              setShowUnitModal(true)
+            }}
+          />
 
           <input
             type="hidden"
@@ -784,14 +859,7 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
             value={watch('unit_id') || ''}
           />
 
-          <Input
-            label="Selling Price"
-            type="number"
-            step="0.01"
-            placeholder="Enter selling price"
-            error={errors.selling_price?.message}
-            {...register('selling_price', { valueAsNumber: true })}
-          />
+         
 
           <Input
             label="Purchase Price"
@@ -799,7 +867,40 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
             step="0.01"
             placeholder="Enter purchase price"
             error={errors.purchase_price?.message}
-            {...register('purchase_price', { valueAsNumber: true })}
+            onInput={(e) => handleDecimalInput(e, 2)}
+            {...register('purchase_price', {
+              valueAsNumber: true,
+              min: { value: 0, message: 'Purchase price must be positive' },
+              validate: (value) => {
+                const purchasePrice = parseFloat(value)
+                const sellingPrice = parseFloat(watch('selling_price'))
+                if (purchasePrice && sellingPrice && sellingPrice < purchasePrice) {
+                  return 'Selling price must be greater than or equal to purchase price'
+                }
+                return true
+              }
+            })}
+          />
+
+           <Input
+            label="Selling Price"
+            type="number"
+            step="0.01"
+            placeholder="Enter selling price"
+            error={errors.selling_price?.message}
+            onInput={(e) => handleDecimalInput(e, 2)}
+            {...register('selling_price', {
+              valueAsNumber: true,
+              min: { value: 0, message: 'Selling price must be positive' },
+              validate: (value) => {
+                const sellingPrice = parseFloat(value)
+                const purchasePrice = parseFloat(watch('purchase_price'))
+                if (sellingPrice && purchasePrice && sellingPrice < purchasePrice) {
+                  return 'Selling price must be greater than or equal to purchase price'
+                }
+                return true
+              }
+            })}
           />
 
           <Input
@@ -808,7 +909,12 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
             step="0.01"
             placeholder="Enter GST percentage"
             error={errors.gst_percentage?.message}
-            {...register('gst_percentage', { valueAsNumber: true })}
+            onInput={(e) => handleDecimalInput(e, 2)}
+            {...register('gst_percentage', {
+              valueAsNumber: true,
+              min: { value: 0, message: 'GST percentage must be positive' },
+              max: { value: 100, message: 'GST percentage cannot exceed 100' }
+            })}
           />
 
           <Input
@@ -817,7 +923,12 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
             step="0.01"
             placeholder="Enter discount percentage"
             error={errors.discount_percentage?.message}
-            {...register('discount_percentage', { valueAsNumber: true })}
+            onInput={(e) => handleDecimalInput(e, 2)}
+            {...register('discount_percentage', {
+              valueAsNumber: true,
+              min: { value: 0, message: 'Discount percentage must be positive' },
+              max: { value: 100, message: 'Discount percentage cannot exceed 100' }
+            })}
           />
         </div>
       </div>
@@ -828,7 +939,7 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
           <h3 className="text-xl font-bold text-gray-900 dark:text-white">Product Description</h3>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Detailed product information</p>
         </div>
-        
+
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -877,7 +988,7 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
               {attributes.filter(attr => attr.key.trim() !== '').length} active
             </span>
           </div>
-          
+
           <div className="space-y-4 mb-6">
             {attributes.map((attr, index) => (
               <div key={index} className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
@@ -904,7 +1015,7 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
               </div>
             ))}
           </div>
-          
+
           <div className="flex items-center justify-between pt-4 border-t border-gray-200 dark:border-gray-700">
             <Button
               type="button"
@@ -915,7 +1026,7 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
               <FiPlus className="w-4 h-4" />
               <span>Add Attribute</span>
             </Button>
-            
+
             {attributes.length > 1 && (
               <Button
                 type="button"
@@ -930,305 +1041,369 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
       ))}
 
       {/* Stock Information */}
-      {(hasPermission('conversion_factor') || hasPermission('minimum_stock_quantity') || 
-        hasPermission('maximum_stock_quantity') || hasPermission('current_stock') || 
+      {(hasPermission('conversion_factor') || hasPermission('minimum_stock_quantity') ||
+        hasPermission('maximum_stock_quantity') || hasPermission('current_stock') ||
         hasPermission('warehouse_location')) && (
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700">
-          <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6">Stock Information</h3>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {renderField('conversion_factor', (
-              <Input
-                label="Conversion Factor"
-                type="number"
-                step="0.01"
-                placeholder="Enter conversion factor"
-                error={errors.conversion_factor?.message}
-                {...register('conversion_factor', { valueAsNumber: true })}
-              />
-            ))}
+          <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700">
+            <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6">Stock Information</h3>
 
-            {renderField('minimum_stock_quantity', (
-              <Input
-                label="Minimum Stock Quantity"
-                type="number"
-                step="1"
-                placeholder="Enter minimum stock"
-                error={errors.minimum_stock_quantity?.message}
-                {...register('minimum_stock_quantity', { valueAsNumber: true })}
-              />
-            ))}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {renderField('conversion_factor', (
+                <Input
+                  label="Conversion Factor"
+                  type="number"
+                  step="0.0001"
+                  placeholder="Enter conversion factor"
+                  error={errors.conversion_factor?.message}
+                  onInput={(e) => handleDecimalInput(e, 4)}
+                  {...register('conversion_factor', {
+                    valueAsNumber: true,
+                    min: { value: 0, message: 'Conversion factor must be positive' }
+                  })}
+                />
+              ))}
 
-            {renderField('maximum_stock_quantity', (
-              <Input
-                label="Maximum Stock Quantity"
-                type="number"
-                step="1"
-                placeholder="Enter maximum stock"
-                error={errors.maximum_stock_quantity?.message}
-                {...register('maximum_stock_quantity', { valueAsNumber: true })}
-              />
-            ))}
+              {renderField('minimum_stock_quantity', (
+                <Input
+                  label="Minimum Stock Quantity"
+                  type="number"
+                  step="0.0001"
+                  placeholder="Enter minimum stock"
+                  error={errors.minimum_stock_quantity?.message}
+                  onInput={(e) => handleDecimalInput(e, 4)}
+                  {...register('minimum_stock_quantity', {
+                    valueAsNumber: true,
+                    min: { value: 0, message: 'Minimum stock must be positive' }
+                  })}
+                />
+              ))}
 
-            {renderField('current_stock', (
-              <Input
-                label="Current Stock"
-                type="number"
-                step="1"
-                placeholder="Enter current stock"
-                error={errors.current_stock?.message}
-                {...register('current_stock', { valueAsNumber: true })}
-              />
-            ))}
+              {renderField('maximum_stock_quantity', (
+                <Input
+                  label="Maximum Stock Quantity"
+                  type="number"
+                  step="0.0001"
+                  placeholder="Enter maximum stock"
+                  error={errors.maximum_stock_quantity?.message}
+                  onInput={(e) => handleDecimalInput(e, 4)}
+                  {...register('maximum_stock_quantity', {
+                    valueAsNumber: true,
+                    min: { value: 0, message: 'Maximum stock must be positive' }
+                  })}
+                />
+              ))}
 
-            {renderField('warehouse_location', (
-              <Input
-                label="Warehouse Location"
-                placeholder="Enter warehouse location"
-                error={errors.warehouse_location?.message}
-                {...register('warehouse_location')}
-              />
-            ))}
+              {renderField('current_stock', (
+                <Input
+                  label="Current Stock"
+                  type="number"
+                  step="0.0001"
+                  placeholder="Enter current stock"
+                  error={errors.current_stock?.message}
+                  onInput={(e) => handleDecimalInput(e, 4)}
+                  {...register('current_stock', {
+                    valueAsNumber: true,
+                    min: { value: 0, message: 'Current stock must be positive' }
+                  })}
+                />
+              ))}
+
+              {renderField('warehouse_location', (
+                <Input
+                  label="Warehouse Location"
+                  placeholder="Enter warehouse location"
+                  error={errors.warehouse_location?.message}
+                  maxLength={validationRules.warehouseLocation.maxLength}
+                  onInput={(e) => handleMaxLength(e, validationRules.warehouseLocation.maxLength)}
+                  {...register('warehouse_location', {
+                    maxLength: { value: validationRules.warehouseLocation.maxLength, message: 'Warehouse location must not exceed 100 characters' }
+                  })}
+                />
+              ))}
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
       {/* Additional Pricing */}
-      {(hasPermission('mrp') || hasPermission('wholesale_price') || 
+      {(hasPermission('mrp') || hasPermission('wholesale_price') ||
         hasPermission('discount_amount') || hasPermission('cess_percentage')) && (
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700">
-          <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6">Additional Pricing</h3>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {renderField('mrp', (
-              <Input
-                label="MRP (Maximum Retail Price)"
-                type="number"
-                step="0.01"
-                placeholder="Enter MRP"
-                error={errors.mrp?.message}
-                {...register('mrp', { valueAsNumber: true })}
-              />
-            ))}
+          <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700">
+            <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6">Additional Pricing</h3>
 
-            {renderField('wholesale_price', (
-              <Input
-                label="Wholesale Price"
-                type="number"
-                step="0.01"
-                placeholder="Enter wholesale price"
-                error={errors.wholesale_price?.message}
-                {...register('wholesale_price', { valueAsNumber: true })}
-              />
-            ))}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {renderField('mrp', (
+                <Input
+                  label="MRP (Maximum Retail Price)"
+                  type="number"
+                  step="0.01"
+                  placeholder="Enter MRP"
+                  error={errors.mrp?.message}
+                  onInput={(e) => handleDecimalInput(e, 2)}
+                  {...register('mrp', {
+                    valueAsNumber: true,
+                    min: { value: 0, message: 'MRP must be positive' }
+                  })}
+                />
+              ))}
 
-            {renderField('discount_amount', (
-              <Input
-                label="Discount Amount"
-                type="number"
-                step="0.01"
-                placeholder="Enter discount amount"
-                error={errors.discount_amount?.message}
-                {...register('discount_amount', { valueAsNumber: true })}
-              />
-            ))}
+              {renderField('wholesale_price', (
+                <Input
+                  label="Wholesale Price"
+                  type="number"
+                  step="0.01"
+                  placeholder="Enter wholesale price"
+                  error={errors.wholesale_price?.message}
+                  onInput={(e) => handleDecimalInput(e, 2)}
+                  {...register('wholesale_price', {
+                    valueAsNumber: true,
+                    min: { value: 0, message: 'Wholesale price must be positive' }
+                  })}
+                />
+              ))}
 
-            {renderField('cess_percentage', (
-              <Input
-                label="CESS Percentage"
-                type="number"
-                step="0.01"
-                placeholder="Enter CESS percentage"
-                error={errors.cess_percentage?.message}
-                {...register('cess_percentage', { valueAsNumber: true })}
-              />
-            ))}
+              {renderField('discount_amount', (
+                <Input
+                  label="Discount Amount"
+                  type="number"
+                  step="0.01"
+                  placeholder="Enter discount amount"
+                  error={errors.discount_amount?.message}
+                  onInput={(e) => handleDecimalInput(e, 2)}
+                  {...register('discount_amount', {
+                    valueAsNumber: true,
+                    min: { value: 0, message: 'Discount amount must be positive' }
+                  })}
+                />
+              ))}
+
+              {renderField('cess_percentage', (
+                <Input
+                  label="CESS Percentage"
+                  type="number"
+                  step="0.01"
+                  placeholder="Enter CESS percentage"
+                  error={errors.cess_percentage?.message}
+                  onInput={(e) => handleDecimalInput(e, 2)}
+                  {...register('cess_percentage', {
+                    valueAsNumber: true,
+                    min: { value: 0, message: 'CESS percentage must be positive' },
+                    max: { value: 100, message: 'CESS percentage cannot exceed 100' }
+                  })}
+                />
+              ))}
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
       {/* Tax Information */}
       {renderField('gst-hsn-code', (
         <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700">
           <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6">Tax Information</h3>
-          
+
           <Input
             label="GST HSN Code"
             type="number"
             placeholder="Enter GST HSN code (numeric only)"
             error={errors.gst_hsn_code?.message}
-            {...register('gst_hsn_code', { 
+            maxLength={validationRules.gstHsnCode.maxLength}
+            onInput={(e) => {
+              handleNumberInput(e)
+              handleMaxLength(e, validationRules.gstHsnCode.maxLength)
+            }}
+            {...register('gst_hsn_code', {
               valueAsNumber: true,
-              pattern: /^[0-9]*$/
+              pattern: { value: validationRules.gstHsnCode.pattern, message: 'GST HSN code must be numeric only' },
+              maxLength: { value: validationRules.gstHsnCode.maxLength, message: 'GST HSN code must not exceed 12 digits' }
             })}
           />
         </div>
       ))}
 
       {/* Medicine Specific Fields */}
-      {(hasPermission('medicine_type_id') || 
-        hasPermission('expiry_date') || hasPermission('batch_number') || 
-        hasPermission('manufacturer_name') || hasPermission('prescription_required') || 
-        hasPermission('schedule_type') || hasPermission('salt_composition') || 
+      {(hasPermission('medicine_type_id') ||
+        hasPermission('expiry_date') || hasPermission('batch_number') ||
+        hasPermission('manufacturer_name') || hasPermission('prescription_required') ||
+        hasPermission('schedule_type') || hasPermission('salt_composition') ||
         hasPermission('warranty_months')) && (
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700">
-          <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6">Medicine Information</h3>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {renderField('medicine_type_id', (
-              <SearchSelect
-                label="Medicine Type"
-                options={createPageData.medicineTypes?.map(type => ({
-                  value: type.id,
-                  label: type.name,
-                  description: type.code ? `Code: ${type.code}` : null,
-                  subtext: type.category ? `Category: ${type.category}` : null
-                })) || []}
-                value={watch('medicine_type_id') || ''}
-                onChange={(value) => setValue('medicine_type_id', value, { shouldValidate: true })}
-                error={errors.medicine_type_id?.message}
-                placeholder="Search for a medicine type..."
-                onCreateNew={(searchTerm) => {
-                  setShowMedicineTypeModal(true)
-                }}
-              />
-            ))}
-            <input
-              type="hidden"
-              {...register('medicine_type_id')}
-              value={watch('medicine_type_id') || ''}
-            />
+          <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700">
+            <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6">Medicine Information</h3>
 
-            {renderField('expiry-date', (
-              <Input
-                label="Expiry Date"
-                type="date"
-                error={errors.expiry_date?.message}
-                {...register('expiry_date')}
-              />
-            ))}
-
-            {renderField('batch-number', (
-              <Input
-                label="Batch Number"
-                placeholder="Enter batch number"
-                error={errors.batch_number?.message}
-                {...register('batch_number')}
-              />
-            ))}
-
-            {renderField('manufacturer-name', (
-              <Input
-                label="Manufacturer Name"
-                placeholder="Enter manufacturer name"
-                error={errors.manufacturer_name?.message}
-                {...register('manufacturer_name')}
-              />
-            ))}
-
-            {renderField('prescription-required', (
-              <div className="flex items-center p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-600">
-                <input
-                  type="checkbox"
-                  className="rounded border-gray-300 text-blue-600 mr-3 w-4 h-4"
-                  {...register('prescription_required')}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {renderField('medicine_type_id', (
+                <SearchSelect
+                  label="Medicine Type"
+                  options={createPageData.medicineTypes?.map(type => ({
+                    value: type.id,
+                    label: type.name,
+                    description: type.code ? `Code: ${type.code}` : null,
+                    subtext: type.category ? `Category: ${type.category}` : null
+                  })) || []}
+                  value={watch('medicine_type_id') || ''}
+                  onChange={(value) => setValue('medicine_type_id', value, { shouldValidate: true })}
+                  error={errors.medicine_type_id?.message}
+                  placeholder="Search for a medicine type..."
+                  onCreateNew={(searchTerm) => {
+                    setShowMedicineTypeModal(true)
+                  }}
                 />
-                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Prescription Required
-                </label>
-              </div>
-            ))}
-
-            {renderField('schedule-type', (
-              <Input
-                label="Schedule Type"
-                placeholder="Enter schedule type"
-                error={errors.schedule_type?.message}
-                {...register('schedule_type')}
+              ))}
+              <input
+                type="hidden"
+                {...register('medicine_type_id')}
+                value={watch('medicine_type_id') || ''}
               />
-            ))}
 
-            {renderField('salt-composition', (
-              <Input
-                label="Salt Composition"
-                placeholder="Enter salt composition"
-                error={errors.salt_composition?.message}
-                {...register('salt_composition')}
-              />
-            ))}
+              {renderField('expiry-date', (
+                <Input
+                  label="Expiry Date"
+                  type="date"
+                  error={errors.expiry_date?.message}
+                  {...register('expiry_date')}
+                />
+              ))}
 
-            {renderField('warranty-months', (
-              <Input
-                label="Warranty Months"
-                type="number"
-                placeholder="Enter warranty months"
-                error={errors.warranty_months?.message}
-                {...register('warranty_months', { valueAsNumber: true })}
-              />
-            ))}
+              {renderField('batch-number', (
+                <Input
+                  label="Batch Number"
+                  placeholder="Enter batch number"
+                  error={errors.batch_number?.message}
+                  maxLength={validationRules.batchNumber.maxLength}
+                  onInput={(e) => handleMaxLength(e, validationRules.batchNumber.maxLength)}
+                  {...register('batch_number', {
+                    maxLength: { value: validationRules.batchNumber.maxLength, message: 'Batch number must not exceed 100 characters' }
+                  })}
+                />
+              ))}
+
+              {renderField('manufacturer-name', (
+                <Input
+                  label="Manufacturer Name"
+                  placeholder="Enter manufacturer name"
+                  error={errors.manufacturer_name?.message}
+                  maxLength={validationRules.manufacturerName.maxLength}
+                  onInput={(e) => handleMaxLength(e, validationRules.manufacturerName.maxLength)}
+                  {...register('manufacturer_name', {
+                    maxLength: { value: validationRules.manufacturerName.maxLength, message: 'Manufacturer name must not exceed 255 characters' }
+                  })}
+                />
+              ))}
+
+              {renderField('prescription-required', (
+                <div className="flex items-center p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-600">
+                  <input
+                    type="checkbox"
+                    className="rounded border-gray-300 text-blue-600 mr-3 w-4 h-4"
+                    {...register('prescription_required')}
+                  />
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Prescription Required
+                  </label>
+                </div>
+              ))}
+
+              {renderField('schedule-type', (
+                <Input
+                  label="Schedule Type"
+                  placeholder="Enter schedule type (H, X, G, etc.)"
+                  error={errors.schedule_type?.message}
+                  maxLength={validationRules.scheduleType.maxLength}
+                  onInput={(e) => {
+                    e.target.value = e.target.value.toUpperCase()
+                    handleMaxLength(e, validationRules.scheduleType.maxLength)
+                  }}
+                  {...register('schedule_type', {
+                    pattern: { value: validationRules.scheduleType.pattern, message: 'Schedule type must be uppercase letters only (H, X, G, etc.)' },
+                    maxLength: { value: validationRules.scheduleType.maxLength, message: 'Schedule type must not exceed 5 characters' }
+                  })}
+                />
+              ))}
+
+              {renderField('salt-composition', (
+                <Input
+                  label="Salt Composition"
+                  placeholder="Enter salt composition"
+                  error={errors.salt_composition?.message}
+                  {...register('salt_composition')}
+                />
+              ))}
+
+              {renderField('warranty-months', (
+                <Input
+                  label="Warranty Months"
+                  type="number"
+                  placeholder="Enter warranty months"
+                  error={errors.warranty_months?.message}
+                  onInput={(e) => handleNumberInput(e)}
+                  {...register('warranty_months', {
+                    valueAsNumber: true,
+                    min: { value: 0, message: 'Warranty months must be positive' },
+                    max: { value: 120, message: 'Warranty months cannot exceed 120' }
+                  })}
+                />
+              ))}
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
       {/* Agricultural/Perishable Fields */}
-      {(hasPermission('perishable') || hasPermission('organic-certified') || 
+      {(hasPermission('perishable') || hasPermission('organic-certified') ||
         hasPermission('harvest-date') || hasPermission('storage-instructions')) && (
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700">
-          <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6">Agricultural Information</h3>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {renderField('perishable', (
-              <div className="flex items-center p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-600">
-                <input
-                  type="checkbox"
-                  className="rounded border-gray-300 text-blue-600 mr-3 w-4 h-4"
-                  {...register('perishable')}
-                />
-                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Perishable
-                </label>
-              </div>
-            ))}
+          <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700">
+            <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6">Agricultural Information</h3>
 
-            {renderField('organic-certified', (
-              <div className="flex items-center p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-600">
-                <input
-                  type="checkbox"
-                  className="rounded border-gray-300 text-blue-600 mr-3 w-4 h-4"
-                  {...register('organic_certified')}
-                />
-                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Organic Certified
-                </label>
-              </div>
-            ))}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {renderField('perishable', (
+                <div className="flex items-center p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-600">
+                  <input
+                    type="checkbox"
+                    className="rounded border-gray-300 text-blue-600 mr-3 w-4 h-4"
+                    {...register('perishable')}
+                  />
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Perishable
+                  </label>
+                </div>
+              ))}
 
-            {renderField('harvest-date', (
-              <Input
-                label="Harvest Date"
-                type="date"
-                placeholder="Enter harvest date"
-                error={errors.harvest_date?.message}
-                {...register('harvest_date')}
-              />
-            ))}
+              {renderField('organic-certified', (
+                <div className="flex items-center p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-600">
+                  <input
+                    type="checkbox"
+                    className="rounded border-gray-300 text-blue-600 mr-3 w-4 h-4"
+                    {...register('organic_certified')}
+                  />
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Organic Certified
+                  </label>
+                </div>
+              ))}
 
-            {renderField('storage-instructions', (
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Storage Instructions
-                </label>
-                <textarea
-                  rows={3}
-                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white resize-none"
-                  placeholder="Enter storage instructions"
-                  {...register('storage_instructions')}
+              {renderField('harvest-date', (
+                <Input
+                  label="Harvest Date"
+                  type="date"
+                  placeholder="Enter harvest date"
+                  error={errors.harvest_date?.message}
+                  {...register('harvest_date')}
                 />
-              </div>
-            ))}
+              ))}
+
+              {renderField('storage-instructions', (
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Storage Instructions
+                  </label>
+                  <textarea
+                    rows={3}
+                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white resize-none"
+                    placeholder="Enter storage instructions"
+                    {...register('storage_instructions')}
+                  />
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
       {/* Variants Section */}
       {(hasPermission('size') || hasPermission('color') || hasPermission('material') || hasPermission('gender')) && (
@@ -1248,7 +1423,7 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
               Add Variant
             </Button>
           </div>
-          
+
           <div className="space-y-4">
             {variants.map((variant, index) => (
               <div key={index} className="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
@@ -1260,7 +1435,7 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
                     onChange={(e) => updateVariant(index, 'size', e.target.value)}
                   />
                 ))}
-                
+
                 {renderField('color', (
                   <Input
                     label="Color"
@@ -1269,7 +1444,7 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
                     onChange={(e) => updateVariant(index, 'color', e.target.value)}
                   />
                 ))}
-                
+
                 {renderField('material', (
                   <Input
                     label="Material"
@@ -1278,7 +1453,7 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
                     onChange={(e) => updateVariant(index, 'material', e.target.value)}
                   />
                 ))}
-                
+
                 {renderField('gender', (
                   <Select
                     label="Gender"
@@ -1292,7 +1467,7 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
                     onChange={(e) => updateVariant(index, 'gender', e.target.value)}
                   />
                 ))}
-                
+
                 <Button
                   type="button"
                   variant="outline"
@@ -1311,16 +1486,20 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
       {renderField('short_description', (
         <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700">
           <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6">Additional Description</h3>
-          
+
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Short Description
             </label>
             <textarea
               rows={2}
+              maxLength={validationRules.shortDescription.maxLength}
               className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white resize-none"
               placeholder="Enter short description (optional)..."
-              {...register('short_description')}
+              onInput={(e) => handleMaxLength(e, validationRules.shortDescription.maxLength)}
+              {...register('short_description', {
+                maxLength: { value: validationRules.shortDescription.maxLength, message: 'Short description must not exceed 500 characters' }
+              })}
             />
             {errors.short_description && (
               <p className="mt-1 text-sm text-red-600 dark:text-red-400">
@@ -1335,7 +1514,7 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
       {(hasPermission('is_featured') || hasPermission('is_returnable') || hasPermission('is_refundable')) && (
         <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700">
           <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6">Additional Options</h3>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {renderField('is_featured', (
               <div className="flex items-center p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-600">
@@ -1383,12 +1562,17 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
       {renderField('supplier_id', (
         <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700">
           <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6">Supplier Information</h3>
-          
+
           <Input
             label="Supplier ID"
+            type="number"
             placeholder="Enter supplier ID"
             error={errors.supplier_id?.message}
-            {...register('supplier_id')}
+            onInput={(e) => handleNumberInput(e)}
+            {...register('supplier_id', {
+              valueAsNumber: true,
+              min: { value: 1, message: 'Supplier ID must be positive' }
+            })}
           />
         </div>
       ))}
