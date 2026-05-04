@@ -532,58 +532,85 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
   // Handle store creation from modal
   const handleCreateStore = async (storeData) => {
     try {
-      console.log('🏪 Store created:', storeData)
-      
-      // Extract store info from response - check multiple possible structures
-      let storeInfo, storeName, storeId
-      
-      if (storeData.data) {
-        // Nested structure: { data: { id, name, ... } }
-        storeInfo = storeData.data
-      } else if (storeData.id && storeData.name) {
-        // Direct structure: { id, name, ... }
-        storeInfo = storeData
-      } else {
-        console.error('Unexpected store response structure:', storeData)
-        toast.error('Store created but with unexpected response format')
-        return
-      }
-      
-      storeName = storeInfo.name || storeInfo.store_name || 'New Store'
-      storeId = storeInfo.id
-      
-      console.log('🏪 Extracted store info:', { storeId, storeName, storeInfo })
+      console.log('Store created:', storeData)
       
       // Refresh stores list
       await fetchInitialData()
       
-      // Set the new store as selected
-      console.log('🏪 Setting store_id to:', storeId)
-      setFormData(prev => ({ ...prev, store_id: storeId }))
-      
-      // Update store search field to show the new store name
-      console.log('🏪 Setting store search to:', storeName)
-      setStoreSearch(storeName)
+      // Fetch updated stores from API
+      try {
+        const response = await invoiceAPI.getBillGenerateData(currentUserId)
+        let updatedData = response.data?.data || response.data || {}
+        const updatedStoresList = updatedData.stores || updatedData.bill_store || updatedData.store || []
+        setStores(Array.isArray(updatedStoresList) ? updatedStoresList : [])
+        
+        // Find the newly created store
+        const newStore = updatedStoresList.find(s => 
+          s.name === storeData.name || 
+          s.name === storeData.data?.name
+        )
+        
+        if (newStore) {
+          // Auto-select the new store
+          setFormData(prev => ({
+            ...prev,
+            store_id: newStore.id
+          }))
+          // Update store search field to show the new store name
+          setStoreSearch(newStore.name || newStore.store_name)
+          toast.success('Store created and selected successfully')
+        } else {
+          // Fallback: use the returned store data
+          let storeInfo, storeName, storeId
+          
+          if (storeData.data) {
+            // Nested structure: { data: { id, name, ... } }
+            storeInfo = storeData.data
+          } else if (storeData.id && storeData.name) {
+            // Direct structure: { id, name, ... }
+            storeInfo = storeData
+          } else {
+            console.error('Unexpected store response structure:', storeData)
+            toast.error('Store created but with unexpected response format')
+            return
+          }
+          
+          storeName = storeInfo.name || storeInfo.store_name || 'New Store'
+          storeId = storeInfo.id
+          
+          setFormData(prev => ({ ...prev, store_id: storeId }))
+          setStoreSearch(storeName)
+          toast.success('Store created successfully')
+        }
+      } catch (error) {
+        console.error('Failed to refresh store list:', error)
+        // Fallback: use the returned store data
+        let storeInfo, storeName, storeId
+        
+        if (storeData.data) {
+          storeInfo = storeData.data
+        } else if (storeData.id && storeData.name) {
+          storeInfo = storeData
+        } else {
+          console.error('Unexpected store response structure:', storeData)
+          toast.error('Store created but with unexpected response format')
+          return
+        }
+        
+        storeName = storeInfo.name || storeInfo.store_name || 'New Store'
+        storeId = storeInfo.id
+        
+        setFormData(prev => ({ ...prev, store_id: storeId }))
+        setStoreSearch(storeName)
+        toast.success('Store created successfully')
+      }
       
       // Close the store modal
       setShowAddStoreModal(false)
-      
-      toast.success(`Store "${storeName}" selected successfully`)
     } catch (err) {
-      console.error('Store refresh error:', err)
-      toast.error('Store created but failed to refresh list')
+      console.error('Store creation error:', err)
+      toast.error('Failed to create store')
     }
-  }
-
-  // Store selection handlers
-  const handleStoreSelect = (store) => {
-    setFormData(prev => ({
-      ...prev,
-      store_id: store.id
-    }))
-    setStoreSearch(store.name || store.store_name)
-    setShowStoreDropdown(false)
-    toast.success(`Store selected: ${store.name || store.store_name}`)
   }
 
   const handleStoreSearchChange = (value) => {
@@ -850,7 +877,7 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
         className="space-y-6"
       >
         {/* Header */}
-        <div className="flex items-center justify-between pb-4 border-b border-gray-200 dark:border-gray-700">
+        <div className="flex items-center justify-between pb-4 border-b border-gray-200 dark:border-gray-700 sticky top-[62px] bg-white z-[100] pt-4">
           <div className="flex items-center space-x-3">
             <div className="p-2 bg-primary-100 dark:bg-primary-900/20 rounded-lg">
               <FiShoppingCart className="w-5 h-5 text-primary-600 dark:text-primary-400" />
