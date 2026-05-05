@@ -270,13 +270,13 @@ export const generateA4InvoiceHTML = (invoice) => {
         </thead>
         <tbody>
           <!-- Products Section -->
-          ${invoice.items && invoice.items.length > 0 ? `
+          ${Array.isArray(invoice.items) && invoice.items.length > 0 ? `
           <tr>
             <td colspan="7" style="background: #f8f9fa; padding: 8px; font-weight: bold; border-bottom: 2px solid #dee2e6;">
               PRODUCTS
             </td>
           </tr>
-          ${invoice.items?.map((item, index) => {
+          ${invoice.items.map((item, index) => {
             const itemPrice = typeof item.price === 'string' ? parseFloat(item.price) : (typeof item.price === 'number' ? item.price : 0);
             const itemTotal = typeof item.total_price === 'string' ? parseFloat(item.total_price) : (typeof item.total_price === 'number' ? item.total_price : 0);
             const itemGst = typeof item.gst === 'string' ? parseFloat(item.gst) : (typeof item.gst === 'number' ? item.gst : 0);
@@ -297,13 +297,13 @@ export const generateA4InvoiceHTML = (invoice) => {
           ` : ''}
           
           <!-- Packages Section -->
-          ${invoice.packages && invoice.packages.length > 0 ? `
+          ${Array.isArray(invoice.packages) && invoice.packages.length > 0 ? `
           <tr>
             <td colspan="7" style="background: #e3f2fd; padding: 8px; font-weight: bold; border-bottom: 2px solid #dee2e6;">
               PACKAGES
             </td>
           </tr>
-          ${invoice.packages?.map((pkg, index) => {
+          ${invoice.packages.map((pkg, index) => {
             const pkgPrice = typeof pkg.price === 'string' ? parseFloat(pkg.price) : (typeof pkg.price === 'number' ? pkg.price : 0);
             const pkgTotal = typeof pkg.total_price === 'string' ? parseFloat(pkg.total_price) : (typeof pkg.total_price === 'number' ? pkg.total_price : 0);
             
@@ -332,27 +332,27 @@ export const generateA4InvoiceHTML = (invoice) => {
         </div>
         <div class="summary-row">
           <span class="label">Total GST:</span>
-          <span class="value">₹${((invoice.items?.reduce((sum, item) => {
+          <span class="value">₹${((Array.isArray(invoice.items) ? invoice.items.reduce((sum, item) => {
             const itemPrice = typeof item.price === 'string' ? parseFloat(item.price) : (typeof item.price === 'number' ? item.price : 0);
             const itemGst = typeof item.gst === 'string' ? parseFloat(item.gst) : (typeof item.gst === 'number' ? item.gst : 0);
             const subtotal = itemPrice * parseFloat(item.quantity || 0);
             return sum + (subtotal * itemGst / 100);
-          }, 0) || 0) + (invoice.packages?.reduce((sum, pkg) => {
+          }, 0) : 0) + (Array.isArray(invoice.packages) ? invoice.packages.reduce((sum, pkg) => {
             const pkgPrice = typeof pkg.price === 'string' ? parseFloat(pkg.price) : (typeof pkg.price === 'number' ? pkg.price : 0);
             return sum + (pkgPrice * parseFloat(pkg.quantity || 0)); // Packages have 0 GST
-          }, 0) || 0)).toFixed(2)}</span>
+          }, 0) : 0)).toFixed(2)}</span>
         </div>
         <div class="summary-row">
           <span class="label">Total Discount:</span>
-          <span class="value" style="color: #28a745;">-₹${((invoice.items?.reduce((sum, item) => {
+          <span class="value" style="color: #28a745;">-₹${((Array.isArray(invoice.items) ? invoice.items.reduce((sum, item) => {
             const itemPrice = typeof item.price === 'string' ? parseFloat(item.price) : (typeof item.price === 'number' ? item.price : 0);
             const itemDiscount = typeof item.discount === 'string' ? parseFloat(item.discount) : (typeof item.discount === 'number' ? item.discount : 0);
             const subtotal = itemPrice * parseFloat(item.quantity || 0);
             return sum + (subtotal * itemDiscount / 100);
-          }, 0) || 0) + (invoice.packages?.reduce((sum, pkg) => {
+          }, 0) : 0) + (Array.isArray(invoice.packages) ? invoice.packages.reduce((sum, pkg) => {
             const pkgPrice = typeof pkg.price === 'string' ? parseFloat(pkg.price) : (typeof pkg.price === 'number' ? pkg.price : 0);
             return sum + 0; // Packages have 0 discount
-          }, 0) || 0)).toFixed(2)}</span>
+          }, 0) : 0)).toFixed(2)}</span>
         </div>
         <div class="summary-row total">
           <span>Grand Total:</span>
