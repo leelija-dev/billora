@@ -21,7 +21,7 @@ export default function BlogCard({ blog }) {
     }
     
     // If it's a relative path, prepend the API base URL
-    let API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+    let API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ||  'http://localhost:8000';
     
     // Remove /api suffix if present (images are served from base URL, not /api)
     API_BASE_URL = API_BASE_URL.replace(/\/api$/, '');
