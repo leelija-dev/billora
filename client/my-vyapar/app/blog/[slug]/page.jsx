@@ -11,7 +11,7 @@ import {
   ChevronDown, ChevronUp, Bookmark, Copy, Check,
   MessageCircle, ThumbsUp, Share, ExternalLink
 } from 'lucide-react';
-import { blogPosts, getBlogBySlug } from '@/data/blogData';
+import { blogApi } from '@/services/blogApi';
 import BlogCard from '@/components/blog/BlogCard';
 
 export default function BlogPostPage() {
@@ -27,29 +27,8 @@ export default function BlogPostPage() {
   const [openFaqs, setOpenFaqs] = useState([1]); // First FAQ open by default
   const [tableOfContents, setTableOfContents] = useState([]);
 
-  // Sample FAQ data
-  const faqs = [
-    {
-      id: 1,
-      question: "How can this article help my business?",
-      answer: "This article provides actionable insights and strategies that you can immediately implement in your business to improve efficiency and growth. From proven frameworks to real-world examples, you'll find practical advice that can be applied right away."
-    },
-    {
-      id: 2,
-      question: "Who is this content intended for?",
-      answer: "This content is designed for business owners, entrepreneurs, and professionals looking to enhance their knowledge in this specific area. Whether you're a beginner or an expert, you'll find valuable takeaways."
-    },
-    {
-      id: 3,
-      question: "Are there any additional resources available?",
-      answer: "Yes, check out our related posts section below and subscribe to our newsletter for more in-depth guides and updates. We also offer downloadable resources and templates for our subscribers."
-    },
-    {
-      id: 4,
-      question: "How often do you publish new content?",
-      answer: "We publish new articles weekly. Subscribe to our newsletter to stay updated with the latest insights, trends, and best practices in the industry."
-    }
-  ];
+  // FAQ data will come from the blog API response
+  const faqs = blog?.faqs || [];
 
   const toggleFaq = (faqId) => {
     setOpenFaqs(prev => 
@@ -65,24 +44,25 @@ export default function BlogPostPage() {
     }
   }, [params.slug]);
 
-  const fetchBlog = () => {
+  const fetchBlog = async () => {
     try {
       setLoading(true);
       setError(null);
 
-      const blogData = getBlogBySlug(params.slug);
-      
-      if (!blogData) {
+      const response = await blogApi.getBlog(params.slug);
+      const data = response.data;
+
+      if (!data.status || !data.blog) {
         setError('Blog post not found');
         return;
       }
 
-      setBlog(blogData);
+      setBlog(data.blog);
 
       // Extract headings for table of contents
-      if (blogData.content) {
+      if (data.blog.content) {
         const tempDiv = document.createElement('div');
-        tempDiv.innerHTML = blogData.content;
+        tempDiv.innerHTML = data.blog.content;
         const headings = tempDiv.querySelectorAll('h2, h3');
         const toc = Array.from(headings).map((heading, index) => ({
           id: `heading-${index}`,
@@ -93,15 +73,17 @@ export default function BlogPostPage() {
         setTableOfContents(toc);
       }
 
-      // Get related blogs (same category, excluding current blog)
-      const related = blogPosts.filter(post => 
-        post.id !== blogData.id &&
-        post.categories.some(cat => 
-          blogData.categories.some(blogCat => blogCat.id === cat.id)
-        )
-      ).slice(0, 3);
-
-      setRelatedBlogs(related);
+      // Get related blogs
+      const relatedResponse = await blogApi.getRelatedBlogs(3);
+      const relatedData = relatedResponse.data;
+      
+      if (relatedData.status && relatedData.blogs?.data) {
+        // Filter out current blog and limit to 3
+        const related = relatedData.blogs.data
+          .filter(post => post.id !== data.blog.id)
+          .slice(0, 3);
+        setRelatedBlogs(related);
+      }
     } catch (error) {
       console.error('Error fetching blog:', error);
       setError('Blog post not found');
@@ -116,6 +98,24 @@ export default function BlogPostPage() {
       month: 'long',
       day: 'numeric'
     });
+  };
+
+  // Helper function to fix image URLs
+  const getImageUrl = (imagePath) => {
+    if (!imagePath) return null;
+    
+    // If it's already a full URL, return as-is
+    if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
+      return imagePath;
+    }
+    
+    // If it's a relative path, prepend the API base URL
+    const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+    
+    // Remove leading slash if present to avoid double slashes
+    const cleanPath = imagePath.startsWith('/') ? imagePath.slice(1) : imagePath;
+    
+    return `${API_BASE_URL}/${cleanPath}`;
   };
 
   const handleShare = async (platform = null) => {
@@ -295,7 +295,7 @@ export default function BlogPostPage() {
               {blog.feature_image && (
                 <div className="relative h-56 sm:h-80 md:h-96 w-full overflow-hidden">
                   <Image
-                    src={blog.feature_image}
+                    src={getImageUrl(blog.feature_image)}
                     alt={blog.feature_image_alt || blog.title}
                     fill
                     className="object-cover"
@@ -335,10 +335,10 @@ export default function BlogPostPage() {
                     <Eye className="h-3 w-3 sm:h-4 sm:w-4" />
                     1.2k views
                   </div>
-                  {blog.author && (
+                  {blog.user && (
                     <div className="flex items-center gap-1">
                       <User className="h-3 w-3 sm:h-4 sm:w-4" />
-                      {blog.author}
+                      {blog.user.fname} {blog.user.lname}
                     </div>
                   )}
                 </div>
@@ -414,10 +414,12 @@ export default function BlogPostPage() {
             <div className="mt-8 sm:mt-12 bg-gradient-to-r from-[rgb(65,135,249)]/5 to-[#ec4899]/5 rounded-2xl sm:rounded-3xl border border-slate-100 p-5 sm:p-6 md:p-8">
               <div className="flex flex-col sm:flex-row gap-5 sm:gap-6 items-start sm:items-center">
                 <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gradient-to-r from-[rgb(65,135,249)] to-[#ec4899] flex items-center justify-center text-white text-xl sm:text-2xl font-bold shrink-0">
-                  {blog.author?.charAt(0) || 'A'}
+                  {blog.user?.fname?.charAt(0) || blog.user?.lname?.charAt(0) || 'A'}
                 </div>
                 <div className="flex-1">
-                  <h3 className="text-lg sm:text-xl font-bold text-slate-900 mb-1">{blog.author || 'Editorial Team'}</h3>
+                  <h3 className="text-lg sm:text-xl font-bold text-slate-900 mb-1">
+                    {blog.user ? `${blog.user.fname} ${blog.user.lname}` : 'Editorial Team'}
+                  </h3>
                   <p className="text-[rgb(65,135,249)] text-xs sm:text-sm mb-2 sm:mb-3">Senior Content Writer</p>
                   <p className="text-slate-600 text-xs sm:text-sm leading-relaxed">
                     Passionate about sharing insights and helping businesses grow through valuable content. 

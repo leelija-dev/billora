@@ -11,6 +11,24 @@ export default function BlogCard({ blog }) {
     });
   };
 
+  // Helper function to fix image URLs
+  const getImageUrl = (imagePath) => {
+    if (!imagePath) return null;
+    
+    // If it's already a full URL, return as-is
+    if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
+      return imagePath;
+    }
+    
+    // If it's a relative path, prepend the API base URL
+    const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+    
+    // Remove leading slash if present to avoid double slashes
+    const cleanPath = imagePath.startsWith('/') ? imagePath.slice(1) : imagePath;
+    
+    return `${API_BASE_URL}/${cleanPath}`;
+  };
+
   return (
     <div className="group relative bg-white rounded-2xl shadow-sm hover:shadow-xl border border-slate-100 overflow-hidden transition-all duration-300 hover:-translate-y-1">
       {/* Hover gradient overlay */}
@@ -20,7 +38,7 @@ export default function BlogCard({ blog }) {
       <div className="relative h-52 overflow-hidden">
         {blog.feature_image ? (
           <Image
-            src={blog.feature_image}
+            src={getImageUrl(blog.feature_image)}
             alt={blog.feature_image_alt || blog.title}
             fill
             className="object-cover group-hover:scale-105 transition-transform duration-500"

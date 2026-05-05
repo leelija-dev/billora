@@ -3,10 +3,11 @@
 import { useState, useEffect } from 'react';
 import { Search, Filter, X, ChevronRight, Sparkles, TrendingUp, Clock, Eye } from 'lucide-react';
 import BlogCard from '@/components/blog/BlogCard';
-import { blogPosts, categories, getBlogsByCategory, searchBlogs } from '@/data/blogData';
+import { blogApi } from '@/services/blogApi';
 
 export default function BlogPage() {
   const [blogs, setBlogs] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -14,8 +15,7 @@ export default function BlogPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-
-  const BLOGS_PER_PAGE = 6;
+  const [error, setError] = useState(null);
 
   const fetchBlogs = async (page = 1, reset = false) => {
     try {
@@ -25,39 +25,45 @@ export default function BlogPage() {
         setLoadingMore(true);
       }
 
-      // Simulate API delay for better UX
-      await new Promise(resolve => setTimeout(resolve, 800));
-
-      let filteredBlogs = [...blogPosts];
-
+      const params = { page };
+      
       // Apply search filter
       if (searchTerm) {
-        filteredBlogs = searchBlogs(searchTerm);
+        params.search = 'name';
+        params.name = searchTerm;
       }
 
       // Apply category filter
       if (selectedCategory) {
-        filteredBlogs = getBlogsByCategory(parseInt(selectedCategory));
+        params.category_id = selectedCategory;
       }
 
-      // Sort by date (newest first)
-      filteredBlogs.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+      const response = await blogApi.getBlogs(params);
+      const data = response.data;
 
-      // Apply pagination
-      const startIndex = (page - 1) * BLOGS_PER_PAGE;
-      const endIndex = startIndex + BLOGS_PER_PAGE;
-      const paginatedBlogs = filteredBlogs.slice(startIndex, endIndex);
+      if (data.status) {
+        const blogData = data.blogs?.data || [];
+        
+        if (reset) {
+          setBlogs(blogData);
+        } else {
+          setBlogs(prev => [...prev, ...blogData]);
+        }
 
-      if (reset) {
-        setBlogs(paginatedBlogs);
+        // Set categories from API response
+        if (data.categories && categories.length === 0) {
+          setCategories(data.categories);
+        }
+
+        // Check if there are more pages
+        setHasMore(data.blogs?.current_page < data.blogs?.last_page);
+        setCurrentPage(data.blogs?.current_page || page);
       } else {
-        setBlogs(prev => [...prev, ...paginatedBlogs]);
+        throw new Error(data.message || 'Failed to fetch blogs');
       }
-
-      setHasMore(endIndex < filteredBlogs.length);
-      setCurrentPage(page);
     } catch (error) {
       console.error('Error fetching blogs:', error);
+      setError(error.message || 'Failed to fetch blogs');
     } finally {
       setLoading(false);
       setLoadingMore(false);
@@ -86,8 +92,26 @@ export default function BlogPage() {
     setHasMore(true);
   };
 
+  // Helper function to fix image URLs
+  const getImageUrl = (imagePath) => {
+    if (!imagePath) return null;
+    
+    // If it's already a full URL, return as-is
+    if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
+      return imagePath;
+    }
+    
+    // If it's a relative path, prepend the API base URL
+    const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+    
+    // Remove leading slash if present to avoid double slashes
+    const cleanPath = imagePath.startsWith('/') ? imagePath.slice(1) : imagePath;
+    
+    return `${API_BASE_URL}/${cleanPath}`;
+  };
+
   // Featured post (first blog post)
-  const featuredPost = blogPosts[0];
+  const featuredPost = blogs[0];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50">
@@ -217,7 +241,7 @@ export default function BlogPage() {
                 <div className="relative h-64 lg:h-full min-h-[300px] overflow-hidden">
                   {featuredPost?.feature_image ? (
                     <img
-                      src={featuredPost.feature_image}
+                      src={getImageUrl(featuredPost.feature_image)}
                       alt={featuredPost.title}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                     />
@@ -289,6 +313,24 @@ export default function BlogPage() {
               </div>
             ))}
           </div>
+        ) : error ? (
+          <div className="text-center py-20 bg-white rounded-3xl border border-slate-100">
+            <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-red-50 mb-6">
+              <Search className="h-8 w-8 text-red-500" />
+            </div>
+            <h3 className="text-xl font-semibold text-slate-900 mb-2">
+              Error loading articles
+            </h3>
+            <p className="text-slate-500 mb-4">
+              {error}
+            </p>
+            <button
+              onClick={() => fetchBlogs(1, true)}
+              className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-gradient-to-r from-[rgb(65,135,249)] to-[#ec4899] text-white text-sm font-medium"
+            >
+              Try Again
+            </button>
+          </div>
         ) : blogs.length === 0 ? (
           <div className="text-center py-20 bg-white rounded-3xl border border-slate-100">
             <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-r from-[rgb(65,135,249)]/10 to-[#ec4899]/10 mb-6">
@@ -335,7 +377,7 @@ export default function BlogPage() {
             {/* Show current count */}
             {!loadingMore && blogs.length > 0 && (
               <p className="text-center text-slate-500 text-sm mt-6">
-                Showing {blogs.length} of {!searchTerm && !selectedCategory ? blogPosts.length : blogs.length + (hasMore ? '...' : '')} articles
+                Showing {blogs.length} articles{hasMore ? ' (more available)' : ''}
               </p>
             )}
           </>
