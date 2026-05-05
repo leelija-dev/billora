@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { FiSave, FiX, FiPlus, FiTrash2, FiUser, FiShoppingCart, FiDollarSign, FiPackage, FiSearch, FiAlertCircle, FiMinus, FiUserPlus } from 'react-icons/fi'
 import Input from '../../common/Input/Input'
@@ -13,6 +14,7 @@ import { invoiceAPI } from '../../../services/invoiceService'
 import { stockAPI } from '../../../services/stockService'
 import { packagesAPI } from '../../../services/packagesService'
 import { storeAPI } from '../../../services/storeService'
+import { customerAPI } from '../../../services/customerService'
 import usePackageStore from '../../../store/packageStore'
 import { useAuthStore } from '../../../store/authStore'
 import { useCustomerStore } from '../../../store/customerStore'
@@ -26,6 +28,7 @@ let lastFetchTime = null
 const CACHE_EXPIRY = 30 * 1000 // 30 seconds
 
 const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting }) => {
+  const navigate = useNavigate()
   const { user } = useAuthStore()
   const { packages, fetchPackages, loading: packagesLoading } = usePackageStore()
   const { createCustomer, fetchCustomers } = useCustomerStore()
@@ -88,6 +91,8 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
   const [packageQuantity, setPackageQuantity] = useState(1)
   const [showBillDialog, setShowBillDialog] = useState(false)
   const [generatedBillData, setGeneratedBillData] = useState(null)
+  const [createdInvoiceData, setCreatedInvoiceData] = useState(null)
+  const [isSubmittingBill, setIsSubmittingBill] = useState(false)
   
   // Add customer modal state
   const [showAddCustomerModal, setShowAddCustomerModal] = useState(false)
@@ -777,7 +782,7 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
     return { subtotal, totalGst, totalDiscount, totalAmount }
   }
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
     
     if (!formData.customer_id || !formData.store_id || formData.items.length === 0) {
@@ -835,10 +840,26 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
       totalAmount: totals.totalAmount,
       items: formData.items.length
     })
-    
-    // Show bill generation dialog instead of direct submission
-    setGeneratedBillData(submissionData)
-    setShowBillDialog(true)
+
+    // Submit the bill to server first
+    setIsSubmittingBill(true)
+    try {
+      const response = await onSubmit(submissionData)
+      console.log('📄 Invoice submitted successfully:', response)
+
+      // Get the created invoice data from response
+      const createdInvoice = response?.data?.data || response?.data || submissionData
+      setCreatedInvoiceData(createdInvoice)
+      setGeneratedBillData(submissionData)
+
+      // Show print choice dialog
+      setShowBillDialog(true)
+    } catch (error) {
+      console.error('Error generating invoice:', error)
+      toast.error('Failed to generate invoice. Please try again.')
+    } finally {
+      setIsSubmittingBill(false)
+    }
   }
 
   // Click outside handlers
@@ -861,6 +882,59 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
+
+  // Helper function to enrich invoice data with customer and store details for printing
+  const enrichInvoiceForPrint = async (invoice) => {
+    try {
+      let customerData = {}
+      let storeData = {}
+
+      // Fetch customer details if customer_id is present
+      if (invoice.customer_id) {
+        try {
+          const customerResponse = await customerAPI.getById(invoice.customer_id)
+          customerData = customerResponse.data?.data || {}
+        } catch (error) {
+          console.error('Failed to fetch customer data for print:', error)
+        }
+      }
+
+      // Fetch store details if store_id is present
+      if (invoice.store_id) {
+        try {
+          const storeResponse = await storeAPI.getByUserId(invoice.user_id || currentUserId)
+          const storesArray = storeResponse.data?.data?.data || storeResponse.data?.data || []
+          storeData = storesArray.find(store => store.id === invoice.store_id) || storesArray[0] || {}
+        } catch (error) {
+          console.error('Failed to fetch store data for print:', error)
+        }
+      }
+
+      // Enhance invoice with full details
+      const enhancedInvoice = {
+        ...invoice,
+        invoice_number: invoice.invoice_number || invoice.id || `INV-${Date.now()}`,
+        id: invoice.id || invoice.invoice_id,
+        customer_name: customerData.name || invoice.customer_name || 'Walk-in Customer',
+        customer_phone: customerData.phone || invoice.customer_phone || 'N/A',
+        customer_email: customerData.email || invoice.customer_email || 'N/A',
+        customer_address: customerData.address ? `${customerData.address}, ${customerData.city || ''}` : invoice.customer_address || 'N/A',
+        customer_gst: customerData.gst || invoice.customer_gst || 'N/A',
+        store_name: storeData.name || invoice.store_name || 'Your Store Name',
+        store_address: storeData.address ? `${storeData.address}, ${storeData.city || ''}` : invoice.store_address || '123 Business Street, City',
+        store_gst: storeData.gst || invoice.store_gst || 'GSTIN123456',
+        store_email: storeData.email || invoice.store_email || 'store@business.com',
+        store_phone: storeData.mobile || storeData.phone || invoice.store_phone || '123-456-7890',
+        items: invoice.items || []
+      }
+
+      console.log('Enriched invoice for print:', enhancedInvoice)
+      return enhancedInvoice
+    } catch (error) {
+      console.error('Error enriching invoice for print:', error)
+      return invoice
+    }
+  }
 
   const totals = calculateTotals()
 
@@ -1652,66 +1726,66 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
                     variant="primary"
                     onClick={async () => {
                       try {
-                        // Submit the bill data first
-                        const response = await onSubmit(generatedBillData)
-                        console.log('📄 Invoice submitted successfully:', response)
-                        
-                        // Get the created invoice data from response
-                        const createdInvoice = response?.data?.data || response?.data || generatedBillData
-                        
+                        // Enrich invoice with customer and store details
+                        const enrichedInvoice = await enrichInvoiceForPrint(createdInvoiceData)
+
                         // Trigger A4 print
-                        printA4Invoice(createdInvoice)
-                        
+                        printA4Invoice(enrichedInvoice)
+
                         // Close dialog
                         setShowBillDialog(false)
-                        
+
                         toast.success('Invoice generated and printed successfully')
+
+                        // Navigate to invoices page
+                        navigate('/invoices')
                       } catch (error) {
-                        console.error('Error generating invoice:', error)
-                        toast.error('Failed to generate invoice. Please try again.')
+                        console.error('Error printing invoice:', error)
+                        toast.error('Failed to print invoice. Please try again.')
                       }
                     }}
                     className="w-full"
                   >
                     🖨️ A4 Print
                   </Button>
-                  
+
                   <Button
                     variant="outline"
                     onClick={async () => {
                       try {
-                        // Submit the bill data first
-                        const response = await onSubmit(generatedBillData)
-                        console.log('🧾 Invoice submitted successfully:', response)
-                        
-                        // Get the created invoice data from response
-                        const createdInvoice = response?.data?.data || response?.data || generatedBillData
-                        
+                        // Enrich invoice with customer and store details
+                        const enrichedInvoice = await enrichInvoiceForPrint(createdInvoiceData)
+
                         // Trigger thermal print
-                        printThermalInvoice(createdInvoice)
-                        
+                        printThermalInvoice(enrichedInvoice)
+
                         // Close dialog
                         setShowBillDialog(false)
-                        
+
                         toast.success('Invoice generated and printed successfully')
+
+                        // Navigate to invoices page
+                        navigate('/invoices')
                       } catch (error) {
-                        console.error('Error generating invoice:', error)
-                        toast.error('Failed to generate invoice. Please try again.')
+                        console.error('Error printing invoice:', error)
+                        toast.error('Failed to print invoice. Please try again.')
                       }
                     }}
                     className="w-full"
                   >
                     🧾 Thermal Print
                   </Button>
-                  
+
                   <Button
                     variant="secondary"
                     onClick={() => {
                       setShowBillDialog(false)
+                      // Navigate to invoices page since bill is already submitted
+                      navigate('/invoices')
                     }}
                     className="w-full"
                   >
-                    Cancel
+                    Skip Print
                   </Button>
                 </div>
               </div>
