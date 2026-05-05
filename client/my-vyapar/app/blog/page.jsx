@@ -114,7 +114,7 @@ export default function BlogPage() {
   };
 
   // Featured post (first blog post)
-  const featuredPost = blogs[0];
+  const featuredPost = blogs.length > 0 ? blogs[0] : null;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50">
@@ -235,8 +235,8 @@ export default function BlogPage() {
           </div>
         )}
     
-        {/* Featured Post - conditional, only show when no filters active */}
-        {!searchTerm && !selectedCategory && (
+        {/* Featured Post - conditional, only show when no filters active and blogs exist */}
+        {!searchTerm && !selectedCategory && featuredPost && (
           <div className="mb-12 mt-6">
             <div className="group relative bg-white rounded-3xl shadow-xl overflow-hidden border border-slate-100 hover:shadow-2xl transition-all duration-500">
               <div className="absolute inset-0 bg-gradient-to-r from-[rgb(65,135,249)]/5 to-[#ec4899]/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
@@ -342,10 +342,12 @@ export default function BlogPage() {
               <Search className="h-8 w-8 text-[rgb(65,135,249)]" />
             </div>
             <h3 className="text-xl font-semibold text-slate-900 mb-2">
-              No articles found
+              {searchTerm || selectedCategory ? 'No articles found' : 'No articles yet'}
             </h3>
             <p className="text-slate-500">
-              Try adjusting your search or filter criteria
+              {searchTerm || selectedCategory 
+                ? 'Try adjusting your search or filter criteria' 
+                : 'Check back later for new content'}
             </p>
           </div>
         ) : (
