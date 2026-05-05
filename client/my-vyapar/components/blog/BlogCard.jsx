@@ -21,7 +21,10 @@ export default function BlogCard({ blog }) {
     }
     
     // If it's a relative path, prepend the API base URL
-    const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+    let API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+    
+    // Remove /api suffix if present (images are served from base URL, not /api)
+    API_BASE_URL = API_BASE_URL.replace(/\/api$/, '');
     
     // Remove leading slash if present to avoid double slashes
     const cleanPath = imagePath.startsWith('/') ? imagePath.slice(1) : imagePath;
