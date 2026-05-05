@@ -59,17 +59,26 @@ export default function BlogPostPage() {
 
       setBlog(data.blog);
 
-      // Extract headings for table of contents
+      // Extract headings for table of contents and add IDs to content
       if (data.blog.content) {
         const tempDiv = document.createElement('div');
         tempDiv.innerHTML = data.blog.content;
         const headings = tempDiv.querySelectorAll('h2, h3');
-        const toc = Array.from(headings).map((heading, index) => ({
-          id: `heading-${index}`,
-          text: heading.textContent,
-          level: heading.tagName.toLowerCase(),
-          href: `#heading-${index}`
-        }));
+        
+        // Add IDs to headings and create table of contents
+        const toc = Array.from(headings).map((heading, index) => {
+          const id = `heading-${index}`;
+          heading.id = id; // Add ID to the heading element
+          return {
+            id,
+            text: heading.textContent,
+            level: heading.tagName.toLowerCase(),
+            href: `#${id}`
+          };
+        });
+        
+        // Update the blog content with the modified HTML that includes IDs
+        data.blog.content = tempDiv.innerHTML;
         setTableOfContents(toc);
       }
 
@@ -147,6 +156,23 @@ export default function BlogPostPage() {
 
   const handleBookmark = () => {
     setBookmarked(!bookmarked);
+  };
+
+  const handleTocClick = (e, href) => {
+    e.preventDefault();
+    const targetId = href.replace('#', '');
+    const element = document.getElementById(targetId);
+    
+    if (element) {
+      // Smooth scroll to the element
+      element.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start'
+      });
+      
+      // Update URL without page reload
+      window.history.pushState(null, null, href);
+    }
   };
 
   if (loading) {
@@ -274,6 +300,7 @@ export default function BlogPostPage() {
                       <li key={idx}>
                         <a 
                           href={item.href}
+                          onClick={(e) => handleTocClick(e, item.href)}
                           className={`text-slate-600 hover:text-[rgb(65,135,249)] transition-colors ${
                             item.level === 'h3' ? 'pl-3 text-slate-500' : ''
                           } block py-1`}
@@ -298,8 +325,9 @@ export default function BlogPostPage() {
                     src={getImageUrl(blog.feature_image)}
                     alt={blog.feature_image_alt || blog.title}
                     fill
-                    className="object-cover"
+                    className="object-contain"
                     priority
+                    unoptimized
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent"></div>
                 </div>

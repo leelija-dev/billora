@@ -41,7 +41,9 @@ export default function BlogCard({ blog }) {
             src={getImageUrl(blog.feature_image)}
             alt={blog.feature_image_alt || blog.title}
             fill
-            className="object-cover group-hover:scale-105 transition-transform duration-500"
+            className="object-contain group-hover:scale-105 transition-transform duration-500"
+            
+            unoptimized
           />
         ) : (
           <div className="w-full h-full bg-gradient-to-br from-[rgb(65,135,249)]/10 to-[#ec4899]/10 flex items-center justify-center">
@@ -92,9 +94,11 @@ export default function BlogCard({ blog }) {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-full bg-gradient-to-r from-[rgb(65,135,249)]/20 to-[#ec4899]/20 flex items-center justify-center text-sm font-medium text-[rgb(65,135,249)]">
-              {blog.author ? blog.author.charAt(0) : 'A'}
+              {blog.user ? (blog.user.fname ? blog.user.fname.charAt(0) : blog.user.username ? blog.user.username.charAt(0) : 'A') : 'A'}
             </div>
-            <span className="text-sm text-slate-600">{blog.author || 'Staff Writer'}</span>
+            <span className="text-sm text-slate-600">
+              {blog.user ? (blog.user.fname && blog.user.lname ? `${blog.user.fname} ${blog.user.lname}` : blog.user.username || 'Staff Writer') : 'Staff Writer'}
+            </span>
           </div>
           
           <Link

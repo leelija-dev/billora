@@ -23,46 +23,50 @@ const getCsrfToken = async () => {
 
 export const blogApi = {
   // Get all blogs with pagination, search, and category filter
+  // API: http://localhost:8000/api/blog?search=name&category_id=1
   getBlogs: async (params = {}) => {
     await getCsrfToken();
-    const response = await apiClient.get('/api/blogs', { params });
+    const response = await apiClient.get('/api/blog', { params });
     return response;
   },
 
   // Get single blog by slug
+  // API: http://localhost:8000/api/blog/{slug}
   getBlog: async (slug) => {
     await getCsrfToken();
-    const response = await apiClient.get(`/api/blogs/${slug}`);
+    const response = await apiClient.get(`/api/blog/${slug}`);
     return response;
   },
 
-  // Get all categories
+  // Get all categories (included in blogs API response)
   getCategories: async () => {
     await getCsrfToken();
-    const response = await apiClient.get('/api/blog-categories');
+    const response = await apiClient.get('/api/blog');
     return response;
   },
 
-  // Get blogs by category
+  // Get blogs by category (using main API with category_id filter)
   getBlogsByCategory: async (categoryId, params = {}) => {
     await getCsrfToken();
-    const response = await apiClient.get(`/api/blogs/category/${categoryId}`, { params });
-    return response;
-  },
-
-  // Search blogs
-  searchBlogs: async (query, params = {}) => {
-    await getCsrfToken();
-    const response = await apiClient.get('/api/blogs/search', {
-      params: { q: query, ...params }
+    const response = await apiClient.get('/api/blog', {
+      params: { category_id: categoryId, ...params }
     });
     return response;
   },
 
-  // Get related blogs
-  getRelatedBlogs: async (blogId, limit = 3) => {
+  // Search blogs (using main API with search parameter)
+  searchBlogs: async (query, params = {}) => {
     await getCsrfToken();
-    const response = await apiClient.get(`/api/blogs/${blogId}/related`, {
+    const response = await apiClient.get('/api/blog', {
+      params: { search: 'name', ...params }
+    });
+    return response;
+  },
+
+  // Get related blogs (using main API to get more blogs)
+  getRelatedBlogs: async (limit = 3) => {
+    await getCsrfToken();
+    const response = await apiClient.get('/api/blog', {
       params: { limit }
     });
     return response;

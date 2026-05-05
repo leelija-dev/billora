@@ -238,12 +238,12 @@ export default function BlogPage() {
             <div className="group relative bg-white rounded-3xl shadow-xl overflow-hidden border border-slate-100 hover:shadow-2xl transition-all duration-500">
               <div className="absolute inset-0 bg-gradient-to-r from-[rgb(65,135,249)]/5 to-[#ec4899]/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
               <div className="grid lg:grid-cols-2 gap-0">
-                <div className="relative h-64 lg:h-full min-h-[300px] overflow-hidden">
+                <div className="relative h-64 lg:h-full min-h-[300px] overflow-hidden max-h-[400px]">
                   {featuredPost?.feature_image ? (
                     <img
                       src={getImageUrl(featuredPost.feature_image)}
                       alt={featuredPost.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                      className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-700"
                     />
                   ) : (
                     <div className="w-full h-full bg-gradient-to-br from-[rgb(65,135,249)]/20 to-[#ec4899]/20 flex items-center justify-center">
@@ -280,10 +280,12 @@ export default function BlogPage() {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-full bg-gradient-to-r from-[rgb(65,135,249)] to-[#ec4899] flex items-center justify-center text-white font-semibold">
-                        {featuredPost?.author?.charAt(0) || 'A'}
+                        {featuredPost?.user ? (featuredPost.user.fname ? featuredPost.user.fname.charAt(0) : featuredPost.user.username ? featuredPost.user.username.charAt(0) : 'A') : 'A'}
                       </div>
                       <div>
-                        <p className="text-sm font-medium text-slate-900">{featuredPost?.author || 'Editorial Team'}</p>
+                        <p className="text-sm font-medium text-slate-900">
+                          {featuredPost?.user ? (featuredPost.user.fname && featuredPost.user.lname ? `${featuredPost.user.fname} ${featuredPost.user.lname}` : featuredPost.user.username || 'Editorial Team') : 'Editorial Team'}
+                        </p>
                         <p className="text-xs text-slate-500">Senior Writer</p>
                       </div>
                     </div>

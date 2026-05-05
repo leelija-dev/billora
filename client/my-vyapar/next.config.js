@@ -5,9 +5,24 @@ const nextConfig = {
   },
   images: {
     remotePatterns: [
-      ...(process.env.NEXT_PUBLIC_API_BASE_URL && (() => {
+      // Add localhost for development
+      {
+        protocol: 'http',
+        hostname: 'localhost',
+        port: '8000',
+        pathname: '/**',
+      },
+      // Add production API domain
+      {
+        protocol: 'https',
+        hostname: 'api.thefastbill.com',
+        port: '',
+        pathname: '/**',
+      },
+      // Add production API URL if configured (dynamic)
+      ...(process.env.NEXT_PUBLIC_API_URL && (() => {
         try {
-          const apiUrl = new URL(process.env.NEXT_PUBLIC_API_BASE_URL);
+          const apiUrl = new URL(process.env.NEXT_PUBLIC_API_URL);
           return {
             protocol: apiUrl.protocol.slice(0, -1),
             hostname: apiUrl.hostname,
@@ -18,7 +33,7 @@ const nextConfig = {
           return null;
         }
       })() ? [(() => {
-        const apiUrl = new URL(process.env.NEXT_PUBLIC_API_BASE_URL);
+        const apiUrl = new URL(process.env.NEXT_PUBLIC_API_URL);
         return {
           protocol: apiUrl.protocol.slice(0, -1),
           hostname: apiUrl.hostname,
@@ -26,6 +41,7 @@ const nextConfig = {
           pathname: '/**',
         };
       })()] : []),
+      // Add placeholder domains
       {
         protocol: 'https',
         hostname: 'via.placeholder.com',
