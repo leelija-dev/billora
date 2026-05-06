@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { FiX, FiSave, FiUser, FiMapPin, FiPhone, FiMail, FiGlobe, FiChevronDown, FiChevronUp } from 'react-icons/fi'
 import Input from '../../common/Input/Input'
@@ -27,6 +27,23 @@ const CustomerModal = ({ isOpen, onClose, onCustomerCreated, initialData = {} })
   const [error, setError] = useState('')
   const [fieldErrors, setFieldErrors] = useState({})
   const [showMoreDetails, setShowMoreDetails] = useState(false)
+
+  // Update form data when initialData changes (for editing)
+  useEffect(() => {
+    if (isOpen && initialData && Object.keys(initialData).length > 0) {
+      setFormData({
+        name: initialData.name || '',
+        email: initialData.email || '',
+        phone: initialData.phone || '',
+        address: initialData.address || '',
+        city: initialData.city || '',
+        gst: initialData.gst || '',
+        status: initialData.status || 'active'
+      })
+      setFieldErrors({})
+      setError('')
+    }
+  }, [initialData, isOpen])
 
   const handleInputChange = (e) => {
     const { name, value } = e.target

@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { FiX, FiSave, FiMapPin, FiPhone, FiMail, FiGlobe, FiChevronDown, FiChevronUp, FiUpload } from 'react-icons/fi'
 import Input from '../../common/Input/Input'
@@ -25,6 +25,25 @@ const StoreModal = ({ isOpen, onClose, onStoreCreated, initialData = {} }) => {
   const [error, setError] = useState('')
   const [fieldErrors, setFieldErrors] = useState({})
   const [showMoreDetails, setShowMoreDetails] = useState(false)
+
+  // Update form data when initialData changes (for editing)
+  useEffect(() => {
+    if (isOpen && initialData && Object.keys(initialData).length > 0) {
+      setFormData({
+        name: initialData.name || '',
+        gst: initialData.gst || '',
+        email: initialData.email || '',
+        mobile: initialData.mobile || '',
+        address: initialData.address || '',
+        city: initialData.city || '',
+        state: initialData.state || '',
+        pincode: initialData.pincode || '',
+        status: initialData.status !== undefined ? initialData.status : true
+      })
+      setFieldErrors({})
+      setError('')
+    }
+  }, [initialData, isOpen])
 
   const handleInputChange = (e) => {
     const { name, value, type, files } = e.target

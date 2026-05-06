@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { FiSave, FiX, FiPlus, FiTrash2, FiUser, FiShoppingCart, FiDollarSign, FiPackage, FiSearch, FiAlertCircle, FiMinus, FiUserPlus } from 'react-icons/fi'
+import { FiSave, FiX, FiPlus, FiTrash2, FiUser, FiShoppingCart, FiDollarSign, FiPackage, FiSearch, FiAlertCircle, FiMinus, FiUserPlus, FiEdit } from 'react-icons/fi'
 import Input from '../../common/Input/Input'
 import Button from '../../common/Button/Button'
 import Select from '../../common/Select/Select'
@@ -107,9 +107,19 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
   })
   const [customerErrors, setCustomerErrors] = useState({})
   
+  // Edit customer modal state
+  const [showEditCustomerModal, setShowEditCustomerModal] = useState(false)
+  const [editingCustomer, setEditingCustomer] = useState(null)
+  const [isUpdatingCustomer, setIsUpdatingCustomer] = useState(false)
+  
   // Add store modal state
   const [showAddStoreModal, setShowAddStoreModal] = useState(false)
   const [isCreatingStore, setIsCreatingStore] = useState(false)
+  
+  // Edit store modal state
+  const [showEditStoreModal, setShowEditStoreModal] = useState(false)
+  const [editingStore, setEditingStore] = useState(null)
+  const [isUpdatingStore, setIsUpdatingStore] = useState(false)
   
   // Enhanced product search state
   const [filteredProducts, setFilteredProducts] = useState([])
@@ -626,6 +636,78 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
     setShowStoreDropdown(true)
   }
 
+  // Edit customer handlers
+  const handleEditCustomer = (customer) => {
+    setEditingCustomer(customer)
+    setShowEditCustomerModal(true)
+  }
+
+  const handleUpdateCustomer = async (customerData) => {
+    setIsUpdatingCustomer(true)
+    try {
+      const response = await customerAPI.update(editingCustomer.id, customerData)
+      
+      if (response.data?.status === true || response.data?.data) {
+        // Update customers list
+        const updatedCustomers = customers.map(c => 
+          c.id === editingCustomer.id ? { ...c, ...customerData } : c
+        )
+        setCustomers(updatedCustomers)
+        
+        // Auto-select the updated customer
+        setFormData(prev => ({ ...prev, customer_id: editingCustomer.id }))
+        setCustomerSearch(customerData.name || customerData.phone)
+        
+        toast.success('Customer updated successfully!')
+        setShowEditCustomerModal(false)
+        setEditingCustomer(null)
+      } else {
+        throw new Error('Failed to update customer')
+      }
+    } catch (error) {
+      console.error('Customer update error:', error)
+      toast.error('Failed to update customer')
+    } finally {
+      setIsUpdatingCustomer(false)
+    }
+  }
+
+  // Edit store handlers
+  const handleEditStore = (store) => {
+    setEditingStore(store)
+    setShowEditStoreModal(true)
+  }
+
+  const handleUpdateStore = async (storeData) => {
+    setIsUpdatingStore(true)
+    try {
+      const response = await storeAPI.update(editingStore.id, storeData)
+      
+      if (response.data?.status === true || response.data?.data) {
+        // Update stores list
+        const updatedStores = stores.map(s => 
+          s.id === editingStore.id ? { ...s, ...storeData } : s
+        )
+        setStores(updatedStores)
+        
+        // Auto-select the updated store
+        setFormData(prev => ({ ...prev, store_id: editingStore.id }))
+        setStoreSearch(storeData.name)
+        
+        toast.success('Store updated successfully!')
+        setShowEditStoreModal(false)
+        setEditingStore(null)
+      } else {
+        throw new Error('Failed to update store')
+      }
+    } catch (error) {
+      console.error('Store update error:', error)
+      toast.error('Failed to update store')
+    } finally {
+      setIsUpdatingStore(false)
+    }
+  }
+
   // Package selection handlers
   const handlePackageSelect = (pkg) => {
     setSelectedPackage(pkg)
@@ -1050,7 +1132,20 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
                     value: customer.id,
                     label: customer.name || customer.customer_name,
                     description: customer.phone || customer.email ? `📞 ${customer.phone || 'N/A'} | 📧 ${customer.email || 'N/A'}` : null,
-                    subtext: customer.gst ? `GST: ${customer.gst}` : null
+                    subtext: customer.gst ? `GST: ${customer.gst}` : null,
+                    rightContent: (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleEditCustomer(customer)
+                        }}
+                        className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-full transition-all duration-200"
+                        title="Edit customer"
+                      >
+                        <FiEdit className="w-3.5 h-3.5" />
+                      </button>
+                    )
                   })) || []}
                   value={formData.customer_id || ''}
                   onChange={(value) => {
@@ -1076,7 +1171,20 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
                     value: store.id,
                     label: store.name || store.store_name,
                     description: store.mobile || store.phone || store.email ? `📞 ${store.mobile || store.phone || 'N/A'} | 📧 ${store.email || 'N/A'}` : null,
-                    subtext: store.address && store.city ? `📍 ${store.address}, ${store.city}` : null
+                    subtext: store.address && store.city ? `📍 ${store.address}, ${store.city}` : null,
+                    rightContent: (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleEditStore(store)
+                        }}
+                        className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-full transition-all duration-200"
+                        title="Edit store"
+                      >
+                        <FiEdit className="w-3.5 h-3.5" />
+                      </button>
+                    )
                   })) || []}
                   value={formData.store_id || ''}
                   onChange={(value) => {
@@ -1685,11 +1793,33 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
         onCustomerCreated={handleCreateCustomer}
       />
 
+      {/* Edit Customer Modal */}
+      <CustomerModal
+        isOpen={showEditCustomerModal}
+        onClose={() => {
+          setShowEditCustomerModal(false)
+          setEditingCustomer(null)
+        }}
+        onCustomerCreated={handleUpdateCustomer}
+        initialData={editingCustomer || {}}
+      />
+
       {/* Add Store Modal */}
       <StoreModal
         isOpen={showAddStoreModal}
         onClose={() => setShowAddStoreModal(false)}
         onStoreCreated={handleCreateStore}
+      />
+
+      {/* Edit Store Modal */}
+      <StoreModal
+        isOpen={showEditStoreModal}
+        onClose={() => {
+          setShowEditStoreModal(false)
+          setEditingStore(null)
+        }}
+        onStoreCreated={handleUpdateStore}
+        initialData={editingStore || {}}
       />
 
       {/* Bill Generation Dialog */}
