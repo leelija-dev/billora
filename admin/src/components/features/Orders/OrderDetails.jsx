@@ -172,10 +172,10 @@ const OrderDetails = ({ order, onUpdateOrder, onUpdatePayment, onPrintInvoice })
                     {item.quantity}
                   </td>
                   <td className="px-4 py-3 text-right text-sm text-gray-900 dark:text-white">
-                    ${parseFloat(item.price || 0).toFixed(2)}
+                    ₹{parseFloat(item.price || 0).toFixed(2)}
                   </td>
                   <td className="px-4 py-3 text-right text-sm font-medium text-gray-900 dark:text-white">
-                    ${(parseFloat(item.quantity || 0) * parseFloat(item.price || 0)).toFixed(2)}
+                    ₹{(parseFloat(item.quantity || 0) * parseFloat(item.price || 0)).toFixed(2)}
                   </td>
                 </tr>
               ))}

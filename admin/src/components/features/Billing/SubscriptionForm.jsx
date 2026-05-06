@@ -204,7 +204,7 @@ const SubscriptionForm = ({ plans, currentPlan, onSubmit, onCancel, isSubmitting
 
                 <div className="mt-2 flex items-baseline">
                   <span className="text-2xl font-bold text-gray-900 dark:text-white">
-                    ${displayPrice}
+                    ₹{displayPrice}
                   </span>
                   <span className="ml-1 text-sm text-gray-500 dark:text-gray-400">
                     /{displayInterval}

@@ -639,7 +639,7 @@ const Orders = () => {
         />
         <StatCard
           title="Revenue"
-          value={`$${stats.revenue.toLocaleString()}`}
+          value={`₹${stats.revenue.toLocaleString()}`}
           icon={FiDollarSign}
           color="from-green-500 to-emerald-500"
           change={8}

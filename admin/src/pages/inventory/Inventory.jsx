@@ -449,7 +449,7 @@ const Stock = () => {
                 />
                 <StatCard
                   title="Total Value"
-                  value={`$${stats.totalValue.toLocaleString()}`}
+                  value={`₹${stats.totalValue.toLocaleString()}`}
                   icon={FiDollarSign}
                   color="from-purple-500 to-pink-500"
                   delay={0.3}

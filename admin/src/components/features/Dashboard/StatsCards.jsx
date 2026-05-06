@@ -5,7 +5,7 @@ const StatsCards = ({ stats }) => {
   const cards = [
     {
       title: 'Total Revenue',
-      value: `$${stats.revenue?.toLocaleString() || 0}`,
+      value: `₹${stats.revenue?.toLocaleString() || 0}`,
       icon: FiDollarSign,
       change: stats.revenueChange || 12.5,
       color: 'bg-green-500',

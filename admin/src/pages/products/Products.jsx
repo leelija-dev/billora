@@ -535,7 +535,7 @@ const Products = () => {
             )}
           </motion.div>
           <div className="flex-1">
-            <p className="font-medium text-gray-900 dark:text-white">{value}</p>
+            <p className="font-medium text-gray-900 dark:text-white whitespace-normal">{value}</p>
             <p className="text-sm text-gray-500 dark:text-gray-400">SKU: {row.sku}</p>
 
             {/* Unit Information */}

@@ -14,7 +14,7 @@ const parseNumber = (value) => {
 // Helper function to safely format currency
 const formatCurrency = (value) => {
   const num = parseNumber(value)
-  return num.toFixed(2)
+  return `₹${num.toFixed(2)}`
 }
 
 // Helper function to truncate long product names for thermal paper

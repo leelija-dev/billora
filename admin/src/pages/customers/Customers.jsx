@@ -582,10 +582,10 @@ const Customers = () => {
                   />
                   <StatCard
                     title="Total Due"
-                    value={`$${stats.totalSpent.toFixed(2)}`}
+                    value={`₹${stats.totalSpent.toFixed(2)}`}
                     icon={FiDollarSign}
                     color="from-indigo-500 to-purple-500"
-                    subtitle={`Avg: $${(stats.totalSpent / (stats.total || 1)).toFixed(2)}/customer`}
+                    subtitle={`Avg: ₹${(stats.totalSpent / (stats.total || 1)).toFixed(2)}/customer`}
                     delay={0.5}
                   />
                 </>
