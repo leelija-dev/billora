@@ -8,6 +8,7 @@ import Select from '../../common/Select/Select'
 import { useCustomerStore } from '../../../store/customerStore'
 import { useAuthStore } from '../../../store/authStore'
 import toast from 'react-hot-toast'
+import { handlePhoneInput, handleMaxLength, validationRules } from '../../../utils/validators'
 
 const CustomerModal = ({ isOpen, onClose, onCustomerCreated, initialData = {} }) => {
   const { createCustomer, fetchCustomers } = useCustomerStore()
@@ -24,15 +25,53 @@ const CustomerModal = ({ isOpen, onClose, onCustomerCreated, initialData = {} })
   })
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState('')
+  const [fieldErrors, setFieldErrors] = useState({})
   const [showMoreDetails, setShowMoreDetails] = useState(false)
 
   const handleInputChange = (e) => {
     const { name, value } = e.target
+    
+    // Apply validation based on field type and check for errors
+    let error = ''
+    
+    if (name === 'phone') {
+      handlePhoneInput(e)
+      const phoneValue = e.target.value.replace(/\D/g, '')
+      if (phoneValue.length > 0 && phoneValue.length < 10) {
+        error = 'Phone number must be exactly 10 digits'
+      } else if (phoneValue.length === 10) {
+        error = ''
+      }
+    } else if (name === 'name') {
+      handleMaxLength(e, validationRules.productName.maxLength)
+      if (e.target.value.trim().length > 0 && e.target.value.trim().length < validationRules.productName.minLength) {
+        error = `Name must be at least ${validationRules.productName.minLength} characters`
+      }
+    } else if (name === 'email') {
+      handleMaxLength(e, 255)
+      if (e.target.value.trim().length > 0 && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e.target.value)) {
+        error = 'Please enter a valid email address'
+      }
+    } else if (name === 'address') {
+      handleMaxLength(e, 500)
+    } else if (name === 'city') {
+      handleMaxLength(e, 100)
+    } else if (name === 'gst') {
+      handleMaxLength(e, 50)
+    }
+    
     setFormData(prev => ({
       ...prev,
-      [name]: value
+      [name]: e.target.value
     }))
-    // Clear error when user starts typing
+    
+    // Update field-specific errors
+    setFieldErrors(prev => ({
+      ...prev,
+      [name]: error
+    }))
+    
+    // Clear general error when user starts typing
     if (error) setError('')
   }
 
@@ -41,10 +80,12 @@ const CustomerModal = ({ isOpen, onClose, onCustomerCreated, initialData = {} })
     
     if (!formData.phone?.trim()) {
       newErrors.phone = 'Phone number is required'
-    } else if (!/^[\d\s-()+]+$/.test(formData.phone)) {
-      newErrors.phone = 'Phone number is invalid'
+    } else if (!/^[0-9]{10}$/.test(formData.phone.replace(/\D/g, ''))) {
+      newErrors.phone = 'Phone number must be exactly 10 digits'
     }
 
+    // Set field errors and return validation result
+    setFieldErrors(newErrors)
     return Object.keys(newErrors).length === 0
   }
 
@@ -53,12 +94,6 @@ const CustomerModal = ({ isOpen, onClose, onCustomerCreated, initialData = {} })
     
     // Basic validation
     if (!validateForm()) {
-      setError('Please fix the errors in the form')
-      return
-    }
-    
-    if (!formData.phone.trim()) {
-      setError('Phone number is required')
       return
     }
 
@@ -106,6 +141,7 @@ const CustomerModal = ({ isOpen, onClose, onCustomerCreated, initialData = {} })
       status: 'active'
     })
     setError('')
+    setFieldErrors({})
     setShowMoreDetails(false)
     onClose()
   }
@@ -139,6 +175,7 @@ const CustomerModal = ({ isOpen, onClose, onCustomerCreated, initialData = {} })
             icon={FiPhone}
             type="tel"
             required
+            error={fieldErrors.phone}
           />
         </div>
 
@@ -174,6 +211,7 @@ const CustomerModal = ({ isOpen, onClose, onCustomerCreated, initialData = {} })
                   onChange={handleInputChange}
                   placeholder="Enter customer's full name"
                   icon={FiUser}
+                  error={fieldErrors.name}
                 />
 
                 <Input
@@ -184,6 +222,7 @@ const CustomerModal = ({ isOpen, onClose, onCustomerCreated, initialData = {} })
                   placeholder="Enter email address"
                   icon={FiMail}
                   type="email"
+                  error={fieldErrors.email}
                 />
               </div>
 

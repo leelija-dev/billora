@@ -7,6 +7,7 @@ import Modal from '../../common/Modal/Modal'
 import { storeAPI } from '../../../services/storeService'
 import toast from 'react-hot-toast'
 import { LucideStore } from 'lucide-react'
+import { handlePhoneInput, handleMaxLength, validationRules } from '../../../utils/validators'
 
 const StoreModal = ({ isOpen, onClose, onStoreCreated, initialData = {} }) => {
   const [formData, setFormData] = useState({
@@ -22,22 +23,70 @@ const StoreModal = ({ isOpen, onClose, onStoreCreated, initialData = {} }) => {
   })
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState('')
+  const [fieldErrors, setFieldErrors] = useState({})
   const [showMoreDetails, setShowMoreDetails] = useState(false)
 
   const handleInputChange = (e) => {
     const { name, value, type, files } = e.target
+    
     if (type === 'file') {
       setFormData(prev => ({
         ...prev,
         [name]: files[0] || null
       }))
     } else {
+      // Apply validation based on field type and check for errors
+      let error = ''
+      
+      if (name === 'mobile') {
+        handlePhoneInput(e)
+        const phoneValue = e.target.value.replace(/\D/g, '')
+        if (phoneValue.length > 0 && phoneValue.length < 10) {
+          error = 'Mobile number must be exactly 10 digits'
+        } else if (phoneValue.length === 10) {
+          error = ''
+        }
+      } else if (name === 'name') {
+        handleMaxLength(e, validationRules.productName.maxLength)
+        if (e.target.value.trim().length > 0 && e.target.value.trim().length < validationRules.productName.minLength) {
+          error = `Store name must be at least ${validationRules.productName.minLength} characters`
+        }
+      } else if (name === 'email') {
+        handleMaxLength(e, 255)
+        if (e.target.value.trim().length > 0 && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e.target.value)) {
+          error = 'Please enter a valid email address'
+        }
+      } else if (name === 'address') {
+        handleMaxLength(e, 500)
+      } else if (name === 'city') {
+        handleMaxLength(e, 100)
+      } else if (name === 'state') {
+        handleMaxLength(e, 100)
+      } else if (name === 'pincode') {
+        handleMaxLength(e, 6)
+        // Only allow numbers for pincode
+        e.target.value = e.target.value.replace(/[^0-9]/g, '')
+        if (e.target.value.length > 0 && e.target.value.length < 6) {
+          error = 'Pincode must be exactly 6 digits'
+        } else if (e.target.value.length === 6) {
+          error = ''
+        }
+      } else if (name === 'gst') {
+        handleMaxLength(e, 50)
+      }
+      
       setFormData(prev => ({
         ...prev,
-        [name]: value
+        [name]: e.target.value
+      }))
+      
+      // Update field-specific errors
+      setFieldErrors(prev => ({
+        ...prev,
+        [name]: error
       }))
     }
-    // Clear error when user starts typing
+    // Clear general error when user starts typing
     if (error) setError('')
   }
 
@@ -45,13 +94,21 @@ const StoreModal = ({ isOpen, onClose, onStoreCreated, initialData = {} }) => {
     e.preventDefault()
     
     // Basic validation
+    const newErrors = {}
+    
     if (!formData.name.trim()) {
-      setError('Store name is required')
-      return
+      newErrors.name = 'Store name is required'
     }
     
     if (!formData.mobile.trim()) {
-      setError('Mobile number is required')
+      newErrors.mobile = 'Mobile number is required'
+    } else if (!/^[0-9]{10}$/.test(formData.mobile.replace(/\D/g, ''))) {
+      newErrors.mobile = 'Mobile number must be exactly 10 digits'
+    }
+    
+    // Set field errors and check if form is valid
+    setFieldErrors(newErrors)
+    if (Object.keys(newErrors).length > 0) {
       return
     }
 
@@ -98,10 +155,10 @@ const StoreModal = ({ isOpen, onClose, onStoreCreated, initialData = {} }) => {
       city: '',
       state: '',
       pincode: '',
-
       status: true
     })
     setError('')
+    setFieldErrors({})
     setShowMoreDetails(false)
     onClose()
   }
@@ -134,6 +191,7 @@ const StoreModal = ({ isOpen, onClose, onStoreCreated, initialData = {} }) => {
             placeholder="Enter store name"
             required
             icon={LucideStore}
+            error={fieldErrors.name}
           />
 
           <Input
@@ -145,6 +203,7 @@ const StoreModal = ({ isOpen, onClose, onStoreCreated, initialData = {} }) => {
             required
             icon={FiPhone}
             type="tel"
+            error={fieldErrors.mobile}
           />
         </div>
 
@@ -181,6 +240,7 @@ const StoreModal = ({ isOpen, onClose, onStoreCreated, initialData = {} }) => {
                   placeholder="Enter email address"
                   icon={FiMail}
                   type="email"
+                  error={fieldErrors.email}
                 />
 
                 <Input
@@ -190,6 +250,7 @@ const StoreModal = ({ isOpen, onClose, onStoreCreated, initialData = {} }) => {
                   onChange={handleInputChange}
                   placeholder="Enter GST number"
                   icon={FiGlobe}
+                  error={fieldErrors.gst}
                 />
               </div>
 
@@ -230,6 +291,7 @@ const StoreModal = ({ isOpen, onClose, onStoreCreated, initialData = {} }) => {
                     placeholder="Enter pincode"
                     icon={FiMapPin}
                     type="text"
+                    error={fieldErrors.pincode}
                   />
                 </div>
               </div>
