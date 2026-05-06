@@ -193,7 +193,21 @@ export const useInvoiceStore = create((set, get) => ({
       // Handle the actual response structure from backend
       const responseData = response.data
       if (responseData?.status === true) {
-        // Success case - return the response data structure
+        // Success case - notify customer store to clear cache
+        try {
+          const broadcastChannel = new BroadcastChannel('app-cache-invalidation')
+          broadcastChannel.postMessage({
+            type: 'invoice-created',
+            data: {
+              customer_id: invoiceData.customer_id,
+              timestamp: Date.now()
+            }
+          })
+          broadcastChannel.close()
+        } catch (error) {
+          console.log('BroadcastChannel not supported, skipping cross-module cache invalidation')
+        }
+        
         set({ loading: false })
         return { success: true, data: responseData }
       } else {
@@ -219,6 +233,22 @@ export const useInvoiceStore = create((set, get) => ({
         invoices: state.invoices.map((inv) => (inv.id === id ? response.data : inv)),
         loading: false,
       }))
+      
+      // Notify customer store to clear cache
+      try {
+        const broadcastChannel = new BroadcastChannel('app-cache-invalidation')
+        broadcastChannel.postMessage({
+          type: 'invoice-updated',
+          data: {
+            customer_id: invoiceData.customer_id,
+            timestamp: Date.now()
+          }
+        })
+        broadcastChannel.close()
+      } catch (error) {
+        console.log('BroadcastChannel not supported, skipping cross-module cache invalidation')
+      }
+      
       toast.success('Invoice updated successfully')
       return { success: true, data: response.data }
     } catch (error) {
@@ -232,12 +262,32 @@ export const useInvoiceStore = create((set, get) => ({
   deleteInvoice: async (id) => {
     set({ loading: true })
     try {
+      // Get invoice data before deletion for customer_id
+      const currentState = get()
+      const invoiceToDelete = currentState.invoices.find(inv => inv.id === id)
+      
       await invoiceAPI.delete(id)
       set((state) => ({
         invoices: state.invoices.filter((inv) => inv.id !== id),
         totalInvoices: state.totalInvoices - 1,
         loading: false,
       }))
+      
+      // Notify customer store to clear cache
+      try {
+        const broadcastChannel = new BroadcastChannel('app-cache-invalidation')
+        broadcastChannel.postMessage({
+          type: 'invoice-deleted',
+          data: {
+            customer_id: invoiceToDelete?.customer_id,
+            timestamp: Date.now()
+          }
+        })
+        broadcastChannel.close()
+      } catch (error) {
+        console.log('BroadcastChannel not supported, skipping cross-module cache invalidation')
+      }
+      
       toast.success('Invoice deleted successfully')
       return { success: true }
     } catch (error) {
