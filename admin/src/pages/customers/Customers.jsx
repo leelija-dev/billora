@@ -22,9 +22,11 @@ import {
   FiStar,
   FiArrowLeft,
   FiAlertCircle,
+  FiCreditCard,
 } from "react-icons/fi";
 import { motion, AnimatePresence } from "framer-motion";
 import { useCustomerStore } from "../../store/customerStore";
+import { customerAPI } from "../../services/customerService";
 import Button from "../../components/common/Button/Button";
 import Input from "../../components/common/Input/Input";
 import Table from "../../components/common/Table/Table";
@@ -56,6 +58,7 @@ const Customers = () => {
 
   const [showAddForm, setShowAddForm] = useState(false);
   const [showEditForm, setShowEditForm] = useState(false);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [searchTerm, setSearchTerm] = useState(filters.search || "");
@@ -66,6 +69,7 @@ const Customers = () => {
   const [formSubmitting, setFormSubmitting] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
   const [pageLoading, setPageLoading] = useState(false);
+  const [paymentAmount, setPaymentAmount] = useState("");
 
   useEffect(() => {
     const fetchData = async () => {
@@ -118,7 +122,46 @@ const Customers = () => {
   const handleCancelForm = () => {
     setShowAddForm(false);
     setShowEditForm(false);
+    setShowPaymentModal(false);
     setSelectedCustomer(null);
+    setPaymentAmount("");
+  };
+
+  const handlePaymentClick = (customer) => {
+    setSelectedCustomer(customer);
+    setShowPaymentModal(true);
+    setPaymentAmount("");
+  };
+
+  const handlePaymentSubmit = async () => {
+    if (!selectedCustomer || !paymentAmount || parseFloat(paymentAmount) <= 0) {
+      return;
+    }
+
+    try {
+      setFormSubmitting(true);
+      await customerAPI.makeDuePayment(selectedCustomer.id, { due_payment: paymentAmount });
+      
+      // Clear cache to force fresh data fetch
+      const { clearCache } = useCustomerStore.getState();
+      clearCache();
+      
+      // Fetch fresh data with current page and search
+      await fetchCustomers(currentPage, filters.search);
+      
+      // Close modal and reset state
+      setShowPaymentModal(false);
+      setSelectedCustomer(null);
+      setPaymentAmount("");
+      
+      // Show success message (you might want to use a toast notification)
+      console.log("Payment processed successfully");
+    } catch (error) {
+      console.error("Failed to process payment:", error);
+      // Handle error (show toast notification, etc.)
+    } finally {
+      setFormSubmitting(false);
+    }
   };
 
   const handleSubmitCustomer = async (customerData) => {
@@ -382,6 +425,15 @@ const Customers = () => {
             title="View customer details"
           >
             <FaUsers className="w-4 h-4" />
+          </motion.button>
+          <motion.button
+            whileHover={{ scale: 1.1, rotate: 5 }}
+            whileTap={{ scale: 0.9 }}
+            onClick={() => handlePaymentClick(row)}
+            className="p-2 text-purple-600 hover:bg-purple-50 dark:text-purple-400 dark:hover:bg-purple-900/20 rounded-lg transition-colors"
+            title="Make payment"
+          >
+            <FiCreditCard className="w-4 h-4" />
           </motion.button>
           <motion.button
             whileHover={{ scale: 1.1, rotate: 5 }}
@@ -816,6 +868,105 @@ const Customers = () => {
           </>
         )}
       </motion.div>
+      
+      {/* Payment Modal */}
+      <AnimatePresence>
+        {showPaymentModal && selectedCustomer && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+            onClick={() => setShowPaymentModal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              transition={{ type: "spring", stiffness: 200 }}
+              className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full p-6"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="text-center">
+                <motion.div
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{
+                    delay: 0.1,
+                    type: "spring",
+                    stiffness: 200,
+                  }}
+                  className="w-16 h-16 bg-purple-100 dark:bg-purple-900/20 rounded-full flex items-center justify-center mx-auto mb-4"
+                >
+                  <FiCreditCard className="w-8 h-8 text-purple-600 dark:text-purple-400" />
+                </motion.div>
+                
+                <motion.h3
+                  initial={{ y: 10, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ delay: 0.2 }}
+                  className="text-xl font-bold text-gray-900 dark:text-white mb-2"
+                >
+                  Make Payment
+                </motion.h3>
+                
+                <motion.p
+                  initial={{ y: 10, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ delay: 0.3 }}
+                  className="text-gray-600 dark:text-gray-400 mb-6"
+                >
+                  Customer: <span className="font-semibold">{selectedCustomer.name}</span>
+                  <br />
+                  Current due amount: <span className="font-semibold text-red-600">
+                    ${parseFloat(selectedCustomer.due_amount || 0).toFixed(2)}
+                  </span>
+                </motion.p>
+                
+                <motion.div
+                  initial={{ y: 10, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ delay: 0.4 }}
+                  className="space-y-4"
+                >
+                  <Input
+                    type="number"
+                    label="Payment Amount"
+                    placeholder="Enter amount"
+                    value={paymentAmount}
+                    onChange={(e) => setPaymentAmount(e.target.value)}
+                    min="0"
+                    max={selectedCustomer.due_amount || 0}
+                    step="0.01"
+                  />
+                  
+                  <div className="flex space-x-3">
+                    <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="flex-1">
+                      <Button
+                        variant="outline"
+                        onClick={() => setShowPaymentModal(false)}
+                        disabled={formSubmitting}
+                      >
+                        Cancel
+                      </Button>
+                    </motion.div>
+                    <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="flex-1">
+                      <Button
+                        onClick={handlePaymentSubmit}
+                        disabled={!paymentAmount || parseFloat(paymentAmount) <= 0 || formSubmitting}
+                        loading={formSubmitting}
+                      >
+                        {formSubmitting ? 'Processing...' : 'Pay Now'}
+                      </Button>
+                    </motion.div>
+                  </div>
+                </motion.div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+      
       {/* Delete Confirmation Modal */}
       <AnimatePresence>
         {showDeleteConfirm && (
