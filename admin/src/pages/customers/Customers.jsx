@@ -35,7 +35,7 @@ import Pagination from "../../components/common/Pagination/Pagination";
 import EmptyState from "../../components/common/EmptyState/EmptyState";
 import CustomerForm from "../../components/features/Customers/CustomerForm";
 import Select from "../../components/common/Select/Select";
-import { FaUser, FaUsers } from "react-icons/fa";
+import { FaRupeeSign, FaUser, FaUsers } from "react-icons/fa";
 
 const Customers = () => {
   const navigate = useNavigate();
@@ -388,9 +388,9 @@ const Customers = () => {
       accessor: "due_amount",
       cell: (value) => (
         <motion.div whileHover={{ scale: 1.05 }} className="flex items-center">
-          <FiDollarSign className="w-3 h-3 mr-1 text-gray-400" />
+          <FaRupeeSign className="w-3 h-3 mr-1 text-gray-400" />
           <span className="text-sm font-semibold text-gray-900 dark:text-white">
-            ${parseFloat(value || 0).toFixed(2)}
+            {parseFloat(value || 0).toFixed(2)}
           </span>
         </motion.div>
       ),
@@ -919,7 +919,7 @@ const Customers = () => {
                   Customer: <span className="font-semibold">{selectedCustomer.name}</span>
                   <br />
                   Current due amount: <span className="font-semibold text-red-600">
-                    ${parseFloat(selectedCustomer.due_amount || 0).toFixed(2)}
+                    ₹{parseFloat(selectedCustomer.due_amount || 0).toFixed(2)}
                   </span>
                 </motion.p>
                 
