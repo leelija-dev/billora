@@ -43,7 +43,7 @@ const Reports = () => {
   const [refreshing, setRefreshing] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
   const [showExportDropdown, setShowExportDropdown] = useState(false)
-  const [selectedFilter, setSelectedFilter] = useState('currentMonth')
+  const [selectedFilter, setSelectedFilter] = useState('30days')
 
   // Fetch today's reports by default
   const fetchReports = async (start = '', end = '') => {
@@ -104,9 +104,9 @@ const Reports = () => {
     }
   }
 
-  // Initialize with current month reports
+  // Initialize with last 30 days reports
   useEffect(() => {
-    handleQuickFilter('currentMonth')
+    handleQuickFilter('30days')
   }, [])
 
   // Apply search filter
