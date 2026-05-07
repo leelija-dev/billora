@@ -991,13 +991,19 @@ const handleCreateCustomer = async (customerData) => {
       const response = await onSubmit(submissionData)
       console.log('📄 Invoice submitted successfully:', response)
 
-      // Get the created invoice data from response
-      const createdInvoice = response?.data?.data || response?.data || submissionData
-      setCreatedInvoiceData(createdInvoice)
-      setGeneratedBillData(submissionData)
+      // Check if invoice was actually created successfully
+      if (response?.status === true || response?.success) {
+        // Get the created invoice data from response
+        const createdInvoice = response?.data?.data || response?.data || submissionData
+        setCreatedInvoiceData(createdInvoice)
+        setGeneratedBillData(submissionData)
 
-      // Show print choice dialog
-      setShowBillDialog(true)
+        // Show print choice dialog only after successful bill generation
+        setShowBillDialog(true)
+      } else {
+        // Show error message if invoice creation failed
+        toast.error(response?.message || 'Failed to generate invoice. Please try again.')
+      }
     } catch (error) {
       console.error('Error generating invoice:', error)
       toast.error('Failed to generate invoice. Please try again.')
