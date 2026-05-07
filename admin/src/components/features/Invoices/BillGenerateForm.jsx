@@ -21,6 +21,7 @@ import { useCustomerStore } from '../../../store/customerStore'
 import toast from 'react-hot-toast'
 import { LucideStore } from 'lucide-react'
 import { printA4Invoice, printThermalInvoice } from '../../../templates/PrintUtils'
+import { FaRupeeSign } from 'react-icons/fa'
 
 // Cache for bill generate data
 let billGenerateCache = null
@@ -1368,8 +1369,8 @@ const handleCreateCustomer = async (customerData) => {
                                 </div>
                               </div>
                               <div className="text-right ml-4">
-                                <div className="font-semibold text-gray-900 dark:text-white">
-                                  ¥{parseFloat(pkg.package_price || 0).toFixed(2)}
+                                <div className="font-semibold text-gray-900 dark:text-white flex justify-center items-center">
+                                  <FaRupeeSign className='mt-2 text-[13px] mb-[4px] me-[2px]'/>{parseFloat(pkg.package_price || 0).toFixed(2)}
                                 </div>
                               </div>
                             </div>
@@ -1405,8 +1406,8 @@ const handleCreateCustomer = async (customerData) => {
                         </p>
                       </div>
                       <div className="text-right">
-                        <p className="text-lg font-bold text-primary-600 dark:text-primary-400">
-                          ¥{parseFloat(selectedPackage.package_price || 0).toFixed(2)}
+                        <p className="text-lg font-bold text-primary-600 dark:text-primary-400 flex gap-1 justify-end items-center">
+                          <FaRupeeSign className='text-[15px]'/>{parseFloat(selectedPackage.package_price || 0).toFixed(2)}
                         </p>
                       </div>
                     </div>
