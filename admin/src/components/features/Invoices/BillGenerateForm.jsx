@@ -118,6 +118,16 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
   // Add store modal state
   const [showAddStoreModal, setShowAddStoreModal] = useState(false)
   const [isCreatingStore, setIsCreatingStore] = useState(false)
+  const [newStoreData, setNewStoreData] = useState({
+    name: '',
+    email: '',
+    mobile: '',
+    address: '',
+    city: '',
+    state: '',
+    pincode: '',
+    gst: ''
+  })
 
   // Edit store modal state
   const [showEditStoreModal, setShowEditStoreModal] = useState(false)
@@ -1265,6 +1275,22 @@ const handleCreateCustomer = async (customerData) => {
                   required
                   disabled={dataFetchError}
                   onCreateNew={(searchTerm) => {
+                    // Detect if search term is a phone number (contains digits) or name/address
+                    const isPhoneNumber = /^\d[\d\s-]*$/.test(searchTerm.trim())
+                    
+                    if (isPhoneNumber) {
+                      setNewStoreData(prev => ({ 
+                        ...prev, 
+                        mobile: searchTerm.trim(),
+                        name: '' 
+                      }))
+                    } else {
+                      setNewStoreData(prev => ({ 
+                        ...prev, 
+                        name: searchTerm.trim(),
+                        mobile: '' 
+                      }))
+                    }
                     setShowAddStoreModal(true)
                   }}
                 />
@@ -1885,8 +1911,22 @@ const handleCreateCustomer = async (customerData) => {
       {/* Add Store Modal */}
       <StoreModal
         isOpen={showAddStoreModal}
-        onClose={() => setShowAddStoreModal(false)}
+        onClose={() => {
+          setShowAddStoreModal(false)
+          // Reset new store data when modal closes
+          setNewStoreData({
+            name: '',
+            email: '',
+            mobile: '',
+            address: '',
+            city: '',
+            state: '',
+            pincode: '',
+            gst: ''
+          })
+        }}
         onStoreCreated={handleCreateStore}
+        initialData={newStoreData}
       />
 
       {/* Edit Store Modal */}

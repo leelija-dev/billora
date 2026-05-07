@@ -27,24 +27,51 @@ const StoreModal = ({ isOpen, onClose, onStoreCreated, initialData = {} }) => {
   const [fieldErrors, setFieldErrors] = useState({})
   const [showMoreDetails, setShowMoreDetails] = useState(false)
 
-  // Update form data when initialData changes (for editing)
+  // Update form data when initialData changes (for editing or prefill)
   useEffect(() => {
-    if (isOpen && initialData && Object.keys(initialData).length > 0) {
-      setFormData({
-        name: initialData.name || '',
-        gst: initialData.gst || '',
-        email: initialData.email || '',
-        mobile: initialData.mobile || '',
-        address: initialData.address || '',
-        city: initialData.city || '',
-        state: initialData.state || '',
-        pincode: initialData.pincode || '',
-        status: initialData.status !== undefined ? initialData.status : true
-      })
-      setFieldErrors({})
-      setError('')
+    if (isOpen) {
+      const hasPrefillData = initialData.name || initialData.mobile || initialData.email || initialData.address
+      
+      if (initialData && Object.keys(initialData).length > 0) {
+        setFormData({
+          name: initialData.name || '',
+          gst: initialData.gst || '',
+          email: initialData.email || '',
+          mobile: initialData.mobile || '',
+          address: initialData.address || '',
+          city: initialData.city || '',
+          state: initialData.state || '',
+          pincode: initialData.pincode || '',
+          status: initialData.status !== undefined ? initialData.status : true
+        })
+        setFieldErrors({})
+        setError('')
+        
+        // Auto-expand more details for edit mode or if we have prefill data
+        if (isEditMode || hasPrefillData) {
+          setShowMoreDetails(true)
+        } else {
+          setShowMoreDetails(false)
+        }
+      } else {
+        // Reset form for new store
+        setFormData({
+          name: '',
+          gst: '',
+          email: '',
+          mobile: '',
+          address: '',
+          city: '',
+          state: '',
+          pincode: '',
+          status: true
+        })
+        setFieldErrors({})
+        setError('')
+        setShowMoreDetails(false)
+      }
     }
-  }, [initialData, isOpen])
+  }, [initialData, isOpen, isEditMode])
 
   const handleInputChange = (e) => {
     const { name, value, type, files } = e.target
