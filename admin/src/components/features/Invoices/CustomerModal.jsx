@@ -39,6 +39,9 @@ const CustomerModal = ({ isOpen, onClose, onCustomerCreated, initialData = {} })
       initialDataSetRef.current = false
       
       if (initialData && Object.keys(initialData).length > 0 && !initialDataSetRef.current) {
+        // For edit mode or pre-filled new customer data
+        const hasPrefillData = initialData.name || initialData.phone || initialData.email || initialData.address
+        
         setFormData({
           name: initialData.name || '',
           email: initialData.email || '',
@@ -52,8 +55,8 @@ const CustomerModal = ({ isOpen, onClose, onCustomerCreated, initialData = {} })
         setError('')
         initialDataSetRef.current = true
         
-        // Auto-expand more details for edit mode
-        if (isEditMode) {
+        // Auto-expand more details for edit mode or if we have prefill data beyond just phone
+        if (isEditMode || (hasPrefillData && (initialData.name || initialData.address))) {
           setShowMoreDetails(true)
         } else {
           setShowMoreDetails(false)
@@ -210,7 +213,7 @@ const handleSubmit = async (e) => {
         toast.success('Customer created successfully!')
         
         // IMPORTANT: Get the complete customer data from the API response
-        // The API might return it in result.data or result.data.data
+        // The customer store now returns data field with the API response
         let createdCustomer = result.data?.data || result.data
         
         // Ensure we have a complete customer object with ID
@@ -224,13 +227,11 @@ const handleSubmit = async (e) => {
         if (createdCustomer && createdCustomer.id) {
           onCustomerCreated(createdCustomer)
         } else {
-          // Fallback: combine the request data with the ID from response
-          const customerWithId = { 
-            ...customerData, 
-            id: result.data?.id || createdCustomer?.id || Date.now() // temporary ID
-          }
-          console.warn('Using fallback customer object:', customerWithId)
-          onCustomerCreated(customerWithId)
+          // Log the issue for debugging
+          console.error('No valid customer ID found in response:', result)
+          console.error('Created customer object:', createdCustomer)
+          toast.error('Customer created but ID is missing. Please try again.')
+          return // Don't close modal, let user try again
         }
         
         handleClose()

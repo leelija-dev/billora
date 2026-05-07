@@ -1211,7 +1211,22 @@ const handleCreateCustomer = async (customerData) => {
                   required
                   disabled={dataFetchError}
                   onCreateNew={(searchTerm) => {
-                    setNewCustomerData(prev => ({ ...prev, name: searchTerm }))
+                    // Detect if search term is a phone number (contains digits) or name
+                    const isPhoneNumber = /^\d[\d\s-]*$/.test(searchTerm.trim())
+                    
+                    if (isPhoneNumber) {
+                      setNewCustomerData(prev => ({ 
+                        ...prev, 
+                        phone: searchTerm.trim(),
+                        name: '' 
+                      }))
+                    } else {
+                      setNewCustomerData(prev => ({ 
+                        ...prev, 
+                        name: searchTerm.trim(),
+                        phone: '' 
+                      }))
+                    }
                     setShowAddCustomerModal(true)
                   }}
                 />
@@ -1840,9 +1855,20 @@ const handleCreateCustomer = async (customerData) => {
       {/* Add Customer Modal */}
       <CustomerModal
         isOpen={showAddCustomerModal}
-        onClose={() => setShowAddCustomerModal(false)}
+        onClose={() => {
+          setShowAddCustomerModal(false)
+          // Reset new customer data when modal closes
+          setNewCustomerData({
+            name: '',
+            email: '',
+            phone: '',
+            address: '',
+            city: '',
+            gst: ''
+          })
+        }}
         onCustomerCreated={handleCreateCustomer}
-        initialData={emptyInitialData}
+        initialData={newCustomerData}
       />
 
       {/* Edit Customer Modal */}
