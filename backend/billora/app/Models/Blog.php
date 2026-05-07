@@ -25,12 +25,8 @@ class Blog extends Model
     ];
  public function tags()
 {
-    return $this->belongsToMany(
-        Tags::class,
-        'blog_tags',
-        'blog_id',
-        'tag_id'
-    );
+    return $this->hasMany(
+        BlogTags::class,'blog_id');
 }
 
 public function categories()

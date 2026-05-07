@@ -582,6 +582,17 @@
         .form-grid {
             gap: 25px;
         }
+
+        .tag-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .tag-row .form-input {
+            flex: 1;
+        }
     </style>
 
     {{-- @include('admin.sidebar') --}}
@@ -609,7 +620,7 @@
                 @csrf
 
                 <!-- Plan Details -->
-                <div class="form-title">Plan Details</div>
+                <div class="form-title">Blog Details</div>
 
                 <div class="form-grid">
                     <!-- Plan Name -->
@@ -668,20 +679,29 @@
                         <label class="form-label">
                             Tags<span>*</span>
                         </label>
-                        <div>
+                        <div id="tagsWrapper" class="space-y-3">
+                            <div class="tag-row flex items-center gap-3">
 
-                            <select name="tags_id[]" class="form-select" multiple required id="tags">
-                                @foreach ($tags as $tag)
-                                    <option value="{{ $tag->id }}"
-                                        {{ in_array($tag->id, old('tags_id', [])) ? 'selected' : '' }}>
-                                        {{ $tag->name }}
-                                    </option>
-                                @endforeach
-                            </select>
-                            @error('tags_id')
-                                <span class="text-danger">{{ $message }}</span>
+                                <input type="text" name="tags[]" placeholder="Enter tag"
+                                    class="w-full rounded-xl border border-gray-300 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500">
+
+                                <button type="button"
+                                    class="removeTag px-4 py-3 rounded-xl bg-red-500 text-white-700 hover:bg-red-300 transition" style="color: white;">
+                                    Remove
+                                </button>
+
+                            </div>
+                            @error('tags')
+                                <span class="text-danger" style="color: red">{{ $message }}</span>
                             @enderror
+                        </div>
 
+                        <!-- Add Button -->
+                        <div class="mt-4">
+                            <button type="button" id="addTag"
+                                class="px-6 py-3 rounded-xl bg-blue-600 text-white font-medium hover:bg-blue-700 transition">
+                                Add Tag
+                            </button>
                         </div>
                     </div>
                     <!-- Price and Currency -->
@@ -714,7 +734,7 @@
                     </div>
                     <div class="form-group">
                         <label class="form-label">
-                            Feature Image<span>*</span>
+                            Feature Image
                         </label>
 
                         <div>
@@ -746,8 +766,8 @@
                         </label>
 
 
-                        <input type="text" name="keywords" class="form-input currency-input" placeholder="Enter keywords"
-                            value="{{ old('keywords') }}" required>
+                        <input type="text" name="keywords" class="form-input currency-input"
+                            placeholder="Enter keywords" value="{{ old('keywords') }}" required>
                         @error('keywords')
                             <span class="text-danger">{{ $message }}</span>
                         @enderror
@@ -775,14 +795,14 @@
 
                 </div>
                 <div class="form-group">
-                    <label class="form-label">Content</label>
+                    <label class="form-label">Content<span>*</span></label>
                     <textarea name="content" id="description" class="form-textarea" placeholder="Enter content..">{{ old('content') }}</textarea>
 
                     @error('content')
                         <span class="text-danger" style="color: red">{{ $message }}</span>
                     @enderror
                 </div>
-                
+
                 <!-- FAQ Heading -->
                 <div class="mt-4 flex items-center">
                     <div class="flex-grow border-t border-gray-300"></div>
@@ -794,7 +814,7 @@
                     <div class="flex-grow border-t border-gray-300"></div>
                 </div>
 
-               
+
 
                 <!-- FAQ Container -->
                 <div id="faq-container" class="mt-4 space-y-4">
@@ -817,6 +837,9 @@
 
                             <input type="text" name="question[]" class="form-input" placeholder="Enter question..">
                         </div>
+                        @error('question')
+                            <span class="text-danger" style="color: red">{{ $message }}</span>
+                        @enderror
 
                         <!-- Answer -->
                         <div class="form-group mt-2">
@@ -824,11 +847,13 @@
 
                             <textarea name="answer[]" class="form-textarea faq-answer" placeholder="Enter answer.."></textarea>
                         </div>
-
+                        @error('answer')
+                            <span class="text-danger" style="color: red">{{ $message }}</span>
+                        @enderror
                     </div>
 
                 </div>
-                 <!-- Add FAQ Button -->
+                <!-- Add FAQ Button -->
                 <div class="mt-4">
                     <button type="button" onclick="addFaq()"
                         class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg">
@@ -917,7 +942,6 @@
             });
 
         });
-        
     </script>
     <script>
         document.addEventListener("DOMContentLoaded", function() {
@@ -1101,6 +1125,41 @@
                 placeholder: 'Enter answer..'
             });
 
+        });
+    </script>
+    <script>
+        document.getElementById('addTag').addEventListener('click', function() {
+
+            let wrapper = document.getElementById('tagsWrapper');
+
+            let div = document.createElement('div');
+
+            div.className = "tag-row flex items-center gap-3";
+
+            div.innerHTML = `
+            <input 
+                type="text" 
+                name="tags[]" 
+                placeholder="Enter tag"
+                class="w-full rounded-xl border border-gray-300 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+
+            <button 
+                type="button" 
+                class="removeTag px-4 py-3 rounded-xl bg-red-500 text-white-100 hover:bg-red-300 transition" style="color: white;"
+            >
+                Remove
+            </button>
+        `;
+
+            wrapper.appendChild(div);
+        });
+
+        // Remove Tag
+        document.addEventListener('click', function(e) {
+            if (e.target.classList.contains('removeTag')) {
+                e.target.parentElement.remove();
+            }
         });
     </script>
 @endsection

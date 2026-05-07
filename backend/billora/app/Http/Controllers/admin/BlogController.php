@@ -19,6 +19,7 @@ class BlogController extends Controller
 
         $blogs = Blog::with(['categories','tags','faqs','user'])
             ->where('status', true)
+            ->orderBy('created_at', 'desc')
             // Search
             ->when($search, function ($query) use ($search) {
 
@@ -48,17 +49,16 @@ class BlogController extends Controller
             })
 
             ->latest()
-            ->orderBy('created_at', 'desc')
             ->paginate(6);
 
         $categories = Category::where('status', true)->get();
-        $tags = Tags::where('status', true)->get();
+        // $tags = Tags::where('status', true)->get();
         return response()->json([
             'status' => true,
             'message' => 'All Blogs list with pagination',
             'categories' => $categories,
             'blogs' => $blogs,
-            'tags' => $tags
+            // 'tags' => $tags
         ]);
 
     } catch (\Exception $e) {

@@ -41,8 +41,8 @@ class BlogController extends Controller
     public function create()
     {
         $categories = Category::where('status', true)->get();
-        $tags = Tags::where('status', true)->get();
-        return view('admin.blogs.create', compact('categories', 'tags'));
+        // $tags = Tags::where('status', true)->get();
+        return view('admin.blogs.create', compact('categories'));
     }
 
     public function store(Request $request)
@@ -63,8 +63,8 @@ class BlogController extends Controller
             'category_id'         => 'nullable|array',
             'category_id.*'       => 'exists:categories,id',
 
-            'tags_id'             => 'nullable|array',
-            'tags_id.*'           => 'exists:tags,id',
+            // 'tags'             => 'nullable|array',
+            'tags.*'           => 'nullable|string',
             'question.*'          => 'nullable|string',
             'answer.*'            => 'nullable|string',
 
@@ -151,14 +151,15 @@ class BlogController extends Controller
 
             //Save Tags
 
-            if (!empty($validated['tags_id'])) {
+            if (!empty($validated['tags'])) {
 
                 $tagData = [];
 
-                foreach ($validated['tags_id'] as $tagId) {
+                foreach ($validated['tags'] as $tagName) {
                     $tagData[] = [
                         'blog_id' => $blog->id,
-                        'tag_id'  => $tagId,
+                        'tag_name'  => $tagName,
+                        'created_at' => now()
                     ];
                 }
 
@@ -167,19 +168,26 @@ class BlogController extends Controller
 
             //FAQ add
 
-            if (!empty($validated['question'])) {
-
+           if (!empty($validated['question'])) {
+                Log::info('FAQ data is not empty',$validated['question']);
                 $faqData = [];
-
+                
                 foreach ($validated['question'] as $key => $question) {
+                     if (
+                            empty(trim($question ?? '')) &&
+                            empty(trim($answer ?? ''))
+                        ) {
+                            continue;
+                        }
                     $faqData[] = [
                         'blog_id'     => $blog->id,
                         'question'    => $question,
                         'answer'      => $validated['answer'][$key],
                     ];
                 }
-
+                  if (!empty($faqData)) {
                 BlogFaq::insert($faqData);
+                  }
             }
             DB::commit();
 
@@ -207,8 +215,8 @@ class BlogController extends Controller
     {
         $blog =  Blog::with(['categories', 'tags','faqs'])->withTrashed()->findOrFail($id);
         $categories = Category::where('status', true)->get();
-        $tags = Tags::where('status', true)->get();
-        return view('admin.blogs.edit', compact('blog', 'categories', 'tags'));
+        $tags = BlogTags::where('blog_id', $id)->get();
+        return view('admin.blogs.edit', compact('blog', 'categories','tags'));
     }
     public function update(Request $request, $id)
     {
@@ -230,8 +238,8 @@ class BlogController extends Controller
             'category_id'         => 'nullable|array',
             'category_id.*'       => 'exists:categories,id',
 
-            'tags_id'             => 'nullable|array',
-            'tags_id.*'           => 'exists:tags,id',
+            // 'tags'             => 'nullable|array',
+            'tags.*'           => 'nullable|string',
             'question'   => 'nullable|array',
             'question.*' => 'nullable|string',
 
@@ -318,15 +326,15 @@ class BlogController extends Controller
 
             BlogTags::where('blog_id', $blog->id)->delete();
 
-            if (!empty($validated['tags_id'])) {
+            if (!empty($validated['tags'])) {
 
                 $tagData = [];
 
-                foreach ($validated['tags_id'] as $tagId) {
+                foreach ($validated['tags'] as $tagName) {
 
                     $tagData[] = [
                         'blog_id' => $blog->id,
-                        'tag_id'  => $tagId,
+                        'tag_name'  => $tagName,
                     ];
                 }
 
@@ -340,14 +348,21 @@ class BlogController extends Controller
                 $faqData = [];
 
                 foreach ($validated['question'] as $key => $question) {
+                    if (
+                            empty(trim($question ?? '')) &&
+                            empty(trim($answer ?? ''))
+                        ) {
+                            continue;
+                        }
                     $faqData[] = [
                         'blog_id'     => $blog->id,
                         'question'    => $question,
                         'answer'      => $validated['answer'][$key],
                     ];
                 }
-
+                if(!empty($faqData)){
                 BlogFaq::insert($faqData);
+                }
             }
             DB::commit();
 

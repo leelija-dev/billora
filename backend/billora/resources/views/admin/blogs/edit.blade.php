@@ -675,30 +675,61 @@
 
                         </div>
                     </div>
+
                     <div class="form-group">
                         <label class="form-label">
                             Tags<span>*</span>
                         </label>
-                        <div>
-                            <select name="tags_id[]" class="form-select" multiple required id="tags">
 
-                                @php
-                                    $selectedTags = old('tags_id', $blog->tags->pluck('id')->toArray());
-                                @endphp
+                        <div id="tagsWrapper" class="space-y-3">
+
+                            @if (isset($tags) && count($tags) > 0)
 
                                 @foreach ($tags as $tag)
-                                    <option value="{{ $tag->id }}"
-                                        {{ in_array($tag->id, $selectedTags) ? 'selected' : '' }}>
-                                        {{ $tag->name }}
-                                    </option>
+                                    <div class="tag-row flex items-center gap-3">
+
+                                        <input type="text" name="tags[]" value="{{ $tag->tag_name ? $tag->tag_name : '' }}"
+                                            placeholder="Enter tag"
+                                            class="w-full rounded-xl border border-gray-300 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500">
+
+                                        <button type="button"
+                                            class="removeTag px-4 py-3 rounded-xl bg-red-500 hover:bg-red-400 transition text-white">
+                                            Remove
+                                        </button>
+
+                                    </div>
                                 @endforeach
+                            @else
+                                <div class="tag-row flex items-center gap-3">
 
-                            </select>
+                                    <input type="text" name="tags[]" placeholder="Enter tag"
+                                        class="w-full rounded-xl border border-gray-300 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500">
 
-                            @error('tags_id')
-                                <span class="text-danger">{{ $message }}</span>
-                            @enderror
+                                    <button type="button"
+                                        class="removeTag px-4 py-3 rounded-xl bg-red-500 hover:bg-red-400 transition text-white">
+                                        Remove
+                                    </button>
+
+                                </div>
+
+                            @endif
+
                         </div>
+
+                        @error('tags')
+                            <span class="text-danger" style="color:red">
+                                {{ $message }}
+                            </span>
+                        @enderror
+
+                        <!-- Add Button -->
+                        <div class="mt-4">
+                            <button type="button" id="addTag"
+                                class="px-6 py-3 rounded-xl bg-blue-600 text-white font-medium hover:bg-blue-700 transition">
+                                Add Tag
+                            </button>
+                        </div>
+
                     </div>
                     <!-- Price and Currency -->
                     <div class="form-group">
@@ -764,8 +795,8 @@
                         </label>
 
 
-                        <input type="text" name="keywords" class="form-input currency-input" placeholder="Enter keywords"
-                            value="{{ $blog->keywords ?? old('keywords') }}" required>
+                        <input type="text" name="keywords" class="form-input currency-input"
+                            placeholder="Enter keywords" value="{{ $blog->keywords ?? old('keywords') }}" required>
                         @error('keywords')
                             <span class="text-danger">{{ $message }}</span>
                         @enderror
@@ -1173,6 +1204,48 @@
                 placeholder: 'Enter answer..',
             });
 
+        });
+    </script>
+    <script>
+        document.getElementById('addTag').addEventListener('click', function() {
+
+            let wrapper = document.getElementById('tagsWrapper');
+
+            let div = document.createElement('div');
+
+            div.className = "tag-row flex items-center gap-3";
+
+            div.innerHTML = `
+            <input 
+                type="text" 
+                name="tags[]" 
+                placeholder="Enter tag"
+                class="w-full rounded-xl border border-gray-300 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+
+            <button 
+                type="button"
+                class="removeTag px-4 py-3 rounded-xl bg-red-500 hover:bg-red-400 transition text-white"
+            >
+                Remove
+            </button>
+        `;
+
+            wrapper.appendChild(div);
+        });
+
+        // Remove tag row
+        document.addEventListener('click', function(e) {
+
+            if (e.target.classList.contains('removeTag')) {
+
+                let rows = document.querySelectorAll('.tag-row');
+
+                // Prevent removing last input
+                if (rows.length > 1) {
+                    e.target.parentElement.remove();
+                }
+            }
         });
     </script>
 @endsection
