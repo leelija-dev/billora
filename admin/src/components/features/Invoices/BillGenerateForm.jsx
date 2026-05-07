@@ -106,7 +106,7 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
     gst: ''
   })
   const [customerErrors, setCustomerErrors] = useState({})
-  
+
   // Stable empty object reference for add customer modal
   const emptyInitialData = useMemo(() => ({}), [])
 
@@ -472,33 +472,93 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
   }
 
   // Handle customer creation from modal
-  const handleCreateCustomer = async (customerData) => {
-    try {
-      // Use the returned customer data directly instead of refreshing
-      const createdCustomer = customerData
-      
-      // Add the new customer to the existing customers list
-      setCustomers(prev => {
-        const existingCustomers = Array.isArray(prev) ? prev : []
-        return [createdCustomer, ...existingCustomers]
-      })
-      
-      // Auto-select the new customer
-      setFormData(prev => ({
-        ...prev,
-        customer_id: createdCustomer.id
-      }))
-      
-      // Set search field to show the new customer
-      setCustomerSearch(createdCustomer.name || createdCustomer.phone)
-      
-      toast.success('Customer created and selected successfully')
-      setShowAddCustomerModal(false)
-    } catch (err) {
-      console.error('Customer creation error:', err)
-      toast.error('Failed to create customer')
+  // Handle customer creation from modal
+// Handle customer creation from modal
+const handleCreateCustomer = async (customerData) => {
+  try {
+    // The customerData from CustomerModal might have different structures
+    let createdCustomer = customerData
+    
+    console.log('Customer data received in BillGenerateForm:', createdCustomer)
+    
+    // Handle different response structures
+    if (createdCustomer?.data) {
+      createdCustomer = createdCustomer.data
     }
+    
+    // Check if we have a valid customer with ID
+    if (!createdCustomer || !createdCustomer.id) {
+      console.error('Invalid customer data received:', createdCustomer)
+      toast.error('Customer created but data is incomplete')
+      
+      // Try to fetch the customer again as fallback
+      try {
+        const refreshResponse = await customerAPI.getAll(currentUserId, '')
+        let customersList = []
+        if (refreshResponse?.data?.data?.data && Array.isArray(refreshResponse.data.data.data)) {
+          customersList = refreshResponse.data.data.data
+        } else if (refreshResponse?.data?.data && Array.isArray(refreshResponse.data.data)) {
+          customersList = refreshResponse.data.data
+        } else if (Array.isArray(refreshResponse?.data)) {
+          customersList = refreshResponse.data
+        }
+        
+        // Find the newly created customer (the last one or search by phone)
+        const newCustomer = customersList.find(c => c.phone === createdCustomer.phone)
+        if (newCustomer) {
+          createdCustomer = newCustomer
+          console.log('Found customer from refresh:', createdCustomer)
+        }
+      } catch (refreshError) {
+        console.error('Failed to refresh customers:', refreshError)
+      }
+      
+      if (!createdCustomer || !createdCustomer.id) {
+        return
+      }
+    }
+    
+    // Add the new customer to the existing customers list
+    setCustomers(prev => {
+      const existingCustomers = Array.isArray(prev) ? prev : []
+      // Check if customer already exists to avoid duplicates
+      const exists = existingCustomers.some(c => c.id === createdCustomer.id)
+      if (!exists) {
+        console.log('Adding new customer to list:', createdCustomer)
+        return [createdCustomer, ...existingCustomers]
+      }
+      return existingCustomers
+    })
+    
+    // Auto-select the new customer
+    setFormData(prev => ({
+      ...prev,
+      customer_id: createdCustomer.id
+    }))
+    
+    // Set search field to show the new customer
+    setCustomerSearch(createdCustomer.name || createdCustomer.phone)
+    
+    // Force a re-render to ensure SearchSelect updates
+    setTimeout(() => {
+      // Double-check the selection
+      setFormData(prev => {
+        if (prev.customer_id !== createdCustomer.id) {
+          console.log('Forcing customer selection update')
+          return { ...prev, customer_id: createdCustomer.id }
+        }
+        return prev
+      })
+    }, 100)
+    
+    toast.success(`Customer ${createdCustomer.name} created and selected successfully`)
+    setShowAddCustomerModal(false)
+    
+  } catch (err) {
+    console.error('Customer creation error:', err)
+    toast.error('Failed to create customer')
   }
+}
 
   // Handle store creation from modal
   const handleCreateStore = async (storeData) => {
@@ -591,50 +651,50 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
 
   // Edit customer handlers
   // Edit customer handlers
-const handleEditCustomer = (customer) => {
-  setEditingCustomer(customer)
-  setShowEditCustomerModal(true)
-}
-
-const handleUpdateCustomer = async (customerData) => {
-  // Prevent duplicate updates
-  if (isUpdatingCustomer) return
-  
-  setIsUpdatingCustomer(true)
-  try {
-    const response = await customerAPI.update(editingCustomer.id, customerData)
-
-    // Handle the actual response structure from API
-    if (response.data?.status === true || response.data?.data) {
-      // Create updated customer object from response data
-      const updatedCustomerData = response.data.data || response.data
-      
-      // Update customers list with actual response data
-      const updatedCustomers = customers.map(c =>
-        c.id === editingCustomer.id ? { ...c, ...updatedCustomerData, ...customerData } : c
-      )
-      setCustomers(updatedCustomers)
-
-      // Auto-select the updated customer
-      setFormData(prev => ({ ...prev, customer_id: editingCustomer.id }))
-      setCustomerSearch(updatedCustomerData.name || customerData.name || customerData.phone)
-
-      // Show appropriate success message
-      const successMessage = response.data.message || 'Customer updated successfully!'
-      toast.success(successMessage)
-      
-      setShowEditCustomerModal(false)
-      setEditingCustomer(null)
-    } else {
-      throw new Error('Failed to update customer')
-    }
-  } catch (error) {
-    console.error('Customer update error:', error)
-    toast.error('Failed to update customer')
-  } finally {
-    setIsUpdatingCustomer(false)
+  const handleEditCustomer = (customer) => {
+    setEditingCustomer(customer)
+    setShowEditCustomerModal(true)
   }
-}
+
+  const handleUpdateCustomer = async (customerData) => {
+    // Prevent duplicate updates
+    if (isUpdatingCustomer) return
+
+    setIsUpdatingCustomer(true)
+    try {
+      const response = await customerAPI.update(editingCustomer.id, customerData)
+
+      // Handle the actual response structure from API
+      if (response.data?.status === true || response.data?.data) {
+        // Create updated customer object from response data
+        const updatedCustomerData = response.data.data || response.data
+
+        // Update customers list with actual response data
+        const updatedCustomers = customers.map(c =>
+          c.id === editingCustomer.id ? { ...c, ...updatedCustomerData, ...customerData } : c
+        )
+        setCustomers(updatedCustomers)
+
+        // Auto-select the updated customer
+        setFormData(prev => ({ ...prev, customer_id: editingCustomer.id }))
+        setCustomerSearch(updatedCustomerData.name || customerData.name || customerData.phone)
+
+        // Show appropriate success message
+        const successMessage = response.data.message || 'Customer updated successfully!'
+        toast.success(successMessage)
+
+        setShowEditCustomerModal(false)
+        setEditingCustomer(null)
+      } else {
+        throw new Error('Failed to update customer')
+      }
+    } catch (error) {
+      console.error('Customer update error:', error)
+      toast.error('Failed to update customer')
+    } finally {
+      setIsUpdatingCustomer(false)
+    }
+  }
 
   // Edit store handlers
   const handleEditStore = (store) => {
@@ -651,7 +711,7 @@ const handleUpdateCustomer = async (customerData) => {
       if (response.data?.status === true || response.data?.data) {
         // Create updated store object from response data
         const updatedStoreData = response.data.data || response.data
-        
+
         // Update stores list with the actual response data
         const updatedStores = stores.map(s =>
           s.id === editingStore.id ? { ...s, ...updatedStoreData, ...storeData } : s
@@ -665,7 +725,7 @@ const handleUpdateCustomer = async (customerData) => {
         // Show appropriate success message
         const successMessage = response.data.message || 'Store updated successfully!'
         toast.success(successMessage)
-        
+
         setShowEditStoreModal(false)
         setEditingStore(null)
       } else {

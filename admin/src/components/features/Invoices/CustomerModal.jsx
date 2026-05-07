@@ -147,80 +147,107 @@ const CustomerModal = ({ isOpen, onClose, onCustomerCreated, initialData = {} })
     return Object.keys(newErrors).length === 0
   }
 
-  const handleSubmit = async (e) => {
-    e.preventDefault()
-    
-    // Prevent duplicate submissions
-    if (isSubmittingRef.current || hasSubmittedRef.current) {
-      console.log('Preventing duplicate submission')
-      return
-    }
-    
-    if (!validateForm()) {
-      return
-    }
-
-    isSubmittingRef.current = true
-    setIsSubmitting(true)
-    setError('')
-
-    try {
-      const userId = user?.id || JSON.parse(localStorage.getItem('user'))?.id || 1
-      
-      if (isEditMode) {
-        // Update existing customer
-        const updateData = {
-          user_id: userId,
-          name: formData.name,
-          email: formData.email || null,
-          phone: formData.phone,
-          address: formData.address,
-          city: formData.city || null,
-        }
-        
-        const result = await updateCustomer(initialData.id, updateData)
-        
-        if (result.success) {
-          hasSubmittedRef.current = true
-          toast.success('Customer updated successfully!')
-          onCustomerCreated({ ...updateData, id: initialData.id })
-          handleClose()
-        } else {
-          throw new Error(result.error?.message || 'Failed to update customer')
-        }
-      } else {
-        // Create new customer
-        const customerData = {
-          user_id: userId,
-          name: showMoreDetails ? formData.name : formData.phone,
-          email: formData.email || null,
-          phone: formData.phone,
-          address: showMoreDetails ? formData.address : 'N/A',
-          city: formData.city || null,
-          created_by: userId
-        }
-        
-        const result = await createCustomer(customerData)
-        
-        if (result.success) {
-          hasSubmittedRef.current = true
-          toast.success('Customer created successfully!')
-          onCustomerCreated(result.data || customerData)
-          handleClose()
-        } else {
-          throw new Error(result.error?.message || 'Failed to create customer')
-        }
-      }
-    } catch (err) {
-      console.error('Customer operation error:', err)
-      const errorMessage = err.response?.data?.message || err.message || (isEditMode ? 'Failed to update customer' : 'Failed to create customer')
-      setError(errorMessage)
-      toast.error(errorMessage)
-      isSubmittingRef.current = false
-    } finally {
-      setIsSubmitting(false)
-    }
+  // In CustomerModal.jsx - Update the handleSubmit function
+const handleSubmit = async (e) => {
+  e.preventDefault()
+  
+  // Prevent duplicate submissions
+  if (isSubmittingRef.current || hasSubmittedRef.current) {
+    console.log('Preventing duplicate submission')
+    return
   }
+  
+  if (!validateForm()) {
+    return
+  }
+
+  isSubmittingRef.current = true
+  setIsSubmitting(true)
+  setError('')
+
+  try {
+    const userId = user?.id || JSON.parse(localStorage.getItem('user'))?.id || 1
+    
+    if (isEditMode) {
+      // Update existing customer
+      const updateData = {
+        user_id: userId,
+        name: formData.name,
+        email: formData.email || null,
+        phone: formData.phone,
+        address: formData.address,
+        city: formData.city || null,
+      }
+      
+      const result = await updateCustomer(initialData.id, updateData)
+      
+      if (result.success) {
+        hasSubmittedRef.current = true
+        toast.success('Customer updated successfully!')
+        // Pass the complete customer object with ID
+        const updatedCustomer = { ...updateData, id: initialData.id }
+        onCustomerCreated(updatedCustomer)
+        handleClose()
+      } else {
+        throw new Error(result.error?.message || 'Failed to update customer')
+      }
+    } else {
+      // Create new customer
+      const customerData = {
+        user_id: userId,
+        name: showMoreDetails ? formData.name : formData.phone,
+        email: formData.email || null,
+        phone: formData.phone,
+        address: showMoreDetails ? formData.address : 'N/A',
+        city: formData.city || null,
+        created_by: userId
+      }
+      
+      const result = await createCustomer(customerData)
+      
+      if (result.success) {
+        hasSubmittedRef.current = true
+        toast.success('Customer created successfully!')
+        
+        // IMPORTANT: Get the complete customer data from the API response
+        // The API might return it in result.data or result.data.data
+        let createdCustomer = result.data?.data || result.data
+        
+        // Ensure we have a complete customer object with ID
+        if (createdCustomer && !createdCustomer.id && createdCustomer.data?.id) {
+          createdCustomer = createdCustomer.data
+        }
+        
+        console.log('Full customer data from API:', createdCustomer)
+        
+        // Make sure we pass the complete object with ID
+        if (createdCustomer && createdCustomer.id) {
+          onCustomerCreated(createdCustomer)
+        } else {
+          // Fallback: combine the request data with the ID from response
+          const customerWithId = { 
+            ...customerData, 
+            id: result.data?.id || createdCustomer?.id || Date.now() // temporary ID
+          }
+          console.warn('Using fallback customer object:', customerWithId)
+          onCustomerCreated(customerWithId)
+        }
+        
+        handleClose()
+      } else {
+        throw new Error(result.error?.message || 'Failed to create customer')
+      }
+    }
+  } catch (err) {
+    console.error('Customer operation error:', err)
+    const errorMessage = err.response?.data?.message || err.message || (isEditMode ? 'Failed to update customer' : 'Failed to create customer')
+    setError(errorMessage)
+    toast.error(errorMessage)
+    isSubmittingRef.current = false
+  } finally {
+    setIsSubmitting(false)
+  }
+}
 
   const handleClose = () => {
     setFormData({

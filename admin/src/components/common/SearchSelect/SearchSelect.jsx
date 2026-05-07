@@ -35,12 +35,28 @@ const SearchSelect = ({
   
   const displayValue = selectedOption ? selectedOption[displayKey] : ''
 
-  // Filter options based on search term
-  const filteredOptions = Array.isArray(options) && !onSearchChange
-    ? options.filter(option => 
-        option[displayKey]?.toLowerCase().includes(searchTerm.toLowerCase())
-      )
-    : options
+  // Filter options based on search term - use parent filtered options when provided
+  const filteredOptions = React.useMemo(() => {
+    // If onSearchChange is provided, use parent's filtered options
+    if (onSearchChange) {
+      return options
+    }
+    
+    if (!Array.isArray(options)) return []
+    
+    if (!searchTerm.trim()) {
+      return options
+    }
+    
+    const searchLower = searchTerm.toLowerCase()
+    return options.filter(option => {
+      const labelMatch = option[displayKey]?.toLowerCase().includes(searchLower)
+      const descriptionMatch = option.description?.toLowerCase().includes(searchLower)
+      const subtextMatch = option.subtext?.toLowerCase().includes(searchLower)
+      
+      return labelMatch || descriptionMatch || subtextMatch
+    })
+  }, [options, searchTerm, displayKey, onSearchChange])
 
   // Handle option selection
   const handleSelect = (selectedValue, selectedOption) => {
