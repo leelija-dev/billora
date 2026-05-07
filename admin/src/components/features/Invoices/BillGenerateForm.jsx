@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { FiSave, FiX, FiPlus, FiTrash2, FiUser, FiShoppingCart, FiDollarSign, FiPackage, FiSearch, FiAlertCircle, FiMinus, FiUserPlus, FiEdit } from 'react-icons/fi'
@@ -106,6 +106,9 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
     gst: ''
   })
   const [customerErrors, setCustomerErrors] = useState({})
+  
+  // Stable empty object reference for add customer modal
+  const emptyInitialData = useMemo(() => ({}), [])
 
   // Edit customer modal state
   const [showEditCustomerModal, setShowEditCustomerModal] = useState(false)
@@ -1777,6 +1780,7 @@ const handleUpdateCustomer = async (customerData) => {
         isOpen={showAddCustomerModal}
         onClose={() => setShowAddCustomerModal(false)}
         onCustomerCreated={handleCreateCustomer}
+        initialData={emptyInitialData}
       />
 
       {/* Edit Customer Modal */}
