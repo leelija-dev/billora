@@ -20,6 +20,10 @@ export const printA4Invoice = (invoice) => {
     // Generate HTML content
     const htmlContent = generateA4InvoiceHTML(invoice)
     
+    // Create blob from HTML content
+    const blob = new Blob([htmlContent], { type: 'text/html' })
+    const url = URL.createObjectURL(blob)
+    
     // Create iframe for printing
     const iframe = document.createElement('iframe')
     iframe.style.position = 'absolute'
@@ -30,18 +34,18 @@ export const printA4Invoice = (invoice) => {
     
     document.body.appendChild(iframe)
     
-    const iframeDoc = iframe.contentDocument || iframe.contentWindow.document
-    iframeDoc.open()
-    iframeDoc.write(htmlContent)
-    iframeDoc.close()
+    // Load content via blob URL
+    iframe.src = url
     
     // Wait for content to load, then print
     iframe.onload = () => {
       setTimeout(() => {
+        iframe.contentWindow.focus()
         iframe.contentWindow.print()
         // Clean up after printing
         setTimeout(() => {
           document.body.removeChild(iframe)
+          URL.revokeObjectURL(url)
         }, 1000)
       }, 500)
     }
@@ -66,6 +70,10 @@ export const printThermalInvoice = (invoice) => {
     // Generate HTML content
     const htmlContent = generateThermalInvoiceHTML(invoice)
     
+    // Create blob from HTML content
+    const blob = new Blob([htmlContent], { type: 'text/html' })
+    const url = URL.createObjectURL(blob)
+    
     // Create iframe for printing with thermal paper dimensions
     const iframe = document.createElement('iframe')
     iframe.style.position = 'absolute'
@@ -76,18 +84,18 @@ export const printThermalInvoice = (invoice) => {
     
     document.body.appendChild(iframe)
     
-    const iframeDoc = iframe.contentDocument || iframe.contentWindow.document
-    iframeDoc.open()
-    iframeDoc.write(htmlContent)
-    iframeDoc.close()
+    // Load content via blob URL
+    iframe.src = url
     
     // Wait for content to load, then print
     iframe.onload = () => {
       setTimeout(() => {
+        iframe.contentWindow.focus()
         iframe.contentWindow.print()
         // Clean up after printing
         setTimeout(() => {
           document.body.removeChild(iframe)
+          URL.revokeObjectURL(url)
         }, 1000)
       }, 500)
     }

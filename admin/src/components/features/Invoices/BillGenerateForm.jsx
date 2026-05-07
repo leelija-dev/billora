@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { FiSave, FiX, FiPlus, FiTrash2, FiUser, FiShoppingCart, FiDollarSign, FiPackage, FiSearch, FiAlertCircle, FiMinus, FiUserPlus } from 'react-icons/fi'
 import Input from '../../common/Input/Input'
@@ -13,11 +14,13 @@ import { invoiceAPI } from '../../../services/invoiceService'
 import { stockAPI } from '../../../services/stockService'
 import { packagesAPI } from '../../../services/packagesService'
 import { storeAPI } from '../../../services/storeService'
+import { customerAPI } from '../../../services/customerService'
 import usePackageStore from '../../../store/packageStore'
 import { useAuthStore } from '../../../store/authStore'
 import { useCustomerStore } from '../../../store/customerStore'
 import toast from 'react-hot-toast'
 import { LucideStore } from 'lucide-react'
+import { printA4Invoice, printThermalInvoice } from '../../../templates/PrintUtils'
 
 // Cache for bill generate data
 let billGenerateCache = null
@@ -25,6 +28,7 @@ let lastFetchTime = null
 const CACHE_EXPIRY = 30 * 1000 // 30 seconds
 
 const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting }) => {
+  const navigate = useNavigate()
   const { user } = useAuthStore()
   const { packages, fetchPackages, loading: packagesLoading } = usePackageStore()
   const { createCustomer, fetchCustomers } = useCustomerStore()
@@ -85,6 +89,10 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
   const [filteredPackages, setFilteredPackages] = useState([])
   const [selectedPackage, setSelectedPackage] = useState(null)
   const [packageQuantity, setPackageQuantity] = useState(1)
+  const [showBillDialog, setShowBillDialog] = useState(false)
+  const [generatedBillData, setGeneratedBillData] = useState(null)
+  const [createdInvoiceData, setCreatedInvoiceData] = useState(null)
+  const [isSubmittingBill, setIsSubmittingBill] = useState(false)
   
   // Add customer modal state
   const [showAddCustomerModal, setShowAddCustomerModal] = useState(false)
@@ -532,58 +540,85 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
   // Handle store creation from modal
   const handleCreateStore = async (storeData) => {
     try {
-      console.log('🏪 Store created:', storeData)
-      
-      // Extract store info from response - check multiple possible structures
-      let storeInfo, storeName, storeId
-      
-      if (storeData.data) {
-        // Nested structure: { data: { id, name, ... } }
-        storeInfo = storeData.data
-      } else if (storeData.id && storeData.name) {
-        // Direct structure: { id, name, ... }
-        storeInfo = storeData
-      } else {
-        console.error('Unexpected store response structure:', storeData)
-        toast.error('Store created but with unexpected response format')
-        return
-      }
-      
-      storeName = storeInfo.name || storeInfo.store_name || 'New Store'
-      storeId = storeInfo.id
-      
-      console.log('🏪 Extracted store info:', { storeId, storeName, storeInfo })
+      console.log('Store created:', storeData)
       
       // Refresh stores list
       await fetchInitialData()
       
-      // Set the new store as selected
-      console.log('🏪 Setting store_id to:', storeId)
-      setFormData(prev => ({ ...prev, store_id: storeId }))
-      
-      // Update store search field to show the new store name
-      console.log('🏪 Setting store search to:', storeName)
-      setStoreSearch(storeName)
+      // Fetch updated stores from API
+      try {
+        const response = await invoiceAPI.getBillGenerateData(currentUserId)
+        let updatedData = response.data?.data || response.data || {}
+        const updatedStoresList = updatedData.stores || updatedData.bill_store || updatedData.store || []
+        setStores(Array.isArray(updatedStoresList) ? updatedStoresList : [])
+        
+        // Find the newly created store
+        const newStore = updatedStoresList.find(s => 
+          s.name === storeData.name || 
+          s.name === storeData.data?.name
+        )
+        
+        if (newStore) {
+          // Auto-select the new store
+          setFormData(prev => ({
+            ...prev,
+            store_id: newStore.id
+          }))
+          // Update store search field to show the new store name
+          setStoreSearch(newStore.name || newStore.store_name)
+          toast.success('Store created and selected successfully')
+        } else {
+          // Fallback: use the returned store data
+          let storeInfo, storeName, storeId
+          
+          if (storeData.data) {
+            // Nested structure: { data: { id, name, ... } }
+            storeInfo = storeData.data
+          } else if (storeData.id && storeData.name) {
+            // Direct structure: { id, name, ... }
+            storeInfo = storeData
+          } else {
+            console.error('Unexpected store response structure:', storeData)
+            toast.error('Store created but with unexpected response format')
+            return
+          }
+          
+          storeName = storeInfo.name || storeInfo.store_name || 'New Store'
+          storeId = storeInfo.id
+          
+          setFormData(prev => ({ ...prev, store_id: storeId }))
+          setStoreSearch(storeName)
+          toast.success('Store created successfully')
+        }
+      } catch (error) {
+        console.error('Failed to refresh store list:', error)
+        // Fallback: use the returned store data
+        let storeInfo, storeName, storeId
+        
+        if (storeData.data) {
+          storeInfo = storeData.data
+        } else if (storeData.id && storeData.name) {
+          storeInfo = storeData
+        } else {
+          console.error('Unexpected store response structure:', storeData)
+          toast.error('Store created but with unexpected response format')
+          return
+        }
+        
+        storeName = storeInfo.name || storeInfo.store_name || 'New Store'
+        storeId = storeInfo.id
+        
+        setFormData(prev => ({ ...prev, store_id: storeId }))
+        setStoreSearch(storeName)
+        toast.success('Store created successfully')
+      }
       
       // Close the store modal
       setShowAddStoreModal(false)
-      
-      toast.success(`Store "${storeName}" selected successfully`)
     } catch (err) {
-      console.error('Store refresh error:', err)
-      toast.error('Store created but failed to refresh list')
+      console.error('Store creation error:', err)
+      toast.error('Failed to create store')
     }
-  }
-
-  // Store selection handlers
-  const handleStoreSelect = (store) => {
-    setFormData(prev => ({
-      ...prev,
-      store_id: store.id
-    }))
-    setStoreSearch(store.name || store.store_name)
-    setShowStoreDropdown(false)
-    toast.success(`Store selected: ${store.name || store.store_name}`)
   }
 
   const handleStoreSearchChange = (value) => {
@@ -747,7 +782,7 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
     return { subtotal, totalGst, totalDiscount, totalAmount }
   }
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
     
     if (!formData.customer_id || !formData.store_id || formData.items.length === 0) {
@@ -805,8 +840,26 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
       totalAmount: totals.totalAmount,
       items: formData.items.length
     })
-    
-    onSubmit(submissionData)
+
+    // Submit the bill to server first
+    setIsSubmittingBill(true)
+    try {
+      const response = await onSubmit(submissionData)
+      console.log('📄 Invoice submitted successfully:', response)
+
+      // Get the created invoice data from response
+      const createdInvoice = response?.data?.data || response?.data || submissionData
+      setCreatedInvoiceData(createdInvoice)
+      setGeneratedBillData(submissionData)
+
+      // Show print choice dialog
+      setShowBillDialog(true)
+    } catch (error) {
+      console.error('Error generating invoice:', error)
+      toast.error('Failed to generate invoice. Please try again.')
+    } finally {
+      setIsSubmittingBill(false)
+    }
   }
 
   // Click outside handlers
@@ -830,6 +883,59 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
+  // Helper function to enrich invoice data with customer and store details for printing
+  const enrichInvoiceForPrint = async (invoice) => {
+    try {
+      let customerData = {}
+      let storeData = {}
+
+      // Fetch customer details if customer_id is present
+      if (invoice.customer_id) {
+        try {
+          const customerResponse = await customerAPI.getById(invoice.customer_id)
+          customerData = customerResponse.data?.data || {}
+        } catch (error) {
+          console.error('Failed to fetch customer data for print:', error)
+        }
+      }
+
+      // Fetch store details if store_id is present
+      if (invoice.store_id) {
+        try {
+          const storeResponse = await storeAPI.getByUserId(invoice.user_id || currentUserId)
+          const storesArray = storeResponse.data?.data?.data || storeResponse.data?.data || []
+          storeData = storesArray.find(store => store.id === invoice.store_id) || storesArray[0] || {}
+        } catch (error) {
+          console.error('Failed to fetch store data for print:', error)
+        }
+      }
+
+      // Enhance invoice with full details
+      const enhancedInvoice = {
+        ...invoice,
+        invoice_number: invoice.invoice_number || invoice.id || `INV-${Date.now()}`,
+        id: invoice.id || invoice.invoice_id,
+        customer_name: customerData.name || invoice.customer_name || 'Walk-in Customer',
+        customer_phone: customerData.phone || invoice.customer_phone || 'N/A',
+        customer_email: customerData.email || invoice.customer_email || 'N/A',
+        customer_address: customerData.address ? `${customerData.address}, ${customerData.city || ''}` : invoice.customer_address || 'N/A',
+        customer_gst: customerData.gst || invoice.customer_gst || 'N/A',
+        store_name: storeData.name || invoice.store_name || 'Your Store Name',
+        store_address: storeData.address ? `${storeData.address}, ${storeData.city || ''}` : invoice.store_address || '123 Business Street, City',
+        store_gst: storeData.gst || invoice.store_gst || 'GSTIN123456',
+        store_email: storeData.email || invoice.store_email || 'store@business.com',
+        store_phone: storeData.mobile || storeData.phone || invoice.store_phone || '123-456-7890',
+        items: invoice.items || []
+      }
+
+      console.log('Enriched invoice for print:', enhancedInvoice)
+      return enhancedInvoice
+    } catch (error) {
+      console.error('Error enriching invoice for print:', error)
+      return invoice
+    }
+  }
+
   const totals = calculateTotals()
 
   if (loading) {
@@ -850,7 +956,7 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
         className="space-y-6"
       >
         {/* Header */}
-        <div className="flex items-center justify-between pb-4 border-b border-gray-200 dark:border-gray-700">
+        <div className="flex items-center justify-between pb-4 border-b border-gray-200 dark:border-gray-700 sticky top-[62px] bg-white z-50 pt-4">
           <div className="flex items-center space-x-3">
             <div className="p-2 bg-primary-100 dark:bg-primary-900/20 rounded-lg">
               <FiShoppingCart className="w-5 h-5 text-primary-600 dark:text-primary-400" />
@@ -1204,12 +1310,12 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
                                 <div className="text-xs text-gray-500 dark:text-gray-400 space-y-1 mt-2">
                                   {product.gst_percentage && (
                                     <div>
-                                      📈 GST: {parseFloat(product.gst_percentage).toFixed(1)}%
+                                      GST: {parseFloat(product.gst_percentage).toFixed(1)}%
                                     </div>
                                   )}
                                   {product.discount_percentage && (
                                     <div>
-                                      🎁 Discount: {parseFloat(product.discount_percentage).toFixed(1)}%
+                                      Discount: {parseFloat(product.discount_percentage).toFixed(1)}%
                                     </div>
                                   )}
                                 </div>
@@ -1585,6 +1691,108 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
         onClose={() => setShowAddStoreModal(false)}
         onStoreCreated={handleCreateStore}
       />
+
+      {/* Bill Generation Dialog */}
+      <AnimatePresence>
+        {showBillDialog && generatedBillData && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+            onClick={() => setShowBillDialog(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              transition={{ type: "spring", duration: 0.5 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-6 max-w-md w-full mx-4"
+            >
+              <div className="text-center">
+                <div className="w-16 h-16 bg-green-100 dark:bg-green-900/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <FiShoppingCart className="w-8 h-8 text-green-600 dark:text-green-400" />
+                </div>
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
+                  Invoice Generated Successfully!
+                </h3>
+                <p className="text-gray-600 dark:text-gray-400 mb-6">
+                  Your invoice has been generated. What would you like to do next?
+                </p>
+                
+                <div className="space-y-3">
+                  <Button
+                    variant="primary"
+                    onClick={async () => {
+                      try {
+                        // Enrich invoice with customer and store details
+                        const enrichedInvoice = await enrichInvoiceForPrint(createdInvoiceData)
+
+                        // Trigger A4 print
+                        printA4Invoice(enrichedInvoice)
+
+                        // Close dialog
+                        setShowBillDialog(false)
+
+                        toast.success('Invoice generated and printed successfully')
+
+                        // Navigate to invoices page
+                        navigate('/invoices')
+                      } catch (error) {
+                        console.error('Error printing invoice:', error)
+                        toast.error('Failed to print invoice. Please try again.')
+                      }
+                    }}
+                    className="w-full"
+                  >
+                    🖨️ A4 Print
+                  </Button>
+
+                  <Button
+                    variant="outline"
+                    onClick={async () => {
+                      try {
+                        // Enrich invoice with customer and store details
+                        const enrichedInvoice = await enrichInvoiceForPrint(createdInvoiceData)
+
+                        // Trigger thermal print
+                        printThermalInvoice(enrichedInvoice)
+
+                        // Close dialog
+                        setShowBillDialog(false)
+
+                        toast.success('Invoice generated and printed successfully')
+
+                        // Navigate to invoices page
+                        navigate('/invoices')
+                      } catch (error) {
+                        console.error('Error printing invoice:', error)
+                        toast.error('Failed to print invoice. Please try again.')
+                      }
+                    }}
+                    className="w-full"
+                  >
+                    🧾 Thermal Print
+                  </Button>
+
+                  <Button
+                    variant="secondary"
+                    onClick={() => {
+                      setShowBillDialog(false)
+                      // Navigate to invoices page since bill is already submitted
+                      navigate('/invoices')
+                    }}
+                    className="w-full"
+                  >
+                    Skip Print
+                  </Button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </>
   )
 }

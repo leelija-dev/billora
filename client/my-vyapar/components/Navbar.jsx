@@ -92,13 +92,14 @@ useEffect(() => {
   }, [isLoggedIn, hasActivePlan, user, pathname, shouldHideNavbar]);
 
   const routeMap = {
-    "/trymobile": 0,
-    "/carrers": 1,
-    "/partner": 2,
-    "/solution": 3,
-    "/about": 4,
-    "/pricing": 5,
-    "/contact": 6,
+    // "/trymobile": 0,
+    // "/carrers": 1,
+    "/pricing": 0,
+    "/partner": 1,
+    "/solution": 2,
+    "/about": 3,
+    "/blog": 4,
+    "/contact": 5,
   };
 
   const isNavPage = (path) => {
@@ -418,12 +419,13 @@ useEffect(() => {
   }, [isNavAction, activeTab]);
 
   const navItems = [
-    { name: "Try Mobile", href: "/trymobile" },
-    { name: "Carrers", href: "/carrers" },
+    // { name: "Try Mobile", href: "/trymobile" },
+    // { name: "Carrers", href: "/carrers" },
+    { name: "Pricing", href: "/pricing" },
     { name: "Partner", href: "/partner" },
     { name: "Solution", href: "/solution" },
+    { name: "Blog", href: "/blog" },
     { name: "About", href: "/about" },
-    { name: "Pricing", href: "/pricing" },
     { name: "Contact", href: "/contact" },
   ];
 

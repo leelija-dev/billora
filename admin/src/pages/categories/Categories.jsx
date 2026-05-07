@@ -312,6 +312,8 @@ const Categories = () => {
   ]
 
   return (
+
+    <>
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
@@ -762,7 +764,9 @@ const Categories = () => {
       )}
 
       {/* Delete Confirmation Modal */}
-      <AnimatePresence>
+      
+    </motion.div>
+    <AnimatePresence>
         {showDeleteConfirm && (
           <motion.div
             initial={{ opacity: 0 }}
@@ -827,7 +831,7 @@ const Categories = () => {
           </motion.div>
         )}
       </AnimatePresence>
-    </motion.div>
+    </>
   )
 }
 

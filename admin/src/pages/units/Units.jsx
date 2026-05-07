@@ -198,6 +198,7 @@ const Units = () => {
   ]
 
   return (
+   <>
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
@@ -421,7 +422,9 @@ const Units = () => {
         </>
       )}
 
-      {/* Delete Confirmation Modal */}
+      
+    </motion.div>
+    {/* Delete Confirmation Modal */}
       <AnimatePresence>
         {showDeleteConfirm && (
           <motion.div
@@ -487,7 +490,7 @@ const Units = () => {
           </motion.div>
         )}
       </AnimatePresence>
-    </motion.div>
+   </>
   )
 }
 

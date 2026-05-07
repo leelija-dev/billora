@@ -939,7 +939,7 @@ console.log(' Latest valid purchase for upgrade calculation:', latestPurchase)
                     <>
                       <StatCard
                         title="Total Spent"
-                        value={`$${stats.totalSpent.toFixed(2)}`}
+                        value={`₹${stats.totalSpent.toFixed(2)}`}
                         icon={FiDollarSign}
                         color="from-blue-500 to-cyan-500"
                         delay={0.1}
@@ -1047,7 +1047,7 @@ console.log(' Latest valid purchase for upgrade calculation:', latestPurchase)
                             <div>
                               <p className="text-sm text-gray-600 dark:text-gray-400">Base Price</p>
                               <p className="font-medium text-gray-900 dark:text-white">
-                                ${parseFloat(selectedPlan.price || selectedPlan.amount || 0).toFixed(2)}
+                                ₹{parseFloat(selectedPlan.price || selectedPlan.amount || 0).toFixed(2)}
                               </p>
                             </div>
                           </div>
@@ -1363,7 +1363,7 @@ console.log(' Latest valid purchase for upgrade calculation:', latestPurchase)
                               <div className="flex items-center justify-between">
                                 <span className="text-gray-600 dark:text-gray-400">Price</span>
                                 <span className="font-medium text-gray-900 dark:text-white">
-                                  ${currentPlan.price || currentPlan.amount || 0}/{currentPlan.interval || 'month'}
+                                  ₹{currentPlan.price || currentPlan.amount || 0}/{currentPlan.interval || 'month'}
                                 </span>
                               </div>
                               <div className="flex items-center justify-between">

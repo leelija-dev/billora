@@ -334,7 +334,10 @@ const InvoiceTable = ({
           <motion.button
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.95 }}
-            onClick={() => onView(row)}
+            onClick={(e) => {
+              e.stopPropagation()
+              onView(row)
+            }}
             className="p-1.5 text-blue-600 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
             title="View Invoice"
           >
@@ -346,7 +349,10 @@ const InvoiceTable = ({
             <motion.button
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.95 }}
-              onClick={() => setPrintDropdown(printDropdown === row.id ? null : row.id)}
+              onClick={(e) => {
+                e.stopPropagation()
+                setPrintDropdown(printDropdown === row.id ? null : row.id)
+              }}
               className="p-1.5 text-green-600 hover:bg-green-50 dark:text-green-400 dark:hover:bg-green-900/20 rounded-lg transition-colors"
               title="Print Invoice"
             >
@@ -365,7 +371,8 @@ const InvoiceTable = ({
                     <motion.button
                       whileHover={{ backgroundColor: '#f3f4f6' }}
                       whileTap={{ scale: 0.98 }}
-                      onClick={() => {
+                      onClick={(e) => {
+                        e.stopPropagation()
                         onPrintA4(row)
                         setPrintDropdown(null)
                       }}
@@ -378,7 +385,8 @@ const InvoiceTable = ({
                     <motion.button
                       whileHover={{ backgroundColor: '#f3f4f6' }}
                       whileTap={{ scale: 0.98 }}
-                      onClick={() => {
+                      onClick={(e) => {
+                        e.stopPropagation()
                         onPrintThermal(row)
                         setPrintDropdown(null)
                       }}

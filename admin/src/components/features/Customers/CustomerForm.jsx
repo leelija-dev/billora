@@ -225,7 +225,7 @@ const CustomerForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting }) =
             <div>
               <p className="text-xs text-gray-500 dark:text-gray-400">Total Spent</p>
               <p className="text-sm font-medium text-gray-900 dark:text-white">
-                ${(initialData.totalSpent || 0).toFixed(2)}
+                ₹{(initialData.totalSpent || 0).toFixed(2)}
               </p>
             </div>
             <div>

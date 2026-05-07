@@ -49,7 +49,7 @@ const RevenueChart = ({ data }) => {
           />
           <YAxis 
             className="text-xs fill-gray-500 dark:fill-gray-400"
-            tickFormatter={(value) => `$${value}`}
+            tickFormatter={(value) => `₹${value}`}
           />
           <Tooltip content={<CustomTooltip />} />
           <Area

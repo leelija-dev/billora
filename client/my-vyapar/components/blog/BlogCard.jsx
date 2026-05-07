@@ -11,6 +11,27 @@ export default function BlogCard({ blog }) {
     });
   };
 
+  // Helper function to fix image URLs
+  const getImageUrl = (imagePath) => {
+    if (!imagePath) return null;
+    
+    // If it's already a full URL, return as-is
+    if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
+      return imagePath;
+    }
+    
+    // If it's a relative path, prepend the API base URL
+    let API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ||  'http://localhost:8000';
+    
+    // Remove /api suffix if present (images are served from base URL, not /api)
+    API_BASE_URL = API_BASE_URL.replace(/\/api$/, '');
+    
+    // Remove leading slash if present to avoid double slashes
+    const cleanPath = imagePath.startsWith('/') ? imagePath.slice(1) : imagePath;
+    
+    return `${API_BASE_URL}/${cleanPath}`;
+  };
+
   return (
     <div className="group relative bg-white rounded-2xl shadow-sm hover:shadow-xl border border-slate-100 overflow-hidden transition-all duration-300 hover:-translate-y-1">
       {/* Hover gradient overlay */}
@@ -20,10 +41,12 @@ export default function BlogCard({ blog }) {
       <div className="relative h-52 overflow-hidden">
         {blog.feature_image ? (
           <Image
-            src={blog.feature_image}
+            src={getImageUrl(blog.feature_image)}
             alt={blog.feature_image_alt || blog.title}
             fill
-            className="object-cover group-hover:scale-105 transition-transform duration-500"
+            className="object-contain group-hover:scale-105 transition-transform duration-500"
+            
+            unoptimized
           />
         ) : (
           <div className="w-full h-full bg-gradient-to-br from-[rgb(65,135,249)]/10 to-[#ec4899]/10 flex items-center justify-center">
@@ -74,9 +97,11 @@ export default function BlogCard({ blog }) {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-full bg-gradient-to-r from-[rgb(65,135,249)]/20 to-[#ec4899]/20 flex items-center justify-center text-sm font-medium text-[rgb(65,135,249)]">
-              {blog.author ? blog.author.charAt(0) : 'A'}
+              {blog.user ? (blog.user.fname ? blog.user.fname.charAt(0) : blog.user.username ? blog.user.username.charAt(0) : 'A') : 'A'}
             </div>
-            <span className="text-sm text-slate-600">{blog.author || 'Staff Writer'}</span>
+            <span className="text-sm text-slate-600">
+              {blog.user ? (blog.user.fname && blog.user.lname ? `${blog.user.fname} ${blog.user.lname}` : blog.user.username || 'Staff Writer') : 'Staff Writer'}
+            </span>
           </div>
           
           <Link

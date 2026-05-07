@@ -535,7 +535,7 @@ const Products = () => {
             )}
           </motion.div>
           <div className="flex-1">
-            <p className="font-medium text-gray-900 dark:text-white">{value}</p>
+            <p className="font-medium text-gray-900 dark:text-white whitespace-normal">{value}</p>
             <p className="text-sm text-gray-500 dark:text-gray-400">SKU: {row.sku}</p>
 
             {/* Unit Information */}
@@ -805,6 +805,7 @@ const Products = () => {
   ]
 
   return (
+    <>
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
@@ -1291,6 +1292,20 @@ const Products = () => {
         </>
       )}
 
+    
+
+      {/* Stock Add Modal */}
+      <StockAddModal
+        isOpen={showStockModal}
+        onClose={() => setShowStockModal(false)}
+        onAddStock={handleAddStock}
+        product={selectedStockProduct}
+        currentStock={selectedStockProduct ? getProductStock(selectedStockProduct.id) : 0}
+      />
+
+      
+    </motion.div>
+
       {/* Delete Confirmation Modal */}
       <AnimatePresence>
         {showDeleteConfirm && (
@@ -1299,6 +1314,7 @@ const Products = () => {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+            style={{marginTop: '0 !important',}}
             onClick={() => setShowDeleteConfirm(false)}
           >
             <motion.div
@@ -1345,16 +1361,7 @@ const Products = () => {
           </motion.div>
         )}
       </AnimatePresence>
-
-      {/* Stock Add Modal */}
-      <StockAddModal
-        isOpen={showStockModal}
-        onClose={() => setShowStockModal(false)}
-        onAddStock={handleAddStock}
-        product={selectedStockProduct}
-        currentStock={selectedStockProduct ? getProductStock(selectedStockProduct.id) : 0}
-      />
-    </motion.div>
+    </>
   )
 }
 

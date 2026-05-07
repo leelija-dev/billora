@@ -54,6 +54,8 @@ const Stock = () => {
   const [selectedStocks, setSelectedStocks] = useState([])
   const [showAddStockModal, setShowAddStockModal] = useState(false)
   const [selectedStockForModal, setSelectedStockForModal] = useState(null)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [stockToDelete, setStockToDelete] = useState(null)
   const [initialLoading, setInitialLoading] = useState(true)
 
   useEffect(() => {
@@ -120,9 +122,20 @@ const Stock = () => {
     }
   }
 
-  const handleDeleteStock = async (id) => {
-    if (window.confirm('Are you sure you want to delete this stock?')) {
-      await deleteStock(id, user.id)
+  const handleDeleteClick = (stock) => {
+    setStockToDelete(stock)
+    setShowDeleteConfirm(true)
+  }
+
+  const handleDeleteStock = async () => {
+    if (stockToDelete) {
+      try {
+        await deleteStock(stockToDelete.id, user.id)
+        setShowDeleteConfirm(false)
+        setStockToDelete(null)
+      } catch (error) {
+        console.error('Error deleting stock:', error)
+      }
     }
   }
 
@@ -303,7 +316,7 @@ const Stock = () => {
           <motion.button
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.95 }}
-            onClick={() => handleDeleteStock(row.id)}
+            onClick={() => handleDeleteClick(row)}
             className="p-2 text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20 rounded-lg transition-colors"
             title="Delete Stock"
           >
@@ -341,6 +354,7 @@ const Stock = () => {
   )
 
   return (
+    <>
     <motion.div 
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
@@ -435,7 +449,7 @@ const Stock = () => {
                 />
                 <StatCard
                   title="Total Value"
-                  value={`$${stats.totalValue.toLocaleString()}`}
+                  value={`₹${stats.totalValue.toLocaleString()}`}
                   icon={FiDollarSign}
                   color="from-purple-500 to-pink-500"
                   delay={0.3}
@@ -615,7 +629,72 @@ const Stock = () => {
           isSubmitting={loading}
         />
       )}
+
+      
     </motion.div>
+
+    {/* Delete Confirmation Modal */}
+      <AnimatePresence>
+        {showDeleteConfirm && stockToDelete && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+            onClick={() => {
+              setShowDeleteConfirm(false)
+              setStockToDelete(null)
+            }}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              transition={{ type: "spring", duration: 0.5 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-6 max-w-md w-full mx-4"
+            >
+              <div className="text-center">
+                <div className="w-16 h-16 bg-red-100 dark:bg-red-900/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <FiX className="w-8 h-8 text-red-600 dark:text-red-400" />
+                </div>
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
+                  Delete Stock Item
+                </h3>
+                <p className="text-gray-600 dark:text-gray-400 mb-2">
+                  Are you sure you want to delete this stock item?
+                </p>
+                <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-6">
+                  "{stockToDelete.product?.name || stockToDelete.product_name || 'Stock Item'}"
+                </p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mb-6">
+                  This action cannot be undone.
+                </p>
+                <div className="flex space-x-3">
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setShowDeleteConfirm(false)
+                      setStockToDelete(null)
+                    }}
+                    className="flex-1"
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    variant="danger"
+                    onClick={handleDeleteStock}
+                    className="flex-1"
+                  >
+                    Delete
+                  </Button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </>
   )
 }
 

@@ -3,10 +3,11 @@
 import { useState, useEffect } from 'react';
 import { Search, Filter, X, ChevronRight, Sparkles, TrendingUp, Clock, Eye } from 'lucide-react';
 import BlogCard from '@/components/blog/BlogCard';
-import { blogPosts, categories, getBlogsByCategory, searchBlogs } from '@/data/blogData';
+import { blogApi } from '@/services/blogApi';
 
 export default function BlogPage() {
   const [blogs, setBlogs] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -14,8 +15,7 @@ export default function BlogPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-
-  const BLOGS_PER_PAGE = 6;
+  const [error, setError] = useState(null);
 
   const fetchBlogs = async (page = 1, reset = false) => {
     try {
@@ -25,39 +25,45 @@ export default function BlogPage() {
         setLoadingMore(true);
       }
 
-      // Simulate API delay for better UX
-      await new Promise(resolve => setTimeout(resolve, 800));
-
-      let filteredBlogs = [...blogPosts];
-
+      const params = { page };
+      
       // Apply search filter
       if (searchTerm) {
-        filteredBlogs = searchBlogs(searchTerm);
+        params.search = 'name';
+        params.name = searchTerm;
       }
 
       // Apply category filter
       if (selectedCategory) {
-        filteredBlogs = getBlogsByCategory(parseInt(selectedCategory));
+        params.category_id = selectedCategory;
       }
 
-      // Sort by date (newest first)
-      filteredBlogs.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+      const response = await blogApi.getBlogs(params);
+      const data = response.data;
 
-      // Apply pagination
-      const startIndex = (page - 1) * BLOGS_PER_PAGE;
-      const endIndex = startIndex + BLOGS_PER_PAGE;
-      const paginatedBlogs = filteredBlogs.slice(startIndex, endIndex);
+      if (data.status) {
+        const blogData = data.blogs?.data || [];
+        
+        if (reset) {
+          setBlogs(blogData);
+        } else {
+          setBlogs(prev => [...prev, ...blogData]);
+        }
 
-      if (reset) {
-        setBlogs(paginatedBlogs);
+        // Set categories from API response
+        if (data.categories && categories.length === 0) {
+          setCategories(data.categories);
+        }
+
+        // Check if there are more pages
+        setHasMore(data.blogs?.current_page < data.blogs?.last_page);
+        setCurrentPage(data.blogs?.current_page || page);
       } else {
-        setBlogs(prev => [...prev, ...paginatedBlogs]);
+        throw new Error(data.message || 'Failed to fetch blogs');
       }
-
-      setHasMore(endIndex < filteredBlogs.length);
-      setCurrentPage(page);
     } catch (error) {
       console.error('Error fetching blogs:', error);
+      setError(error.message || 'Failed to fetch blogs');
     } finally {
       setLoading(false);
       setLoadingMore(false);
@@ -86,8 +92,29 @@ export default function BlogPage() {
     setHasMore(true);
   };
 
+  // Helper function to fix image URLs
+  const getImageUrl = (imagePath) => {
+    if (!imagePath) return null;
+    
+    // If it's already a full URL, return as-is
+    if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
+      return imagePath;
+    }
+    
+    // If it's a relative path, prepend the API base URL
+    let API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ||  'http://localhost:8000';
+    
+    // Remove /api suffix if present (images are served from base URL, not /api)
+    API_BASE_URL = API_BASE_URL.replace(/\/api$/, '');
+    
+    // Remove leading slash if present to avoid double slashes
+    const cleanPath = imagePath.startsWith('/') ? imagePath.slice(1) : imagePath;
+    
+    return `${API_BASE_URL}/${cleanPath}`;
+  };
+
   // Featured post (first blog post)
-  const featuredPost = blogPosts[0];
+  const featuredPost = blogs.length > 0 ? blogs[0] : null;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50">
@@ -208,18 +235,18 @@ export default function BlogPage() {
           </div>
         )}
     
-        {/* Featured Post - conditional, only show when no filters active */}
-        {!searchTerm && !selectedCategory && (
+        {/* Featured Post - conditional, only show when no filters active and blogs exist */}
+        {!searchTerm && !selectedCategory && featuredPost && (
           <div className="mb-12 mt-6">
             <div className="group relative bg-white rounded-3xl shadow-xl overflow-hidden border border-slate-100 hover:shadow-2xl transition-all duration-500">
               <div className="absolute inset-0 bg-gradient-to-r from-[rgb(65,135,249)]/5 to-[#ec4899]/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
               <div className="grid lg:grid-cols-2 gap-0">
-                <div className="relative h-64 lg:h-full min-h-[300px] overflow-hidden">
+                <div className="relative h-64 lg:h-full min-h-[300px] overflow-hidden max-h-[400px]">
                   {featuredPost?.feature_image ? (
                     <img
-                      src={featuredPost.feature_image}
+                      src={getImageUrl(featuredPost.feature_image)}
                       alt={featuredPost.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                      className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-700"
                     />
                   ) : (
                     <div className="w-full h-full bg-gradient-to-br from-[rgb(65,135,249)]/20 to-[#ec4899]/20 flex items-center justify-center">
@@ -256,10 +283,12 @@ export default function BlogPage() {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-full bg-gradient-to-r from-[rgb(65,135,249)] to-[#ec4899] flex items-center justify-center text-white font-semibold">
-                        {featuredPost?.author?.charAt(0) || 'A'}
+                        {featuredPost?.user ? (featuredPost.user.fname ? featuredPost.user.fname.charAt(0) : featuredPost.user.username ? featuredPost.user.username.charAt(0) : 'A') : 'A'}
                       </div>
                       <div>
-                        <p className="text-sm font-medium text-slate-900">{featuredPost?.author || 'Editorial Team'}</p>
+                        <p className="text-sm font-medium text-slate-900">
+                          {featuredPost?.user ? (featuredPost.user.fname && featuredPost.user.lname ? `${featuredPost.user.fname} ${featuredPost.user.lname}` : featuredPost.user.username || 'Editorial Team') : 'Editorial Team'}
+                        </p>
                         <p className="text-xs text-slate-500">Senior Writer</p>
                       </div>
                     </div>
@@ -289,16 +318,36 @@ export default function BlogPage() {
               </div>
             ))}
           </div>
+        ) : error ? (
+          <div className="text-center py-20 bg-white rounded-3xl border border-slate-100">
+            <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-red-50 mb-6">
+              <Search className="h-8 w-8 text-red-500" />
+            </div>
+            <h3 className="text-xl font-semibold text-slate-900 mb-2">
+              Error loading articles
+            </h3>
+            <p className="text-slate-500 mb-4">
+              {error}
+            </p>
+            <button
+              onClick={() => fetchBlogs(1, true)}
+              className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-gradient-to-r from-[rgb(65,135,249)] to-[#ec4899] text-white text-sm font-medium"
+            >
+              Try Again
+            </button>
+          </div>
         ) : blogs.length === 0 ? (
           <div className="text-center py-20 bg-white rounded-3xl border border-slate-100">
             <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-r from-[rgb(65,135,249)]/10 to-[#ec4899]/10 mb-6">
               <Search className="h-8 w-8 text-[rgb(65,135,249)]" />
             </div>
             <h3 className="text-xl font-semibold text-slate-900 mb-2">
-              No articles found
+              {searchTerm || selectedCategory ? 'No articles found' : 'No articles yet'}
             </h3>
             <p className="text-slate-500">
-              Try adjusting your search or filter criteria
+              {searchTerm || selectedCategory 
+                ? 'Try adjusting your search or filter criteria' 
+                : 'Check back later for new content'}
             </p>
           </div>
         ) : (
@@ -335,7 +384,7 @@ export default function BlogPage() {
             {/* Show current count */}
             {!loadingMore && blogs.length > 0 && (
               <p className="text-center text-slate-500 text-sm mt-6">
-                Showing {blogs.length} of {!searchTerm && !selectedCategory ? blogPosts.length : blogs.length + (hasMore ? '...' : '')} articles
+                Showing {blogs.length} articles{hasMore ? ' (more available)' : ''}
               </p>
             )}
           </>

@@ -107,6 +107,7 @@ const Table = ({
                       onClick={() => handleSort(column)}
                       className={`
                         group
+                       ${column.header=="Product"  ? 'min-w-[350px]' : ''}
                         px-6 
                         ${compact ? 'py-2' : 'py-3.5'} 
                         text-left 
