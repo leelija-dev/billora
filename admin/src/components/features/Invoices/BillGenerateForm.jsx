@@ -1001,9 +1001,9 @@ const handleCreateCustomer = async (customerData) => {
           // Ensure we have the complete items and packages data from submission
           items: submissionData.items || [],
           packages: submissionData.packages || [],
-          // Use API data for important fields
+          // Use API data for important fields - invoice_id is the correct invoice number
           id: apiInvoiceData.id || apiInvoiceData.invoice_id,
-          invoice_number: apiInvoiceData.invoice_number || `INV-${Date.now()}`,
+          invoice_number: apiInvoiceData.invoice_id || apiInvoiceData.invoice_number || `INV-${Date.now()}`,
           total_amount: apiInvoiceData.total_amount || submissionData.total_amount,
           created_at: apiInvoiceData.created_at || new Date().toISOString()
         }
@@ -1123,8 +1123,8 @@ const handleCreateCustomer = async (customerData) => {
           // Total amounts (prefer server data)
           total_amount: serverInvoiceData.total_amount || createdInvoiceData.total_amount || 0,
           paid_amount: serverInvoiceData.paid_amount || serverInvoiceData.paid_amount || createdInvoiceData.paid_amount || 0,
-          // Invoice metadata
-          invoice_number: serverInvoiceData.invoice_number || createdInvoiceData.invoice_number || `INV-${Date.now()}`,
+          // Invoice metadata - use invoice_id from server as invoice_number
+          invoice_number: serverInvoiceData.invoice_id || serverInvoiceData.invoice_number || createdInvoiceData.invoice_id || createdInvoiceData.invoice_number || `INV-${Date.now()}`,
           created_at: serverInvoiceData.created_at || createdInvoiceData.created_at || new Date().toISOString(),
           invoice_date: serverInvoiceData.invoice_date || createdInvoiceData.invoice_date || serverInvoiceData.created_at || new Date().toISOString()
         }
@@ -1134,6 +1134,8 @@ const handleCreateCustomer = async (customerData) => {
         console.log('🔍 Packages count:', mergedInvoiceData.packages?.length || 0)
         console.log('🔍 Paid amount:', mergedInvoiceData.paid_amount)
         console.log('🔍 Store name:', mergedInvoiceData.store_name)
+        console.log('🔍 Invoice number:', mergedInvoiceData.invoice_number)
+        console.log('🔍 Server invoice_id:', serverInvoiceData.invoice_id)
         
         return mergedInvoiceData
       }
