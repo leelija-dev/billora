@@ -10,6 +10,7 @@ import { LucideStore } from 'lucide-react'
 import { handlePhoneInput, handleMaxLength, validationRules } from '../../../utils/validators'
 
 const StoreModal = ({ isOpen, onClose, onStoreCreated, initialData = {} }) => {
+  const isEditMode = !!initialData?.id
   const [formData, setFormData] = useState({
     name: initialData.name || '',
     gst: initialData.gst || '',
@@ -145,18 +146,34 @@ const StoreModal = ({ isOpen, onClose, onStoreCreated, initialData = {} }) => {
         status: true
       }
 
-      const response = await storeAPI.create(storeData)
-      
-      if (response.data) {
-        toast.success('Store created successfully!')
-        onStoreCreated(response.data)
-        handleClose()
+      let response
+      if (isEditMode) {
+        // Update existing store
+        response = await storeAPI.update(initialData.id, storeData)
+        
+        if (response.data?.status === true || response.data?.data) {
+          const updatedStoreData = response.data.data || response.data
+          toast.success(response.data.message || 'Store updated successfully!')
+          onStoreCreated({ ...updatedStoreData, ...storeData })
+          handleClose()
+        } else {
+          throw new Error('Failed to update store')
+        }
       } else {
-        throw new Error('Failed to create store')
+        // Create new store
+        response = await storeAPI.create(storeData)
+        
+        if (response.data) {
+          toast.success('Store created successfully!')
+          onStoreCreated(response.data)
+          handleClose()
+        } else {
+          throw new Error('Failed to create store')
+        }
       }
     } catch (err) {
-      console.error('Store creation error:', err)
-      const errorMessage = err.response?.data?.message || err.message || 'Failed to create store'
+      console.error('Store operation error:', err)
+      const errorMessage = err.response?.data?.message || err.message || (isEditMode ? 'Failed to update store' : 'Failed to create store')
       setError(errorMessage)
       toast.error(errorMessage)
     } finally {
@@ -186,7 +203,7 @@ const StoreModal = ({ isOpen, onClose, onStoreCreated, initialData = {} }) => {
     <Modal
       isOpen={isOpen}
       onClose={handleClose}
-      title="Add New Store"
+      title={isEditMode ? "Edit Store" : "Add New Store"}
       size="md"
     >
       <form onSubmit={handleSubmit} className="space-y-4">
@@ -344,7 +361,7 @@ const StoreModal = ({ isOpen, onClose, onStoreCreated, initialData = {} }) => {
             disabled={isSubmitting}
             icon={FiSave}
           >
-            {isSubmitting ? 'Creating...' : 'Create Store'}
+            {isSubmitting ? (isEditMode ? 'Updating...' : 'Creating...') : (isEditMode ? 'Update Store' : 'Create Store')}
           </Button>
         </div>
       </form>

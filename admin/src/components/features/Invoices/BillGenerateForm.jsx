@@ -474,41 +474,29 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
   // Handle customer creation from modal
   const handleCreateCustomer = async (customerData) => {
     try {
-      // Refresh customers list from customer API directly
-      const customersResponse = await customerAPI.getAll(currentUserId, '')
-
-      let customersList = []
-      if (customersResponse?.data?.data?.data && Array.isArray(customersResponse.data.data.data)) {
-        customersList = customersResponse.data.data.data
-      } else if (customersResponse?.data?.data && Array.isArray(customersResponse.data.data)) {
-        customersList = customersResponse.data.data
-      } else if (Array.isArray(customersResponse?.data)) {
-        customersList = customersResponse.data
-      }
-
-      setCustomers(customersList)
-
-      // Find the newly created customer
-      const newCustomer = customersList.find(c =>
-        c.name === customerData.name ||
-        c.phone === customerData.phone
-      )
-
-      if (newCustomer) {
-        // Auto-select the new customer
-        setFormData(prev => ({
-          ...prev,
-          customer_id: newCustomer.id
-        }))
-        toast.success('Customer created and selected successfully')
-      } else {
-        toast.success('Customer created successfully')
-      }
-
+      // Use the returned customer data directly instead of refreshing
+      const createdCustomer = customerData
+      
+      // Add the new customer to the existing customers list
+      setCustomers(prev => {
+        const existingCustomers = Array.isArray(prev) ? prev : []
+        return [createdCustomer, ...existingCustomers]
+      })
+      
+      // Auto-select the new customer
+      setFormData(prev => ({
+        ...prev,
+        customer_id: createdCustomer.id
+      }))
+      
+      // Set search field to show the new customer
+      setCustomerSearch(createdCustomer.name || createdCustomer.phone)
+      
+      toast.success('Customer created and selected successfully')
       setShowAddCustomerModal(false)
     } catch (err) {
       console.error('Customer creation error:', err)
-      toast.error('Failed to refresh customer list')
+      toast.error('Failed to create customer')
     }
   }
 
@@ -616,18 +604,25 @@ const handleUpdateCustomer = async (customerData) => {
   try {
     const response = await customerAPI.update(editingCustomer.id, customerData)
 
+    // Handle the actual response structure from API
     if (response.data?.status === true || response.data?.data) {
-      // Update customers list
+      // Create updated customer object from response data
+      const updatedCustomerData = response.data.data || response.data
+      
+      // Update customers list with actual response data
       const updatedCustomers = customers.map(c =>
-        c.id === editingCustomer.id ? { ...c, ...customerData } : c
+        c.id === editingCustomer.id ? { ...c, ...updatedCustomerData, ...customerData } : c
       )
       setCustomers(updatedCustomers)
 
       // Auto-select the updated customer
       setFormData(prev => ({ ...prev, customer_id: editingCustomer.id }))
-      setCustomerSearch(customerData.name || customerData.phone)
+      setCustomerSearch(updatedCustomerData.name || customerData.name || customerData.phone)
 
-      toast.success('Customer updated successfully!')
+      // Show appropriate success message
+      const successMessage = response.data.message || 'Customer updated successfully!'
+      toast.success(successMessage)
+      
       setShowEditCustomerModal(false)
       setEditingCustomer(null)
     } else {
@@ -652,18 +647,25 @@ const handleUpdateCustomer = async (customerData) => {
     try {
       const response = await storeAPI.update(editingStore.id, storeData)
 
+      // Handle the actual response structure from API
       if (response.data?.status === true || response.data?.data) {
-        // Update stores list
+        // Create updated store object from response data
+        const updatedStoreData = response.data.data || response.data
+        
+        // Update stores list with the actual response data
         const updatedStores = stores.map(s =>
-          s.id === editingStore.id ? { ...s, ...storeData } : s
+          s.id === editingStore.id ? { ...s, ...updatedStoreData, ...storeData } : s
         )
         setStores(updatedStores)
 
         // Auto-select the updated store
         setFormData(prev => ({ ...prev, store_id: editingStore.id }))
-        setStoreSearch(storeData.name)
+        setStoreSearch(updatedStoreData.name || storeData.name)
 
-        toast.success('Store updated successfully!')
+        // Show appropriate success message
+        const successMessage = response.data.message || 'Store updated successfully!'
+        toast.success(successMessage)
+        
         setShowEditStoreModal(false)
         setEditingStore(null)
       } else {
