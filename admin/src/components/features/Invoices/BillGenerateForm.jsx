@@ -620,7 +620,18 @@ const handleCreateCustomer = async (customerData) => {
           storeName = storeInfo.name || storeInfo.store_name || 'New Store'
           storeId = storeInfo.id
 
-          setFormData(prev => ({ ...prev, store_id: storeId }))
+          // Preserve current form state and customer selection when creating store
+          setFormData(prev => ({
+            ...prev,
+            store_id: storeId,
+            // Keep current customer selection
+            customer_id: prev.customer_id,
+            customer_name: prev.customer_name,
+            customer_phone: prev.customer_phone,
+            customer_email: prev.customer_email,
+            customer_address: prev.customer_address,
+            customer_gst: prev.customer_gst
+          }))
           setStoreSearch(storeName)
           toast.success('Store created successfully')
         }
