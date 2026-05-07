@@ -484,92 +484,92 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting,
 
   // Handle customer creation from modal
   // Handle customer creation from modal
-// Handle customer creation from modal
-const handleCreateCustomer = async (customerData) => {
-  try {
-    // The customerData from CustomerModal might have different structures
-    let createdCustomer = customerData
-    
-    console.log('Customer data received in BillGenerateForm:', createdCustomer)
-    
-    // Handle different response structures
-    if (createdCustomer?.data) {
-      createdCustomer = createdCustomer.data
-    }
-    
-    // Check if we have a valid customer with ID
-    if (!createdCustomer || !createdCustomer.id) {
-      console.error('Invalid customer data received:', createdCustomer)
-      toast.error('Customer created but data is incomplete')
-      
-      // Try to fetch the customer again as fallback
-      try {
-        const refreshResponse = await customerAPI.getAll(currentUserId, '')
-        let customersList = []
-        if (refreshResponse?.data?.data?.data && Array.isArray(refreshResponse.data.data.data)) {
-          customersList = refreshResponse.data.data.data
-        } else if (refreshResponse?.data?.data && Array.isArray(refreshResponse.data.data)) {
-          customersList = refreshResponse.data.data
-        } else if (Array.isArray(refreshResponse?.data)) {
-          customersList = refreshResponse.data
-        }
-        
-        // Find the newly created customer (the last one or search by phone)
-        const newCustomer = customersList.find(c => c.phone === createdCustomer.phone)
-        if (newCustomer) {
-          createdCustomer = newCustomer
-          console.log('Found customer from refresh:', createdCustomer)
-        }
-      } catch (refreshError) {
-        console.error('Failed to refresh customers:', refreshError)
+  // Handle customer creation from modal
+  const handleCreateCustomer = async (customerData) => {
+    try {
+      // The customerData from CustomerModal might have different structures
+      let createdCustomer = customerData
+
+      console.log('Customer data received in BillGenerateForm:', createdCustomer)
+
+      // Handle different response structures
+      if (createdCustomer?.data) {
+        createdCustomer = createdCustomer.data
       }
-      
+
+      // Check if we have a valid customer with ID
       if (!createdCustomer || !createdCustomer.id) {
-        return
-      }
-    }
-    
-    // Add the new customer to the existing customers list
-    setCustomers(prev => {
-      const existingCustomers = Array.isArray(prev) ? prev : []
-      // Check if customer already exists to avoid duplicates
-      const exists = existingCustomers.some(c => c.id === createdCustomer.id)
-      if (!exists) {
-        console.log('Adding new customer to list:', createdCustomer)
-        return [createdCustomer, ...existingCustomers]
-      }
-      return existingCustomers
-    })
-    
-    // Auto-select the new customer
-    setFormData(prev => ({
-      ...prev,
-      customer_id: createdCustomer.id
-    }))
-    
-    // Set search field to show the new customer
-    setCustomerSearch(createdCustomer.name || createdCustomer.phone)
-    
-    // Force a re-render to ensure SearchSelect updates
-    setTimeout(() => {
-      // Double-check the selection
-      setFormData(prev => {
-        if (prev.customer_id !== createdCustomer.id) {
-          console.log('Forcing customer selection update')
-          return { ...prev, customer_id: createdCustomer.id }
+        console.error('Invalid customer data received:', createdCustomer)
+        toast.error('Customer created but data is incomplete')
+
+        // Try to fetch the customer again as fallback
+        try {
+          const refreshResponse = await customerAPI.getAll(currentUserId, '')
+          let customersList = []
+          if (refreshResponse?.data?.data?.data && Array.isArray(refreshResponse.data.data.data)) {
+            customersList = refreshResponse.data.data.data
+          } else if (refreshResponse?.data?.data && Array.isArray(refreshResponse.data.data)) {
+            customersList = refreshResponse.data.data
+          } else if (Array.isArray(refreshResponse?.data)) {
+            customersList = refreshResponse.data
+          }
+
+          // Find the newly created customer (the last one or search by phone)
+          const newCustomer = customersList.find(c => c.phone === createdCustomer.phone)
+          if (newCustomer) {
+            createdCustomer = newCustomer
+            console.log('Found customer from refresh:', createdCustomer)
+          }
+        } catch (refreshError) {
+          console.error('Failed to refresh customers:', refreshError)
         }
-        return prev
+
+        if (!createdCustomer || !createdCustomer.id) {
+          return
+        }
+      }
+
+      // Add the new customer to the existing customers list
+      setCustomers(prev => {
+        const existingCustomers = Array.isArray(prev) ? prev : []
+        // Check if customer already exists to avoid duplicates
+        const exists = existingCustomers.some(c => c.id === createdCustomer.id)
+        if (!exists) {
+          console.log('Adding new customer to list:', createdCustomer)
+          return [createdCustomer, ...existingCustomers]
+        }
+        return existingCustomers
       })
-    }, 100)
-    
-    toast.success(`Customer ${createdCustomer.name} created and selected successfully`)
-    setShowAddCustomerModal(false)
-    
-  } catch (err) {
-    console.error('Customer creation error:', err)
-    toast.error('Failed to create customer')
+
+      // Auto-select the new customer
+      setFormData(prev => ({
+        ...prev,
+        customer_id: createdCustomer.id
+      }))
+
+      // Set search field to show the new customer
+      setCustomerSearch(createdCustomer.name || createdCustomer.phone)
+
+      // Force a re-render to ensure SearchSelect updates
+      setTimeout(() => {
+        // Double-check the selection
+        setFormData(prev => {
+          if (prev.customer_id !== createdCustomer.id) {
+            console.log('Forcing customer selection update')
+            return { ...prev, customer_id: createdCustomer.id }
+          }
+          return prev
+        })
+      }, 100)
+
+      toast.success(`Customer ${createdCustomer.name} created and selected successfully`)
+      setShowAddCustomerModal(false)
+
+    } catch (err) {
+      console.error('Customer creation error:', err)
+      toast.error('Failed to create customer')
+    }
   }
-}
 
   // Handle store creation from modal
   const handleCreateStore = async (storeData) => {
@@ -1059,11 +1059,11 @@ const handleCreateCustomer = async (customerData) => {
   const fetchCompleteInvoiceData = async (invoiceId) => {
     try {
       console.log('🔍 Fetching complete invoice data from server for ID:', invoiceId)
-      
+
       // Fetch the complete invoice data from server
       const response = await invoiceAPI.getById(invoiceId)
       console.log('🔍 Server invoice response:', response)
-      
+
       let serverInvoiceData = null
       if (response?.data?.data) {
         serverInvoiceData = response.data.data
@@ -1079,11 +1079,11 @@ const handleCreateCustomer = async (customerData) => {
       // If we have server data, merge it with local data for complete information
       if (serverInvoiceData && createdInvoiceData) {
         console.log('🔍 Merging server data with local submission data')
-        
+
         // Fetch customer and store details for complete information
         let customerData = {}
         let storeData = {}
-        
+
         try {
           if (serverInvoiceData.customer_id || createdInvoiceData.customer_id) {
             const customerId = serverInvoiceData.customer_id || createdInvoiceData.customer_id
@@ -1093,7 +1093,7 @@ const handleCreateCustomer = async (customerData) => {
         } catch (error) {
           console.error('Failed to fetch customer data:', error)
         }
-        
+
         try {
           if (serverInvoiceData.store_id || createdInvoiceData.store_id) {
             const storeId = serverInvoiceData.store_id || createdInvoiceData.store_id
@@ -1147,7 +1147,7 @@ const handleCreateCustomer = async (customerData) => {
         console.log('🔍 Store name:', mergedInvoiceData.store_name)
         console.log('🔍 Invoice number:', mergedInvoiceData.invoice_number)
         console.log('🔍 Server invoice_id:', serverInvoiceData.invoice_id)
-        
+
         return mergedInvoiceData
       }
 
@@ -1373,18 +1373,18 @@ const handleCreateCustomer = async (customerData) => {
                   onCreateNew={(searchTerm) => {
                     // Detect if search term is a phone number (contains digits) or name
                     const isPhoneNumber = /^\d[\d\s-]*$/.test(searchTerm.trim())
-                    
+
                     if (isPhoneNumber) {
-                      setNewCustomerData(prev => ({ 
-                        ...prev, 
+                      setNewCustomerData(prev => ({
+                        ...prev,
                         phone: searchTerm.trim(),
-                        name: '' 
+                        name: ''
                       }))
                     } else {
-                      setNewCustomerData(prev => ({ 
-                        ...prev, 
+                      setNewCustomerData(prev => ({
+                        ...prev,
                         name: searchTerm.trim(),
-                        phone: '' 
+                        phone: ''
                       }))
                     }
                     setShowAddCustomerModal(true)
@@ -1427,18 +1427,18 @@ const handleCreateCustomer = async (customerData) => {
                   onCreateNew={(searchTerm) => {
                     // Detect if search term is a phone number (contains digits) or name/address
                     const isPhoneNumber = /^\d[\d\s-]*$/.test(searchTerm.trim())
-                    
+
                     if (isPhoneNumber) {
-                      setNewStoreData(prev => ({ 
-                        ...prev, 
+                      setNewStoreData(prev => ({
+                        ...prev,
                         mobile: searchTerm.trim(),
-                        name: '' 
+                        name: ''
                       }))
                     } else {
-                      setNewStoreData(prev => ({ 
-                        ...prev, 
+                      setNewStoreData(prev => ({
+                        ...prev,
                         name: searchTerm.trim(),
-                        mobile: '' 
+                        mobile: ''
                       }))
                     }
                     setShowAddStoreModal(true)
@@ -1513,7 +1513,7 @@ const handleCreateCustomer = async (customerData) => {
                               </div>
                               <div className="text-right ml-4">
                                 <div className="font-semibold text-gray-900 dark:text-white flex justify-center items-center">
-                                  <FaRupeeSign className='mt-2 text-[13px] mb-[4px] me-[2px]'/>{parseFloat(pkg.package_price || 0).toFixed(2)}
+                                  <FaRupeeSign className='mt-2 text-[13px] mb-[4px] me-[2px]' />{parseFloat(pkg.package_price || 0).toFixed(2)}
                                 </div>
                               </div>
                             </div>
@@ -1550,7 +1550,7 @@ const handleCreateCustomer = async (customerData) => {
                       </div>
                       <div className="text-right">
                         <p className="text-lg font-bold text-primary-600 dark:text-primary-400 flex gap-1 justify-end items-center">
-                          <FaRupeeSign className='text-[15px]'/>{parseFloat(selectedPackage.package_price || 0).toFixed(2)}
+                          <FaRupeeSign className='text-[15px]' />{parseFloat(selectedPackage.package_price || 0).toFixed(2)}
                         </p>
                       </div>
                     </div>
@@ -1769,8 +1769,14 @@ const handleCreateCustomer = async (customerData) => {
                           <p className="font-medium text-gray-900 dark:text-white text-sm">{item.product_name}</p>
                           <p className="text-xs text-gray-500 dark:text-gray-400">{item.product_code}</p>
                           <p className="text-xs text-gray-400 dark:text-gray-500">{item.unit_name}</p>
-                          {item.stock_quantity !== undefined && (
-                            <p className="text-xs text-blue-600 dark:text-blue-400">Stock: {item.stock_quantity}</p>
+                          {item.stock_quantity !== undefined && item.stock_quantity > 0 ? (
+                            <p className="text-xs text-blue-600 dark:text-blue-400">
+                              Stock: {item.stock_quantity}
+                            </p>
+                          ) : (
+                            <p className="text-xs text-red-600 dark:text-red-400">
+                              Please Add Stock
+                            </p>
                           )}
                         </div>
                       </td>
@@ -2126,7 +2132,7 @@ const handleCreateCustomer = async (customerData) => {
                       try {
                         // Fetch complete invoice data from server using invoice ID
                         const completeInvoiceData = await fetchCompleteInvoiceData(createdInvoiceData.id)
-                        
+
                         if (!completeInvoiceData) {
                           // Fallback to enriched data if server fetch fails
                           const enrichedInvoice = await enrichInvoiceForPrint(createdInvoiceData)
@@ -2140,7 +2146,7 @@ const handleCreateCustomer = async (customerData) => {
                         setShowBillDialog(false)
 
                         toast.success('Invoice generated and printed successfully')
-                        
+
                         // Instead of navigate, call the onSuccess callback
                         if (onSuccess) {
                           onSuccess()
@@ -2161,7 +2167,7 @@ const handleCreateCustomer = async (customerData) => {
                       try {
                         // Fetch complete invoice data from server using invoice ID
                         const completeInvoiceData = await fetchCompleteInvoiceData(createdInvoiceData.id)
-                        
+
                         if (!completeInvoiceData) {
                           // Fallback to enriched data if server fetch fails
                           const enrichedInvoice = await enrichInvoiceForPrint(createdInvoiceData)
@@ -2175,7 +2181,7 @@ const handleCreateCustomer = async (customerData) => {
                         setShowBillDialog(false)
 
                         toast.success('Invoice generated and printed successfully')
-                        
+
                         // Instead of navigate, call the onSuccess callback
                         if (onSuccess) {
                           onSuccess()

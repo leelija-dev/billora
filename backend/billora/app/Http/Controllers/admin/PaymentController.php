@@ -211,7 +211,7 @@ class PaymentController extends Controller
             //     'message' => 'Payment successful',
             //     'data' => $data
             // ]);
-            $redirectUrl = rtrim(env('FRONTEND_LOGIN_URL', 'http://localhost:3000'), '/') . '/dashboard';
+            $redirectUrl = rtrim(env('REACT_APP_URL', 'https://app.thefastbill.com'), '/') . '/dashboard';
             return redirect()->away($redirectUrl);
         }
 
