@@ -178,20 +178,18 @@ const handleAddSubmit = async (data) => {
     const res = await createInvoice(data)
     console.log('Invoice creation response:', res)
     
-    // Check for successful response - backend returns status: true, not success field
     if (res?.status === true || res?.success) {
-      setShowAddForm(false)
-      await fetchInvoices(currentPage)
       toast.success('Invoice created successfully')
-      return res  // 👈 Add this return statement
+      // Return the created invoice data
+      return { success: true, data: res?.data || res }
     } else {
       toast.error(res?.message || 'Failed to create invoice')
-      return { success: false, error: res?.message }  // 👈 Return error info
+      return { success: false, error: res?.message }
     }
   } catch (error) {
     console.error('Failed to create invoice:', error)
     toast.error('Failed to create invoice')
-    return { success: false, error: error.message }  // 👈 Return error info
+    return { success: false, error: error.message }
   } finally {
     setFormSubmitting(false)
   }
@@ -595,6 +593,12 @@ const handleAddSubmit = async (data) => {
               onCancel={handleCancelForm}
               isSubmitting={formSubmitting}
               hasStockPermission={hasStockPermission}
+              onSuccess={() => {
+                // This will close the form and show the invoice table
+                setShowAddForm(false)
+                // Refresh the invoices list
+                fetchInvoices(currentPage)
+              }}
             />
           </motion.div>
         )}

@@ -28,7 +28,7 @@ let billGenerateCache = null
 let lastFetchTime = null
 const CACHE_EXPIRY = 30 * 1000 // 30 seconds
 
-const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting }) => {
+const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting, onSuccess }) => {
   const navigate = useNavigate()
   const { user } = useAuthStore()
   const { packages, fetchPackages, loading: packagesLoading } = usePackageStore()
@@ -993,16 +993,26 @@ const handleCreateCustomer = async (customerData) => {
       console.log('📄 Invoice submitted successfully:', response)
 
       // Check if invoice was actually created successfully
-      if (response?.status === true || response?.success) {
-        // Get the created invoice data from response
-        const createdInvoice = response?.data?.data || response?.data || submissionData
+      if (response?.success === true || response?.status === true) {
+        // Get the created invoice data from response and merge with submission data for printing
+        const apiInvoiceData = response?.data || {}
+        const createdInvoice = {
+          ...apiInvoiceData,
+          // Ensure we have the complete items and packages data from submission
+          items: submissionData.items || [],
+          packages: submissionData.packages || [],
+          // Use API data for important fields
+          id: apiInvoiceData.id || apiInvoiceData.invoice_id,
+          invoice_number: apiInvoiceData.invoice_number || `INV-${Date.now()}`,
+          total_amount: apiInvoiceData.total_amount || submissionData.total_amount,
+          created_at: apiInvoiceData.created_at || new Date().toISOString()
+        }
         setCreatedInvoiceData(createdInvoice)
         setGeneratedBillData(submissionData)
 
         // Show print choice dialog only after successful bill generation
         setShowBillDialog(true)
       } else {
-        // Show error message if invoice creation failed
         toast.error(response?.message || 'Failed to generate invoice. Please try again.')
       }
     } catch (error) {
@@ -1034,6 +1044,107 @@ const handleCreateCustomer = async (customerData) => {
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
+  // Helper function to fetch complete invoice data from server using invoice ID
+  const fetchCompleteInvoiceData = async (invoiceId) => {
+    try {
+      console.log('🔍 Fetching complete invoice data from server for ID:', invoiceId)
+      
+      // Fetch the complete invoice data from server
+      const response = await invoiceAPI.getById(invoiceId)
+      console.log('🔍 Server invoice response:', response)
+      
+      let serverInvoiceData = null
+      if (response?.data?.data) {
+        serverInvoiceData = response.data.data
+        console.log('🔍 Complete invoice data from server:', serverInvoiceData)
+      } else if (response?.data) {
+        serverInvoiceData = response.data
+        console.log('🔍 Invoice data from response.data:', serverInvoiceData)
+      } else {
+        console.warn('⚠️ No invoice data found in server response')
+        return null
+      }
+
+      // If we have server data, merge it with local data for complete information
+      if (serverInvoiceData && createdInvoiceData) {
+        console.log('🔍 Merging server data with local submission data')
+        
+        // Fetch customer and store details for complete information
+        let customerData = {}
+        let storeData = {}
+        
+        try {
+          if (serverInvoiceData.customer_id || createdInvoiceData.customer_id) {
+            const customerId = serverInvoiceData.customer_id || createdInvoiceData.customer_id
+            const customerResponse = await customerAPI.getById(customerId)
+            customerData = customerResponse.data?.data || {}
+          }
+        } catch (error) {
+          console.error('Failed to fetch customer data:', error)
+        }
+        
+        try {
+          if (serverInvoiceData.store_id || createdInvoiceData.store_id) {
+            const storeId = serverInvoiceData.store_id || createdInvoiceData.store_id
+            const storeResponse = await storeAPI.getByUserId(serverInvoiceData.user_id || createdInvoiceData.user_id || currentUserId)
+            const storesArray = storeResponse.data?.data?.data || storeResponse.data?.data || []
+            storeData = storesArray.find(store => store.id === storeId) || storesArray[0] || {}
+          }
+        } catch (error) {
+          console.error('Failed to fetch store data:', error)
+        }
+
+        // Create merged invoice data
+        const mergedInvoiceData = {
+          // Use server data for payment and official fields
+          ...serverInvoiceData,
+          // Use local data for items and packages (server might not have these)
+          items: createdInvoiceData.items || [],
+          packages: createdInvoiceData.packages || [],
+          // Use local data for form fields that server might not return
+          customer_id: serverInvoiceData.customer_id || createdInvoiceData.customer_id,
+          store_id: serverInvoiceData.store_id || createdInvoiceData.store_id,
+          user_id: serverInvoiceData.user_id || createdInvoiceData.user_id || currentUserId,
+          // Customer information (prefer fetched data)
+          customer_name: customerData.name || serverInvoiceData.customer_name || createdInvoiceData.customer_name || 'Walk-in Customer',
+          customer_phone: customerData.phone || serverInvoiceData.customer_phone || createdInvoiceData.customer_phone || 'N/A',
+          customer_email: customerData.email || serverInvoiceData.customer_email || createdInvoiceData.customer_email || 'N/A',
+          customer_address: customerData.address ? `${customerData.address}, ${customerData.city || ''}` : serverInvoiceData.customer_address || createdInvoiceData.customer_address || 'N/A',
+          customer_gst: customerData.gst || serverInvoiceData.customer_gst || createdInvoiceData.customer_gst || 'N/A',
+          // Store information (prefer fetched data)
+          store_name: storeData.name || serverInvoiceData.store_name || createdInvoiceData.store_name || 'Your Store Name',
+          store_address: storeData.address ? `${storeData.address}, ${storeData.city || ''}` : serverInvoiceData.store_address || createdInvoiceData.store_address || '123 Business Street, City',
+          store_gst: storeData.gst || serverInvoiceData.store_gst || createdInvoiceData.store_gst || 'GSTIN123456',
+          store_email: storeData.email || serverInvoiceData.store_email || createdInvoiceData.store_email || 'store@business.com',
+          store_phone: storeData.mobile || storeData.phone || serverInvoiceData.store_phone || createdInvoiceData.store_phone || '123-456-7890',
+          // Payment information (use server data as it's more accurate)
+          payment_mode: serverInvoiceData.payment_mode || createdInvoiceData.payment_mode || 'Cash',
+          payment_status: serverInvoiceData.payment_status || createdInvoiceData.payment_status || 'paid',
+          // Total amounts (prefer server data)
+          total_amount: serverInvoiceData.total_amount || createdInvoiceData.total_amount || 0,
+          paid_amount: serverInvoiceData.paid_amount || serverInvoiceData.paid_amount || createdInvoiceData.paid_amount || 0,
+          // Invoice metadata
+          invoice_number: serverInvoiceData.invoice_number || createdInvoiceData.invoice_number || `INV-${Date.now()}`,
+          created_at: serverInvoiceData.created_at || createdInvoiceData.created_at || new Date().toISOString(),
+          invoice_date: serverInvoiceData.invoice_date || createdInvoiceData.invoice_date || serverInvoiceData.created_at || new Date().toISOString()
+        }
+
+        console.log('🔍 Merged invoice data for print:', mergedInvoiceData)
+        console.log('🔍 Items count:', mergedInvoiceData.items?.length || 0)
+        console.log('🔍 Packages count:', mergedInvoiceData.packages?.length || 0)
+        console.log('🔍 Paid amount:', mergedInvoiceData.paid_amount)
+        console.log('🔍 Store name:', mergedInvoiceData.store_name)
+        
+        return mergedInvoiceData
+      }
+
+      return serverInvoiceData
+    } catch (error) {
+      console.error('❌ Error fetching complete invoice data:', error)
+      return null
+    }
+  }
+
   // Helper function to enrich invoice data with customer and store details for printing
   const enrichInvoiceForPrint = async (invoice) => {
     try {
@@ -1064,22 +1175,41 @@ const handleCreateCustomer = async (customerData) => {
       // Enhance invoice with full details
       const enhancedInvoice = {
         ...invoice,
+        // Ensure required fields for print templates
         invoice_number: invoice.invoice_number || invoice.id || `INV-${Date.now()}`,
         id: invoice.id || invoice.invoice_id,
+        // Customer information
         customer_name: customerData.name || invoice.customer_name || 'Walk-in Customer',
         customer_phone: customerData.phone || invoice.customer_phone || 'N/A',
         customer_email: customerData.email || invoice.customer_email || 'N/A',
         customer_address: customerData.address ? `${customerData.address}, ${customerData.city || ''}` : invoice.customer_address || 'N/A',
         customer_gst: customerData.gst || invoice.customer_gst || 'N/A',
+        customer_id: invoice.customer_id,
+        // Store information
         store_name: storeData.name || invoice.store_name || 'Your Store Name',
         store_address: storeData.address ? `${storeData.address}, ${storeData.city || ''}` : invoice.store_address || '123 Business Street, City',
         store_gst: storeData.gst || invoice.store_gst || 'GSTIN123456',
         store_email: storeData.email || invoice.store_email || 'store@business.com',
         store_phone: storeData.mobile || storeData.phone || invoice.store_phone || '123-456-7890',
-        items: invoice.items || []
+        store_id: invoice.store_id,
+        user_id: invoice.user_id || currentUserId,
+        // Financial information
+        total_amount: invoice.total_amount || invoice.totalAmount || 0,
+        paid_amount: invoice.paid_amount || invoice.paidAmount || 0,
+        payment_mode: invoice.payment_mode || invoice.payment_method || 'Cash',
+        payment_status: invoice.payment_status || 'paid',
+        // Items and packages (crucial for print templates)
+        items: invoice.items || [],
+        packages: invoice.packages || [],
+        // Dates
+        created_at: invoice.created_at || new Date().toISOString(),
+        invoice_date: invoice.invoice_date || invoice.created_at || new Date().toISOString()
       }
 
-      console.log('Enriched invoice for print:', enhancedInvoice)
+      console.log('🔍 Enriched invoice for print:', enhancedInvoice)
+      console.log('🔍 Items count:', enhancedInvoice.items?.length || 0)
+      console.log('🔍 Packages count:', enhancedInvoice.packages?.length || 0)
+      console.log('🔍 Total amount:', enhancedInvoice.total_amount)
       return enhancedInvoice
     } catch (error) {
       console.error('Error enriching invoice for print:', error)
@@ -1981,19 +2111,27 @@ const handleCreateCustomer = async (customerData) => {
                     variant="primary"
                     onClick={async () => {
                       try {
-                        // Enrich invoice with customer and store details
-                        const enrichedInvoice = await enrichInvoiceForPrint(createdInvoiceData)
-
-                        // Trigger A4 print
-                        printA4Invoice(enrichedInvoice)
+                        // Fetch complete invoice data from server using invoice ID
+                        const completeInvoiceData = await fetchCompleteInvoiceData(createdInvoiceData.id)
+                        
+                        if (!completeInvoiceData) {
+                          // Fallback to enriched data if server fetch fails
+                          const enrichedInvoice = await enrichInvoiceForPrint(createdInvoiceData)
+                          printA4Invoice(enrichedInvoice)
+                        } else {
+                          // Use server data which should have correct paid amount and store info
+                          printA4Invoice(completeInvoiceData)
+                        }
 
                         // Close dialog
                         setShowBillDialog(false)
 
                         toast.success('Invoice generated and printed successfully')
-
-                        // Navigate to invoices page
-                        navigate('/invoices')
+                        
+                        // Instead of navigate, call the onSuccess callback
+                        if (onSuccess) {
+                          onSuccess()
+                        }
                       } catch (error) {
                         console.error('Error printing invoice:', error)
                         toast.error('Failed to print invoice. Please try again.')
@@ -2008,19 +2146,27 @@ const handleCreateCustomer = async (customerData) => {
                     variant="outline"
                     onClick={async () => {
                       try {
-                        // Enrich invoice with customer and store details
-                        const enrichedInvoice = await enrichInvoiceForPrint(createdInvoiceData)
-
-                        // Trigger thermal print
-                        printThermalInvoice(enrichedInvoice)
+                        // Fetch complete invoice data from server using invoice ID
+                        const completeInvoiceData = await fetchCompleteInvoiceData(createdInvoiceData.id)
+                        
+                        if (!completeInvoiceData) {
+                          // Fallback to enriched data if server fetch fails
+                          const enrichedInvoice = await enrichInvoiceForPrint(createdInvoiceData)
+                          printThermalInvoice(enrichedInvoice)
+                        } else {
+                          // Use server data which should have correct paid amount and store info
+                          printThermalInvoice(completeInvoiceData)
+                        }
 
                         // Close dialog
                         setShowBillDialog(false)
 
                         toast.success('Invoice generated and printed successfully')
-
-                        // Navigate to invoices page
-                        navigate('/invoices')
+                        
+                        // Instead of navigate, call the onSuccess callback
+                        if (onSuccess) {
+                          onSuccess()
+                        }
                       } catch (error) {
                         console.error('Error printing invoice:', error)
                         toast.error('Failed to print invoice. Please try again.')
@@ -2035,8 +2181,10 @@ const handleCreateCustomer = async (customerData) => {
                     variant="secondary"
                     onClick={() => {
                       setShowBillDialog(false)
-                      // Navigate to invoices page since bill is already submitted
-                      navigate('/invoices')
+                      // Instead of navigate, call the onSuccess callback
+                      if (onSuccess) {
+                        onSuccess()
+                      }
                     }}
                     className="w-full"
                   >
