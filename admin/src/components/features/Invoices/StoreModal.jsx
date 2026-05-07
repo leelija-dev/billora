@@ -146,22 +146,12 @@ const StoreModal = ({ isOpen, onClose, onStoreCreated, initialData = {} }) => {
         status: true
       }
 
-      let response
       if (isEditMode) {
-        // Update existing store
-        response = await storeAPI.update(initialData.id, storeData)
-        
-        if (response.data?.status === true || response.data?.data) {
-          const updatedStoreData = response.data.data || response.data
-          toast.success(response.data.message || 'Store updated successfully!')
-          onStoreCreated({ ...updatedStoreData, ...storeData })
-          handleClose()
-        } else {
-          throw new Error('Failed to update store')
-        }
+        // For edit mode, pass data to parent to handle API call
+        onStoreCreated({ ...storeData, id: initialData.id })
       } else {
-        // Create new store
-        response = await storeAPI.create(storeData)
+        // For create mode, make API call directly
+        const response = await storeAPI.create(storeData)
         
         if (response.data) {
           toast.success('Store created successfully!')
