@@ -32,14 +32,14 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
   const { user } = useAuthStore()
   const { packages, fetchPackages, loading: packagesLoading } = usePackageStore()
   const { createCustomer, fetchCustomers } = useCustomerStore()
-  
+
   // Get current user ID
   const getUserId = () => {
     if (user?.id) {
       console.log('Using user ID from auth store:', user.id)
       return user.id
     }
-    
+
     const authData = localStorage.getItem('auth')
     if (authData) {
       try {
@@ -50,7 +50,7 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
         console.error('Failed to parse auth data:', error)
       }
     }
-    
+
     throw new Error('User ID not found in auth store or localStorage')
   }
 
@@ -76,7 +76,7 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
   const [productSearch, setProductSearch] = useState('')
   const [showProductList, setShowProductList] = useState(false)
   const [dataFetchError, setDataFetchError] = useState(false) // Track if data fetch failed
-  
+
   // Search states for customer and store
   const [customerSearch, setCustomerSearch] = useState('')
   const [storeSearch, setStoreSearch] = useState('')
@@ -93,7 +93,7 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
   const [generatedBillData, setGeneratedBillData] = useState(null)
   const [createdInvoiceData, setCreatedInvoiceData] = useState(null)
   const [isSubmittingBill, setIsSubmittingBill] = useState(false)
-  
+
   // Add customer modal state
   const [showAddCustomerModal, setShowAddCustomerModal] = useState(false)
   const [isCreatingCustomer, setIsCreatingCustomer] = useState(false)
@@ -106,21 +106,21 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
     gst: ''
   })
   const [customerErrors, setCustomerErrors] = useState({})
-  
+
   // Edit customer modal state
   const [showEditCustomerModal, setShowEditCustomerModal] = useState(false)
   const [editingCustomer, setEditingCustomer] = useState(null)
   const [isUpdatingCustomer, setIsUpdatingCustomer] = useState(false)
-  
+
   // Add store modal state
   const [showAddStoreModal, setShowAddStoreModal] = useState(false)
   const [isCreatingStore, setIsCreatingStore] = useState(false)
-  
+
   // Edit store modal state
   const [showEditStoreModal, setShowEditStoreModal] = useState(false)
   const [editingStore, setEditingStore] = useState(null)
   const [isUpdatingStore, setIsUpdatingStore] = useState(false)
-  
+
   // Enhanced product search state
   const [filteredProducts, setFilteredProducts] = useState([])
 
@@ -129,7 +129,7 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
     const basePrice = price * quantity
     const discountAmount = basePrice * (discount / 100)
     const gstAmount = (basePrice - discountAmount) * (gst / 100)
-    return ((basePrice - discountAmount) + gstAmount) 
+    return ((basePrice - discountAmount) + gstAmount)
   }
 
   // Check if we have valid cached data
@@ -138,60 +138,38 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
   }
 
   const fetchInitialData = async () => {
-    if (isCacheValid()) {
-      console.log('Using cached bill generate data')
-      const data = billGenerateCache
-      
-      const customersList = data.customers || data.bill_customer || data.customer || []
-      const storesList = data.stores || data.store || []
-      const productsList = data.products || data.product || []
-      const unitsList = data.units || data.unit || []
-      
-      setCustomers(customersList.length > 0 ? customersList : [])
-      setStores(storesList.length > 0 ? storesList : [])
-      setProducts(productsList.length > 0 ? productsList : [])
-      setUnits(unitsList.length > 0 ? unitsList : [])
-      
-      if (storesList.length > 0 && !formData.store_id) {
-        const firstStoreId = storesList[0].id
-        setFormData(prev => ({
-          ...prev,
-          store_id: firstStoreId
-        }))
-      }
-      
-      return
-    }
-
     setLoading(true)
     setDataFetchError(false)
-    
+
     try {
-      const response = await invoiceAPI.getBillGenerateData(currentUserId)
-      console.log('Full API response:', response)
-      
-      let data = {}
-      if (response.data) {
-        if (response.data.data) {
-          data = response.data.data
-        } else {
-          data = response.data
-        }
+      // Fetch customers directly from customer API
+      const customersResponse = await customerAPI.getAll(currentUserId, '')
+      console.log('Customers API response:', customersResponse)
+
+      // Extract customers array from nested structure
+      let customersList = []
+      if (customersResponse?.data?.data?.data && Array.isArray(customersResponse.data.data.data)) {
+        customersList = customersResponse.data.data.data
+      } else if (customersResponse?.data?.data && Array.isArray(customersResponse.data.data)) {
+        customersList = customersResponse.data.data
+      } else if (Array.isArray(customersResponse?.data)) {
+        customersList = customersResponse.data
       }
-      
-      billGenerateCache = data
-      lastFetchTime = Date.now()
-      
-      const customersList = data.customers || data.bill_customer || data.customer || []
-      const storesList = data.stores || data.store || []
-      const productsList = data.products || data.product || []
-      const unitsList = data.units || data.unit || []
-      
-      setCustomers(customersList.length > 0 ? customersList : [])
+
+      setCustomers(customersList)
+
+      // Fetch stores from bill generate API or store API
+      const billResponse = await invoiceAPI.getBillGenerateData(currentUserId)
+      let billData = billResponse.data?.data || billResponse.data || {}
+
+      const storesList = billData.stores || billData.store || []
+      const productsList = billData.products || billData.product || []
+      const unitsList = billData.units || billData.unit || []
+
       setStores(storesList.length > 0 ? storesList : [])
       setProducts(productsList.length > 0 ? productsList : [])
       setUnits(unitsList.length > 0 ? unitsList : [])
-      
+
       if (storesList.length > 0 && !formData.store_id) {
         const firstStoreId = storesList[0].id
         setFormData(prev => ({
@@ -199,24 +177,19 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
           store_id: firstStoreId
         }))
       }
-      
-      // Success toast
+
       toast.success('Data loaded successfully')
-      
+
     } catch (error) {
-      console.error('Failed to fetch bill generate data:', error)
+      console.error('Failed to fetch data:', error)
       setDataFetchError(true)
-      
-      // Show error toast
+
       if (error.code === 'ERR_NETWORK') {
-        toast.error('Network error: Unable to connect to server. Please check if backend is running.')
-      } else if (error.response?.status === 404) {
-        toast.error('API endpoint not found. Please check backend configuration.')
+        toast.error('Network error: Unable to connect to server.')
       } else {
         toast.error('Failed to load form data. Please try again later.')
       }
-      
-      // Set empty arrays instead of error strings
+
       setCustomers([])
       setStores([])
       setProducts([])
@@ -245,12 +218,12 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
       setFilteredCustomers([])
       return
     }
-    
+
     if (customerSearch.trim() === '') {
       setFilteredCustomers(customers)
     } else {
       const searchLower = customerSearch.toLowerCase()
-      const filtered = customers.filter(customer => 
+      const filtered = customers.filter(customer =>
         customer.name?.toLowerCase().includes(searchLower) ||
         customer.phone?.toLowerCase().includes(searchLower) ||
         customer.email?.toLowerCase().includes(searchLower) ||
@@ -267,12 +240,12 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
       setFilteredStores([])
       return
     }
-    
+
     if (storeSearch.trim() === '') {
       setFilteredStores(stores)
     } else {
       const searchLower = storeSearch.toLowerCase()
-      const filtered = stores.filter(store => 
+      const filtered = stores.filter(store =>
         store.name?.toLowerCase().includes(searchLower) ||
         store.mobile?.toLowerCase().includes(searchLower) ||
         store.email?.toLowerCase().includes(searchLower) ||
@@ -290,12 +263,12 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
       setFilteredProducts([])
       return
     }
-    
+
     if (productSearch.trim() === '') {
       setFilteredProducts(products)
     } else {
       const searchLower = productSearch.toLowerCase()
-      const filtered = products.filter(product => 
+      const filtered = products.filter(product =>
         product.name?.toLowerCase().includes(searchLower) ||
         product.product_name?.toLowerCase().includes(searchLower) ||
         product.sku?.toLowerCase().includes(searchLower) ||
@@ -315,12 +288,12 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
       setFilteredPackages([])
       return
     }
-    
+
     if (packageSearch.trim() === '') {
       setFilteredPackages(packages)
     } else {
       const searchLower = packageSearch.toLowerCase()
-      const filtered = packages.filter(pkg => 
+      const filtered = packages.filter(pkg =>
         pkg.package_name?.toLowerCase().includes(searchLower) ||
         pkg.package_size?.toLowerCase().includes(searchLower) ||
         pkg.package_price?.toString().includes(searchLower)
@@ -349,25 +322,25 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
     try {
       // Check if product already exists in items
       const existingItemIndex = formData.items.findIndex(item => item.product_id === product.id)
-      
+
       if (existingItemIndex !== -1) {
         // Product exists, update quantity
         const updatedItems = [...formData.items]
         const newQuantity = updatedItems[existingItemIndex].quantity + 1
         const item = updatedItems[existingItemIndex]
-        
+
         updatedItems[existingItemIndex] = {
           ...item,
           quantity: newQuantity,
           item_count: newQuantity,
           total_price: calculateItemTotal(item.price, newQuantity, item.gst, item.discount)
         }
-        
+
         setFormData(prev => ({
           ...prev,
           items: updatedItems
         }))
-        
+
         console.log('🔄 Updated existing product quantity:', updatedItems[existingItemIndex])
       } else {
         // Fetch stock data for this product
@@ -380,20 +353,20 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
           console.error('Failed to fetch stock data:', error)
           // Continue without stock data
         }
-        
+
         const unit = Array.isArray(units) ? units.find(u => u.id === product.unit_id) : null
-        
+
         const sellingPrice = parseFloat(stockItem?.selling_price) || parseFloat(product.selling_price) || parseFloat(product.price) || 0
         const purchasePrice = parseFloat(stockItem?.purchase_price) || parseFloat(product.purchase_price) || parseFloat(product.cost) || 0
         const gst = parseFloat(product.gst_percentage) || parseFloat(stockItem?.gst_percentage) || parseFloat(product.gst) || 0
         const discount = parseFloat(product.discount_percentage) || parseFloat(stockItem?.discount) || parseFloat(product.discount) || 0
         const stockQuantity = stockItem?.quantity || 0
         const stockId = stockItem?.id || null
-        
+
         // Calculate initial total price
         const quantity = 1
         const totalPrice = calculateItemTotal(sellingPrice, quantity, gst, discount)
-        
+
         const newItem = {
           product_id: product.id,
           product_name: product.name || product.product_name,
@@ -411,12 +384,12 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
           stock_quantity: stockQuantity,
           stock_id: stockId
         }
-        
+
         setFormData(prev => ({
           ...prev,
           items: [...prev.items, newItem]
         }))
-        
+
         setShowProductList(false)
         setProductSearch('')
         toast.success(`${newItem.product_name} added to invoice`)
@@ -431,19 +404,19 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
     setFormData(prev => {
       const newItems = [...prev.items]
       const item = newItems[index]
-      
+
       if (field === 'quantity') {
         const newQuantity = parseFloat(value) || 0
-        
+
         // Validate against stock quantity
         if (item.stock_quantity > 0 && newQuantity > item.stock_quantity) {
           toast.error(`Cannot add more than available stock. Available: ${item.stock_quantity}`)
           return prev
         }
-        
+
         item.quantity = newQuantity
         item.item_count = newQuantity
-        
+
         // Recalculate total price correctly
         item.total_price = calculateItemTotal(item.price, item.quantity, item.gst, item.discount)
       } else if (field === 'price') {
@@ -461,7 +434,7 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
       } else {
         item[field] = value
       }
-      
+
       return { ...prev, items: newItems }
     })
   }
@@ -478,15 +451,15 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
   // Validate customer form
   const validateCustomerForm = () => {
     const newErrors = {}
-    
+
     if (!newCustomerData.name?.trim()) {
       newErrors.name = 'Name is required'
     }
-    
+
     if (newCustomerData.email && !/\S+@\S+\.\S+/.test(newCustomerData.email)) {
       newErrors.email = 'Email is invalid'
     }
-    
+
     if (newCustomerData.phone && !/^[\d\s-()+]+$/.test(newCustomerData.phone)) {
       newErrors.phone = 'Phone number is invalid'
     }
@@ -498,52 +471,41 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
   // Handle customer creation from modal
   const handleCreateCustomer = async (customerData) => {
     try {
-      // Refresh customers list
-      await fetchCustomers(currentUserId, '')
-      
-      // Fetch updated customers from API
-      try {
-        const response = await invoiceAPI.getBillGenerateData(currentUserId)
-        let updatedData = response.data?.data || response.data || {}
-        const updatedCustomersList = updatedData.customers || updatedData.bill_customer || updatedData.customer || []
-        setCustomers(Array.isArray(updatedCustomersList) ? updatedCustomersList : [])
-        
-        // Find the newly created customer
-        const newCustomer = updatedCustomersList.find(c => 
-          c.name === customerData.name || 
-          c.phone === customerData.phone
-        )
-        
-        if (newCustomer) {
-          // Auto-select the new customer
-          setFormData(prev => ({
-            ...prev,
-            customer_id: newCustomer.id
-          }))
-          toast.success('Customer created and selected successfully')
-        } else {
-          // Fallback: use the returned customer data
-          setFormData(prev => ({
-            ...prev,
-            customer_id: customerData.id
-          }))
-          toast.success('Customer created successfully')
-        }
-      } catch (error) {
-        console.error('Failed to refresh customer list:', error)
-        // Fallback: use the returned customer data
+      // Refresh customers list from customer API directly
+      const customersResponse = await customerAPI.getAll(currentUserId, '')
+
+      let customersList = []
+      if (customersResponse?.data?.data?.data && Array.isArray(customersResponse.data.data.data)) {
+        customersList = customersResponse.data.data.data
+      } else if (customersResponse?.data?.data && Array.isArray(customersResponse.data.data)) {
+        customersList = customersResponse.data.data
+      } else if (Array.isArray(customersResponse?.data)) {
+        customersList = customersResponse.data
+      }
+
+      setCustomers(customersList)
+
+      // Find the newly created customer
+      const newCustomer = customersList.find(c =>
+        c.name === customerData.name ||
+        c.phone === customerData.phone
+      )
+
+      if (newCustomer) {
+        // Auto-select the new customer
         setFormData(prev => ({
           ...prev,
-          customer_id: customerData.id
+          customer_id: newCustomer.id
         }))
+        toast.success('Customer created and selected successfully')
+      } else {
         toast.success('Customer created successfully')
       }
-      
-      // Close the customer modal
+
       setShowAddCustomerModal(false)
     } catch (err) {
       console.error('Customer creation error:', err)
-      toast.error('Failed to create customer')
+      toast.error('Failed to refresh customer list')
     }
   }
 
@@ -551,23 +513,23 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
   const handleCreateStore = async (storeData) => {
     try {
       console.log('Store created:', storeData)
-      
+
       // Refresh stores list
       await fetchInitialData()
-      
+
       // Fetch updated stores from API
       try {
         const response = await invoiceAPI.getBillGenerateData(currentUserId)
         let updatedData = response.data?.data || response.data || {}
         const updatedStoresList = updatedData.stores || updatedData.bill_store || updatedData.store || []
         setStores(Array.isArray(updatedStoresList) ? updatedStoresList : [])
-        
+
         // Find the newly created store
-        const newStore = updatedStoresList.find(s => 
-          s.name === storeData.name || 
+        const newStore = updatedStoresList.find(s =>
+          s.name === storeData.name ||
           s.name === storeData.data?.name
         )
-        
+
         if (newStore) {
           // Auto-select the new store
           setFormData(prev => ({
@@ -580,7 +542,7 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
         } else {
           // Fallback: use the returned store data
           let storeInfo, storeName, storeId
-          
+
           if (storeData.data) {
             // Nested structure: { data: { id, name, ... } }
             storeInfo = storeData.data
@@ -592,10 +554,10 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
             toast.error('Store created but with unexpected response format')
             return
           }
-          
+
           storeName = storeInfo.name || storeInfo.store_name || 'New Store'
           storeId = storeInfo.id
-          
+
           setFormData(prev => ({ ...prev, store_id: storeId }))
           setStoreSearch(storeName)
           toast.success('Store created successfully')
@@ -604,7 +566,7 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
         console.error('Failed to refresh store list:', error)
         // Fallback: use the returned store data
         let storeInfo, storeName, storeId
-        
+
         if (storeData.data) {
           storeInfo = storeData.data
         } else if (storeData.id && storeData.name) {
@@ -614,15 +576,15 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
           toast.error('Store created but with unexpected response format')
           return
         }
-        
+
         storeName = storeInfo.name || storeInfo.store_name || 'New Store'
         storeId = storeInfo.id
-        
+
         setFormData(prev => ({ ...prev, store_id: storeId }))
         setStoreSearch(storeName)
         toast.success('Store created successfully')
       }
-      
+
       // Close the store modal
       setShowAddStoreModal(false)
     } catch (err) {
@@ -637,40 +599,44 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
   }
 
   // Edit customer handlers
-  const handleEditCustomer = (customer) => {
-    setEditingCustomer(customer)
-    setShowEditCustomerModal(true)
-  }
+  // Edit customer handlers
+const handleEditCustomer = (customer) => {
+  setEditingCustomer(customer)
+  setShowEditCustomerModal(true)
+}
 
-  const handleUpdateCustomer = async (customerData) => {
-    setIsUpdatingCustomer(true)
-    try {
-      const response = await customerAPI.update(editingCustomer.id, customerData)
-      
-      if (response.data?.status === true || response.data?.data) {
-        // Update customers list
-        const updatedCustomers = customers.map(c => 
-          c.id === editingCustomer.id ? { ...c, ...customerData } : c
-        )
-        setCustomers(updatedCustomers)
-        
-        // Auto-select the updated customer
-        setFormData(prev => ({ ...prev, customer_id: editingCustomer.id }))
-        setCustomerSearch(customerData.name || customerData.phone)
-        
-        toast.success('Customer updated successfully!')
-        setShowEditCustomerModal(false)
-        setEditingCustomer(null)
-      } else {
-        throw new Error('Failed to update customer')
-      }
-    } catch (error) {
-      console.error('Customer update error:', error)
-      toast.error('Failed to update customer')
-    } finally {
-      setIsUpdatingCustomer(false)
+const handleUpdateCustomer = async (customerData) => {
+  // Prevent duplicate updates
+  if (isUpdatingCustomer) return
+  
+  setIsUpdatingCustomer(true)
+  try {
+    const response = await customerAPI.update(editingCustomer.id, customerData)
+
+    if (response.data?.status === true || response.data?.data) {
+      // Update customers list
+      const updatedCustomers = customers.map(c =>
+        c.id === editingCustomer.id ? { ...c, ...customerData } : c
+      )
+      setCustomers(updatedCustomers)
+
+      // Auto-select the updated customer
+      setFormData(prev => ({ ...prev, customer_id: editingCustomer.id }))
+      setCustomerSearch(customerData.name || customerData.phone)
+
+      toast.success('Customer updated successfully!')
+      setShowEditCustomerModal(false)
+      setEditingCustomer(null)
+    } else {
+      throw new Error('Failed to update customer')
     }
+  } catch (error) {
+    console.error('Customer update error:', error)
+    toast.error('Failed to update customer')
+  } finally {
+    setIsUpdatingCustomer(false)
   }
+}
 
   // Edit store handlers
   const handleEditStore = (store) => {
@@ -682,18 +648,18 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
     setIsUpdatingStore(true)
     try {
       const response = await storeAPI.update(editingStore.id, storeData)
-      
+
       if (response.data?.status === true || response.data?.data) {
         // Update stores list
-        const updatedStores = stores.map(s => 
+        const updatedStores = stores.map(s =>
           s.id === editingStore.id ? { ...s, ...storeData } : s
         )
         setStores(updatedStores)
-        
+
         // Auto-select the updated store
         setFormData(prev => ({ ...prev, store_id: editingStore.id }))
         setStoreSearch(storeData.name)
-        
+
         toast.success('Store updated successfully!')
         setShowEditStoreModal(false)
         setEditingStore(null)
@@ -750,12 +716,12 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
       ...prev,
       items: [...prev.items, packageItem]
     }))
-    
+
     // Reset package selection
     setSelectedPackage(null)
     setPackageSearch('')
     setPackageQuantity(1)
-    
+
     toast.success(`Package added: ${packageItem.product_name} x${packageItem.quantity}`)
     console.log('Added package to invoice:', packageItem)
   }
@@ -778,19 +744,19 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
     const item = formData.items[index]
     const maxValue = item.stock_quantity > 0 ? item.stock_quantity : undefined
     const newQuantity = parseFloat(item.quantity) + 1
-    
+
     if (maxValue && newQuantity > maxValue) {
       toast.error(`Cannot exceed available stock. Maximum: ${maxValue}`)
       return
     }
-    
+
     handleUpdateItem(index, 'quantity', newQuantity)
   }
 
   const handleDecrementQuantity = (index) => {
     const item = formData.items[index]
     const newQuantity = parseFloat(item.quantity) - 1
-    
+
     if (newQuantity >= 1) {
       handleUpdateItem(index, 'quantity', newQuantity)
     }
@@ -800,7 +766,7 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
   const handleIncrementGst = (index) => {
     const item = formData.items[index]
     const newGst = parseFloat(item.gst) + 1
-    
+
     if (newGst <= 100) {
       handleUpdateItem(index, 'gst', newGst)
     }
@@ -809,7 +775,7 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
   const handleDecrementGst = (index) => {
     const item = formData.items[index]
     const newGst = parseFloat(item.gst) - 1
-    
+
     if (newGst >= 0) {
       handleUpdateItem(index, 'gst', newGst)
     }
@@ -819,7 +785,7 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
   const handleIncrementDiscount = (index) => {
     const item = formData.items[index]
     const newDiscount = parseFloat(item.discount) + 1
-    
+
     if (newDiscount >= 0) {
       handleUpdateItem(index, 'discount', newDiscount)
     }
@@ -828,7 +794,7 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
   const handleDecrementDiscount = (index) => {
     const item = formData.items[index]
     const newDiscount = parseFloat(item.discount) - 1
-    
+
     if (newDiscount >= 0) {
       handleUpdateItem(index, 'discount', newDiscount)
     }
@@ -839,7 +805,7 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
     // Separate products and packages
     const productItems = formData.items.filter(item => !item.is_package)
     const packageItems = formData.items.filter(item => item.is_package)
-    
+
     // Calculate product totals with discount and GST
     const productSubtotal = productItems.reduce((sum, item) => sum + (item.price * item.quantity), 0)
     const productDiscount = productItems.reduce((sum, item) => {
@@ -851,39 +817,39 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
       const discountedPrice = basePrice - (basePrice * (item.discount / 100))
       return sum + (discountedPrice * (item.gst / 100))
     }, 0)
-    
+
     // Calculate package totals
     const packageTotal = packageItems.reduce((sum, item) => sum + (item.price * item.quantity), 0)
-    
+
     // Final calculation
     const subtotal = productSubtotal
     const totalDiscount = productDiscount
     const totalGst = productGst
     const totalAmount = (productSubtotal - productDiscount + productGst) + packageTotal
-    
+
     return { subtotal, totalGst, totalDiscount, totalAmount }
   }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    
+
     if (!formData.customer_id || !formData.store_id || formData.items.length === 0) {
       toast.error('Please fill all required fields and add at least one item')
       return
     }
-    
+
     // Check for stock validation
-    const stockIssues = formData.items.filter(item => 
+    const stockIssues = formData.items.filter(item =>
       item.stock_quantity > 0 && item.quantity > item.stock_quantity
     )
-    
+
     if (stockIssues.length > 0) {
       toast.error(`Cannot proceed. ${stockIssues.length} item(s) exceed available stock. Please adjust quantities.`)
       return
     }
-    
+
     const totals = calculateTotals()
-    
+
     // Validate payment amount for semi-paid
     if (formData.payment_status === 'semi_paid') {
       if (!formData.payment_amount || formData.payment_amount <= 0) {
@@ -891,7 +857,28 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
         return
       }
     }
-    
+
+    const refreshCustomers = async () => {
+      try {
+        const response = await customerAPI.getAll(currentUserId, '')
+        let customersList = []
+
+        if (response?.data?.data?.data && Array.isArray(response.data.data.data)) {
+          customersList = response.data.data.data
+        } else if (response?.data?.data && Array.isArray(response.data.data)) {
+          customersList = response.data.data
+        } else if (Array.isArray(response?.data)) {
+          customersList = response.data
+        }
+
+        setCustomers(customersList)
+        return customersList
+      } catch (error) {
+        console.error('Failed to refresh customers:', error)
+        return []
+      }
+    }
+
     // Separate products and packages
     const productItems = formData.items.filter(item => !item.is_package)
     const packageItems = formData.items.filter(item => item.is_package)
@@ -909,11 +896,11 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
       ...formData,
       items: productItems,
       packages: packages,
-      paid_amount: formData.payment_status === 'paid' ? totals.totalAmount.toString() : 
-                  formData.payment_status === 'semi_paid' ? formData.payment_amount.toString() : '0',
+      paid_amount: formData.payment_status === 'paid' ? totals.totalAmount.toString() :
+        formData.payment_status === 'semi_paid' ? formData.payment_amount.toString() : '0',
       total_amount: totals.totalAmount.toString()
     }
-    
+
     console.log('📤 Submitting invoice:', submissionData)
     console.log('📊 Final Totals:', {
       subtotal: totals.subtotal,
@@ -1114,7 +1101,7 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
             </div>
           </motion.div>
         )}
-        
+
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Left Column - Customer Info */}
           <div className="lg:col-span-1 space-y-4">
@@ -1128,9 +1115,9 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
                 {/* Customer SearchSelect */}
                 <SearchSelect
                   label="Select Customer"
-                  options={customers?.map(customer => ({
+                  options={Array.isArray(customers) && customers.length > 0 ? customers.map(customer => ({
                     value: customer.id,
-                    label: customer.name || customer.customer_name,
+                    label: customer.name || customer.customer_name || `Customer ${customer.id}`,
                     description: customer.phone || customer.email ? `📞 ${customer.phone || 'N/A'} | 📧 ${customer.email || 'N/A'}` : null,
                     subtext: customer.gst ? `GST: ${customer.gst}` : null,
                     rightContent: (
@@ -1140,13 +1127,13 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
                           e.stopPropagation()
                           handleEditCustomer(customer)
                         }}
-                        className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-full transition-all duration-200"
+                        className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-all duration-200"
                         title="Edit customer"
                       >
                         <FiEdit className="w-3.5 h-3.5" />
                       </button>
                     )
-                  })) || []}
+                  })) : []}
                   value={formData.customer_id || ''}
                   onChange={(value) => {
                     setFormData(prev => ({ ...prev, customer_id: value }))
@@ -1220,7 +1207,7 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
             </div>
           </div>
 
-         
+
 
           {/* Package Selection */}
           <div className="lg:col-span-1 space-y-4">
@@ -1248,7 +1235,7 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
                       disabled={dataFetchError}
                     />
                   </div>
-                  
+
                   {/* Package Dropdown */}
                   {showPackageDropdown && !dataFetchError && (
                     <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg max-h-60 overflow-y-auto">
@@ -1283,7 +1270,7 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
                       )}
                     </div>
                   )}
-                  
+
                   {dataFetchError && (
                     <div className="mt-2 text-sm text-red-600 dark:text-red-400">
                       Unable to load packages. Please check server connection.
@@ -1347,7 +1334,7 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
 
         </div>
         <div className='w-full'>
-           {/* Middle Column - Product Search */}
+          {/* Middle Column - Product Search */}
           <div className="lg:col-span-1 space-y-4">
             <div className="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-4">
               <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4 flex items-center">
@@ -1376,75 +1363,75 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
                     />
                   </div>
                   <AnimatePresence>
-                  {showProductList && productSearch && !dataFetchError && (
-                    <motion.div
-                      initial={{ opacity: 0, y: -10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -10 }}
-                      className="absolute z-10 w-full mt-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg max-h-80 overflow-y-auto"
-                    >
-                      {filteredProducts.length > 0 ? (
-                        filteredProducts.map(product => (
-                          <div
-                            key={product.id}
-                            className="p-4 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer border-b border-gray-100 dark:border-gray-700 last:border-b-0"
-                            onClick={() => handleAddItem(product)}
-                          >
-                            <div className="flex justify-between items-start">
-                              <div className="flex-1">
-                                <div className="font-medium text-gray-900 dark:text-white mb-1">
-                                  {product.name || product.product_name}
-                                </div>
-                                <div className="text-sm text-gray-500 dark:text-gray-400 space-y-1">
-                                  <div>
-                                    📦 SKU: {product.sku || product.code || product.product_code || 'N/A'}
+                    {showProductList && productSearch && !dataFetchError && (
+                      <motion.div
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        className="absolute z-10 w-full mt-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg max-h-80 overflow-y-auto"
+                      >
+                        {filteredProducts.length > 0 ? (
+                          filteredProducts.map(product => (
+                            <div
+                              key={product.id}
+                              className="p-4 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer border-b border-gray-100 dark:border-gray-700 last:border-b-0"
+                              onClick={() => handleAddItem(product)}
+                            >
+                              <div className="flex justify-between items-start">
+                                <div className="flex-1">
+                                  <div className="font-medium text-gray-900 dark:text-white mb-1">
+                                    {product.name || product.product_name}
                                   </div>
-                                  {product.brand?.name && (
+                                  <div className="text-sm text-gray-500 dark:text-gray-400 space-y-1">
                                     <div>
-                                      🏷️ Brand: {product.brand.name}
+                                      📦 SKU: {product.sku || product.code || product.product_code || 'N/A'}
                                     </div>
-                                  )}
-                                  {product.category?.name && (
-                                    <div>
-                                      📂 Category: {product.category.name}
-                                    </div>
-                                  )}
+                                    {product.brand?.name && (
+                                      <div>
+                                        🏷️ Brand: {product.brand.name}
+                                      </div>
+                                    )}
+                                    {product.category?.name && (
+                                      <div>
+                                        📂 Category: {product.category.name}
+                                      </div>
+                                    )}
+                                  </div>
                                 </div>
-                              </div>
-                              <div className="text-right ml-4">
-                                <div className="font-semibold text-gray-900 dark:text-white">
-                                  ₹{parseFloat(product.selling_price || product.price || 0).toFixed(2)}
-                                </div>
-                                <div className="text-xs text-gray-500 dark:text-gray-400 space-y-1 mt-2">
-                                  {product.gst_percentage && (
-                                    <div>
-                                      GST: {parseFloat(product.gst_percentage).toFixed(1)}%
-                                    </div>
-                                  )}
-                                  {product.discount_percentage && (
-                                    <div>
-                                      Discount: {parseFloat(product.discount_percentage).toFixed(1)}%
-                                    </div>
-                                  )}
+                                <div className="text-right ml-4">
+                                  <div className="font-semibold text-gray-900 dark:text-white">
+                                    ₹{parseFloat(product.selling_price || product.price || 0).toFixed(2)}
+                                  </div>
+                                  <div className="text-xs text-gray-500 dark:text-gray-400 space-y-1 mt-2">
+                                    {product.gst_percentage && (
+                                      <div>
+                                        GST: {parseFloat(product.gst_percentage).toFixed(1)}%
+                                      </div>
+                                    )}
+                                    {product.discount_percentage && (
+                                      <div>
+                                        Discount: {parseFloat(product.discount_percentage).toFixed(1)}%
+                                      </div>
+                                    )}
+                                  </div>
                                 </div>
                               </div>
                             </div>
+                          ))
+                        ) : (
+                          <div className="p-4 text-center text-gray-500 dark:text-gray-400">
+                            No products found
                           </div>
-                        ))
-                      ) : (
-                        <div className="p-4 text-center text-gray-500 dark:text-gray-400">
-                          No products found
-                        </div>
-                      )}
-                    </motion.div>
+                        )}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+
+                  {dataFetchError && (
+                    <div className="mt-2 text-sm text-red-600 dark:text-red-400">
+                      Unable to load products. Please check server connection.
+                    </div>
                   )}
-                </AnimatePresence>
-                
-                {dataFetchError && (
-                  <div className="mt-2 text-sm text-red-600 dark:text-red-400">
-                    Unable to load products. Please check server connection.
-                  </div>
-                )}
                 </div>
 
                 {formData.items.length > 0 && (
@@ -1491,7 +1478,7 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
               Invoice Items ({formData.items.length})
             </h3>
           </div>
-          
+
           {formData.items.length === 0 ? (
             <EmptyState
               icon={FiPackage}
@@ -1530,7 +1517,7 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
                             <p className="text-xs text-blue-600 dark:text-blue-400">Stock: {item.stock_quantity}</p>
                           )}
                         </div>
-                       </td>
+                      </td>
                       <td className="py-3">
                         <div className="flex items-center justify-center space-x-1">
                           <button
@@ -1545,11 +1532,10 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
                             type="text"
                             value={item.quantity.toString()}
                             onChange={(e) => handleUpdateItem(index, 'quantity', e.target.value)}
-                            className={`min-w-[5.5rem] text-sm text-center ${
-                              item.stock_quantity > 0 && item.quantity > item.stock_quantity 
-                                ? 'border-red-500 bg-red-50' 
-                                : ''
-                            }`}
+                            className={`min-w-[5.5rem] text-sm text-center ${item.stock_quantity > 0 && item.quantity > item.stock_quantity
+                              ? 'border-red-500 bg-red-50'
+                              : ''
+                              }`}
                           />
                           <button
                             type="button"
@@ -1560,7 +1546,7 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
                             <FiPlus className="w-3 h-3" />
                           </button>
                         </div>
-                       </td>
+                      </td>
                       <td className="py-3">
                         <div className="flex justify-center">
                           <Input
@@ -1571,7 +1557,7 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
                             className="w-20 text-sm text-center"
                           />
                         </div>
-                       </td>
+                      </td>
                       <td className="py-3">
                         <div className="flex items-center justify-center space-x-1">
                           <button
@@ -1598,7 +1584,7 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
                             <FiPlus className="w-3 h-3" />
                           </button>
                         </div>
-                       </td>
+                      </td>
                       <td className="py-3">
                         <div className="flex items-center justify-center space-x-1">
                           <button
@@ -1625,7 +1611,7 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
                             <FiPlus className="w-3 h-3" />
                           </button>
                         </div>
-                       </td>
+                      </td>
                       <td className="py-3">
                         <div className="flex justify-center">
                           <Input
@@ -1635,7 +1621,7 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
                             className="w-20 text-sm text-center bg-gray-50 dark:bg-gray-500 font-semibold"
                           />
                         </div>
-                       </td>
+                      </td>
                       <td className="py-3">
                         <div className="flex justify-center">
                           <button
@@ -1646,7 +1632,7 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
                             <FiTrash2 className="w-4 h-4" />
                           </button>
                         </div>
-                       </td>
+                      </td>
                     </motion.tr>
                   ))}
                 </tbody>
@@ -1678,8 +1664,8 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
                       { value: 'non_paid', label: 'Non Paid' }
                     ]}
                     value={formData.payment_status}
-                    onChange={(e) => setFormData(prev => ({ 
-                      ...prev, 
+                    onChange={(e) => setFormData(prev => ({
+                      ...prev,
                       payment_status: e.target.value,
                       payment_amount: e.target.value === 'semi_paid' ? prev.payment_amount : 0
                     }))}
@@ -1736,7 +1722,7 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
                         +₹{totals.totalGst.toFixed(2)}
                       </span>
                     </div>
-                    
+
                     <div className="flex justify-between text-base font-bold pt-2 border-t border-gray-200 dark:border-gray-500">
                       <span className="text-gray-900 dark:text-white">Total Amount:</span>
                       <span className="text-primary-600 dark:text-primary-400">
@@ -1773,8 +1759,8 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
                 </div>
                 <div className="text-right">
                   <p className="text-lg font-bold text-gray-900 dark:text-white">
-                    ₹{formData.payment_status === 'paid' ? totals.totalAmount.toFixed(2) : 
-                       formData.payment_status === 'semi_paid' ? parseFloat(formData.payment_amount || 0).toFixed(2) : '0.00'}
+                    ₹{formData.payment_status === 'paid' ? totals.totalAmount.toFixed(2) :
+                      formData.payment_status === 'semi_paid' ? parseFloat(formData.payment_amount || 0).toFixed(2) : '0.00'}
                   </p>
                   <p className="text-xs text-gray-500 dark:text-gray-400">
                     Paid Amount
@@ -1850,7 +1836,7 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting 
                 <p className="text-gray-600 dark:text-gray-400 mb-6">
                   Your invoice has been generated. What would you like to do next?
                 </p>
-                
+
                 <div className="space-y-3">
                   <Button
                     variant="primary"

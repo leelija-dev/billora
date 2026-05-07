@@ -1,26 +1,30 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { FiX, FiSave, FiUser, FiMapPin, FiPhone, FiMail, FiGlobe, FiChevronDown, FiChevronUp } from 'react-icons/fi'
 import Input from '../../common/Input/Input'
 import Button from '../../common/Button/Button'
 import Modal from '../../common/Modal/Modal'
-import Select from '../../common/Select/Select'
 import { useCustomerStore } from '../../../store/customerStore'
 import { useAuthStore } from '../../../store/authStore'
 import toast from 'react-hot-toast'
 import { handlePhoneInput, handleMaxLength, validationRules } from '../../../utils/validators'
 
 const CustomerModal = ({ isOpen, onClose, onCustomerCreated, initialData = {} }) => {
-  const { createCustomer, fetchCustomers } = useCustomerStore()
+  const { createCustomer, updateCustomer } = useCustomerStore()
   const { user } = useAuthStore()
   
+  const isEditMode = !!initialData?.id
+  const isSubmittingRef = useRef(false)
+  const hasSubmittedRef = useRef(false)
+  const initialDataSetRef = useRef(false)
+  
   const [formData, setFormData] = useState({
-    name: initialData.name || '',
-    email: initialData.email || '',
-    phone: initialData.phone || '',
-    address: initialData.address || '',
-    city: initialData.city || '',
-    gst: initialData.gst || '',
+    name: '',
+    email: '',
+    phone: '',
+    address: '',
+    city: '',
+    gst: '',
     status: 'active'
   })
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -28,80 +32,117 @@ const CustomerModal = ({ isOpen, onClose, onCustomerCreated, initialData = {} })
   const [fieldErrors, setFieldErrors] = useState({})
   const [showMoreDetails, setShowMoreDetails] = useState(false)
 
-  // Update form data when initialData changes (for editing)
+  // Reset form when modal opens - but only once per open
   useEffect(() => {
-    if (isOpen && initialData && Object.keys(initialData).length > 0) {
-      setFormData({
-        name: initialData.name || '',
-        email: initialData.email || '',
-        phone: initialData.phone || '',
-        address: initialData.address || '',
-        city: initialData.city || '',
-        gst: initialData.gst || '',
-        status: initialData.status || 'active'
-      })
-      setFieldErrors({})
-      setError('')
+    if (isOpen) {
+      // Reset the flag when modal opens
+      initialDataSetRef.current = false
+      
+      if (initialData && Object.keys(initialData).length > 0 && !initialDataSetRef.current) {
+        setFormData({
+          name: initialData.name || '',
+          email: initialData.email || '',
+          phone: initialData.phone || '',
+          address: initialData.address || '',
+          city: initialData.city || '',
+          gst: initialData.gst || '',
+          status: initialData.status || 'active'
+        })
+        setFieldErrors({})
+        setError('')
+        initialDataSetRef.current = true
+        
+        // Auto-expand more details for edit mode
+        if (isEditMode) {
+          setShowMoreDetails(true)
+        } else {
+          setShowMoreDetails(false)
+        }
+      } else if ((!initialData || Object.keys(initialData).length === 0) && !initialDataSetRef.current) {
+        // Reset form for new customer
+        setFormData({
+          name: '',
+          email: '',
+          phone: '',
+          address: '',
+          city: '',
+          gst: '',
+          status: 'active'
+        })
+        setFieldErrors({})
+        setError('')
+        setShowMoreDetails(false)
+        initialDataSetRef.current = true
+      }
+      
+      // Reset submission refs when modal opens
+      hasSubmittedRef.current = false
+      isSubmittingRef.current = false
+    } else {
+      // Reset the flag when modal closes
+      initialDataSetRef.current = false
     }
-  }, [initialData, isOpen])
+  }, [isOpen, initialData, isEditMode])
 
   const handleInputChange = (e) => {
     const { name, value } = e.target
     
-    // Apply validation based on field type and check for errors
-    let error = ''
+    let validationError = ''
     
     if (name === 'phone') {
-      handlePhoneInput(e)
-      const phoneValue = e.target.value.replace(/\D/g, '')
+      const phoneValue = value.replace(/\D/g, '')
       if (phoneValue.length > 0 && phoneValue.length < 10) {
-        error = 'Phone number must be exactly 10 digits'
+        validationError = 'Phone number must be exactly 10 digits'
       } else if (phoneValue.length === 10) {
-        error = ''
+        validationError = ''
       }
     } else if (name === 'name') {
-      handleMaxLength(e, validationRules.productName.maxLength)
-      if (e.target.value.trim().length > 0 && e.target.value.trim().length < validationRules.productName.minLength) {
-        error = `Name must be at least ${validationRules.productName.minLength} characters`
+      if (value.trim().length > 0 && value.trim().length < validationRules.productName.minLength) {
+        validationError = `Name must be at least ${validationRules.productName.minLength} characters`
       }
     } else if (name === 'email') {
-      handleMaxLength(e, 255)
-      if (e.target.value.trim().length > 0 && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e.target.value)) {
-        error = 'Please enter a valid email address'
+      if (value.trim().length > 0 && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+        validationError = 'Please enter a valid email address'
       }
-    } else if (name === 'address') {
-      handleMaxLength(e, 500)
-    } else if (name === 'city') {
-      handleMaxLength(e, 100)
-    } else if (name === 'gst') {
-      handleMaxLength(e, 50)
     }
     
     setFormData(prev => ({
       ...prev,
-      [name]: e.target.value
+      [name]: value
     }))
     
-    // Update field-specific errors
     setFieldErrors(prev => ({
       ...prev,
-      [name]: error
+      [name]: validationError
     }))
     
-    // Clear general error when user starts typing
-    if (error) setError('')
+    if (validationError) setError('')
   }
 
   const validateForm = () => {
     const newErrors = {}
     
+    // Phone validation (required)
     if (!formData.phone?.trim()) {
       newErrors.phone = 'Phone number is required'
-    } else if (!/^[0-9]{10}$/.test(formData.phone.replace(/\D/g, ''))) {
-      newErrors.phone = 'Phone number must be exactly 10 digits'
+    } else {
+      const cleanPhone = formData.phone.replace(/\D/g, '')
+      if (cleanPhone.length !== 10) {
+        newErrors.phone = 'Phone number must be exactly 10 digits'
+      }
     }
 
-    // Set field errors and return validation result
+    // If more details are shown or in edit mode, validate these fields
+    if (showMoreDetails || isEditMode) {
+      if (!formData.name?.trim()) {
+        newErrors.name = 'Name is required'
+      }
+
+      if (!formData.address?.trim()) {
+        newErrors.address = 'Address is required'
+      }
+    }
+
     setFieldErrors(newErrors)
     return Object.keys(newErrors).length === 0
   }
@@ -109,39 +150,73 @@ const CustomerModal = ({ isOpen, onClose, onCustomerCreated, initialData = {} })
   const handleSubmit = async (e) => {
     e.preventDefault()
     
-    // Basic validation
+    // Prevent duplicate submissions
+    if (isSubmittingRef.current || hasSubmittedRef.current) {
+      console.log('Preventing duplicate submission')
+      return
+    }
+    
     if (!validateForm()) {
       return
     }
 
+    isSubmittingRef.current = true
     setIsSubmitting(true)
     setError('')
 
     try {
-      // Get current user ID
       const userId = user?.id || JSON.parse(localStorage.getItem('user'))?.id || 1
       
-      const customerData = {
-        ...formData,
-        name: formData.phone, // Use phone as name since name field is hidden
-        admin_id: userId,
-        created_by: userId
-      }
-
-      const result = await createCustomer(customerData)
-      
-      if (result.success) {
-        toast.success('Customer created successfully!')
-        onCustomerCreated(result.data || customerData)
-        handleClose()
+      if (isEditMode) {
+        // Update existing customer
+        const updateData = {
+          user_id: userId,
+          name: formData.name,
+          email: formData.email || null,
+          phone: formData.phone,
+          address: formData.address,
+          city: formData.city || null,
+        }
+        
+        const result = await updateCustomer(initialData.id, updateData)
+        
+        if (result.success) {
+          hasSubmittedRef.current = true
+          toast.success('Customer updated successfully!')
+          onCustomerCreated({ ...updateData, id: initialData.id })
+          handleClose()
+        } else {
+          throw new Error(result.error?.message || 'Failed to update customer')
+        }
       } else {
-        throw new Error(result.error?.message || 'Failed to create customer')
+        // Create new customer
+        const customerData = {
+          user_id: userId,
+          name: showMoreDetails ? formData.name : formData.phone,
+          email: formData.email || null,
+          phone: formData.phone,
+          address: showMoreDetails ? formData.address : 'N/A',
+          city: formData.city || null,
+          created_by: userId
+        }
+        
+        const result = await createCustomer(customerData)
+        
+        if (result.success) {
+          hasSubmittedRef.current = true
+          toast.success('Customer created successfully!')
+          onCustomerCreated(result.data || customerData)
+          handleClose()
+        } else {
+          throw new Error(result.error?.message || 'Failed to create customer')
+        }
       }
     } catch (err) {
-      console.error('Customer creation error:', err)
-      const errorMessage = err.response?.data?.message || err.message || 'Failed to create customer'
+      console.error('Customer operation error:', err)
+      const errorMessage = err.response?.data?.message || err.message || (isEditMode ? 'Failed to update customer' : 'Failed to create customer')
       setError(errorMessage)
       toast.error(errorMessage)
+      isSubmittingRef.current = false
     } finally {
       setIsSubmitting(false)
     }
@@ -160,6 +235,9 @@ const CustomerModal = ({ isOpen, onClose, onCustomerCreated, initialData = {} })
     setError('')
     setFieldErrors({})
     setShowMoreDetails(false)
+    isSubmittingRef.current = false
+    hasSubmittedRef.current = false
+    initialDataSetRef.current = false
     onClose()
   }
 
@@ -167,7 +245,7 @@ const CustomerModal = ({ isOpen, onClose, onCustomerCreated, initialData = {} })
     <Modal
       isOpen={isOpen}
       onClose={handleClose}
-      title="Add New Customer"
+      title={isEditMode ? "Edit Customer" : "Add New Customer"}
       size="md"
     >
       <form onSubmit={handleSubmit} className="space-y-4">
@@ -175,20 +253,20 @@ const CustomerModal = ({ isOpen, onClose, onCustomerCreated, initialData = {} })
           <motion.div
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-4 text-red-700 dark:text-red-300"
+            className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-4 text-red-700 dark:text-red-300 text-sm"
           >
             {error}
           </motion.div>
         )}
 
-        {/* Basic Fields */}
+        {/* Only Phone Number Field - Always Visible */}
         <div className="grid grid-cols-1 gap-4">
           <Input
-            label="Phone Number"
+            label="Phone Number *"
             name="phone"
             value={formData.phone}
             onChange={handleInputChange}
-            placeholder="Enter phone number"
+            placeholder="Enter 10-digit phone number"
             icon={FiPhone}
             type="tel"
             required
@@ -196,23 +274,25 @@ const CustomerModal = ({ isOpen, onClose, onCustomerCreated, initialData = {} })
           />
         </div>
 
-        {/* Add More Details Button */}
-        <div className="flex justify-center">
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={() => setShowMoreDetails(!showMoreDetails)}
-            className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
-            icon={showMoreDetails ? FiChevronUp : FiChevronDown}
-          >
-            {showMoreDetails ? 'Hide' : 'Add'} More Details
-          </Button>
-        </div>
+        {/* Add More Details Button (only for create mode) */}
+        {!isEditMode && (
+          <div className="flex justify-center">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowMoreDetails(!showMoreDetails)}
+              className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+              icon={showMoreDetails ? FiChevronUp : FiChevronDown}
+            >
+              {showMoreDetails ? 'Hide' : 'Add'} More Details
+            </Button>
+          </div>
+        )}
 
         {/* Collapsible Additional Fields */}
         <AnimatePresence>
-          {showMoreDetails && (
+          {(showMoreDetails || isEditMode) && (
             <motion.div
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
@@ -220,15 +300,27 @@ const CustomerModal = ({ isOpen, onClose, onCustomerCreated, initialData = {} })
               transition={{ duration: 0.3 }}
               className="space-y-4 border-t border-gray-200 dark:border-gray-700 pt-4"
             >
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4">
                 <Input
-                  label="Full Name"
+                  label="Full Name *"
                   name="name"
                   value={formData.name}
                   onChange={handleInputChange}
                   placeholder="Enter customer's full name"
                   icon={FiUser}
+                  required={showMoreDetails || isEditMode}
                   error={fieldErrors.name}
+                />
+
+                <Input
+                  label="Address *"
+                  name="address"
+                  value={formData.address}
+                  onChange={handleInputChange}
+                  placeholder="Enter street address"
+                  icon={FiMapPin}
+                  required={showMoreDetails || isEditMode}
+                  error={fieldErrors.address}
                 />
 
                 <Input
@@ -240,17 +332,6 @@ const CustomerModal = ({ isOpen, onClose, onCustomerCreated, initialData = {} })
                   icon={FiMail}
                   type="email"
                   error={fieldErrors.email}
-                />
-              </div>
-
-              <div className="space-y-4">
-                <Input
-                  label="Address"
-                  name="address"
-                  value={formData.address}
-                  onChange={handleInputChange}
-                  placeholder="Enter street address"
-                  icon={FiMapPin}
                 />
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -272,23 +353,25 @@ const CustomerModal = ({ isOpen, onClose, onCustomerCreated, initialData = {} })
                     icon={FiGlobe}
                   />
                 </div>
-              </div>
 
-              {/* Status Field */}
-              <div className="space-y-2">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Status
-                </label>
-                <select
-                  name="status"
-                  value={formData.status}
-                  onChange={handleInputChange}
-                  className="w-full px-3 py-2 h-[42px] border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
-                >
-                  <option value="active">Active</option>
-                  <option value="inactive">Inactive</option>
-                  <option value="blocked">Blocked</option>
-                </select>
+                {/* Status Field - only for edit mode */}
+                {isEditMode && (
+                  <div className="space-y-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                      Status
+                    </label>
+                    <select
+                      name="status"
+                      value={formData.status}
+                      onChange={handleInputChange}
+                      className="w-full px-3 py-2 h-[42px] border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                    >
+                      <option value="active">Active</option>
+                      <option value="inactive">Inactive</option>
+                      <option value="blocked">Blocked</option>
+                    </select>
+                  </div>
+                )}
               </div>
             </motion.div>
           )}
@@ -311,7 +394,7 @@ const CustomerModal = ({ isOpen, onClose, onCustomerCreated, initialData = {} })
             disabled={isSubmitting}
             icon={FiSave}
           >
-            {isSubmitting ? 'Creating...' : 'Create Customer'}
+            {isSubmitting ? (isEditMode ? 'Updating...' : 'Creating...') : (isEditMode ? 'Update Customer' : 'Create Customer')}
           </Button>
         </div>
       </form>
