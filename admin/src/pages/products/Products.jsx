@@ -437,6 +437,18 @@ const Products = () => {
     setRefreshing(true)
     // Clear stock cache to force fresh data
     stockCache.delete('all')
+    
+    // Clear product store cache to force fresh data
+    const { clearCache } = useProductStore.getState()
+    clearCache()
+    
+    // Reset last fetch time to bypass duplicate request prevention
+    const currentState = useProductStore.getState()
+    useProductStore.setState({ 
+      lastFetchTime: null, 
+      cacheKey: null 
+    })
+    
     await fetchProducts()
     // Refetch stocks with fresh data (only if not already loading)
     if (!stocksLoading) {
