@@ -6,7 +6,7 @@ use Google\Service\Drive;
 
 
 Route::get('/', function () {
-    return view('welcome');
+    return view('admin.login');
 });
 Route::get('/verify-email/{token}', [CustomerController::class, 'verifyEmail']);
 Route::post('/resend-verification', [CustomerController::class, 'resendVerificationEmail']);

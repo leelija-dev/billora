@@ -301,46 +301,91 @@ api.interceptors.request.use(async (config) => {
 // Response interceptor
 api.interceptors.response.use(
   (response) => {
+
     if (isDevelopment) {
-      console.log(`✅ ${response.config.method?.toUpperCase()} ${response.config.url} - ${response.status}`);
+      console.log(
+        `✅ ${response.config.method?.toUpperCase()} ${response.config.url} - ${response.status}`
+      );
     }
+
     return response;
   },
+
   async (error) => {
-    console.error(`❌ API Error:`, error.response?.status, error.response?.data);
-    
-    if (error.response?.status === 401) {
+
+    const status = error?.response?.status;
+    const url = error?.config?.url || '';
+
+    // ✅ Ignore ALL logout errors
+    if (url.includes('/logout')) {
+
+      console.warn('Logout request ignored');
+
+      return Promise.resolve({
+        data: {
+          status: true
+        }
+      });
+    }
+
+    // ✅ Better logging
+    console.log("❌ API Error:", {
+      message: error?.message,
+      status,
+      data: error?.response?.data,
+      url
+    });
+
+    // ✅ Unauthorized handling
+    if (status === 401) {
+
       if (typeof window !== 'undefined') {
+
         localStorage.removeItem('auth_token');
         localStorage.removeItem('user');
         localStorage.removeItem('auth-storage');
-        window.dispatchEvent(new CustomEvent('unauthorized'));
+
+        localStorage.setItem(
+          "logout-event",
+          Date.now().toString()
+        );
+
+        window.dispatchEvent(
+          new CustomEvent('unauthorized')
+        );
       }
     }
-    
-    // Reset CSRF flag on 419 to retry
-    if (error.response?.status === 419) {
-      console.log('🔄 CSRF token mismatch, resetting and retrying...');
+
+    // ✅ CSRF retry
+    if (status === 419) {
+
       csrfFetched = false;
-      
-      // Retry the request once
+
       const originalRequest = error.config;
+
       if (!originalRequest._retry) {
+
         originalRequest._retry = true;
+
         try {
+
           await fetchCsrfCookie();
-          // Also update the CSRF token in headers
+
           const newCsrfToken = getCsrfToken();
+
           if (newCsrfToken) {
             originalRequest.headers['X-XSRF-TOKEN'] = newCsrfToken;
           }
+
           return api(originalRequest);
+
         } catch (retryError) {
+
           return Promise.reject(retryError);
         }
       }
     }
-    
+
     return Promise.reject(error);
   }
 );

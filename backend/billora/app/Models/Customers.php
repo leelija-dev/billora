@@ -32,7 +32,8 @@ protected $fillable=[
         'created_by',
         'plan_id',
         'is_active',
-        'business_type_id'
+        'business_type_id',
+        'products_qr'
 ];
 protected $hidden = [
         'password',

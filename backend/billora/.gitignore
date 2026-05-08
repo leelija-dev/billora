@@ -25,3 +25,4 @@ Thumbs.db
 /public/images/testimonials/*
 /public/blogs/images/*
 # /config/cors.php
+/public/products_qr

@@ -1,6 +1,7 @@
 <?php 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\admin\AuthController;
+use App\Http\Controllers\admin\superadmin\DashboardController;
 use App\Http\Controllers\admin\superadmin\AdminMailController;
 use App\Http\Controllers\admin\superadmin\AdminUserController;
 use App\Http\Controllers\admin\superadmin\BusinessTypeController;
@@ -27,9 +28,10 @@ Route::middleware(['web', 'admin.auth'])->prefix('admin')->group(function () {
     Route::get('/logout', function() {
         abort(404);
     });
-    Route::get('/', function() {
-        return view('admin.dashboard');
-    })->name('admin.dashboard');
+    // Route::get('/', function() {
+    //     return view('admin.dashboard');
+    // })->name('admin.dashboard');
+    Route::get('/', [DashboardController::class, 'index'])->name('admin.dashboard');
     Route::post('/logout', [AuthController::class, 'logout'])->name('admin.logout');
     //     Route::view('/sidebar', 'admin.sidebar')->name('sidebar');
 

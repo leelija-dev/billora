@@ -93,7 +93,8 @@ export const useAuthStore = create(
             sourceTabId: TAB_ID 
           });
           setTimeout(() => channel.close(), 100);
-          localStorage.removeItem('manual_logout');
+          // localStorage.removeItem('manual_logout');
+          sessionStorage.removeItem('manual_logout');
           toast.success('Login successful!');
           return { success: true };
         } catch (error) {
@@ -132,6 +133,7 @@ export const useAuthStore = create(
   // ✅ CLEAR STORAGE
   localStorage.removeItem('auth-storage');
   localStorage.removeItem('user');
+  localStorage.removeItem('auth_token');
 
   // ✅ CLEAR PERMISSIONS
   usePermissionStore.getState().clearPermissions();
@@ -388,8 +390,8 @@ if (
   localStorage.removeItem('user');
 
   // ✅ IMPORTANT (prevent auto-login bug)
-  localStorage.setItem('manual_logout', 'true');
-
+  // localStorage.setItem('manual_logout', 'true');
+sessionStorage.setItem('manual_logout', 'true');
   toast.success('Logged out from another app');
 } else {
         console.log('Unknown message type:', event.data?.type);

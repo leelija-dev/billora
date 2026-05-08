@@ -426,7 +426,7 @@
             <div class="stat-card">
                 <div class="stat-info">
                     <h3>Total Customers</h3>
-                    <div class="stat-number">{{ $customers->total() }}</div>
+                    <div class="stat-number">{{ $totalCustomers ? $totalCustomers : 0  }}</div>
                 </div>
                 <div class="stat-icon">
                     <svg viewBox="0 0 24 24">
@@ -437,7 +437,7 @@
             <div class="stat-card">
                 <div class="stat-info">
                     <h3>Active Customers</h3>
-                    <div class="stat-number">{{ $customers->where('is_active', 1)->count() }}</div>
+                    <div class="stat-number">{{ $activeCustomers ? $activeCustomers : 0 }}</div>
                 </div>
                 <div class="stat-icon">
                     <svg viewBox="0 0 24 24">
@@ -448,7 +448,7 @@
             <div class="stat-card">
                 <div class="stat-info">
                     <h3>Inactive Customer</h3>
-                    <div class="stat-number">{{ $customers->where('is_active', 0)->count() }}</div>
+                    <div class="stat-number">{{ $inactiveCustomers ? $inactiveCustomers : 0 }}</div>
                 </div>
                 <div class="stat-icon">
                     <svg viewBox="0 0 24 24">
@@ -458,8 +458,8 @@
             </div>
             <div class="stat-card">
                 <div class="stat-info">
-                    <h3>New This Month</h3>
-                    <div class="stat-number">42</div>
+                    <h3>Verified Customers</h3>
+                    <div class="stat-number">{{$verifiedCustomers ? $verifiedCustomers : 0}}</div>
                 </div>
                 <div class="stat-icon">
                     <svg viewBox="0 0 24 24">

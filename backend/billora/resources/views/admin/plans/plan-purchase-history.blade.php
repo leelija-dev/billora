@@ -294,7 +294,6 @@
         @if(session('success'))
             <div class="bg-green-50 border-l-4 border-green-500 text-green-700 px-5 py-3 rounded-xl mb-6 flex items-center justify-between fade-in">
                 <div class="flex items-center gap-2">
-                    <span>✅</span>
                     <span>{{ session('success') }}</span>
                 </div>
                 <button onclick="this.parentElement.remove()" class="text-green-700 hover:text-green-900">✕</button>
@@ -405,12 +404,12 @@
                                 <td data-label="Status">
                                     @if($plans->status == 'active')
                                         <span class="badge-active">
-                                            <span class="w-1.5 h-1.5 bg-green-500 rounded-full mr-1.5"></span>
+                                            
                                             Active
                                         </span>
                                     @else
                                         <span class="badge-expired">
-                                            <span class="w-1.5 h-1.5 bg-red-500 rounded-full mr-1.5"></span>
+                                            
                                             {{ ucfirst($plans->status) }}
                                         </span>
                                     @endif
@@ -424,11 +423,11 @@
                                 <td data-label="Payment Status">
                                     @if($plans->payment_status == 'success')
                                         <span class="badge-success">
-                                            ✅ Success
+                                            Success
                                         </span>
                                     @else
                                         <span class="badge-pending">
-                                            ⏳ Pending
+                                            Pending
                                         </span>
                                     @endif
                                 </td>

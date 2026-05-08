@@ -418,7 +418,7 @@
                                         <td class="px-6 py-4 whitespace-nowrap">
                                             @if($plan->is_active)
                                                 <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800 transition-all duration-300 hover:scale-105 cursor-pointer">
-                                                    <span class="w-1.5 h-1.5 bg-green-500 rounded-full mr-1 animate-pulse"></span>
+                                                    
                                                     Active
                                                 </span>
                                             @else

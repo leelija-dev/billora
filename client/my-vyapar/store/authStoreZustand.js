@@ -186,37 +186,50 @@ export const useAuthStore = create(
           return { success: false, error: error.message };
         }
       },
+logout: async () => {
+  try {
 
-      logout: async () => {
-        set({ isLoading: true });
-        
-        try {
-          await logoutUser();
-        } catch (err) {
-          console.log('Logout API call failed:', err);
-        }
-        
-        set({
-          user: null,
-          isLoggedIn: false,
-          isLoading: false,
-          error: null,
-        });
-        
-        localStorage.removeItem('auth-storage');
-        localStorage.removeItem('user');
-        localStorage.removeItem('auth_token');
-        
-        // ✅ Broadcast logout to other tabs
-        const channel = new BroadcastChannel('auth_channel');
-        channel.postMessage({
-          type: 'LOGOUT',
-          sourceTabId: TAB_ID
-        });
-        setTimeout(() => channel.close(), 100);
-        
-        window.dispatchEvent(new Event("userLoggedOut"));
-      },
+    // API logout
+    await logoutUser();
+
+  } catch (error) {
+    console.error("Logout API error:", error);
+  }
+
+  // Broadcast logout to other tabs/apps
+  try {
+    const channel = new BroadcastChannel('auth_channel');
+
+    channel.postMessage({
+      type: 'LOGOUT',
+      sourceTabId: TAB_ID,
+      timestamp: Date.now()
+    });
+
+    setTimeout(() => channel.close(), 100);
+
+  } catch (error) {
+    console.error("Broadcast logout error:", error);
+  }
+
+  // Clear storage
+  localStorage.removeItem("token");
+  localStorage.removeItem("auth_token");
+  localStorage.removeItem("auth-storage");
+  localStorage.removeItem("user");
+
+  sessionStorage.clear();
+
+  // Clear Zustand state
+  set({
+    user: null,
+    token: null,
+    isLoggedIn: false,
+    company: null
+  });
+
+  window.dispatchEvent(new Event("userLoggedOut"));
+},
 
       updateUser: (userData) => {
         set({ user: { ...get().user, ...userData } });
