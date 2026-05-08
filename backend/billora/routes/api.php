@@ -92,9 +92,11 @@ Route::middleware('auth:sanctum')->prefix('products')->group(function () {
    Route::post('/store', [ProductsController::class, 'store']); //store product
    Route::get('/{id}', [ProductsController::class, 'show']); //single product
    Route::put('/{id}', [ProductsController::class, 'update']); // update product
-   Route::delete('/{id}', [ProductsController::class, 'destroy']); // delete product
+   Route::delete('/{id}', [ProductsController::class, 'destroy']); // delete product soft delete
    Route::patch('/{id}', [ProductsController::class, 'restore']); // restore product
    Route::delete('/{id}/force', [ProductsController::class, 'forceDelete']); // delete product permanently
+   Route::delete('/bulk-delete/{ids}', [ProductsController::class, 'bulkDelete']); // bulk delete product (soft delete)
+   Route::delete('/bulk-force-delete/{ids}', [ProductsController::class, 'bulkForceDelete']); // bulk delete product permanently
 });
 //stocks
 Route::middleware('auth:sanctum')->prefix('stocks')->group(function () {

@@ -780,6 +780,43 @@ class ProductsController extends Controller
             ]);
         }
     }
+    public function bulkDelete($ids){     //bulk soft delete products
+        try {
+            if (!Auth::check()) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Authentication .required Please login first.'
+                ]);
+            }
+            $user = Auth::user()->id;
+            $customer = Customers::findOrFail($user);
+            if ($customer->plan_id == null || $customer->is_active == false) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'You do not have any active plan. Please upgrade your plan.'
+                ]);
+            }
+            foreach($ids as $id){
+            $product = Products::where('user_id', $user)->where('id', $id)->first();
+            $product->delete();
+            $stocksProduct = Stocks::where('user_id',$user)->where('product_id', $product->id)->first();
+            if($stocksProduct){
+                $stocksProduct->delete();
+            }
+            }
+            return response()->json([
+                'status' => true,
+                'message' => 'Product Deleted Successfully',
+                'data' => $product
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => false,
+                'message' => $e->getMessage()
+            ]);
+        }
+    
+    }
     public function restore($id)
     {
         try {
@@ -877,6 +914,54 @@ class ProductsController extends Controller
                 'status' => true,
                 'message' => 'Product Deleted Permanently',
                 'data' => $product
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => false,
+                'message' => $e->getMessage()
+            ]);
+        }
+    }
+    public function bulkForceDelete($ids)  //bulk permanently delete products
+    {
+        try {
+            if (!Auth::check()) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Authentication required. Please login first.'
+                ]);
+            }
+            $user = Auth::user()->id;
+            // check active plan
+            $customer = Customers::findOrFail($user);
+            if ($customer->plan_id == null || $customer->is_active == false) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'You do not have any active plan. Please upgrade your plan.'
+                ]);
+            }
+            foreach($ids as $id){
+            $product = Products::withTrashed()->where('user_id', $user)->where('id', $id)->first();
+            if ($product) {
+                if ($product->image) {
+                    $fileId = $this->getFileIdFromUrl($product->image);
+                    if ($fileId) {
+                        $this->deleteFromDrive($fileId);
+                    }
+                }
+                if ($product->qr_code) {
+                    $fileId = $this->getFileIdFromUrl($product->qr_code);
+                    if ($fileId) {
+                        $this->deleteFromDrive($fileId);
+                    }
+                }
+            }
+            $product->forceDelete();
+            }
+            return response()->json([
+                'status' => true,
+                'message' => 'Product Deleted Permanently',
+                'data' => []
             ]);
         } catch (\Exception $e) {
             return response()->json([
