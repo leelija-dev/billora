@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react'
-import { 
-  FiPlus, 
-  FiSearch, 
-  FiFilter, 
-  FiFileText, 
-  FiTrash2, 
+import {
+  FiPlus,
+  FiSearch,
+  FiFilter,
+  FiFileText,
+  FiTrash2,
   FiCheckCircle,
   FiArrowLeft,
   FiX,
@@ -72,22 +72,22 @@ const Invoices = () => {
   // Handle resize events to prevent unnecessary API calls
   useEffect(() => {
     let resizeTimeout
-    
+
     const handleResizeStart = () => {
       setIsResizing(true)
       clearTimeout(resizeTimeout)
     }
-    
+
     const handleResizeEnd = () => {
       clearTimeout(resizeTimeout)
       resizeTimeout = setTimeout(() => {
         setIsResizing(false)
       }, 150) // Wait for resize to finish
     }
-    
+
     window.addEventListener('resize', handleResizeStart)
     window.addEventListener('resize', handleResizeEnd)
-    
+
     return () => {
       window.removeEventListener('resize', handleResizeStart)
       window.removeEventListener('resize', handleResizeEnd)
@@ -172,27 +172,28 @@ const Invoices = () => {
     }
   }
 
-  const handleAddSubmit = async (data) => {
-    setFormSubmitting(true)
-    try {
-      const res = await createInvoice(data)
-      console.log('Invoice creation response:', res)
-      
-      // Check for successful response - backend returns status: true, not success field
-      if (res?.status === true || res?.success) {
-        setShowAddForm(false)
-        await fetchInvoices(currentPage)
-        toast.success('Invoice created successfully')
-      } else {
-        toast.error(res?.message || 'Failed to create invoice')
-      }
-    } catch (error) {
-      console.error('Failed to create invoice:', error)
-      toast.error('Failed to create invoice')
-    } finally {
-      setFormSubmitting(false)
+const handleAddSubmit = async (data) => {
+  setFormSubmitting(true)
+  try {
+    const res = await createInvoice(data)
+    console.log('Invoice creation response:', res)
+    
+    if (res?.status === true || res?.success) {
+      toast.success('Invoice created successfully')
+      // Return the created invoice data
+      return { success: true, data: res?.data || res }
+    } else {
+      toast.error(res?.message || 'Failed to create invoice')
+      return { success: false, error: res?.message }
     }
+  } catch (error) {
+    console.error('Failed to create invoice:', error)
+    toast.error('Failed to create invoice')
+    return { success: false, error: error.message }
+  } finally {
+    setFormSubmitting(false)
   }
+}
 
   const clearFilters = () => {
     setSearchTerm('')
@@ -208,13 +209,13 @@ const Invoices = () => {
       // Use cached data from invoice store instead of making new API calls
       let customerData = invoice.customer || {}
       let storeData = invoice.store || {}
-      
+
       // Only fetch if data is missing from cache
       if (!customerData.name && invoice.customer_id) {
         const customerResponse = await customerAPI.getById(invoice.customer_id)
         customerData = customerResponse.data?.data || {}
       }
-      
+
       if (!storeData.name && invoice.store_id) {
         const storeResponse = await storeAPI.getByUserId(invoice.user_id)
         const storesArray = storeResponse.data?.data?.data || storeResponse.data?.data || []
@@ -223,17 +224,17 @@ const Invoices = () => {
 
       const invoiceItems = invoice.invoice_items || invoice.items || []
       let enhancedItems = []
-      
+
       if (invoiceItems.length > 0) {
         // Batch fetch products with caching
         const uniqueProductIds = [...new Set(invoiceItems.map(item => item.product_id).filter(Boolean))]
-        
+
         const productPromises = uniqueProductIds.map(async (productId) => {
           const cached = productCache.get(productId)
           if (cached && (Date.now() - cached.timestamp) < CACHE_EXPIRY) {
             return { id: productId, data: cached.data }
           }
-          
+
           try {
             const productResponse = await productsAPI.getById(productId)
             const productData = productResponse.data?.data || productResponse.data || {}
@@ -244,13 +245,13 @@ const Invoices = () => {
             return { id: productId, data: null }
           }
         })
-        
+
         const productResults = await Promise.all(productPromises)
         const productMap = productResults.reduce((acc, { id, data }) => {
           acc[id] = data
           return acc
         }, {})
-        
+
         enhancedItems = invoiceItems.map(item => {
           const productData = productMap[item.product_id] || {}
           return {
@@ -303,13 +304,13 @@ const Invoices = () => {
       // Use cached data from invoice store instead of making new API calls
       let customerData = invoice.customer || {}
       let storeData = invoice.store || {}
-      
+
       // Only fetch if data is missing from cache
       if (!customerData.name && invoice.customer_id) {
         const customerResponse = await customerAPI.getById(invoice.customer_id)
         customerData = customerResponse.data?.data || {}
       }
-      
+
       if (!storeData.name && invoice.store_id) {
         const storeResponse = await storeAPI.getByUserId(invoice.user_id)
         const storesArray = storeResponse.data?.data?.data || storeResponse.data?.data || []
@@ -318,17 +319,17 @@ const Invoices = () => {
 
       const invoiceItems = invoice.invoice_items || invoice.items || []
       let enhancedItems = []
-      
+
       if (invoiceItems.length > 0) {
         // Batch fetch products with caching
         const uniqueProductIds = [...new Set(invoiceItems.map(item => item.product_id).filter(Boolean))]
-        
+
         const productPromises = uniqueProductIds.map(async (productId) => {
           const cached = productCache.get(productId)
           if (cached && (Date.now() - cached.timestamp) < CACHE_EXPIRY) {
             return { id: productId, data: cached.data }
           }
-          
+
           try {
             const productResponse = await productsAPI.getById(productId)
             const productData = productResponse.data?.data || productResponse.data || {}
@@ -339,13 +340,13 @@ const Invoices = () => {
             return { id: productId, data: null }
           }
         })
-        
+
         const productResults = await Promise.all(productPromises)
         const productMap = productResults.reduce((acc, { id, data }) => {
           acc[id] = data
           return acc
         }, {})
-        
+
         enhancedItems = invoiceItems.map(item => {
           const productData = productMap[item.product_id] || {}
           return {
@@ -395,7 +396,7 @@ const Invoices = () => {
 
   // Calculate stats with safe invoices array
   const safeInvoices = Array.isArray(invoices) ? invoices : []
-  
+
   const stats = {
     total: totalInvoices || safeInvoices?.length || 0,
     completed: safeInvoices?.filter(i => i.status === 'completed').length || 0,
@@ -426,7 +427,7 @@ const Invoices = () => {
         <div className="flex items-center justify-between">
           <div>
             <p className="text-sm text-gray-600 dark:text-gray-400">{title}</p>
-            <motion.p 
+            <motion.p
               initial={{ scale: 1 }}
               animate={{ scale: [1, 1.1, 1] }}
               transition={{ duration: 0.5, delay: delay + 0.3 }}
@@ -438,7 +439,7 @@ const Invoices = () => {
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{subtitle}</p>
             )}
           </div>
-          <motion.div 
+          <motion.div
             whileHover={{ rotate: 15, scale: 1.1 }}
             transition={{ type: "spring", stiffness: 300 }}
             className={`p-3 rounded-xl bg-gradient-to-br ${color} shadow-lg`}
@@ -451,7 +452,7 @@ const Invoices = () => {
   )
 
   return (
-    <motion.div 
+    <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       className="space-y-6 p-6"
@@ -476,7 +477,7 @@ const Invoices = () => {
             )}
           </p>
         </div>
-        
+
         <div className="flex items-center space-x-3">
           {showAddForm ? (
             <motion.div
@@ -522,7 +523,7 @@ const Invoices = () => {
             {initialLoading ? (
               // Loading skeleton for stats cards
               Array.from({ length: 4 }).map((_, index) => (
-                <motion.div 
+                <motion.div
                   key={index}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -592,6 +593,12 @@ const Invoices = () => {
               onCancel={handleCancelForm}
               isSubmitting={formSubmitting}
               hasStockPermission={hasStockPermission}
+              onSuccess={() => {
+                // This will close the form and show the invoice table
+                setShowAddForm(false)
+                // Refresh the invoices list
+                fetchInvoices(currentPage)
+              }}
             />
           </motion.div>
         )}
@@ -634,22 +641,21 @@ const Invoices = () => {
                       className="pl-10"
                     />
                   </div>
-                  
+
                   <div className="flex items-center space-x-2">
                     <motion.button
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
                       onClick={() => setShowFilters(!showFilters)}
-                      className={`px-4 py-2 rounded-xl border transition-colors flex items-center space-x-2 ${
-                        showFilters 
+                      className={`px-4 py-2 rounded-xl border transition-colors flex items-center space-x-2 ${showFilters
                           ? 'bg-primary-50 border-primary-200 text-primary-600 dark:bg-primary-900/20 dark:border-primary-800 dark:text-primary-400'
                           : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'
-                      }`}
+                        }`}
                     >
                       <FiFilter className="w-4 h-4" />
                       <span>Filters</span>
                       {filters.status && (
-                        <motion.span 
+                        <motion.span
                           initial={{ scale: 0 }}
                           animate={{ scale: 1 }}
                           className="ml-1 w-2 h-2 bg-primary-500 rounded-full"
@@ -695,7 +701,7 @@ const Invoices = () => {
                             value={filters.status}
                             onChange={(e) => setFilters({ status: e.target.value })}
                           />
-                          
+
                           <Select
                             label="Date Range"
                             options={[
@@ -750,7 +756,7 @@ const Invoices = () => {
               // Loading skeleton for table
               <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-12">
                 <div className="flex flex-col items-center justify-center">
-                  <motion.div 
+                  <motion.div
                     animate={{ rotate: 360 }}
                     transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
                     className="w-12 h-12 border-4 border-primary-200 border-t-primary-600 rounded-full mb-4"
@@ -795,7 +801,7 @@ const Invoices = () => {
                 </div>
 
                 {totalInvoices > pageSize && (
-                  <motion.div 
+                  <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ delay: 0.8 }}
@@ -844,7 +850,7 @@ const Invoices = () => {
               onClick={e => e.stopPropagation()}
             >
               <div className="text-center">
-                <motion.div 
+                <motion.div
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
                   transition={{ delay: 0.1, type: "spring", stiffness: 200 }}
@@ -852,7 +858,7 @@ const Invoices = () => {
                 >
                   <FiTrash2 className="w-8 h-8 text-red-600 dark:text-red-400" />
                 </motion.div>
-                <motion.h3 
+                <motion.h3
                   initial={{ y: 10, opacity: 0 }}
                   animate={{ y: 0, opacity: 1 }}
                   transition={{ delay: 0.2 }}
@@ -860,16 +866,16 @@ const Invoices = () => {
                 >
                   Delete Invoice
                 </motion.h3>
-                <motion.p 
+                <motion.p
                   initial={{ y: 10, opacity: 0 }}
                   animate={{ y: 0, opacity: 1 }}
                   transition={{ delay: 0.3 }}
                   className="text-gray-600 dark:text-gray-400 mb-6"
                 >
-                  Are you sure you want to delete invoice <span className="font-semibold">#{invoiceToDelete?.invoiceNumber}</span>? 
+                  Are you sure you want to delete invoice <span className="font-semibold">#{invoiceToDelete?.invoiceNumber}</span>?
                   This action cannot be undone and will remove all associated data.
                 </motion.p>
-                <motion.div 
+                <motion.div
                   initial={{ y: 10, opacity: 0 }}
                   animate={{ y: 0, opacity: 1 }}
                   transition={{ delay: 0.4 }}
@@ -930,7 +936,7 @@ const Invoices = () => {
               onClick={e => e.stopPropagation()}
             >
               <div className="text-center">
-                <motion.div 
+                <motion.div
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
                   transition={{ delay: 0.1, type: "spring", stiffness: 200 }}
@@ -938,7 +944,7 @@ const Invoices = () => {
                 >
                   <FaReceipt className="w-8 h-8 text-green-600 dark:text-green-400" />
                 </motion.div>
-                <motion.h3 
+                <motion.h3
                   initial={{ y: 10, opacity: 0 }}
                   animate={{ y: 0, opacity: 1 }}
                   transition={{ delay: 0.2 }}
@@ -946,7 +952,7 @@ const Invoices = () => {
                 >
                   Bill Generation
                 </motion.h3>
-                <motion.p 
+                <motion.p
                   initial={{ y: 10, opacity: 0 }}
                   animate={{ y: 0, opacity: 1 }}
                   transition={{ delay: 0.3 }}
@@ -954,7 +960,7 @@ const Invoices = () => {
                 >
                   Generate bills with stock management integration. This will open the bill generation page where you can create new invoices with product selection and stock management.
                 </motion.p>
-                <motion.div 
+                <motion.div
                   initial={{ y: 10, opacity: 0 }}
                   animate={{ y: 0, opacity: 1 }}
                   transition={{ delay: 0.4 }}

@@ -220,7 +220,7 @@ class UserOrdersController extends Controller
             ]);
         }
         $orderHistory = UserOrders::with(['items.product'])
-            ->where('user_id', $id)
+            ->where('user_id', $id)->orderBy('id','desc')
             ->get();
         return response()->json([
             'status' => true,

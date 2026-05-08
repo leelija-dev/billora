@@ -7,7 +7,6 @@ import {
   FiDownload,
   FiRefreshCw,
   FiCalendar,
-  FiDollarSign,
   FiShoppingBag,
   FiClock,
   FiCheckCircle,
@@ -25,6 +24,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useOrderStore } from '../../store/orderStore'
 import { orderAPI } from '../../services/orderService'
 import { useAuthStore } from '../../store/authStore'
+import toast from 'react-hot-toast'
 import Button from '../../components/common/Button/Button'
 import Input from '../../components/common/Input/Input'
 import Table from '../../components/common/Table/Table'
@@ -48,6 +48,8 @@ const Orders = () => {
     filters,
     fetchOrders,
     updateOrderStatus,
+    updatePaymentStatus,
+    updateOrderPayment,
     setFilters,
   } = useOrderStore()
 
@@ -105,10 +107,9 @@ const Orders = () => {
         processing: processingOrders,
         completed: completedOrders,
         revenue: totalRevenue,
-        revenueChange: 0 // Would need historical data for this
+        revenueChange: 0
       })
     } else {
-      // Reset stats when no orders
       setStats({
         total: 0,
         pending: 0,
@@ -133,10 +134,12 @@ const Orders = () => {
   const handleOrderStatusChange = async (orderId, newStatus) => {
     setUpdatingStatus(true)
     try {
-      await orderAPI.updateOrderStatus(orderId, newStatus)
-      fetchOrders(1, user.id) // Refresh orders with user ID
+      await updateOrderStatus(orderId, newStatus)
+      await fetchOrders(1, user.id) // Refresh orders with user ID
+      toast.success('Order status updated successfully')
     } catch (error) {
       console.error('Error updating order status:', error)
+      toast.error('Failed to update order status')
     } finally {
       setUpdatingStatus(false)
     }
@@ -145,10 +148,12 @@ const Orders = () => {
   const handlePaymentStatusChange = async (orderId, newStatus) => {
     setUpdatingStatus(true)
     try {
-      await orderAPI.updatePaymentStatus(orderId, newStatus)
-      fetchOrders(1, user.id) // Refresh orders with user ID
+      await updatePaymentStatus(orderId, newStatus)
+      await fetchOrders(1, user.id) // Refresh orders with user ID
+      toast.success('Payment status updated successfully')
     } catch (error) {
       console.error('Error updating payment status:', error)
+      toast.error('Failed to update payment status')
     } finally {
       setUpdatingStatus(false)
     }
@@ -162,20 +167,44 @@ const Orders = () => {
       setShowPaymentModal(true)
     } catch (error) {
       console.error('Error fetching payment details:', error)
+      toast.error('Failed to fetch payment details')
     }
   }
 
   const handleUpdatePayment = async () => {
-    if (!selectedOrder || !paidAmount) return
+    if (!selectedOrder || !paidAmount) {
+      toast.error('Please enter a payment amount')
+      return
+    }
+    
+    const amount = parseFloat(paidAmount)
+    if (isNaN(amount) || amount <= 0) {
+      toast.error('Please enter a valid payment amount')
+      return
+    }
+    
+    if (amount > (paymentDetails?.remaining_due || 0)) {
+      toast.error(`Payment amount cannot exceed remaining due of ₹${paymentDetails?.remaining_due?.toFixed(2)}`)
+      return
+    }
     
     setUpdatingStatus(true)
     try {
-      await orderAPI.updateOrderPayment(selectedOrder.id, user.id, paidAmount)
-      setShowPaymentModal(false)
-      setPaidAmount('')
-      fetchOrders(1, user.id) // Refresh orders with user ID
+      const result = await updateOrderPayment(selectedOrder.id, user.id, amount)
+      
+      if (result.success) {
+        // Close modal and reset form
+        setShowPaymentModal(false)
+        setSelectedOrder(null)
+        setPaymentDetails(null)
+        setPaidAmount('')
+        
+        // Refresh orders to show updated data
+        await fetchOrders(1, user.id)
+      }
     } catch (error) {
       console.error('Error updating payment:', error)
+      toast.error('Failed to update payment')
     } finally {
       setUpdatingStatus(false)
     }
@@ -183,11 +212,9 @@ const Orders = () => {
 
   const handlePrintInvoice = (order, printType) => {
     if (printType === 'a4') {
-      // Generate A4 invoice using template
       const invoiceContent = generateA4InvoiceHTML(order)
       printInvoice(invoiceContent, 'a4')
     } else if (printType === 'thermal') {
-      // Generate thermal receipt using template
       const receiptContent = generateThermalInvoiceHTML(order)
       printInvoice(receiptContent, 'thermal')
     } else {
@@ -233,7 +260,7 @@ const Orders = () => {
     setShowCreateForm(false)
     setShowEditForm(false)
     setSelectedOrder(null)
-    fetchOrders(1, user.id) // Refresh data
+    fetchOrders(1, user.id)
   }
 
   const handleCancelForm = () => {
@@ -376,16 +403,43 @@ const Orders = () => {
       ),
     },
     {
-      header: 'Total',
+      header: 'Total Amount',
       accessor: 'total_amount',
       cell: (value) => (
         <div className="flex items-center">
-          <FiDollarSign className="w-3 h-3 mr-1 text-gray-400" />
+          <span className="text-gray-400 mr-1">₹</span>
           <span className="font-semibold text-gray-900 dark:text-white">
-            {parseFloat(value).toFixed(2)}
+            ₹{parseFloat(value || 0).toFixed(2)}
           </span>
         </div>
       ),
+    },
+    {
+      header: 'Paid Amount',
+      accessor: 'paid_amount',
+      cell: (value) => (
+        <div className="flex items-center">
+          <span className="text-green-400 mr-1">₹</span>
+          <span className="font-semibold text-green-600 dark:text-green-400">
+            ₹{parseFloat(value || 0).toFixed(2)}
+          </span>
+        </div>
+      ),
+    },
+    {
+      header: 'Due Amount',
+      accessor: 'due_amount',
+      cell: (value, row) => {
+        const dueAmount = parseFloat(row.total_amount || 0) - parseFloat(row.paid_amount || 0)
+        return (
+          <div className="flex items-center">
+            <span className="text-red-400 mr-1">₹</span>
+            <span className={`font-semibold ${dueAmount > 0 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>
+              ₹{dueAmount.toFixed(2)}
+            </span>
+          </div>
+        )
+      },
     },
     {
       header: 'Status',
@@ -407,7 +461,7 @@ const Orders = () => {
       cell: (value) => (
         <StatusBadge
           status={value}
-          variant={value === 'paid' ? 'success' : value === 'refunded' ? 'default' : 'warning'}
+          variant={value === 'completed' ? 'success' : value === 'failed' ? 'danger' : 'warning'}
           size="sm"
         />
       ),
@@ -416,17 +470,7 @@ const Orders = () => {
       header: 'Actions',
       accessor: 'id',
       cell: (value, row) => (
-        <div className="flex items-center space-x-1">
-          <motion.button
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => handleViewPaymentDetails(row)}
-            className="p-2 text-green-600 hover:bg-green-50 dark:text-green-400 dark:hover:bg-green-900/20 rounded-lg transition-colors"
-            title="Payment Details"
-          >
-            <FiDollarSign className="w-4 h-4" />
-          </motion.button>
-          
+        <div className="flex items-center justify-center">
           <motion.button
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.95 }}
@@ -470,7 +514,6 @@ const Orders = () => {
     </motion.div>
   )
 
-  // Render Create Order Form
   const renderCreateOrderForm = () => (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -505,7 +548,6 @@ const Orders = () => {
     </motion.div>
   )
 
-  // Render Edit Order Form
   const renderEditOrderForm = () => (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -547,7 +589,6 @@ const Orders = () => {
     </motion.div>
   )
 
-  // Render Main Orders View
   const renderOrdersView = () => (
     <motion.div
       initial={{ opacity: 0 }}
@@ -640,7 +681,7 @@ const Orders = () => {
         <StatCard
           title="Revenue"
           value={`₹${stats.revenue.toLocaleString()}`}
-          icon={FiDollarSign}
+          icon={() => <span className="text-white">₹</span>}
           color="from-green-500 to-emerald-500"
           change={8}
           delay={0.2}
@@ -694,7 +735,7 @@ const Orders = () => {
                   value=""
                   onChange={(e) => {
                     if (e.target.value) {
-                      selectedOrders.forEach(id => handleStatusChange(id, e.target.value))
+                      selectedOrders.forEach(id => handleOrderStatusChange(id, e.target.value))
                     }
                   }}
                   options={[
@@ -789,18 +830,18 @@ const Orders = () => {
                       { value: 'cancelled', label: 'Cancelled' },
                     ]}
                     value={filters.status}
-                    onChange={(e) => setFilters({ status: e.target.value })}
+                    onChange={(e) => setFilters({ status: e.target.value }, user?.id)}
                   />
                   <Select
                     label="Payment Status"
                     options={[
                       { value: '', label: 'All' },
-                      { value: 'paid', label: 'Paid' },
-                      { value: 'unpaid', label: 'Unpaid' },
-                      { value: 'refunded', label: 'Refunded' },
+                      { value: 'pending', label: 'Pending' },
+                      { value: 'completed', label: 'Completed' },
+                      { value: 'failed', label: 'Failed' },
                     ]}
                     value={filters.paymentStatus}
-                    onChange={(e) => setFilters({ paymentStatus: e.target.value })}
+                    onChange={(e) => setFilters({ paymentStatus: e.target.value }, user?.id)}
                   />
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -809,7 +850,7 @@ const Orders = () => {
                     <Input
                       type="date"
                       value={filters.dateFrom}
-                      onChange={(e) => setFilters({ dateFrom: e.target.value })}
+                      onChange={(e) => setFilters({ dateFrom: e.target.value }, user?.id)}
                     />
                   </div>
                   <div>
@@ -819,7 +860,7 @@ const Orders = () => {
                     <Input
                       type="date"
                       value={filters.dateTo}
-                      onChange={(e) => setFilters({ dateTo: e.target.value })}
+                      onChange={(e) => setFilters({ dateTo: e.target.value }, user?.id)}
                     />
                   </div>
                 </div>
@@ -891,14 +932,14 @@ const Orders = () => {
         )}
       </AnimatePresence>
 
-      {/* Order Details Modal (always renders but conditionally shown) */}
+      {/* Order Details Modal */}
       <Modal
         isOpen={showDetailsModal}
         onClose={() => {
           setShowDetailsModal(false)
           setSelectedOrder(null)
         }}
-        title={`Order #${selectedOrder?.orderNumber}`}
+        title={`Order #${selectedOrder?.orderNumber || selectedOrder?.id}`}
         size="lg"
       >
         {selectedOrder && (
@@ -906,7 +947,9 @@ const Orders = () => {
             order={selectedOrder}
             onUpdateOrder={handleOrderStatusChange}
             onUpdatePayment={handlePaymentStatusChange}
+            onUpdateOrderPayment={updateOrderPayment}
             onPrintInvoice={handlePrintInvoice}
+            user={user}
           />
         )}
       </Modal>
@@ -920,7 +963,7 @@ const Orders = () => {
           setPaymentDetails(null)
           setPaidAmount('')
         }}
-        title={`Payment Details - Order #${selectedOrder?.orderNumber}`}
+        title={`Payment Details - Order #${selectedOrder?.orderNumber || selectedOrder?.id}`}
         size="md"
       >
         {selectedOrder && paymentDetails && (
@@ -931,58 +974,88 @@ const Orders = () => {
                 <div className="flex justify-between">
                   <span className="text-gray-600 dark:text-gray-400">Order Total:</span>
                   <span className="font-semibold text-gray-900 dark:text-white">
-                    ${selectedOrder.total?.toFixed(2) || '0.00'}
+                    ₹{(selectedOrder.total_amount || paymentDetails.total_amount || 0).toFixed(2)}
                   </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600 dark:text-gray-400">Total Paid:</span>
                   <span className="font-semibold text-green-600 dark:text-green-400">
-                    ${paymentDetails.total_paid?.toFixed(2) || '0.00'}
+                    ₹{(paymentDetails.total_paid || 0).toFixed(2)}
                   </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600 dark:text-gray-400">Remaining Due:</span>
                   <span className="font-semibold text-red-600 dark:text-red-400">
-                    ${paymentDetails.remaining_due?.toFixed(2) || '0.00'}
+                    ₹{(paymentDetails.remaining_due || 0).toFixed(2)}
                   </span>
                 </div>
               </div>
             </div>
 
-            <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">Update Payment</h3>
-              <div className="space-y-3">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Payment Amount
-                  </label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    placeholder="Enter payment amount"
-                    value={paidAmount}
-                    onChange={(e) => setPaidAmount(e.target.value)}
-                    max={paymentDetails.remaining_due || 0}
-                  />
-                </div>
-                <div className="flex space-x-3">
-                  <Button
-                    onClick={handleUpdatePayment}
-                    disabled={!paidAmount || parseFloat(paidAmount) <= 0 || updatingStatus}
-                    className="flex-1"
-                  >
-                    {updatingStatus ? 'Processing...' : 'Update Payment'}
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={() => setShowPaymentModal(false)}
-                    className="flex-1"
-                  >
-                    Cancel
-                  </Button>
+            {(paymentDetails.remaining_due || 0) > 0 ? (
+              <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">Update Payment</h3>
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Payment Amount
+                    </label>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      placeholder="Enter payment amount"
+                      value={paidAmount}
+                      onChange={(e) => setPaidAmount(e.target.value)}
+                      max={paymentDetails.remaining_due || 0}
+                    />
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                      Maximum: ₹{(paymentDetails.remaining_due || 0).toFixed(2)}
+                    </p>
+                  </div>
+                  <div className="flex space-x-3">
+                    <Button
+                      onClick={handleUpdatePayment}
+                      disabled={!paidAmount || parseFloat(paidAmount) <= 0 || updatingStatus}
+                      className="flex-1"
+                    >
+                      {updatingStatus ? 'Processing...' : 'Update Payment'}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setShowPaymentModal(false)
+                        setSelectedOrder(null)
+                        setPaymentDetails(null)
+                        setPaidAmount('')
+                      }}
+                      className="flex-1"
+                    >
+                      Cancel
+                    </Button>
+                  </div>
                 </div>
               </div>
-            </div>
+            ) : (
+              <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-4 text-center">
+                <FiCheckCircle className="w-12 h-12 text-green-500 mx-auto mb-2" />
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Order Fully Paid</h3>
+                <p className="text-gray-600 dark:text-gray-400 mt-1">
+                  This order has been fully paid. No further payments are required.
+                </p>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setShowPaymentModal(false)
+                    setSelectedOrder(null)
+                    setPaymentDetails(null)
+                    setPaidAmount('')
+                  }}
+                  className="mt-3"
+                >
+                  Close
+                </Button>
+              </div>
+            )}
           </div>
         )}
       </Modal>

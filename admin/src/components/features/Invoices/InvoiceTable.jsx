@@ -313,20 +313,6 @@ const InvoiceTable = ({
       ),
     },
     {
-      header: 'Status',
-      accessor: 'status',
-      cell: (value) => {
-        const config = getStatusConfig(value)
-        return (
-          <StatusBadge
-            status={config.label}
-            variant={config.variant}
-            icon={config.icon}
-          />
-        )
-      },
-    },
-    {
       header: 'Actions',
       accessor: 'actions',
       cell: (_, row) => (
@@ -403,6 +389,21 @@ const InvoiceTable = ({
         </div>
       ),
     },
+    {
+      header: 'Status',
+      accessor: 'status',
+      cell: (value) => {
+        const config = getStatusConfig(value)
+        return (
+          <StatusBadge
+            status={config.label}
+            variant={config.variant}
+            icon={config.icon}
+          />
+        )
+      },
+    }
+    
   ]
 
   return (

@@ -171,7 +171,7 @@ export const useCustomerStore = create((set, get) => ({
       get().clearCache()
       
       toast.success('Customer created successfully')
-      return { success: true }
+      return { success: true, data: response.data }
     } catch (error) {
       console.error('Failed to create customer:', error)
       toast.error('Failed to create customer')
@@ -392,3 +392,25 @@ export const useCustomerStore = create((set, get) => ({
     }
   },
 }))
+
+// Initialize BroadcastChannel listener for cross-module cache invalidation
+if (typeof window !== 'undefined') {
+  try {
+    const broadcastChannel = new BroadcastChannel('app-cache-invalidation')
+    broadcastChannel.onmessage = (event) => {
+      const eventType = event.data?.type
+      if (eventType === 'invoice-created' || eventType === 'invoice-updated' || eventType === 'invoice-deleted') {
+        console.log(`Customer store: ${eventType}, clearing cache`)
+        useCustomerStore.getState().clearCache()
+        
+        // If we have current customers loaded, refresh them to show updated data
+        const currentState = useCustomerStore.getState()
+        if (currentState.customers.length > 0) {
+          useCustomerStore.getState().fetchCustomers(currentState.currentPage, currentState.filters.search)
+        }
+      }
+    }
+  } catch (error) {
+    console.log('BroadcastChannel not supported in customer store')
+  }
+}
