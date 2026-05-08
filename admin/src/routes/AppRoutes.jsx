@@ -9,6 +9,7 @@ import Login from '../pages/auth/Login'
 // Main Pages
 import Dashboard from '../pages/dashboard/Dashboard'
 import Products from '../pages/products/Products'
+import DeletedProducts from '../pages/products/DeletedProducts'
 import Categories from '../pages/categories/Categories'
 import Brands from '../pages/brands/Brands'
 import Units from '../pages/units/Units'
@@ -43,6 +44,7 @@ const AppRoutes = () => {
         <Route index element={<Navigate to="/dashboard" replace />} />
         <Route path="dashboard" element={<Dashboard />} />
         <Route path="products" element={<ProtectedRoute feature="products"><Products /></ProtectedRoute>} />
+        <Route path="products/deleted" element={<ProtectedRoute feature="products"><DeletedProducts /></ProtectedRoute>} />
         <Route path="categories" element={<ProtectedRoute feature="categories"><Categories /></ProtectedRoute>} />
         <Route path="brands" element={<Brands />} />
         <Route path="units" element={<ProtectedRoute feature="units"><Units /></ProtectedRoute>} />

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
+import { Link } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import {
   FiPlus,
@@ -876,6 +877,15 @@ const Products = () => {
               >
                 <FiDownload className="w-5 h-5 text-gray-600 dark:text-gray-300" />
               </motion.button>
+
+              {/* Deleted Products Button */}
+              <Link
+                to="/products/deleted"
+                className="flex items-center px-4 py-2 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded-xl hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors"
+              >
+                <FiTrash2 className="w-4 h-4 mr-2" />
+                Deleted Products
+              </Link>
 
               {/* Import Button */}
               <motion.button

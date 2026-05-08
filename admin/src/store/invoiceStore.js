@@ -32,7 +32,7 @@ export const useInvoiceStore = create((set, get) => ({
   invoices: [],
   totalInvoices: 0,
   currentPage: 1,
-  pageSize: 10,
+  pageSize: 15,
   loading: false,
   error: null,
   filters: {
@@ -139,7 +139,7 @@ export const useInvoiceStore = create((set, get) => ({
         invoices: enrichedInvoices,
         totalInvoices: response.data?.data?.total || response.data?.total || 0,
         currentPage: response.data?.data?.current_page || page,
-        pageSize: response.data?.data?.per_page || 10,
+        pageSize: response.data?.data?.per_page || 15,
         loading: false,
         lastFetchTime: Date.now()
       })

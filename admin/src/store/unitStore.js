@@ -26,7 +26,7 @@ const useUnitStore = create((set, get) => ({
   units: [],
   totalUnits: 0,
   currentPage: 1,
-  pageSize: 10,
+  pageSize: 15,
   loading: false,
   error: null,
   filters: {
@@ -86,7 +86,7 @@ const useUnitStore = create((set, get) => ({
         units: unitsArray,
         totalUnits: paginationData.total || 0,
         currentPage: paginationData.current_page || 1,
-        pageSize: paginationData.per_page || 10,
+        pageSize: paginationData.per_page || 15,
         loading: false,
         lastFetchTime: Date.now()
       })

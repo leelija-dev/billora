@@ -26,7 +26,7 @@ const useStoreStore = create((set, get) => ({
   stores: [],
   totalStores: 0,
   currentPage: 1,
-  pageSize: 10,
+  pageSize: 15,
   loading: false,
   error: null,
   filters: {
