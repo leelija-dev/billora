@@ -94,6 +94,7 @@ Route::middleware('auth:sanctum')->prefix('products')->group(function () {
    Route::put('/{id}', [ProductsController::class, 'update']); // update product
    Route::delete('/{id}', [ProductsController::class, 'destroy']); // delete product soft delete
    Route::patch('/{id}', [ProductsController::class, 'restore']); // restore product
+   Route::get('/deleted-products',[ProductsController::class, 'deletedProducts']); // deleted products
    Route::delete('/{id}/force', [ProductsController::class, 'forceDelete']); // delete product permanently
    Route::delete('/bulk-delete/{ids}', [ProductsController::class, 'bulkDelete']); // bulk delete product (soft delete)
    Route::delete('/bulk-force-delete/{ids}', [ProductsController::class, 'bulkForceDelete']); // bulk delete product permanently

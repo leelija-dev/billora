@@ -1061,4 +1061,31 @@ class ProductsController extends Controller
             ]);
         }
     }
+    public function deletedProducts($id){
+        try{
+        $user = $user = Auth::user()->id;
+        if($user != $id){
+            return response()->json([
+                'status' => false,
+                'message' => 'You are not authorized to perform this action'
+            ]);
+        }
+        $products = Products::onlyTrashed()->where('user_id', $id)->get();
+        if (!$products) {
+            return response()->json([
+                'status'  => false,
+                'message' => 'Product not found!'
+            ]);
+        }
+        return response()->json([
+            'status' => true,
+            'products' => $products
+        ]);
+        }catch(\Exception $e){
+            return response()->json([
+                'status' => false,
+                'message' => $e->getMessage()
+            ]);
+        }
+    }
 }
