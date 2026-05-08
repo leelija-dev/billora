@@ -65,11 +65,14 @@ const Reports = () => {
       
       // Enrich reports with customer and store names
       const enrichedReports = await Promise.all(
-        reportsData.map(async (report) => {
+        reportsData.map(async (report, index) => {
           try {
+            // Add delay to prevent overwhelming the server
+            await new Promise(resolve => setTimeout(resolve, 50 * index))
+            
             const [customerResponse, storeResponse] = await Promise.all([
-              apiClient.get(`/customer/show/${report.customer_id}`),
-              apiClient.get(`/store/${report.store_id}`)
+              reportsAPI.getCustomer(report.customer_id),
+              reportsAPI.getStore(report.store_id)
             ])
             
             const customer = customerResponse.data?.data || customerResponse.data || {}
@@ -1091,7 +1094,7 @@ const handleExportToPDF = () => {
     },
     {
       header: 'Actions',
-      accessor: 'id',
+      accessor: 'actions',
       cell: (value, row) => (
         <div className="flex items-center space-x-1">
           <motion.button
