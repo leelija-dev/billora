@@ -54,7 +54,7 @@ class ProductsController extends Controller
                     ->orWhere('unit_id', 'like', '%' . $request->search . '%')
                     ->orWhere('unit_amount', 'like', '%' . $request->search . '%')
                     ->orderBy('id', 'desc')
-                    ->paginate(10);
+                    ->paginate(15);
             }
             return response()->json([
                 'status' => true,

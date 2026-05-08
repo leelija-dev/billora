@@ -27,7 +27,7 @@ export const useProductStore = create((set, get) => ({
   products: [],
   totalProducts: 0,
   currentPage: 1,
-  pageSize: 10,
+  pageSize: 15,
   loading: false,
   filters: {
     search: '',
