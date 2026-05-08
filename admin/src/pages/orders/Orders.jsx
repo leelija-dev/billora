@@ -57,6 +57,7 @@ const Orders = () => {
   const [showEditForm, setShowEditForm] = useState(false)
   const [showDetailsModal, setShowDetailsModal] = useState(false)
   const [showPaymentModal, setShowPaymentModal] = useState(false)
+  const [showPrintModal, setShowPrintModal] = useState(false)
   const [selectedOrder, setSelectedOrder] = useState(null)
   const [searchTerm, setSearchTerm] = useState(filters.search || '')
   const [showFilters, setShowFilters] = useState(false)
@@ -169,6 +170,11 @@ const Orders = () => {
       console.error('Error fetching payment details:', error)
       toast.error('Failed to fetch payment details')
     }
+  }
+
+  const handlePrintOrder = (order) => {
+    setSelectedOrder(order)
+    setShowPrintModal(true)
   }
 
   const handleUpdatePayment = async () => {
@@ -470,7 +476,17 @@ const Orders = () => {
       header: 'Actions',
       accessor: 'id',
       cell: (value, row) => (
-        <div className="flex items-center justify-center">
+        <div className="flex items-center space-x-1">
+          <motion.button
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => handlePrintOrder(row)}
+            className="p-2 text-blue-600 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
+            title="Print Order"
+          >
+            <FiPrinter className="w-4 h-4" />
+          </motion.button>
+          
           <motion.button
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.95 }}
@@ -1056,6 +1072,68 @@ const Orders = () => {
                 </Button>
               </div>
             )}
+          </div>
+        )}
+      </Modal>
+
+      {/* Print Options Modal */}
+      <Modal
+        isOpen={showPrintModal}
+        onClose={() => {
+          setShowPrintModal(false)
+          setSelectedOrder(null)
+        }}
+        title={`Print Options - Order #${selectedOrder?.orderNumber || selectedOrder?.id}`}
+        size="sm"
+      >
+        {selectedOrder && (
+          <div className="space-y-4">
+            <div className="text-center">
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                Choose print format for Order #{selectedOrder?.orderNumber || selectedOrder?.id}
+              </p>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <Button
+                onClick={() => {
+                  handlePrintInvoice(selectedOrder, 'a4')
+                  setShowPrintModal(false)
+                  setSelectedOrder(null)
+                }}
+                className="w-full"
+                variant="primary"
+              >
+                <FiPrinter className="w-4 h-4 mr-2" />
+                Print A4 Invoice
+              </Button>
+              
+              <Button
+                onClick={() => {
+                  handlePrintInvoice(selectedOrder, 'thermal')
+                  setShowPrintModal(false)
+                  setSelectedOrder(null)
+                }}
+                className="w-full"
+                variant="secondary"
+              >
+                <FiPrinter className="w-4 h-4 mr-2" />
+                Print Thermal
+              </Button>
+            </div>
+            
+            <div className="flex justify-center mt-4">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowPrintModal(false)
+                  setSelectedOrder(null)
+                }}
+                className="px-6"
+              >
+                Cancel
+              </Button>
+            </div>
           </div>
         )}
       </Modal>
