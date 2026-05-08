@@ -172,4 +172,31 @@ export const useDeletedProductStore = create((set, get) => ({
       return { success: false, error: error.response?.data }
     }
   },
+
+  // Bulk permanently delete products
+  bulkForceDeleteProducts: async (ids) => {
+    set({ loading: true })
+    try {
+      const response = await productsAPI.bulkForceDelete(ids)
+      console.log('Products bulk permanently deleted successfully:', response)
+      
+      // Get current state
+      const currentState = get()
+      
+      // Update local state immediately for better UX
+      set({
+        deletedProducts: currentState.deletedProducts.filter(p => !ids.includes(p.id)),
+        totalDeletedProducts: Math.max(0, (currentState.deletedProducts?.length || 0) - ids.length),
+        loading: false,
+      })
+      
+      toast.success(`${ids.length} products permanently deleted`)
+      return { success: true, data: response.data }
+    } catch (error) {
+      console.error('Failed to bulk permanently delete products:', error)
+      toast.error('Failed to bulk permanently delete products')
+      set({ loading: false })
+      return { success: false, error: error.response?.data }
+    }
+  },
 }))

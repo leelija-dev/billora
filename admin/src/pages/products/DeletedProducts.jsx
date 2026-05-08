@@ -11,6 +11,7 @@ import {
   FiCheckCircle,
   FiX,
   FiEye,
+  FiArrowLeft,
 } from 'react-icons/fi'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useDeletedProductStore } from '../../store/deletedProductStore'
@@ -27,6 +28,10 @@ import Pagination from '../../components/common/Pagination/Pagination'
 import EmptyState from '../../components/common/EmptyState/EmptyState'
 import Modal from '../../components/common/Modal/Modal'
 
+import { useNavigate } from 'react-router-dom'
+
+
+
 const DeletedProducts = () => {
   const { user } = useAuthStore()
   const {
@@ -40,6 +45,7 @@ const DeletedProducts = () => {
     fetchDeletedProductsByUrl,
     restoreProduct,
     forceDeleteProduct,
+    bulkForceDeleteProducts,
   } = useDeletedProductStore()
 
   const [searchTerm, setSearchTerm] = useState('')
@@ -47,9 +53,12 @@ const DeletedProducts = () => {
   const [showRestoreConfirm, setShowRestoreConfirm] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [selectedProduct, setSelectedProduct] = useState(null)
+  const [selectedProducts, setSelectedProducts] = useState([])
+  const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false)
   const [categories, setCategories] = useState([])
   const [brands, setBrands] = useState([])
   const [units, setUnits] = useState([])
+  const navigate = useNavigate()
 
   useEffect(() => {
     if (user?.id) {
@@ -159,6 +168,25 @@ const DeletedProducts = () => {
     }
   }
 
+  const handleBulkForceDelete = () => {
+    if (selectedProducts.length > 0) {
+      setShowBulkDeleteConfirm(true)
+    }
+  }
+
+  const confirmBulkForceDelete = async () => {
+    if (selectedProducts.length > 0) {
+      try {
+        await bulkForceDeleteProducts(selectedProducts)
+        setSelectedProducts([])
+        setShowBulkDeleteConfirm(false)
+      } catch (error) {
+        console.error('Error bulk permanently deleting products:', error)
+        toast.error('Failed to permanently delete products')
+      }
+    }
+  }
+
   const handlePageChange = (url) => {
     if (url) {
       fetchDeletedProductsByUrl(url)
@@ -166,6 +194,37 @@ const DeletedProducts = () => {
   }
 
   const columns = [
+    {
+      header: (
+        <input
+          type="checkbox"
+          checked={selectedProducts.length === deletedProducts.length && deletedProducts.length > 0}
+          onChange={(e) => {
+            if (e.target.checked) {
+              setSelectedProducts(deletedProducts.map(p => p.id))
+            } else {
+              setSelectedProducts([])
+            }
+          }}
+          className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+        />
+      ),
+      accessor: 'checkbox',
+      cell: (value, row) => (
+        <input
+          type="checkbox"
+          checked={selectedProducts.includes(row.id)}
+          onChange={(e) => {
+            if (e.target.checked) {
+              setSelectedProducts([...selectedProducts, row.id])
+            } else {
+              setSelectedProducts(selectedProducts.filter(id => id !== row.id))
+            }
+          }}
+          className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+        />
+      ),
+    },
     {
       header: 'Product',
       accessor: 'name',
@@ -321,6 +380,22 @@ const DeletedProducts = () => {
           >
             <FiRefreshCw className={`w-5 h-5 text-gray-600 dark:text-gray-300 ${refreshing ? 'animate-spin' : ''}`} />
           </motion.button>
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: 20 }}
+          >
+            <Button
+              variant="outline"
+              onClick={()=>{
+                navigate('/products')
+              }}
+             
+              icon={FiArrowLeft}
+            >
+              Back to Products
+            </Button>
+          </motion.div>
         </div>
       </motion.div>
 
@@ -341,6 +416,43 @@ const DeletedProducts = () => {
           icon={FiSearch}
         />
       </motion.div>
+
+      {/* Bulk Actions Bar */}
+      <AnimatePresence>
+        {selectedProducts.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-4"
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <span className="text-sm font-medium text-red-700 dark:text-red-300">
+                  {selectedProducts.length} products selected
+                </span>
+                <button
+                  onClick={() => setSelectedProducts([])}
+                  className="text-xs text-red-600 hover:text-red-700 dark:text-red-400"
+                >
+                  Clear selection
+                </button>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleBulkForceDelete}
+                  className="border-red-300 text-red-600 hover:bg-red-50 dark:border-red-700 dark:text-red-400 dark:hover:bg-red-900/20"
+                >
+                  <FiTrash2 className="w-4 h-4 mr-2" />
+                  Delete Permanently
+                </Button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Deleted Products Table */}
       <motion.div
@@ -461,6 +573,46 @@ const DeletedProducts = () => {
             </div>
           </div>
         )}
+      </Modal>
+
+      {/* Bulk Permanent Delete Confirmation Modal */}
+      <Modal
+        isOpen={showBulkDeleteConfirm}
+        onClose={() => {
+          setShowBulkDeleteConfirm(false)
+        }}
+        title="Permanently Delete Selected Products"
+        size="sm"
+      >
+        <div className="space-y-4">
+          <div className="text-center">
+            <FiAlertTriangle className="w-12 h-12 text-red-500 mx-auto mb-2" />
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+              Permanently Delete {selectedProducts.length} Products?
+            </h3>
+            <p className="text-gray-600 dark:text-gray-400 mt-1">
+              This action cannot be undone. The selected products will be permanently removed from the database.
+            </p>
+          </div>
+          <div className="flex space-x-3">
+            <Button
+              onClick={confirmBulkForceDelete}
+              className="flex-1 bg-red-600 hover:bg-red-700"
+            >
+              <FiTrash2 className="w-4 h-4 mr-2" />
+              Delete Permanently
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowBulkDeleteConfirm(false)
+              }}
+              className="flex-1"
+            >
+              Cancel
+            </Button>
+          </div>
+        </div>
       </Modal>
     </motion.div>
   )

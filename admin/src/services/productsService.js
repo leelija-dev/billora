@@ -357,6 +357,32 @@ export const productsAPI = {
     }
   },
 
+  // Bulk soft delete products
+  bulkDelete: async (ids) => {
+    try {
+      console.log(`📦 Bulk deleting products with IDs:`, ids);
+      const response = await apiClient.delete('/products/bulk-delete', { data: { ids } });
+      console.log('📦 Products bulk deleted successfully');
+      return response;
+    } catch (error) {
+      console.error('❌ Failed to bulk delete products:', error);
+      throw error.response?.data || error.message;
+    }
+  },
+
+  // Bulk permanently delete products
+  bulkForceDelete: async (ids) => {
+    try {
+      console.log(`📦 Bulk permanently deleting products with IDs:`, ids);
+      const response = await apiClient.delete(`/products/bulk-force-delete`, { data: { ids } });
+      console.log('📦 Products bulk permanently deleted');
+      return response;
+    } catch (error) {
+      console.error('❌ Failed to bulk permanently delete products:', error);
+      throw error.response?.data || error.message;
+    }
+  },
+
   // Search products
   search: async (query, filters = {}) => {
     try {
