@@ -29,11 +29,11 @@ export const productsAPI = {
   },
 
   // Get deleted products (soft deleted)
-  getDeleted: async (search = '') => {
+  getDeleted: async (userId = null, search = '') => {
     try {
-      const params = search ? { search, deleted: 'true' } : { deleted: 'true' };
+      const params = search ? { search } : {};
       console.log('📦 Fetching deleted products with params:', params);
-      const response = await apiClient.get('/products', { params });
+      const response = await apiClient.get(`/products/deleted-products/${userId}`, { params });
       console.log('📦 Deleted products fetched successfully:', response.data);
       return response;
     } catch (error) {

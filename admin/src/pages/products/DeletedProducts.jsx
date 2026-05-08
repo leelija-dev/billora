@@ -14,6 +14,7 @@ import {
 } from 'react-icons/fi'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useDeletedProductStore } from '../../store/deletedProductStore'
+import { useAuthStore } from '../../store/authStore'
 import { productsAPI } from '../../services/productsService'
 import { categoriesAPI } from '../../services/categoriesService'
 import { brandsAPI } from '../../services/brandsService'
@@ -27,6 +28,7 @@ import EmptyState from '../../components/common/EmptyState/EmptyState'
 import Modal from '../../components/common/Modal/Modal'
 
 const DeletedProducts = () => {
+  const { user } = useAuthStore()
   const {
     deletedProducts,
     totalDeletedProducts,
@@ -50,17 +52,21 @@ const DeletedProducts = () => {
   const [units, setUnits] = useState([])
 
   useEffect(() => {
-    fetchDeletedProducts()
-    fetchCategoriesBrandsAndUnits()
-  }, [])
+    if (user?.id) {
+      fetchDeletedProducts(user.id)
+      fetchCategoriesBrandsAndUnits()
+    }
+  }, [user?.id])
 
   useEffect(() => {
     const debounceTimer = setTimeout(() => {
-      fetchDeletedProducts(1, searchTerm)
+      if (user?.id) {
+        fetchDeletedProducts(user.id, searchTerm)
+      }
     }, 500)
 
     return () => clearTimeout(debounceTimer)
-  }, [searchTerm])
+  }, [searchTerm, user?.id])
 
   const fetchCategoriesBrandsAndUnits = async () => {
     try {
@@ -109,9 +115,9 @@ const DeletedProducts = () => {
   }
 
   const handleRefresh = async () => {
-    if (refreshing) return
+    if (refreshing || !user?.id) return
     setRefreshing(true)
-    await fetchDeletedProducts()
+    await fetchDeletedProducts(user.id)
     setRefreshing(false)
   }
 

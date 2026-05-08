@@ -19,21 +19,23 @@ export const useDeletedProductStore = create((set, get) => ({
     last_page_url: null,
   },
 
-  fetchDeletedProducts: async (page = 1, search = '') => {
+  fetchDeletedProducts: async (userId, search = '') => {
+    if (!userId) return
+    
     set({ loading: true })
     try {
-      const response = await productsAPI.getDeleted(search)
+      const response = await productsAPI.getDeleted(userId, search)
       
       console.log(' Deleted Product Store - Raw API Response:', response)
       
       // Handle your API's response structure
       const apiData = response.data
-      let deletedProducts = apiData.data?.data || []
-      const paginationData = apiData.data || {}
+      let deletedProducts = apiData.products || []
+      const paginationData = apiData || {}
       
       // Extract pagination data from API response
       const pagination = {
-        current_page: paginationData.current_page || page,
+        current_page: paginationData.current_page || 1,
         last_page: paginationData.last_page || 1,
         per_page: paginationData.per_page || 15,
         total: paginationData.total || deletedProducts.length,
@@ -79,8 +81,8 @@ export const useDeletedProductStore = create((set, get) => ({
       
       // Handle your API's response structure
       const apiData = response.data
-      let deletedProducts = apiData.data?.data || []
-      const paginationData = apiData.data || {}
+      let deletedProducts = apiData.products || []
+      const paginationData = apiData || {}
       
       // Extract pagination data from API response
       const pagination = {
