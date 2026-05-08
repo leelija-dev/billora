@@ -76,6 +76,46 @@ const Orders = () => {
     revenueChange: 0
   })
 
+  // Computed filtered orders based on current filters
+  const filteredOrders = React.useMemo(() => {
+    let filtered = [...orders]
+    
+    // Apply search filter
+    if (filters.search) {
+      const searchLower = filters.search.toLowerCase()
+      filtered = filtered.filter(order => 
+        (order.order_id && order.order_id.toString().toLowerCase().includes(searchLower)) ||
+        (order.customer_name && order.customer_name.toLowerCase().includes(searchLower)) ||
+        (order.customer_phone && order.customer_phone.toLowerCase().includes(searchLower)) ||
+        (order.customer_email && order.customer_email.toLowerCase().includes(searchLower))
+      )
+    }
+    
+    // Apply status filter
+    if (filters.status) {
+      filtered = filtered.filter(order => order.order_status === filters.status)
+    }
+    
+    // Apply payment status filter
+    if (filters.paymentStatus) {
+      filtered = filtered.filter(order => order.payment_status === filters.paymentStatus)
+    }
+    
+    // Apply date range filter
+    if (filters.dateFrom) {
+      const fromDate = new Date(filters.dateFrom)
+      filtered = filtered.filter(order => new Date(order.created_at) >= fromDate)
+    }
+    
+    if (filters.dateTo) {
+      const toDate = new Date(filters.dateTo)
+      toDate.setHours(23, 59, 59, 999) // End of day
+      filtered = filtered.filter(order => new Date(order.created_at) <= toDate)
+    }
+    
+    return filtered
+  }, [orders, filters])
+
   useEffect(() => {
     // Fetch orders with current user ID
     if (user?.id) {
@@ -94,16 +134,16 @@ const Orders = () => {
   }, [searchTerm, setFilters, user?.id])
 
   useEffect(() => {
-    if (orders.length > 0) {
-      const pendingOrders = orders.filter(order => order.order_status === 'pending').length
-      const processingOrders = orders.filter(order => order.order_status === 'processing').length
-      const completedOrders = orders.filter(order => order.order_status === 'completed').length
-      const totalRevenue = orders
+    if (filteredOrders.length > 0) {
+      const pendingOrders = filteredOrders.filter(order => order.order_status === 'pending').length
+      const processingOrders = filteredOrders.filter(order => order.order_status === 'processing').length
+      const completedOrders = filteredOrders.filter(order => order.order_status === 'completed').length
+      const totalRevenue = filteredOrders
         .filter(order => order.order_status === 'completed' && order.total_amount)
         .reduce((sum, order) => sum + parseFloat(order.total_amount || 0), 0)
 
       setStats({
-        total: totalOrders,
+        total: filteredOrders.length,
         pending: pendingOrders,
         processing: processingOrders,
         completed: completedOrders,
@@ -120,7 +160,7 @@ const Orders = () => {
         revenueChange: 0
       })
     }
-  }, [orders, totalOrders])
+  }, [filteredOrders])
 
   const handleViewOrder = (order) => {
     setSelectedOrder(order)
@@ -324,12 +364,12 @@ const Orders = () => {
         <div className="flex items-center">
           <input
             type="checkbox"
-            checked={selectedOrders.length === orders.length && orders.length > 0}
+            checked={selectedOrders.length === filteredOrders.length && filteredOrders.length > 0}
             onChange={() => {
-              if (selectedOrders.length === orders.length) {
+              if (selectedOrders.length === filteredOrders.length) {
                 setSelectedOrders([])
               } else {
-                setSelectedOrders(orders.map(o => o.id))
+                setSelectedOrders(filteredOrders.map(o => o.id))
               }
             }}
             className="w-4 h-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
@@ -631,7 +671,7 @@ const Orders = () => {
         
         <div className="flex items-center space-x-3">
           {/* Date Range Selector */}
-          <div className="flex items-center bg-gray-100 dark:bg-gray-800 rounded-xl p-1">
+          {/* <div className="flex items-center bg-gray-100 dark:bg-gray-800 rounded-xl p-1">
             {['today', 'week', 'month', 'custom'].map((range) => (
               <motion.button
                 key={range}
@@ -647,7 +687,7 @@ const Orders = () => {
                 {range.charAt(0).toUpperCase() + range.slice(1)}
               </motion.button>
             ))}
-          </div>
+          </div> */}
 
           {/* Refresh Button */}
           <motion.button
@@ -669,7 +709,7 @@ const Orders = () => {
           </motion.button>
 
           {/* Create Order Button */}
-          <motion.div
+          {/* <motion.div
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
           >
@@ -680,7 +720,7 @@ const Orders = () => {
             >
               Create Order
             </Button>
-          </motion.div>
+          </motion.div> */}
         </div>
       </motion.div>
 
@@ -895,14 +935,14 @@ const Orders = () => {
       >
         <Table
           columns={columns}
-          data={orders}
+          data={filteredOrders}
           loading={loading}
         />
       </motion.div>
       
       <Pagination
         currentPage={currentPage}
-        totalItems={totalOrders}
+        totalItems={filteredOrders.length}
         pageSize={pageSize}
         onPageChange={handlePageChange}
       />
