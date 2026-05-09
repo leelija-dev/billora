@@ -156,7 +156,7 @@ const Products = () => {
         setStocksLoading(false)
       }
     }
-    fetchData()
+    fetchData() 
   }, [])
 
   useEffect(() => {
