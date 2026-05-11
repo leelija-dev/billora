@@ -25,12 +25,12 @@ export const loginUser = async (userData) => {
       throw new Error(response.data.message || 'Login failed');
     }
   } catch (error) {
-    console.error('❌ Login error:', error);
-    console.error('❌ Error response:', error.response);
-    console.error('❌ Error data:', error.response?.data);
+    // console.error('❌ Login error:', error);
+    // console.error('❌ Error response:', error.response);
+    // console.error('❌ Error data:', error.response?.data);
     
     // Provide specific error messages
-    if (error.message?.includes("User not found")) {
+    if (error.response?.data.message?.includes("User not found")) {
       throw new Error('User not found. Please check your credentials.');
     } else if (error.message?.includes("password")) {
       throw new Error('Invalid password. Please try again.');

@@ -665,7 +665,7 @@ const Pricing = ({ limit = 3, showFilters = true, showViewAllButton = true }) =>
 
       <Container size="default">
         {/* Header Section */}
-        <div className="text-center mb-16 px-4 relative z-10">
+        <div className="text-center mb-4 px-4 relative z-10">
           <div className="inline-flex items-center gap-2 bg-gradient-to-r from-purple-100 to-purple-50 text-purple-700 px-5 py-2 rounded-full text-sm font-semibold mb-6 shadow-sm">
             <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
               <path d="M10 2a8 8 0 100 16 8 8 0 000-16zm1 12h-2v-2h2v2zm0-4h-2V6h2v4z" />

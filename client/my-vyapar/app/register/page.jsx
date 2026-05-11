@@ -187,7 +187,7 @@ const RegisterPage = () => {
     
     try {
       // Use authStore's register method directly
-      await register({ 
+      const result = await register({ 
         name: name.trim(), 
         email: email.trim().toLowerCase(), 
         password: password,
@@ -198,32 +198,47 @@ const RegisterPage = () => {
         pincode: pincode.trim()
       });
       
-      setSuccess("Registration successful! Please check your email to verify your account.");
-      
-      // Clear form
-      setName("");
-      setEmail("");
-      setPassword("");
-      setPhone("");
-      setCity("");
-      setState("");
-      setCountry("");
-      setPincode("");
-      
-      // Clear validation errors
-      setNameError("");
-      setEmailError("");
-      setPasswordError("");
-      setPhoneError("");
-      setCityError("");
-      setStateError("");
-      setCountryError("");
-      setPincodeError("");
-      
-      // Redirect to login after 3 seconds
-      setTimeout(() => {
-        router.push("/login");
-      }, 3000);
+      if (result.success) {
+        setSuccess("Registration successful! Please check your email to verify your account.");
+        
+        // Clear form
+        setName("");
+        setEmail("");
+        setPassword("");
+        setPhone("");
+        setCity("");
+        setState("");
+        setCountry("");
+        setPincode("");
+        
+        // Clear validation errors
+        setNameError("");
+        setEmailError("");
+        setPasswordError("");
+        setPhoneError("");
+        setCityError("");
+        setStateError("");
+        setCountryError("");
+        setPincodeError("");
+        
+        // Redirect to login after 3 seconds
+        setTimeout(() => {
+          router.push("/login");
+        }, 3000);
+      } else {
+        // Handle registration error
+        const errorMessage = result.error || "Registration failed. Please try again.";
+        setError(errorMessage);
+        
+        // Set specific field errors based on error message
+        if (errorMessage.includes("email")) {
+          setEmailError("This email is already registered. Please use a different email or login.");
+        } else if (errorMessage.includes("server") || errorMessage.includes("connect")) {
+          setError("Cannot connect to server. Please make sure backend is running.");
+        } else {
+          setError(errorMessage);
+        }
+      }
       
     } catch (error) {
       if (error.message.includes("email") || error.message.includes("duplicate")) {
@@ -287,7 +302,7 @@ const RegisterPage = () => {
           )}
 
           {/* Google Button */}
-          <button 
+          {/* <button 
             type="button"
             className="w-full py-3.5 rounded-xl border border-[#ddd] bg-white cursor-pointer mb-6 hover:shadow-md transition-shadow"
             disabled={loading}
@@ -295,14 +310,14 @@ const RegisterPage = () => {
             <div className="mx-auto flex justify-center">
               <FcGoogle size={22} />
             </div>
-          </button>
+          </button> */}
 
           {/* OR Divider */}
-          <div className="flex items-center mb-6">
+          {/* <div className="flex items-center mb-6">
             <span className="flex-1 h-px bg-[#ccc]"></span>
             <p className="mx-4 text-[#555] text-sm">or</p>
             <span className="flex-1 h-px bg-[#ccc]"></span>
-          </div>
+          </div> */}
 
           {/* Name Field */}
           <div className="flex flex-col mb-5">
