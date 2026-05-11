@@ -17,6 +17,8 @@ class Store extends Model
     'address',
     'city',
     'status',
+    'state',
+    'pincode',
     'created_by'
     ];
     protected $casts = [
