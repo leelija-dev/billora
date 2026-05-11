@@ -1147,14 +1147,15 @@ const Products = () => {
                       onDelete={handleDelete}
                       onAddStock={handleAddStock}
                     />
-                  </div>
-                  <Pagination
+                    <Pagination
                     currentPage={currentPage}
                     totalItems={totalProducts}
                     pageSize={pageSize}
                     pagination={pagination}
                     onPageChange={handlePageChange}
                   />
+                  </div>
+                  
                 </>
               ) : (
                 // Grid View

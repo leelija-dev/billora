@@ -271,17 +271,12 @@ export const useCustomerStore = create((set, get) => ({
       let customersArray = []
       let total = 0
       
-      // Handle the paginated structure: response.data.data.data (array of customers)
-      if (response?.data?.data?.data && Array.isArray(response.data.data.data)) {
+      // Handle the paginated structure: response.data.data (Laravel pagination)
+      if (response?.data?.data && Array.isArray(response.data.data.data)) {
         customersArray = response.data.data.data
         total = response.data.data.total || customersArray.length
       }
-      // Handle response.data.data (if it's directly an array)
-      else if (response?.data?.data && Array.isArray(response.data.data)) {
-        customersArray = response.data.data
-        total = response.data.data.total || customersArray.length
-      }
-      // Handle response.data (if it's an array)
+      // Handle response.data (if it's directly an array)
       else if (Array.isArray(response?.data)) {
         customersArray = response.data
         total = customersArray.length

@@ -21,9 +21,7 @@ import {
   FiBox,
   FiGrid,
   FiBarChart2,
-  FiTag,
-  FiTrash2,
-  FiChevronDown
+  FiTag
 } from 'react-icons/fi';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FaFileMedical, FaStore } from 'react-icons/fa';
@@ -36,7 +34,6 @@ const Sidebar = () => {
   const { planExpireReminder } = useNotificationStore();
   const location = useLocation();
   const [hoveredItem, setHoveredItem] = useState(null);
-  const [expandedCustomers, setExpandedCustomers] = useState(false);
 
   useEffect(() => {
     const checkMobile = () => {
@@ -109,37 +106,12 @@ const Sidebar = () => {
     const icon = iconMap[permission.slug] || FiSettings; // Default to Settings icon
     const badge = permission.slug === 'plans' && planExpireReminder ? '?' : null;
     
-    // Special handling for customers to create submenu
-    if (permission.slug === 'customers') {
-      return {
-        path: path,
-        name: permission.name,
-        icon: icon,
-        badge: badge,
-        permission: null, // Sidebar permissions already handle access control
-        hasSubmenu: true,
-        submenu: [
-          {
-            path: '/customers',
-            name: 'All Customers',
-            icon: FiUsers,
-          },
-          {
-            path: '/customers/trashed',
-            name: 'Trashed Customers',
-            icon: FiTrash2,
-          }
-        ]
-      };
-    }
-    
     return {
       path: path,
       name: permission.name,
       icon: icon,
       badge: badge,
-      permission: null, // Sidebar permissions already handle access control
-      hasSubmenu: false
+      permission: null // Sidebar permissions already handle access control
     };
   });
 
@@ -232,10 +204,7 @@ const Sidebar = () => {
         <nav className="mt-6 px-3 space-y-1 overflow-y-auto max-h-[calc(100vh-180px)] scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 pb-20">
           {filteredMenuItems.map((item, index) => {
             const Icon = item.icon;
-            const isActive = item.hasSubmenu 
-              ? (item.submenu?.some(sub => location.pathname === sub.path) || location.pathname === item.path)
-              : location.pathname === item.path;
-            const isSubmenuActive = item.submenu?.some(sub => location.pathname === sub.path);
+            const isActive = location.pathname === item.path;
             
             return (
               <motion.div
@@ -246,242 +215,98 @@ const Sidebar = () => {
                 onHoverStart={() => setHoveredItem(item.path)}
                 onHoverEnd={() => setHoveredItem(null)}
               >
-                {item.hasSubmenu ? (
-                  // Submenu item (Customers)
-                  <div>
-                    <button
-                      onClick={() => setExpandedCustomers(!expandedCustomers)}
-                      className={`w-full relative flex items-center px-3 py-3 rounded-xl
-                        transition-all duration-200 group
-                        ${isActive 
-                          ? 'bg-gradient-to-r from-primary-500/10 to-primary-600/5 dark:from-primary-500/20 dark:to-primary-600/10 text-primary-600 dark:text-primary-400 shadow-sm' 
-                          : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100/80 dark:hover:bg-gray-700/80 hover:text-gray-900 dark:hover:text-white'
-                        }
-                      `}
-                    >
-                      {/* Active indicator */}
-                      {isActive && (
-                        <motion.div
-                          layoutId="activeIndicator"
-                          className="absolute left-0 w-1 h-8 bg-gradient-to-b from-primary-500 to-secondary-500 rounded-r-full"
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          transition={{ duration: 0.2 }}
-                        />
-                      )}
-
-                      {/* Icon */}
-                      <motion.div
-                        whileHover={{ scale: 1.1 }}
-                        whileTap={{ scale: 0.95 }}
-                        className={`relative ${sidebarOpen ? 'mr-3' : 'mx-auto'}`}
-                      >
-                        <Icon className={`w-5 h-5 transition-transform duration-200 ${
-                          isActive ? 'text-primary-500' : ''
-                        }`} />
-                        
-                        {/* Notification badge for icon */}
-                        {item.badge && !sidebarOpen && (
-                          <span className={`absolute -top-1 -right-1 w-2 h-2 ${
-                            item.badge === 'Low Stock' 
-                              ? 'bg-yellow-500' 
-                              : item.badge === '⚠️' 
-                                ? 'bg-orange-500'
-                                : 'bg-red-500'
-                          } rounded-full ring-2 ring-white dark:ring-gray-800`} />
-                        )}
-                      </motion.div>
-
-                      {/* Item name */}
-                      <AnimatePresence mode="wait">
-                        {sidebarOpen && (
-                          <motion.span
-                            initial={{ opacity: 0, width: 0 }}
-                            animate={{ opacity: 1, width: 'auto' }}
-                            exit={{ opacity: 0, width: 0 }}
-                            transition={{ duration: 0.2 }}
-                            className="text-sm font-medium whitespace-nowrap overflow-hidden flex-1 text-left"
-                          >
-                            {item.name}
-                          </motion.span>
-                        )}
-                      </AnimatePresence>
-
-                      {/* Chevron for submenu */}
-                      {sidebarOpen && (
-                        <motion.div
-                          animate={{ rotate: expandedCustomers ? 180 : 0 }}
-                          transition={{ duration: 0.2 }}
-                        >
-                          <FiChevronDown className="w-4 h-4" />
-                        </motion.div>
-                      )}
-
-                      {/* Tooltip for collapsed state */}
-                      {!sidebarOpen && !isMobile && hoveredItem === item.path && (
-                        <motion.div
-                          initial={{ opacity: 0, x: -10 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          className="absolute left-full ml-2 px-3 py-2 bg-gray-900 dark:bg-gray-700 text-white text-sm rounded-lg whitespace-nowrap shadow-lg z-50"
-                        >
-                          {item.name}
-                          {item.badge && (
-                            <span className="ml-2 px-1.5 py-0.5 bg-red-500 text-white text-xs rounded-full">
-                              {item.badge}
-                            </span>
-                          )}
-                          {/* Arrow */}
-                          <div className="absolute left-0 top-1/2 -translate-x-1 -translate-y-1/2 border-4 border-transparent border-r-gray-900 dark:border-r-gray-700" />
-                        </motion.div>
-                      )}
-                    </button>
-
-                    {/* Submenu items */}
-                    <AnimatePresence>
-                      {sidebarOpen && expandedCustomers && (
-                        <motion.div
-                          initial={{ height: 0, opacity: 0 }}
-                          animate={{ height: "auto", opacity: 1 }}
-                          exit={{ height: 0, opacity: 0 }}
-                          transition={{ duration: 0.3 }}
-                          className="overflow-hidden"
-                        >
-                          <div className="ml-4 mt-1 space-y-1">
-                            {item.submenu.map((subItem, subIndex) => {
-                              const SubIcon = subItem.icon;
-                              const isSubActive = location.pathname === subItem.path;
-                              
-                              return (
-                                <motion.div
-                                  key={subItem.path}
-                                  initial={{ opacity: 0, x: -10 }}
-                                  animate={{ opacity: 1, x: 0 }}
-                                  transition={{ delay: subIndex * 0.05 }}
-                                >
-                                  <NavLink
-                                    to={subItem.path}
-                                    className={({ isActive }) => `
-                                      relative flex items-center px-3 py-2 rounded-lg
-                                      transition-all duration-200 group
-                                      ${isActive 
-                                        ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400' 
-                                        : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100/80 dark:hover:bg-gray-700/80 hover:text-gray-700 dark:hover:text-gray-300'
-                                      }
-                                    `}
-                                  >
-                                    {/* Icon */}
-                                    <SubIcon className={`w-4 h-4 mr-3 ${
-                                      isSubActive ? 'text-primary-500' : ''
-                                    }`} />
-                                    
-                                    {/* Item name */}
-                                    <span className="text-sm font-medium">
-                                      {subItem.name}
-                                    </span>
-                                  </NavLink>
-                                </motion.div>
-                              );
-                            })}
-                          </div>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </div>
-                ) : (
-                  // Regular menu item
-                  <NavLink
-                    to={item.path}
-                    className={({ isActive }) => `
-                      relative flex items-center px-3 py-3 rounded-xl
-                      transition-all duration-200 group
-                      ${isActive 
-                        ? 'bg-gradient-to-r from-primary-500/10 to-primary-600/5 dark:from-primary-500/20 dark:to-primary-600/10 text-primary-600 dark:text-primary-400 shadow-sm' 
-                        : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100/80 dark:hover:bg-gray-700/80 hover:text-gray-900 dark:hover:text-white'
-                      }
-                    `}
-                  >
-                    {/* Active indicator */}
-                    {isActive && (
-                      <motion.div
-                        layoutId="activeIndicator"
-                        className="absolute left-0 w-1 h-8 bg-gradient-to-b from-primary-500 to-secondary-500 rounded-r-full"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ duration: 0.2 }}
-                      />
-                    )}
-
-                    {/* Icon */}
+                <NavLink
+                  to={item.path}
+                  className={({ isActive }) => `
+                    relative flex items-center px-3 py-3 rounded-xl
+                    transition-all duration-200 group
+                    ${isActive 
+                      ? 'bg-gradient-to-r from-primary-500/10 to-primary-600/5 dark:from-primary-500/20 dark:to-primary-600/10 text-primary-600 dark:text-primary-400 shadow-sm' 
+                      : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100/80 dark:hover:bg-gray-700/80 hover:text-gray-900 dark:hover:text-white'
+                    }
+                  `}
+                >
+                  {/* Active indicator */}
+                  {isActive && (
                     <motion.div
-                      whileHover={{ scale: 1.1 }}
-                      whileTap={{ scale: 0.95 }}
-                      className={`relative ${sidebarOpen ? 'mr-3' : 'mx-auto'}`}
-                    >
-                      <Icon className={`w-5 h-5 transition-transform duration-200 ${
-                        isActive ? 'text-primary-500' : ''
-                      }`} />
-                      
-                      {/* Notification badge for icon */}
-                      {item.badge && !sidebarOpen && (
-                        <span className={`absolute -top-1 -right-1 w-2 h-2 ${
-                          item.badge === 'Low Stock' 
-                            ? 'bg-yellow-500' 
-                            : item.badge === '⚠️' 
-                              ? 'bg-orange-500'
-                              : 'bg-red-500'
-                        } rounded-full ring-2 ring-white dark:ring-gray-800`} />
-                      )}
-                    </motion.div>
+                      layoutId="activeIndicator"
+                      className="absolute left-0 w-1 h-8 bg-gradient-to-b from-primary-500 to-secondary-500 rounded-r-full"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ duration: 0.2 }}
+                    />
+                  )}
 
-                    {/* Item name */}
-                    <AnimatePresence mode="wait">
-                      {sidebarOpen && (
-                        <motion.span
-                          initial={{ opacity: 0, width: 0 }}
-                          animate={{ opacity: 1, width: 'auto' }}
-                          exit={{ opacity: 0, width: 0 }}
-                          transition={{ duration: 0.2 }}
-                          className="text-sm font-medium whitespace-nowrap overflow-hidden"
-                        >
-                          {item.name}
-                        </motion.span>
-                      )}
-                    </AnimatePresence>
-
-                    {/* Badge for expanded state */}
-                    {sidebarOpen && item.badge && (
-                      <motion.span
-                        initial={{ scale: 0 }}
-                        animate={{ scale: 1 }}
-                        className={`ml-auto text-xs font-medium px-2 py-1 rounded-full ${
-                          item.badge === 'Low Stock' 
-                            ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
-                            : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
-                        }`}
-                      >
-                        {item.badge}
-                      </motion.span>
+                  {/* Icon */}
+                  <motion.div
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.95 }}
+                    className={`relative ${sidebarOpen ? 'mr-3' : 'mx-auto'}`}
+                  >
+                    <Icon className={`w-5 h-5 transition-transform duration-200 ${
+                      isActive ? 'text-primary-500' : ''
+                    }`} />
+                    
+                    {/* Notification badge for icon */}
+                    {item.badge && !sidebarOpen && (
+                      <span className={`absolute -top-1 -right-1 w-2 h-2 ${
+                        item.badge === 'Low Stock' 
+                          ? 'bg-yellow-500' 
+                          : item.badge === '⚠️' 
+                            ? 'bg-orange-500'
+                            : 'bg-red-500'
+                      } rounded-full ring-2 ring-white dark:ring-gray-800`} />
                     )}
+                  </motion.div>
 
-                    {/* Tooltip for collapsed state */}
-                    {!sidebarOpen && !isMobile && hoveredItem === item.path && (
-                      <motion.div
-                        initial={{ opacity: 0, x: -10 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        className="absolute left-full ml-2 px-3 py-2 bg-gray-900 dark:bg-gray-700 text-white text-sm rounded-lg whitespace-nowrap shadow-lg z-50"
+                  {/* Item name */}
+                  <AnimatePresence mode="wait">
+                    {sidebarOpen && (
+                      <motion.span
+                        initial={{ opacity: 0, width: 0 }}
+                        animate={{ opacity: 1, width: 'auto' }}
+                        exit={{ opacity: 0, width: 0 }}
+                        transition={{ duration: 0.2 }}
+                        className="text-sm font-medium whitespace-nowrap overflow-hidden"
                       >
                         {item.name}
-                        {item.badge && (
-                          <span className="ml-2 px-1.5 py-0.5 bg-red-500 text-white text-xs rounded-full">
-                            {item.badge}
-                          </span>
-                        )}
-                        {/* Arrow */}
-                        <div className="absolute left-0 top-1/2 -translate-x-1 -translate-y-1/2 border-4 border-transparent border-r-gray-900 dark:border-r-gray-700" />
-                      </motion.div>
+                      </motion.span>
                     )}
-                  </NavLink>
-                )}
+                  </AnimatePresence>
+
+                  {/* Badge for expanded state */}
+                  {sidebarOpen && item.badge && (
+                    <motion.span
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      className={`ml-auto text-xs font-medium px-2 py-1 rounded-full ${
+                        item.badge === 'Low Stock' 
+                          ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
+                          : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                      }`}
+                    >
+                      {item.badge}
+                    </motion.span>
+                  )}
+
+                  {/* Tooltip for collapsed state */}
+                  {!sidebarOpen && !isMobile && hoveredItem === item.path && (
+                    <motion.div
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      className="absolute left-full ml-2 px-3 py-2 bg-gray-900 dark:bg-gray-700 text-white text-sm rounded-lg whitespace-nowrap shadow-lg z-50"
+                    >
+                      {item.name}
+                      {item.badge && (
+                        <span className="ml-2 px-1.5 py-0.5 bg-red-500 text-white text-xs rounded-full">
+                          {item.badge}
+                        </span>
+                      )}
+                      {/* Arrow */}
+                      <div className="absolute left-0 top-1/2 -translate-x-1 -translate-y-1/2 border-4 border-transparent border-r-gray-900 dark:border-r-gray-700" />
+                    </motion.div>
+                  )}
+                </NavLink>
               </motion.div>
             );
           })}

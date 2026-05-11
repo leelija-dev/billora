@@ -180,16 +180,7 @@ const Table = ({
         </div>
       </div>
       
-      {/* Optional Footer */}
-      {data.length > 0 && (
-        <div className="px-6 py-3 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50">
-          <div className="flex items-center justify-between">
-            <p className="text-sm text-gray-600 dark:text-gray-400">
-              Showing <span className="font-medium">{data.length}</span> results
-            </p>
-          </div>
-        </div>
-      )}
+     
     </div>
   )
 }

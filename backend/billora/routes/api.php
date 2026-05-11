@@ -167,11 +167,11 @@ Route::middleware('auth:sanctum')->prefix('customer')->group(function () {
    Route::get('/trashed', [BillCustomerController::class, 'trashed']);
    Route::get('/{id}', [BillCustomerController::class, 'index']);
    Route::get('/show/{id}', [BillCustomerController::class, 'show']);
+   Route::delete('/{id}/force', [BillCustomerController::class, 'forceDelete']); //permanently delete
    Route::put('/due-payment/{id}', [BillCustomerController::class, 'duePayment']); // due payment
    Route::put('/{id}', [BillCustomerController::class, 'update']);
    Route::delete('/{id}', [BillCustomerController::class, 'delete']); //soft delete
    Route::patch('/{id}', [BillCustomerController::class, 'restore']); //restore
-   Route::delete('/{id}/force', [BillCustomerController::class, 'forceDelete']); //permanently delete
 });
 
 // categories

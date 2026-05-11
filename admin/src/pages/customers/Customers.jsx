@@ -597,6 +597,18 @@ const Customers = () => {
                 >
                   <FiDownload className="w-5 h-5 text-gray-600 dark:text-gray-300" />
                 </motion.button>
+
+                {/* Trashed Customers Button */}
+                <motion.button
+                  whileHover={{ scale: 1.1, y: -2 }}
+                  whileTap={{ scale: 0.9 }}
+                  transition={{ type: "spring", stiffness: 300 }}
+                  onClick={() => navigate("/customers/trashed")}
+                  className="p-2.5 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors shadow-sm"
+                  title="View trashed customers"
+                >
+                  <FiTrash2 className="w-5 h-5 text-red-600 dark:text-red-400" />
+                </motion.button>
               </>
             )}
 
@@ -923,13 +935,12 @@ const Customers = () => {
                       data={safeCustomers}
                       loading={loading}
                     />
-                  </div>
-                  {totalCustomers > pageSize && (
+                    {totalCustomers > pageSize && (
                     <motion.div
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       transition={{ delay: 0.8 }}
-                      className="mt-6"
+                      className=""
                     >
                       <Pagination
                         currentPage={currentPage}
@@ -939,6 +950,8 @@ const Customers = () => {
                       />
                     </motion.div>
                   )}
+                  </div>
+                  
                 </>
               )}
             </motion.div>

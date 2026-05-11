@@ -246,7 +246,7 @@ class BillCustomerController extends Controller
                 ]);
             }
             $billCustomer = BillCustomer::withTrashed()->where('id', $id)->where('admin_id', $data['user_id'])->firstOrFail();
-            if($billCustomer->isEmpty()){
+            if($billCustomer == null){
                 return response()->json([
                     'status' =>true,
                     'message' => "Customer not found!"
@@ -277,7 +277,7 @@ class BillCustomerController extends Controller
                     ]);
             }
             $billCustomer = BillCustomer::withTrashed()->where('admin_id',$user)->where('id',$id)->first();
-            if($billCustomer->isEmpty()){
+            if($billCustomer == null){
                 return response()->json([
                     'status' => true,
                     'message' => "Customer not found!"

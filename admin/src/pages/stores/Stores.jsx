@@ -679,8 +679,7 @@ const Stores = () => {
                       data={safeStores}
                       loading={loading}
                     />
-                  </div>
-                  {totalStores > pageSize && (
+                    {totalStores > pageSize && (
                     <Pagination
                       currentPage={currentPage}
                       totalItems={totalStores}
@@ -688,6 +687,8 @@ const Stores = () => {
                       onPageChange={handlePageChange}
                     />
                   )}
+                  </div>
+                  
                 </>
               ) : (
                 // Grid View
@@ -800,12 +801,14 @@ const Stores = () => {
                     })}
                   </div>
                   {totalStores > pageSize && (
+                    <div className='rounded-2xl bg-white overflow-hidden mt-7'>
                     <Pagination
                       currentPage={currentPage}
                       totalItems={totalStores}
                       pageSize={pageSize}
                       onPageChange={handlePageChange}
                     />
+                    </div>
                   )}
                 </>
               )

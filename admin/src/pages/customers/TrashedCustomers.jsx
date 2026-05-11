@@ -57,9 +57,20 @@ const TrashedCustomers = () => {
     fetchTrashedCustomers();
   }, []);
 
-  const handlePageChange = (page) => {
+  const handlePageChange = (pageOrUrl) => {
     setPageLoading(true);
-    fetchTrashedCustomers(page).finally(() => {
+    
+    // Extract page number from URL if it's a URL string
+    let pageNumber = 1;
+    if (typeof pageOrUrl === 'string' && pageOrUrl.includes('page=')) {
+      const urlParams = new URLSearchParams(pageOrUrl.split('?')[1]);
+      pageNumber = parseInt(urlParams.get('page')) || 1;
+    } else if (typeof pageOrUrl === 'number') {
+      pageNumber = pageOrUrl;
+    }
+    
+    setCurrentPage(pageNumber);
+    fetchTrashedCustomers(pageNumber).finally(() => {
       setPageLoading(false);
     });
   };

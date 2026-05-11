@@ -477,6 +477,18 @@ const CustomerDetails = () => {
             <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
               <Button
                 variant="outline"
+                onClick={() => navigate('/customers/trashed')}
+                icon={FiTrash2}
+                size="sm"
+                className="border-red-200 text-red-600 hover:bg-red-50 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-900/20"
+                title="View trashed customers"
+              >
+                Trashed
+              </Button>
+            </motion.div>
+            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+              <Button
+                variant="outline"
                 onClick={() => navigate('/customers')}
                 icon={FiArrowLeft}
                 size="sm"
