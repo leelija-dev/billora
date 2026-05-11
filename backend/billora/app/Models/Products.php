@@ -23,6 +23,7 @@ class Products extends Model
         'selling_price',
         'purchase_price',
         'gst_percentage',
+        'purchase_gst_percentage',
         'discount_percentage',
         'description',
         'is_active',
