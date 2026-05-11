@@ -147,7 +147,7 @@ export const useCustomerStore = create((set, get) => ({
     try {
       const { user } = useAuthStore.getState()
       const dataWithAdmin = {
-        admin_id: user.id,
+        user_id: user.id,
         name: customerData.name,
         email: customerData.email || null,
         phone: customerData.phone,
@@ -224,7 +224,17 @@ export const useCustomerStore = create((set, get) => ({
   deleteCustomer: async (id) => {
     set({ loading: true })
     try {
-      await customerAPI.delete(id)
+      // Get current user ID from auth store
+      const { user } = useAuthStore.getState()
+      const userId = user?.id
+      
+      if (!userId) {
+        console.error('❌ No user ID found for customer deletion')
+        set({ loading: false })
+        return { success: false, error: 'User not authenticated' }
+      }
+      
+      await customerAPI.delete(id, userId)
       set((state) => ({
         customers: Array.isArray(state.customers) 
           ? state.customers.filter((c) => c?.id !== id)

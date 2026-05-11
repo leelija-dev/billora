@@ -66,7 +66,7 @@ export const customerAPI = {
 
       console.log('👥 Creating customer with data:', {
 
-        admin_id: customerData.admin_id,
+        user_id: customerData.admin_id,
 
         name: customerData.name,
 
@@ -135,9 +135,7 @@ export const customerAPI = {
       console.log(`👥 Soft deleting customer with ID: ${id}`);
 
       const response = await apiClient.delete(`/customer/${id}`, {
-
         data: { user_id: userId }
-
       });
 
       console.log('👥 Customer deleted successfully');
