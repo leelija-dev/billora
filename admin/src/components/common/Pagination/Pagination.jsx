@@ -39,101 +39,133 @@ const Pagination = ({
     return rangeWithDots
   }
 
-  // Function to get URL for a specific page number
   const getPageUrl = (pageNumber) => {
     if (!pagination?.first_page_url) return null
-    // Replace page number in first_page_url with the requested page number
     return pagination.first_page_url.replace(/page=\d+/, `page=${pageNumber}`)
   }
 
+  const handlePageChange = (page) => {
+    if (page === '...') return
+    if (pagination) {
+      const pageParam = typeof page === 'number' ? getPageUrl(page) : page
+      onPageChange(pageParam)
+    } else {
+      onPageChange(page)
+    }
+  }
+
+  // Calculate range for display
+  const startItem = (currentPage - 1) * pageSize + 1
+  const endItem = Math.min(currentPage * pageSize, totalItems)
+
   return (
-    <div className="flex items-center justify-between px-4 py-3 sm:px-6">
-      <div className="flex-1 flex justify-between sm:hidden">
-        <button
-          onClick={() => onPageChange(pagination?.prev_page_url)}
-          disabled={!pagination?.prev_page_url}
-          className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300"
-        >
-          Previous
-        </button>
-        <button
-          onClick={() => onPageChange(pagination?.next_page_url)}
-          disabled={!pagination?.next_page_url}
-          className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300"
-        >
-          Next
-        </button>
+    <div className="bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700">
+      {/* Mobile view */}
+      <div className="flex items-center justify-between px-4 py-3 sm:hidden">
+        <div className="flex flex-1 justify-between">
+          <button
+            onClick={() => handlePageChange(pagination?.prev_page_url)}
+            disabled={!pagination?.prev_page_url}
+            className="relative inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-200"
+          >
+            Previous
+          </button>
+          <button
+            onClick={() => handlePageChange(pagination?.next_page_url)}
+            disabled={!pagination?.next_page_url}
+            className="relative ml-3 inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-200"
+          >
+            Next
+          </button>
+        </div>
       </div>
-      
-      <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
-        <div>
-          <p className="text-sm text-gray-700 dark:text-gray-300">
+
+      {/* Desktop view */}
+      <div className="hidden sm:flex sm:items-center sm:justify-between px-6 py-4">
+        {/* Results info */}
+        <div className="flex items-center">
+          <div className="text-sm text-gray-600 dark:text-gray-400">
             Showing{' '}
-            <span className="font-medium">
-              {(currentPage - 1) * pageSize + 1}
+            <span className="font-semibold text-gray-900 dark:text-white">
+              {startItem}
             </span>{' '}
             to{' '}
-            <span className="font-medium">
-              {Math.min(currentPage * pageSize, totalItems)}
+            <span className="font-semibold text-gray-900 dark:text-white">
+              {endItem}
             </span>{' '}
             of{' '}
-            <span className="font-medium">{totalItems}</span>{' '}
+            <span className="font-semibold text-gray-900 dark:text-white">
+              {totalItems}
+            </span>{' '}
             results
-          </p>
+          </div>
+          <div className="ml-4 text-xs text-gray-400 dark:text-gray-500">
+            Page {currentPage} of {totalPages}
+          </div>
         </div>
-        
-        <div>
-          <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
-            <button
-              onClick={() => onPageChange(pagination?.first_page_url)}
-              disabled={!pagination?.first_page_url || currentPage === 1}
-              className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-gray-800 dark:border-gray-600 dark:text-gray-400"
-            >
-              <FiChevronsLeft className="h-4 w-4" />
-            </button>
-            
-            <button
-              onClick={() => onPageChange(pagination?.prev_page_url)}
-              disabled={!pagination?.prev_page_url}
-              className="relative inline-flex items-center px-2 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-gray-800 dark:border-gray-600 dark:text-gray-400"
-            >
-              <FiChevronLeft className="h-4 w-4" />
-            </button>
-            
+
+        {/* Pagination controls */}
+        <div className="flex items-center space-x-2">
+          {/* First page button */}
+          <button
+            onClick={() => handlePageChange(1)}
+            disabled={currentPage === 1}
+            className="relative inline-flex items-center justify-center w-8 h-8 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-gray-700 dark:hover:text-gray-300 disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-200"
+          >
+            <FiChevronsLeft className="h-4 w-4" />
+          </button>
+
+          {/* Previous page button */}
+          <button
+            onClick={() => handlePageChange(pagination?.prev_page_url)}
+            disabled={!pagination?.prev_page_url}
+            className="relative inline-flex items-center justify-center w-8 h-8 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-gray-700 dark:hover:text-gray-300 disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-200"
+          >
+            <FiChevronLeft className="h-4 w-4" />
+          </button>
+
+          {/* Page numbers */}
+          <div className="flex items-center space-x-1">
             {getPageNumbers().map((page, index) => (
               <button
                 key={index}
-                onClick={() => typeof page === 'number' && onPageChange(getPageUrl(page))}
+                onClick={() => handlePageChange(page)}
                 disabled={page === '...'}
                 className={`
-                  relative inline-flex items-center px-4 py-2 border text-sm font-medium
+                  relative inline-flex items-center justify-center min-w-[2rem] h-8 px-3 rounded-lg text-sm font-medium transition-all duration-200
                   ${page === currentPage
-                    ? 'z-10 bg-primary-50 border-primary-500 text-primary-600 dark:bg-primary-900/30 dark:border-primary-500 dark:text-primary-400'
-                    : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-400'
+                    ? 'bg-primary-600 dark:bg-primary-500 text-white shadow-md hover:bg-primary-700 dark:hover:bg-primary-600'
+                    : page === '...'
+                    ? 'bg-transparent text-gray-400 dark:text-gray-500 cursor-default'
+                    : 'bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 hover:border-gray-400 dark:hover:border-gray-500'
                   }
-                  ${page === '...' ? 'cursor-default' : 'cursor-pointer'}
                 `}
+                style={{
+                  boxShadow: page === currentPage ? '0 1px 3px 0 rgba(0, 0, 0, 0.1)' : 'none'
+                }}
               >
                 {page}
               </button>
             ))}
-            
-            <button
-              onClick={() => onPageChange(pagination?.next_page_url)}
-              disabled={!pagination?.next_page_url}
-              className="relative inline-flex items-center px-2 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-gray-800 dark:border-gray-600 dark:text-gray-400"
-            >
-              <FiChevronRight className="h-4 w-4" />
-            </button>
-            
-            <button
-              onClick={() => onPageChange(pagination?.last_page_url)}
-              disabled={!pagination?.last_page_url || currentPage === totalPages}
-              className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-gray-800 dark:border-gray-600 dark:text-gray-400"
-            >
-              <FiChevronsRight className="h-4 w-4" />
-            </button>
-          </nav>
+          </div>
+
+          {/* Next page button */}
+          <button
+            onClick={() => handlePageChange(pagination?.next_page_url)}
+            disabled={!pagination?.next_page_url}
+            className="relative inline-flex items-center justify-center w-8 h-8 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-gray-700 dark:hover:text-gray-300 disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-200"
+          >
+            <FiChevronRight className="h-4 w-4" />
+          </button>
+
+          {/* Last page button */}
+          <button
+            onClick={() => handlePageChange(totalPages)}
+            disabled={currentPage === totalPages}
+            className="relative inline-flex items-center justify-center w-8 h-8 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-gray-700 dark:hover:text-gray-300 disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-200"
+          >
+            <FiChevronsRight className="h-4 w-4" />
+          </button>
         </div>
       </div>
     </div>

@@ -36,6 +36,7 @@ import EmptyState from "../../components/common/EmptyState/EmptyState";
 import CustomerForm from "../../components/features/Customers/CustomerForm";
 import Select from "../../components/common/Select/Select";
 import { FaRupeeSign, FaUser, FaUsers } from "react-icons/fa";
+import toast from "react-hot-toast";
 
 const Customers = () => {
   const navigate = useNavigate();
@@ -70,6 +71,7 @@ const Customers = () => {
   const [initialLoading, setInitialLoading] = useState(true);
   const [pageLoading, setPageLoading] = useState(false);
   const [paymentAmount, setPaymentAmount] = useState("");
+  const [paymentError, setPaymentError] = useState("");
 
   useEffect(() => {
     const fetchData = async () => {
@@ -125,16 +127,82 @@ const Customers = () => {
     setShowPaymentModal(false);
     setSelectedCustomer(null);
     setPaymentAmount("");
+    setPaymentError("");
   };
 
   const handlePaymentClick = (customer) => {
     setSelectedCustomer(customer);
     setShowPaymentModal(true);
     setPaymentAmount("");
+    setPaymentError("");
+  };
+
+  // Validate payment amount
+  const validatePaymentAmount = (amount) => {
+    if (!amount || amount === "") {
+      return "Payment amount is required";
+    }
+    
+    const numAmount = parseFloat(amount);
+    const dueAmount = parseFloat(selectedCustomer?.due_amount || 0);
+    
+    if (isNaN(numAmount)) {
+      return "Please enter a valid number";
+    }
+    
+    if (numAmount <= 0) {
+      return "Payment amount must be greater than zero";
+    }
+    
+    if (numAmount > dueAmount) {
+      return `Payment amount cannot exceed due amount of ₹${dueAmount.toFixed(2)}`;
+    }
+    
+    return "";
+  };
+
+  // Handle payment amount change
+  const handlePaymentAmountChange = (e) => {
+    let value = e.target.value;
+    
+    // Remove any non-numeric characters except decimal point
+    value = value.replace(/[^0-9.]/g, "");
+    
+    // Ensure only one decimal point
+    const parts = value.split(".");
+    if (parts.length > 2) {
+      value = parts[0] + "." + parts.slice(1).join("");
+    }
+    
+    // Limit to 2 decimal places
+    if (parts[1] && parts[1].length > 2) {
+      value = parts[0] + "." + parts[1].substring(0, 2);
+    }
+    
+    setPaymentAmount(value);
+    
+    // Validate on change
+    const error = validatePaymentAmount(value);
+    setPaymentError(error);
   };
 
   const handlePaymentSubmit = async () => {
-    if (!selectedCustomer || !paymentAmount || parseFloat(paymentAmount) <= 0) {
+    // Validate amount
+    const error = validatePaymentAmount(paymentAmount);
+    if (error) {
+      setPaymentError(error);
+      toast.error(error);
+      return;
+    }
+
+    const amount = parseFloat(paymentAmount);
+    const dueAmount = parseFloat(selectedCustomer?.due_amount || 0);
+    
+    // Double-check validation
+    if (amount > dueAmount) {
+      const errorMsg = `Payment amount cannot exceed due amount of ₹${dueAmount.toFixed(2)}`;
+      setPaymentError(errorMsg);
+      toast.error(errorMsg);
       return;
     }
 
@@ -149,16 +217,17 @@ const Customers = () => {
       // Fetch fresh data with current page and search
       await fetchCustomers(currentPage, filters.search);
       
+      // Show success message
+      toast.success(`Payment of ₹${parseFloat(paymentAmount).toFixed(2)} processed successfully!`);
+      
       // Close modal and reset state
       setShowPaymentModal(false);
       setSelectedCustomer(null);
       setPaymentAmount("");
-      
-      // Show success message (you might want to use a toast notification)
-      console.log("Payment processed successfully");
+      setPaymentError("");
     } catch (error) {
       console.error("Failed to process payment:", error);
-      // Handle error (show toast notification, etc.)
+      toast.error(error.response?.data?.message || "Failed to process payment. Please try again.");
     } finally {
       setFormSubmitting(false);
     }
@@ -169,8 +238,10 @@ const Customers = () => {
     try {
       if (showEditForm && selectedCustomer) {
         await updateCustomer(selectedCustomer.id, customerData);
+        toast.success("Customer updated successfully!");
       } else {
         await createCustomer(customerData);
+        toast.success("Customer created successfully!");
       }
       // Refresh the customer list
       await fetchCustomers();
@@ -178,7 +249,7 @@ const Customers = () => {
       handleCancelForm();
     } catch (error) {
       console.error("Error saving customer:", error);
-      // Handle error (show toast notification, etc.)
+      toast.error(error.response?.data?.message || "Failed to save customer. Please try again.");
     } finally {
       setFormSubmitting(false);
     }
@@ -187,11 +258,13 @@ const Customers = () => {
   const handleDelete = async (id) => {
     try {
       await deleteCustomer(id);
+      toast.success("Customer deleted successfully!");
       setShowDeleteConfirm(false);
       setSelectedCustomer(null);
       fetchCustomers(currentPage);
     } catch (error) {
       console.error("Failed to delete customer:", error);
+      toast.error(error.response?.data?.message || "Failed to delete customer. Please try again.");
     }
   };
 
@@ -200,11 +273,13 @@ const Customers = () => {
       for (const id of selectedCustomers) {
         await deleteCustomer(id);
       }
+      toast.success(`${selectedCustomers.length} customers deleted successfully!`);
       setSelectedCustomers([]);
       setShowDeleteConfirm(false);
       fetchCustomers(currentPage);
     } catch (error) {
       console.error("Failed to delete customers:", error);
+      toast.error("Failed to delete customers. Please try again.");
     }
   };
 
@@ -219,11 +294,13 @@ const Customers = () => {
     setRefreshing(true);
     await fetchCustomers();
     setRefreshing(false);
+    toast.success("Customer list refreshed!");
   };
 
   const clearFilters = () => {
     setSearchTerm("");
     setFilters({ search: "", status: "" });
+    toast.success("Filters cleared!");
   };
 
   const toggleCustomerSelection = (customerId) => {
@@ -390,7 +467,7 @@ const Customers = () => {
         <motion.div whileHover={{ scale: 1.05 }} className="flex items-center">
           <FaRupeeSign className="w-3 h-3 mr-1 text-gray-400" />
           <span className="text-sm font-semibold text-gray-900 dark:text-white">
-            {parseFloat(value || 0).toFixed(2)}
+            ₹{parseFloat(value || 0).toFixed(2)}
           </span>
         </motion.div>
       ),
@@ -519,6 +596,18 @@ const Customers = () => {
                   className="p-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shadow-sm"
                 >
                   <FiDownload className="w-5 h-5 text-gray-600 dark:text-gray-300" />
+                </motion.button>
+
+                {/* Trashed Customers Button */}
+                <motion.button
+                  whileHover={{ scale: 1.1, y: -2 }}
+                  whileTap={{ scale: 0.9 }}
+                  transition={{ type: "spring", stiffness: 300 }}
+                  onClick={() => navigate("/customers/trashed")}
+                  className="p-2.5 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors shadow-sm"
+                  title="View trashed customers"
+                >
+                  <FiTrash2 className="w-5 h-5 text-red-600 dark:text-red-400" />
                 </motion.button>
               </>
             )}
@@ -846,13 +935,12 @@ const Customers = () => {
                       data={safeCustomers}
                       loading={loading}
                     />
-                  </div>
-                  {totalCustomers > pageSize && (
+                    {totalCustomers > pageSize && (
                     <motion.div
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       transition={{ delay: 0.8 }}
-                      className="mt-6"
+                      className=""
                     >
                       <Pagination
                         currentPage={currentPage}
@@ -862,6 +950,8 @@ const Customers = () => {
                       />
                     </motion.div>
                   )}
+                  </div>
+                  
                 </>
               )}
             </motion.div>
@@ -877,7 +967,11 @@ const Customers = () => {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
-            onClick={() => setShowPaymentModal(false)}
+            onClick={() => {
+              setShowPaymentModal(false);
+              setPaymentError("");
+              setPaymentAmount("");
+            }}
           >
             <motion.div
               initial={{ scale: 0.9, opacity: 0, y: 20 }}
@@ -929,22 +1023,65 @@ const Customers = () => {
                   transition={{ delay: 0.4 }}
                   className="space-y-4"
                 >
-                  <Input
-                    type="number"
-                    label="Payment Amount"
-                    placeholder="Enter amount"
-                    value={paymentAmount}
-                    onChange={(e) => setPaymentAmount(e.target.value)}
-                    min="0"
-                    max={selectedCustomer.due_amount || 0}
-                    step="0.01"
-                  />
+                  <div className="text-left">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Payment Amount
+                    </label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">
+                        ₹
+                      </span>
+                      <input
+                        type="text"
+                        value={paymentAmount}
+                        onChange={handlePaymentAmountChange}
+                        placeholder="Enter amount"
+                        className={`w-full pl-8 pr-3 py-2 h-[42px] border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent dark:bg-gray-700 dark:text-white transition-colors ${
+                          paymentError
+                            ? "border-red-500 focus:ring-red-500"
+                            : "border-gray-300 dark:border-gray-600"
+                        }`}
+                        disabled={formSubmitting}
+                      />
+                    </div>
+                    {paymentError && (
+                      <div className="flex items-center space-x-1 mt-1">
+                        <FiAlertCircle className="w-4 h-4 text-red-500" />
+                        <p className="text-red-500 text-sm">{paymentError}</p>
+                      </div>
+                    )}
+                    {!paymentError && paymentAmount && parseFloat(paymentAmount) > 0 && (
+                      <p className="text-xs text-green-500 mt-1">
+                        ✓ Valid payment amount
+                      </p>
+                    )}
+                    <div className="flex justify-between items-center mt-2">
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        Max allowed: ₹{parseFloat(selectedCustomer.due_amount || 0).toFixed(2)}
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const maxAmount = parseFloat(selectedCustomer.due_amount || 0);
+                          setPaymentAmount(maxAmount.toString());
+                          setPaymentError("");
+                        }}
+                        className="text-xs text-purple-600 hover:text-purple-700 dark:text-purple-400"
+                      >
+                        Pay Full Amount
+                      </button>
+                    </div>
+                  </div>
                   
                   <div className="flex space-x-3">
                     <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="flex-1">
                       <Button
                         variant="outline"
-                        onClick={() => setShowPaymentModal(false)}
+                        onClick={() => {
+                          setShowPaymentModal(false);
+                          setPaymentError("");
+                          setPaymentAmount("");
+                        }}
                         disabled={formSubmitting}
                       >
                         Cancel
@@ -953,8 +1090,14 @@ const Customers = () => {
                     <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="flex-1">
                       <Button
                         onClick={handlePaymentSubmit}
-                        disabled={!paymentAmount || parseFloat(paymentAmount) <= 0 || formSubmitting}
+                        disabled={
+                          !paymentAmount || 
+                          parseFloat(paymentAmount) <= 0 || 
+                          parseFloat(paymentAmount) > parseFloat(selectedCustomer.due_amount || 0) ||
+                          formSubmitting
+                        }
                         loading={formSubmitting}
+                        className="w-full"
                       >
                         {formSubmitting ? 'Processing...' : 'Pay Now'}
                       </Button>

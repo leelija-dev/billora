@@ -11,11 +11,19 @@ const Login = () => {
   const { login, isLoading, isAuthenticated } = useAuthStore()
   const [showPassword, setShowPassword] = useState(false)
   
-  // Redirect authenticated users to the page they were trying to access
+  // Redirect authenticated users with active plans to the page they were trying to access
   useEffect(() => {
     if (isAuthenticated) {
-      const from = location.state?.from?.pathname || '/dashboard'
-      navigate(from, { replace: true })
+      const { hasActivePlanFromStorage } = useAuthStore.getState();
+      const hasActivePlan = hasActivePlanFromStorage();
+      
+      if (hasActivePlan) {
+        const from = location.state?.from?.pathname || '/dashboard'
+        console.log('✅ User has active plan, redirecting to:', from)
+        navigate(from, { replace: true })
+      } else {
+        console.log('❌ User authenticated but no active plan, staying on login page')
+      }
     }
   }, [isAuthenticated, navigate, location])
   

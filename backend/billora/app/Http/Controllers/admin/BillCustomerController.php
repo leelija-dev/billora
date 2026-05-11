@@ -47,7 +47,7 @@ class BillCustomerController extends Controller
     {
         
         $data = $request->validate([
-            'admin_id'      => 'required',
+            'user_id'      => 'required',
             'name'          => 'nullable',
             'email'         => 'nullable',
             'phone'         => 'required',
@@ -56,8 +56,9 @@ class BillCustomerController extends Controller
             'gst_number'    => 'nullable',
             'created_by'    => 'required'
         ]);
+        // $data['admin_id'] =$request->user_id;
         $user = Auth::user()->id;
-         if($user != $data['admin_id']){
+         if($user != $data['user_id']){
             return response()->json([
                 'status' => false,
                 'message' => 'Unauthorized, You are not allowed to perform this action,logged in user not mathched with our data',
@@ -72,7 +73,16 @@ class BillCustomerController extends Controller
                 ]);
         }
         try {
-            $billCustomer = BillCustomer::create($data);
+            $billCustomer = BillCustomer::create([
+            'admin_id'      => $data['user_id'],
+            'name'          => $data['name'],
+            'email'         => $data['email'],
+            'phone'         => $data['phone'],
+            'address'       => $data['address'],
+            'city'          => $data['city'],
+            'created_by'    => $data['created_by']
+            ]
+                );
             return response()->json([
                 'status' => true,
                 'message' => 'Bill Customer Created Successfully',
@@ -238,7 +248,7 @@ class BillCustomerController extends Controller
                 ]);
             }
             $billCustomer = BillCustomer::withTrashed()->where('id', $id)->where('admin_id', $data['user_id'])->firstOrFail();
-            if($billCustomer->isEmpty()){
+            if($billCustomer == null){
                 return response()->json([
                     'status' =>true,
                     'message' => "Customer not found!"
@@ -269,7 +279,7 @@ class BillCustomerController extends Controller
                     ]);
             }
             $billCustomer = BillCustomer::withTrashed()->where('admin_id',$user)->where('id',$id)->first();
-            if($billCustomer->isEmpty()){
+            if($billCustomer == null){
                 return response()->json([
                     'status' => true,
                     'message' => "Customer not found!"

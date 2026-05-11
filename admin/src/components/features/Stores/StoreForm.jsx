@@ -5,7 +5,17 @@ import { useAuthStore } from '../../../store/authStore'
 import Input from '../../common/Input/Input'
 import Button from '../../common/Button/Button'
 import toast from 'react-hot-toast'
-import { FiX, FiPackage, FiMail, FiPhone, FiMapPin, FiSave, FiArrowLeft } from 'react-icons/fi'
+import { FiX, FiPackage, FiMail, FiPhone, FiMapPin, FiSave, FiArrowLeft, FiAlertCircle } from 'react-icons/fi'
+import {
+  validatePhone,
+  validateEmail,
+  validateGSTNumber,
+  handlePhoneInput,
+  handleGSTInput,
+  handleAlphanumericInput,
+  validationRules,
+  validateFormData
+} from '../../../utils/validators' // Adjust path as needed
 
 const StoreForm = ({ 
   store = null, 
@@ -23,16 +33,16 @@ const StoreForm = ({
     setValue,
     reset,
     watch,
+    setError,
+    clearErrors
   } = useForm()
 
   // Get current user ID from auth store
   const getUserId = () => {
-    // First try to get user from auth store (most reliable)
     if (user && user.id) {
       return user.id.toString()
     }
     
-    // Fallback to localStorage if auth store is not available
     const authStorage = localStorage.getItem('auth-storage')
     if (authStorage) {
       try {
@@ -45,7 +55,6 @@ const StoreForm = ({
       }
     }
     
-    // Last fallback - try old auth key
     const authData = localStorage.getItem('auth')
     if (authData) {
       try {
@@ -62,6 +71,66 @@ const StoreForm = ({
 
   const currentUserId = getUserId()
 
+  // Input handlers for real-time validation using utilities
+  const handleMobileInput = (e) => {
+    handlePhoneInput(e) // Use the utility function
+    const value = e.target.value
+    setValue('mobile', value, { shouldValidate: true })
+    
+    if (value.length === 10 || value.length === 0) {
+      clearErrors('mobile')
+    } else if (value.length > 0 && value.length !== 10) {
+      setError('mobile', {
+        type: 'manual',
+        message: validationRules.mobile.message
+      })
+    }
+  }
+
+  const handleGSTInputWrapper = (e) => {
+    handleGSTInput(e) // Use the utility function
+    const value = e.target.value
+    setValue('gst', value, { shouldValidate: true })
+    
+    if (value.length === 0 || validateGSTNumber(value)) {
+      clearErrors('gst')
+    } else if (value.length > 0 && !validateGSTNumber(value)) {
+      setError('gst', {
+        type: 'manual',
+        message: validationRules.gstNumber.message
+      })
+    }
+  }
+
+  const handleEmailInput = (e) => {
+    const value = e.target.value
+    setValue('email', value, { shouldValidate: true })
+    
+    if (value && !validateEmail(value)) {
+      setError('email', {
+        type: 'manual',
+        message: validationRules.email.message
+      })
+    } else {
+      clearErrors('email')
+    }
+  }
+
+  const handleCityInput = (e) => {
+    handleAlphanumericInput(e) // Use utility to prevent invalid characters
+    const value = e.target.value
+    setValue('city', value, { shouldValidate: true })
+    
+    if (value && !validationRules.city.pattern.test(value)) {
+      setError('city', {
+        type: 'manual',
+        message: validationRules.city.message
+      })
+    } else {
+      clearErrors('city')
+    }
+  }
+
   // Pre-fill form if editing
   useEffect(() => {
     if (store && isEdit) {
@@ -76,7 +145,6 @@ const StoreForm = ({
         status: store.status === true || store.status === 'active' ? 'active' : 'inactive',
       })
     } else {
-      // For new store, set default values
       reset({
         name: '',
         gst: '',
@@ -93,13 +161,60 @@ const StoreForm = ({
   }, [store, isEdit, reset, currentUserId])
 
   const onFormSubmit = (data) => {
+    // Prepare validation rules for the form
+    const formValidationRules = {
+      name: {
+        required: true,
+        minLength: 2,
+        maxLength: 100,
+        message: 'Store name must be between 2 and 100 characters'
+      },
+      email: {
+        required: true,
+        pattern: validationRules.email.pattern,
+        message: validationRules.email.message
+      },
+      mobile: {
+        pattern: validationRules.mobile.pattern,
+        minLength: 10,
+        maxLength: 10,
+        message: validationRules.mobile.message
+      },
+      address: {
+        required: true,
+        minLength: 5,
+        message: 'Address must be at least 5 characters'
+      },
+      city: {
+        required: true,
+        pattern: validationRules.city.pattern,
+        message: validationRules.city.message
+      },
+      gst: {
+        pattern: validationRules.gstNumber.pattern,
+        message: validationRules.gstNumber.message
+      }
+    }
+
+    // Use the validateFormData utility
+    const validationErrors = validateFormData(data, formValidationRules)
+    
+    // Check for errors
+    if (Object.keys(validationErrors).length > 0) {
+      Object.entries(validationErrors).forEach(([field, message]) => {
+        setError(field, { type: 'manual', message })
+      })
+      toast.error('Please fix the validation errors before submitting')
+      return
+    }
+    
     const storeData = {
       ...data,
       user_id: currentUserId,
       created_by: currentUserId,
-      // Convert status to boolean or string as needed by your backend
       status: data.status === 'active' ? true : false,
     }
+    
     console.log('📝 StoreForm - Form data submitted:', data)
     console.log('📝 StoreForm - Final store data:', storeData)
     onSubmit(storeData)
@@ -114,6 +229,17 @@ const StoreForm = ({
       required: true,
       icon: FiPackage,
       gridCols: 'col-span-2',
+      validation: {
+        required: 'Store name is required',
+        minLength: {
+          value: 2,
+          message: 'Store name must be at least 2 characters'
+        },
+        maxLength: {
+          value: 100,
+          message: 'Store name cannot exceed 100 characters'
+        }
+      }
     },
     {
       name: 'email',
@@ -123,15 +249,30 @@ const StoreForm = ({
       required: true,
       icon: FiMail,
       gridCols: 'col-span-1',
+      onInput: handleEmailInput,
+      validation: {
+        required: 'Email is required',
+        pattern: {
+          value: validationRules.email.pattern,
+          message: validationRules.email.message
+        }
+      }
     },
     {
       name: 'mobile',
       label: 'Mobile Number',
       type: 'tel',
-      placeholder: 'Enter mobile number',
+      placeholder: 'Enter 10-digit mobile number',
       required: false,
       icon: FiPhone,
       gridCols: 'col-span-1',
+      onInput: handleMobileInput,
+      validation: {
+        validate: (value) => {
+          if (!value) return true
+          return validatePhone(value) || validationRules.mobile.message
+        }
+      }
     },
     {
       name: 'address',
@@ -141,6 +282,13 @@ const StoreForm = ({
       required: true,
       icon: FiMapPin,
       gridCols: 'col-span-2',
+      validation: {
+        required: 'Address is required',
+        minLength: {
+          value: 5,
+          message: 'Address must be at least 5 characters'
+        }
+      }
     },
     {
       name: 'city',
@@ -150,15 +298,30 @@ const StoreForm = ({
       required: true,
       icon: FiMapPin,
       gridCols: 'col-span-1',
+      onInput: handleCityInput,
+      validation: {
+        required: 'City is required',
+        pattern: {
+          value: validationRules.city.pattern,
+          message: validationRules.city.message
+        }
+      }
     },
     {
       name: 'gst',
       label: 'GST Number',
       type: 'text',
-      placeholder: 'Enter GST number',
+      placeholder: 'Enter GST number (e.g., 22AAAAA0000A1Z)',
       required: false,
       icon: FiPackage,
       gridCols: 'col-span-1',
+      onInput: handleGSTInputWrapper,
+      validation: {
+        validate: (value) => {
+          if (!value) return true
+          return validateGSTNumber(value) || validationRules.gstNumber.message
+        }
+      }
     },
   ]
 
@@ -195,36 +358,79 @@ const StoreForm = ({
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {formFields.map((field) => (
             <div key={field.name} className={field.gridCols}>
-              <Input
-                name={field.name}
-                label={field.label}
-                type={field.type}
-                value={watch(field.name)}
-                onChange={(e) => setValue(field.name, e.target.value)}
-                placeholder={field.placeholder}
-                required={field.required}
-                error={errors[field.name]?.message}
-                icon={field.icon}
-                disabled={isSubmitting}
-              />
+              <div className="space-y-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  {field.label}
+                  {field.required && <span className="text-red-500 ml-1">*</span>}
+                </label>
+                <div className="relative">
+                  {field.icon && (
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <field.icon className="h-5 w-5 text-gray-400" />
+                    </div>
+                  )}
+                  <input
+                    type={field.type}
+                    placeholder={field.placeholder}
+                    disabled={isSubmitting}
+                    onInput={field.onInput}
+                    className={`w-full pl-10 pr-3 py-2 h-[42px] border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white transition-colors ${
+                      errors[field.name] 
+                        ? 'border-red-500 focus:ring-red-500' 
+                        : 'border-gray-300 dark:border-gray-600'
+                    }`}
+                    {...register(field.name, field.validation)}
+                  />
+                </div>
+                {errors[field.name] && (
+                  <div className="flex items-center space-x-1 mt-1">
+                    <FiAlertCircle className="w-4 h-4 text-red-500" />
+                    <p className="text-red-500 text-sm">
+                      {errors[field.name].message}
+                    </p>
+                  </div>
+                )}
+                {field.name === 'mobile' && !errors[field.name] && (
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    {validationRules.mobile.message}
+                  </p>
+                )}
+                {field.name === 'gst' && !errors[field.name] && (
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    Format: 15 characters (e.g., 22AAAAA0000A1Z)
+                  </p>
+                )}
+                {field.name === 'city' && !errors[field.name] && (
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    Only letters, spaces, and hyphens allowed
+                  </p>
+                )}
+              </div>
             </div>
           ))}
 
           {/* Status Field */}
           <div className="space-y-1">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 ">
-              Status
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Status <span className="text-red-500 ml-1">*</span>
             </label>
             <select
               {...register('status', { required: 'Status is required' })}
-              className="w-full px-3 py-2 h-[42px] border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+              className={`w-full px-3 py-2 h-[42px] border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white ${
+                errors.status 
+                  ? 'border-red-500 focus:ring-red-500' 
+                  : 'border-gray-300 dark:border-gray-600'
+              }`}
               disabled={isSubmitting}
             >
               <option value="active">Active</option>
               <option value="inactive">Inactive</option>
             </select>
             {errors.status && (
-              <p className="text-red-500 text-sm">{errors.status.message}</p>
+              <div className="flex items-center space-x-1 mt-1">
+                <FiAlertCircle className="w-4 h-4 text-red-500" />
+                <p className="text-red-500 text-sm">{errors.status.message}</p>
+              </div>
             )}
           </div>
 
@@ -237,14 +443,17 @@ const StoreForm = ({
               type="file"
               accept="image/*"
               {...register('logo')}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 dark:file:bg-gray-600 dark:file:text-gray-200"
               disabled={isSubmitting}
             />
             <p className="text-xs text-gray-500 dark:text-gray-400">
-              Recommended: Square image, max 2MB
+              Recommended: Square image, max 2MB (JPG, PNG, GIF)
             </p>
             {errors.logo && (
-              <p className="text-red-500 text-sm">{errors.logo.message}</p>
+              <div className="flex items-center space-x-1 mt-1">
+                <FiAlertCircle className="w-4 h-4 text-red-500" />
+                <p className="text-red-500 text-sm">{errors.logo.message}</p>
+              </div>
             )}
           </div>
         </div>
@@ -252,6 +461,27 @@ const StoreForm = ({
         {/* Hidden fields for user_id and created_by */}
         <input type="hidden" {...register('user_id')} value={currentUserId} />
         <input type="hidden" {...register('created_by')} value={currentUserId} />
+
+        {/* Form validation summary */}
+        {Object.keys(errors).length > 0 && (
+          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+            <div className="flex items-start space-x-2">
+              <FiAlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 mt-0.5" />
+              <div>
+                <h4 className="text-sm font-semibold text-red-800 dark:text-red-200">
+                  Please fix the following errors:
+                </h4>
+                <ul className="mt-2 list-disc list-inside text-sm text-red-700 dark:text-red-300">
+                  {Object.entries(errors).map(([field, error]) => (
+                    <li key={field}>
+                      {field.charAt(0).toUpperCase() + field.slice(1)}: {error.message}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Actions */}
         <div className="flex items-center justify-end space-x-4 pt-6 border-t border-gray-200 dark:border-gray-700">

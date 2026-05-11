@@ -80,7 +80,17 @@ const Login = () => {
       if (redirectUrl) {
         router.push(redirectUrl);
       } else {
-        router.push("/pricing");
+        // Check if user has active plan
+        const hasActivePlan = user?.plan_id && user?.is_active === 1;
+        
+        if (hasActivePlan) {
+          // User has active plan - redirect to home page
+          toast.success("Welcome back! Redirecting to your dashboard...");
+          router.push("/");
+        } else {
+          // User doesn't have active plan - redirect to pricing page
+          router.push("/pricing");
+        }
       }
     }
   }, [isLoggedIn, user, router, searchParams]);
@@ -143,7 +153,7 @@ const Login = () => {
     const response = await loginUser({ email, password });
     const responseData = response.data;
     
-    if (!responseData.status) {
+    if (!responseData?.status) {
       loginAttempted.current = false;
       throw new Error(responseData.message || "Login failed");
     }
@@ -165,7 +175,7 @@ const Login = () => {
     toast.dismiss(loadingToast);
     
     if (result.success) {
-      toast.success("Login Successful!");
+      toast.success("Login Successful!", { duration: 2000 });
       // The useEffect will handle redirect
     } else {
       throw new Error(result.error || "Login failed");
@@ -185,8 +195,9 @@ const Login = () => {
     } else if (error.message?.includes("verify")) {
       errorMessage = "❌ Please verify your email before logging in.";
     } else if (error.message?.includes("Failed to fetch")) {
-      errorMessage = "Cannot connect to server. Please make sure the backend is running.";
+      errorMessage = "Cannot connect to server. Please make sure backend is running.";
     } else {
+      // Show the exact error message from API
       errorMessage = error.message || "❌ Login failed. Please try again.";
     }
     
@@ -226,7 +237,7 @@ const Login = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#ece9f1] to-[#dfe3f8] flex flex-col">
       <Toaster 
-        position="top-center"
+        position="top-right"
         reverseOrder={false}
         gutter={8}
         containerClassName=""
