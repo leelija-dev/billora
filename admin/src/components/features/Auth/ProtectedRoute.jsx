@@ -16,7 +16,7 @@ const ProtectedRoute = ({
   showUpgradePrompt = true
 }) => {
   const location = useLocation()
-  const { isAuthenticated, isLoading, hasHydrated, checkAuth } = useAuthStore()
+  const { isAuthenticated, isLoading, hasHydrated, checkAuth, hasActivePlan } = useAuthStore()
   
   console.log('🔍 ProtectedRoute - Current path:', location.pathname)
   console.log('🔍 ProtectedRoute - Auth state:', { isAuthenticated, isLoading, hasHydrated })
@@ -77,9 +77,35 @@ const ProtectedRoute = ({
     return <Navigate to="/login" state={{ from: location }} replace />
   }
 
-  // If still loading auth, show spinner (but don't wait for hydration if already authenticated)
+  // If user is authenticated but doesn't have active plan, redirect to login
+  if (isAuthenticated && location.pathname !== '/login') {
+    let hasActivePlanStatus = false;
+    
+    if (hasHydrated) {
+      hasActivePlanStatus = hasActivePlan();
+      console.log('🔍 Using hydrated store for plan check:', hasActivePlanStatus);
+    } else {
+      const authState = useAuthStore.getState();
+      hasActivePlanStatus = authState.hasActivePlanFromStorage();
+      console.log('🔍 Using localStorage for plan check:', hasActivePlanStatus);
+      console.log('🔍 User data from localStorage:', {
+        user: authState.user,
+        plan_id: authState.user?.plan_id,
+        is_active: authState.user?.is_active
+      });
+    }
+    
+    if (!hasActivePlanStatus) {
+      console.log('🔄 Redirecting to login - User authenticated but no active plan, current path:', location.pathname)
+      return <Navigate to="/login" state={{ from: location }} replace />
+    } else {
+      console.log('✅ User has active plan, allowing access')
+    }
+  }
+
+  // If still loading auth, show spinner
   if (isLoading || (isChecking && !isAuthenticated)) {
-    console.log('🔄 Still loading auth...')
+    console.log('🔄 Still loading auth...', { isLoading, isAuthenticated, hasHydrated, isChecking })
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <LoadingSpinner size="lg" />
