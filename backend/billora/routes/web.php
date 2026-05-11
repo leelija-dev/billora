@@ -10,7 +10,13 @@ Route::get('/', function () {
 });
 Route::get('/verify-email/{token}', [CustomerController::class, 'verifyEmail']);
 Route::post('/resend-verification', [CustomerController::class, 'resendVerificationEmail']);
+// Route::get('/cloud-test', function () {
 
+//     return [
+//         'cloud_url' => config('cloudinary.cloud_url'),
+//     ];
+
+// });
 Route::get('/google-drive-token', function () {
     $client = new Client();
 

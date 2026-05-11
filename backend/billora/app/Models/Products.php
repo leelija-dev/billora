@@ -60,7 +60,10 @@ class Products extends Model
         'warranty_months',
         'warehouse_location',
         'supplier_id',
-        'updated_by'
+        'updated_by',
+        'image_public_id',
+        'qr_public_id',
+        'barcode_public_id'
 
     ];
     protected $casts = [
