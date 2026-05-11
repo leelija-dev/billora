@@ -76,6 +76,8 @@ class StoreController extends Controller
             'mobile'      => 'nullable',
             'address'     => 'nullable',
             'city'        => 'nullable',
+            'state'       => 'nullable',
+            'pincode'     => 'nullable',
             'status'      => 'required',
             'created_by'  => 'required'
         ]);
@@ -169,6 +171,8 @@ class StoreController extends Controller
             'mobile'  => 'nullable',
             'address' => 'nullable',
             'city'    => 'nullable',
+            'state'       => 'nullable',
+            'pincode'     => 'nullable',
             'status'  => 'required',
         ]);
        

@@ -12,6 +12,7 @@ class ProductImages extends Model
         'user_id',
         'product_id',
         'image',
+        'image_public_id',
         'created_by'
     ];
     

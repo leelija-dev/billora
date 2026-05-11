@@ -53,6 +53,7 @@ class BillCustomerController extends Controller
             'phone'         => 'required',
             'address'       => 'nullable',
             'city'          => 'nullable',
+            'gst_number'    => 'nullable',
             'created_by'    => 'required'
         ]);
         $user = Auth::user()->id;
@@ -134,6 +135,7 @@ class BillCustomerController extends Controller
             'phone'     => 'required',
             'address'   => 'nullable',
             'city'      => 'nullable',
+            'gst_number'    => 'nullable',
  
         ]);
         try {
@@ -331,5 +333,8 @@ class BillCustomerController extends Controller
             'data'      => $billCustomer
         ]);
     }
+    // public function paymentHistory($id){
+
+    // }
 }
 
