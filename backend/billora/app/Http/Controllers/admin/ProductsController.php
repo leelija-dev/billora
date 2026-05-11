@@ -927,25 +927,39 @@ class ProductsController extends Controller
             $product = Products::withTrashed()->where('user_id', $user)->where('id', $id)->first();
             if ($product) {
                 if ($product->image) {
-                    $fileId = $this->getFileIdFromUrl($product->image);
-                    if ($fileId) {
-                        $this->deleteFromDrive($fileId);
-                    }
+                    // $fileId = $this->getFileIdFromUrl($product->image);
+                    // if ($fileId) {
+                    //     $this->deleteFromDrive($fileId);
+                    // }
+                    $this->deleteFromCloudinary(
+                        $product->image_public_id
+                    );
                 }
                 if ($product->qr_code) {
-                    $fileId = $this->getFileIdFromUrl($product->qr_code);
-                    if ($fileId) {
-                        $this->deleteFromDrive($fileId);
-                    }
-                    // }
+                    // $fileId = $this->getFileIdFromUrl($product->qr_code);
+
+                    // $this->deleteFromDrive($fileId);
+                    $this->deleteFromCloudinary(
+                        $product->image_public_id
+                    );
+
+                    $this->deleteFromCloudinary(
+                        $product->qr_public_id
+                    );
+
+                    $this->deleteFromCloudinary(
+                        $product->barcode_public_id
+                    );
                 }
-                $product->forceDelete();
+            }
+            $product->forceDelete();
             }
             return response()->json([
                 'status' => true,
                 'message' => 'Product Deleted Permanently',
                 'data' => []
             ]);
+            
         } catch (\Exception $e) {
             return response()->json([
                 'status' => false,
