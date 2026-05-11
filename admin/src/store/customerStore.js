@@ -261,26 +261,61 @@ export const useCustomerStore = create((set, get) => ({
   },
 
   // Get trashed customers
-  fetchTrashedCustomers: async () => {
+  fetchTrashedCustomers: async (page = 1) => {
     set({ loading: true })
     try {
-      const response = await customerAPI.getTrashed()
+      const response = await customerAPI.getTrashed(page)
+      
+      console.log('🗑️ CustomerStore - Full trashed response:', response)
       
       let customersArray = []
-      if (response?.data?.data && Array.isArray(response.data.data)) {
-        customersArray = response.data.data
-      } else if (Array.isArray(response?.data)) {
-        customersArray = response.data
+      let total = 0
+      
+      // Handle the paginated structure: response.data.data.data (array of customers)
+      if (response?.data?.data?.data && Array.isArray(response.data.data.data)) {
+        customersArray = response.data.data.data
+        total = response.data.data.total || customersArray.length
       }
+      // Handle response.data.data (if it's directly an array)
+      else if (response?.data?.data && Array.isArray(response.data.data)) {
+        customersArray = response.data.data
+        total = response.data.data.total || customersArray.length
+      }
+      // Handle response.data (if it's an array)
+      else if (Array.isArray(response?.data)) {
+        customersArray = response.data
+        total = customersArray.length
+      }
+      // Handle case where data might be in a different property
+      else if (response?.data && typeof response.data === 'object') {
+        // Try to find any array property
+        for (const key in response.data) {
+          if (Array.isArray(response.data[key])) {
+            customersArray = response.data[key]
+            total = customersArray.length
+            break
+          }
+        }
+      }
+      
+      // Ensure we have an array
+      if (!Array.isArray(customersArray)) {
+        customersArray = []
+        total = 0
+      }
+      
+      console.log('🗑️ CustomerStore - Extracted trashed customers:', customersArray)
+      console.log('🗑️ CustomerStore - Total trashed customers:', total)
       
       set({
         customers: customersArray,
-        totalCustomers: customersArray.length,
+        totalCustomers: total,
+        currentPage: page,
         loading: false,
       })
-      return { success: true }
+      return { success: true, data: customersArray }
     } catch (error) {
-      console.error('Failed to fetch deleted customers:', error)
+      console.error('❌ CustomerStore - Failed to fetch deleted customers:', error)
       toast.error('Failed to fetch deleted customers')
       set({ customers: [], totalCustomers: 0, loading: false })
       return { success: false, error: error.response?.data }

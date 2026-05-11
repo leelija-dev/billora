@@ -20,6 +20,7 @@ import Inventory from '../pages/inventory/Inventory'
 import Orders from '../pages/orders/Orders'
 import Customers from '../pages/customers/Customers'
 import CustomerDetails from '../pages/customers/CustomerDetails'
+import TrashedCustomers from '../pages/customers/TrashedCustomers'
 import Invoices from '../pages/invoices/Invoices'
 import InvoiceDetail from '../pages/invoices/InvoiceDetail'
 import Reports from '../pages/reports/Reports'
@@ -54,6 +55,7 @@ const AppRoutes = () => {
         <Route path="stock" element={<ProtectedRoute feature="stock-management"><Inventory /></ProtectedRoute>} />
         <Route path="orders" element={<ProtectedRoute feature="orders"><Orders /></ProtectedRoute>} />
         <Route path="customers" element={<ProtectedRoute feature="customers"><Customers /></ProtectedRoute>} />
+        <Route path="customers/trashed" element={<ProtectedRoute feature="customers"><TrashedCustomers /></ProtectedRoute>} />
         <Route path="customers/:id" element={<CustomerDetails />} />
         <Route path="invoices" element={<ProtectedRoute feature="invoices"><Invoices /></ProtectedRoute>} />
         <Route path="invoices/detail/:id" element={<InvoiceDetail />} />

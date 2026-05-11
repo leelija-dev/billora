@@ -156,13 +156,14 @@ export const customerAPI = {
 
   // Get all deleted customers (soft deleted)
 
-  getTrashed: async () => {
+  getTrashed: async (page = 1) => {
 
     try {
 
-      console.log('👥 Fetching trashed customers');
+      console.log('👥 Fetching trashed customers, page:', page);
 
-      const response = await apiClient.get('/customer/trashed');
+      const params = page > 1 ? { page } : {};
+      const response = await apiClient.get('/customer/trashed', { params });
 
       console.log('👥 Trashed customers fetched:', response.data);
 
@@ -186,9 +187,19 @@ export const customerAPI = {
 
     try {
 
-      console.log(`👥 Restoring customer with ID: ${id}`);
+      // Get current user from auth store
+      const { useAuthStore } = await import('../store/authStore');
+      const { user } = useAuthStore.getState();
+      
+      if (!user?.id) {
+        throw new Error('User not authenticated');
+      }
 
-      const response = await apiClient.patch(`/customer/${id}`);
+      console.log(`👥 Restoring customer with ID: ${id} for user: ${user.id}`);
+
+      const response = await apiClient.patch(`/customer/${id}`, {
+        user_id: user.id
+      });
 
       console.log('👥 Customer restored successfully');
 
