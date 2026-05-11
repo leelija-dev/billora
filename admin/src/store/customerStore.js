@@ -362,16 +362,21 @@ export const useCustomerStore = create((set, get) => ({
       const response = await customerAPI.getPaymentHistory(id, startDate, endDate)
       
       let historyArray = []
+      // Handle different response structures
       if (response?.data?.data && Array.isArray(response.data.data)) {
         historyArray = response.data.data
+      } else if (response?.data?.bill_payment_history && Array.isArray(response.data.bill_payment_history)) {
+        historyArray = response.data.bill_payment_history
       } else if (Array.isArray(response?.data)) {
         historyArray = response.data
       }
       
+      console.log('💳 CustomerStore - Payment history processed:', historyArray)
+      
       set({ loading: false })
       return { success: true, data: historyArray }
     } catch (error) {
-      console.error('Failed to fetch payment history:', error)
+      console.error('❌ CustomerStore - Failed to fetch payment history:', error)
       toast.error('Failed to fetch payment history')
       set({ loading: false })
       return { success: false, error: error.response?.data }

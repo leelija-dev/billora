@@ -260,13 +260,17 @@ export const customerAPI = {
 
   // Get customer payment history with date filters
 
-  getPaymentHistory: async (id, queryParams = '') => {
+  getPaymentHistory: async (id, startDate = '', endDate = '') => {
 
     try {
 
-      console.log(`💳 Fetching payment history for customer ${id} with params:`, queryParams);
+      console.log(`💳 Fetching payment history for customer ${id} with date range:`, { startDate, endDate });
 
-      const response = await apiClient.get(`/customer/show/${id}${queryParams ? '?' + queryParams : ''}`);
+      const params = new URLSearchParams();
+      if (startDate) params.append('start_date', startDate);
+      if (endDate) params.append('end_date', endDate);
+      
+      const response = await apiClient.get(`/customer/show/${id}${params.toString() ? '?' + params.toString() : ''}`);
 
       console.log('💳 Payment history fetched:', response.data);
 

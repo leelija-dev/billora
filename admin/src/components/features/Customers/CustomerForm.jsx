@@ -42,7 +42,8 @@ const CustomerForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting }) =
     address: '',
     city: '',
     pincode: '',
-    admin_id: currentUserId,
+    user_id: currentUserId, // Use user_id to match backend expectation
+    admin_id: currentUserId, // Keep for backward compatibility
     created_by: currentUserId,
     status: 'active',
     ...initialData
@@ -51,11 +52,12 @@ const CustomerForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting }) =
   const [errors, setErrors] = useState({})
   const [touched, setTouched] = useState({})
 
-  // Auto-populate admin_id and created_by from auth context
+  // Auto-populate user_id, admin_id and created_by from auth context
   useEffect(() => {
     if (!initialData) {
       setFormData(prev => ({
         ...prev,
+        user_id: currentUserId,
         admin_id: currentUserId,
         created_by: currentUserId,
       }))
@@ -72,6 +74,7 @@ const CustomerForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting }) =
         city: initialData.city || '',
         pincode: initialData.pincode || '',
         status: initialData.status || 'active',
+        user_id: initialData.user_id || initialData.admin_id || currentUserId,
         admin_id: initialData.admin_id || currentUserId,
         created_by: initialData.created_by || currentUserId,
       })
@@ -317,7 +320,7 @@ const CustomerForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting }) =
         city: formData.city?.trim() || null,
         pincode: formData.pincode || null,
         status: formData.status,
-        admin_id: formData.admin_id,
+        user_id: formData.admin_id, // Backend expects user_id, not admin_id
         created_by: formData.created_by,
       }
       onSubmit(cleanData)
