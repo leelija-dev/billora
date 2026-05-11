@@ -7,7 +7,7 @@ export const useOrderStore = create((set, get) => ({
   orders: [],
   totalOrders: 0,
   currentPage: 1,
-  pageSize: 10,
+  pageSize: 15,
   loading: false,
   filters: {
     search: '',

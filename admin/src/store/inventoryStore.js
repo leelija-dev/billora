@@ -13,7 +13,7 @@ export const useInventoryStore = create((set, get) => ({
   stocks: [],
   totalStocks: 0,
   currentPage: 1,
-  pageSize: 10,
+  pageSize: 15,
   loading: false,
   filters: {
     search: '',

@@ -57,6 +57,7 @@ const Orders = () => {
   const [showEditForm, setShowEditForm] = useState(false)
   const [showDetailsModal, setShowDetailsModal] = useState(false)
   const [showPaymentModal, setShowPaymentModal] = useState(false)
+  const [showPrintModal, setShowPrintModal] = useState(false)
   const [selectedOrder, setSelectedOrder] = useState(null)
   const [searchTerm, setSearchTerm] = useState(filters.search || '')
   const [showFilters, setShowFilters] = useState(false)
@@ -74,6 +75,46 @@ const Orders = () => {
     revenue: 0,
     revenueChange: 0
   })
+
+  // Computed filtered orders based on current filters
+  const filteredOrders = React.useMemo(() => {
+    let filtered = [...orders]
+    
+    // Apply search filter
+    if (filters.search) {
+      const searchLower = filters.search.toLowerCase()
+      filtered = filtered.filter(order => 
+        (order.order_id && order.order_id.toString().toLowerCase().includes(searchLower)) ||
+        (order.customer_name && order.customer_name.toLowerCase().includes(searchLower)) ||
+        (order.customer_phone && order.customer_phone.toLowerCase().includes(searchLower)) ||
+        (order.customer_email && order.customer_email.toLowerCase().includes(searchLower))
+      )
+    }
+    
+    // Apply status filter
+    if (filters.status) {
+      filtered = filtered.filter(order => order.order_status === filters.status)
+    }
+    
+    // Apply payment status filter
+    if (filters.paymentStatus) {
+      filtered = filtered.filter(order => order.payment_status === filters.paymentStatus)
+    }
+    
+    // Apply date range filter
+    if (filters.dateFrom) {
+      const fromDate = new Date(filters.dateFrom)
+      filtered = filtered.filter(order => new Date(order.created_at) >= fromDate)
+    }
+    
+    if (filters.dateTo) {
+      const toDate = new Date(filters.dateTo)
+      toDate.setHours(23, 59, 59, 999) // End of day
+      filtered = filtered.filter(order => new Date(order.created_at) <= toDate)
+    }
+    
+    return filtered
+  }, [orders, filters])
 
   useEffect(() => {
     // Fetch orders with current user ID
@@ -93,16 +134,16 @@ const Orders = () => {
   }, [searchTerm, setFilters, user?.id])
 
   useEffect(() => {
-    if (orders.length > 0) {
-      const pendingOrders = orders.filter(order => order.order_status === 'pending').length
-      const processingOrders = orders.filter(order => order.order_status === 'processing').length
-      const completedOrders = orders.filter(order => order.order_status === 'completed').length
-      const totalRevenue = orders
+    if (filteredOrders.length > 0) {
+      const pendingOrders = filteredOrders.filter(order => order.order_status === 'pending').length
+      const processingOrders = filteredOrders.filter(order => order.order_status === 'processing').length
+      const completedOrders = filteredOrders.filter(order => order.order_status === 'completed').length
+      const totalRevenue = filteredOrders
         .filter(order => order.order_status === 'completed' && order.total_amount)
         .reduce((sum, order) => sum + parseFloat(order.total_amount || 0), 0)
 
       setStats({
-        total: totalOrders,
+        total: filteredOrders.length,
         pending: pendingOrders,
         processing: processingOrders,
         completed: completedOrders,
@@ -119,7 +160,7 @@ const Orders = () => {
         revenueChange: 0
       })
     }
-  }, [orders, totalOrders])
+  }, [filteredOrders])
 
   const handleViewOrder = (order) => {
     setSelectedOrder(order)
@@ -169,6 +210,11 @@ const Orders = () => {
       console.error('Error fetching payment details:', error)
       toast.error('Failed to fetch payment details')
     }
+  }
+
+  const handlePrintOrder = (order) => {
+    setSelectedOrder(order)
+    setShowPrintModal(true)
   }
 
   const handleUpdatePayment = async () => {
@@ -318,12 +364,12 @@ const Orders = () => {
         <div className="flex items-center">
           <input
             type="checkbox"
-            checked={selectedOrders.length === orders.length && orders.length > 0}
+            checked={selectedOrders.length === filteredOrders.length && filteredOrders.length > 0}
             onChange={() => {
-              if (selectedOrders.length === orders.length) {
+              if (selectedOrders.length === filteredOrders.length) {
                 setSelectedOrders([])
               } else {
-                setSelectedOrders(orders.map(o => o.id))
+                setSelectedOrders(filteredOrders.map(o => o.id))
               }
             }}
             className="w-4 h-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
@@ -470,7 +516,17 @@ const Orders = () => {
       header: 'Actions',
       accessor: 'id',
       cell: (value, row) => (
-        <div className="flex items-center justify-center">
+        <div className="flex items-center space-x-1">
+          <motion.button
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => handlePrintOrder(row)}
+            className="p-2 text-blue-600 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
+            title="Print Order"
+          >
+            <FiPrinter className="w-4 h-4" />
+          </motion.button>
+          
           <motion.button
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.95 }}
@@ -615,7 +671,7 @@ const Orders = () => {
         
         <div className="flex items-center space-x-3">
           {/* Date Range Selector */}
-          <div className="flex items-center bg-gray-100 dark:bg-gray-800 rounded-xl p-1">
+          {/* <div className="flex items-center bg-gray-100 dark:bg-gray-800 rounded-xl p-1">
             {['today', 'week', 'month', 'custom'].map((range) => (
               <motion.button
                 key={range}
@@ -631,7 +687,7 @@ const Orders = () => {
                 {range.charAt(0).toUpperCase() + range.slice(1)}
               </motion.button>
             ))}
-          </div>
+          </div> */}
 
           {/* Refresh Button */}
           <motion.button
@@ -653,7 +709,7 @@ const Orders = () => {
           </motion.button>
 
           {/* Create Order Button */}
-          <motion.div
+          {/* <motion.div
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
           >
@@ -664,7 +720,7 @@ const Orders = () => {
             >
               Create Order
             </Button>
-          </motion.div>
+          </motion.div> */}
         </div>
       </motion.div>
 
@@ -879,14 +935,14 @@ const Orders = () => {
       >
         <Table
           columns={columns}
-          data={orders}
+          data={filteredOrders}
           loading={loading}
         />
       </motion.div>
       
       <Pagination
         currentPage={currentPage}
-        totalItems={totalOrders}
+        totalItems={filteredOrders.length}
         pageSize={pageSize}
         onPageChange={handlePageChange}
       />
@@ -1056,6 +1112,68 @@ const Orders = () => {
                 </Button>
               </div>
             )}
+          </div>
+        )}
+      </Modal>
+
+      {/* Print Options Modal */}
+      <Modal
+        isOpen={showPrintModal}
+        onClose={() => {
+          setShowPrintModal(false)
+          setSelectedOrder(null)
+        }}
+        title={`Print Options - Order #${selectedOrder?.orderNumber || selectedOrder?.id}`}
+        size="sm"
+      >
+        {selectedOrder && (
+          <div className="space-y-4">
+            <div className="text-center">
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                Choose print format for Order #{selectedOrder?.orderNumber || selectedOrder?.id}
+              </p>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <Button
+                onClick={() => {
+                  handlePrintInvoice(selectedOrder, 'a4')
+                  setShowPrintModal(false)
+                  setSelectedOrder(null)
+                }}
+                className="w-full"
+                variant="primary"
+              >
+                <FiPrinter className="w-4 h-4 mr-2" />
+                Print A4 Invoice
+              </Button>
+              
+              <Button
+                onClick={() => {
+                  handlePrintInvoice(selectedOrder, 'thermal')
+                  setShowPrintModal(false)
+                  setSelectedOrder(null)
+                }}
+                className="w-full"
+                variant="secondary"
+              >
+                <FiPrinter className="w-4 h-4 mr-2" />
+                Print Thermal
+              </Button>
+            </div>
+            
+            <div className="flex justify-center mt-4">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowPrintModal(false)
+                  setSelectedOrder(null)
+                }}
+                className="px-6"
+              >
+                Cancel
+              </Button>
+            </div>
           </div>
         )}
       </Modal>

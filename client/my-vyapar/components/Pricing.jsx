@@ -8,6 +8,20 @@ import { useAuthStore } from "../store/authStoreZustand";
 import { useFilterStore } from "../store/filterStore";
 import { useRouter } from "next/navigation";
 import businessService from "../services/businessService";
+import {
+  FaStar,
+  FaCheck,
+  FaSpinner,
+  FaArrowRight,
+  FaLock,
+  FaLayerGroup,
+  FaTags,
+  FaGem,
+  FaInfoCircle
+} from 'react-icons/fa';
+import { IoMdTrendingUp } from 'react-icons/io';
+import { RiVipCrownFill } from 'react-icons/ri';
+import { GiRoundStar } from 'react-icons/gi';
 
 const Pricing = ({ limit = 3, showFilters = true, showViewAllButton = true }) => {
   const [showLoginModal, setShowLoginModal] = useState(false);
@@ -15,7 +29,11 @@ const Pricing = ({ limit = 3, showFilters = true, showViewAllButton = true }) =>
   const [checkingEligibility, setCheckingEligibility] = useState({});
   const [isClientMounted, setIsClientMounted] = useState(false);
   const [isSelectEnabled, setIsSelectEnabled] = useState(false);
-  
+  const [hoveredPlan, setHoveredPlan] = useState(null);
+  const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const dropdownRef = useRef(null);
+
   const {
     plans,
     loading,
@@ -28,7 +46,7 @@ const Pricing = ({ limit = 3, showFilters = true, showViewAllButton = true }) =>
     subscribeToPlan,
     clearError
   } = usePricingStore();
-  
+
   const {
     filters,
     updateFilter,
@@ -43,43 +61,45 @@ const Pricing = ({ limit = 3, showFilters = true, showViewAllButton = true }) =>
   const cardRefs = useRef([]);
   const router = useRouter();
 
-  // Use Zustand auth store instead of manual localStorage
   const { user, token, isLoggedIn, hasActivePlan, checkPlanPurchaseEligibility } = useAuthStore();
 
-  // Set client mounted state
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
   useEffect(() => {
     setIsClientMounted(true);
-    // Enable select after client mount to avoid hydration mismatch
     const timer = setTimeout(() => {
       setIsSelectEnabled(true);
     }, 100);
     return () => clearTimeout(timer);
   }, []);
 
-  // Load business types from service
   useEffect(() => {
     const loadBusinessTypes = async () => {
       try {
-        // Try without token first (if endpoint is public)
         let businessTypeData;
-        
+
         if (token) {
-          // With token (authenticated)
           businessTypeData = await businessService.getBusinessTypes(token);
         } else {
-          // Without token (public endpoint)
           businessTypeData = await businessService.getBusinessTypes();
         }
-        
+
         if (businessTypeData && businessTypeData.length > 0) {
           setAllBusinessTypes(businessTypeData);
-          console.log("Business types loaded:", businessTypeData);
         } else {
           console.warn("No business types found");
         }
       } catch (err) {
         console.error("Business type fetch error:", err);
-        // Set empty array to prevent infinite loading
         setAllBusinessTypes([]);
       }
     };
@@ -87,13 +107,9 @@ const Pricing = ({ limit = 3, showFilters = true, showViewAllButton = true }) =>
     loadBusinessTypes();
   }, [token]);
 
-  // Fetch plans from Laravel API
   const transformPlan = (plan, index) => {
-    console.log("transformPlan called with:", plan, typeof plan);
-    
     const features = plan.features || [];
     const monthlyPrice = parseFloat(plan.price);
-    // Use yearly price from API if available, otherwise calculate with multiplier from API or default to 12
     const yearlyPrice = plan.price?.yearly ? parseFloat(plan.price.yearly) : monthlyPrice * (plan.yearly_multiplier || 12);
     const discount = parseFloat(plan.discount) || 0;
     const monthlyDiscountedPrice = monthlyPrice - (monthlyPrice * discount / 100);
@@ -129,61 +145,51 @@ const Pricing = ({ limit = 3, showFilters = true, showViewAllButton = true }) =>
         monthly: monthlyDiscountedPrice.toLocaleString("en-IN"),
         yearly: yearlyDiscountedPrice.toLocaleString("en-IN"),
       },
-      plan_duration:plan.duration_days,
+      plan_duration: plan.duration_days,
       discount: discount,
       gst: gstRate,
       businessTypes: transformedBusinessTypes,
       supportedBusinessTypeIds: supportedBusinessTypeIds,
       description: plan.description ? plan.description.replace(/<[^>]*>?/gm, "") : "",
       features: features,
-      color: index === 1 ? "#8b5cf6" : "#000000",
+      color: index === 1 ? "#8b5cf6" : "#1e293b",
       buttonText: `Select Plan`,
       popular: index === 1,
     };
   };
 
   const transformPlans = (plansData) => {
-    console.log("transformPlans called with:", plansData, typeof plansData, Array.isArray(plansData));
-    
     if (!Array.isArray(plansData)) {
       console.error("transformPlans expected array but got:", typeof plansData, plansData);
       return [];
     }
-    
+
     return plansData.map((plan, index) => transformPlan(plan, index));
   };
 
   const filterPlansByBusinessType = async (businessTypeId) => {
     try {
       if (businessTypeId === "all") {
-        // Use store methods to get all plans
         let transformedPlans = plans.map(transformPlan);
-        
-        // Apply limit if specified
+
         if (limit && limit > 0) {
           transformedPlans = transformedPlans.slice(0, limit);
         }
-        
-        console.log("Setting filteredPlans with all plans:", transformedPlans, "Length:", transformedPlans.length);
+
         setFilteredPlans(transformedPlans);
       } else {
-        // Use filter store to search by business type
         updateFilter('search', businessTypeId);
         const searchResults = await searchWithFilters();
-        console.log("Search results for business type", businessTypeId, ":", searchResults);
-        
+
         if (searchResults && searchResults.length > 0) {
           let transformedPlans = searchResults.map(transformPlan);
-          
-          // Apply limit if specified
+
           if (limit && limit > 0) {
             transformedPlans = transformedPlans.slice(0, limit);
           }
-          
-          console.log("Setting filteredPlans with search results:", transformedPlans, "Length:", transformedPlans.length);
+
           setFilteredPlans(transformedPlans);
         } else {
-          console.log("No search results found, setting filteredPlans to empty array");
           setFilteredPlans([]);
         }
       }
@@ -193,7 +199,6 @@ const Pricing = ({ limit = 3, showFilters = true, showViewAllButton = true }) =>
     }
   };
 
-  // Initial plans fetch
   useEffect(() => {
     const loadPlans = async () => {
       try {
@@ -206,39 +211,35 @@ const Pricing = ({ limit = 3, showFilters = true, showViewAllButton = true }) =>
     loadPlans();
   }, [limit, fetchPlans]);
 
-  // Update filteredPlans when plans are available
   useEffect(() => {
-    console.log("Main plans useEffect triggered - plans length:", plans?.length);
     if (plans && plans.length > 0) {
       let transformedPlans = plans.map(transformPlan);
-      
-      // Apply limit if specified
+
       if (limit && limit > 0) {
         transformedPlans = transformedPlans.slice(0, limit);
       }
-      
-      console.log("Main useEffect - Setting filteredPlans with:", transformedPlans, "Length:", transformedPlans.length);
-        setFilteredPlans(transformedPlans);
-    }
-  }, [plans, limit, fetchPlans]);
 
-  // Filter plans based on selected business type
+      setFilteredPlans(transformedPlans);
+      setHasLoadedOnce(true);
+    } else if (plans && plans.length === 0) {
+      setHasLoadedOnce(true);
+    }
+  }, [plans, limit]);
+
   useEffect(() => {
-    console.log("Business type filter useEffect triggered - selectedBusinessType:", selectedBusinessType, "plans length:", plans?.length);
     if (showFilters && plans && plans.length > 0) {
       filterPlansByBusinessType(selectedBusinessType);
     }
   }, [selectedBusinessType, showFilters, plans]);
 
-  // Check plan eligibility when plans are loaded and user is logged in
   useEffect(() => {
     const checkEligibilityForPlans = async () => {
       if (isLoggedIn && filteredPlans.length > 0) {
         const eligibilityData = {};
-        
+
         for (const plan of filteredPlans) {
           setCheckingEligibility(prev => ({ ...prev, [plan.id]: true }));
-          
+
           try {
             const eligibility = await checkPlanPurchaseEligibility(plan.id);
             eligibilityData[plan.id] = eligibility;
@@ -249,9 +250,8 @@ const Pricing = ({ limit = 3, showFilters = true, showViewAllButton = true }) =>
             setCheckingEligibility(prev => ({ ...prev, [plan.id]: false }));
           }
         }
-        
+
         setPlanEligibility(eligibilityData);
-        console.log("Plan eligibility data:", eligibilityData);
       }
     };
 
@@ -311,18 +311,14 @@ const Pricing = ({ limit = 3, showFilters = true, showViewAllButton = true }) =>
   };
 
   const handleSubscribe = async (plan) => {
-    console.log("handleSubscribe called with plan:", plan.name, "isLoggedIn:", isLoggedIn);
-    
-    // Check plan eligibility if user is logged in
     if (isLoggedIn) {
       const eligibility = planEligibility[plan.id];
-      
+
       if (!eligibility) {
-        console.log("Eligibility not checked yet, checking now...");
         try {
           const eligibilityResult = await checkPlanPurchaseEligibility(plan.id);
           setPlanEligibility(prev => ({ ...prev, [plan.id]: eligibilityResult }));
-          
+
           if (!eligibilityResult.canPurchase) {
             alert(eligibilityResult.reason);
             return;
@@ -337,7 +333,7 @@ const Pricing = ({ limit = 3, showFilters = true, showViewAllButton = true }) =>
         return;
       }
     }
-    
+
     const currentPriceData = getCurrentPrice(plan);
     const originalPriceData = getOriginalPrice(plan);
     const gstAmount = currentPriceData.price * (plan.gst / 100);
@@ -362,23 +358,18 @@ const Pricing = ({ limit = 3, showFilters = true, showViewAllButton = true }) =>
     };
 
     if (!isLoggedIn) {
-      console.log("User not logged in, showing login modal");
       setPendingPlan(selectedPlanData);
       setShowLoginModal(true);
       return;
     }
 
-    // Check if this is an upgrade action
     const eligibility = planEligibility[plan.id];
     const isUpgrade = eligibility && eligibility.action === 'upgrade';
-    
+
     if (isUpgrade) {
-      console.log("User is upgrading plan, redirecting to dashboard");
-      // For upgrade, redirect to dashboard instead of order summary
       const dashboardUrl = process.env.NEXT_PUBLIC_DASHBOARD_URL || 'http://localhost:3000';
       window.open(`${dashboardUrl}/billing`, '_blank');
     } else {
-      console.log("User is purchasing new plan, proceeding to order summary");
       selectPlan(selectedPlanData);
       localStorage.setItem('selectedPlan', JSON.stringify(selectedPlanData));
       router.push("/order-summary");
@@ -434,34 +425,40 @@ const Pricing = ({ limit = 3, showFilters = true, showViewAllButton = true }) =>
     if (!showLoginModal) return null;
 
     return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4" onClick={() => setShowLoginModal(false)}>
-        <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
-          <div className="text-center mb-6">
-            <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <svg className="w-8 h-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-300" onClick={() => setShowLoginModal(false)}>
+        <div className="bg-white rounded-3xl max-w-md w-full p-8 shadow-2xl transform animate-in zoom-in-95 duration-300" onClick={(e) => e.stopPropagation()}>
+          <div className="text-center mb-8">
+            <div className="w-24 h-24 bg-gradient-to-br from-purple-100 to-purple-200 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg">
+              <svg className="w-12 h-12 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
               </svg>
             </div>
-            <h3 className="text-xl font-bold text-gray-900 mb-2">Login Required</h3>
-            <p className="text-gray-600">Please login to continue with your subscription</p>
+            <h3 className="text-2xl font-bold text-gray-900 mb-3">Unlock Premium Features</h3>
+            <p className="text-gray-600">Sign in to continue with your subscription and access exclusive benefits</p>
             {pendingPlan && (
-              <p className="text-sm text-purple-600 mt-2 font-medium">
-                Plan: {pendingPlan.name} • ₹{pendingPlan.displayPrice}/month
-              </p>
+              <div className="mt-5 p-4 bg-gradient-to-r from-purple-50 to-purple-100 rounded-xl">
+                <p className="text-sm text-purple-900 font-semibold">
+                  Selected Plan: {pendingPlan.name}
+                </p>
+                <p className="text-2xl font-bold text-purple-600 mt-1">
+                  ₹{pendingPlan.displayPrice}
+                  <span className="text-sm font-normal text-gray-600">/month</span>
+                </p>
+              </div>
             )}
           </div>
           <div className="space-y-3">
             <button
               onClick={handleLoginRedirect}
-              className="w-full py-3 bg-gradient-to-r from-purple-600 to-purple-500 text-white rounded-xl font-semibold hover:from-purple-700 hover:to-purple-600 transition-all duration-300"
+              className="w-full py-3.5 bg-gradient-to-r from-purple-600 to-purple-500 text-white rounded-xl font-semibold hover:from-purple-700 hover:to-purple-600 transition-all duration-300 shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
             >
-              Login Now
+              Login to Continue
             </button>
             <button
               onClick={() => setShowLoginModal(false)}
-              className="w-full py-3 bg-gray-100 text-gray-700 rounded-xl font-semibold hover:bg-gray-200 transition-all duration-300"
+              className="w-full py-3.5 bg-gray-100 text-gray-700 rounded-xl font-semibold hover:bg-gray-200 transition-all duration-300"
             >
-              Cancel
+              Maybe Later
             </button>
           </div>
         </div>
@@ -469,27 +466,146 @@ const Pricing = ({ limit = 3, showFilters = true, showViewAllButton = true }) =>
     );
   };
 
+  // Skeleton Loading Component
+  const PricingCardSkeleton = ({ isPopular = false }) => (
+    <div className={`group relative transition-all duration-500 transform ${isPopular ? 'lg:scale-105 z-20' : ''
+      }`}>
+      <div className={`absolute -inset-0.5 bg-gradient-to-r from-purple-600 to-purple-400 rounded-2xl blur opacity-0 ${isPopular ? 'opacity-30 animate-pulse' : ''
+        }`}></div>
+
+      <div className={`relative bg-white rounded-2xl overflow-hidden shadow-xl`}>
+        {isPopular && (
+          <div className="absolute top-4 right-4 z-10">
+            <div className="bg-gray-200 text-gray-200 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider animate-pulse">
+              <span className="inline-block w-16 h-4"></span>
+            </div>
+          </div>
+        )}
+
+        <div className="p-8">
+          <div className="mb-6">
+            <div className={`w-14 h-14 rounded-xl mb-4 bg-gray-200 animate-pulse ${isPopular ? 'shadow-lg' : ''
+              }`}></div>
+            <div className="h-8 bg-gray-200 rounded-lg mb-2 animate-pulse"></div>
+            <div className="h-4 bg-gray-200 rounded animate-pulse mb-1"></div>
+            <div className="h-4 bg-gray-200 rounded w-3/4 animate-pulse"></div>
+          </div>
+
+          <div className="mb-6 pb-6 border-b border-gray-100">
+            <div className="inline-block w-24 h-6 bg-gray-200 rounded-full mb-3 animate-pulse"></div>
+            <div className="flex items-baseline gap-1">
+              <div className="w-4 h-8 bg-gray-200 rounded animate-pulse"></div>
+              <div className="w-16 h-12 bg-gray-200 rounded animate-pulse"></div>
+              <div className="w-8 h-6 bg-gray-200 rounded animate-pulse"></div>
+            </div>
+            <div className="flex items-center gap-2 mt-3">
+              <div className="w-12 h-4 bg-gray-200 rounded animate-pulse"></div>
+              <div className="w-20 h-5 bg-gray-200 rounded-full animate-pulse"></div>
+            </div>
+          </div>
+
+          <div className="mb-8">
+            <div className="h-4 bg-gray-200 rounded w-24 mb-4 animate-pulse"></div>
+            <div className="space-y-3.5">
+              {[1, 2, 3, 4, 5].map((i) => (
+                <div key={i} className="flex items-start gap-3">
+                  <div className="w-5 h-5 bg-gray-200 rounded-full animate-pulse"></div>
+                  <div className="flex-1">
+                    <div className="h-4 bg-gray-200 rounded animate-pulse mb-1"></div>
+                    {i % 2 === 0 && <div className="h-4 bg-gray-200 rounded w-3/4 animate-pulse"></div>}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="h-12 bg-gray-200 rounded-xl animate-pulse"></div>
+        </div>
+      </div>
+    </div>
+  );
+
   if (loading) {
     return (
-      <div className="py-20 bg-gradient-to-br from-[#f8fafc] to-[#f1f5f9] min-h-[400px] flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500 mx-auto mb-4"></div>
-          <p className="text-gray-600 text-lg font-medium">Loading plans...</p>
+      <div className="pb-28 pt-8 md:pb-28 md:pt-12 bg-gradient-to-br from-gray-50 via-white to-gray-50 font-['Inter',system-ui,-apple-system,sans-serif] relative overflow-hidden">
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute -top-40 -right-40 w-80 h-80 bg-purple-100 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob"></div>
+          <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-blue-100 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-2000"></div>
         </div>
+
+        <Container size="default">
+          <div className="text-center mb-16 px-4 relative z-10">
+            <div className="inline-block w-32 h-8 bg-gray-200 rounded-full mb-6 animate-pulse"></div>
+            <div className="h-12 bg-gray-200 rounded-lg w-96 mx-auto mb-4 animate-pulse"></div>
+            <div className="h-6 bg-gray-200 rounded w-80 mx-auto animate-pulse"></div>
+          </div>
+
+          <div className="flex justify-center items-center mb-12 relative z-10">
+            <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-1.5 shadow-lg border border-gray-200 inline-flex gap-1 w-64">
+              <div className="h-10 bg-gray-200 rounded-xl flex-1 animate-pulse"></div>
+              <div className="h-10 bg-gray-200 rounded-xl flex-1 animate-pulse"></div>
+            </div>
+          </div>
+
+          <div className="flex justify-center items-center mb-12 px-4 relative z-10">
+            <div className="w-80 h-12 bg-gray-200 rounded-xl animate-pulse"></div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-20 px-4 relative z-10">
+            <PricingCardSkeleton isPopular={false} />
+            <PricingCardSkeleton isPopular={true} />
+            <PricingCardSkeleton isPopular={false} />
+          </div>
+
+          <div className="relative z-10 max-w-4xl mx-auto">
+            <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-200 p-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="flex items-center gap-3 justify-center">
+                    <div className="w-10 h-10 bg-gray-200 rounded-full animate-pulse"></div>
+                    <div>
+                      <div className="h-4 bg-gray-200 rounded w-24 mb-1 animate-pulse"></div>
+                      <div className="h-3 bg-gray-200 rounded w-32 animate-pulse"></div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </Container>
+
+        <style jsx>{`
+          @keyframes blob {
+            0% { transform: translate(0px, 0px) scale(1); }
+            33% { transform: translate(30px, -50px) scale(1.1); }
+            66% { transform: translate(-20px, 20px) scale(0.9); }
+            100% { transform: translate(0px, 0px) scale(1); }
+          }
+          .animate-blob {
+            animation: blob 7s infinite;
+          }
+          .animation-delay-2000 {
+            animation-delay: 2s;
+          }
+        `}</style>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="py-20 bg-gradient-to-br from-[#f8fafc] to-[#f1f5f9] min-h-[400px] flex items-center justify-center">
-        <div className="text-center bg-white p-8 rounded-2xl shadow-lg max-w-md">
-          <div className="text-red-500 text-6xl mb-4">⚠️</div>
-          <h3 className="text-xl font-bold text-gray-800 mb-2">Unable to Load Plans</h3>
-          <p className="text-gray-600 mb-4">{error}</p>
+      <div className="py-40 bg-gradient-to-br from-gray-50 via-white to-gray-50 min-h-[600px] flex items-center justify-center">
+        <div className="text-center bg-white p-10 rounded-3xl shadow-2xl max-w-md">
+          <div className="w-24 h-24 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
+            <svg className="w-12 h-12 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+          </div>
+          <h3 className="text-2xl font-bold text-gray-800 mb-3">Oops! Something went wrong</h3>
+          <p className="text-gray-600 mb-6">{error}</p>
           <button
             onClick={() => window.location.reload()}
-            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+            className="px-6 py-3 bg-gradient-to-r from-purple-600 to-purple-500 text-white rounded-xl font-semibold hover:from-purple-700 hover:to-purple-600 transition-all duration-300 shadow-md hover:shadow-lg"
           >
             Try Again
           </button>
@@ -499,251 +615,450 @@ const Pricing = ({ limit = 3, showFilters = true, showViewAllButton = true }) =>
   }
 
   const displayPlans = showFilters ? filteredPlans : (plans && plans.length > 0 ? plans.slice(0, limit) : []);
-  
-  // Debug logging
-  console.log("Pricing Component Debug:", {
-    showFilters,
-    plansLength: plans?.length || 0,
-    filteredPlansLength: filteredPlans?.length || 0,
-    displayPlansLength: displayPlans?.length || 0,
-    limit
-  });
+
+  // Get selected business type name for display
+  const getSelectedBusinessTypeName = () => {
+    if (selectedBusinessType === "all") return "All Business Types";
+    const selected = allBusinessTypes.find(bt => bt.id === parseInt(selectedBusinessType));
+    return selected ? selected.name : "Select Business Type";
+  };
+
+  // Get current user's active plan details
+  const getCurrentPlanDetails = () => {
+    if (!isLoggedIn || !user?.plan_id) return null;
+
+    const currentPlan = plans.find(plan => plan.id === user.plan_id);
+    return currentPlan || null;
+  };
+
+  // Determine if plan is upgrade, downgrade, or same
+  const getPlanAction = (plan) => {
+    const currentPlan = getCurrentPlanDetails();
+
+    if (!currentPlan) {
+      return {
+        isUpgrade: false,
+        isDowngrade: false,
+        isSame: false,
+        canPurchase: true
+      };
+    }
+
+    const currentPlanPrice = parseFloat(currentPlan.price);
+    const planPrice = parseFloat(plan.price.monthly);
+
+    return {
+      isUpgrade: planPrice > currentPlanPrice,
+      isDowngrade: planPrice < currentPlanPrice,
+      isSame: planPrice === currentPlanPrice,
+      canPurchase: planPrice !== currentPlanPrice
+    };
+  };
 
   return (
-    <div className="py-10 sm:py-20 bg-gradient-to-br from-[#f8fafc] to-[#f1f5f9] font-['Inter',system-ui,-apple-system,sans-serif] overflow-x-hidden">
+    <div className="pb-28 pt-8 md:pb-28 md:pt-12 bg-gradient-to-br from-gray-50 via-white to-gray-50 font-['Inter',system-ui,-apple-system,sans-serif] relative overflow-hidden">
+      {/* Background Decorations */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-purple-100 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob"></div>
+        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-blue-100 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-2000"></div>
+      </div>
+
       <Container size="default">
         {/* Header Section */}
-        <div className="text-center mb-12 px-4">
-          <SectionTitle title="Simple, Transparent Pricing" />
-          <p className="text-[#475569] text-lg max-w-[600px] mx-auto mt-4 font-medium">
-            Choose the perfect plan for your business. No hidden fees.
+        <div className="text-center mb-16 px-4 relative z-10">
+          <div className="inline-flex items-center gap-2 bg-gradient-to-r from-purple-100 to-purple-50 text-purple-700 px-5 py-2 rounded-full text-sm font-semibold mb-6 shadow-sm">
+            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M10 2a8 8 0 100 16 8 8 0 000-16zm1 12h-2v-2h2v2zm0-4h-2V6h2v4z" />
+            </svg>
+            Flexible Pricing Plans
+          </div>
+          <h2 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent mb-4">
+            Choose Your Perfect Plan
+          </h2>
+          <p className="text-gray-600 text-lg max-w-2xl mx-auto">
+            Start for free, scale with confidence. No hidden fees, cancel anytime.
           </p>
         </div>
 
-        {/* Filters Section */}
-        <div className="flex flex-col md:flex-row justify-center items-center gap-6 mb-12">
-          {/* Business Type Dropdown */}
-          <div className="flex items-center gap-3 bg-white px-5 py-2.5 rounded-full shadow-md border border-gray-200">
-            <div className="flex items-center gap-2">
-              <div className="bg-gradient-to-r from-purple-500 to-purple-600 p-1.5 rounded-full">
-                <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                </svg>
-              </div>
-              <span className="text-sm font-semibold text-gray-700">Business Type:</span>
-            </div>
-            <select
-              value={selectedBusinessType}
-              onChange={(e) => setSelectedBusinessType(e.target.value)}
-              className="px-3 py-1.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm bg-white cursor-pointer"
-              disabled={!isSelectEnabled || allBusinessTypes.length === 0}
-              suppressHydrationWarning
-            >
-              <option value="all">All Business Types</option>
-              {allBusinessTypes.length > 0 ? (
-                allBusinessTypes.map((businessType) => (
-                  <option key={businessType.id} value={businessType.id}>
-                    {businessType.name}
-                  </option>
-                ))
-              ) : (
-                <option value="" disabled>Loading business types...</option>
-              )}
-            </select>
-            {allBusinessTypes.length === 0 && (
-              <span className="text-xs text-red-500">Loading...</span>
-            )}
-          </div>
-        </div>
-
-        {/* Pricing Cards Grid */}
-        {displayPlans.length === 0 && !loading ? (
-          <div className="text-center py-20">
-            <div className="text-6xl mb-4">🔍</div>
-            <h3 className="text-xl font-bold text-gray-800 mb-2">No Plans Found</h3>
-            <p className="text-gray-600">No plans available for this business type. Please try another selection.</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8 mb-16 items-stretch px-4">
-            {displayPlans.map((plan, index) => {
-              const isPopular = plan.popular;
-              const currentPriceData = getCurrentPrice(plan);
-              const originalPriceData = getOriginalPrice(plan);
-             
-
-              return (
-                <div
-                  key={plan.id}
-                  ref={(el) => (cardRefs.current[index] = el)}
-                  className={`bg-white rounded-2xl p-8 shadow-lg relative transition-all duration-500 border flex flex-col  translate-y-10 hover:-translate-y-2 hover:shadow-2xl
-                    ${isPopular 
-                      ? 'border-2 border-purple-500 shadow-purple-100 scale-100 lg:scale-105 z-20 pt-10' 
-                      : 'border-gray-200 hover:border-gray-300 z-10'
-                    }`}
+        {/* Business Type Dropdown */}
+        {showFilters && allBusinessTypes.length > 0 && (
+          <div className="flex justify-center items-center mb-12 px-4 relative z-20">
+            <div className="relative" ref={dropdownRef}>
+              <button
+                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                className="flex items-center justify-between gap-3 bg-white rounded-[40px] px-6 py-3 min-w-[260px] shadow-md border border-gray-200 hover:border-purple-300 transition-all duration-300"
+              >
+                <div className="flex items-center gap-2">
+                  <svg className="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                  </svg>
+                  <span className="text-gray-700 font-medium">{getSelectedBusinessTypeName()}</span>
+                </div>
+                <svg
+                  className={`w-5 h-5 text-gray-400 transition-transform duration-300 ${isDropdownOpen ? 'rotate-180' : ''}`}
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
                 >
-                  {isPopular && (
-                    <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-gradient-to-r from-purple-600 to-purple-500 text-white px-4 py-1 rounded-full text-xs font-bold uppercase tracking-wider shadow-lg whitespace-nowrap">
-                      Most Popular
-                    </div>
-                  )}
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
 
-                  <div className="text-center mb-8 pb-6 border-b border-gray-100">
-                    <h3 className="text-2xl font-bold text-gray-900 mb-3">
-                      {plan.name.charAt(0).toUpperCase() + plan.name.slice(1).toLowerCase()}
-                    </h3>
-
-                    <div className="mb-4">
-                      {(plan.discount > 0 || currentPriceData.hasCustomPrice) && (
-                        <div className="inline-flex items-center gap-2 bg-red-50 px-3 py-1 rounded-full mb-3">
-                          <span className="text-red-600 text-xs font-bold">
-                            {currentPriceData.hasCustomPrice ? `Special Price` : `${plan.discount}% OFF`}
-                          </span>
-                          <span className="text-gray-400 line-through text-sm">
-                            ₹{originalPriceData.displayPrice}
-                          </span>
-                        </div>
-                      )}
-
-                      <div className="flex items-baseline justify-center gap-1">
-                        <span className="text-2xl font-semibold text-gray-500">₹</span>
-                        <span className="text-5xl font-bold" style={{ color: isPopular ? '#8b5cf6' : '#000000' }}>
-                          {currentPriceData.displayPrice}
-                        </span>
-                        <span className="text-gray-400 text-base font-medium">/ {plan.plan_duration} days</span>
-                      </div>
-
-                      {(plan.discount > 0 || currentPriceData.hasCustomPrice) && (
-                        <p className="text-xs text-green-600 mt-1 font-medium">
-                          🎉 You save ₹{(originalPriceData.price - currentPriceData.price).toLocaleString('en-IN')}!
-                        </p>
-                      )}
-                    </div>
-
-                    <p className="text-sm text-gray-600 font-medium">{plan.description}</p>
-                  </div>
-
-                  <div className="flex-1 mb-8">
-                    <h4 className="text-xs font-bold text-gray-500 mb-5 uppercase tracking-wider">included Features :</h4>
-                    <ul className="space-y-3.5">
-                      {plan.features.map((feature, idx) => (
-                        <li key={idx} className="flex items-start gap-3 text-sm text-gray-700">
-                          <svg className="w-5 h-5 shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none">
-                            <path d="M20 6L9 17L4 12" stroke={isPopular ? '#8b5cf6' : '#000000'} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-                          </svg>
-                          <span className="leading-relaxed">{feature}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-
-                  <div className="mt-auto pt-4">
-                    {/* Plan eligibility status indicator */}
-                    {isLoggedIn && planEligibility[plan.id] && (
-                      <div className="mb-3 p-2 rounded-lg text-xs font-medium">
-                        {planEligibility[plan.id].canPurchase ? (
-                          <div className="text-green-600 bg-green-50 px-2 py-1 rounded">
-                            {planEligibility[plan.id].action === 'upgrade' && 'Upgrade Available'}
-                            {planEligibility[plan.id].action === 'renewal' && 'Renewal Available'}
-                            {planEligibility[plan.id].action === 'new_purchase' && 'Available'}
-                          </div>
-                        ) : (
-                          <div className="text-red-600 bg-red-50 px-2 py-1 rounded">
-                            {planEligibility[plan.id].reason}
-                          </div>
-                        )}
-                      </div>
+              {/* Dropdown Menu */}
+              {isDropdownOpen && (
+                <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-[30px] shadow-lg border border-gray-200 overflow-hidden z-20 animate-in fade-in zoom-in-95 duration-200">
+                  <button
+                    onClick={() => {
+                      setSelectedBusinessType("all");
+                      setIsDropdownOpen(false);
+                    }}
+                    className={`w-full px-6 py-3 text-left hover:bg-purple-50 transition-colors duration-200 flex items-center gap-2 ${selectedBusinessType === "all" ? "bg-purple-50 text-purple-700" : "text-gray-700"
+                      }`}
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                    </svg>
+                    All Business Types
+                    {selectedBusinessType === "all" && (
+                      <svg className="w-4 h-4 ml-auto text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
                     )}
+                  </button>
 
+                  {allBusinessTypes.map((businessType) => (
                     <button
-                      onClick={() => handleSubscribe(plan)}
-                      disabled={
-                        subscribing === plan.id || 
-                        (isLoggedIn && planEligibility[plan.id] && !planEligibility[plan.id].canPurchase) ||
-                        checkingEligibility[plan.id]
-                      }
-                      className={`w-full py-3.5 rounded-xl text-base font-semibold transition-all duration-300 hover:shadow-lg active:scale-95
-                        ${isPopular 
-                          ? 'bg-gradient-to-r from-purple-600 to-purple-500 text-white hover:from-purple-700 hover:to-purple-600' 
-                          : 'bg-white border-2 hover:bg-gray-50'
-                        }
-                        ${subscribing === plan.id || checkingEligibility[plan.id] ? 'opacity-50 cursor-not-allowed' : ''}
-                        ${isLoggedIn && planEligibility[plan.id] && !planEligibility[plan.id].canPurchase ? 'opacity-50 cursor-not-allowed bg-gray-100' : ''}
-                      `}
-                      style={{
-                        color: isPopular ? 'white' : '#000000',
-                        borderColor: isPopular ? 'transparent' : '#000000'
+                      key={businessType.id}
+                      onClick={() => {
+                        setSelectedBusinessType(businessType.id.toString());
+                        setIsDropdownOpen(false);
                       }}
+                      className={`w-full px-6 py-3 text-left hover:bg-purple-50 transition-colors duration-200 flex items-center gap-2 ${selectedBusinessType === businessType.id.toString() ? "bg-purple-50 text-purple-700" : "text-gray-700"
+                        }`}
                     >
-                      {subscribing === plan.id ? (
-                        <span className="flex items-center justify-center gap-2">
-                          <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
-                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                          </svg>
-                          Processing...
-                        </span>
-                      ) : checkingEligibility[plan.id] ? (
-                        <span className="flex items-center justify-center gap-2">
-                          <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
-                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                          </svg>
-                          Checking...
-                        </span>
-                      ) : isLoggedIn && planEligibility[plan.id] ? (
-                        planEligibility[plan.id].canPurchase ? (
-                          <span>
-                            {planEligibility[plan.id].action === 'upgrade' && 'Upgrade Plan'}
-                            {planEligibility[plan.id].action === 'renewal' && 'Renew Plan'}
-                            {planEligibility[plan.id].action === 'new_purchase' && 'Select Plan'}
-                          </span>
-                        ) : (
-                          <span className="text-gray-500">You already have this plan</span>
-                        )
-                      ) : (
-                        plan.buttonText
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                      </svg>
+                      {businessType.name}
+                      {selectedBusinessType === businessType.id.toString() && (
+                        <svg className="w-4 h-4 ml-auto text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
                       )}
                     </button>
-                  </div>
+                  ))}
                 </div>
-              );
-            })}
+              )}
+            </div>
           </div>
         )}
 
-        {/* Bottom Section */}
-        <div className="flex flex-col md:flex-row items-center justify-between gap-6 px-4 border-t border-gray-200 pt-12">
-          <div className="hidden lg:block w-[150px]" />
-
-          <div className="flex flex-row items-center gap-3 py-3 px-6 bg-white rounded-full shadow-sm border border-gray-200 hover:shadow-md transition-shadow duration-300">
-            <div className="bg-blue-50 p-2 rounded-full">
-              <svg width="18" height="18" className="text-blue-600" viewBox="0 0 24 24" fill="none">
-                <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="currentColor" strokeWidth="2" />
-                <path d="M12 6V12L16 14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+        {/* Pricing Cards Grid */}
+        {displayPlans.length === 0 && !loading && hasLoadedOnce ? (
+          <div className="text-center py-24 relative z-10">
+            <div className="w-32 h-32 bg-gradient-to-br from-gray-100 to-gray-200 rounded-full flex items-center justify-center mx-auto mb-8 shadow-lg">
+              <svg className="w-16 h-16 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
               </svg>
             </div>
-            <span className="text-sm text-gray-700 font-medium whitespace-nowrap">
-              30-day money-back guarantee • No questions asked
-            </span>
+            <h3 className="text-3xl font-bold text-gray-800 mb-3">No Plans Available</h3>
+            <p className="text-gray-600 text-lg">No plans found for this business type. Please try another selection.</p>
           </div>
+        ) : (
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8 mb-20 px-4 relative z-10">
+              {displayPlans.map((plan, index) => {
+                const isPopular = plan.popular;
+                const currentPriceData = getCurrentPrice(plan);
+                const originalPriceData = getOriginalPrice(plan);
+                const isHovered = hoveredPlan === plan.id;
+                const planAction = getPlanAction(plan);
 
-          {showViewAllButton && (
-            <a
-              href="/pricing"
-              className="group inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl font-semibold text-sm shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300"
-            >
-              <span>View All Plans</span>
-              <svg className="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
-            </a>
-          )}
-        </div>
+                return (
+                  <div
+                    key={plan.id}
+                    ref={(el) => (cardRefs.current[index] = el)}
+                    onMouseEnter={() => setHoveredPlan(plan.id)}
+                    onMouseLeave={() => setHoveredPlan(null)}
+                    className={`relative transition-all duration-500 ${isPopular
+                        ? 'lg:-mt-4 lg:mb-4 z-20'
+                        : 'hover:lg:-translate-y-3'
+                      }`}
+                  >
+                    {/* Floating glow effect */}
+                    <div className={`absolute -inset-2 bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-3xl blur-2xl transition duration-700 ${isHovered ? 'opacity-100' : 'opacity-0'
+                      }`}></div>
+
+                    {/* Main Card */}
+                    <div className={`relative bg-white rounded-3xl overflow-hidden transition-all duration-500 ${isPopular
+                        ? 'shadow-2xl ring-2 ring-purple-500'
+                        : 'shadow-lg hover:shadow-2xl'
+                      } ${isHovered ? 'shadow-2xl' : ''}`}>
+
+                      {/* Modern Popular Banner */}
+                      {isPopular && (
+                        <div className="absolute top-0 inset-x-0 z-10">
+                          <div className="bg-gradient-to-r from-purple-600 via-purple-500 to-pink-500 text-white py-2.5 text-center">
+                            <div className="flex items-center justify-center gap-2 text-sm font-bold uppercase tracking-wider">
+                              <RiVipCrownFill className="w-4 h-4" />
+                              MOST POPULAR CHOICE
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      <div className={`p-8 ${isPopular ? 'pt-16' : 'pt-8'} text-center`}>
+                        {/* Header - Centered */}
+                        <div className="mb-3">
+                          <h3 className="text-2xl font-bold text-gray-900 mb-3">
+                            {plan.name}
+                          </h3>
+                          <p className="text-gray-500 text-sm leading-relaxed max-w-xs mx-auto">
+                            {plan.description}
+                          </p>
+                        </div>
+
+                        {/* Price Section - Centered */}
+                        <div className="mb-6 pb-6 border-b border-gray-100">
+                          <div className="flex items-baseline justify-center gap-1">
+                            <span className="text-3xl font-bold text-gray-900">₹</span>
+                            <span className={`text-5xl font-black tracking-tight ${isPopular ? 'bg-gradient-to-r from-purple-600 to-pink-500 bg-clip-text text-transparent' : 'text-gray-900'
+                              }`}>
+                              {currentPriceData.displayPrice}
+                            </span>
+                            <span className="text-gray-500 font-medium">/ month</span>
+                          </div>
+
+                          {/* Savings Badge - Centered */}
+                          {plan.discount > 0 && !currentPriceData.hasCustomPrice && (
+                            <div className="mt-4 inline-flex items-center gap-2 bg-gradient-to-r from-green-50 to-emerald-50 px-3 py-1.5 rounded-full mx-auto">
+                              <span className="text-sm text-gray-400 line-through">
+                                ₹{originalPriceData.displayPrice}
+                              </span>
+                              <span className="text-xs font-bold text-green-700">
+                                Save ₹{(originalPriceData.price - currentPriceData.price).toLocaleString('en-IN')}
+                              </span>
+                            </div>
+                          )}
+
+                          {/* Special Pricing - Centered */}
+                          {currentPriceData.hasCustomPrice && (
+                            <div className="mt-4 flex justify-center">
+                              <div className="inline-flex items-center gap-2 bg-gradient-to-r from-purple-50 to-pink-50 px-4 py-2 rounded-full">
+                                <div className="relative">
+                                  <div className="absolute inset-0 bg-purple-500 rounded-full blur-sm opacity-50"></div>
+                                  <FaTags className="w-4 h-4 text-purple-600 relative" />
+                                </div>
+                                <span className="text-xs font-semibold text-purple-700">Special Pricing Available</span>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Features Section - Centered */}
+                        <div className="mb-8">
+                          <div className="flex items-center justify-between mb-4">
+                            <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider flex items-center gap-1">
+                              <FaLayerGroup className="w-3 h-3" />
+                              What's Included
+                            </h4>
+                            <span className="text-xs text-gray-400">{plan.features.length} features</span>
+                          </div>
+
+                          <div className="space-y-3 text-left max-w-sm mx-auto">
+                            {plan.features.slice(0, 5).map((feature, idx) => (
+                              <div key={idx} className="flex items-start gap-3 group/item">
+                                <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 mt-0.5 transition-all duration-300 ${isPopular
+                                    ? 'bg-purple-100 group-hover/item:bg-purple-200'
+                                    : 'bg-green-100 group-hover/item:bg-green-200'
+                                  }`}>
+                                  <FaCheck className={`w-3 h-3 ${isPopular ? 'text-purple-600' : 'text-green-600'}`} />
+                                </div>
+                                <span className="text-sm text-gray-700 group-hover/item:text-gray-900 transition-colors">
+                                  {feature}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+
+                          {plan.features.length > 5 && (
+                            <button className="mt-3 text-xs font-medium text-purple-600 hover:text-purple-700 flex items-center justify-center gap-1 mx-auto transition-colors">
+                              <FaInfoCircle className="w-3 h-3" />
+                              +{plan.features.length - 5} more features
+                            </button>
+                          )}
+                        </div>
+
+                        {/* Eligibility Status - Modern Design - Centered */}
+                        {isLoggedIn && planEligibility[plan.id] && (
+                          <div className="mb-6">
+                            <div className={`p-3 rounded-xl inline-block w-full ${planEligibility[plan.id].canPurchase
+                                ? 'bg-gradient-to-r from-green-50 to-emerald-50 border-l-4 border-green-500'
+                                : 'bg-gray-50 border-l-4 border-gray-300'
+                              }`}>
+                              <div className="flex items-center justify-center gap-2 text-sm font-medium">
+                                {planEligibility[plan.id].canPurchase ? (
+                                  <>
+                                    <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+                                    <span className="text-green-700">
+                                      {planEligibility[plan.id].action === 'upgrade' && ' Ready to Upgrade'}
+                                      {planEligibility[plan.id].action === 'renewal' && ' Eligible for Renewal'}
+                                      {planEligibility[plan.id].action === 'new_purchase' && ' Available Now'}
+                                    </span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <FaSpinner className="w-4 h-4 text-gray-400" />
+                                    <span className="text-gray-500 text-xs">{planEligibility[plan.id].reason}</span>
+                                  </>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* CTA Button - Modern Design */}
+                        <button
+                          onClick={() => handleSubscribe(plan)}
+                          disabled={
+                            subscribing === plan.id ||
+                            (isLoggedIn && planEligibility[plan.id] && !planEligibility[plan.id].canPurchase) ||
+                            checkingEligibility[plan.id] ||
+                            (isLoggedIn && planAction.isSame) ||
+                            (isLoggedIn && planAction.isDowngrade)
+                          }
+                          className={`relative w-full py-4 rounded-xl font-bold transition-all duration-300 overflow-hidden group
+                ${isPopular
+                              ? 'bg-gradient-to-r from-purple-600 via-purple-500 to-pink-500 text-white shadow-lg hover:shadow-xl'
+                              : planAction.isUpgrade
+                                ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white shadow-lg hover:shadow-xl'
+                                : planAction.isDowngrade
+                                  ? 'bg-gray-400 text-white shadow-lg hover:shadow-xl hover:bg-gray-500'
+                                  : 'bg-gray-900 text-white hover:bg-gray-800 shadow-md'
+                            }
+                ${(subscribing === plan.id || checkingEligibility[plan.id] || (isLoggedIn && planEligibility[plan.id] && !planEligibility[plan.id].canPurchase) || (isLoggedIn && planAction.isSame))
+                              ? 'opacity-60 cursor-not-allowed'
+                              : 'hover:scale-105 active:scale-95'
+                            }
+              `}>
+                          {/* Animated shine effect */}
+                          <div className={`absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-700 ${isPopular
+                              ? 'bg-gradient-to-r from-transparent via-white/20 to-transparent'
+                              : 'bg-gradient-to-r from-transparent via-gray-400/10 to-transparent'
+                            }`}></div>
+
+                          <span className="relative flex items-center justify-center gap-2">
+                            {subscribing === plan.id ? (
+                              <>
+                                <FaSpinner className="animate-spin h-5 w-5" />
+                                Processing...
+                              </>
+                            ) : checkingEligibility[plan.id] ? (
+                              <>
+                                <FaSpinner className="animate-spin h-5 w-5" />
+                                Checking...
+                              </>
+                            ) : isLoggedIn && planEligibility[plan.id] ? (
+                              planEligibility[plan.id].canPurchase ? (
+                                <>
+                                  {planAction.isUpgrade && '🚀 Upgrade Now'}
+                                  {planAction.isDowngrade && '� Downgrade Now'}
+                                  {planEligibility[plan.id].action === 'renewal' && '🔄 Renew Now'}
+                                  {planEligibility[plan.id].action === 'new_purchase' && '✨ Get Started'}
+                                  <FaArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                                </>
+                              ) : (
+                                planAction.isSame ? '🔒 Current Plan' : '🔒 Currently Unavailable'
+                              )
+                            ) : (
+                              <>
+                                🎉 Start Free Trial
+                                <FaArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                              </>
+                            )}
+                          </span>
+                        </button>
+
+                        {/* Trust Badge for popular plan - Centered */}
+                        {isPopular && (
+                          <div className="mt-4 text-center">
+                            <p className="text-xs text-gray-400 flex items-center justify-center gap-1">
+                              <FaLock className="w-3 h-3" />
+                              Secure payment • Cancel anytime
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+
+
+            {/* View All Button */}
+            {showViewAllButton && (
+              <div className="text-center relative z-10">
+                <a
+                  href="/pricing"
+                  className="group inline-flex items-center gap-3 px-8 py-3.5 bg-white text-purple-600 rounded-xl font-semibold shadow-lg hover:shadow-xl border-2 border-purple-200 hover:border-purple-400 transition-all duration-300 hover:-translate-y-0.5"
+                >
+                  <span>View All Plans</span>
+                  <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                  </svg>
+                </a>
+              </div>
+            )}
+          </>
+        )}
       </Container>
 
       <LoginModal />
 
-      
+      <style jsx>{`
+        @keyframes blob {
+          0% { transform: translate(0px, 0px) scale(1); }
+          33% { transform: translate(30px, -50px) scale(1.1); }
+          66% { transform: translate(-20px, 20px) scale(0.9); }
+          100% { transform: translate(0px, 0px) scale(1); }
+        }
+        .animate-blob {
+          animation: blob 7s infinite;
+        }
+        .animation-delay-2000 {
+          animation-delay: 2s;
+        }
+        @keyframes fade-in {
+          from {
+            opacity: 0;
+          }
+          to {
+            opacity: 1;
+          }
+        }
+        @keyframes zoom-in-95 {
+          from {
+            opacity: 0;
+            transform: scale(0.95);
+          }
+          to {
+            opacity: 1;
+            transform: scale(1);
+          }
+        }
+        .animate-in {
+          animation-duration: 0.2s;
+          animation-fill-mode: both;
+        }
+        .fade-in {
+          animation-name: fade-in;
+        }
+        .zoom-in-95 {
+          animation-name: zoom-in-95;
+        }
+      `}</style>
     </div>
   );
 };

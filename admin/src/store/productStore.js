@@ -27,7 +27,7 @@ export const useProductStore = create((set, get) => ({
   products: [],
   totalProducts: 0,
   currentPage: 1,
-  pageSize: 10,
+  pageSize: 15,
   loading: false,
   filters: {
     search: '',
@@ -334,6 +334,33 @@ export const useProductStore = create((set, get) => ({
         loading: false,
         error: error.message || 'Failed to fetch products'
       })
+    }
+  },
+
+  // Bulk soft delete products
+  bulkDeleteProducts: async (ids) => {
+    set({ loading: true })
+    try {
+      const response = await productsAPI.bulkDelete(ids)
+      console.log('Products bulk deleted successfully:', response)
+      
+      // Get current state
+      const currentState = get()
+      
+      // Update local state immediately for better UX
+      set({
+        products: currentState.products.filter(p => !ids.includes(p.id)),
+        totalProducts: Math.max(0, (currentState.products?.length || 0) - ids.length),
+        loading: false,
+      })
+      
+      toast.success(`${ids.length} products deleted successfully`)
+      return { success: true, data: response.data }
+    } catch (error) {
+      console.error('Failed to bulk delete products:', error)
+      toast.error('Failed to bulk delete products')
+      set({ loading: false })
+      return { success: false, error: error.response?.data }
     }
   },
 

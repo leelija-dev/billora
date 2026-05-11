@@ -49,7 +49,7 @@ class ProductsController extends Controller
                     ->orWhere('unit_id', 'like', '%' . $request->search . '%')
                     ->orWhere('unit_amount', 'like', '%' . $request->search . '%')
                     ->orderBy('id', 'desc')
-                    ->paginate(10);
+                    ->paginate(15);
             }
             return response()->json([
                 'status' => true,
@@ -746,8 +746,10 @@ class ProductsController extends Controller
             ]);
         }
     }
-    public function bulkDelete($ids)
-    {     //bulk soft delete products
+    public function bulkDelete(Request $request){     //bulk soft delete products
+            $ids=$request->validate([
+                'ids'=>'required'
+            ]);
         try {
             if (!Auth::check()) {
                 return response()->json([
@@ -763,13 +765,13 @@ class ProductsController extends Controller
                     'message' => 'You do not have any active plan. Please upgrade your plan.'
                 ]);
             }
-            foreach ($ids as $id) {
-                $product = Products::where('user_id', $user)->where('id', $id)->first();
-                $product->delete();
-                $stocksProduct = Stocks::where('user_id', $user)->where('product_id', $product->id)->first();
-                if ($stocksProduct) {
-                    $stocksProduct->delete();
-                }
+            foreach($ids['ids'] as $id){
+            $product = Products::where('user_id', $user)->where('id', $id)->first();
+            $product->delete();
+            $stocksProduct = Stocks::where('user_id',$user)->where('product_id', $product->id)->first();
+            if($stocksProduct){
+                $stocksProduct->delete();
+            }
             }
             return response()->json([
                 'status' => true,
@@ -801,7 +803,7 @@ class ProductsController extends Controller
                     'message' => 'You do not have any active plan. Please upgrade your plan.'
                 ]);
             }
-            $product = Products::withTrashed()->where('user_id', $user)->where('id', $id)->first();
+            $product = Products::withTrashed()->where('user_id', $user)->where('id', $id)->firstOrFail();
             $product->restore();
             // check permission 
             if ($product) {
@@ -900,8 +902,11 @@ class ProductsController extends Controller
             ]);
         }
     }
-    public function bulkForceDelete($ids)  //bulk permanently delete products
+    public function bulkForceDelete(Request $request)  //bulk permanently delete products
     {
+        $ids=$request->validate([
+            'ids'=>'required'
+        ]);
         try {
             if (!Auth::check()) {
                 return response()->json([
@@ -918,33 +923,19 @@ class ProductsController extends Controller
                     'message' => 'You do not have any active plan. Please upgrade your plan.'
                 ]);
             }
-            foreach ($ids as $id) {
-                $product = Products::withTrashed()->where('user_id', $user)->where('id', $id)->first();
-                if ($product) {
-                    if ($product->image) {
-                        // $fileId = $this->getFileIdFromUrl($product->image);
-                        // if ($fileId) {
-                        //     $this->deleteFromDrive($fileId);
-                        // }
-                        $this->deleteFromCloudinary(
-                            $product->image_public_id
-                        );
+            foreach($ids['ids'] as $id){
+            $product = Products::withTrashed()->where('user_id', $user)->where('id', $id)->first();
+            if ($product) {
+                if ($product->image) {
+                    $fileId = $this->getFileIdFromUrl($product->image);
+                    if ($fileId) {
+                        $this->deleteFromDrive($fileId);
                     }
-                    if ($product->qr_code) {
-                        // $fileId = $this->getFileIdFromUrl($product->qr_code);
-                        // if ($fileId) {
-                        // $this->deleteFromDrive($fileId);
-                        $this->deleteFromCloudinary(
-                            $product->image_public_id
-                        );
-
-                        $this->deleteFromCloudinary(
-                            $product->qr_public_id
-                        );
-
-                        $this->deleteFromCloudinary(
-                            $product->barcode_public_id
-                        );
+                }
+                if ($product->qr_code) {
+                    $fileId = $this->getFileIdFromUrl($product->qr_code);
+                    if ($fileId) {
+                        $this->deleteFromDrive($fileId);
                     }
                     // }
                 }
