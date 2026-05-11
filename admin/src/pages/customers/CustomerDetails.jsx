@@ -432,17 +432,7 @@ const CustomerDetails = () => {
           className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6"
         >
           <div className="flex items-center space-x-3">
-            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-              <Button
-                variant="outline"
-                onClick={() => navigate('/customers')}
-                icon={FiArrowLeft}
-                size="sm"
-                className="shadow-md"
-              >
-                Back
-              </Button>
-            </motion.div>
+            
             <div>
               <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-gray-300 bg-clip-text text-transparent">
                 Customer Details
@@ -482,6 +472,17 @@ const CustomerDetails = () => {
                 size="sm"
               >
                 Delete
+              </Button>
+            </motion.div>
+            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+              <Button
+                variant="outline"
+                onClick={() => navigate('/customers')}
+                icon={FiArrowLeft}
+                size="sm"
+                className="shadow-md"
+              >
+                Back
               </Button>
             </motion.div>
           </div>
