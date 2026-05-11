@@ -29,11 +29,11 @@ export const productsAPI = {
   },
 
   // Get deleted products (soft deleted)
-  getDeleted: async (search = '') => {
+  getDeleted: async (userId = null, search = '') => {
     try {
-      const params = search ? { search, deleted: 'true' } : { deleted: 'true' };
+      const params = search ? { search } : {};
       console.log('📦 Fetching deleted products with params:', params);
-      const response = await apiClient.get('/products', { params });
+      const response = await apiClient.get(`/products/deleted-products/${userId}`, { params });
       console.log('📦 Deleted products fetched successfully:', response.data);
       return response;
     } catch (error) {
@@ -353,6 +353,32 @@ export const productsAPI = {
       return response;
     } catch (error) {
       console.error(`❌ Failed to permanently delete product ${id}:`, error);
+      throw error.response?.data || error.message;
+    }
+  },
+
+  // Bulk soft delete products
+  bulkDelete: async (ids) => {
+    try {
+      console.log(`📦 Bulk deleting products with IDs:`, ids);
+      const response = await apiClient.delete('/products/bulk-delete', { data: { ids } });
+      console.log('📦 Products bulk deleted successfully');
+      return response;
+    } catch (error) {
+      console.error('❌ Failed to bulk delete products:', error);
+      throw error.response?.data || error.message;
+    }
+  },
+
+  // Bulk permanently delete products
+  bulkForceDelete: async (ids) => {
+    try {
+      console.log(`📦 Bulk permanently deleting products with IDs:`, ids);
+      const response = await apiClient.delete(`/products/bulk-force-delete`, { data: { ids } });
+      console.log('📦 Products bulk permanently deleted');
+      return response;
+    } catch (error) {
+      console.error('❌ Failed to bulk permanently delete products:', error);
       throw error.response?.data || error.message;
     }
   },

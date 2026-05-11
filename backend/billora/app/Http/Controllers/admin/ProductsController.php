@@ -780,7 +780,10 @@ class ProductsController extends Controller
             ]);
         }
     }
-    public function bulkDelete($ids){     //bulk soft delete products
+    public function bulkDelete(Request $request){     //bulk soft delete products
+            $ids=$request->validate([
+                'ids'=>'required'
+            ]);
         try {
             if (!Auth::check()) {
                 return response()->json([
@@ -796,7 +799,7 @@ class ProductsController extends Controller
                     'message' => 'You do not have any active plan. Please upgrade your plan.'
                 ]);
             }
-            foreach($ids as $id){
+            foreach($ids['ids'] as $id){
             $product = Products::where('user_id', $user)->where('id', $id)->first();
             $product->delete();
             $stocksProduct = Stocks::where('user_id',$user)->where('product_id', $product->id)->first();
@@ -835,7 +838,7 @@ class ProductsController extends Controller
                     'message' => 'You do not have any active plan. Please upgrade your plan.'
                 ]);
             }
-            $product = Products::withTrashed()->where('user_id', $user)->where('id', $id)->get();
+            $product = Products::withTrashed()->where('user_id', $user)->where('id', $id)->firstOrFail();
             $product->restore();
             // check permission 
              if($product){
@@ -922,8 +925,11 @@ class ProductsController extends Controller
             ]);
         }
     }
-    public function bulkForceDelete($ids)  //bulk permanently delete products
+    public function bulkForceDelete(Request $request)  //bulk permanently delete products
     {
+        $ids=$request->validate([
+            'ids'=>'required'
+        ]);
         try {
             if (!Auth::check()) {
                 return response()->json([
@@ -940,7 +946,7 @@ class ProductsController extends Controller
                     'message' => 'You do not have any active plan. Please upgrade your plan.'
                 ]);
             }
-            foreach($ids as $id){
+            foreach($ids['ids'] as $id){
             $product = Products::withTrashed()->where('user_id', $user)->where('id', $id)->first();
             if ($product) {
                 if ($product->image) {

@@ -19,21 +19,23 @@ export const useDeletedProductStore = create((set, get) => ({
     last_page_url: null,
   },
 
-  fetchDeletedProducts: async (page = 1, search = '') => {
+  fetchDeletedProducts: async (userId, search = '') => {
+    if (!userId) return
+    
     set({ loading: true })
     try {
-      const response = await productsAPI.getDeleted(search)
+      const response = await productsAPI.getDeleted(userId, search)
       
       console.log(' Deleted Product Store - Raw API Response:', response)
       
       // Handle your API's response structure
       const apiData = response.data
-      let deletedProducts = apiData.data?.data || []
-      const paginationData = apiData.data || {}
+      let deletedProducts = apiData.products || []
+      const paginationData = apiData || {}
       
       // Extract pagination data from API response
       const pagination = {
-        current_page: paginationData.current_page || page,
+        current_page: paginationData.current_page || 1,
         last_page: paginationData.last_page || 1,
         per_page: paginationData.per_page || 15,
         total: paginationData.total || deletedProducts.length,
@@ -79,8 +81,8 @@ export const useDeletedProductStore = create((set, get) => ({
       
       // Handle your API's response structure
       const apiData = response.data
-      let deletedProducts = apiData.data?.data || []
-      const paginationData = apiData.data || {}
+      let deletedProducts = apiData.products || []
+      const paginationData = apiData || {}
       
       // Extract pagination data from API response
       const pagination = {
@@ -166,6 +168,33 @@ export const useDeletedProductStore = create((set, get) => ({
     } catch (error) {
       console.error('Failed to permanently delete product:', error)
       toast.error('Failed to permanently delete product')
+      set({ loading: false })
+      return { success: false, error: error.response?.data }
+    }
+  },
+
+  // Bulk permanently delete products
+  bulkForceDeleteProducts: async (ids) => {
+    set({ loading: true })
+    try {
+      const response = await productsAPI.bulkForceDelete(ids)
+      console.log('Products bulk permanently deleted successfully:', response)
+      
+      // Get current state
+      const currentState = get()
+      
+      // Update local state immediately for better UX
+      set({
+        deletedProducts: currentState.deletedProducts.filter(p => !ids.includes(p.id)),
+        totalDeletedProducts: Math.max(0, (currentState.deletedProducts?.length || 0) - ids.length),
+        loading: false,
+      })
+      
+      toast.success(`${ids.length} products permanently deleted`)
+      return { success: true, data: response.data }
+    } catch (error) {
+      console.error('Failed to bulk permanently delete products:', error)
+      toast.error('Failed to bulk permanently delete products')
       set({ loading: false })
       return { success: false, error: error.response?.data }
     }

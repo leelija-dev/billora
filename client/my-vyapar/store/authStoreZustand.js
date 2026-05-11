@@ -19,14 +19,14 @@ export const useAuthStore = create(
         set({ isLoading: true });
         try {
           const response = await checkSession();
-          
+
           if (response.status === true && response.user) {
             set({
               user: response.user,
               isLoggedIn: true,
               isLoading: false,
             });
-            
+
             localStorage.setItem('user', JSON.stringify(response.user));
             return true;
           } else {
@@ -42,124 +42,126 @@ export const useAuthStore = create(
       },
 
       login: (userData, token) => {
-  console.log('📝 Store login called with user:', userData?.email);
-  console.log('📝 Token received:', token?.substring(0, 20) + '...');
-  
-  if (!userData || !token) {
-    console.error('❌ Store login: Missing userData or token');
-    return { success: false, error: 'Missing user data or token' };
-  }
-  
-  set({
-    user: userData,
-    isLoggedIn: true,
-    isLoading: false,
-    error: null,
-  });
-  
-  localStorage.setItem('user', JSON.stringify(userData));
-  if (token) localStorage.setItem('auth_token', token);
-  
-  // ✅ Broadcast to other tabs when Next.js logs in
-  console.log('📢🔵 NEXT.js: Preparing to broadcast LOGIN...');
-  console.log('📢🔵 NEXT.js: TAB_ID:', TAB_ID);
-  console.log('📢🔵 NEXT.js: User data:', userData);
-  console.log('📢🔵 NEXT.js: Token length:', token?.length || 0);
-  
-  try {
-    const channel = new BroadcastChannel('auth_channel');
-    const broadcastMessage = {
-      type: 'LOGIN',
-      user: userData,
-      token: token,
-      sourceTabId: TAB_ID,
-      timestamp: Date.now()
-    };
-    
-    console.log('📢🔵 NEXT.js: Broadcasting message:', {
-      type: broadcastMessage.type,
-      userEmail: userData?.email,
-      tokenPreview: token?.substring(0, 30) + '...',
-      sourceTabId: TAB_ID,
-      timestamp: broadcastMessage.timestamp
-    });
-    
-    // Verify channel is supported
-    if (channel.postMessage) {
-      channel.postMessage(broadcastMessage);
-      console.log('📢🔵 NEXT.js: Broadcast sent successfully!');
-    } else {
-      console.error('📢🔵 NEXT.js: BroadcastChannel not supported!');
-    }
-    
-    setTimeout(() => {
-      channel.close();
-      console.log('📢🔵 NEXT.js: Broadcast channel closed');
-    }, 100);
-    
-  } catch (error) {
-    console.error('📢🔵 NEXT.js: Broadcast error:', error);
-  }
-  
-  // ✅ Also emit localStorage event for cross-origin sync
-  try {
-    console.log('📢🔵 NEXT.js: Emitting localStorage event...');
-    const syncEvent = {
-      type: 'LOGIN',
-      user: userData,
-      token: token,
-      sourceTabId: TAB_ID,
-      timestamp: Date.now(),
-      origin: 'nextjs'
-    };
-    
-    console.log('📢🔵 NEXT.js: Sync event data:', syncEvent);
-    console.log('📢🔵 NEXT.js: Current domain:', window.location.hostname);
-    console.log('📢🔵 NEXT.js: Setting auth_sync_event...');
-    
-    localStorage.setItem('auth_sync_event', JSON.stringify(syncEvent));
-    console.log('📢🔵 NEXT.js: auth_sync_event set in localStorage');
-    
-    // Trigger storage event by removing and setting again
-    setTimeout(() => {
-      console.log('📢🔵 NEXT.js: Triggering storage event...');
-      localStorage.removeItem('auth_sync_event');
-      console.log('📢🔵 NEXT.js: auth_sync_event removed - should trigger event');
-    }, 100);
-    
-    console.log('📢🔵 NEXT.js: localStorage event emitted!');
-  } catch (error) {
-    console.error('📢🔵 NEXT.js: localStorage event error:', error);
-  }
-  
-  window.dispatchEvent(new Event("userLoggedIn"));
-  
-  console.log('✅ Store login successful');
-  return { success: true };
-},
+        console.log('📝 Store login called with user:', userData?.email);
+        console.log('📝 Token received:', token?.substring(0, 20) + '...');
+
+        if (!userData || !token) {
+          console.error('❌ Store login: Missing userData or token');
+          return { success: false, error: 'Missing user data or token' };
+        }
+
+        // Note: For login, we assume success since tokens are only provided on successful login
+        // Error handling for login is done at the API/service level
+        set({
+          user: userData,
+          isLoggedIn: true,
+          isLoading: false,
+          error: null,
+        });
+
+        localStorage.setItem('user', JSON.stringify(userData));
+        if (token) localStorage.setItem('auth_token', token);
+
+        // ✅ Broadcast to other tabs when Next.js logs in
+        console.log('📢🔵 NEXT.js: Preparing to broadcast LOGIN...');
+        console.log('📢🔵 NEXT.js: TAB_ID:', TAB_ID);
+        console.log('📢🔵 NEXT.js: User data:', userData);
+        console.log('📢🔵 NEXT.js: Token length:', token?.length || 0);
+
+        try {
+          const channel = new BroadcastChannel('auth_channel');
+          const broadcastMessage = {
+            type: 'LOGIN',
+            user: userData,
+            token: token,
+            sourceTabId: TAB_ID,
+            timestamp: Date.now()
+          };
+
+          console.log('📢🔵 NEXT.js: Broadcasting message:', {
+            type: broadcastMessage.type,
+            userEmail: userData?.email,
+            tokenPreview: token?.substring(0, 30) + '...',
+            sourceTabId: TAB_ID,
+            timestamp: broadcastMessage.timestamp
+          });
+
+          // Verify channel is supported
+          if (channel.postMessage) {
+            channel.postMessage(broadcastMessage);
+            console.log('📢🔵 NEXT.js: Broadcast sent successfully!');
+          } else {
+            console.error('📢🔵 NEXT.js: BroadcastChannel not supported!');
+          }
+
+          setTimeout(() => {
+            channel.close();
+            console.log('📢🔵 NEXT.js: Broadcast channel closed');
+          }, 100);
+
+        } catch (error) {
+          console.error('📢🔵 NEXT.js: Broadcast error:', error);
+        }
+
+        // ✅ Also emit localStorage event for cross-origin sync
+        try {
+          console.log('📢🔵 NEXT.js: Emitting localStorage event...');
+          const syncEvent = {
+            type: 'LOGIN',
+            user: userData,
+            token: token,
+            sourceTabId: TAB_ID,
+            timestamp: Date.now(),
+            origin: 'nextjs'
+          };
+
+          console.log('📢🔵 NEXT.js: Sync event data:', syncEvent);
+          console.log('📢🔵 NEXT.js: Current domain:', window.location.hostname);
+          console.log('📢🔵 NEXT.js: Setting auth_sync_event...');
+
+          localStorage.setItem('auth_sync_event', JSON.stringify(syncEvent));
+          console.log('📢🔵 NEXT.js: auth_sync_event set in localStorage');
+
+          // Trigger storage event by removing and setting again
+          setTimeout(() => {
+            console.log('📢🔵 NEXT.js: Triggering storage event...');
+            localStorage.removeItem('auth_sync_event');
+            console.log('📢🔵 NEXT.js: auth_sync_event removed - should trigger event');
+          }, 100);
+
+          console.log('📢🔵 NEXT.js: localStorage event emitted!');
+        } catch (error) {
+          console.error('📢🔵 NEXT.js: localStorage event error:', error);
+        }
+
+        window.dispatchEvent(new Event("userLoggedIn"));
+
+        console.log('✅ Store login successful');
+        return { success: true };
+      },
 
       register: async (userData) => {
         console.log('📝 Store register called with user:', userData?.email);
         set({ isLoading: true, error: null });
-        
+
         try {
           const response = await registerUser(userData);
           console.log('📦 Store register response:', response);
-          
-          if (response?.data?.user || response?.status === true) {
-            const userData = response.data?.user || response.data;
-            const token = response.data?.token;
-            
+
+          if (response?.status === true && response?.data?.user) {
+            const userData = response.data.user;
+            const token = response.data.token;
+
             set({
               user: userData,
               isLoggedIn: true,
               isLoading: false,
               error: null,
             });
-            
+
             localStorage.setItem('user', JSON.stringify(userData));
             if (token) localStorage.setItem('auth_token', token);
-            
+
             // ✅ Broadcast to other tabs on register
             const channel = new BroadcastChannel('auth_channel');
             channel.postMessage({
@@ -169,13 +171,21 @@ export const useAuthStore = create(
               sourceTabId: TAB_ID
             });
             setTimeout(() => channel.close(), 100);
-            
+
             window.dispatchEvent(new Event("userLoggedIn"));
-            
+
             console.log('✅ Store register successful');
             return { success: true, user: userData };
           } else {
-            throw new Error(response?.data?.message || response?.message || 'Registration failed');
+            const errorMessage = response?.data?.message || response?.message || 'Registration failed';
+            console.log('❌ Store register error:', errorMessage);
+            set({
+              user: null,
+              isLoggedIn: false,
+              isLoading: false,
+              error: errorMessage,
+            });
+            return { success: false, error: errorMessage };
           }
         } catch (error) {
           console.error('❌ Store register error:', error);
@@ -186,50 +196,50 @@ export const useAuthStore = create(
           return { success: false, error: error.message };
         }
       },
-logout: async () => {
-  try {
+      logout: async () => {
+        try {
 
-    // API logout
-    await logoutUser();
+          // API logout
+          await logoutUser();
 
-  } catch (error) {
-    console.error("Logout API error:", error);
-  }
+        } catch (error) {
+          console.error("Logout API error:", error);
+        }
 
-  // Broadcast logout to other tabs/apps
-  try {
-    const channel = new BroadcastChannel('auth_channel');
+        // Broadcast logout to other tabs/apps
+        try {
+          const channel = new BroadcastChannel('auth_channel');
 
-    channel.postMessage({
-      type: 'LOGOUT',
-      sourceTabId: TAB_ID,
-      timestamp: Date.now()
-    });
+          channel.postMessage({
+            type: 'LOGOUT',
+            sourceTabId: TAB_ID,
+            timestamp: Date.now()
+          });
 
-    setTimeout(() => channel.close(), 100);
+          setTimeout(() => channel.close(), 100);
 
-  } catch (error) {
-    console.error("Broadcast logout error:", error);
-  }
+        } catch (error) {
+          console.error("Broadcast logout error:", error);
+        }
 
-  // Clear storage
-  localStorage.removeItem("token");
-  localStorage.removeItem("auth_token");
-  localStorage.removeItem("auth-storage");
-  localStorage.removeItem("user");
+        // Clear storage
+        localStorage.removeItem("token");
+        localStorage.removeItem("auth_token");
+        localStorage.removeItem("auth-storage");
+        localStorage.removeItem("user");
 
-  sessionStorage.clear();
+        sessionStorage.clear();
 
-  // Clear Zustand state
-  set({
-    user: null,
-    token: null,
-    isLoggedIn: false,
-    company: null
-  });
+        // Clear Zustand state
+        set({
+          user: null,
+          token: null,
+          isLoggedIn: false,
+          company: null
+        });
 
-  window.dispatchEvent(new Event("userLoggedOut"));
-},
+        window.dispatchEvent(new Event("userLoggedOut"));
+      },
 
       updateUser: (userData) => {
         set({ user: { ...get().user, ...userData } });
@@ -245,35 +255,35 @@ logout: async () => {
 
       checkPlanPurchaseEligibility: async (planId) => {
         const { user, isLoggedIn } = get();
-        
+
         console.log('🔍 Checking plan purchase eligibility for plan:', planId);
-        
+
         if (!isLoggedIn || !user) {
           return { canPurchase: true, reason: 'User not logged in', action: 'login_required' };
         }
 
         try {
           const currentPlanId = user.plan_id;
-          
+
           if (!currentPlanId) {
             return { canPurchase: true, reason: 'No active plan', action: 'new_purchase' };
           }
-          
+
           if (currentPlanId === planId) {
-            return { 
-              canPurchase: false, 
+            return {
+              canPurchase: false,
               reason: 'You already have this active plan',
               action: 'cannot_purchase'
             };
           }
-          
-          return { 
-            canPurchase: true, 
-            reason: 'Can upgrade plan', 
+
+          return {
+            canPurchase: true,
+            reason: 'Can upgrade plan',
             action: 'upgrade',
             currentPlanId: currentPlanId
           };
-          
+
         } catch (error) {
           console.error('Error checking plan eligibility:', error);
           return { canPurchase: false, reason: 'Error checking eligibility' };
@@ -301,35 +311,35 @@ logout: async () => {
 // ✅ FIX: Cross-tab synchronization - DIRECTLY UPDATE STATE (NO API CALL)
 if (typeof window !== 'undefined') {
   const channel = new BroadcastChannel('auth_channel');
-  
+
   channel.onmessage = (event) => {
     // ✅ Ignore messages from the same tab
     if (event.data.sourceTabId === TAB_ID) {
       console.log('📢 Ignoring self-broadcast message');
       return;
     }
-    
+
     console.log('📢 Received message from another tab:', event.data.type);
-    
+
     if (event.data.type === 'LOGIN') {
       const { user, token } = event.data;
-      
+
       console.log('✅ Login detected from another tab/app');
       console.log('👤 User:', user?.email);
       console.log('🔑 Token received:', token?.substring(0, 20) + '...');
-      
+
       if (token && user) {
         // ✅ Store the token in localStorage
         localStorage.setItem('auth_token', token);
         localStorage.setItem('user', JSON.stringify(user));
-        
+
         // ✅ DIRECTLY update Zustand store (NO API CALL!)
         useAuthStore.setState({
           user: user,
           isLoggedIn: true,
           isLoading: false,
         });
-        
+
         // ✅ Show notification
         toast.success(`Logged in as ${user?.email} from React app!`);
       } else {
@@ -343,7 +353,7 @@ if (typeof window !== 'undefined') {
       toast.success('Logged out from another app');
     }
   };
-  
+
   // Keep channel open
   window.addEventListener('beforeunload', () => {
     channel.close();

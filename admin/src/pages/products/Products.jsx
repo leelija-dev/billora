@@ -72,9 +72,10 @@ const Products = () => {
     fetchProducts,
     fetchProductsByUrl,
     deleteProduct,
-    setFilters,
+    bulkDeleteProducts,
     createProduct,
     updateProduct,
+    setFilters,
   } = useProductStore()
 
   // Refs to track initialization
@@ -155,7 +156,7 @@ const Products = () => {
         setStocksLoading(false)
       }
     }
-    fetchData()
+    fetchData() 
   }, [])
 
   useEffect(() => {
@@ -412,11 +413,15 @@ const Products = () => {
   }
 
   const handleBulkDelete = async () => {
-    if (window.confirm(`Are you sure you want to delete ${selectedProducts.length} products?`)) {
-      // Implement bulk delete
-      setSelectedProducts([])
-      setShowDeleteConfirm(false)
-    }
+    
+      try {
+        await bulkDeleteProducts(selectedProducts)
+        setSelectedProducts([])
+        setShowDeleteConfirm(false)
+      } catch (error) {
+        console.error('Error bulk deleting products:', error)
+      }
+
   }
 
   const handlePageChange = (url) => {
@@ -432,6 +437,18 @@ const Products = () => {
     setRefreshing(true)
     // Clear stock cache to force fresh data
     stockCache.delete('all')
+    
+    // Clear product store cache to force fresh data
+    const { clearCache } = useProductStore.getState()
+    clearCache()
+    
+    // Reset last fetch time to bypass duplicate request prevention
+    const currentState = useProductStore.getState()
+    useProductStore.setState({ 
+      lastFetchTime: null, 
+      cacheKey: null 
+    })
+    
     await fetchProducts()
     // Refetch stocks with fresh data (only if not already loading)
     if (!stocksLoading) {

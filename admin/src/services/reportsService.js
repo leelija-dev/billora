@@ -56,6 +56,34 @@ export const reportsAPI = {
     
     console.log('📊 Exporting reports:', { start_date: startDate, end_date: endDate })
     return apiClient.get(url)
+  },
+
+  // Get customer details with timeout
+  getCustomer: (customerId) => {
+    console.log('👤 Fetching customer:', customerId)
+    return apiClient.get(`/customer/show/${customerId}`, { timeout: 5000 })
+      .then(response => {
+        console.log('✅ Customer Response:', response)
+        return response
+      })
+      .catch(error => {
+        console.error('❌ Customer API Error:', error)
+        throw error
+      })
+  },
+
+  // Get store details with timeout
+  getStore: (storeId) => {
+    console.log('🏪 Fetching store:', storeId)
+    return apiClient.get(`/store/${storeId}`, { timeout: 5000 })
+      .then(response => {
+        console.log('✅ Store Response:', response)
+        return response
+      })
+      .catch(error => {
+        console.error('❌ Store API Error:', error)
+        throw error
+      })
   }
 }
 
