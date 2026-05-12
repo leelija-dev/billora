@@ -20,6 +20,7 @@ use App\Http\Controllers\admin\PlanPurchaseHistoryController;
 use App\Http\Controllers\admin\PaymentController;
 use App\Http\Controllers\admin\BusinessTypeController;
 use App\Http\Controllers\admin\ContactUsController;
+use App\Http\Controllers\admin\GstController;
 use App\Http\Controllers\admin\MedicineTypeController;
 use App\Http\Controllers\admin\PackageCostController;
 use App\Http\Controllers\admin\UserOrdersController;
@@ -92,12 +93,12 @@ Route::middleware('auth:sanctum')->prefix('products')->group(function () {
    Route::post('/store', [ProductsController::class, 'store']); //store product
    Route::get('/{id}', [ProductsController::class, 'show']); //single product
    Route::put('/{id}', [ProductsController::class, 'update']); // update product
-   Route::delete('/{id}', [ProductsController::class, 'destroy']); // delete product soft delete
    Route::patch('/{id}', [ProductsController::class, 'restore']); // restore product
    Route::get('/deleted-products/{id}',[ProductsController::class, 'deletedProducts']); // deleted products
    Route::delete('/{id}/force', [ProductsController::class, 'forceDelete']); // delete product permanently
-   Route::delete('/bulk-delete/{ids}', [ProductsController::class, 'bulkDelete']); // bulk delete product (soft delete)
-   Route::delete('/bulk-force-delete/{ids}', [ProductsController::class, 'bulkForceDelete']); // bulk delete product permanently
+   Route::delete('/bulk-delete', [ProductsController::class, 'bulkDelete']); // bulk delete product (soft delete)
+   Route::delete('/bulk-force-delete', [ProductsController::class, 'bulkForceDelete']); // bulk delete product permanently
+   Route::delete('/{id}', [ProductsController::class, 'destroy']); // delete product soft delete
 });
 //stocks
 Route::middleware('auth:sanctum')->prefix('stocks')->group(function () {
@@ -272,4 +273,9 @@ Route::prefix('/blog')->group(function (){
    Route::get('/{slug}', [BlogController::class, 'show']);
    Route::get('/all-categories', [BlogController::class, 'allCategrories']);
    
+});
+Route::middleware('auth:sanctum')->prefix('gst-collection')->group(function () {
+   Route::get('/{id}',[GstController::class, 'index']);     //register user id
+   Route::get('/all-products/{id}', [GstController::class, 'productDetails']);   //product id
+   Route::put('/update-status/{id}', [GstController::class, 'updateStatus']);
 });
