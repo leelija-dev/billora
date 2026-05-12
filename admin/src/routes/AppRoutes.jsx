@@ -29,6 +29,7 @@ import ReportDetails from '../pages/reports/ReportDetails'
 import Plans from '../pages/billing/Plans'
 import Settings from '../pages/settings/Settings'
 
+
 // Test Page
 import APITest from '../components/test/APITest'
 
@@ -64,6 +65,7 @@ const AppRoutes = () => {
         <Route path="reports" element={<ProtectedRoute feature="reports"><Reports /></ProtectedRoute>} />
         <Route path="reports/:id" element={<ReportDetails />} />
         <Route path="billing" element={<ProtectedRoute feature="billing"><Plans /></ProtectedRoute>} />
+
         <Route path="settings" element={<ProtectedRoute feature="settings"><Settings /></ProtectedRoute>} />
       </Route>
       
