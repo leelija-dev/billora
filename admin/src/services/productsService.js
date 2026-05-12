@@ -412,4 +412,19 @@ export const productsAPI = {
       throw error.response?.data || error.message;
     }
   },
+
+  // Get products by category
+  getByCategory: async (categoryId) => {
+    try {
+      console.log(`📦 Fetching products by category ID: ${categoryId}`);
+      const response = await apiClient.get('/products', {
+        params: { category: categoryId }
+      });
+      console.log('📦 Products by category fetched successfully:', response.data);
+      return response;
+    } catch (error) {
+      console.error(`❌ Failed to fetch products by category ${categoryId}:`, error);
+      throw error.response?.data || error.message;
+    }
+  },
 };
