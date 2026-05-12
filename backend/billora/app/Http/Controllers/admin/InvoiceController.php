@@ -525,6 +525,265 @@ class InvoiceController extends Controller
             ]);
         }
     }
+    public function update(Request $request, $id)
+    {
+        
+            $data = $request->validate([
+            'user_id'       => 'required|exists:customers,id',
+            'customer_id'   => 'required|exists:bill_customer,id',
+            'store_id'      => 'required|exists:store,id',
+            'paid_amount'   => 'required|numeric|min:0',
+            'created_by'    => 'required',
+            'items'         => 'required|array|min:1',
+            'deleted_item_ids' => 'nullable|array',
+            
+        ]);
+        // $data = $request->all();
+        $user = Auth::user()->id;
+        if($user != $data['user_id']){
+            return response()->json([
+            'status' => false,
+            'message' => 'You are not authorized to update this invoice'
+            ]);
+        }
+          DB::beginTransaction();
+        try{
+            $invoice = Invoice::where('id', $id)->where('user_id', $data['user_id'])->firstOrFail();
+            $oldItems = InvoiceItems::where('invoice_id', $invoice->id)->where('user_id', $data['user_id'])->get();
+            $customer =  Customers::findOrFail($request->user_id);
+             $permissions = DB::table('plan_permission_details as ppd')  //stock permission 
+                ->join('plan_permission as pp', 'pp.id', '=', 'ppd.permission_id')
+                ->where('ppd.plan_id', $customer->plan_id)
+                ->pluck('pp.slug')
+                ->toArray();
 
+            $hasStockPermission = in_array('stock-management', $permissions);
+            $newItems = collect($request->items);
+            $requestProductIds = $newItems->pluck('product_id')->toArray();
+            //deleted items resrtore stock if stock permission
+            if(isset($data['deleted_item_ids']) && count($data['deleted_item_ids']) > 0){
+                foreach($data['deleted_item_ids'] as $id){
+                
+                $invoiceItem = InvoiceItems::where('invoice_id', $invoice->id)->where('id',$id)->first();
+                if ($hasStockPermission) {
+                    $stocks = Stocks::where('user_id',$data['user_id'])->where('product_id', $invoiceItem->product_id)->first();
+                    if($stocks){
+                    $stocks->update([
+                        'quantity' => $stocks->quantity + $invoiceItem->quantity
+                    ]);
+                    }
+                } 
+               $gstCollection =  GstCollection::where('user_id', $data['user_id'])->where('invoice_id', $invoice->id)->where('product_id', $invoiceItem->product_id)->first();
+                if($gstCollection){
+                    $gstCollection->delete();
+                }
+                $invoiceItem->delete();
+                }
+            }
+
+            //update invoice 
+             $totalAmount = 0;
+            $totalItems = count($newItems);
+
+            foreach ($newItems as $item) {
+                
+              if ($hasStockPermission) {
+                $stock = Stocks::where('id', $item['stock_id'])
+                    ->where('product_id', $item['product_id'])
+                    ->first();
+
+                if (!$stock) {
+                    DB::rollback();
+                    return response()->json([
+                        'status' => false,
+                        'message' => 'Stock not available'
+                    ]);
+                }
+                $price = $stock->selling_price;
+              }else{
+                    $product = Products::find($item['product_id']);
+                $price = $product->selling_price ?? 0;
+              }
+                // $price = $item['price'];
+                $qty = $item['quantity'];
+                $discount = ((($price * $qty) * $item['discount'] ?? 0) / 100);
+                $gst = (((($price * $qty) - $discount) * $item['gst'] ?? 0) / 100);
+
+                $itemTotal = ((($price * $qty) - $discount) + $gst);
+
+                $totalAmount += $itemTotal;
+            }
+            $invoice->update([
+                'customer_id'   => $request->customer_id,
+                'total_amount'  => $totalAmount,
+                'total_items'   => $totalItems,
+                'paid_amount'   => $request->paid_amount,
+
+            ]);
+            
+            //Invpoice Items update and add 
+            foreach($newItems as $item){
+                // $exist = InvoiceItems::where('invoice_id', $invoice->id)->where('product_id', $item['product_id'])->first();
+                $exist = null;
+
+                if(isset($item['id'])){
+
+                    $exist = InvoiceItems::where('invoice_id', $invoice->id)
+                        ->where('id', $item['id'])
+                        ->first();
+                }
+                if ($hasStockPermission) {
+                $stock = Stocks::where('id', $item['stock_id'])
+                    ->where('product_id', $item['product_id'])
+                    ->first();
+
+                    $price = $stock->selling_price;
+                } else {
+                    $product = Products::find($item['product_id']);
+                    $price = $product->selling_price ?? 0;
+                }
+                $qty = $item['quantity'];
+                $product = Products::find($item['product_id']);
+                $discount = ((($price * $qty) * $item['discount'] ?? 0) / 100);
+                $gst = (((($price * $qty) - $discount) * $item['gst'] ?? 0) / 100);
+                $totalPrice = ((($price * $qty) - $discount) + $gst);
+                if($exist){
+                    if ($hasStockPermission) {
+
+                        $oldQty = $exist->quantity;
+
+                        $differenceQty = $qty - $oldQty;
+
+                        if ($differenceQty > 0) {
+
+                            if ($stock->quantity < $differenceQty) {
+
+                                DB::rollback();
+
+                                return response()->json([
+                                    'status' => false,
+                                    'message' => 'Stock not available'
+                                ]);
+                            }
+
+                            $stock->decrement('quantity', $differenceQty);
+
+                        } elseif ($differenceQty < 0) {
+
+                            $stock->increment('quantity', abs($differenceQty));
+                        }
+}
+                    $exist->update([
+                        'quantity' => $item['quantity'],
+                        'unit_id'       => $item['unit_id'],
+                        'item_count' => $item['quantity'],
+                        'price' => $item['price'],
+                        'gst' => $item['gst'] ?? 0,
+                        'discount' => $item['discount'] ?? 0,
+                        'total_price' => $totalPrice ?? 0,
+                    ]);
+                    $gstCollections =  GstCollection::where('user_id', $data['user_id'])->where('invoice_id', $invoice->id)->where('product_id', $item['product_id'])->first();
+                    $product = Products::find($item['product_id']);
+                    if($gstCollections){
+                        $gstCollections->update([
+                            'purchase_price' => $product->purchase_price,
+                            'purchase_gst_percentage' => $product->purchase_gst_percentage ?? 0,
+                            'purchase_gst_amount' => $item['discount'] ?? 0,
+                            'selling_price'  => $item['price'] ?? 0,
+                            'selling_discount_percentage' => $item['discount'] ?? 0,
+                            'selling_gst_percentage' => $item['gst'] ?? 0,
+                            'selling_gst_amount' => $item['price'] * $item['gst'] / 100,
+                            'quantity' => $item['quantity'],
+                            'govt_pay_status' => false,
+                            'invoice_status' =>'completed',
+                        ]);
+                    }else{
+                        GstCollection::create([
+                            'user_id' => $data['user_id'],
+                            'invoice_id' => $invoice->id,
+                            'product_id' => $item['product_id'],
+                            'purchase_price' => $product->purchase_price,
+                            'purchase_gst_percentage' => $product->purchase_gst_percentage ?? 0,
+                            'purchase_gst_amount' => $item['discount'] ?? 0,
+                            'selling_price'  => $item['price'] ?? 0,
+                            'selling_discount_percentage' => $item['discount'] ?? 0,
+                            'selling_gst_percentage' => $item['gst'] ?? 0,
+                            'selling_gst_amount' => $item['price'] * $item['gst'] / 100,
+                            'quantity' => $item['quantity'],
+                            'govt_pay_status' => false,
+                            'invoice_status' =>'completed',
+                            'created_by' => $request->created_by
+                        ]);
+                    }
+                }else{
+                    InvoiceItems::create([
+                        'user_id'       => $data['user_id'],
+                        'invoice_id'    => $invoice->id,
+                        'product_id'    => $item['product_id'],
+                        'quantity'      => $item['quantity'],
+                        'unit_id'       => $item['unit_id'],
+                        'price'         => $item['price'] ?? 0,
+                        'gst'           => $item['gst'] ?? 0,
+                        'discount'      => $item['discount'] ?? 0,
+                        'total_price'   => $totalPrice ?? 0,
+                        'status'        => 'completed',
+                        'created_by'    => $request->created_by
+                    ]);
+                    if ($hasStockPermission) {
+                    $stocks = Stocks::where('user_id',$data['user_id'])->where('product_id', $item['product_id'])->first();
+                    if($stocks){
+                    $stocks->update([
+                        'quantity' => $stocks->quantity - $item['quantity']
+                    ]);
+                    }
+                 } 
+                      GstCollection::create([
+                    'user_id' => $request->user_id,
+                    'invoice_id' => $invoice->id,
+                    'customer_id' =>$request->customer_id,
+                    'product_id' => $item['product_id'],
+                    'purchase_price' =>$product->purchase_price ?? 0,
+                    'purchase_gst_percentage' => $product->purchase_gst_percentage ?? 0,
+                    'purchase_gst_amount' => $product->purchase_price * $product->purchase_gst_percentage / 100 ?? 0,
+                    'selling_price' => $product->selling_price ?? 0,
+                    'selling_discount_percentage' => $product->discount_percentage ?? 0,
+                    'selling_gst_percentage' => $product->gst_percentage ?? 0,
+                    'selling_gst_amount' => $product->selling_price * $product->gst_percentage / 100 ?? 0,
+                    'quantity' =>$qty,
+                    'govt_pay_status' => false,
+                    'invoice_status' => 'completed',
+                    'created_by'     => $request->created_by
+                 ]);
+                }
+                
+              
+            }
+            $billPaymentHistory = BillPaymentHistory::where('admin_id', $request->user_id)->where('invoice_id', $invoice->id)->first();
+            if($billPaymentHistory){ 
+            $billPaymentHistory->update([
+                     'customer_id'    => $request->customer_id,
+                     'store_id'       => $request->store_id,
+                     'total_amount'   => $totalAmount,
+                     'paid_amount'    => $request->paid_amount,
+                     'due_amount'     => $totalAmount - $request->paid_amount,
+                     'payment_method' => $request->payment_method ?? 'Cash',
+                     'remarks'        =>'Bill Generated',
+                ]);  
+            }
+            DB::commit();
+            return response()->json([
+                'status' => true,
+                'message' => 'Invoice updated successfully'
+            ]);
+           
+        }catch(\Exception $e){
+            DB::rollBack();
+            return response()->json([
+                'status' => false,
+                'message' => $e->getMessage()
+            ]);
+        }
+
+    }
 
 }
