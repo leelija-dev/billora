@@ -785,5 +785,71 @@ class InvoiceController extends Controller
         }
 
     }
+    public function  updateBillStatus($id){
+        $user = Auth::user()->id;
+        DB::beginTransaction();
+        try{
+            $invoice = Invoice::where('id',$id)->where('user_id',$user)->firstOrFail();
+          
+            if($invoice->status == 'cancelled'){
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Invoice already cancelled'
+                ]);
+            }
+            $billCustomer = BillCustomer::where('id',$invoice->customer_id)->where('admin_id', $user)->firstOrFail();
+            $invoiceItem = InvoiceItems::where('invoice_id', $invoice->id)->where('user_id', $user)->get();
+            // $gstCollection = GstCollection::where('invoice_id', $invoice->id)->where('user_id', $user)->get();
+            $customer = Customers::findOrFail($user);
+            $permissions = DB::table('plan_permission_details as ppd')
+            ->join('plan_permission as pp', 'pp.id', '=', 'ppd.permission_id')
+            ->where('ppd.plan_id', $customer->plan_id)
+            ->pluck('pp.slug')
+            ->toArray();
+
+            $hasStockPermission = in_array('stock-management', $permissions);
+            //stock reverse/update
+            if ($hasStockPermission) {
+                foreach ($invoiceItem as $item) {
+                    Stocks::where('user_id', $user)
+                        ->where('product_id', $item->product_id)
+                        ->increment('quantity', $item->quantity);
+                }
+            }
+            //invoice item status update
+            InvoiceItems::where('invoice_id', $invoice->id)
+                ->where('user_id', $user)->update([
+                    'status' => 'cancelled'
+                ]);
+            //gst collection status update
+            GstCollection::where('invoice_id', $invoice->id)
+                ->where('user_id',$user)
+                ->update([
+                    'govt_pay_status' => false,
+                    'invoice_status' => 'cancelled',
+                ]);
+            //invoice status update
+            $invoice->update([
+               'status' => 'cancelled', 
+               'updated_at' => now()
+            ]);
+            //customer due update
+            if($billCustomer)
+            $billCustomer->update([
+                'due_amount' => ($billCustomer->due_amount - ($invoice->total_amount - $invoice->paid_amount)),
+            ]);
+            DB::commit();
+            return response()->json([
+                'status' => true,
+                'message' => 'Invoice cancelled successfully'
+            ]);
+        }catch(\Exception $e){  
+            DB::rollBack();
+            return response()->json([
+                'status' => false,
+                'message' => $e->getMessage() 
+            ]);
+        }
+    }
 
 }

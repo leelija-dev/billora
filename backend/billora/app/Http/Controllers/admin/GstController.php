@@ -28,7 +28,7 @@ class GstController extends Controller
         // }
         $data = GstCollection::where('user_id',$id)->where('invoice_status','completed')->get();
         $totalGst = GstCollection::where('user_id',$id)->sum('selling_gst_amount'); 
-        $dueGstPayGovt = GstCollection::where('user_id', $id)->where('govt_pay_status', false)->sum(DB::raw('selling_gst_amount * quantity'));
+        $dueGstPayGovt = GstCollection::where('user_id', $id)->where('govt_pay_status', false)->where('invoice_status','completed')->sum(DB::raw('selling_gst_amount * quantity'));
         // $allProducts = GstCollection::where('user_id',$id)->get();
        $allProducts = GstCollection::where('user_id', $id)
             ->select(
@@ -89,7 +89,8 @@ class GstController extends Controller
         $user = Auth::user()->id;
         $product = GstCollection::where('user_id', $user)->where('id', $id)->first(); 
         $product->update([
-            'govt_pay_status' => true
+            'govt_pay_status' => true,
+            
         ]);
         return response()->json([
             'status' => true,
