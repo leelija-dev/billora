@@ -364,6 +364,24 @@ export const useProductStore = create((set, get) => ({
     }
   },
 
+  // Get a single product by ID from the current products array
+  getProductById: (id) => {
+    const currentState = get()
+    const product = currentState.products.find(p => p.id === parseInt(id))
+    return product || null
+  },
+
+  // Get products by category
+  getProductsByCategory: async (categoryId) => {
+    try {
+      const response = await productsAPI.getByCategory(categoryId)
+      return response.data?.data?.data || response.data?.data || []
+    } catch (error) {
+      console.error('Error fetching products by category:', error)
+      return []
+    }
+  },
+
   clearCache: () => {
     productCache.clear()
     console.log('Product cache cleared')
