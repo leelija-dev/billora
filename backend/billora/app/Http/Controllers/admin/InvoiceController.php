@@ -258,6 +258,7 @@ class InvoiceController extends Controller
                 'paid_amount'    => $request->paid_amount,
                 'due_amount'     => $totalAmount - $request->paid_amount,
                 'payment_method' => $request->payment_method ?? 'Cash',
+                'remarks'        =>'Bill Generated',
                 'transaction_id' => null,
                 'created_by'     => $request->created_by
             ]);
@@ -497,6 +498,7 @@ class InvoiceController extends Controller
                 'due_amount'     => $totalAmount - $request->paid_amount,
                 'payment_method' => $request->payment_method ?? 'Cash',
                 'transaction_id' => null,
+                'remarks'        =>'',
                 'created_by'     => $request->created_by
             ]);
             // update due amount in customer 

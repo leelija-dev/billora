@@ -12,9 +12,9 @@ export const storeAPI = {
     return apiClient.post('/store/store', storeData)
   },
 
-  // Edit/show shop (POST method)
+  // Edit/show shop (GET method)
   getEditData: (userId) => {
-    return apiClient.post(`/store/edit/${userId}`)
+    return apiClient.get(`/store/edit/${userId}`)
   },
 
   // Update shop

@@ -66,7 +66,7 @@ export const customerAPI = {
 
       console.log('👥 Creating customer with data:', {
 
-        admin_id: customerData.admin_id,
+        user_id: customerData.admin_id,
 
         name: customerData.name,
 
@@ -135,9 +135,7 @@ export const customerAPI = {
       console.log(`👥 Soft deleting customer with ID: ${id}`);
 
       const response = await apiClient.delete(`/customer/${id}`, {
-
         data: { user_id: userId }
-
       });
 
       console.log('👥 Customer deleted successfully');
@@ -158,13 +156,14 @@ export const customerAPI = {
 
   // Get all deleted customers (soft deleted)
 
-  getTrashed: async () => {
+  getTrashed: async (page = 1) => {
 
     try {
 
-      console.log('👥 Fetching trashed customers');
+      console.log('👥 Fetching trashed customers, page:', page);
 
-      const response = await apiClient.get('/customer/trashed');
+      const params = page > 1 ? { page } : {};
+      const response = await apiClient.get('/customer/trashed', { params });
 
       console.log('👥 Trashed customers fetched:', response.data);
 
@@ -188,9 +187,19 @@ export const customerAPI = {
 
     try {
 
-      console.log(`👥 Restoring customer with ID: ${id}`);
+      // Get current user from auth store
+      const { useAuthStore } = await import('../store/authStore');
+      const { user } = useAuthStore.getState();
+      
+      if (!user?.id) {
+        throw new Error('User not authenticated');
+      }
 
-      const response = await apiClient.patch(`/customer/${id}`);
+      console.log(`👥 Restoring customer with ID: ${id} for user: ${user.id}`);
+
+      const response = await apiClient.patch(`/customer/${id}`, {
+        user_id: user.id
+      });
 
       console.log('👥 Customer restored successfully');
 
@@ -262,13 +271,17 @@ export const customerAPI = {
 
   // Get customer payment history with date filters
 
-  getPaymentHistory: async (id, queryParams = '') => {
+  getPaymentHistory: async (id, startDate = '', endDate = '') => {
 
     try {
 
-      console.log(`💳 Fetching payment history for customer ${id} with params:`, queryParams);
+      console.log(`💳 Fetching payment history for customer ${id} with date range:`, { startDate, endDate });
 
-      const response = await apiClient.get(`/customer/show/${id}${queryParams ? '?' + queryParams : ''}`);
+      const params = new URLSearchParams();
+      if (startDate) params.append('start_date', startDate);
+      if (endDate) params.append('end_date', endDate);
+      
+      const response = await apiClient.get(`/customer/show/${id}${params.toString() ? '?' + params.toString() : ''}`);
 
       console.log('💳 Payment history fetched:', response.data);
 

@@ -750,12 +750,14 @@ const Categories = () => {
                   })}
                 </div>
                 {totalCategories > pageSize && (
-                  <Pagination
+                 <div className='rounded-2xl bg-white overflow-hidden mt-7'>
+                   <Pagination
                     currentPage={currentPage}
                     totalItems={totalCategories}
                     pageSize={pageSize}
                     onPageChange={handlePageChange}
                   />
+                 </div>
                 )}
               </>
             )}
