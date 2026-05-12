@@ -14,6 +14,7 @@ use App\Models\Brand;
 use App\Models\Store;
 use App\Models\BillCustomer;
 use App\Models\BillPaymentHistory;
+use App\Models\GstCollection;
 use App\Models\PackageInvoice;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
@@ -199,7 +200,7 @@ class InvoiceController extends Controller
                 $discount = ((($price * $qty) * $item['discount'] ?? 0) / 100);
                 $gst = (((($price * $qty) - $discount) * $item['gst'] ?? 0) / 100);
                 $totalPrice = ((($price * $qty) - $discount) + $gst);
-
+                $product = Products::find($item['product_id']);
                 InvoiceItems::create([
                     'user_id'       => $request->user_id,
                     'invoice_id'    => $invoice->id,
@@ -214,6 +215,24 @@ class InvoiceController extends Controller
                     'status'        => 'completed',
                     'created_by'    => $request->created_by
                 ]);
+                GstCollection::create([
+                    'user_id' => $request->user_id,
+                    'invoice_id' => $invoice->id,
+                    'customer_id' =>$request->customer_id,
+                    'product_id' => $item['product_id'],
+                    'purchase_price' =>$product->purchase_price ?? 0,
+                    'purchase_gst_percentage' => $product->purchase_gst_percentage ?? 0,
+                    'purchase_gst_amount' => $product->purchase_price * $product->purchase_gst_percentage / 100 ?? 0,
+                    'selling_price' => $product->selling_price ?? 0,
+                    'selling_discount_percentage' => $product->discount_percentage ?? 0,
+                    'selling_gst_percentage' => $product->gst_percentage ?? 0,
+                    'selling_gst_amount' => $product->selling_price * $product->gst_percentage / 100 ?? 0,
+                    'quantity' =>$qty,
+                    'govt_pay_status' => false,
+                    'invoice_status' => 'completed',
+                    'created_by'     => $request->created_by
+                ]);
+                
             }
             if(isset($packages)){
                 foreach ($packages as $package) {
