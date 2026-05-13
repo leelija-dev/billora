@@ -59,6 +59,13 @@ return [
             'throw' => false,
             'report' => false,
         ],
+        'cloudinary' => [
+    'driver' => 'cloudinary',
+    'cloud' => env('CLOUDINARY_CLOUD_NAME', 'dkteqyggl'),  // Changed from 'cloud_name' to 'cloud'
+    'key' => env('CLOUDINARY_KEY', '323357458623633'),
+    'secret' => env('CLOUDINARY_SECRET', 'NOdkl8rTJ0v_b4I0WK0vbkwbcpo'),
+    'secure' => true,
+],
 
     ],
 

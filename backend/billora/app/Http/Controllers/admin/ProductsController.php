@@ -17,14 +17,8 @@ use App\Models\ProductImages;
 use App\Models\ProductVariant;
 use App\Models\Store;
 use Illuminate\Support\Facades\Auth;
-use Google\Client;
-use Google\Service\Drive;
-use Google\Service\Drive\DriveFile;
-use Google\Service\Drive\Permission;
-use chillerlan\QRCode\QRCode;
-use chillerlan\QRCode\QROptions;
 use Illuminate\Support\Facades\Log;
-use BaconQrCode\Renderer\Image\Png;
+// use BaconQrCode\Renderer\Image\Png;
 use BaconQrCode\Renderer\ImageRenderer;
 use BaconQrCode\Renderer\RendererStyle\RendererStyle;
 use BaconQrCode\Renderer\Image\SvgImageBackEnd;
@@ -32,6 +26,7 @@ use BaconQrCode\Writer;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
 use Milon\Barcode\Facades\DNS1DFacade as DNS1D;
+use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
 
 class ProductsController extends Controller
 {
@@ -45,7 +40,7 @@ class ProductsController extends Controller
                 ]);
             }
             $user = Auth::user()->id;
-            $product = Products::with(['variants', 'images', 'medicine_type'])->where('user_id', $user)->where('is_active', true) ->orderBy('id', 'desc')->paginate(15);
+            $product = Products::with(['variants', 'images', 'medicine_type'])->where('user_id', $user)->where('is_active', true)->orderBy('id', 'desc')->paginate(15);
             if ($request->has('search')) {
                 $product = Products::where('user_id', $user)->where('name', 'like', '%' . $request->search . '%')
                     ->orWhere('sku', 'like', '%' . $request->search . '%')
@@ -126,132 +121,116 @@ class ProductsController extends Controller
         }
     }
 
-    private function uploadToDrive($file, $folderId)
+    
+    private function uploadToCloudinary($file, $folder = 'Thefastbill')
     {
-        $client = new Client();
-        $client->setClientId(env('GOOGLE_CLIENT_ID'));
-        $client->setClientSecret(env('GOOGLE_CLIENT_SECRET'));
-        $client->refreshToken(env('GOOGLE_REFRESH_TOKEN'));
+        try {
 
-        $service = new Drive($client);
-        $name = method_exists($file, 'getClientOriginalName')
-            ? $file->getClientOriginalName()
-            : basename($file->getPathname());
+            $upload = Cloudinary::uploadApi()->upload(
+                $file->getRealPath(),
+                [
+                    'folder' => $folder
+                ]
+            );
 
+            return [
+                'url' => $upload['secure_url'],
+                'public_id' => $upload['public_id']
+            ];
+        } catch (\Exception $e) {
 
-        $fileMetadata = new DriveFile([
-            // 'name' => time() . '_' . $file->getClientOriginalName(),
-            'name' => time() . '_' . $name,
-            'parents' => [$folderId]
-        ]);
+            Log::error('Cloudinary upload failed: ' . $e->getMessage());
 
-        $uploadedFile = $service->files->create($fileMetadata, [
-            'data' => file_get_contents($file->getRealPath()),
-            'mimeType' => $file->getMimeType(),
-            'uploadType' => 'multipart',
-            'fields' => 'id'
-        ]);
-
-        $fileId = $uploadedFile->id;
-
-        // Make file public
-        $permission = new Permission([
-            'type' => 'anyone',
-            'role' => 'reader'
-        ]);
-
-        $service->permissions->create($fileId, $permission);
-
-        return "https://drive.google.com/uc?export=view&id=" . $fileId;
+            return null;
+        }
     }
+   
     private function generateQrAndUpload($product)
     {
         try {
+
             $qrData = "ID:{$product->id}";
-            // OR better:
-            // $qrData = env('FRONTEND_URL') . "/product/" . $product->id;
 
             $renderer = new ImageRenderer(
-                new RendererStyle(100),
+                new RendererStyle(200),
                 new SvgImageBackEnd()
             );
 
             $writer = new Writer($renderer);
 
-            // Generate QR as string (NO FILE)
             $qrContent = $writer->writeString($qrData);
 
-            return $this->uploadStringToDrive(
-                $qrContent,
-                'qr_' . $product->id . '_' . time() . '.svg',
-                env('GOOGLE_QR_FOLDER_ID')
+            $tempPath = storage_path('app/temp_qr_' . time() . '.svg');
+
+            file_put_contents($tempPath, $qrContent);
+
+            $upload = Cloudinary::uploadApi()->upload(
+                $tempPath,
+                [
+                    'folder' => 'Thefastbill/qr'
+                ]
             );
+
+            if (file_exists($tempPath)) {
+                unlink($tempPath);
+            }
+
+            return [
+                'url' => $upload['secure_url'],
+                'public_id' => $upload['public_id']
+            ];
         } catch (\Exception $e) {
+
             Log::error('QR Error: ' . $e->getMessage());
-            return null;
+
+            return [
+                'url' => null,
+                'public_id' => null
+            ];
         }
     }
 
-    private function uploadStringToDrive($content, $fileName, $folderId)
-    {
-        $client = new Client();
-        $client->setClientId(env('GOOGLE_CLIENT_ID'));
-        $client->setClientSecret(env('GOOGLE_CLIENT_SECRET'));
-        $client->refreshToken(env('GOOGLE_REFRESH_TOKEN'));
-
-        $service = new Drive($client);
-
-        $fileMetadata = new DriveFile([
-            'name' => $fileName,
-            'parents' => [$folderId]
-        ]);
-
-        $uploadedFile = $service->files->create($fileMetadata, [
-            'data' => $content,
-            'mimeType' => 'image/svg+xml',
-            'uploadType' => 'multipart',
-            'fields' => 'id'
-        ]);
-
-        $fileId = $uploadedFile->id;
-
-        // Make public
-        $permission = new Permission([
-            'type' => 'anyone',
-            'role' => 'reader'
-        ]);
-
-        $service->permissions->create($fileId, $permission);
-
-        return "https://drive.google.com/uc?export=view&id=" . $fileId;
-    }
     private function generateBarcodeAndUpload($product)
     {
-        // generate base64 barcode
-        $barcodeBase64 = DNS1D::getBarcodePNG((string)$product->id, 'C128');
+        try {
 
-        // convert base64 → binary
-        $imageData = base64_decode($barcodeBase64);
+            $barcodeBase64 = DNS1D::getBarcodePNG(
+                (string)$product->id,
+                'C128'
+            );
 
-        // create temp file (memory-based)
-        $tempFile = tmpfile();
-        $tempPath = stream_get_meta_data($tempFile)['uri'];
+            $imageData = base64_decode($barcodeBase64);
 
-        file_put_contents($tempPath, $imageData);
+            $tempPath = storage_path(
+                'app/temp_barcode_' . time() . '.png'
+            );
 
-        // convert to Laravel File
-        $file = new \Illuminate\Http\File($tempPath);
+            file_put_contents($tempPath, $imageData);
 
-        // upload to Google Drive
-        $barcodeUrl = $this->uploadToDrive(
-            $file,
-            env('GOOGLE_BAR_CODE_FOLDER_ID')
-        );
+            $upload = Cloudinary::uploadApi()->upload(
+                $tempPath,
+                [
+                    'folder' => 'Thefastbill/barcodes'
+                ]
+            );
 
-        // close temp file (auto deletes)
-        fclose($tempFile);
+            if (file_exists($tempPath)) {
+                unlink($tempPath);
+            }
 
-        return $barcodeUrl;
+            return [
+                'url' => $upload['secure_url'],
+                'public_id' => $upload['public_id']
+            ];
+        } catch (\Exception $e) {
+
+            Log::error('Barcode Error: ' . $e->getMessage());
+
+            return [
+                'url' => null,
+                'public_id' => null
+            ];
+        }
     }
     public function store(Request $request)
     {
@@ -259,7 +238,7 @@ class ProductsController extends Controller
         try {
             $user = Auth::user()->id;
             $variants = $request->input('variants');
-
+            // Log::info('cloudi nary url'. )
             // if not array → remove it completely
             if (!is_array($variants)) {
                 $request->request->remove('variants');
@@ -277,6 +256,7 @@ class ProductsController extends Controller
                 'selling_price'         => 'nullable',
                 'purchase_price'        => 'nullable',
                 'gst_percentage'        => 'nullable',
+                'purchase_gst_percentage'=> 'nullable',
                 'discount_percentage'   => 'nullable',
                 'description'           => 'nullable',
                 'is_active'             => 'required',
@@ -343,10 +323,20 @@ class ProductsController extends Controller
             }
             //  Upload main Image → image folder
             if ($request->hasFile('image')) {
-                $data['image'] = $this->uploadToDrive(
+                // $data['image'] = $this->uploadToDrive(
+                //     $request->file('image'),
+                //     env('GOOGLE_IMAGE_FOLDER_ID')
+                // );
+                $upload = $this->uploadToCloudinary(
                     $request->file('image'),
-                    env('GOOGLE_IMAGE_FOLDER_ID')
+                    'Thefastbill/products'
                 );
+                if (!$upload) {
+                    throw new \Exception('Failed to upload main image');
+                }
+
+                $data['image'] = $upload['url'];
+                $data['image_public_id'] = $upload['public_id'];
             }
 
             //  Upload QR → qr_codes folder
@@ -390,39 +380,40 @@ class ProductsController extends Controller
                     Log::info('stocks created' . $stocks);
                 }
             }
-            $qrUrl = $this->generateQrAndUpload($product);
-            // BARCODE (no local file)
-            $barcodeUrl = $this->generateBarcodeAndUpload($product);
-            // $product->update(['barcode' => $barcodeUrl]);
-            //  Save QR in DB
+
+            $qr = $this->generateQrAndUpload($product);
+            $barcode = $this->generateBarcodeAndUpload($product);
+            Log::info($qr);
+            Log::info($barcode);
             $product->update([
-                'qr_code' => $qrUrl,
-                'barcode' => $barcodeUrl
+                'qr_code'         => $qr['url'] ?? null,
+                'qr_public_id'    => $qr['public_id'] ?? null,
+                'barcode'         => $barcode['url'] ?? null,
+                'barcode_public_id' => $barcode['public_id'] ?? null,
             ]);
+            // multi images upload
             // multi images upload
             if ($request->hasFile('images')) {
                 foreach ($request->file('images') as $img) {
-
-                    $imageUrl = $this->uploadToDrive(
+                    $upload = $this->uploadToCloudinary(
                         $img,
-                        env('GOOGLE_IMAGE_FOLDER_ID')
+                        'Thefastbill/product-images'
                     );
 
+                    if (!$upload) {
+                        throw new \Exception('Failed to upload additional image');
+                    }
+
                     ProductImages::create([
-                        'user_id'    => $user,
+                        'user_id' => $user,
                         'product_id' => $product->id,
-                        'image'      => $imageUrl,
+                        'image' => $upload['url'],
+                        'image_public_id' => $upload['public_id'],
                         'created_by' => $user,
                     ]);
                 }
             }
-            //             if ($request->has('variants') && is_string($request->variants)) {
-            //     $request->merge([
-            //         'variants' => json_decode($request->variants, true)
-            //     ]);
-            // }
-            //product variants
-            // $variants = $request->input('variants');
+          
             //  CLEAN INVALID VARIANTS INPUT
             if ($request->has('variants')) {
 
@@ -478,49 +469,13 @@ class ProductsController extends Controller
             ]);
         }
     }
-    public function show($id)
+    private function deleteFromCloudinary($publicId)
     {
-        try {
-            if (!Auth::check()) {
-                return response()->json([
-                    'status' => false,
-                    'message' => 'Authentication required. Please login first.'
-                ]);
-            }
-            $user = Auth::user()->id;
-            $product = Products::with('variants', 'images')->where('user_id', $user)->where('id', $id)->first();
-            return response()->json([
-                'status' => true,
-                'message' => 'Single product',
-                'data' => $product
-            ]);
-        } catch (\Exception $e) {
-            return response()->json([
-                'status' => false,
-                'message' => $e->getMessage(),
-            ]);
+        if ($publicId) {
+            Cloudinary::destroy($publicId);
         }
     }
-    private function getFileIdFromUrl($url)
-    {
-        parse_str(parse_url($url, PHP_URL_QUERY), $params);
-        return $params['id'] ?? null;
-    }
-    private function deleteFromDrive($fileId)
-    {
-        $client = new \Google\Client();
-        $client->setClientId(env('GOOGLE_CLIENT_ID'));
-        $client->setClientSecret(env('GOOGLE_CLIENT_SECRET'));
-        $client->refreshToken(env('GOOGLE_REFRESH_TOKEN'));
-
-        $service = new \Google\Service\Drive($client);
-
-        try {
-            $service->files->delete($fileId);
-        } catch (\Exception $e) {
-            // ignore if already deleted
-        }
-    }
+   
     public function update($id, Request $request)
     {   // update product
         DB::beginTransaction();
@@ -550,6 +505,7 @@ class ProductsController extends Controller
                 'selling_price'         => 'nullable',
                 'purchase_price'        => 'nullable',
                 'gst_percentage'        => 'nullable',
+                'purchase_gst_percentage'=> 'nullable',
                 'discount_percentage'   => 'nullable',
                 'description'           => 'nullable',
                 'is_active'             => 'required',
@@ -598,35 +554,43 @@ class ProductsController extends Controller
 
                     // delete old image
                     if ($product->image) {
-                        $fileId = $this->getFileIdFromUrl($product->image);
-                        if ($fileId) {
-                            $this->deleteFromDrive($fileId);
-                        }
+                        // $fileId = $this->getFileIdFromUrl($product->image);
+                        // if ($fileId) {
+                        //     $this->deleteFromDrive($fileId);
+                        // }
+                        $this->deleteFromCloudinary(
+                            $product->image_public_id
+                        );
                     }
 
                     // upload new image
-                    $data['image'] = $this->uploadToDrive(
+                    // $data['image'] = $this->uploadToDrive(
+                    //     $request->file('image'),
+                    //     env('GOOGLE_IMAGE_FOLDER_ID')
+                    // );
+                    $upload = $this->uploadToCloudinary(
                         $request->file('image'),
-                        env('GOOGLE_IMAGE_FOLDER_ID')
+                        'Thefastbill/products'
                     );
+
+                    $data['image'] = $upload['url'];
+                    $data['image_public_id'] = $upload['public_id'];
                 }
 
                 //QR code
                 if ($request->hasFile('qr_code')) {
 
-                    // delete old qr
-                    if ($product->qr_code) {
-                        $fileId = $this->getFileIdFromUrl($product->qr_code);
-                        if ($fileId) {
-                            $this->deleteFromDrive($fileId);
-                        }
-                    }
-
-                    // upload new qr
-                    $data['qr_code'] = $this->uploadToDrive(
-                        $request->file('qr_code'),
-                        env('GOOGLE_QR_FOLDER_ID')
+                    $this->deleteFromCloudinary(
+                        $product->qr_public_id
                     );
+
+                    $upload = $this->uploadToCloudinary(
+                        $request->file('qr_code'),
+                        'Thefastbill/qr'
+                    );
+
+                    $data['qr_code'] = $upload['url'];
+                    $data['qr_public_id'] = $upload['public_id'];
                 }
             }
             $product->update($data);
@@ -678,10 +642,13 @@ class ProductsController extends Controller
 
                 foreach ($oldImages as $img) {
                     if ($img->image) {
-                        $fileId = $this->getFileIdFromUrl($img->image);
-                        if ($fileId) {
-                            $this->deleteFromDrive($fileId);
-                        }
+                        // $fileId = $this->getFileIdFromUrl($img->image);
+                        // if ($fileId) {
+                        // $this->deleteFromDrive($fileId);
+                        $this->deleteFromCloudinary(
+                            $img->image_public_id
+                        );
+                        // }
                     }
                     $img->delete();
                 }
@@ -689,15 +656,16 @@ class ProductsController extends Controller
                 //  Insert new images
                 foreach ($request->file('images') as $image) {
 
-                    $imageUrl = $this->uploadToDrive(
+                    $upload = $this->uploadToCloudinary(
                         $image,
-                        env('GOOGLE_IMAGE_FOLDER_ID')
+                        'Thefastbill/product-images'
                     );
 
                     ProductImages::create([
-                        'user_id'    => $user,
+                        'user_id' => $user,
                         'product_id' => $product->id,
-                        'image'      => $imageUrl,
+                        'image' => $upload['url'],
+                        'image_public_id' => $upload['public_id'],
                         'created_by' => $user,
                     ]);
                 }
@@ -764,8 +732,8 @@ class ProductsController extends Controller
             }
             $product = Products::where('user_id', $user)->where('id', $id)->first();
             $product->delete();
-            $stocksProduct = Stocks::where('user_id',$user)->where('product_id', $product->id)->first();
-            if($stocksProduct){
+            $stocksProduct = Stocks::where('user_id', $user)->where('product_id', $product->id)->first();
+            if ($stocksProduct) {
                 $stocksProduct->delete();
             }
             return response()->json([
@@ -818,7 +786,6 @@ class ProductsController extends Controller
                 'message' => $e->getMessage()
             ]);
         }
-    
     }
     public function restore($id)
     {
@@ -841,16 +808,16 @@ class ProductsController extends Controller
             $product = Products::withTrashed()->where('user_id', $user)->where('id', $id)->firstOrFail();
             $product->restore();
             // check permission 
-             if($product){
+            if ($product) {
                 $stocks = [
-            'product_id'        => $product->id,
-            'quantity'          => 0,
-            'selling_price'     => $product->selling_price ?? 0,
-            'product_package_id' => null,
-            'purchase_price'    => $product->purchase_price ?? 0,
-            'unit_id'           => $product->unit_id,
+                    'product_id'        => $product->id,
+                    'quantity'          => 0,
+                    'selling_price'     => $product->selling_price ?? 0,
+                    'product_package_id' => null,
+                    'purchase_price'    => $product->purchase_price ?? 0,
+                    'unit_id'           => $product->unit_id,
 
-            ];
+                ];
             }
             $permissions = DB::table('plan_permission_details as ppd')
                 ->join('plan_permission as pp', 'pp.id', '=', 'ppd.permission_id')
@@ -860,13 +827,12 @@ class ProductsController extends Controller
 
             $hasStockPermission = in_array('stock-management', $permissions);
 
-            Log::info('hasStockPermission'. $hasStockPermission);
+            Log::info('hasStockPermission' . $hasStockPermission);
             if ($hasStockPermission) {
                 $stocks['user_id'] = $user;
                 $stocks['created_by'] = $user;
                 $stock = Stocks::create($stocks);
-          
-            } 
+            }
             return response()->json([
                 'status' => true,
                 'message' => 'Product Restored Successfully',
@@ -900,16 +866,29 @@ class ProductsController extends Controller
             $product = Products::withTrashed()->where('user_id', $user)->where('id', $id)->first();
             if ($product) {
                 if ($product->image) {
-                    $fileId = $this->getFileIdFromUrl($product->image);
-                    if ($fileId) {
-                        $this->deleteFromDrive($fileId);
-                    }
+                    // $fileId = $this->getFileIdFromUrl($product->image);
+                    // if ($fileId) {
+                    //     $this->deleteFromDrive($fileId);
+                    // }
+                    $this->deleteFromCloudinary(
+                        $product->image_public_id
+                    );
                 }
                 if ($product->qr_code) {
-                    $fileId = $this->getFileIdFromUrl($product->qr_code);
-                    if ($fileId) {
-                        $this->deleteFromDrive($fileId);
-                    }
+                    // $fileId = $this->getFileIdFromUrl($product->qr_code);
+
+                    // $this->deleteFromDrive($fileId);
+                    $this->deleteFromCloudinary(
+                        $product->image_public_id
+                    );
+
+                    $this->deleteFromCloudinary(
+                        $product->qr_public_id
+                    );
+
+                    $this->deleteFromCloudinary(
+                        $product->barcode_public_id
+                    );
                 }
             }
             $product->forceDelete();
@@ -950,16 +929,29 @@ class ProductsController extends Controller
             $product = Products::withTrashed()->where('user_id', $user)->where('id', $id)->first();
             if ($product) {
                 if ($product->image) {
-                    $fileId = $this->getFileIdFromUrl($product->image);
-                    if ($fileId) {
-                        $this->deleteFromDrive($fileId);
-                    }
+                    // $fileId = $this->getFileIdFromUrl($product->image);
+                    // if ($fileId) {
+                    //     $this->deleteFromDrive($fileId);
+                    // }
+                    $this->deleteFromCloudinary(
+                        $product->image_public_id
+                    );
                 }
                 if ($product->qr_code) {
-                    $fileId = $this->getFileIdFromUrl($product->qr_code);
-                    if ($fileId) {
-                        $this->deleteFromDrive($fileId);
-                    }
+                    // $fileId = $this->getFileIdFromUrl($product->qr_code);
+
+                    // $this->deleteFromDrive($fileId);
+                    $this->deleteFromCloudinary(
+                        $product->image_public_id
+                    );
+
+                    $this->deleteFromCloudinary(
+                        $product->qr_public_id
+                    );
+
+                    $this->deleteFromCloudinary(
+                        $product->barcode_public_id
+                    );
                 }
             }
             $product->forceDelete();
@@ -969,6 +961,7 @@ class ProductsController extends Controller
                 'message' => 'Product Deleted Permanently',
                 'data' => []
             ]);
+            
         } catch (\Exception $e) {
             return response()->json([
                 'status' => false,
@@ -1067,27 +1060,28 @@ class ProductsController extends Controller
             ]);
         }
     }
-    public function deletedProducts($id){
-        try{
-        $user = $user = Auth::user()->id;
-        if($user != $id){
+    public function deletedProducts($id)
+    {
+        try {
+            $user = $user = Auth::user()->id;
+            if ($user != $id) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'You are not authorized to perform this action'
+                ]);
+            }
+            $products = Products::onlyTrashed()->where('user_id', $id)->get();
+            if (!$products) {
+                return response()->json([
+                    'status'  => false,
+                    'message' => 'Product not found!'
+                ]);
+            }
             return response()->json([
-                'status' => false,
-                'message' => 'You are not authorized to perform this action'
+                'status' => true,
+                'products' => $products
             ]);
-        }
-        $products = Products::onlyTrashed()->where('user_id', $id)->get();
-        if (!$products) {
-            return response()->json([
-                'status'  => false,
-                'message' => 'Product not found!'
-            ]);
-        }
-        return response()->json([
-            'status' => true,
-            'products' => $products
-        ]);
-        }catch(\Exception $e){
+        } catch (\Exception $e) {
             return response()->json([
                 'status' => false,
                 'message' => $e->getMessage()

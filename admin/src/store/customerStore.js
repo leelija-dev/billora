@@ -147,7 +147,7 @@ export const useCustomerStore = create((set, get) => ({
     try {
       const { user } = useAuthStore.getState()
       const dataWithAdmin = {
-        admin_id: user.id,
+        user_id: user.id,
         name: customerData.name,
         email: customerData.email || null,
         phone: customerData.phone,
@@ -224,7 +224,17 @@ export const useCustomerStore = create((set, get) => ({
   deleteCustomer: async (id) => {
     set({ loading: true })
     try {
-      await customerAPI.delete(id)
+      // Get current user ID from auth store
+      const { user } = useAuthStore.getState()
+      const userId = user?.id
+      
+      if (!userId) {
+        console.error('❌ No user ID found for customer deletion')
+        set({ loading: false })
+        return { success: false, error: 'User not authenticated' }
+      }
+      
+      await customerAPI.delete(id, userId)
       set((state) => ({
         customers: Array.isArray(state.customers) 
           ? state.customers.filter((c) => c?.id !== id)
@@ -251,26 +261,56 @@ export const useCustomerStore = create((set, get) => ({
   },
 
   // Get trashed customers
-  fetchTrashedCustomers: async () => {
+  fetchTrashedCustomers: async (page = 1) => {
     set({ loading: true })
     try {
-      const response = await customerAPI.getTrashed()
+      const response = await customerAPI.getTrashed(page)
+      
+      console.log('🗑️ CustomerStore - Full trashed response:', response)
       
       let customersArray = []
-      if (response?.data?.data && Array.isArray(response.data.data)) {
-        customersArray = response.data.data
-      } else if (Array.isArray(response?.data)) {
-        customersArray = response.data
+      let total = 0
+      
+      // Handle the paginated structure: response.data.data (Laravel pagination)
+      if (response?.data?.data && Array.isArray(response.data.data.data)) {
+        customersArray = response.data.data.data
+        total = response.data.data.total || customersArray.length
       }
+      // Handle response.data (if it's directly an array)
+      else if (Array.isArray(response?.data)) {
+        customersArray = response.data
+        total = customersArray.length
+      }
+      // Handle case where data might be in a different property
+      else if (response?.data && typeof response.data === 'object') {
+        // Try to find any array property
+        for (const key in response.data) {
+          if (Array.isArray(response.data[key])) {
+            customersArray = response.data[key]
+            total = customersArray.length
+            break
+          }
+        }
+      }
+      
+      // Ensure we have an array
+      if (!Array.isArray(customersArray)) {
+        customersArray = []
+        total = 0
+      }
+      
+      console.log('🗑️ CustomerStore - Extracted trashed customers:', customersArray)
+      console.log('🗑️ CustomerStore - Total trashed customers:', total)
       
       set({
         customers: customersArray,
-        totalCustomers: customersArray.length,
+        totalCustomers: total,
+        currentPage: page,
         loading: false,
       })
-      return { success: true }
+      return { success: true, data: customersArray }
     } catch (error) {
-      console.error('Failed to fetch deleted customers:', error)
+      console.error('❌ CustomerStore - Failed to fetch deleted customers:', error)
       toast.error('Failed to fetch deleted customers')
       set({ customers: [], totalCustomers: 0, loading: false })
       return { success: false, error: error.response?.data }
@@ -352,16 +392,21 @@ export const useCustomerStore = create((set, get) => ({
       const response = await customerAPI.getPaymentHistory(id, startDate, endDate)
       
       let historyArray = []
+      // Handle different response structures
       if (response?.data?.data && Array.isArray(response.data.data)) {
         historyArray = response.data.data
+      } else if (response?.data?.bill_payment_history && Array.isArray(response.data.bill_payment_history)) {
+        historyArray = response.data.bill_payment_history
       } else if (Array.isArray(response?.data)) {
         historyArray = response.data
       }
       
+      console.log('💳 CustomerStore - Payment history processed:', historyArray)
+      
       set({ loading: false })
       return { success: true, data: historyArray }
     } catch (error) {
-      console.error('Failed to fetch payment history:', error)
+      console.error('❌ CustomerStore - Failed to fetch payment history:', error)
       toast.error('Failed to fetch payment history')
       set({ loading: false })
       return { success: false, error: error.response?.data }

@@ -23,6 +23,7 @@ class Products extends Model
         'selling_price',
         'purchase_price',
         'gst_percentage',
+        'purchase_gst_percentage',
         'discount_percentage',
         'description',
         'is_active',
@@ -60,7 +61,10 @@ class Products extends Model
         'warranty_months',
         'warehouse_location',
         'supplier_id',
-        'updated_by'
+        'updated_by',
+        'image_public_id',
+        'qr_public_id',
+        'barcode_public_id'
 
     ];
     protected $casts = [

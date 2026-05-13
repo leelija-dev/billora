@@ -1425,6 +1425,13 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting,
                   required
                   disabled={dataFetchError}
                   onCreateNew={(searchTerm) => {
+                    // Check if user already has a store
+                    if (stores.length > 0) {
+                      console.log('User already has a store, preventing new store creation')
+                      toast.error('You already have a store. You can only have one store.')
+                      return
+                    }
+
                     // Detect if search term is a phone number (contains digits) or name/address
                     const isPhoneNumber = /^\d[\d\s-]*$/.test(searchTerm.trim())
 
@@ -2066,7 +2073,7 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting,
 
       {/* Add Store Modal */}
       <StoreModal
-        isOpen={showAddStoreModal}
+        isOpen={showAddStoreModal && stores.length === 0}
         onClose={() => {
           setShowAddStoreModal(false)
           // Reset new store data when modal closes
@@ -2083,6 +2090,8 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting,
         }}
         onStoreCreated={handleCreateStore}
         initialData={newStoreData}
+        mode="create"
+        isSubmitting={isCreatingStore}
       />
 
       {/* Edit Store Modal */}

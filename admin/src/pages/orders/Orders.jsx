@@ -938,14 +938,15 @@ const Orders = () => {
           data={filteredOrders}
           loading={loading}
         />
-      </motion.div>
-      
-      <Pagination
+        <Pagination
         currentPage={currentPage}
         totalItems={filteredOrders.length}
         pageSize={pageSize}
         onPageChange={handlePageChange}
       />
+      </motion.div>
+      
+      
     </motion.div>
   )
 

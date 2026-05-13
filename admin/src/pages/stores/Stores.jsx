@@ -452,7 +452,7 @@ const Stores = () => {
               </motion.button>
 
               {/* Import Button */}
-              <motion.button
+                <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 className="p-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shadow-sm"
@@ -679,8 +679,7 @@ const Stores = () => {
                       data={safeStores}
                       loading={loading}
                     />
-                  </div>
-                  {totalStores > pageSize && (
+                    {totalStores > pageSize && (
                     <Pagination
                       currentPage={currentPage}
                       totalItems={totalStores}
@@ -688,6 +687,8 @@ const Stores = () => {
                       onPageChange={handlePageChange}
                     />
                   )}
+                  </div>
+                  
                 </>
               ) : (
                 // Grid View
@@ -800,12 +801,14 @@ const Stores = () => {
                     })}
                   </div>
                   {totalStores > pageSize && (
+                    <div className='rounded-2xl bg-white overflow-hidden mt-7'>
                     <Pagination
                       currentPage={currentPage}
                       totalItems={totalStores}
                       pageSize={pageSize}
                       onPageChange={handlePageChange}
                     />
+                    </div>
                   )}
                 </>
               )

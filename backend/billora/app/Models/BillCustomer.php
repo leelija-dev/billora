@@ -15,6 +15,7 @@ class BillCustomer extends Model
         'phone', 
         'address',
         'city', 
+        'gst_number',
         'created_by',
         'due_amount'
     ];

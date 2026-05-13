@@ -443,7 +443,7 @@ const Packages = () => {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ delay: 0.8 }}
-                    className="mt-6"
+                  className='rounded-2xl bg-white overflow-hidden mt-7'
                   >
                     <Pagination
                       currentPage={currentPage}

@@ -798,14 +798,12 @@ const handleAddSubmit = async (data) => {
                     onPrintA4={handlePrintA4}
                     onPrintThermal={handlePrintThermal}
                   />
-                </div>
-
-                {totalInvoices > pageSize && (
+                  {totalInvoices > pageSize && (
                   <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ delay: 0.8 }}
-                    className="mt-6"
+                    className=""
                   >
                     <Pagination
                       currentPage={currentPage}
@@ -815,6 +813,9 @@ const handleAddSubmit = async (data) => {
                     />
                   </motion.div>
                 )}
+                </div>
+
+                
               </>
             )}
           </motion.div>
