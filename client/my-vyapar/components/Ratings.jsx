@@ -77,7 +77,9 @@ const Ratings = () => {
           {/* Main Heading */}
           <h2 className="text-2xl sm:text-2xl md:text-xl lg:text-[28px] font-bold text-[#0f172a] mb-6 sm:mb-8 md:mb-4 lg:mb-[30px] leading-tight">
             {/* Tablet: md:text-xl (20px) */}
-            How useful is Billora for <br className="hidden sm:block" /> Your Business?
+            How useful is “The Fast Bill” 
+ <br className="hidden sm:block" /> for
+Your Business?
           </h2>
 
           {/* Stars Rating */}

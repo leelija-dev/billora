@@ -24,7 +24,7 @@ const HowItWorks = () => {
         {
             number: '01',
             title: 'Create Account',
-            description: 'Sign up for free in under 2 minutes. No credit card required. Get instant access to all basic features.',
+            description: 'Sign up for free with your email address. Simply enter your business details & set up your account to get access to all basic features.',
             icon: <FaEnvelope className="w-6 h-6" />,
             color: '#3b82f6',
             buttonText: 'Sign Up Now'
@@ -32,7 +32,7 @@ const HowItWorks = () => {
         {
             number: '02',
             title: 'Choose Plan',
-            description: 'Select the plan that fits your business needs. Upgrade, downgrade, or cancel anytime with no questions asked.',
+            description: 'Determine your business needs & select a plan that fits your budget. Free trials & easy cancellations available',
             icon: <FaBolt className="w-6 h-6" />,
             color: '#8b5cf6',
             buttonText: 'View Plans'
@@ -40,7 +40,7 @@ const HowItWorks = () => {
         {
             number: '03',
             title: 'Start Billing',
-            description: 'Begin creating professional GST invoices immediately. Invite your team and start managing your business.',
+            description: 'Start creating customized invoices quickly by entering product & client details.  Also, calculate GST faster with your team members.',
             icon: <FaRocket className="w-6 h-6" />,
             color: '#10b981',
             buttonText: 'Get Started'
@@ -57,9 +57,9 @@ const HowItWorks = () => {
                 
                 {/* Header Section: Reduced mb-12 to mb-8 for tighter spacing */}
                 <div className="text-center mb-8 lg:mb-12 xl:mb-16 px-4">
-                    <SectionTitle title="How It Works" />
+                    <SectionTitle title="The Setup Process" />
                     <p className="text-[#475569] text-sm md:text-base lg:text-lg max-w-[600px] mx-auto mt-4 animate-[fadeInUp_0.8s_ease-out_0.2s_both] leading-relaxed">
-                        Get started with {process.env.NEXT_PUBLIC_APP_NAME || 'Billora'} in three simple steps
+                       3 Simple Steps to Get Personalized & Effortless GST Invoices
                     </p>
                 </div>
 

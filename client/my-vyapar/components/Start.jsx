@@ -24,18 +24,24 @@ export default function Start() {
             className="max-w-xl text-center lg:text-left md:text-left px-4 sm:px-0"
           >
             <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-5xl font-bold text-slate-900 mb-4 sm:mb-6 md:mb-6 lg:mb-6 leading-tight">
-              Carry Your Business <br className="hidden sm:block" />
-              <span className="text-indigo-600">Wherever You Go</span>
+              Pack Up & Profit <br className="hidden sm:block" />
+              <span className="text-indigo-600">Anytime, Anywhere</span>
+              
+
             </h2>
 
-            <p className="text-slate-600 text-base sm:text-base md:text-lg lg:text-lg mb-3 sm:mb-4 md:mb-4 lg:mb-4 leading-relaxed">
-              Not in the office? No worries, you can use {process.env.NEXT_PUBLIC_APP_NAME || 'Billora'} from your
-              phone from anywhere.
+            <h3 className="text-xl sm:text-2xl md:text-3xl lg:text-3xl font-bold text-slate-900 mb-4 sm:mb-6 md:mb-6 lg:mb-6 leading-tight">#BusinessonTheGo</h3>
+
+            <p className="text-slate-600 text-base sm:text-base md:text-lg lg:text-lg mb-3  leading-relaxed">
+              No desk? Don’t Stress!
             </p>
 
-            <p className="text-slate-600 text-base sm:text-base md:text-lg lg:text-lg mb-6 sm:mb-8 md:mb-8 lg:mb-8 leading-relaxed">
-              With our easy to use mobile app you can create invoice, share
-              invoice, manage inventory, track sales or check reports.
+            <p className="text-slate-600 text-base sm:text-base md:text-lg lg:text-lg mb-3  leading-relaxed">
+             Keep your business booming right from your mobile with our Fast Bill app.
+            </p>
+            <p className="text-slate-600 text-base sm:text-base md:text-lg lg:text-lg mb-3  leading-relaxed">
+            Now create & share invoices easily, manage inventory the right way, & track sales reports faster even when you’re on the go!
+
             </p>
 
             {/* App Store Badges */}

@@ -8,30 +8,30 @@ import Container from "../components/Container";
 const Features = () => {
   const features = [
     {
-      title: "Manage cashflow seamlessly",
-      description: "The billing software by Vyapar helps automate management. It is done to prevent mistakes in accounting. By investing in this billing software, you can manage your business cash flow effortlessly.",
-      extraDescription: "With real-time tracking and automated reminders, you'll never miss a payment again. The dashboard provides clear insights into your accounts receivable and payable, helping you make informed financial decisions.",
+      title: "Accelerate Billing Seamlessly",
+      description: "With Fast Bill, you can automate invoice generation with pre-filled GST rates and serve your customers faster. By integrating these digital payment gateways, you can now seamlessly speed up your payments.",
+      extraDescription: "The Fast Bill GST billing software comes with automated reminder features and reduces your manual workload significantly. With reduced paper usage, you can now save money for other administrative resources.",
       image: "/image/gst1.png",
       reverse: false,
     },
     {
-      title: "Choose the perfect convenience for customers",
-      description: "Choose the perfect convenience for customers; the biggest comfort you can provide is allowing them to choose how they pay you. Using the Vyapar invoicing app, you can create invoices that include multiple payment options for your business.",
-      extraDescription: "Accept payments via UPI, credit/debit cards, net banking, and digital wallets. The system automatically marks invoices as paid when payment is received, reducing manual reconciliation work.",
+      title: "100% Tax Compliance & Inventory Management",
+      description: "Ensure 100% tax compliance with reduced penalties with automated, faster, & accurate GST filing and instant regulatory updates. Fast Bill maintains audit-ready, tamper-proof records for easy and compliant inspections.",
+      extraDescription: "Also, get real-time insights into product turnover, eliminate stockouts with low-stock alerts, and manage supplier information & purchase bills in one place. Now optimize your stock levels and streamline your operational workflows with Fast Bill.",
       image: "/image/invoice.png",
       reverse: true,
     },
     {
-      title: "Track your business status",
-      description: "With free GST billing software and invoicing tools, you can manage your business using a mobile. Accounting in your business becomes quite simple and efficient with this free software. As all data is stored during invoicing.",
-      extraDescription: "Get real-time insights into your business performance with interactive charts and graphs. Monitor sales trends, top products, and customer behavior to make data-driven decisions.",
+      title: "Data-Driven Business Insights",
+      description: "Fast Bill billing software for small businesses comes with real-time analytics and comprehensive reporting specifications that feature live dashboards and let you make rapid yet data-driven decisions on sales & profitability.",
+      extraDescription: "Our online billing software provides in-depth performance analysis, enables your business to scale efficiently, and manages growth without any significant increase in your overall cost.",
       image: "/image/payments.png",
       reverse: false,
     },
     {
-      title: "Customized Professional Invoices",
-      description: "Create and send professional GST invoices that reflect your brand identity. Our tool allows you to customize colors, logos, and fields to meet your specific business requirements while staying fully compliant.",
-      extraDescription: "Choose from multiple templates designed for various industries. Include terms and conditions, bank details, and digital signatures automatically on every invoice you generate.",
+      title: "Personalized Brand-Specific Invoices",
+      description: "With Fast Bill, you can transform the boring professional invoices into customized ones by creating personalized logos, colors, and layouts that reflect your unique brand voice.",
+      extraDescription: "You can also create custom messages and branded designs for a consistent brand identity, efficient communication, and tailor them anytime according to the industry needs for added credibility and customer loyalty.",
       image: "/image/trace.png",
       reverse: true,
     },
@@ -105,10 +105,10 @@ const Features = () => {
           
           {/* Header Section */}
           <div className="text-center mb-6 sm:mb-16 max-w-[800px] mx-auto">
-            <SectionTitle title="Powerful features to grow your business" />
-            <p className="hidden xs:block text-xs sm:text-base lg:text-lg text-[#666] px-4 mt-1">
+            <SectionTitle title="Streamline Your Invoicing Maximize Cash Flow" />
+            {/* <p className="hidden xs:block text-xs sm:text-base lg:text-lg text-[#666] px-4 mt-1">
               Everything you need to manage your business professionally
-            </p>
+            </p> */}
           </div>
 
           <div className="w-full">

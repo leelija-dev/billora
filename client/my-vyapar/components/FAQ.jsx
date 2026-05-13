@@ -8,34 +8,34 @@ const FAQ = () => {
 
   const faqs = [
     {
-      question: "Is GST supported for all business types?",
+      question: "Can one software manage multiple businesses (multi-GSTIN)?",
       answer:
-        "Yes, our software supports all types of GST registrations including regular, composition, and casual taxpayers. We handle B2B and B2C invoices with proper tax calculations.",
+        "Yes, modern GST billing software can efficiently manage multiple businesses under one single account. Most of these advanced billing applications let users create separate profiles for each GSTIN for generating invoices, tracking inventory, and filing GST returns separately for different businesses while maintaining consolidated records. ",
     },
     {
-      question: "How easy is it to file GST returns?",
+      question: "How to handle GST discrepancies and errors with GST billing applications?",
       answer:
-        "Yes, the platform is flexible and works for traders, manufacturers, service providers and more. Filing GST returns is now just a few clicks away.",
+        "Modern GST billing software automatically matches your purchase records with the Government’s GSTR-2B data. They not only prevent errors by checking HSN/SAC codes or auto-filling buyer details but also help you amend errors in GSTR-1 & adjust tax amounts in GSTR-3B directly. ",
     },
     {
-      question: "Does it support inventory management?",
+      question: "Cloud-based vs. Desktop GST software: which is better?",
       answer:
-        "Absolutely. It supports complete compliance and reporting features along with real-time inventory tracking.",
+        "A cloud-based GST software is generally preferred by most of the business owners as it offers auto-updates for changing tax laws and comes with lower upfront costs. Desktop billing software, on the other hand, helps you operate without the internet but requires extreme data control.",
     },
     {
-      question: "How is GST calculated automatically?",
+      question: "How do I generate an E-invoice (IRN) using GST online billing software?",
       answer:
-        "Yes, the system automatically calculates GST based on your selected configuration and product/service tax rates.",
+        "To generate an E-invoice using a free online billing software, you need to create a B2B invoice in JSON format first and then upload it to the Invoice Registration Portal via the billing software. After validation, it will add a QR code and generate a unique IRN through automatic integration via API.",
     },
     {
-      question: "Can I generate detailed reports?",
+      question: "Is it mandatory to use software for GST billing?",
       answer:
-        "We provide detailed invoice and tax breakdown for every transaction with customizable reports.",
+        "Not really. It’s not mandatory, however, GST billing software is highly effective in ensuring compliance, avoiding penalties, and managing filing requirements.",
     },
     {
-      question: "Is data security assured?",
+      question: "How often does a GST billing software update tax rules?",
       answer:
-        "The software ensures accurate GST filing, reconciliation support, and enterprise-grade data security.",
+        "The best billing software in India generally updates tax rules automatically, especially when there is a change in the law or recommendations from the GST council. However, you can expect to see minor changes once every 4 months and major updates at the start of a financial year (roughly 1st April onwards).",
     },
   ];
 
@@ -75,13 +75,14 @@ const FAQ = () => {
 
                 <div className="message">
                   <p className="text-base sm:text-lg md:text-xl lg:text-2xl mb-2 sm:mb-3 text-slate-900 font-semibold">
-                  Don't get Answer?
+               Still Curious?
+
                   </p>
                   <a
                   href="#contact"
                   className="text-[#1e88e5] text-base sm:text-lg md:text-xl lg:text-2xl no-underline hover:underline transition-all hover:text-blue-700 inline-block font-medium"
                   >
-                  Leave us a Message
+                  Ask Away!
                   </a>
                 </div>
                 </div>
