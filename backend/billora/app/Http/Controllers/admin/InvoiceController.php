@@ -18,60 +18,61 @@ use App\Models\GstCollection;
 use App\Models\PackageInvoice;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
+
 class InvoiceController extends Controller
 {
     public function index()
     {
-        try{
-            if(!Auth::check()){
+        try {
+            if (!Auth::check()) {
                 return response()->json([
                     'status' => false,
                     'message' => 'Authentication required. Please login first.'
                 ]);
             }
             $user = Auth::user()->id;
-             $customer =  Customers::findOrFail($user);
-            if($customer->plan_id == null || $customer->is_active == false){
+            $customer =  Customers::findOrFail($user);
+            if ($customer->plan_id == null || $customer->is_active == false) {
                 return response()->json([
                     'status' => false,
-                    'message' =>'You do not have any active plan. Please upgrade your plan.'
+                    'message' => 'You do not have any active plan. Please upgrade your plan.'
                 ]);
             }
-        $permissions = DB::table('plan_permission_details as ppd')
-            ->join('plan_permission as pp', 'pp.id', '=', 'ppd.permission_id')
-            ->where('ppd.plan_id', $customer->plan_id)
-            ->select('pp.permission_name', 'pp.id', 'pp.slug')
-            ->get();
-        $hasStockPermission = false;
-
-        foreach ($permissions as $permission) {
-            if ($permission->slug === 'stock-management') {
-                $hasStockPermission = true;
-                break;
-            }
-        }
-        if($hasStockPermission){
-        $products = Products::where('user_id', $user)->with(['brand', 'category', 'unit', 'stocks'])
-            ->where('is_active', true)
-            ->whereHas('stocks')
-            ->get();
-        }else{
-             $products = Products::where('user_id', $user)
-                ->with(['brand', 'category', 'unit'])
-                ->where('is_active', true)
+            $permissions = DB::table('plan_permission_details as ppd')
+                ->join('plan_permission as pp', 'pp.id', '=', 'ppd.permission_id')
+                ->where('ppd.plan_id', $customer->plan_id)
+                ->select('pp.permission_name', 'pp.id', 'pp.slug')
                 ->get();
-        }
-        $customers = BillCustomer::where('admin_id', $user)->get();
-        $stores = Store::where('user_id', $user)->get();
-        return response()->json([
-            'status'    => true,
-            'message'   => 'Products and Customers List',
-            'products'  => $products,
-            'customers' => $customers,
-            'stores'    => $stores,
-            'permissions'=> $permissions
-        ]);
-        }catch(\Exception $e){
+            $hasStockPermission = false;
+
+            foreach ($permissions as $permission) {
+                if ($permission->slug === 'stock-management') {
+                    $hasStockPermission = true;
+                    break;
+                }
+            }
+            if ($hasStockPermission) {
+                $products = Products::where('user_id', $user)->with(['brand', 'category', 'unit', 'stocks'])
+                    ->where('is_active', true)
+                    ->whereHas('stocks')
+                    ->get();
+            } else {
+                $products = Products::where('user_id', $user)
+                    ->with(['brand', 'category', 'unit'])
+                    ->where('is_active', true)
+                    ->get();
+            }
+            $customers = BillCustomer::where('admin_id', $user)->get();
+            $stores = Store::where('user_id', $user)->get();
+            return response()->json([
+                'status'    => true,
+                'message'   => 'Products and Customers List',
+                'products'  => $products,
+                'customers' => $customers,
+                'stores'    => $stores,
+                'permissions' => $permissions
+            ]);
+        } catch (\Exception $e) {
             return response()->json([
                 'status' => false,
                 'message' => $e->getMessage()
@@ -82,7 +83,7 @@ class InvoiceController extends Controller
 
     public function store(Request $request)  // bill generate data store
     {
-        if(!Auth::check()){
+        if (!Auth::check()) {
             return response()->json([
                 'status' => false,
                 'message' => 'Authentication required. Please login first.'
@@ -99,7 +100,7 @@ class InvoiceController extends Controller
             // "package_price" => 'nullable|numeric|min:0',
             // "package_size"  => 'nullable',
         ]);
-        if($user != $request->user_id){
+        if ($user != $request->user_id) {
             return response()->json([
                 'status' => false,
                 'message' => 'You are not authorized to perform this action.',
@@ -109,19 +110,19 @@ class InvoiceController extends Controller
         }
         DB::beginTransaction();
         $customer =  Customers::findOrFail($request->user_id);
-        if($customer->plan_id == null || $customer->is_active == false){
-                return response()->json([
-                    'status' => false,
-                    'message' =>'You do not have any active plan. Please upgrade your plan.'
-                ]);
+        if ($customer->plan_id == null || $customer->is_active == false) {
+            return response()->json([
+                'status' => false,
+                'message' => 'You do not have any active plan. Please upgrade your plan.'
+            ]);
         }
         try {
             // check permission 
             $permissions = DB::table('plan_permission_details as ppd')
-            ->join('plan_permission as pp', 'pp.id', '=', 'ppd.permission_id')
-            ->where('ppd.plan_id', $customer->plan_id)
-            ->pluck('pp.slug')
-            ->toArray();
+                ->join('plan_permission as pp', 'pp.id', '=', 'ppd.permission_id')
+                ->where('ppd.plan_id', $customer->plan_id)
+                ->pluck('pp.slug')
+                ->toArray();
 
             $hasStockPermission = in_array('stock-management', $permissions);
 
@@ -129,8 +130,8 @@ class InvoiceController extends Controller
             $items = $request->items;
             $packages = $request->packages;
             $totalPackagePrice = 0;
-            if(isset($packages)){
-                foreach($packages as $package){
+            if (isset($packages)) {
+                foreach ($packages as $package) {
                     $totalPackagePrice += (float)$package['package_price'] * (int)$package['quantity'];
                 }
             }
@@ -139,24 +140,24 @@ class InvoiceController extends Controller
             $totalItems = count($items);
 
             foreach ($items as $item) {
-                
-              if ($hasStockPermission) {
-                $stock = Stocks::where('id', $item['stock_id'])
-                    ->where('product_id', $item['product_id'])
-                    ->first();
 
-                if (!$stock || $stock->quantity < $item['quantity']) {
-                    DB::rollback();
-                    return response()->json([
-                        'status' => false,
-                        'message' => 'Stock not available'
-                    ]);
-                }
-                $price = $stock->selling_price;
-              }else{
+                if ($hasStockPermission) {
+                    $stock = Stocks::where('id', $item['stock_id'])
+                        ->where('product_id', $item['product_id'])
+                        ->first();
+
+                    if (!$stock || $stock->quantity < $item['quantity']) {
+                        DB::rollback();
+                        return response()->json([
+                            'status' => false,
+                            'message' => 'Stock not available'
+                        ]);
+                    }
+                    $price = $stock->selling_price;
+                } else {
                     $product = Products::find($item['product_id']);
-                $price = $product->selling_price ?? 0;
-              }
+                    $price = $product->selling_price ?? 0;
+                }
                 // $price = $item['price'];
                 $qty = $item['quantity'];
                 $discount = ((($price * $qty) * $item['discount'] ?? 0) / 100);
@@ -185,9 +186,9 @@ class InvoiceController extends Controller
             // Store invoice items
             foreach ($items as $item) {
                 if ($hasStockPermission) {
-                $stock = Stocks::where('id', $item['stock_id'])
-                    ->where('product_id', $item['product_id'])
-                    ->first();
+                    $stock = Stocks::where('id', $item['stock_id'])
+                        ->where('product_id', $item['product_id'])
+                        ->first();
 
                     $price = $stock->selling_price;
                 } else {
@@ -218,23 +219,22 @@ class InvoiceController extends Controller
                 GstCollection::create([
                     'user_id' => $request->user_id,
                     'invoice_id' => $invoice->id,
-                    'customer_id' =>$request->customer_id,
+                    'customer_id' => $request->customer_id,
                     'product_id' => $item['product_id'],
-                    'purchase_price' =>$product->purchase_price ?? 0,
+                    'purchase_price' => $product->purchase_price ?? 0,
                     'purchase_gst_percentage' => $product->purchase_gst_percentage ?? 0,
                     'purchase_gst_amount' => $product->purchase_price * $product->purchase_gst_percentage / 100 ?? 0,
                     'selling_price' => $product->selling_price ?? 0,
                     'selling_discount_percentage' => $product->discount_percentage ?? 0,
                     'selling_gst_percentage' => $product->gst_percentage ?? 0,
                     'selling_gst_amount' => $product->selling_price * $product->gst_percentage / 100 ?? 0,
-                    'quantity' =>$qty,
+                    'quantity' => $qty,
                     'govt_pay_status' => false,
                     'invoice_status' => 'completed',
                     'created_by'     => $request->created_by
                 ]);
-                
             }
-            if(isset($packages)){
+            if (isset($packages)) {
                 foreach ($packages as $package) {
                     PackageInvoice::create([
                         'user_id'       => $request->user_id,
@@ -258,7 +258,7 @@ class InvoiceController extends Controller
                 'paid_amount'    => $request->paid_amount,
                 'due_amount'     => $totalAmount - $request->paid_amount,
                 'payment_method' => $request->payment_method ?? 'Cash',
-                'remarks'        =>'Bill Generated',
+                'remarks'        => 'Bill Generated',
                 'transaction_id' => null,
                 'created_by'     => $request->created_by
             ]);
@@ -268,22 +268,22 @@ class InvoiceController extends Controller
             $customer->update([
                 'due_amount' => $due_amount
             ]);
-            
+
             //stock update
             if ($hasStockPermission) {
-            foreach ($items as $item) {
-                $stock = Stocks::where('id', $item['stock_id'])->where('product_id', $item['product_id'])->first();
-                if($stock->quantity >= $item['quantity'])
-                $stock->update([
-                    'quantity' => $stock->quantity - $item['quantity']
-                ]);
-                else{
-                    return response()->json([
-                        'status'    => false,
-                        'message'   => 'Stock not available'
-                    ]);
+                foreach ($items as $item) {
+                    $stock = Stocks::where('id', $item['stock_id'])->where('product_id', $item['product_id'])->first();
+                    if ($stock->quantity >= $item['quantity'])
+                        $stock->update([
+                            'quantity' => $stock->quantity - $item['quantity']
+                        ]);
+                    else {
+                        return response()->json([
+                            'status'    => false,
+                            'message'   => 'Stock not available'
+                        ]);
+                    }
                 }
-            }
             }
             DB::commit();
 
@@ -303,103 +303,101 @@ class InvoiceController extends Controller
             ]);
         }
     }
-   public function show($id)
-{
-    try {
+    public function show($id)
+    {
+        try {
 
-        $userId = Auth::user()->id;
-        $customer =  Customers::findOrFail($userId);
-        if($customer->plan_id == null || $customer->is_active == false){
+            $userId = Auth::user()->id;
+            $customer =  Customers::findOrFail($userId);
+            if ($customer->plan_id == null || $customer->is_active == false) {
                 return response()->json([
                     'status' => false,
-                    'message' =>'You do not have any active plan. Please upgrade your plan.'
+                    'message' => 'You do not have any active plan. Please upgrade your plan.'
                 ]);
-        }
-        $bill = Invoice::with('invoiceItems','packages')
-            ->where('user_id', $userId)
-            ->where('id', $id)
-            ->first();  
+            }
+            $bill = Invoice::with('invoiceItems', 'packages')
+                ->where('user_id', $userId)
+                ->where('id', $id)
+                ->first();
 
-        if (!$bill) {
+            if (!$bill) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Bill not found'
+                ], 404);
+            }
+
             return response()->json([
-                'status' => false,
-                'message' => 'Bill not found'
-            ], 404);
+                'status'  => true,
+                'message' => 'Single Bill',
+                'data'    => $bill
+            ]);
+        } catch (\Exception $e) {
+
+            return response()->json([
+                'status'  => false,
+                'message' => $e->getMessage()
+            ]);
         }
-
-        return response()->json([
-            'status'  => true,
-            'message' => 'Single Bill',
-            'data'    => $bill
-        ]);
-
-    } catch (\Exception $e) {
-
-        return response()->json([
-            'status'  => false,
-            'message' => $e->getMessage()
-        ]);
     }
-}
-   public function billHistory(Request $request)
-{
-    try {
-        $user = Auth::user()->id;
-        $search = $request->search;
+    public function billHistory(Request $request)
+    {
+        try {
+            $user = Auth::user()->id;
+            $search = $request->search;
 
-        $billHistory = Invoice::with(['invoiceItems.product', 'packages'])
-            ->where('user_id', $user)
-            ->when($search, function ($query) use ($search) {
+            $billHistory = Invoice::with(['invoiceItems.product', 'packages'])
+                ->where('user_id', $user)
+                ->when($search, function ($query) use ($search) {
 
-                $query->where('id', 'like', "%$search%")
-                    ->orWhere('total_amount', 'like', "%$search%")
+                    $query->where('id', 'like', "%$search%")
+                        ->orWhere('total_amount', 'like', "%$search%")
 
-                    ->orWhereHas('invoiceItems', function ($q) use ($search) {
-                        $q->where('price', 'like', "%$search%")
-                        ->orWhere('quantity', 'like', "%$search%");
-                    })
+                        ->orWhereHas('invoiceItems', function ($q) use ($search) {
+                            $q->where('price', 'like', "%$search%")
+                                ->orWhere('quantity', 'like', "%$search%");
+                        })
 
-                    ->orWhereHas('invoiceItems.product', function ($q) use ($search) {
-                        $q->where('name', 'like', "%$search%")
-                        ->orWhere('sku', 'like', "%$search%");
-                    });
+                        ->orWhereHas('invoiceItems.product', function ($q) use ($search) {
+                            $q->where('name', 'like', "%$search%")
+                                ->orWhere('sku', 'like', "%$search%");
+                        });
+                })
+                ->orderBy('created_at', 'desc')
+                ->paginate(15);
 
-            })
-            ->orderBy('created_at', 'desc')
-            ->paginate(15);
+            return response()->json([
+                'status'    => true,
+                'message'   => 'Bill History',
+                'data'      => $billHistory
+            ]);
+        } catch (\Exception $e) {
 
-        return response()->json([
-            'status'    => true,
-            'message'   => 'Bill History',
-            'data'      => $billHistory
-        ]);
-
-    } catch (\Exception $e) {
-
-        return response()->json([
-            'status'    => false,
-            'message'   => $e->getMessage()
-        ]);
+            return response()->json([
+                'status'    => false,
+                'message'   => $e->getMessage()
+            ]);
+        }
     }
-} 
 
-        /* with out stock management bill generate */
-    public function bill($id){
-        if(!Auth::check()){
+    /* with out stock management bill generate */
+    public function bill($id)
+    {
+        if (!Auth::check()) {
             return response()->json([
                 'status'    => false,
                 'message'   => 'Authentication required. Please login first.'
             ]);
         }
-       $user = Auth::user()->id;
-       $customer =  Customers::findOrFail($user);
-        if($customer->plan_id == null || $customer->is_active == false){
-                return response()->json([
-                    'status' => false,
-                    'message' =>'You do not have any active plan. Please upgrade your plan.'
-                ]);
+        $user = Auth::user()->id;
+        $customer =  Customers::findOrFail($user);
+        if ($customer->plan_id == null || $customer->is_active == false) {
+            return response()->json([
+                'status' => false,
+                'message' => 'You do not have any active plan. Please upgrade your plan.'
+            ]);
         }
-       $products = Products::with(['brand', 'category', 'unit'])
+        $products = Products::with(['brand', 'category', 'unit'])
             ->where('is_active', true)
             ->where('user_id', $id)
             ->get();
@@ -412,9 +410,8 @@ class InvoiceController extends Controller
             'customers' => $customers,
             'stores'    => $stores
         ]);
-        
     }
-     public function billStore(Request $request)  // bill generate data form product table with out stock management
+    public function billStore(Request $request)  // bill generate data form product table with out stock management
     {
         $request->validate([
             "user_id"       => 'required|exists:customers,id',
@@ -426,11 +423,11 @@ class InvoiceController extends Controller
 
         DB::beginTransaction();
         $customer =  Customers::findOrFail($request->user_id);
-        if($customer->plan_id == null || $customer->is_active == false){
-                return response()->json([
-                    'status' => false,
-                    'message' =>'You do not have any active plan. Please upgrade your plan.'
-                ]);
+        if ($customer->plan_id == null || $customer->is_active == false) {
+            return response()->json([
+                'status' => false,
+                'message' => 'You do not have any active plan. Please upgrade your plan.'
+            ]);
         }
         try {
 
@@ -498,7 +495,7 @@ class InvoiceController extends Controller
                 'due_amount'     => $totalAmount - $request->paid_amount,
                 'payment_method' => $request->payment_method ?? 'Cash',
                 'transaction_id' => null,
-                'remarks'        =>'',
+                'remarks'        => '',
                 'created_by'     => $request->created_by
             ]);
             // update due amount in customer 
@@ -507,7 +504,7 @@ class InvoiceController extends Controller
             $customer->update([
                 'due_amount' => $due_amount
             ]);
-            
+
             DB::commit();
 
             return response()->json([
@@ -525,6 +522,467 @@ class InvoiceController extends Controller
             ]);
         }
     }
+    public function update(Request $request, $id)
+    {
+
+        $data = $request->validate([
+            'user_id'       => 'required|exists:customers,id',
+            'customer_id'   => 'required|exists:bill_customer,id',
+            'store_id'      => 'required|exists:store,id',
+            'paid_amount'   => 'required|numeric|min:0',
+            'created_by'    => 'required',
+            'items'         => 'required|array|min:1',
+            'deleted_item_ids' => 'nullable|array',
+
+        ]);
+        // $data = $request->all();
+        $user = Auth::user()->id;
+        if ($user != $data['user_id']) {
+            return response()->json([
+                'status' => false,
+                'message' => 'You are not authorized to update this invoice'
+            ]);
+        }
+        DB::beginTransaction();
+        try {
+            $invoice = Invoice::where('id', $id)->where('user_id', $data['user_id'])->firstOrFail();
+            $oldItems = InvoiceItems::where('invoice_id', $invoice->id)->where('user_id', $data['user_id'])->get();
+            $customer =  Customers::findOrFail($request->user_id);
+            $permissions = DB::table('plan_permission_details as ppd')  //stock permission 
+                ->join('plan_permission as pp', 'pp.id', '=', 'ppd.permission_id')
+                ->where('ppd.plan_id', $customer->plan_id)
+                ->pluck('pp.slug')
+                ->toArray();
+
+            $hasStockPermission = in_array('stock-management', $permissions);
+            $newItems = collect($request->items);
+            $requestProductIds = $newItems->pluck('product_id')->toArray();
+            //deleted items resrtore stock if stock permission
+            if (isset($data['deleted_item_ids']) && count($data['deleted_item_ids']) > 0) {
+                foreach ($data['deleted_item_ids'] as $id) {
+
+                    $invoiceItem = InvoiceItems::where('invoice_id', $invoice->id)->where('id', $id)->first();
+                    if ($hasStockPermission) {
+                        $stocks = Stocks::where('user_id', $data['user_id'])->where('product_id', $invoiceItem->product_id)->first();
+                        if ($stocks) {
+                            $stocks->update([
+                                'quantity' => $stocks->quantity + $invoiceItem->quantity
+                            ]);
+                        }
+                    }
+                    $gstCollection =  GstCollection::where('user_id', $data['user_id'])->where('invoice_id', $invoice->id)->where('product_id', $invoiceItem->product_id)->first();
+                    if ($gstCollection) {
+                        $gstCollection->delete();
+                    }
+                    $invoiceItem->delete();
+                }
+            }
+
+            //update invoice 
+            $totalAmount = 0;
+            $totalItems = count($newItems);
+
+            foreach ($newItems as $item) {
+
+                if ($hasStockPermission) {
+                    $stock = Stocks::where('id', $item['stock_id'])
+                        ->where('product_id', $item['product_id'])
+                        ->first();
+
+                    if (!$stock) {
+                        DB::rollback();
+                        return response()->json([
+                            'status' => false,
+                            'message' => 'Stock not available'
+                        ]);
+                    }
+                    $price = $stock->selling_price;
+                } else {
+                    $product = Products::find($item['product_id']);
+                    $price = $product->selling_price ?? 0;
+                }
+                // $price = $item['price'];
+                $qty = $item['quantity'];
+                $discount = ((($price * $qty) * $item['discount'] ?? 0) / 100);
+                $gst = (((($price * $qty) - $discount) * $item['gst'] ?? 0) / 100);
+
+                $itemTotal = ((($price * $qty) - $discount) + $gst);
+
+                $totalAmount += $itemTotal;
+            }
+            $invoice->update([
+                'customer_id'   => $request->customer_id,
+                'total_amount'  => $totalAmount,
+                'total_items'   => $totalItems,
+                'paid_amount'   => $request->paid_amount,
+
+            ]);
+
+            //Invpoice Items update and add 
+            foreach ($newItems as $item) {
+                // $exist = InvoiceItems::where('invoice_id', $invoice->id)->where('product_id', $item['product_id'])->first();
+                $exist = null;
+
+                if (isset($item['id'])) {
+
+                    $exist = InvoiceItems::where('invoice_id', $invoice->id)
+                        ->where('id', $item['id'])
+                        ->first();
+                }
+                if ($hasStockPermission) {
+                    $stock = Stocks::where('id', $item['stock_id'])
+                        ->where('product_id', $item['product_id'])
+                        ->first();
+
+                    $price = $stock->selling_price;
+                } else {
+                    $product = Products::find($item['product_id']);
+                    $price = $product->selling_price ?? 0;
+                }
+                $qty = $item['quantity'];
+                $product = Products::find($item['product_id']);
+                $discount = ((($price * $qty) * $item['discount'] ?? 0) / 100);
+                $gst = (((($price * $qty) - $discount) * $item['gst'] ?? 0) / 100);
+                $totalPrice = ((($price * $qty) - $discount) + $gst);
+                if ($exist) {
+                    if ($hasStockPermission) {
+
+                        $oldQty = $exist->quantity;
+
+                        $differenceQty = $qty - $oldQty;
+
+                        if ($differenceQty > 0) {
+
+                            if ($stock->quantity < $differenceQty) {
+
+                                DB::rollback();
+
+                                return response()->json([
+                                    'status' => false,
+                                    'message' => 'Stock not available'
+                                ]);
+                            }
+
+                            $stock->decrement('quantity', $differenceQty);
+                        } elseif ($differenceQty < 0) {
+
+                            $stock->increment('quantity', abs($differenceQty));
+                        }
+                    }
+                    $exist->update([
+                        'quantity' => $item['quantity'],
+                        'unit_id'       => $item['unit_id'],
+                        'item_count' => $item['quantity'],
+                        'price' => $item['price'],
+                        'gst' => $item['gst'] ?? 0,
+                        'discount' => $item['discount'] ?? 0,
+                        'total_price' => $totalPrice ?? 0,
+                    ]);
+                    $gstCollections =  GstCollection::where('user_id', $data['user_id'])->where('invoice_id', $invoice->id)->where('product_id', $item['product_id'])->first();
+                    $product = Products::find($item['product_id']);
+                    if ($gstCollections) {
+                        $gstCollections->update([
+                            'purchase_price' => $product->purchase_price,
+                            'purchase_gst_percentage' => $product->purchase_gst_percentage ?? 0,
+                            'purchase_gst_amount' => $item['discount'] ?? 0,
+                            'selling_price'  => $item['price'] ?? 0,
+                            'selling_discount_percentage' => $item['discount'] ?? 0,
+                            'selling_gst_percentage' => $item['gst'] ?? 0,
+                            'selling_gst_amount' => $item['price'] * $item['gst'] / 100,
+                            'quantity' => $item['quantity'],
+                            'govt_pay_status' => false,
+                            'invoice_status' => 'completed',
+                        ]);
+                    } else {
+                        GstCollection::create([
+                            'user_id' => $data['user_id'],
+                            'invoice_id' => $invoice->id,
+                            'product_id' => $item['product_id'],
+                            'purchase_price' => $product->purchase_price,
+                            'purchase_gst_percentage' => $product->purchase_gst_percentage ?? 0,
+                            'purchase_gst_amount' => $item['discount'] ?? 0,
+                            'selling_price'  => $item['price'] ?? 0,
+                            'selling_discount_percentage' => $item['discount'] ?? 0,
+                            'selling_gst_percentage' => $item['gst'] ?? 0,
+                            'selling_gst_amount' => $item['price'] * $item['gst'] / 100,
+                            'quantity' => $item['quantity'],
+                            'govt_pay_status' => false,
+                            'invoice_status' => 'completed',
+                            'created_by' => $request->created_by
+                        ]);
+                    }
+                } else {
+                    InvoiceItems::create([
+                        'user_id'       => $data['user_id'],
+                        'invoice_id'    => $invoice->id,
+                        'product_id'    => $item['product_id'],
+                        'quantity'      => $item['quantity'],
+                        'unit_id'       => $item['unit_id'],
+                        'price'         => $item['price'] ?? 0,
+                        'gst'           => $item['gst'] ?? 0,
+                        'discount'      => $item['discount'] ?? 0,
+                        'total_price'   => $totalPrice ?? 0,
+                        'status'        => 'completed',
+                        'created_by'    => $request->created_by
+                    ]);
+                    if ($hasStockPermission) {
+                        $stocks = Stocks::where('user_id', $data['user_id'])->where('product_id', $item['product_id'])->first();
+                        if ($stocks) {
+                            $stocks->update([
+                                'quantity' => $stocks->quantity - $item['quantity']
+                            ]);
+                        }
+                    }
+                    GstCollection::create([
+                        'user_id' => $request->user_id,
+                        'invoice_id' => $invoice->id,
+                        'customer_id' => $request->customer_id,
+                        'product_id' => $item['product_id'],
+                        'purchase_price' => $product->purchase_price ?? 0,
+                        'purchase_gst_percentage' => $product->purchase_gst_percentage ?? 0,
+                        'purchase_gst_amount' => $product->purchase_price * $product->purchase_gst_percentage / 100 ?? 0,
+                        'selling_price' => $product->selling_price ?? 0,
+                        'selling_discount_percentage' => $product->discount_percentage ?? 0,
+                        'selling_gst_percentage' => $product->gst_percentage ?? 0,
+                        'selling_gst_amount' => $product->selling_price * $product->gst_percentage / 100 ?? 0,
+                        'quantity' => $qty,
+                        'govt_pay_status' => false,
+                        'invoice_status' => 'completed',
+                        'created_by'     => $request->created_by
+                    ]);
+                }
+            }
+            $billPaymentHistory = BillPaymentHistory::where('admin_id', $request->user_id)->where('invoice_id', $invoice->id)->first();
+            if ($billPaymentHistory) {
+                $billPaymentHistory->update([
+                    'customer_id'    => $request->customer_id,
+                    'store_id'       => $request->store_id,
+                    'total_amount'   => $totalAmount,
+                    'paid_amount'    => $request->paid_amount,
+                    'due_amount'     => $totalAmount - $request->paid_amount,
+                    'payment_method' => $request->payment_method ?? 'Cash',
+                    'remarks'        => 'Bill Generated',
+                ]);
+            }
+            DB::commit();
+            return response()->json([
+                'status' => true,
+                'message' => 'Invoice updated successfully'
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'status' => false,
+                'message' => $e->getMessage()
+            ]);
+        }
+    }
+    public function  updateBillStatus($id)
+    {
+        $user = Auth::user()->id;
+        DB::beginTransaction();
+        try {
+            $invoice = Invoice::where('id', $id)->where('user_id', $user)->firstOrFail();
+
+            if ($invoice->status == 'cancelled') {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Invoice already cancelled'
+                ]);
+            }
+            $billCustomer = BillCustomer::where('id', $invoice->customer_id)->where('admin_id', $user)->firstOrFail();
+            $invoiceItem = InvoiceItems::where('invoice_id', $invoice->id)->where('user_id', $user)->get();
+            // $gstCollection = GstCollection::where('invoice_id', $invoice->id)->where('user_id', $user)->get();
+            $customer = Customers::findOrFail($user);
+            $permissions = DB::table('plan_permission_details as ppd')
+                ->join('plan_permission as pp', 'pp.id', '=', 'ppd.permission_id')
+                ->where('ppd.plan_id', $customer->plan_id)
+                ->pluck('pp.slug')
+                ->toArray();
+
+            $hasStockPermission = in_array('stock-management', $permissions);
+            //stock reverse/update
+            if ($hasStockPermission) {
+                foreach ($invoiceItem as $item) {
+                    Stocks::where('user_id', $user)
+                        ->where('product_id', $item->product_id)
+                        ->increment('quantity', $item->quantity);
+                }
+            }
+            //invoice item status update
+            InvoiceItems::where('invoice_id', $invoice->id)
+                ->where('user_id', $user)->update([
+                    'status' => 'cancelled'
+                ]);
+            //gst collection status update
+            GstCollection::where('invoice_id', $invoice->id)
+                ->where('user_id', $user)
+                ->update([
+                    'govt_pay_status' => false,
+                    'invoice_status' => 'cancelled',
+                ]);
+            //invoice status update
+            $invoice->update([
+                'status' => 'cancelled',
+                'updated_at' => now()
+            ]);
+            //customer due update
+            if ($billCustomer)
+                $billCustomer->update([
+                    'due_amount' => ($billCustomer->due_amount - ($invoice->total_amount - $invoice->paid_amount)),
+                ]);
+            DB::commit();
+            return response()->json([
+                'status' => true,
+                'message' => 'Invoice cancelled successfully'
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'status' => false,
+                'message' => $e->getMessage()
+            ]);
+        }
+    }
+
+    public function customerInvoices($id)
+    {
+        $user = Auth::user()->id;
+        try {
+            if (!Auth::check()) {
+                return response()->json([
+                    'status'    => false,
+                    'message'   => 'Authentication required. Please login first.'
+                ]);
+            }
+            $customer = BillCustomer::where('id', $id)->where('admin_id', $user)->first();
+            if (!$customer) {
+                return response()->json([
+                    'status'    => false,
+                    'message'   => 'Customer not found'
+                ]);
+            }
+            $invoices = Invoice::with('invoiceItems.product')->with('customer')
+                ->where('customer_id', $id)
+                ->where('user_id', $user)
+                ->orderBy('created_at', 'desc')
+                ->get();
+            return response()->json([
+                'status'    => true,
+                'message'   => 'Customer Invoices',
+                'data'      => $invoices
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status'    => false,
+                'message'   => $e->getMessage()
+            ]);
+        }
+    }
+
+    public function invoiceDuePay(Request $request, $id)
+    {
+
+        if (!Auth::check()) {
+            return response()->json([
+                'status'    => false,
+                'message'   => 'Authentication required. Please login first.'
+            ]);
+        }
+        $user = Auth::user()->id;
+        $data = $request->validate([
+            'paid_amount' => 'required|numeric|min:0',
+            'payment_method' => 'required|string',
+
+        ]);
 
 
+        DB::beginTransaction();
+
+        try {
+            $invoice = Invoice::where('id', $id)->where('user_id', $user)->first();
+
+            if (!$invoice) {
+                return response()->json([
+                    'status'    => false,
+                    'message'   => 'Invoice not found'
+                ]);
+            }
+
+            if ($invoice->status == 'cancelled') {
+                return response()->json([
+                    'status'    => false,
+                    'message'   => 'Cannot pay due for cancelled invoice'
+                ]);
+            }
+            if (($invoice->total_amount - $invoice->paid_amount) <= 0) {
+                return response()->json([
+                    'status'    => false,
+                    'message'   => 'No due amount for this invoice'
+                ]);
+            }
+            if (($invoice->total_amount - $invoice->paid_amount) < $data['paid_amount']) {
+                return response()->json([
+                    'status'    => false,
+                    'message'   => 'Paid amount exceeds due amount',
+                    'due amount' => $invoice->total_amount - $invoice->paid_amount
+                ]);
+            }
+            if ($data['paid_amount'] <= 0) {
+                return response()->json([
+                    'status'    => false,
+                    'message'   => 'Paid amount must be greater than zero'
+                ]);
+            }
+            $newPaidAmount = (float)$invoice->paid_amount + (float)$data['paid_amount'];
+            $newDueAmount  = (float)$invoice->total_amount - $newPaidAmount;
+
+            $customer = BillCustomer::where('id', $invoice->customer_id)->where('admin_id', $user)->first();
+            if (!$customer) {
+                return response()->json([
+                    'status'    => false,
+                    'message'   => 'Customer not found'
+                ]);
+            }
+            //invoice paid amount update
+            $invoice->update([
+                'paid_amount' => (float)$invoice->paid_amount + (float)$data['paid_amount'],
+            ]);
+            //customer due update
+            $customer->update([
+                'due_amount' => (float)$customer->due_amount - (float)$data['paid_amount'],
+            ]);
+            // update 
+            BillPaymentHistory::create([
+                'admin_id'       => $user,
+                'invoice_id'     => $invoice->id,
+                'customer_id'    => $invoice->customer_id,
+                'store_id'       => $invoice->store_id,
+                'total_amount'   => $invoice->total_amount,
+                'paid_amount'    => $data['paid_amount'],
+                'due_amount'     => ($invoice->total_amount - ($invoice->paid_amount + $data['paid_amount'])),
+                'payment_method' => $data['payment_method'],
+                'transaction_id' => null,
+                'remarks'        => 'invoice due payment',
+                'created_by'     => $user
+            ]);
+            DB::commit();
+            return response()->json([
+                'status' => true,
+                'message' => 'Due payment successful',
+                'data' => [
+                    'invoice_id' => $invoice->id,
+                    'total_amount' => $invoice->total_amount,
+                    'paid_amount' => $newPaidAmount,
+                    'due_amount' => $newDueAmount
+                ]
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'status'    => false,
+                'message'   => $e->getMessage()
+            ]);
+        }
+    }
 }

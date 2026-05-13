@@ -133,9 +133,10 @@ Route::middleware('auth:sanctum')->prefix('invoice')->group(function () {
    Route::put('/{id}', [InvoiceController::class, 'update']);
    Route::get('/bill-history', [InvoiceController::class, 'billHistory']);
    Route::get('/{id}', [InvoiceController::class, 'show']);
-   
+   Route::put('/update-bill-status/{id}', [InvoiceController::class, 'updateBillStatus']);
    Route::delete('/{id}', [InvoiceController::class, 'destroy']);
-   
+   Route::get('/customer-invoices/{id}',[InvoiceController::class, 'customerInvoices']);
+   Route::put('/invoice-due-pay/{id}', [InvoiceController::class, 'invoiceDuePay']);
 
    // user order hisrtory
    Route::get('/user-order-history/{id}', [UserOrdersController::class, 'userOrderHistory']);
