@@ -27,6 +27,7 @@ import InvoiceDetail from '../pages/invoices/InvoiceDetail'
 import Reports from '../pages/reports/Reports'
 import ReportDetails from '../pages/reports/ReportDetails'
 import Plans from '../pages/billing/Plans'
+import GstManagement from '../pages/gst/GstManagement'
 import Settings from '../pages/settings/Settings'
 
 
@@ -65,6 +66,7 @@ const AppRoutes = () => {
         <Route path="reports" element={<ProtectedRoute feature="reports"><Reports /></ProtectedRoute>} />
         <Route path="reports/:id" element={<ReportDetails />} />
         <Route path="billing" element={<ProtectedRoute feature="billing"><Plans /></ProtectedRoute>} />
+        <Route path="gst" element={<ProtectedRoute feature="gst"><GstManagement /></ProtectedRoute>} />
 
         <Route path="settings" element={<ProtectedRoute feature="settings"><Settings /></ProtectedRoute>} />
       </Route>

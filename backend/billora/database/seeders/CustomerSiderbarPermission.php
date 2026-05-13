@@ -20,6 +20,7 @@ class CustomerSiderbarPermission extends Seeder
                'Products',
                'Categories',
                'Brands',
+               'Gst',
                'Units',
                'Medicine Types',
                'Stores',

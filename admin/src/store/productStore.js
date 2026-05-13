@@ -142,6 +142,7 @@ export const useProductStore = create((set, get) => ({
     set({ loading: true })
     try {
       const response = await productsAPI.create(productData)
+      console.log("Checking product data ............",productData)
       console.log(' Product creation API response:', response)
       console.log(' Response data structure:', JSON.stringify(response.data, null, 2))
       
