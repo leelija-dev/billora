@@ -63,25 +63,24 @@ export const useGstStore = create((set, get) => ({
         product_sku: productMap[collection.product_id]?.sku || null
       }));
       
-      // Extract clean product data from the products array
+      // Extract clean product data from the products array (aggregated data)
       const cleanProducts = products.map(item => {
         // Log the item structure for debugging
         console.log('Processing product item:', item);
         
+        // The API returns aggregated product data with these fields:
+        // product_id, total_quantity, total_purchase_price, total_purchase_gst,
+        // total_selling_price, total_selling_gst, total_products
         return {
-          ...item.product,
-          // Ensure all GST-related values are properly mapped and converted to numbers
-          selling_price: parseFloat(item.selling_price) || parseFloat(item.product?.selling_price) || 0,
-          selling_gst_percentage: parseFloat(item.selling_gst_percentage) || parseFloat(item.product?.gst_percentage) || 0,
-          selling_gst_amount: parseFloat(item.selling_gst_amount) || 0,
-          quantity: parseFloat(item.quantity) || 1,
-          purchase_price: parseFloat(item.purchase_price) || parseFloat(item.product?.purchase_price) || 0,
-          purchase_gst_percentage: parseFloat(item.purchase_gst_percentage) || parseFloat(item.product?.purchase_gst_percentage) || 0,
-          purchase_gst_amount: parseFloat(item.purchase_gst_amount) || 0,
-          selling_discount_percentage: parseFloat(item.selling_discount_percentage) || parseFloat(item.product?.discount_percentage) || 0,
-          total_quantity: parseFloat(item.quantity) || 1,
-          // Also map the product's own GST percentage if available
-          gst_rate: parseFloat(item.product?.gst_percentage) || parseFloat(item.selling_gst_percentage) || 18
+          product_id: item.product_id,
+          total_quantity: parseFloat(item.total_quantity) || 0,
+          total_purchase_price: parseFloat(item.total_purchase_price) || 0,
+          total_purchase_gst: parseFloat(item.total_purchase_gst) || 0,
+          total_selling_price: parseFloat(item.total_selling_price) || 0,
+          total_selling_gst: parseFloat(item.total_selling_gst) || 0,
+          total_products: parseInt(item.total_products) || 0,
+          // Keep product details if available
+          product: item.product || null
         };
       });
 
