@@ -409,10 +409,54 @@ const InvoiceDetail = () => {
   const paidAmountNum = parseFloat(invoice.paid_amount || 0)
   const dueBalance = Math.max(0, totalAmountNum - paidAmountNum)
   const showDuePayment = invoice.status !== 'cancelled' && dueBalance > 0.001
+  const isEditMode = isEditing && invoice.status !== 'cancelled'
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <div className=" mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {isEditMode ? (
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.25 }}
+            className="space-y-6"
+          >
+            <div className="flex flex-col gap-4">
+              <Button
+                variant="outline"
+                onClick={() => setIsEditing(false)}
+                className="w-fit"
+                icon={FiArrowLeft}
+              >
+                Back to invoice
+              </Button>
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+                  Edit invoice
+                </h1>
+                <p className="text-gray-600 dark:text-gray-400 mt-2 flex items-center">
+                  <FiFileText className="w-4 h-4 mr-2 shrink-0" />
+                  <span>
+                    Invoice #{invoice.invoice_number || invoice.id}
+                    <span className="text-gray-500 dark:text-gray-500"> — </span>
+                    Update lines, customer, store, and payment
+                  </span>
+                </p>
+              </div>
+            </div>
+            <InvoiceEditForm
+              invoice={invoice}
+              hasStockPermission={hasStockPermission}
+              variant="page"
+              onCancel={() => setIsEditing(false)}
+              onSaved={() => {
+                setIsEditing(false)
+                setRefetchVersion((v) => v + 1)
+              }}
+            />
+          </motion.div>
+        ) : (
+          <>
         {/* Header Section */}
         <div className="mb-8">
           <div className="flex items-center justify-between">
@@ -448,12 +492,12 @@ const InvoiceDetail = () => {
               {invoice.status !== 'cancelled' && (
                 <>
                   <Button
-                    onClick={() => setIsEditing((e) => !e)}
+                    onClick={() => setIsEditing(true)}
                     variant="outline"
                     className="flex items-center"
                     icon={FiEdit2}
                   >
-                    {isEditing ? 'Close editor' : 'Edit invoice'}
+                    Edit invoice
                   </Button>
                   <Button
                     onClick={handleCancelInvoice}
@@ -492,20 +536,6 @@ const InvoiceDetail = () => {
             </div>
           </div>
         </div>
-
-        {isEditing && invoice.status !== 'cancelled' && (
-          <div className="mb-8">
-            <InvoiceEditForm
-              invoice={invoice}
-              hasStockPermission={hasStockPermission}
-              onCancel={() => setIsEditing(false)}
-              onSaved={() => {
-                setIsEditing(false)
-                setRefetchVersion((v) => v + 1)
-              }}
-            />
-          </div>
-        )}
 
         {/* Main Content */}
         <motion.div
@@ -839,6 +869,8 @@ const InvoiceDetail = () => {
             </motion.div>
           </div>
         </motion.div>
+          </>
+        )}
       </div>
     </div>
   )

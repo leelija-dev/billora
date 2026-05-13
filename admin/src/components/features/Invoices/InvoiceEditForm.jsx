@@ -24,7 +24,7 @@ const calculateLineTotal = (price, quantity, gst, discount) => {
   return afterDisc + gstAmt
 }
 
-const InvoiceEditForm = ({ invoice, hasStockPermission, onCancel, onSaved }) => {
+const InvoiceEditForm = ({ invoice, hasStockPermission, onCancel, onSaved, variant = 'embedded' }) => {
   const { user } = useAuthStore()
   const createdBy = user?.id || invoice.created_by
 
@@ -296,10 +296,20 @@ const InvoiceEditForm = ({ invoice, hasStockPermission, onCancel, onSaved }) => 
   return (
     <form
       onSubmit={handleSubmit}
-      className="rounded-2xl border border-primary-200 dark:border-primary-900 bg-white dark:bg-gray-800 shadow-lg p-6 space-y-6"
+      className={
+        variant === 'page'
+          ? 'rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-lg p-6 space-y-6'
+          : 'rounded-2xl border border-primary-200 dark:border-primary-900 bg-white dark:bg-gray-800 shadow-lg p-6 space-y-6'
+      }
     >
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Edit invoice</h2>
+      <div
+        className={`flex flex-wrap items-center gap-3 ${
+          variant === 'page' ? 'justify-end' : 'justify-between'
+        }`}
+      >
+        {variant !== 'page' && (
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Edit invoice</h2>
+        )}
         <div className="flex gap-2">
           <Button type="button" variant="outline" onClick={onCancel} icon={FiX}>
             Close
