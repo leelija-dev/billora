@@ -26,7 +26,7 @@ class GstController extends Controller
         //         'user_id' => $id
         //     ]);
         // }
-        $data = GstCollection::where('user_id',$id)->where('invoice_status','completed')->get();
+        $data = GstCollection::where('user_id',$id)->where('invoice_status','completed')->orderBy('created_at', 'desc')->get();
         $totalGst = GstCollection::where('user_id',$id)->sum('selling_gst_amount'); 
         $dueGstPayGovt = GstCollection::where('user_id', $id)->where('govt_pay_status', false)->where('invoice_status','completed')->sum(DB::raw('selling_gst_amount * quantity'));
         // $allProducts = GstCollection::where('user_id',$id)->get();
@@ -54,6 +54,7 @@ class GstController extends Controller
                 // Total entries
                 DB::raw('COUNT(*) as total_products')
             )
+            ->orderBy('created_at', 'desc')
             ->groupBy('product_id')
             // ->with('product')
             ->get();

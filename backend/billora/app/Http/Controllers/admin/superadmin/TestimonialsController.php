@@ -36,7 +36,7 @@ class TestimonialsController extends Controller
             $data = $request->validate([
                 'name' => 'required|string|max:255',
                 'role' => 'required|string|max:255',
-                'company' => 'required|string|max:255',
+                'company' => 'nullable|string|max:255',
                 'message' => 'nullable|string',
                 'rating' => 'required|min:1|max:5',
                 'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg',

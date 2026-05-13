@@ -583,7 +583,6 @@
                 </div>
             </div>
         </div>
-
         <!-- Stats Cards -->
         <div class="stats-grid">
             <div class="stat-card">
@@ -842,5 +841,49 @@
 </script>
 
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
+<script>
+    const Toast = Swal.mixin({
+        toast: true,
+        position: 'top-end',
+        showConfirmButton: false,
+        timer: 3000,
+        timerProgressBar: true,
+        didOpen: (toast) => {
+            toast.onmouseenter = Swal.stopTimer;
+            toast.onmouseleave = Swal.resumeTimer;
+        }
+    });
+</script>
+
+{{-- SUCCESS --}}
+@if(session('success'))
+<script>
+    Toast.fire({
+        icon: 'success',
+        title: "{{ session('success') }}"
+    });
+</script>
+@endif
+
+{{-- ERROR --}}
+@if(session('error'))
+<script>
+    Toast.fire({
+        icon: 'error',
+        title: "{{ session('error') }}"
+    });
+</script>
+@endif
+
+{{-- VALIDATION ERROR --}}
+@if ($errors->any())
+<script>
+    Toast.fire({
+        icon: 'error',
+        title: `{!! implode('<br>', $errors->all()) !!}`
+    });
+</script>
+@endif
 @endsection
