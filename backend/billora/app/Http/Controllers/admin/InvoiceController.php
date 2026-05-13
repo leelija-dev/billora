@@ -852,4 +852,39 @@ class InvoiceController extends Controller
         }
     }
 
+    public function customerInvoices($id){
+        $user = Auth::user()->id;
+        try{
+            if(!Auth::check()){
+                return response()->json([
+                    'status'    => false,
+                    'message'   => 'Authentication required. Please login first.'
+                ]);
+            
+            }
+            $customer = BillCustomer::where('id', $id)->where('admin_id', $user)->first();
+            if(!$customer){
+                return response()->json([
+                    'status'    => false,
+                    'message'   => 'Customer not found' 
+                ]);
+            }
+            $invoices = Invoice::with('invoiceItems.product')->with('customer')
+                ->where('customer_id', $id)
+                ->where('user_id', $user)
+                ->orderBy('created_at', 'desc')
+                ->get();
+            return response()->json([
+                'status'    => true,
+                'message'   => 'Customer Invoices',
+                'data'      => $invoices
+            ]);
+          }catch(\Exception $e){
+            return response()->json([
+                'status'    => false,
+                'message'   => $e->getMessage()
+            ]);
+
+         } 
+    }
 }
