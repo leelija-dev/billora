@@ -195,11 +195,10 @@ const Hero = () => {
             {/* --- TEXT CONTENT - Responsive for all screens --- */}
             <div className="flex-1 text-center lg:text-left px-4 sm:px-6 md:px-8 lg:px-0 w-full">
               <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-[56px] font-black text-[#0f172a] leading-[1.15] mb-4 md:mb-6 tracking-tight animate-fadeInUp max-w-[750px] mx-auto lg:mx-0">
-                GST Billing Software for <span className="text-indigo-600 block sm:inline">Small Businesses in India</span>
+                Best Readymade  <span className="text-indigo-600 block sm:inline">GST Billing Software </span>for 1-Click Invoice
               </h1>
               <p className="text-sm sm:text-base md:text-lg lg:text-xl text-slate-600 leading-relaxed mb-8 md:mb-10 max-w-[650px] mx-auto lg:mx-0 px-2 sm:px-0 animate-fadeInUp">
-                Manage your business professionally with {process.env.NEXT_PUBLIC_APP_NAME || 'Billora'}, India's leading
-                small business software for billing, inventory, and accounting.
+               Now calculate CGST, SGST, & IGST faster, generate GST invoices instantly, and track stock levels & outstandings securely without penalties. 
               </p>
               
               {/* SIMPLE BUTTONS - No complex animations */}
@@ -354,7 +353,7 @@ const Hero = () => {
           <div className="absolute top-0 left-1/2 -translate-x-1/2 w-3/4 h-1 bg-gradient-to-r from-transparent via-blue-500/50 to-transparent"></div>
 
           <h2 className="text-2xl sm:text-3xl md:text-[42px] bottom-20 font-bold text-white text-center mb-6 sm:mb-7 md:mb-6 relative z-20 leading-tight px-4">
-            We made it <span className="bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">superb</span> & usable
+            Made smarter, <span className="bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">faster </span>& user-friendly
           </h2>
 
           <div className="flex justify-center bottom-25 gap-2 sm:gap-3 md:gap-5 mb-8 sm:mb-10 md:mb-12 flex-wrap relative z-20 px-4">
@@ -371,10 +370,10 @@ const Hero = () => {
               <div className="flex-1 text-center md:text-left">
                 <div className="flex items-center gap-2 mb-3 sm:mb-4 justify-center md:justify-start">
                   <div className="w-6 sm:w-7 md:w-8 h-6 sm:h-7 md:h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold text-sm sm:text-base md:text-lg">B</div>
-                  <span className="font-bold text-slate-800 text-base sm:text-lg md:text-lg">{process.env.NEXT_PUBLIC_APP_NAME || 'Billora'} Premium</span>
+                  <span className="font-bold text-slate-800 text-base sm:text-lg md:text-lg">{process.env.NEXT_PUBLIC_APP_NAME || 'Billora'}</span>
                 </div>
-                <h3 className="text-xl sm:text-2xl md:text-2xl lg:text-3xl font-extrabold text-slate-900 mb-1 sm:mb-2">GST Billing Software</h3>
-                <p className="text-sm sm:text-base text-slate-500 mb-4 sm:mb-5 md:mb-6">Automate your invoicing and inventory in seconds.</p>
+                <h3 className="text-xl sm:text-2xl md:text-2xl lg:text-3xl font-extrabold text-slate-900 mb-1 sm:mb-2">Best GST Billing Software</h3>
+                <p className="text-sm sm:text-base text-slate-500 mb-4 sm:mb-5 md:mb-6">Automate invoicing and inventory in seconds.</p>
                 <Link href="/start-free-trial" className="block w-full md:w-auto">
                   <span className="w-full md:w-auto px-6 sm:px-7 md:px-8 py-2.5 sm:py-3 bg-slate-900 text-white rounded-full text-sm sm:text-base font-bold hover:bg-blue-600 transition-colors inline-block text-center">
                     Get Started Free

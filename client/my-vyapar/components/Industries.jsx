@@ -16,9 +16,9 @@ const INDUSTRY_DATA = [
   {
     id: 1,
     tag: "Innovation",
-    title: "Drive Innovation",
-    description: "Transform your business with cutting-edge billing solutions designed for the modern era of digital commerce.",
-    fullDescription: "Transform your business with cutting-edge billing solutions designed for the modern era of digital commerce. Our innovative platform leverages AI and machine learning to automate complex billing processes, reduce errors, and provide real-time insights. Experience seamless integration with your existing tools and unlock new levels of efficiency with our intelligent automation suite.",
+    title: "Seamless ITC Claims",
+    description: "Fast Bill billing application maximizes Input Tax Credit by automatically reconciling purchase invoices with GSTR-2B & identifying missing or unmatched records.",
+    fullDescription: "Fast Bill billing application maximizes Input Tax Credit by automatically reconciling purchase invoices with GSTR-2B & identifying missing or unmatched records. This not only ensures precise, error-free claiming and reduced tax liabilities but also improves cash flow that efficiently frees up your capital for business growth.",
     buttonLink: "/solutions/innovation",
    
     color: "#7fa1d0",
@@ -28,10 +28,9 @@ const INDUSTRY_DATA = [
   {
     id: 2,
     tag: "Growth",
-    title: "Empower Growth",
-    description: "Scale your business with powerful accounting tools that provide deep insights into your financial health.",
-    fullDescription: "Scale your business with powerful accounting tools that provide deep insights into your financial health. Our comprehensive suite includes advanced analytics, forecasting capabilities, and customizable dashboards. Make data-driven decisions with real-time financial reporting and predictive insights that help you stay ahead of the competition.",
-    buttonLink: "/solutions/growth",
+    title: "Operational Expansion",
+    description: "Manual billing is error-prone and labor-intensive. Fast Bill GST is a legal billing software that automates compliance, tax calculations, & e-way bill generation.",
+    fullDescription: "Manual billing is error-prone and labor-intensive. Fast Bill GST is a legal billing software that automates compliance, tax calculations, & e-way bill generation. Advanced features like barcode scanning & customer autofill further accelerate the invoicing process, resulting in reduced workload, sales growth, and improved customer satisfaction.",
     
     color: "#6366f1",
     lightColor: "#eef2ff",
@@ -40,9 +39,9 @@ const INDUSTRY_DATA = [
   {
     id: 3,
     tag: "Compliance",
-    title: "GSTR Filing",
-    description: "Simplify GST returns with automated filing systems that ensure accuracy and save hours of manual work.",
-    fullDescription: "Simplify GST returns with automated filing systems that ensure accuracy and save hours of manual work. Our intelligent platform automatically extracts data from invoices, validates entries, and generates error-free returns. Stay compliant with changing regulations while saving valuable time and resources.",
+    title: "Zero Penalties",
+    description: "Constantly changing the GST regulations poses greater penalty risks.",
+    fullDescription: "Constantly changing the GST regulations poses greater penalty risks. Fast Bill free billing software ensures 100% compliance with Indian tax laws by updating relevant guidelines, verifying HSN codes, & minimizing filing errors for GSTR-1 and GSTR-3B. This prevents legal complications & lets your business avoid costly penalties & fines.",
     buttonLink: "/solutions/gstr",
     
     color: "#7bb2cc",
@@ -52,9 +51,9 @@ const INDUSTRY_DATA = [
   {
     id: 4,
     tag: "Operations",
-    title: "Unite Industries",
-    description: "Connect all your business operations seamlessly in one unified platform, from inventory to final sale.",
-    fullDescription: "Connect all your business operations seamlessly in one unified platform, from inventory to final sale. Break down silos between departments with integrated workflows, real-time synchronization, and automated processes. Achieve complete visibility across your entire business ecosystem.",
+    title: "Actionable Data",
+    description: "Fast Bill is the best billing software for retail shops in India because it acts as a mini-ERP that provides you with comprehensive reports on sales,",
+    fullDescription: "Fast Bill is the best billing software for retail shops in India because it acts as a mini-ERP that provides you with comprehensive reports on sales, inventory, & tax. By monitoring stock & customer payments via detailed dashboards, you can now make data-driven decisions on pricing & procurements for optimized profits and accelerated business growth. ",
     buttonLink: "/solutions/unite",
 
     color: "#4b5563",
@@ -64,9 +63,9 @@ const INDUSTRY_DATA = [
   {
     id: 5,
     tag: "Reach",
-    title: "Expand Reach",
-    description: "Grow your customer base with professional digital invoices and integrated payment gateways.",
-    fullDescription: "Grow your customer base with professional digital invoices and integrated payment gateways. Our platform enables you to send branded, professional invoices that enhance your company's image. Accept payments faster with multiple payment options and reduce payment delays with automated reminders.",
+    title: "Increased Reputation",
+    description: "This billing and stock management software eliminates complex, pre-GST interstate trade barriers by automating IGST calculators, generating instant E-way bills, & producing compliant financial reports.",
+    fullDescription: "This billing and stock management software eliminates complex, pre-GST interstate trade barriers by automating IGST calculators, generating instant E-way bills, & producing compliant financial reports. By facilitating seamless logistics and boosting brand credibility, Fast Bill helps Indian business owners expand their brands nationwide and secure unstoppable growth funding.",
     buttonLink: "/solutions/expand",
   
     color: "#4b22c5",
@@ -95,7 +94,7 @@ const IndustrySection = () => {
         <div className="h-[25vh] flex items-center justify-center pb-4 z-20">
           <Container size="full">
             <div className="text-center max-w-4xl mx-auto px-4">
-              <SectionTitle title="Supporting Businesses from a wide range of industries" />
+              <SectionTitle title="Driving Success for Businesses from Every Sector" />
             </div>
           </Container>
         </div>
