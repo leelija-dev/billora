@@ -3,7 +3,7 @@ import { apiClient } from './apiClient'
 export const reportsAPI = {
   // Get reports with optional date filtering
   getReports: (startDate = '', endDate = '') => {
-    let url = '/reports/'
+    let url = '/reports'
     const params = new URLSearchParams()
     
     if (startDate) params.append('start_date', startDate)

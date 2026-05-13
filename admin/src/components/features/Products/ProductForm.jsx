@@ -78,6 +78,7 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
       selling_price: '',
       purchase_price: '',
       gst_percentage: '',
+      purchase_gst_percentage: '',
       discount_percentage: '',
       description: '',
       is_active: true,
@@ -115,6 +116,8 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
     }
   })
 
+
+
   // Fetch create page data on mount
   useEffect(() => {
     if (user?.id) {
@@ -127,6 +130,28 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
       }
     }
   }, [user?.id])
+
+  useEffect(() => {
+    // Initialize purchase_gst_percentage on component mount
+    const currentGstValue = watch('gst_percentage')
+    if (currentGstValue !== undefined && currentGstValue !== '') {
+      setValue('purchase_gst_percentage', currentGstValue, { 
+        shouldValidate: false,
+        shouldDirty: false 
+      })
+    }
+
+    // Watch for changes in gst_percentage and sync to purchase_gst_percentage
+    const subscription = watch((value, { name }) => {
+      if (name === 'gst_percentage') {
+        setValue('purchase_gst_percentage', value.gst_percentage, { 
+          shouldValidate: false,
+          shouldDirty: false 
+        })
+      }
+    })
+    return () => subscription.unsubscribe()
+  }, [watch, setValue])
 
   // Update create page data when medicine types are loaded
   useEffect(() => {
@@ -859,7 +884,7 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
             value={watch('unit_id') || ''}
           />
 
-         
+
 
           <Input
             label="Purchase Price"
@@ -882,7 +907,7 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
             })}
           />
 
-           <Input
+          <Input
             label="Selling Price"
             type="number"
             step="0.01"
@@ -915,6 +940,12 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
               min: { value: 0, message: 'GST percentage must be positive' },
               max: { value: 100, message: 'GST percentage cannot exceed 100' }
             })}
+          />
+          {/* Hidden purchase_gst_percentage field that mirrors gst_percentage */}
+          <input
+            type="hidden"
+            {...register('purchase_gst_percentage')}
+            value={watch('purchase_gst_percentage') || ''}
           />
 
           <Input
