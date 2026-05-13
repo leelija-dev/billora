@@ -258,6 +258,32 @@ export const useInvoiceStore = create((set, get) => ({
     }
   },
 
+  // Cancel invoice (bill status)
+  cancelInvoice: async (id) => {
+    set({ loading: true })
+    try {
+      const response = await invoiceAPI.updateBillStatus(id)
+      const ok = response.data?.status === true
+      if (ok) {
+        toast.success(response.data?.message || 'Invoice cancelled')
+        set((state) => ({
+          invoices: state.invoices.map((inv) =>
+            inv.id === Number(id) || inv.id === id ? { ...inv, status: 'cancelled' } : inv
+          ),
+          loading: false,
+        }))
+        return { success: true, data: response.data }
+      }
+      toast.error(response.data?.message || 'Failed to cancel invoice')
+      set({ loading: false })
+      return { success: false, error: response.data }
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to cancel invoice')
+      set({ loading: false })
+      return { success: false, error: error.response?.data }
+    }
+  },
+
   // Delete invoice/bill
   deleteInvoice: async (id) => {
     set({ loading: true })

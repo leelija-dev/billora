@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react'
 import { 
   FiArrowLeft,
   FiEdit2, 
-  FiTrash2, 
   FiDownload,
   FiPrinter,
   FiFileText,
@@ -10,14 +9,16 @@ import {
   FiDollarSign,
   FiClock,
   FiAlertCircle,
-  FiX
+  FiSlash
 } from 'react-icons/fi'
 import { useNavigate, useParams } from 'react-router-dom'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion } from 'framer-motion'
 import { useInvoiceStore } from '../../store/invoiceStore'
+import { usePermissionStore } from '../../store/permissionStore'
 import Button from '../../components/common/Button/Button'
 import LoadingSpinner from '../../components/common/Spinner/Spinner'
 import StatusBadge from '../../components/common/StatusBadge/StatusBadge'
+import InvoiceEditForm from '../../components/features/Invoices/InvoiceEditForm'
 import { printA4Invoice, printThermalInvoice, downloadInvoicePDF } from '../../templates/PrintUtils'
 import { invoiceAPI } from '../../services/invoiceService'
 import { customerAPI } from '../../services/customerService'
@@ -27,10 +28,15 @@ import { productsAPI } from '../../services/productsService'
 const InvoiceDetail = () => {
   const navigate = useNavigate()
   const { id } = useParams()
-  const { invoices, fetchInvoices } = useInvoiceStore()
+  const { cancelInvoice } = useInvoiceStore()
+  const { canAccess } = usePermissionStore()
+  const hasStockPermission = canAccess('stock-management')
   const [invoice, setInvoice] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [refetchVersion, setRefetchVersion] = useState(0)
+  const [isEditing, setIsEditing] = useState(false)
+  const [cancelSubmitting, setCancelSubmitting] = useState(false)
 
   useEffect(() => {
     const fetchInvoice = async () => {
@@ -238,11 +244,10 @@ const InvoiceDetail = () => {
       }
     }
 
-    // Only fetch when ID changes and we don't already have the invoice
-    if (id && !invoice) {
+    if (id) {
       fetchInvoice()
     }
-  }, [id]) // Removed 'invoices' from dependencies
+  }, [id, refetchVersion])
 
   const getStatusConfig = (status) => {
     const configs = {
@@ -255,15 +260,21 @@ const InvoiceDetail = () => {
     return configs[status] || configs.unpaid
   }
 
-  const handleEdit = () => {
-    navigate(`/invoices/edit/${invoice?.id}`)
-  }
-
-  const handleDelete = () => {
-    if (window.confirm('Are you sure you want to delete this invoice?')) {
-      // In a real implementation, you would call your API
-      // await invoiceAPI.deleteInvoice(invoice.id)
-      navigate('/invoices')
+  const handleCancelInvoice = async () => {
+    if (!invoice?.id) return
+    const ok = window.confirm(
+      'Cancel this invoice? Stock will be restored if you have stock permission, customer due and GST records will be adjusted, and the invoice will be marked cancelled.'
+    )
+    if (!ok) return
+    setCancelSubmitting(true)
+    try {
+      const res = await cancelInvoice(invoice.id)
+      if (res?.success) {
+        setIsEditing(false)
+        setRefetchVersion((v) => v + 1)
+      }
+    } finally {
+      setCancelSubmitting(false)
     }
   }
 
@@ -359,7 +370,28 @@ const InvoiceDetail = () => {
                 })}
               </p>
             </div>
-            <div className="flex space-x-2">
+            <div className="flex flex-wrap gap-2 justify-end">
+              {invoice.status !== 'cancelled' && (
+                <>
+                  <Button
+                    onClick={() => setIsEditing((e) => !e)}
+                    variant="outline"
+                    className="flex items-center"
+                    icon={FiEdit2}
+                  >
+                    {isEditing ? 'Close editor' : 'Edit invoice'}
+                  </Button>
+                  <Button
+                    onClick={handleCancelInvoice}
+                    variant="outline"
+                    disabled={cancelSubmitting}
+                    className="flex items-center border-red-200 text-red-700 hover:bg-red-50 dark:border-red-900 dark:text-red-400 dark:hover:bg-red-900/20"
+                    icon={FiSlash}
+                  >
+                    {cancelSubmitting ? 'Cancelling…' : 'Cancel invoice'}
+                  </Button>
+                </>
+              )}
               <Button
                 onClick={handlePrintThermal}
                 variant="outline"
@@ -386,6 +418,20 @@ const InvoiceDetail = () => {
             </div>
           </div>
         </div>
+
+        {isEditing && invoice.status !== 'cancelled' && (
+          <div className="mb-8">
+            <InvoiceEditForm
+              invoice={invoice}
+              hasStockPermission={hasStockPermission}
+              onCancel={() => setIsEditing(false)}
+              onSaved={() => {
+                setIsEditing(false)
+                setRefetchVersion((v) => v + 1)
+              }}
+            />
+          </div>
+        )}
 
         {/* Main Content */}
         <motion.div

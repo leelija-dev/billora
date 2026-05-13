@@ -58,6 +58,11 @@ export const invoiceAPI = {
   delete: (id) => {
     return apiClient.delete(`/invoice/${id}`)
   },
+
+  // Cancel invoice — restores stock (if permitted), reverses customer due, updates GST rows and status
+  updateBillStatus: (id) => {
+    return apiClient.put(`/invoice/update-bill-status/${id}`, {})
+  },
 }
 
 export default invoiceAPI
