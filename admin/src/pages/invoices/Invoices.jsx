@@ -10,8 +10,8 @@ import {
   FiX,
   FiDollarSign,
   FiClock,
-  FiAlertCircle
-
+  FiAlertCircle,
+  FiCreditCard,
 } from 'react-icons/fi'
 import { FaReceipt } from "react-icons/fa";
 import { useNavigate } from 'react-router-dom'
@@ -31,6 +31,15 @@ import { printA4Invoice, printThermalInvoice } from '../../templates/PrintUtils'
 import { customerAPI } from '../../services/customerService'
 import { storeAPI } from '../../services/storeService'
 import { productsAPI } from '../../services/productsService'
+import { invoiceAPI } from '../../services/invoiceService'
+
+const DUE_PAYMENT_METHOD_OPTIONS = [
+  { value: 'Cash', label: 'Cash' },
+  { value: 'Card', label: 'Card' },
+  { value: 'UPI', label: 'UPI' },
+  { value: 'Bank Transfer', label: 'Bank Transfer' },
+  { value: 'Cheque', label: 'Cheque' },
+]
 
 // Cache for product data
 const productCache = new Map()
@@ -49,6 +58,7 @@ const Invoices = () => {
     fetchInvoices,
     createInvoice,
     deleteInvoice,
+    cancelInvoice,
     fetchBillGenerateData,
     setFilters,
   } = useInvoiceStore()
@@ -68,6 +78,11 @@ const Invoices = () => {
   const [initialLoading, setInitialLoading] = useState(true)
   const [pageLoading, setPageLoading] = useState(false)
   const [isResizing, setIsResizing] = useState(false)
+  const [showPayDueModal, setShowPayDueModal] = useState(false)
+  const [payDueInvoice, setPayDueInvoice] = useState(null)
+  const [duePayAmount, setDuePayAmount] = useState('')
+  const [duePayMethod, setDuePayMethod] = useState('Cash')
+  const [duePaySubmitting, setDuePaySubmitting] = useState(false)
 
   // Handle resize events to prevent unnecessary API calls
   useEffect(() => {
@@ -127,6 +142,80 @@ const Invoices = () => {
     navigate(`/invoices/detail/${invoice.id}`)
   }
 
+  const handleEditInvoice = (invoice) => {
+    navigate(`/invoices/detail/${invoice.id}`, { state: { openEdit: true } })
+  }
+
+  const handleCancelInvoiceFromTable = async (invoice) => {
+    if (!invoice?.id || invoice.status === 'cancelled') return
+    const ok = window.confirm(
+      'Cancel this invoice? Stock will be restored if applicable, customer due will be adjusted, and the invoice will be marked cancelled.'
+    )
+    if (!ok) return
+    const res = await cancelInvoice(invoice.id)
+    if (res?.success) {
+      await fetchInvoices(currentPage)
+    }
+  }
+
+  const handleOpenPayDue = (invoice) => {
+    const total = parseFloat(invoice.total_amount || 0)
+    const paid = parseFloat(invoice.paid_amount || 0)
+    const due = Math.max(0, total - paid)
+    if (invoice.status === 'cancelled' || due <= 0.001) return
+    setPayDueInvoice(invoice)
+    setDuePayAmount('')
+    setDuePayMethod('Cash')
+    setShowPayDueModal(true)
+  }
+
+  const handlePayDueSubmit = async (e) => {
+    e.preventDefault()
+    if (!payDueInvoice?.id) return
+    const total = parseFloat(payDueInvoice.total_amount || 0)
+    const paid = parseFloat(payDueInvoice.paid_amount || 0)
+    const due = Math.max(0, total - paid)
+    const amount = parseFloat(duePayAmount)
+    if (Number.isNaN(amount) || amount <= 0) {
+      toast.error('Enter a valid payment amount')
+      return
+    }
+    if (amount - due > 0.0001) {
+      toast.error(`Amount cannot exceed due (₹${due.toFixed(2)})`)
+      return
+    }
+    setDuePaySubmitting(true)
+    try {
+      const res = await invoiceAPI.invoiceDuePay(payDueInvoice.id, {
+        paid_amount: amount,
+        payment_method: duePayMethod,
+      })
+      if (res.data?.status === true) {
+        toast.success(res.data?.message || 'Payment recorded')
+        setShowPayDueModal(false)
+        setPayDueInvoice(null)
+        setDuePayAmount('')
+        try {
+          const ch = new BroadcastChannel('app-cache-invalidation')
+          ch.postMessage({
+            type: 'invoice-updated',
+            data: { customer_id: payDueInvoice.customer_id, timestamp: Date.now() },
+          })
+          ch.close()
+        } catch {
+          /* ignore */
+        }
+        await fetchInvoices(currentPage)
+      } else {
+        toast.error(res.data?.message || 'Payment failed')
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Payment failed')
+    } finally {
+      setDuePaySubmitting(false)
+    }
+  }
+
   const handleDownload = (invoice) => {
     if (invoice?.pdfUrl) {
       window.open(invoice.pdfUrl, '_blank')
@@ -157,18 +246,6 @@ const Invoices = () => {
       }
     } catch (error) {
       console.error('Failed to delete invoice:', error)
-    }
-  }
-
-  const handleMarkPaid = async (invoice) => {
-    if (!invoice?.id || invoice.status === 'paid') return
-    try {
-      const res = await markAsPaid(invoice.id)
-      if (res?.success) {
-        await fetchInvoices(currentPage)
-      }
-    } catch (error) {
-      console.error('Failed to mark invoice as paid:', error)
     }
   }
 
@@ -793,8 +870,9 @@ const handleAddSubmit = async (data) => {
                     }))}
                     loading={loading}
                     onView={handleView}
-                    onDownload={handleDownload}
-                    onMarkPaid={handleMarkPaid}
+                    onEdit={handleEditInvoice}
+                    onCancelInvoice={handleCancelInvoiceFromTable}
+                    onPayDue={handleOpenPayDue}
                     onPrintA4={handlePrintA4}
                     onPrintThermal={handlePrintThermal}
                   />
@@ -913,6 +991,96 @@ const handleAddSubmit = async (data) => {
                   </motion.div>
                 </motion.div>
               </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Pay due (from table) */}
+      <AnimatePresence>
+        {showPayDueModal && payDueInvoice && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+            onClick={() => {
+              if (!duePaySubmitting) {
+                setShowPayDueModal(false)
+                setPayDueInvoice(null)
+              }
+            }}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              transition={{ type: 'spring', stiffness: 200 }}
+              className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full p-6"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="w-14 h-14 bg-emerald-100 dark:bg-emerald-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
+                <FiCreditCard className="w-7 h-7 text-emerald-600 dark:text-emerald-400" />
+              </div>
+              <h3 className="text-xl font-bold text-center text-gray-900 dark:text-white mb-1">
+                Pay invoice due
+              </h3>
+              <p className="text-center text-sm text-gray-600 dark:text-gray-400 mb-4">
+                Invoice #{payDueInvoice.id}
+                <span className="block mt-1 font-medium text-orange-600 dark:text-orange-400">
+                  Due: ₹
+                  {Math.max(
+                    0,
+                    parseFloat(payDueInvoice.total_amount || 0) -
+                      parseFloat(payDueInvoice.paid_amount || 0)
+                  ).toFixed(2)}
+                </span>
+              </p>
+              <form onSubmit={handlePayDueSubmit} className="space-y-4">
+                <Input
+                  label="Amount to pay"
+                  type="number"
+                  step="0.01"
+                  min="0.01"
+                  max={Math.max(
+                    0,
+                    parseFloat(payDueInvoice.total_amount || 0) -
+                      parseFloat(payDueInvoice.paid_amount || 0)
+                  )}
+                  value={duePayAmount}
+                  onChange={(e) => setDuePayAmount(e.target.value)}
+                  required
+                />
+                <Select
+                  label="Payment method"
+                  value={duePayMethod}
+                  onChange={(e) => setDuePayMethod(e.target.value)}
+                  options={DUE_PAYMENT_METHOD_OPTIONS}
+                />
+                <div className="flex gap-3 pt-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="flex-1"
+                    disabled={duePaySubmitting}
+                    onClick={() => {
+                      setShowPayDueModal(false)
+                      setPayDueInvoice(null)
+                    }}
+                  >
+                    Close
+                  </Button>
+                  <Button
+                    type="submit"
+                    className="flex-1"
+                    disabled={duePaySubmitting}
+                    isLoading={duePaySubmitting}
+                    icon={FiCreditCard}
+                  >
+                    Record payment
+                  </Button>
+                </div>
+              </form>
             </motion.div>
           </motion.div>
         )}

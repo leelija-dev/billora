@@ -9,13 +9,17 @@ import {
   FiDollarSign,
   FiClock,
   FiAlertCircle,
-  FiSlash
+  FiSlash,
+  FiCreditCard
 } from 'react-icons/fi'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useNavigate, useParams, useLocation } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { useInvoiceStore } from '../../store/invoiceStore'
 import { usePermissionStore } from '../../store/permissionStore'
+import toast from 'react-hot-toast'
 import Button from '../../components/common/Button/Button'
+import Input from '../../components/common/Input/Input'
+import Select from '../../components/common/Select/Select'
 import LoadingSpinner from '../../components/common/Spinner/Spinner'
 import StatusBadge from '../../components/common/StatusBadge/StatusBadge'
 import InvoiceEditForm from '../../components/features/Invoices/InvoiceEditForm'
@@ -25,8 +29,17 @@ import { customerAPI } from '../../services/customerService'
 import { storeAPI } from '../../services/storeService'
 import { productsAPI } from '../../services/productsService'
 
+const DUE_PAYMENT_METHOD_OPTIONS = [
+  { value: 'Cash', label: 'Cash' },
+  { value: 'Card', label: 'Card' },
+  { value: 'UPI', label: 'UPI' },
+  { value: 'Bank Transfer', label: 'Bank Transfer' },
+  { value: 'Cheque', label: 'Cheque' },
+]
+
 const InvoiceDetail = () => {
   const navigate = useNavigate()
+  const location = useLocation()
   const { id } = useParams()
   const { cancelInvoice } = useInvoiceStore()
   const { canAccess } = usePermissionStore()
@@ -37,6 +50,9 @@ const InvoiceDetail = () => {
   const [refetchVersion, setRefetchVersion] = useState(0)
   const [isEditing, setIsEditing] = useState(false)
   const [cancelSubmitting, setCancelSubmitting] = useState(false)
+  const [duePayAmount, setDuePayAmount] = useState('')
+  const [duePayMethod, setDuePayMethod] = useState('Cash')
+  const [duePaySubmitting, setDuePaySubmitting] = useState(false)
 
   useEffect(() => {
     const fetchInvoice = async () => {
@@ -249,6 +265,13 @@ const InvoiceDetail = () => {
     }
   }, [id, refetchVersion])
 
+  useEffect(() => {
+    if (invoice && location.state?.openEdit && invoice.status !== 'cancelled') {
+      setIsEditing(true)
+      navigate(location.pathname, { replace: true, state: {} })
+    }
+  }, [invoice, location.state, location.pathname, navigate])
+
   const getStatusConfig = (status) => {
     const configs = {
       paid: { variant: 'success', icon: FiCheckCircle, label: 'Paid' },
@@ -275,6 +298,52 @@ const InvoiceDetail = () => {
       }
     } finally {
       setCancelSubmitting(false)
+    }
+  }
+
+  const handleDuePay = async (e) => {
+    e.preventDefault()
+    if (!invoice?.id || invoice.status === 'cancelled') return
+    const total = parseFloat(invoice.total_amount || 0)
+    const paid = parseFloat(invoice.paid_amount || 0)
+    const due = Math.max(0, total - paid)
+    const amount = parseFloat(duePayAmount)
+    if (Number.isNaN(amount) || amount <= 0) {
+      toast.error('Enter a valid payment amount')
+      return
+    }
+    if (amount - due > 0.0001) {
+      toast.error(`Amount cannot exceed due (₹${due.toFixed(2)})`)
+      return
+    }
+    setDuePaySubmitting(true)
+    try {
+      const res = await invoiceAPI.invoiceDuePay(invoice.id, {
+        paid_amount: amount,
+        payment_method: duePayMethod,
+      })
+      if (res.data?.status === true) {
+        toast.success(res.data?.message || 'Payment recorded')
+        setDuePayAmount('')
+        setDuePayMethod('Cash')
+        try {
+          const ch = new BroadcastChannel('app-cache-invalidation')
+          ch.postMessage({
+            type: 'invoice-updated',
+            data: { customer_id: invoice.customer_id, timestamp: Date.now() },
+          })
+          ch.close()
+        } catch {
+          /* ignore */
+        }
+        setRefetchVersion((v) => v + 1)
+      } else {
+        toast.error(res.data?.message || 'Payment failed')
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Payment failed')
+    } finally {
+      setDuePaySubmitting(false)
     }
   }
 
@@ -335,6 +404,11 @@ const InvoiceDetail = () => {
       </div>
     )
   }
+
+  const totalAmountNum = parseFloat(invoice.total_amount || 0)
+  const paidAmountNum = parseFloat(invoice.paid_amount || 0)
+  const dueBalance = Math.max(0, totalAmountNum - paidAmountNum)
+  const showDuePayment = invoice.status !== 'cancelled' && dueBalance > 0.001
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -684,10 +758,44 @@ const InvoiceDetail = () => {
                 ) : parseFloat(invoice.paid_amount || 0) < parseFloat(invoice.total_amount || 0) ? (
                   <div className="flex justify-between">
                     <span className="text-gray-600 dark:text-gray-400">Due Amount:</span>
-                    <span className="font-medium text-orange-600 dark:text-orange-400">₹{(parseFloat(invoice.total_amount || 0) - parseFloat(invoice.paid_amount || 0)).toFixed(2)}</span>
+                    <span className="font-medium text-orange-600 dark:text-orange-400">₹{dueBalance.toFixed(2)}</span>
                   </div>
                 ) : null}
               </div>
+
+              {showDuePayment && (
+                <form onSubmit={handleDuePay} className="mt-5 pt-5 border-t border-gray-200 dark:border-gray-700 space-y-4">
+                  <h4 className="text-sm font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                    <FiCreditCard className="w-4 h-4" />
+                    Pay due on this invoice
+                  </h4>
+                  <Input
+                    label="Amount to pay"
+                    type="number"
+                    step="0.01"
+                    min="0.01"
+                    max={dueBalance}
+                    placeholder={`Max ₹${dueBalance.toFixed(2)}`}
+                    value={duePayAmount}
+                    onChange={(e) => setDuePayAmount(e.target.value)}
+                  />
+                  <Select
+                    label="Payment method"
+                    value={duePayMethod}
+                    onChange={(e) => setDuePayMethod(e.target.value)}
+                    options={DUE_PAYMENT_METHOD_OPTIONS}
+                  />
+                  <Button
+                    type="submit"
+                    className="w-full"
+                    disabled={duePaySubmitting}
+                    isLoading={duePaySubmitting}
+                    icon={FiCreditCard}
+                  >
+                    Record payment
+                  </Button>
+                </form>
+              )}
             </motion.div>
 
             {/* Quick Actions */}
