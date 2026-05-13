@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { Link } from 'react-router-dom'
+import { Link,useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import {
   FiPlus,
@@ -38,6 +38,8 @@ import ProductModal from '../../components/features/Products/ProductModal'
 import Select from '../../components/common/Select/Select'
 import ProductForm from '../../components/features/Products/ProductForm' // You'll need to create this component
 import StockAddModal from '../../components/common/CreateModals/StockAddModal'
+
+
 
 // Stock cache to prevent duplicate requests
 const stockCache = new Map()
@@ -82,6 +84,7 @@ const Products = () => {
   const initializedRef = useRef(false)
   const categoriesInitializedRef = useRef(false)
   const brandsInitializedRef = useRef(false)
+  const navigate = useNavigate()
 
   const [showAddForm, setShowAddForm] = useState(false)
   const [showEditForm, setShowEditForm] = useState(false)
@@ -798,6 +801,15 @@ const Products = () => {
       accessor: 'id',
       cell: (value, row) => (
         <div className="flex items-center space-x-1">
+          <motion.button
+  whileHover={{ scale: 1.1 }}
+  whileTap={{ scale: 0.95 }}
+  onClick={() => navigate(`/products/${row.id}`)}
+  className="p-2 text-gray-600 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-700 rounded-lg transition-colors"
+  title="View product details"
+>
+  <FiEye className="w-4 h-4" />
+</motion.button>
           <motion.button
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.95 }}

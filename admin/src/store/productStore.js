@@ -142,6 +142,7 @@ export const useProductStore = create((set, get) => ({
     set({ loading: true })
     try {
       const response = await productsAPI.create(productData)
+      console.log("Checking product data ............",productData)
       console.log(' Product creation API response:', response)
       console.log(' Response data structure:', JSON.stringify(response.data, null, 2))
       
@@ -361,6 +362,24 @@ export const useProductStore = create((set, get) => ({
       toast.error('Failed to bulk delete products')
       set({ loading: false })
       return { success: false, error: error.response?.data }
+    }
+  },
+
+  // Get a single product by ID from the current products array
+  getProductById: (id) => {
+    const currentState = get()
+    const product = currentState.products.find(p => p.id === parseInt(id))
+    return product || null
+  },
+
+  // Get products by category
+  getProductsByCategory: async (categoryId) => {
+    try {
+      const response = await productsAPI.getByCategory(categoryId)
+      return response.data?.data?.data || response.data?.data || []
+    } catch (error) {
+      console.error('Error fetching products by category:', error)
+      return []
     }
   },
 

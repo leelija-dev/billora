@@ -21,7 +21,8 @@ import {
   FiBox,
   FiGrid,
   FiBarChart2,
-  FiTag
+  FiTag,
+  FiDollarSign
 } from 'react-icons/fi';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FaFileMedical, FaStore } from 'react-icons/fa';
@@ -78,6 +79,7 @@ const Sidebar = () => {
     'invoices': FiFileText,
     'reports': FiBarChart2,
     'plans': FiCreditCard,
+    'gst': FiDollarSign,
     'settings': FiSettings,
   };
 
@@ -97,6 +99,7 @@ const Sidebar = () => {
     'invoices': '/invoices',
     'reports': '/reports',
     'plans': '/billing',
+    'gst': '/gst',
     'settings': '/settings',
   };
 

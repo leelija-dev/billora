@@ -78,6 +78,7 @@ export const productsAPI = {
       if (productData.selling_price) formData.append('selling_price', productData.selling_price);
       if (productData.purchase_price) formData.append('purchase_price', productData.purchase_price);
       if (productData.gst_percentage) formData.append('gst_percentage', productData.gst_percentage);
+      if (productData.purchase_gst_percentage) formData.append('purchase_gst_percentage', productData.purchase_gst_percentage);
       if (productData.discount_percentage) formData.append('discount_percentage', productData.discount_percentage);
       if (productData.description) formData.append('description', productData.description);
       
@@ -196,6 +197,7 @@ export const productsAPI = {
         if (productData.selling_price) formData.append('selling_price', productData.selling_price);
         if (productData.purchase_price) formData.append('purchase_price', productData.purchase_price);
         if (productData.gst_percentage) formData.append('gst_percentage', productData.gst_percentage);
+        if (productData.purchase_gst_percentage) formData.append('purchase_gst_percentage', productData.purchase_gst_percentage);
         if (productData.discount_percentage) formData.append('discount_percentage', productData.discount_percentage);
         if (productData.description) formData.append('description', productData.description);
         
@@ -409,6 +411,21 @@ export const productsAPI = {
       return response;
     } catch (error) {
       console.error('❌ Failed to fetch products by URL:', error);
+      throw error.response?.data || error.message;
+    }
+  },
+
+  // Get products by category
+  getByCategory: async (categoryId) => {
+    try {
+      console.log(`📦 Fetching products by category ID: ${categoryId}`);
+      const response = await apiClient.get('/products', {
+        params: { category: categoryId }
+      });
+      console.log('📦 Products by category fetched successfully:', response.data);
+      return response;
+    } catch (error) {
+      console.error(`❌ Failed to fetch products by category ${categoryId}:`, error);
       throw error.response?.data || error.message;
     }
   },

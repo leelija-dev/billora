@@ -45,6 +45,7 @@ class StocksController extends Controller
                                 });
                         });
                     })
+                    ->orderBy('id','desc')
                     ->paginate(15);
 
                 return response()->json([
