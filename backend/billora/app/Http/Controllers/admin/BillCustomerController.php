@@ -8,6 +8,9 @@ use App\Models\BillCustomer;
 use App\Models\BillPaymentHistory;
 use Illuminate\Support\Facades\Auth;
 use App\Models\Customers;
+use App\Models\Invoice;
+use Illuminate\Support\Facades\DB;
+
 class BillCustomerController extends Controller
 {
     public function index(Request $request, $id)
@@ -29,6 +32,7 @@ class BillCustomerController extends Controller
                     ->orWhere('city', 'like', "%$search%")
                     ->orWhere('due_amount', 'like', "%$search%");
             })
+            ->orderBy('created_at', 'desc')
             ->paginate(15);
         if ($billCustomer->isEmpty()) {
             return response()->json([
@@ -117,7 +121,8 @@ class BillCustomerController extends Controller
                 $query->whereDate('created_at', '<=', request()->end_date);
             }
 
-            $data = $query->latest()->get();
+            // $data = $query->latest()->get();
+            $data = $query->orderBy('id', 'desc')->get();
             if (!$billCustomer) {
                 return response()->json([
                     'status' => false,
@@ -299,6 +304,12 @@ class BillCustomerController extends Controller
         }
     }
     public function duePayment($id , Request $request){
+         if(!Auth::check()){
+            return response()->json([
+                'status' => false,
+                'message' => 'Authentication required. Please login first.'
+            ], 401);
+        }
        $data = $request->validate([
             'due_payment' => 'required'
         ]);
@@ -312,36 +323,76 @@ class BillCustomerController extends Controller
                 ]);
         }
         //check user authentication
-        if(!Auth::check()){
+        DB::beginTransaction();
+       try{
+        $billCustomer = BillCustomer::where('admin_id',$user)->where('id',$id)->firstOrFail();
+        $paymentAmount = (float)$data['due_payment'];
+        if ($paymentAmount > $billCustomer->due_amount) {
             return response()->json([
                 'status' => false,
-                'message' => 'Authentication required. Please login first.'
-            ], 401);
+                'message' => 'Payment exceeds customer due amount',
+                'due_amount' => $billCustomer->due_amount
+            ]);
         }
-        $billCustomer = BillCustomer::where('admin_id',$user)->where('id',$id)->first();
+        $invoices = Invoice::where('user_id', $user)
+            ->where('customer_id', $billCustomer->id)
+            ->where('status', '!=', 'cancelled')
+            ->whereColumn('paid_amount', '<', 'total_amount')
+            ->orderBy('created_at', 'asc')
+            ->lockForUpdate()
+            ->get();
+        $remainingPayment = $paymentAmount;
+         foreach ($invoices as $invoice) {
+            if ($remainingPayment <= 0) {
+                break;
+            }
+        $invoiceDue = (float)$invoice->total_amount - (float)$invoice->paid_amount; 
+        $payAmount = min($remainingPayment, $invoiceDue);  
+        $newPaidAmount = (float)$invoice->paid_amount + $payAmount;
+        $newDueAmount  = (float)$invoice->total_amount - $newPaidAmount;
+        // Update invoice
+            $invoice->update([
+                'paid_amount' => $newPaidAmount,
+            ]);
         $due_payment_history = BillPaymentHistory::create([
         'admin_id'=>$user,
-        'invoice_id'=> null,
+        'invoice_id'=> $invoice->id,
         'customer_id'=> $billCustomer->id,
-        'store_id'=> null,
-        'total_amount'=> $billCustomer->due_amount,
-        'paid_amount'=>$data['due_payment'],
-        'due_amount'=> $billCustomer->due_amount - $data['due_payment'],
+        'store_id'=> $invoice->store_id,
+        'total_amount'=> $invoiceDue,//$invoice->total_amount,
+        'paid_amount'=>$payAmount,
+        'due_amount'=> $newDueAmount,
         'payment_method'=> 'Cash',
         'transaction_id'=> null,
         'created_by'=> $user,
         'remarks'=>'Due payment'
 
         ]);
+        $remainingPayment -= $payAmount;
+         }
+        // $billCustomer->update([
+        //     'due_amount' => ($billCustomer->due_amount - $data['due_payment'])
+        // ]);
+         // Update customer due amount
         $billCustomer->update([
-            'due_amount' => ($billCustomer->due_amount - $data['due_payment'])
+            'due_amount' => max(
+                0,
+                (float)$billCustomer->due_amount - $paymentAmount
+            )
         ]);
-
+        DB::commit();
         return response()->json([
             'status'    => true,
             'message'   => 'Bill Customer due amount updated successfully',
             'data'      => $billCustomer
         ]);
+       }catch(\Exception $e){
+        DB::rollBack();
+        return response()->json([
+            'status'    => false,
+            'message'   => $e->getMessage()
+        ]);
+       }
     }
     // public function paymentHistory($id){
 
