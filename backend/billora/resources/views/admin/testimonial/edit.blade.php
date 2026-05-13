@@ -434,7 +434,7 @@
     <div class="form-container">
         <form id="testimonialForm" action="{{ route('admin.testimonial.update', $testimonial->id) }}" method="POST" enctype="multipart/form-data" novalidate>
             @csrf
-            @method('PUT')
+            
 
             <div class="form-grid">
                 <!-- Name -->
