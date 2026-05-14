@@ -222,9 +222,7 @@ const InvoiceTable = ({
           <p className="font-medium text-gray-900 dark:text-white">
             {row.customer_name || `Customer #${value}`}
           </p>
-          <p className="text-xs text-gray-500 dark:text-gray-400">
-            ID: #{value}
-          </p>
+         
         </div>
       ),
     },
@@ -252,9 +250,7 @@ const InvoiceTable = ({
             <p className="font-medium text-gray-900 dark:text-white">
               {storeName}
             </p>
-            <p className="text-xs text-gray-500 dark:text-gray-400">
-              ID: #{value}
-            </p>
+            
           </div>
         )
       },

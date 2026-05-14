@@ -10,6 +10,9 @@ import {
   FiShoppingBag,
   FiEdit,
   FiX,
+  FiHash,
+  FiTag,
+  FiGrid,
 } from 'react-icons/fi'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useInventoryStore } from '../../store/inventoryStore'
@@ -178,6 +181,42 @@ const Stock = () => {
     )
   }
 
+  // Helper function to format attributes (handles dynamic key-value pairs)
+  const formatAttributes = (attributes) => {
+    if (!attributes || !Array.isArray(attributes) || attributes.length === 0) {
+      return null
+    }
+    
+    const attributeItems = []
+    
+    attributes.forEach((attr, idx) => {
+      if (typeof attr === 'object' && attr !== null) {
+        // Handle dynamic key-value pairs (like { "size": "Large", "color": "Red" })
+        Object.entries(attr).forEach(([key, value]) => {
+          if (key && value && key !== 'id' && key !== 'product_id') {
+            attributeItems.push(
+              <span 
+                key={`${idx}-${key}`}
+                className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300"
+              >
+                <FiGrid className="w-2.5 h-2.5 mr-1" />
+                {key}: {value}
+              </span>
+            )
+          }
+        })
+      }
+    })
+    
+    if (attributeItems.length === 0) return null
+    
+    return (
+      <div className="flex flex-wrap gap-1 mt-1">
+        {attributeItems}
+      </div>
+    )
+  }
+
   // Calculate stats
   const stats = {
     totalStocks: stocks?.length || 0,
@@ -216,18 +255,50 @@ const Stock = () => {
     },
     {
       header: 'Product',
-      accessor: 'product_name',
-      cell: (value, row) => (
-        <div className="flex items-center space-x-3">
-          <div className="w-8 h-8 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-600 rounded-lg flex items-center justify-center">
-            <FiPackage className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+      accessor: 'product',
+      cell: (value, row) => {
+        // Get product data from the nested product object in stock
+        const product = row.product || null
+        
+        return (
+          <div className="space-y-2">
+            {/* Product Name and basic info */}
+            <div className="flex items-start space-x-3">
+              <div className="w-16 h-16 flex-shrink-0 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-600 rounded-lg flex items-center justify-center">
+                {product?.image ? (
+                  <img 
+                    src={product.image} 
+                    alt={product.name}
+                    className="w-full h-full object-cover rounded-lg"
+                  />
+                ) : (
+                  <FiPackage className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+                )}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-medium text-gray-900 dark:text-white">
+                  {product?.name || row.product_name || `Product ${row.product_id}`}
+                </p>
+                
+                {/* SKU */}
+                {product?.sku && (
+                  <div className="flex items-center text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                    <FiHash className="w-3 h-3 mr-1" />
+                    <span>SKU: {product.sku}</span>
+                  </div>
+                )}
+
+                
+                
+                
+                
+                {/* Product Attributes */}
+                {formatAttributes(product?.attributes)}
+              </div>
+            </div>
           </div>
-          <div>
-            <p className="font-medium text-gray-900 dark:text-white">{value || `Product ${row.product_id}`}</p>
-            <p className="text-xs text-gray-500 dark:text-gray-400">ID: {row.product_id}</p>
-          </div>
-        </div>
-      ),
+        )
+      },
     },
     {
       header: 'Quantity',
