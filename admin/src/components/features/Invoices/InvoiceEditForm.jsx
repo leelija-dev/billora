@@ -78,6 +78,7 @@ const calculateTotalsFromLines = (lineItems) => {
     totalDiscount,
     totalAmount,
     packageTotal,
+    productTotalAfterDiscountAndGst: productSubtotal - productDiscount + productGst,
   }
 }
 
@@ -252,20 +253,10 @@ const InvoiceEditForm = ({ invoice, hasStockPermission, onCancel, onSaved, varia
           paid,
           due: Math.max(0, total - paid),
         }
-        
-        let payment_status = 'non_paid'
-        let payment_amount = 0
-        
-        // Calculate remaining balance
-        const remainingBalance = Math.max(0, total - paid)
-        
-        if (remainingBalance <= 0.001) {
-          payment_status = 'paid'
-          payment_amount = 0
-        } else {
-          payment_status = 'non_paid'
-          payment_amount = 0
-        }
+        let payment_status = 'paid'
+        let payment_amount = paid
+        if (paid <= 0.001) payment_status = 'non_paid'
+        else if (paid < total - 0.01) payment_status = 'semi_paid'
 
         setFormData({
           customer_id: invoice.customer_id || '',
@@ -334,62 +325,53 @@ const InvoiceEditForm = ({ invoice, hasStockPermission, onCancel, onSaved, varia
 
   const totals = useMemo(() => calculateTotalsFromLines(lineItems), [lineItems])
 
-  // Calculate invoice financials based on original paid amount
-  const invoiceFinancials = useMemo(() => {
-    const newInvoiceTotal = totals.totalAmount
-    const originalPaidAmount = originalInvoiceFinancials.current.paid
-    
-    // Calculate remaining balance after original payment
-    const remainingBalance = Math.max(0, newInvoiceTotal - originalPaidAmount)
-    
-    // Calculate new payment based on selection
-    let newPaymentAmount = 0
-    if (formData.payment_status === 'paid') {
-      newPaymentAmount = remainingBalance
-    } else if (formData.payment_status === 'semi_paid') {
-      const enteredAmount = parseFloat(formData.payment_amount) || 0
-      newPaymentAmount = Math.min(Math.max(0, enteredAmount), remainingBalance)
-    } else {
-      newPaymentAmount = 0
+  const effectivePaidAmount = useMemo(() => {
+    const t = totals.totalAmount
+    if (formData.payment_status === 'paid') return t
+    if (formData.payment_status === 'semi_paid') {
+      const p = parseFloat(formData.payment_amount) || 0
+      return Math.min(Math.max(0, p), t)
     }
-    
-    // Final due after new payment
-    const finalDue = remainingBalance - newPaymentAmount
-    
-    return {
-      newInvoiceTotal,
-      originalPaidAmount,
-      remainingBalance,
-      newPaymentAmount,
-      finalDue
-    }
+    return 0
   }, [totals.totalAmount, formData.payment_status, formData.payment_amount])
 
-  // Total paid after update (original + new)
-  const totalPaidAfterUpdate = useMemo(() => {
-    return originalInvoiceFinancials.current.paid + invoiceFinancials.newPaymentAmount
-  }, [invoiceFinancials.newPaymentAmount])
-
-  // Due after payment for display
-  const dueAfterUpdate = useMemo(() => {
-    return invoiceFinancials.finalDue
-  }, [invoiceFinancials.finalDue])
-
-  const productTotalAfterDiscountAndGst = useMemo(
-    () => totals.subtotal - totals.totalDiscount + totals.totalGst,
-    [totals.subtotal, totals.totalDiscount, totals.totalGst]
+  const dueAfterPayment = useMemo(
+    () => Math.max(0, totals.totalAmount - effectivePaidAmount),
+    [totals.totalAmount, effectivePaidAmount]
   )
 
-  // Validate payment amount doesn't exceed remaining balance
   useEffect(() => {
     if (formData.payment_status !== 'semi_paid') return
-    
-    const remainingBalance = Math.max(0, totals.totalAmount - originalInvoiceFinancials.current.paid)
+    const t = totals.totalAmount
     const p = parseFloat(formData.payment_amount) || 0
-    if (p > remainingBalance) {
-      setFormData((prev) => ({ ...prev, payment_amount: remainingBalance }))
+    if (p > t) {
+      setFormData((prev) => ({ ...prev, payment_amount: t }))
     }
   }, [totals.totalAmount, formData.payment_status])
+
+  const handlePaymentAmountChange = (value) => {
+    // Only allow digits and decimal point
+    let cleanedValue = value.replace(/[^0-9.]/g, '')
+    
+    // Prevent multiple decimal points
+    const decimalCount = (cleanedValue.match(/\./g) || []).length
+    if (decimalCount > 1) {
+      cleanedValue = cleanedValue.slice(0, cleanedValue.lastIndexOf('.'))
+    }
+    
+    // Parse the cleaned value
+    let numValue = cleanedValue === '' ? 0 : parseFloat(cleanedValue)
+    if (isNaN(numValue)) numValue = 0
+    
+    // Cap at total amount
+    const maxAmount = totals.totalAmount
+    if (numValue > maxAmount) {
+      numValue = maxAmount
+      cleanedValue = numValue.toString()
+    }
+    
+    setFormData((prev) => ({ ...prev, payment_amount: cleanedValue === '' ? 0 : cleanedValue }))
+  }
 
   const getSelectedCustomerName = () => {
     const c = customers.find((x) => x.id === formData.customer_id)
@@ -701,27 +683,18 @@ const InvoiceEditForm = ({ invoice, hasStockPermission, onCancel, onSaved, varia
       }
     }
 
-    const originalPaid = originalInvoiceFinancials.current.paid
-    const newInvoiceTotal = totals.totalAmount
-    const remainingBalance = Math.max(0, newInvoiceTotal - originalPaid)
-    
-    let additionalPayment = 0
-    if (formData.payment_status === 'paid') {
-      additionalPayment = remainingBalance
-    } else if (formData.payment_status === 'semi_paid') {
+    let paidAmountValue = 0
+    if (formData.payment_status === 'paid') paidAmountValue = totals.totalAmount
+    else if (formData.payment_status === 'semi_paid') {
       const p = parseFloat(formData.payment_amount) || 0
-      additionalPayment = Math.min(Math.max(0, p), remainingBalance)
-    } else {
-      additionalPayment = 0
-    }
-    
-    const totalPaidAmount = originalPaid + additionalPayment
+      paidAmountValue = Math.min(Math.max(0, p), totals.totalAmount)
+    } else paidAmountValue = 0
 
     const payload = {
       user_id: invoice.user_id,
       customer_id: Number(formData.customer_id),
       store_id: Number(formData.store_id),
-      paid_amount: totalPaidAmount,
+      paid_amount: paidAmountValue,
       payment_method: formData.payment_method,
       created_by: createdBy,
       deleted_item_ids: deletedItemIds,
@@ -1182,7 +1155,7 @@ const InvoiceEditForm = ({ invoice, hasStockPermission, onCancel, onSaved, varia
                     <th className="text-center text-xs font-medium text-gray-500 pb-3 w-[100px]">Disc %</th>
                     <th className="text-center text-xs font-medium text-gray-500 pb-3 w-[100px]">Total</th>
                     <th className="w-[60px]" />
-                  </tr>
+                   </tr>
                 </thead>
                 <tbody>
                   {lineItems.map((item, index) => (
@@ -1206,7 +1179,7 @@ const InvoiceEditForm = ({ invoice, hasStockPermission, onCancel, onSaved, varia
                             </p>
                           )}
                         </div>
-                      </td>
+                        </td>
                       <td className="py-3">
                         <div className="flex items-center justify-center gap-1">
                           <button
@@ -1236,7 +1209,7 @@ const InvoiceEditForm = ({ invoice, hasStockPermission, onCancel, onSaved, varia
                             <FiPlus className="w-3 h-3" />
                           </button>
                         </div>
-                      </td>
+                        </td>
                       <td className="py-3 text-center">
                         {item.is_package ? (
                           <span className="text-sm">₹{parseFloat(item.price).toFixed(2)}</span>
@@ -1249,7 +1222,7 @@ const InvoiceEditForm = ({ invoice, hasStockPermission, onCancel, onSaved, varia
                             className="w-20 text-sm text-center mx-auto"
                           />
                         )}
-                      </td>
+                        </td>
                       <td className="py-3 text-center">
                         {item.is_package ? (
                           <span className="text-sm text-gray-400">—</span>
@@ -1277,7 +1250,7 @@ const InvoiceEditForm = ({ invoice, hasStockPermission, onCancel, onSaved, varia
                             </button>
                           </div>
                         )}
-                      </td>
+                        </td>
                       <td className="py-3 text-center">
                         {item.is_package ? (
                           <span className="text-sm text-gray-400">—</span>
@@ -1305,10 +1278,10 @@ const InvoiceEditForm = ({ invoice, hasStockPermission, onCancel, onSaved, varia
                             </button>
                           </div>
                         )}
-                      </td>
+                        </td>
                       <td className="py-3 text-center font-semibold text-sm">
                         ₹{parseFloat(item.total_price || 0).toFixed(2)}
-                      </td>
+                        </td>
                       <td className="py-3 text-center">
                         <button
                           type="button"
@@ -1317,7 +1290,7 @@ const InvoiceEditForm = ({ invoice, hasStockPermission, onCancel, onSaved, varia
                         >
                           <FiTrash2 className="w-4 h-4" />
                         </button>
-                      </td>
+                        </td>
                     </tr>
                   ))}
                 </tbody>
@@ -1351,97 +1324,93 @@ const InvoiceEditForm = ({ invoice, hasStockPermission, onCancel, onSaved, varia
                   value={formData.payment_status}
                   onChange={(e) => {
                     const v = e.target.value
-                    const remainingBalance = Math.max(0, totals.totalAmount - originalInvoiceFinancials.current.paid)
                     setFormData((p) => ({
                       ...p,
                       payment_status: v,
-                      payment_amount: v === 'paid' 
-                        ? remainingBalance 
-                        : v === 'semi_paid' 
-                          ? Math.min(p.payment_amount || 0, remainingBalance)
-                          : 0,
+                      payment_amount:
+                        v === 'paid'
+                          ? totals.totalAmount
+                          : v === 'semi_paid'
+                            ? p.payment_amount
+                            : 0,
                     }))
                   }}
                   options={[
-                    { value: 'paid', label: 'Full paid (pay remaining balance)' },
-                    { value: 'semi_paid', label: 'Semi paid (partial payment)' },
-                    { value: 'non_paid', label: 'Non paid (no additional payment)' },
+                    { value: 'paid', label: 'Full paid' },
+                    { value: 'semi_paid', label: 'Semi paid' },
+                    { value: 'non_paid', label: 'Non paid' },
                   ]}
                 />
                 {formData.payment_status === 'semi_paid' && (
                   <>
                     <Input
-                      label={`Additional payment amount (max: ₹${invoiceFinancials.remainingBalance.toFixed(2)})`}
-                      type="number"
-                      step="0.01"
+                      label="Payment amount"
+                      type="text"
+                      inputMode="decimal"
                       value={formData.payment_amount}
-                      onChange={(e) =>
-                        setFormData((p) => ({ ...p, payment_amount: e.target.value }))
-                      }
-                      max={invoiceFinancials.remainingBalance}
+                      onChange={(e) => handlePaymentAmountChange(e.target.value)}
+                      max={totals.totalAmount}
                     />
                     <p className="text-xs text-gray-500 dark:text-gray-400">
-                      Remaining balance: ₹{invoiceFinancials.remainingBalance.toFixed(2)}<br />
-                      After this payment: ₹{invoiceFinancials.finalDue.toFixed(2)} due
+                      Invoice total is ₹{totals.totalAmount.toFixed(2)}. Due after this payment: ₹
+                      {dueAfterPayment.toFixed(2)}.
                     </p>
                   </>
                 )}
               </div>
               <div className="p-4 bg-white dark:bg-gray-600 rounded-lg border border-gray-200 dark:border-gray-500 space-y-2 text-sm">
                 <p className="text-xs text-gray-500 dark:text-gray-400 pb-2 border-b border-gray-100 dark:border-gray-500/60">
-                  Original invoice: ₹{originalInvoiceFinancials.current.total.toFixed(2)} total, 
-                  ₹{originalInvoiceFinancials.current.paid.toFixed(2)} paid, 
-                  ₹{originalInvoiceFinancials.current.due.toFixed(2)} due.
+                  Original invoice (when editing started): Total ₹
+                  {originalInvoiceFinancials.current.total.toFixed(2)}, paid ₹
+                  {originalInvoiceFinancials.current.paid.toFixed(2)}, due ₹
+                  {originalInvoiceFinancials.current.due.toFixed(2)}.
                 </p>
                 
-                <div className="flex justify-between text-blue-600 dark:text-blue-400">
-                  <span>New invoice total</span>
-                  <span>₹{invoiceFinancials.newInvoiceTotal.toFixed(2)}</span>
-                </div>
-                
-                <div className="flex justify-between">
-                  <span className="text-gray-600 dark:text-gray-300">Already paid</span>
-                  <span className="text-green-600 dark:text-green-400">-₹{invoiceFinancials.originalPaidAmount.toFixed(2)}</span>
-                </div>
-                
-                <div className="flex justify-between font-semibold pt-1 border-t border-gray-200 dark:border-gray-500">
-                  <span>Remaining balance</span>
-                  <span className="text-amber-600 dark:text-amber-400">₹{invoiceFinancials.remainingBalance.toFixed(2)}</span>
-                </div>
-                
-                <div className="flex justify-between">
-                  <span className="text-gray-600 dark:text-gray-300">New payment</span>
-                  <span className="text-primary-600">+₹{invoiceFinancials.newPaymentAmount.toFixed(2)}</span>
-                </div>
-                
-                <div className="flex justify-between font-bold text-base pt-2 border-t border-amber-200/80 dark:border-amber-700/50 text-amber-800 dark:text-amber-200">
-                  <span>Final due amount</span>
-                  <span>₹{invoiceFinancials.finalDue.toFixed(2)}</span>
-                </div>
-                
-                <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 pt-2">
-                  <span>Total paid after update</span>
-                  <span>₹{(invoiceFinancials.originalPaidAmount + invoiceFinancials.newPaymentAmount).toFixed(2)}</span>
+                {/* Product Lines Breakdown */}
+                <div className="space-y-1 pt-1">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600 dark:text-gray-300">Products subtotal</span>
+                    <span>₹{totals.subtotal.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 pl-4">
+                    <span>Less: Total discount</span>
+                    <span>- ₹{totals.totalDiscount.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 pl-4">
+                    <span>Add: Total GST</span>
+                    <span>+ ₹{totals.totalGst.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between font-medium pt-1">
+                    <span className="text-gray-700 dark:text-gray-200">Products total (after discount & GST)</span>
+                    <span>₹{totals.productTotalAfterDiscountAndGst.toFixed(2)}</span>
+                  </div>
                 </div>
 
-                <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400">
-                  <span>Product lines (after discount + GST)</span>
-                  <span>₹{productTotalAfterDiscountAndGst.toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 -mt-1">
-                  <span>Subtotal · discount · GST</span>
-                  <span>
-                    ₹{totals.subtotal.toFixed(2)}
-                    {totals.totalDiscount > 0 ? ` · −₹${totals.totalDiscount.toFixed(2)}` : ''} · +₹
-                    {totals.totalGst.toFixed(2)}
-                  </span>
-                </div>
+                {/* Packages Line */}
                 {totals.packageTotal > 0 && (
-                  <div className="flex justify-between text-xs text-primary-600">
-                    <span>Packages (add-on to total)</span>
-                    <span>+₹{totals.packageTotal.toFixed(2)}</span>
+                  <div className="flex justify-between text-primary-600 pt-1 border-t border-dashed border-gray-200 dark:border-gray-500">
+                    <span>Packages (add-on)</span>
+                    <span>+ ₹{totals.packageTotal.toFixed(2)}</span>
                   </div>
                 )}
+
+                {/* Final Total */}
+                <div className="flex justify-between font-bold text-base pt-2 border-t border-gray-200 dark:border-gray-500 mt-1">
+                  <span className="text-gray-800 dark:text-gray-100">New invoice total</span>
+                  <span className="text-primary-600">₹{totals.totalAmount.toFixed(2)}</span>
+                </div>
+
+                {/* Payment Details */}
+                <div className="space-y-1 pt-1">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600 dark:text-gray-300">Paid amount (this save)</span>
+                    <span className="font-medium">₹{effectivePaidAmount.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between font-semibold text-base pt-1 border-t border-amber-200/80 dark:border-amber-700/50 text-amber-800 dark:text-amber-200">
+                    <span>Due after payment</span>
+                    <span>₹{dueAfterPayment.toFixed(2)}</span>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
