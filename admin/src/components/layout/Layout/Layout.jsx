@@ -14,12 +14,12 @@ const Layout = () => {
       
       <main
         className={`
-          transition-all duration-300 pt-4
+          transition-all duration-300 
           ${!isMobile && sidebarOpen ? 'lggs:ml-64' : 'lggs:ml-20'}
           ${isMobile ? 'ml-0' : ''}
         `}
       >
-        <div className="p-4 md:p-6">
+        <div className=" ">
           <Outlet />
         </div>
       </main>
