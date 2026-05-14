@@ -148,7 +148,7 @@ class CustomerController extends Controller
             }
             return response()->json([
                 'status' => true,
-                'message' => 'User Register Successfully',
+                'message' => 'User Register Successfully.Plase check your email for verification link.',
                 'data' => $customer
             ]);
         } catch (\Exception $e) {
