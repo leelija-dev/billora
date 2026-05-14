@@ -273,7 +273,7 @@ class CustomerController extends Controller
         if (!$user) {
             return response()->json([
                 'status' => false,
-                'message' => 'User not found'
+                'message' => 'Incorrect credentials. Please try again.'
             ], 401);
         }
 
@@ -287,7 +287,7 @@ class CustomerController extends Controller
         if (!Hash::check($request->password, $user->password)) {
             return response()->json([
                 'status' => false,
-                'message' => 'Invalid password'
+                'message' => 'Incorrect credentials. Please try again.'
             ], 401);
         }
 

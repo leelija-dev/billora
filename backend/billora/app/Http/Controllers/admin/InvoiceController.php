@@ -18,6 +18,7 @@ use App\Models\GstCollection;
 use App\Models\PackageInvoice;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 
 class InvoiceController extends Controller
 {
@@ -447,7 +448,7 @@ class InvoiceController extends Controller
 
                 $totalAmount += $itemTotal;
             }
-
+            
             // Store invoice
             $invoice = Invoice::create([
                 'user_id'       => $request->user_id,
@@ -548,6 +549,7 @@ class InvoiceController extends Controller
             $invoice = Invoice::where('id', $id)->where('user_id', $data['user_id'])->firstOrFail();
             $oldItems = InvoiceItems::where('invoice_id', $invoice->id)->where('user_id', $data['user_id'])->get();
             $customer =  Customers::findOrFail($request->user_id);
+            $billCustomer = BillCustomer::where('id', $data['customer_id'])->where('admin_id', $data['user_id'])->firstOrFail();
             $permissions = DB::table('plan_permission_details as ppd')  //stock permission 
                 ->join('plan_permission as pp', 'pp.id', '=', 'ppd.permission_id')
                 ->where('ppd.plan_id', $customer->plan_id)
@@ -610,7 +612,12 @@ class InvoiceController extends Controller
 
                 $totalAmount += $itemTotal;
             }
-            $invoice->update([
+            $dueAmount = max(0, $totalAmount - $request->paid_amount);
+            $due_amount = (($billCustomer->due_amount - ($invoice->total_amount - $invoice->paid_amount)) + ($totalAmount - $request->paid_amount));
+            Log::info('paid_amount: ' . $request->paid_amount);
+            Log::info('totalAmount: ' . $totalAmount);
+            Log::info('due_amount: ' . $due_amount);
+             $invoice->update([
                 'customer_id'   => $request->customer_id,
                 'total_amount'  => $totalAmount,
                 'total_items'   => $totalItems,
@@ -698,6 +705,7 @@ class InvoiceController extends Controller
                             'user_id' => $data['user_id'],
                             'invoice_id' => $invoice->id,
                             'product_id' => $item['product_id'],
+                            'customer_id' => $request->customer_id,
                             'purchase_price' => $product->purchase_price,
                             'purchase_gst_percentage' => $product->purchase_gst_percentage ?? 0,
                             'purchase_gst_amount' => $item['discount'] ?? 0,
@@ -717,6 +725,7 @@ class InvoiceController extends Controller
                         'invoice_id'    => $invoice->id,
                         'product_id'    => $item['product_id'],
                         'quantity'      => $item['quantity'],
+                        'item_count'    => $item['quantity'],
                         'unit_id'       => $item['unit_id'],
                         'price'         => $item['price'] ?? 0,
                         'gst'           => $item['gst'] ?? 0,
@@ -762,6 +771,12 @@ class InvoiceController extends Controller
                     'due_amount'     => $totalAmount - $request->paid_amount,
                     'payment_method' => $request->payment_method ?? 'Cash',
                     'remarks'        => 'Bill Generated',
+                ]);
+            }
+            if( $billCustomer ){
+                // $due_amount = (($billCustomer->due_amount - 
+                $billCustomer->update([
+                    'due_amount' => $due_amount
                 ]);
             }
             DB::commit();
