@@ -189,7 +189,36 @@ class ProductsController extends Controller
             ];
         }
     }
+    public function show($id){
+         if (!Auth::check()) {
+        return response()->json([
+            'status' => false,
+            'message' => 'Authentication required'
+        ], 401);
+    }
+        $user = Auth::user()->id;
+        try{
+        $product = Products::where('user_id', $user)->where('id', $id)->with(['images','category','brand','unit','user','stocks'])->firstOrFail();
+        if(!$product){
+            return response()->json([
+                'status' => false,
+                'message' => 'Product not found'
+            ]);
+        }
+        return response()->json([
+            'status' => true,
+            'message' => 'Product Details',
+            'data' => $product
+        ]);
+        }catch(\Exception $e){
+            return response()->json([
+                'status' => false,
+                'message' => $e->getMessage()
+            ]);
+        }
+        
 
+    }
     private function generateBarcodeAndUpload($product)
     {
         try {
