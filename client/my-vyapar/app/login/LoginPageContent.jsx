@@ -175,7 +175,7 @@ const Login = () => {
     toast.dismiss(loadingToast);
     
     if (result.success) {
-      toast.success("Login Successful!", { duration: 2000 });
+      toast.success("Login Successful!", { duration: 1000 });
       // The useEffect will handle redirect
     } else {
       throw new Error(result.error || "Login failed");

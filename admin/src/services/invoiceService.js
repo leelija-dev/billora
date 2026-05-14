@@ -63,6 +63,14 @@ export const invoiceAPI = {
   updateBillStatus: (id) => {
     return apiClient.put(`/invoice/update-bill-status/${id}`, {})
   },
+
+  // Pay invoice-wise due (partial or full)
+  invoiceDuePay: (id, payload) => {
+    return apiClient.put(`/invoice/invoice-due-pay/${id}`, {
+      paid_amount: payload.paid_amount,
+      payment_method: payload.payment_method,
+    })
+  },
 }
 
 export default invoiceAPI

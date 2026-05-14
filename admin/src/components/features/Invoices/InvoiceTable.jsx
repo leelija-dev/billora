@@ -2,14 +2,14 @@ import React, { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { 
   FiEye, 
-  FiDownload, 
   FiEdit2, 
   FiCheckCircle,
   FiClock,
   FiAlertCircle,
   FiFileText,
   FiPrinter,
-  FiChevronDown
+  FiSlash,
+  FiCreditCard,
 } from 'react-icons/fi'
 import Table from '../../common/Table/Table'
 import StatusBadge from '../../common/StatusBadge/StatusBadge'
@@ -20,9 +20,9 @@ const InvoiceTable = ({
   invoices, 
   loading, 
   onView, 
-  onDownload,
   onEdit,
-  onMarkPaid,
+  onCancelInvoice,
+  onPayDue,
   onPrintA4,
   onPrintThermal
 }) => {
@@ -315,8 +315,16 @@ const InvoiceTable = ({
     {
       header: 'Actions',
       accessor: 'actions',
-      cell: (_, row) => (
-        <div className="flex items-center space-x-2">
+      cell: (_, row) => {
+        const dueAmount = Math.max(
+          0,
+          parseFloat(row.total_amount || 0) - parseFloat(row.paid_amount || 0)
+        )
+        const isCancelled = row.status === 'cancelled'
+        const canPayDue = !isCancelled && dueAmount > 0.001
+
+        return (
+        <div className="flex flex-wrap items-center gap-1">
           <motion.button
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.95 }}
@@ -325,9 +333,67 @@ const InvoiceTable = ({
               onView(row)
             }}
             className="p-1.5 text-blue-600 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
-            title="View Invoice"
+            title="View invoice"
+            type="button"
           >
             <FiEye className="w-4 h-4" />
+          </motion.button>
+
+          <motion.button
+            whileHover={{ scale: isCancelled ? 1 : 1.1 }}
+            whileTap={{ scale: isCancelled ? 1 : 0.95 }}
+            onClick={(e) => {
+              e.stopPropagation()
+              if (!isCancelled && onEdit) onEdit(row)
+            }}
+            disabled={isCancelled}
+            className={`p-1.5 rounded-lg transition-colors ${
+              isCancelled
+                ? 'text-gray-300 dark:text-gray-600 cursor-not-allowed'
+                : 'text-indigo-600 hover:bg-indigo-50 dark:text-indigo-400 dark:hover:bg-indigo-900/20'
+            }`}
+            title={isCancelled ? 'Cannot edit cancelled invoice' : 'Edit invoice'}
+            type="button"
+          >
+            <FiEdit2 className="w-4 h-4" />
+          </motion.button>
+
+          <motion.button
+            whileHover={{ scale: !canPayDue ? 1 : 1.1 }}
+            whileTap={{ scale: !canPayDue ? 1 : 0.95 }}
+            onClick={(e) => {
+              e.stopPropagation()
+              if (canPayDue && onPayDue) onPayDue(row)
+            }}
+            disabled={!canPayDue}
+            className={`p-1.5 rounded-lg transition-colors ${
+              !canPayDue
+                ? 'text-gray-300 dark:text-gray-600 cursor-not-allowed'
+                : 'text-emerald-600 hover:bg-emerald-50 dark:text-emerald-400 dark:hover:bg-emerald-900/20'
+            }`}
+            title={!canPayDue ? 'No due to pay' : 'Pay due on this invoice'}
+            type="button"
+          >
+            <FiCreditCard className="w-4 h-4" />
+          </motion.button>
+
+          <motion.button
+            whileHover={{ scale: isCancelled ? 1 : 1.1 }}
+            whileTap={{ scale: isCancelled ? 1 : 0.95 }}
+            onClick={(e) => {
+              e.stopPropagation()
+              if (!isCancelled && onCancelInvoice) onCancelInvoice(row)
+            }}
+            disabled={isCancelled}
+            className={`p-1.5 rounded-lg transition-colors ${
+              isCancelled
+                ? 'text-gray-300 dark:text-gray-600 cursor-not-allowed'
+                : 'text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20'
+            }`}
+            title={isCancelled ? 'Already cancelled' : 'Cancel invoice'}
+            type="button"
+          >
+            <FiSlash className="w-4 h-4" />
           </motion.button>
 
           {/* Print Button with Dropdown */}
@@ -340,7 +406,8 @@ const InvoiceTable = ({
                 setPrintDropdown(printDropdown === row.id ? null : row.id)
               }}
               className="p-1.5 text-green-600 hover:bg-green-50 dark:text-green-400 dark:hover:bg-green-900/20 rounded-lg transition-colors"
-              title="Print Invoice"
+              title="Print invoice"
+              type="button"
             >
               <FiPrinter className="w-4 h-4" />
             </motion.button>
@@ -387,7 +454,8 @@ const InvoiceTable = ({
             </AnimatePresence>
           </div>
         </div>
-      ),
+        )
+      },
     },
     {
       header: 'Status',

@@ -32,9 +32,9 @@ export const loginUser = async (userData) => {
     // Provide specific error messages
     if (error.response?.data.message?.includes("User not found")) {
       throw new Error('User not found. Please check your credentials.');
-    } else if (error.message?.includes("password")) {
+    } else if (error.response?.data.message?.includes("password")) {
       throw new Error('Invalid password. Please try again.');
-    } else if (error.message?.includes("verify")) {
+    } else if (error.response?.data.message?.includes("verify")) {
       throw new Error('Email not verified. Please check your email.');
     } else {
       throw error;
