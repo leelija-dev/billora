@@ -48,15 +48,13 @@ export const registerUser = async (userData) => {
     await api.get("/sanctum/csrf-cookie");
     
     const response = await api.post("/users/register", userData);
+    console.log("checking response ............", response)
     
-    // Handle both response formats
-    if ((response.success || response.status) && response.data) {
-      // Let Zustand handle storage via persist middleware
-      return response;
-    } else {
-      throw new Error(response.data.message || 'Registration failed');
-    }
+    // ✅ Return the full response object
+    // The caller will check response.data.status
+    return response;
   } catch (error) {
+    console.error('Registration service error:', error);
     throw error;
   }
 };

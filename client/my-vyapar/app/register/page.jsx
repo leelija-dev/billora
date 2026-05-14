@@ -20,7 +20,7 @@ const RegisterPage = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
-  
+
   // Validation error states
   const [nameError, setNameError] = useState("");
   const [emailError, setEmailError] = useState("");
@@ -167,92 +167,95 @@ const RegisterPage = () => {
     const isStateValid = validateState(state);
     const isCountryValid = validateCountry(country);
     const isPincodeValid = validatePincode(pincode);
-    
+
     return isNameValid && isEmailValid && isPasswordValid && isPhoneValid && isCityValid && isStateValid && isCountryValid && isPincodeValid;
   };
 
-  const handleRegister = async (e) => {
-    e.preventDefault();
+ const handleRegister = async (e) => {
+  e.preventDefault();
+  
+  // Clear previous errors
+  setError("");
+  setSuccess("");
+  
+  // Validate form before submitting
+  if (!validateForm()) {
+    return;
+  }
+  
+  setLoading(true);
+  
+  try {
+    // Use authStore's register method directly
+    const result = await register({ 
+      name: name.trim(), 
+      email: email.trim().toLowerCase(), 
+      password: password,
+      phone: phone.replace(/\D/g, ''),
+      city: city.trim(),
+      state: state.trim(),
+      country: country.trim(),
+      pincode: pincode.trim()
+    });
     
-    // Clear previous errors
-    setError("");
-    setSuccess("");
+    console.log('Registration result:', result);
     
-    // Validate form before submitting
-    if (!validateForm()) {
-      return;
-    }
-    
-    setLoading(true);
-    
-    try {
-      // Use authStore's register method directly
-      const result = await register({ 
-        name: name.trim(), 
-        email: email.trim().toLowerCase(), 
-        password: password,
-        phone: phone.replace(/\D/g, ''),
-        city: city.trim(),
-        state: state.trim(),
-        country: country.trim(),
-        pincode: pincode.trim()
-      });
+    if (result.success) {
+      // ✅ Success case - show success message
+      const successMessage = result.message || "Registration successful! Please check your email to verify your account.";
+      setSuccess(successMessage);
       
-      if (result.success) {
-        setSuccess("Registration successful! Please check your email to verify your account.");
-        
-        // Clear form
-        setName("");
-        setEmail("");
-        setPassword("");
-        setPhone("");
-        setCity("");
-        setState("");
-        setCountry("");
-        setPincode("");
-        
-        // Clear validation errors
-        setNameError("");
-        setEmailError("");
-        setPasswordError("");
-        setPhoneError("");
-        setCityError("");
-        setStateError("");
-        setCountryError("");
-        setPincodeError("");
-        
-        // Redirect to login after 3 seconds
-        setTimeout(() => {
-          router.push("/login");
-        }, 3000);
-      } else {
-        // Handle registration error
-        const errorMessage = result.error || "Registration failed. Please try again.";
-        setError(errorMessage);
-        
-        // Set specific field errors based on error message
-        if (errorMessage.includes("email")) {
-          setEmailError("This email is already registered. Please use a different email or login.");
-        } else if (errorMessage.includes("server") || errorMessage.includes("connect")) {
-          setError("Cannot connect to server. Please make sure backend is running.");
-        } else {
-          setError(errorMessage);
-        }
-      }
+      // Clear form
+      setName("");
+      setEmail("");
+      setPassword("");
+      setPhone("");
+      setCity("");
+      setState("");
+      setCountry("");
+      setPincode("");
       
-    } catch (error) {
-      if (error.message.includes("email") || error.message.includes("duplicate")) {
+      // Clear validation errors
+      setNameError("");
+      setEmailError("");
+      setPasswordError("");
+      setPhoneError("");
+      setCityError("");
+      setStateError("");
+      setCountryError("");
+      setPincodeError("");
+      
+      // Redirect to login after 3 seconds
+      setTimeout(() => {
+        router.push("/login");
+      }, 3000);
+    } else {
+      // ✅ Error case - show error message
+      const errorMessage = result.error || "Registration failed. Please try again.";
+      setError(errorMessage);
+      
+      // Set specific field errors based on error message
+      if (errorMessage.toLowerCase().includes("email") || errorMessage.toLowerCase().includes("taken")) {
         setEmailError("This email is already registered. Please use a different email or login.");
-        setError("This email is already registered.");
-      } else if (error.message.includes("Failed to fetch")) {
-        setError("Cannot connect to server. Please make sure the backend is running.");
-      } else {
-        setError(error.message || "Registration failed. Please try again.");
+      } else if (errorMessage.toLowerCase().includes("server") || errorMessage.toLowerCase().includes("connect")) {
+        setError("Cannot connect to server. Please make sure backend is running.");
       }
-    } finally {
-      setLoading(false);
     }
-  };
+    
+  } catch (error) {
+    console.error('Registration error:', error);
+    if (error.message.includes("email") || error.message.includes("duplicate")) {
+      setEmailError("This email is already registered. Please use a different email or login.");
+      setError("This email is already registered.");
+    } else if (error.message.includes("Failed to fetch")) {
+      setError("Cannot connect to server. Please make sure the backend is running.");
+    } else {
+      setError(error.message || "Registration failed. Please try again.");
+    }
+  } finally {
+    setLoading(false);
+  }
+};
 
   // Real-time validation handlers
   const handleNameChange = (e) => {
@@ -278,11 +281,11 @@ const RegisterPage = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#ece9f1] to-[#dfe3f8] flex flex-col font-sans">
-      
+
       <div className="flex-1 flex justify-center items-center py-20 px-4 relative">
-        
+
         <form onSubmit={handleRegister} className=" bg-white py-10 px-[50px] rounded-[25px] shadow-[0_8px_25px_rgba(0,0,0,0.08)]  max-md:px-8  max-sm:px-5 max-sm:py-8">
-          
+
           <h1 className="text-center text-[#2d236b] text-4xl font-bold mb-6 max-sm:text-3xl">
             Register
           </h1>
@@ -322,14 +325,13 @@ const RegisterPage = () => {
           {/* Name Field */}
           <div className="flex flex-col mb-5">
             <label className="mb-1.5 text-sm text-gray-700 font-medium">Full Name *</label>
-            <input 
-              type="text" 
+            <input
+              type="text"
               value={name}
               onChange={handleNameChange}
               onBlur={() => validateName(name)}
-              className={`p-3 rounded-xl border-2 outline-none text-sm focus:border-[#5b5bd6] transition-colors ${
-                nameError ? "border-red-500 bg-red-50" : "border-[#ddd]"
-              }`}
+              className={`p-3 rounded-xl border-2 outline-none text-sm focus:border-[#5b5bd6] transition-colors ${nameError ? "border-red-500 bg-red-50" : "border-[#ddd]"
+                }`}
               placeholder="Enter your full name"
               required
               disabled={loading}
@@ -343,14 +345,13 @@ const RegisterPage = () => {
           {/* Email Field */}
           <div className="flex flex-col mb-5">
             <label className="mb-1.5 text-sm text-gray-700 font-medium">Email address *</label>
-            <input 
-              type="email" 
+            <input
+              type="email"
               value={email}
               onChange={handleEmailChange}
               onBlur={() => validateEmail(email)}
-              className={`p-3 rounded-xl border-2 outline-none text-sm focus:border-[#5b5bd6] transition-colors ${
-                emailError ? "border-red-500 bg-red-50" : "border-[#ddd]"
-              }`}
+              className={`p-3 rounded-xl border-2 outline-none text-sm focus:border-[#5b5bd6] transition-colors ${emailError ? "border-red-500 bg-red-50" : "border-[#ddd]"
+                }`}
               placeholder="Example: name@company.com"
               required
               disabled={loading}
@@ -364,14 +365,13 @@ const RegisterPage = () => {
           {/* Password Field */}
           <div className="flex flex-col mb-5 relative">
             <label className="mb-1.5 text-sm text-gray-700 font-medium">Password *</label>
-            <input 
-              type={showPassword ? "text" : "password"} 
+            <input
+              type={showPassword ? "text" : "password"}
               value={password}
               onChange={handlePasswordChange}
               onBlur={() => validatePassword(password)}
-              className={`p-3 rounded-xl border-2 outline-none text-sm focus:border-[#5b5bd6] transition-colors pr-12 ${
-                passwordError ? "border-red-500 bg-red-50" : "border-[#ddd]"
-              }`}
+              className={`p-3 rounded-xl border-2 outline-none text-sm focus:border-[#5b5bd6] transition-colors pr-12 ${passwordError ? "border-red-500 bg-red-50" : "border-[#ddd]"
+                }`}
               placeholder="Enter your password"
               required
               disabled={loading}
@@ -393,8 +393,8 @@ const RegisterPage = () => {
           {/* Phone Field */}
           <div className="flex flex-col mb-5">
             <label className="mb-1.5 text-sm text-gray-700 font-medium">Phone Number *</label>
-            <input 
-              type="tel" 
+            <input
+              type="tel"
               value={phone}
               onChange={(e) => {
                 setPhone(e.target.value);
@@ -402,9 +402,8 @@ const RegisterPage = () => {
                 else setPhoneError("");
               }}
               onBlur={() => validatePhone(phone)}
-              className={`p-3 rounded-xl border-2 outline-none text-sm focus:border-[#5b5bd6] transition-colors ${
-                phoneError ? "border-red-500 bg-red-50" : "border-[#ddd]"
-              }`}
+              className={`p-3 rounded-xl border-2 outline-none text-sm focus:border-[#5b5bd6] transition-colors ${phoneError ? "border-red-500 bg-red-50" : "border-[#ddd]"
+                }`}
               placeholder="Enter 10-digit mobile number"
               maxLength="10"
               required
@@ -420,8 +419,8 @@ const RegisterPage = () => {
           <div className="grid grid-cols-3 gap-3 mb-5">
             <div className="flex flex-col">
               <label className="mb-1.5 text-sm text-gray-700 font-medium">City *</label>
-              <input 
-                type="text" 
+              <input
+                type="text"
                 value={city}
                 onChange={(e) => {
                   setCity(e.target.value);
@@ -429,9 +428,8 @@ const RegisterPage = () => {
                   else setCityError("");
                 }}
                 onBlur={() => validateCity(city)}
-                className={`p-3 rounded-xl border-2 outline-none text-sm focus:border-[#5b5bd6] transition-colors ${
-                  cityError ? "border-red-500 bg-red-50" : "border-[#ddd]"
-                }`}
+                className={`p-3 rounded-xl border-2 outline-none text-sm focus:border-[#5b5bd6] transition-colors ${cityError ? "border-red-500 bg-red-50" : "border-[#ddd]"
+                  }`}
                 placeholder="City"
                 required
                 disabled={loading}
@@ -443,8 +441,8 @@ const RegisterPage = () => {
 
             <div className="flex flex-col">
               <label className="mb-1.5 text-sm text-gray-700 font-medium">State *</label>
-              <input 
-                type="text" 
+              <input
+                type="text"
                 value={state}
                 onChange={(e) => {
                   setState(e.target.value);
@@ -452,9 +450,8 @@ const RegisterPage = () => {
                   else setStateError("");
                 }}
                 onBlur={() => validateState(state)}
-                className={`p-3 rounded-xl border-2 outline-none text-sm focus:border-[#5b5bd6] transition-colors ${
-                  stateError ? "border-red-500 bg-red-50" : "border-[#ddd]"
-                }`}
+                className={`p-3 rounded-xl border-2 outline-none text-sm focus:border-[#5b5bd6] transition-colors ${stateError ? "border-red-500 bg-red-50" : "border-[#ddd]"
+                  }`}
                 placeholder="State"
                 required
                 disabled={loading}
@@ -466,8 +463,8 @@ const RegisterPage = () => {
 
             <div className="flex flex-col">
               <label className="mb-1.5 text-sm text-gray-700 font-medium">Country *</label>
-              <input 
-                type="text" 
+              <input
+                type="text"
                 value={country}
                 onChange={(e) => {
                   setCountry(e.target.value);
@@ -475,9 +472,8 @@ const RegisterPage = () => {
                   else setCountryError("");
                 }}
                 onBlur={() => validateCountry(country)}
-                className={`p-3 rounded-xl border-2 outline-none text-sm focus:border-[#5b5bd6] transition-colors ${
-                  countryError ? "border-red-500 bg-red-50" : "border-[#ddd]"
-                }`}
+                className={`p-3 rounded-xl border-2 outline-none text-sm focus:border-[#5b5bd6] transition-colors ${countryError ? "border-red-500 bg-red-50" : "border-[#ddd]"
+                  }`}
                 placeholder="Country"
                 required
                 disabled={loading}
@@ -491,8 +487,8 @@ const RegisterPage = () => {
           {/* Pincode Field */}
           <div className="flex flex-col mb-5">
             <label className="mb-1.5 text-sm text-gray-700 font-medium">Pincode *</label>
-            <input 
-              type="text" 
+            <input
+              type="text"
               value={pincode}
               onChange={(e) => {
                 const value = e.target.value.replace(/\D/g, '').slice(0, 6);
@@ -501,9 +497,8 @@ const RegisterPage = () => {
                 else setPincodeError("");
               }}
               onBlur={() => validatePincode(pincode)}
-              className={`p-3 rounded-xl border-2 outline-none text-sm focus:border-[#5b5bd6] transition-colors ${
-                pincodeError ? "border-red-500 bg-red-50" : "border-[#ddd]"
-              }`}
+              className={`p-3 rounded-xl border-2 outline-none text-sm focus:border-[#5b5bd6] transition-colors ${pincodeError ? "border-red-500 bg-red-50" : "border-[#ddd]"
+                }`}
               placeholder="Enter 6-digit pincode"
               maxLength="6"
               required
@@ -516,7 +511,7 @@ const RegisterPage = () => {
           </div>
 
           {/* Register Button */}
-          <button 
+          <button
             type="submit"
             disabled={loading}
             className="w-full py-3.5 rounded-xl border-none bg-gradient-to-r from-[#5b5bd6] to-[#3b82f6] text-white text-base font-bold cursor-pointer mt-2.5 hover:shadow-lg hover:scale-105 transition-all duration-300 disabled:opacity-50 disabled:hover:scale-100"
@@ -527,7 +522,7 @@ const RegisterPage = () => {
           {/* Already Account */}
           <p className="text-center mt-5 text-sm">
             Already have an account?{" "}
-            <span 
+            <span
               onClick={() => router.push("/login")}
               className="text-[#3b82f6] font-bold cursor-pointer hover:underline"
             >
@@ -542,7 +537,7 @@ const RegisterPage = () => {
           </p>
         </form>
       </div>
-      
+
     </div>
   );
 };

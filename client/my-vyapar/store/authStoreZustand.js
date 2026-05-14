@@ -141,61 +141,75 @@ export const useAuthStore = create(
       },
 
       register: async (userData) => {
-        console.log('📝 Store register called with user:', userData?.email);
-        set({ isLoading: true, error: null });
+  console.log('📝 Store register called with user:', userData?.email);
+  set({ isLoading: true, error: null });
 
-        try {
-          const response = await registerUser(userData);
-          console.log('📦 Store register response:', response);
+  try {
+    const response = await registerUser(userData);
+    console.log('📦 Store register response:', response);
 
-          if (response?.status === true && response?.data?.user) {
-            const userData = response.data.user;
-            const token = response.data.token;
+    // ✅ Check if response exists and has data
+    if (response && response.data) {
+      // ✅ Check if registration was successful (status === true)
+      if (response.data.status === true) {
+        // ✅ User data is directly in response.data.data (no token for email verification flow)
+        const userDataResponse = response.data.data;
+        
+        console.log('✅ Registration successful!');
+        console.log('User data:', userDataResponse);
+        
+        // For email verification flow, we don't auto-login the user
+        // Just clear loading state and return success
+        set({ 
+          isLoading: false,
+          error: null 
+        });
+        
+        // Optionally store user data temporarily (but don't mark as logged in)
+        // since email verification is required
+        localStorage.setItem('pending_verification_email', userDataResponse.email);
+        
+        // ✅ Broadcast to other tabs that registration happened (not login)
+        const channel = new BroadcastChannel('auth_channel');
+        channel.postMessage({
+          type: 'REGISTRATION',
+          email: userDataResponse.email,
+          sourceTabId: TAB_ID
+        });
+        setTimeout(() => channel.close(), 100);
 
-            set({
-              user: userData,
-              isLoggedIn: true,
-              isLoading: false,
-              error: null,
-            });
-
-            localStorage.setItem('user', JSON.stringify(userData));
-            if (token) localStorage.setItem('auth_token', token);
-
-            // ✅ Broadcast to other tabs on register
-            const channel = new BroadcastChannel('auth_channel');
-            channel.postMessage({
-              type: 'LOGIN',
-              user: userData,
-              token: token,
-              sourceTabId: TAB_ID
-            });
-            setTimeout(() => channel.close(), 100);
-
-            window.dispatchEvent(new Event("userLoggedIn"));
-
-            console.log('✅ Store register successful');
-            return { success: true, user: userData };
-          } else {
-            const errorMessage = response?.data?.message || response?.message || 'Registration failed';
-            console.log('❌ Store register error:', errorMessage);
-            set({
-              user: null,
-              isLoggedIn: false,
-              isLoading: false,
-              error: errorMessage,
-            });
-            return { success: false, error: errorMessage };
-          }
-        } catch (error) {
-          console.error('❌ Store register error:', error);
-          set({
-            isLoading: false,
-            error: error.message || 'Registration failed',
-          });
-          return { success: false, error: error.message };
-        }
-      },
+        console.log('✅ Store register successful - awaiting email verification');
+        return { 
+          success: true, 
+          user: userDataResponse,
+          message: response.data.message || 'Registration successful! Please check your email to verify your account.'
+        };
+      } else {
+        // ✅ Handle registration error (status === false)
+        const errorMessage = response.data.message || 'Registration failed';
+        console.log('❌ Store register error:', errorMessage);
+        set({
+          user: null,
+          isLoggedIn: false,
+          isLoading: false,
+          error: errorMessage,
+        });
+        return { success: false, error: errorMessage };
+      }
+    } else {
+      // Handle unexpected response structure
+      throw new Error('Invalid response from server');
+    }
+  } catch (error) {
+    console.error('❌ Store register error:', error);
+    const errorMessage = error.response?.data?.message || error.message || 'Registration failed';
+    set({
+      isLoading: false,
+      error: errorMessage,
+    });
+    return { success: false, error: errorMessage };
+  }
+},
       logout: async () => {
         try {
 
