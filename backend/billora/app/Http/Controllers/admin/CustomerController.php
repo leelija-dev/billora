@@ -18,7 +18,7 @@ use BaconQrCode\Renderer\ImageRenderer;
 use BaconQrCode\Renderer\Image\SvgImageBackEnd;
 use BaconQrCode\Renderer\RendererStyle\RendererStyle;
 use BaconQrCode\Writer;
-
+use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
 
 class CustomerController extends Controller
 {
@@ -95,32 +95,32 @@ class CustomerController extends Controller
             $customer = Customers::create($data);
             $qrUrl = env('FRONTEND_ADMIN_URL', 'https://thefastbill.com') . '/products/user_id=' . $customer->id;
 
-            $qrFilename = 'qr_' . $customer->id . '.svg';
-
-            $qrPath = 'products_qr/' . $qrFilename;
-
-            $uploadPath = public_path('products_qr');
-
-            if (!File::exists($uploadPath)) {
-                File::makeDirectory($uploadPath, 0755, true);
-            }
-
             $renderer = new ImageRenderer(
                 new RendererStyle(200),
                 new SvgImageBackEnd()
             );
 
             $writer = new Writer($renderer);
+            $tempFile = sys_get_temp_dir() . '/qr_' . $customer->id . '.svg';
 
-            $writer->writeFile(
-                $qrUrl,
-                public_path($qrPath)
+            $writer->writeFile($qrUrl, $tempFile);
+           $upload = Cloudinary::uploadApi()->upload(
+            $tempFile,
+                [
+                    'folder' => 'Thefastbill/customer_products',
+                    'public_id' => 'customer_qr_' . $customer->id,
+                    'overwrite' => true,
+                    'resource_type' => 'image'
+                ]
             );
-
+            if (file_exists($tempFile)) {
+                unlink($tempFile);
+            }
             $customer->update([
-                'products_qr' => $qrPath
+                'products_qr' => $upload['secure_url'],
+                'products_qr_public_id' => $upload['public_id']
             ]);
-
+           
             Log::info('QR Generated Successfully');
 
             // $customer->notify(new VerifyEmailNotification($data['verification_token']));

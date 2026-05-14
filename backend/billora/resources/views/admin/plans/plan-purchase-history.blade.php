@@ -165,6 +165,16 @@
         border-radius: 30px;
         font-size: 11px;
         font-weight: 600;
+        background: linear-gradient(135deg, #e9c215d2 0%, #d36565 100%);
+        color: #fcfffe;
+    }
+    .badge-cancelled {
+        display: inline-flex;
+        align-items: center;
+        padding: 5px 12px;
+        border-radius: 30px;
+        font-size: 11px;
+        font-weight: 600;
         background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
         color: #991b1b;
     }
@@ -408,7 +418,7 @@
                                             Active
                                         </span>
                                     @else
-                                        <span class="badge-expired">
+                                        <span class="badge-{{ $plans->status }}">
                                             
                                             {{ ucfirst($plans->status) }}
                                         </span>
