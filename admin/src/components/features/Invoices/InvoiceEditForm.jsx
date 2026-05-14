@@ -932,9 +932,7 @@ const InvoiceEditForm = ({ invoice, hasStockPermission, onCancel, onSaved, varia
                 {formData.customer_id && !dataFetchError && (
                   <div className="p-3 bg-white dark:bg-gray-600 rounded-lg border border-gray-200 dark:border-gray-500">
                     <p className="font-medium text-gray-900 dark:text-white">{getSelectedCustomerName()}</p>
-                    <p className="text-sm text-gray-500 dark:text-gray-300">
-                      Customer ID: #{formData.customer_id}
-                    </p>
+                   
                   </div>
                 )}
               </div>

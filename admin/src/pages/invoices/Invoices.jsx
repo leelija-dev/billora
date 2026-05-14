@@ -169,6 +169,35 @@ const Invoices = () => {
     setShowPayDueModal(true)
   }
 
+  // Handle due payment amount change with validation
+  const handleDueAmountChange = (value) => {
+    // Only allow digits and decimal point
+    let cleanedValue = value.replace(/[^0-9.]/g, '')
+    
+    // Prevent multiple decimal points
+    const decimalCount = (cleanedValue.match(/\./g) || []).length
+    if (decimalCount > 1) {
+      cleanedValue = cleanedValue.slice(0, cleanedValue.lastIndexOf('.'))
+    }
+    
+    // Parse the cleaned value
+    let numValue = cleanedValue === '' ? 0 : parseFloat(cleanedValue)
+    if (isNaN(numValue)) numValue = 0
+    
+    // Get max allowed amount (due amount)
+    const total = parseFloat(payDueInvoice?.total_amount || 0)
+    const paid = parseFloat(payDueInvoice?.paid_amount || 0)
+    const maxAmount = Math.max(0, total - paid)
+    
+    // Cap at due amount
+    if (numValue > maxAmount) {
+      numValue = maxAmount
+      cleanedValue = numValue.toString()
+    }
+    
+    setDuePayAmount(cleanedValue === '' ? '' : cleanedValue)
+  }
+
   const handlePayDueSubmit = async (e) => {
     e.preventDefault()
     if (!payDueInvoice?.id) return
@@ -527,6 +556,14 @@ const handleAddSubmit = async (data) => {
       </div>
     </motion.div>
   )
+
+  // Get the due amount for the current invoice
+  const getCurrentDueAmount = () => {
+    if (!payDueInvoice) return 0
+    const total = parseFloat(payDueInvoice.total_amount || 0)
+    const paid = parseFloat(payDueInvoice.paid_amount || 0)
+    return Math.max(0, total - paid)
+  }
 
   return (
     <motion.div
@@ -996,7 +1033,7 @@ const handleAddSubmit = async (data) => {
         )}
       </AnimatePresence>
 
-      {/* Pay due (from table) */}
+      {/* Pay due (from table) with improved amount input */}
       <AnimatePresence>
         {showPayDueModal && payDueInvoice && (
           <motion.div
@@ -1028,29 +1065,25 @@ const handleAddSubmit = async (data) => {
               <p className="text-center text-sm text-gray-600 dark:text-gray-400 mb-4">
                 Invoice #{payDueInvoice.id}
                 <span className="block mt-1 font-medium text-orange-600 dark:text-orange-400">
-                  Due: ₹
-                  {Math.max(
-                    0,
-                    parseFloat(payDueInvoice.total_amount || 0) -
-                      parseFloat(payDueInvoice.paid_amount || 0)
-                  ).toFixed(2)}
+                  Due: ₹{getCurrentDueAmount().toFixed(2)}
                 </span>
               </p>
               <form onSubmit={handlePayDueSubmit} className="space-y-4">
-                <Input
-                  label="Amount to pay"
-                  type="number"
-                  step="0.01"
-                  min="0.01"
-                  max={Math.max(
-                    0,
-                    parseFloat(payDueInvoice.total_amount || 0) -
-                      parseFloat(payDueInvoice.paid_amount || 0)
-                  )}
-                  value={duePayAmount}
-                  onChange={(e) => setDuePayAmount(e.target.value)}
-                  required
-                />
+                <div className="space-y-2">
+                  <Input
+                    label="Amount to pay"
+                    type="text"
+                    inputMode="decimal"
+                    placeholder="0.00"
+                    value={duePayAmount}
+                    onChange={(e) => handleDueAmountChange(e.target.value)}
+                    required
+                    className="font-mono text-lg"
+                  />
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    Maximum payable amount: ₹{getCurrentDueAmount().toFixed(2)}
+                  </p>
+                </div>
                 <Select
                   label="Payment method"
                   value={duePayMethod}
