@@ -441,14 +441,6 @@ const InvoiceDetail = () => {
             className="space-y-6"
           >
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-              <Button
-                variant="outline"
-                onClick={() => setIsEditing(false)}
-                className="w-fit gap-2"
-                icon={FiArrowLeft}
-              >
-                Back to Invoice
-              </Button>
               <div>
                 <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-gray-400 bg-clip-text text-transparent">
                   Edit Invoice
@@ -457,6 +449,15 @@ const InvoiceDetail = () => {
                   Invoice #{invoice.invoice_number || invoice.id}
                 </p>
               </div>
+              <Button
+                variant="outline"
+                onClick={() => setIsEditing(false)}
+                className="w-fit gap-2"
+                icon={FiArrowLeft}
+              >
+                Back to Invoice
+              </Button>
+              
             </div>
             <InvoiceEditForm
               invoice={invoice}
