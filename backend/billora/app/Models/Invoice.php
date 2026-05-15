@@ -10,6 +10,7 @@ class Invoice extends Model
     use SoftDeletes;
     protected $table="invoice";
     protected $fillable =[
+        'invoice_number',
         'user_id',
         'customer_id',
         'store_id',

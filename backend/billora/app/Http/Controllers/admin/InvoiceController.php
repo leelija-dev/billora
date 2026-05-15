@@ -169,9 +169,12 @@ class InvoiceController extends Controller
 
                 $totalAmount += $itemTotal;
             }
-
+            $preInv = Invoice::where('user_id', $request->user_id)->orderBy('id', 'desc')->first();
+            $nextNumber = $preInv ? ((int)$preInv->invoice_number + 1) : 1;
+            $invoiceNumber = str_pad($nextNumber, 3, '0', STR_PAD_LEFT);
             // Store invoice
             $invoice = Invoice::create([
+                'invoice_number' => $invoiceNumber,
                 'user_id'       => $request->user_id,
                 'customer_id'   => $request->customer_id,
                 'store_id'      => $request->store_id,
