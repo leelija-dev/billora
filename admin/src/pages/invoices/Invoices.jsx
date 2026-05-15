@@ -146,15 +146,36 @@ const Invoices = () => {
     navigate(`/invoices/detail/${invoice.id}`, { state: { openEdit: true } })
   }
 
-  const handleCancelInvoiceFromTable = async (invoice) => {
+  // Add these state variables with the other state declarations (around line 60-70)
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false)
+  const [invoiceToCancel, setInvoiceToCancel] = useState(null)
+  const [cancellingInvoice, setCancellingInvoice] = useState(false)
+
+  // Replace the existing handleCancelInvoiceFromTable function with these:
+  const handleCancelClick = (invoice) => {
     if (!invoice?.id || invoice.status === 'cancelled') return
-    const ok = window.confirm(
-      'Cancel this invoice? Stock will be restored if applicable, customer due will be adjusted, and the invoice will be marked cancelled.'
-    )
-    if (!ok) return
-    const res = await cancelInvoice(invoice.id)
-    if (res?.success) {
-      await fetchInvoices(currentPage)
+    setInvoiceToCancel(invoice)
+    setShowCancelConfirm(true)
+  }
+
+  const handleCancelInvoice = async () => {
+    if (!invoiceToCancel?.id) return
+    setCancellingInvoice(true)
+    try {
+      const res = await cancelInvoice(invoiceToCancel.id)
+      if (res?.success) {
+        // toast.success('Invoice cancelled successfully')
+        setShowCancelConfirm(false)
+        setInvoiceToCancel(null)
+        await fetchInvoices(currentPage)
+      } else {
+        toast.error(res?.message || 'Failed to cancel invoice')
+      }
+    } catch (error) {
+      console.error('Failed to cancel invoice:', error)
+      toast.error('Failed to cancel invoice')
+    } finally {
+      setCancellingInvoice(false)
     }
   }
 
@@ -167,6 +188,35 @@ const Invoices = () => {
     setDuePayAmount('')
     setDuePayMethod('Cash')
     setShowPayDueModal(true)
+  }
+
+  // Handle due payment amount change with validation
+  const handleDueAmountChange = (value) => {
+    // Only allow digits and decimal point
+    let cleanedValue = value.replace(/[^0-9.]/g, '')
+
+    // Prevent multiple decimal points
+    const decimalCount = (cleanedValue.match(/\./g) || []).length
+    if (decimalCount > 1) {
+      cleanedValue = cleanedValue.slice(0, cleanedValue.lastIndexOf('.'))
+    }
+
+    // Parse the cleaned value
+    let numValue = cleanedValue === '' ? 0 : parseFloat(cleanedValue)
+    if (isNaN(numValue)) numValue = 0
+
+    // Get max allowed amount (due amount)
+    const total = parseFloat(payDueInvoice?.total_amount || 0)
+    const paid = parseFloat(payDueInvoice?.paid_amount || 0)
+    const maxAmount = Math.max(0, total - paid)
+
+    // Cap at due amount
+    if (numValue > maxAmount) {
+      numValue = maxAmount
+      cleanedValue = numValue.toString()
+    }
+
+    setDuePayAmount(cleanedValue === '' ? '' : cleanedValue)
   }
 
   const handlePayDueSubmit = async (e) => {
@@ -249,28 +299,28 @@ const Invoices = () => {
     }
   }
 
-const handleAddSubmit = async (data) => {
-  setFormSubmitting(true)
-  try {
-    const res = await createInvoice(data)
-    console.log('Invoice creation response:', res)
-    
-    if (res?.status === true || res?.success) {
-      toast.success('Invoice created successfully')
-      // Return the created invoice data
-      return { success: true, data: res?.data || res }
-    } else {
-      toast.error(res?.message || 'Failed to create invoice')
-      return { success: false, error: res?.message }
+  const handleAddSubmit = async (data) => {
+    setFormSubmitting(true)
+    try {
+      const res = await createInvoice(data)
+      console.log('Invoice creation response:', res)
+
+      if (res?.status === true || res?.success) {
+        toast.success('Invoice created successfully')
+        // Return the created invoice data
+        return { success: true, data: res?.data || res }
+      } else {
+        toast.error(res?.message || 'Failed to create invoice')
+        return { success: false, error: res?.message }
+      }
+    } catch (error) {
+      console.error('Failed to create invoice:', error)
+      toast.error('Failed to create invoice')
+      return { success: false, error: error.message }
+    } finally {
+      setFormSubmitting(false)
     }
-  } catch (error) {
-    console.error('Failed to create invoice:', error)
-    toast.error('Failed to create invoice')
-    return { success: false, error: error.message }
-  } finally {
-    setFormSubmitting(false)
   }
-}
 
   const clearFilters = () => {
     setSearchTerm('')
@@ -528,388 +578,480 @@ const handleAddSubmit = async (data) => {
     </motion.div>
   )
 
-  return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      className="space-y-6 p-6"
-    >
-      {/* Header */}
-      <motion.div
-        initial={{ y: -20, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.5, type: "spring", stiffness: 100 }}
-        className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
-      >
-        <div>
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-gray-300 bg-clip-text text-transparent">
-            Invoices
-          </h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-2 flex items-center">
-            <FiFileText className="w-4 h-4 mr-2" />
-            {showAddForm ? (
-              <span>Create New Invoice</span>
-            ) : (
-              <span>Manage and track your invoices</span>
-            )}
-          </p>
-        </div>
+  // Get the due amount for the current invoice
+  const getCurrentDueAmount = () => {
+    if (!payDueInvoice) return 0
+    const total = parseFloat(payDueInvoice.total_amount || 0)
+    const paid = parseFloat(payDueInvoice.paid_amount || 0)
+    return Math.max(0, total - paid)
+  }
 
-        <div className="flex items-center space-x-3">
-          {showAddForm ? (
-            <motion.div
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-            >
-              <Button
-                variant="outline"
-                onClick={handleCancelForm}
-                icon={FiArrowLeft}
+  return (
+    <>
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        className="space-y-6 p-6"
+      >
+        {/* Header */}
+        <motion.div
+          initial={{ y: -20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ duration: 0.5, type: "spring", stiffness: 100 }}
+          className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
+        >
+          <div>
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-gray-300 bg-clip-text text-transparent">
+              Invoices
+            </h1>
+            <p className="text-gray-600 dark:text-gray-400 mt-2 flex items-center">
+              <FiFileText className="w-4 h-4 mr-2" />
+              {showAddForm ? (
+                <span>Create New Invoice</span>
+              ) : (
+                <span>Manage and track your invoices</span>
+              )}
+            </p>
+          </div>
+
+          <div className="flex items-center space-x-3">
+            {showAddForm ? (
+              <motion.div
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
               >
-                Back to Invoices
-              </Button>
-            </motion.div>
-          ) : (
-            <motion.div
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              transition={{ type: "spring", stiffness: 300 }}
-            >
-              <Button
-                onClick={handleAddClick}
-                icon={FiPlus}
-                className="shadow-lg shadow-primary-500/30"
+                <Button
+                  variant="outline"
+                  onClick={handleCancelForm}
+                  icon={FiArrowLeft}
+                >
+                  Back to Invoices
+                </Button>
+              </motion.div>
+            ) : (
+              <motion.div
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                transition={{ type: "spring", stiffness: 300 }}
               >
-                Create Invoice
-              </Button>
+                <Button
+                  onClick={handleAddClick}
+                  icon={FiPlus}
+                  className="shadow-lg shadow-primary-500/30"
+                >
+                  Create Invoice
+                </Button>
+              </motion.div>
+            )}
+          </div>
+        </motion.div>
+
+        {/* Stats Cards - Hide when form is shown */}
+        <AnimatePresence mode="wait">
+          {!showAddForm && (
+            <motion.div
+              key="stats"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6"
+            >
+              {initialLoading ? (
+                // Loading skeleton for stats cards
+                Array.from({ length: 4 }).map((_, index) => (
+                  <motion.div
+                    key={index}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.1 }}
+                    className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6"
+                  >
+                    <div className="animate-pulse">
+                      <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/2 mb-4"></div>
+                      <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-3/4 mb-2"></div>
+                      <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-1/4"></div>
+                    </div>
+                  </motion.div>
+                ))
+              ) : (
+                <>
+                  <StatCard
+                    title="Total Invoices"
+                    value={stats.total}
+                    icon={FiFileText}
+                    color="from-blue-500 to-cyan-500"
+                    delay={0.1}
+                  />
+                  <StatCard
+                    title="Paid"
+                    value={stats.paid}
+                    icon={FiCheckCircle}
+                    color="from-green-500 to-emerald-500"
+                    subtitle={`${((stats.paid / stats.total) * 100 || 0).toFixed(1)}% of total`}
+                    delay={0.2}
+                  />
+                  <StatCard
+                    title="Non Paid"
+                    value={stats.nonPaid}
+                    icon={FiAlertCircle}
+                    color="from-yellow-500 to-orange-500"
+                    subtitle={`${((stats.nonPaid / stats.total) * 100 || 0).toFixed(1)}% of total`}
+                    delay={0.3}
+                  />
+                  <StatCard
+                    title="Outstanding"
+                    value={`₹${stats.unpaidAmount.toFixed(2)}`}
+                    icon={FiDollarSign}
+                    color="from-red-500 to-orange-500"
+                    subtitle={`${((stats.unpaidAmount / stats.totalAmount) * 100 || 0).toFixed(1)}% of total`}
+                    delay={0.4}
+                  />
+                </>
+              )}
             </motion.div>
           )}
-        </div>
-      </motion.div>
+        </AnimatePresence>
 
-      {/* Stats Cards - Hide when form is shown */}
-      <AnimatePresence mode="wait">
-        {!showAddForm && (
-          <motion.div
-            key="stats"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6"
-          >
-            {initialLoading ? (
-              // Loading skeleton for stats cards
-              Array.from({ length: 4 }).map((_, index) => (
-                <motion.div
-                  key={index}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.1 }}
-                  className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6"
-                >
-                  <div className="animate-pulse">
-                    <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/2 mb-4"></div>
-                    <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-3/4 mb-2"></div>
-                    <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-1/4"></div>
-                  </div>
-                </motion.div>
-              ))
-            ) : (
-              <>
-                <StatCard
-                  title="Total Invoices"
-                  value={stats.total}
-                  icon={FiFileText}
-                  color="from-blue-500 to-cyan-500"
-                  delay={0.1}
-                />
-                <StatCard
-                  title="Paid"
-                  value={stats.paid}
-                  icon={FiCheckCircle}
-                  color="from-green-500 to-emerald-500"
-                  subtitle={`${((stats.paid / stats.total) * 100 || 0).toFixed(1)}% of total`}
-                  delay={0.2}
-                />
-                <StatCard
-                  title="Non Paid"
-                  value={stats.nonPaid}
-                  icon={FiAlertCircle}
-                  color="from-yellow-500 to-orange-500"
-                  subtitle={`${((stats.nonPaid / stats.total) * 100 || 0).toFixed(1)}% of total`}
-                  delay={0.3}
-                />
-                <StatCard
-                  title="Outstanding"
-                  value={`₹${stats.unpaidAmount.toFixed(2)}`}
-                  icon={FiDollarSign}
-                  color="from-red-500 to-orange-500"
-                  subtitle={`${((stats.unpaidAmount / stats.totalAmount) * 100 || 0).toFixed(1)}% of total`}
-                  delay={0.4}
-                />
-              </>
-            )}
-          </motion.div>
-        )}
-      </AnimatePresence>
+        {/* Invoice Form */}
+        <AnimatePresence mode="wait">
+          {showAddForm && (
+            <motion.div
+              key="form"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.3 }}
+              className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6"
+            >
+              <BillGenerateForm
+                mode="add"
+                onSubmit={handleAddSubmit}
+                onCancel={handleCancelForm}
+                isSubmitting={formSubmitting}
+                hasStockPermission={hasStockPermission}
+                onSuccess={() => {
+                  // This will close the form and show the invoice table
+                  setShowAddForm(false)
+                  // Refresh the invoices list
+                  fetchInvoices(currentPage)
+                }}
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
 
-      {/* Invoice Form */}
-      <AnimatePresence mode="wait">
-        {showAddForm && (
-          <motion.div
-            key="form"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            transition={{ duration: 0.3 }}
-            className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6"
-          >
-            <BillGenerateForm
-              mode="add"
-              onSubmit={handleAddSubmit}
-              onCancel={handleCancelForm}
-              isSubmitting={formSubmitting}
-              hasStockPermission={hasStockPermission}
-              onSuccess={() => {
-                // This will close the form and show the invoice table
-                setShowAddForm(false)
-                // Refresh the invoices list
-                fetchInvoices(currentPage)
-              }}
-            />
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Filters - Hide when form is shown */}
-      <AnimatePresence mode="wait">
-        {!showAddForm && (
-          <motion.div
-            key="filters"
-            initial={{ y: 20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ delay: 0.7 }}
-            className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6"
-          >
-            {initialLoading ? (
-              // Loading skeleton for filters
-              <div className="animate-pulse">
-                <div className="flex flex-col sm:flex-row gap-4">
-                  <div className="flex-1">
-                    <div className="h-10 bg-gray-200 dark:bg-gray-700 rounded-xl"></div>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <div className="h-10 w-24 bg-gray-200 dark:bg-gray-700 rounded-xl"></div>
-                    <div className="h-10 w-10 bg-gray-200 dark:bg-gray-700 rounded-xl"></div>
+        {/* Filters - Hide when form is shown */}
+        <AnimatePresence mode="wait">
+          {!showAddForm && (
+            <motion.div
+              key="filters"
+              initial={{ y: 20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ delay: 0.7 }}
+              className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6"
+            >
+              {initialLoading ? (
+                // Loading skeleton for filters
+                <div className="animate-pulse">
+                  <div className="flex flex-col sm:flex-row gap-4">
+                    <div className="flex-1">
+                      <div className="h-10 bg-gray-200 dark:bg-gray-700 rounded-xl"></div>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <div className="h-10 w-24 bg-gray-200 dark:bg-gray-700 rounded-xl"></div>
+                      <div className="h-10 w-10 bg-gray-200 dark:bg-gray-700 rounded-xl"></div>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ) : (
-              <>
-                <div className="flex flex-col sm:flex-row gap-4">
-                  <div className="flex-1 relative">
-                    <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                    <Input
-                      type="text"
-                      placeholder="Search invoices by number, customer, or amount..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="pl-10"
-                    />
-                  </div>
+              ) : (
+                <>
+                  <div className="flex flex-col sm:flex-row gap-4">
+                    <div className="flex-1 relative">
+                      <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                      <Input
+                        type="text"
+                        placeholder="Search invoices by number, customer, or amount..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="pl-10"
+                      />
+                    </div>
 
-                  <div className="flex items-center space-x-2">
-                    <motion.button
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                      onClick={() => setShowFilters(!showFilters)}
-                      className={`px-4 py-2 rounded-xl border transition-colors flex items-center space-x-2 ${showFilters
+                    <div className="flex items-center space-x-2">
+                      <motion.button
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={() => setShowFilters(!showFilters)}
+                        className={`px-4 py-2 rounded-xl border transition-colors flex items-center space-x-2 ${showFilters
                           ? 'bg-primary-50 border-primary-200 text-primary-600 dark:bg-primary-900/20 dark:border-primary-800 dark:text-primary-400'
                           : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'
-                        }`}
-                    >
-                      <FiFilter className="w-4 h-4" />
-                      <span>Filters</span>
-                      {filters.status && (
-                        <motion.span
+                          }`}
+                      >
+                        <FiFilter className="w-4 h-4" />
+                        <span>Filters</span>
+                        {filters.status && (
+                          <motion.span
+                            initial={{ scale: 0 }}
+                            animate={{ scale: 1 }}
+                            className="ml-1 w-2 h-2 bg-primary-500 rounded-full"
+                          />
+                        )}
+                      </motion.button>
+
+                      {(searchTerm || filters.status) && (
+                        <motion.button
                           initial={{ scale: 0 }}
                           animate={{ scale: 1 }}
-                          className="ml-1 w-2 h-2 bg-primary-500 rounded-full"
-                        />
+                          exit={{ scale: 0 }}
+                          onClick={clearFilters}
+                          className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+                        >
+                          <FiX className="w-5 h-5" />
+                        </motion.button>
                       )}
-                    </motion.button>
+                    </div>
+                  </div>
 
-                    {(searchTerm || filters.status) && (
-                      <motion.button
-                        initial={{ scale: 0 }}
-                        animate={{ scale: 1 }}
-                        exit={{ scale: 0 }}
-                        onClick={clearFilters}
-                        className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+                  <AnimatePresence>
+                    {showFilters && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.3 }}
+                        className="overflow-hidden"
                       >
-                        <FiX className="w-5 h-5" />
-                      </motion.button>
+                        <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
+                          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                            <Select
+                              label="Status"
+                              options={[
+                                { value: '', label: 'All Statuses' },
+                                { value: 'paid', label: 'Paid' },
+                                { value: 'unpaid', label: 'Unpaid' },
+                                { value: 'overdue', label: 'Overdue' },
+                                { value: 'cancelled', label: 'Cancelled' },
+                                { value: 'refunded', label: 'Refunded' },
+                              ]}
+                              value={filters.status}
+                              onChange={(e) => setFilters({ status: e.target.value })}
+                            />
+
+                            <Select
+                              label="Date Range"
+                              options={[
+                                { value: '', label: 'All Time' },
+                                { value: 'today', label: 'Today' },
+                                { value: 'week', label: 'This Week' },
+                                { value: 'month', label: 'This Month' },
+                                { value: 'quarter', label: 'This Quarter' },
+                                { value: 'year', label: 'This Year' },
+                              ]}
+                              value={filters.dateRange}
+                              onChange={(e) => setFilters({ dateRange: e.target.value })}
+                            />
+
+                            <Input
+                              label="Min Amount"
+                              type="number"
+                              placeholder="0"
+                              value={filters.minAmount}
+                              onChange={(e) => setFilters({ minAmount: e.target.value })}
+                            />
+
+                            <Input
+                              label="Max Amount"
+                              type="number"
+                              placeholder="10000"
+                              value={filters.maxAmount}
+                              onChange={(e) => setFilters({ maxAmount: e.target.value })}
+                            />
+                          </div>
+                        </div>
+                      </motion.div>
                     )}
+                  </AnimatePresence>
+                </>
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Invoices Table - Hide when form is shown */}
+        <AnimatePresence mode="wait">
+          {!showAddForm && (
+            <motion.div
+              key="table"
+              initial={{ y: 20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ delay: 0.8 }}
+            >
+              {initialLoading || pageLoading ? (
+                // Loading skeleton for table
+                <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-12">
+                  <div className="flex flex-col items-center justify-center">
+                    <motion.div
+                      animate={{ rotate: 360 }}
+                      transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                      className="w-12 h-12 border-4 border-primary-200 border-t-primary-600 rounded-full mb-4"
+                    />
+                    <p className="text-gray-600 dark:text-gray-400">
+                      {initialLoading ? 'Loading invoice data...' : 'Updating invoice data...'}
+                    </p>
                   </div>
                 </div>
-
-                <AnimatePresence>
-                  {showFilters && (
+              ) : safeInvoices?.length === 0 ? (
+                <EmptyState
+                  icon={FiFileText}
+                  title="No invoices found"
+                  description="Try adjusting your search or filters, or create your first invoice."
+                  action={
                     <motion.div
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: 'auto', opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      transition={{ duration: 0.3 }}
-                      className="overflow-hidden"
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
                     >
-                      <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
-                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                          <Select
-                            label="Status"
-                            options={[
-                              { value: '', label: 'All Statuses' },
-                              { value: 'paid', label: 'Paid' },
-                              { value: 'unpaid', label: 'Unpaid' },
-                              { value: 'overdue', label: 'Overdue' },
-                              { value: 'cancelled', label: 'Cancelled' },
-                              { value: 'refunded', label: 'Refunded' },
-                            ]}
-                            value={filters.status}
-                            onChange={(e) => setFilters({ status: e.target.value })}
-                          />
-
-                          <Select
-                            label="Date Range"
-                            options={[
-                              { value: '', label: 'All Time' },
-                              { value: 'today', label: 'Today' },
-                              { value: 'week', label: 'This Week' },
-                              { value: 'month', label: 'This Month' },
-                              { value: 'quarter', label: 'This Quarter' },
-                              { value: 'year', label: 'This Year' },
-                            ]}
-                            value={filters.dateRange}
-                            onChange={(e) => setFilters({ dateRange: e.target.value })}
-                          />
-
-                          <Input
-                            label="Min Amount"
-                            type="number"
-                            placeholder="0"
-                            value={filters.minAmount}
-                            onChange={(e) => setFilters({ minAmount: e.target.value })}
-                          />
-
-                          <Input
-                            label="Max Amount"
-                            type="number"
-                            placeholder="10000"
-                            value={filters.maxAmount}
-                            onChange={(e) => setFilters({ maxAmount: e.target.value })}
-                          />
-                        </div>
-                      </div>
+                      <Button onClick={handleAddClick} icon={FiPlus}>
+                        Create Invoice
+                      </Button>
                     </motion.div>
-                  )}
-                </AnimatePresence>
-              </>
-            )}
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Invoices Table - Hide when form is shown */}
-      <AnimatePresence mode="wait">
-        {!showAddForm && (
-          <motion.div
-            key="table"
-            initial={{ y: 20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ delay: 0.8 }}
-          >
-            {initialLoading || pageLoading ? (
-              // Loading skeleton for table
-              <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-12">
-                <div className="flex flex-col items-center justify-center">
-                  <motion.div
-                    animate={{ rotate: 360 }}
-                    transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                    className="w-12 h-12 border-4 border-primary-200 border-t-primary-600 rounded-full mb-4"
-                  />
-                  <p className="text-gray-600 dark:text-gray-400">
-                    {initialLoading ? 'Loading invoice data...' : 'Updating invoice data...'}
-                  </p>
-                </div>
-              </div>
-            ) : safeInvoices?.length === 0 ? (
-              <EmptyState
-                icon={FiFileText}
-                title="No invoices found"
-                description="Try adjusting your search or filters, or create your first invoice."
-                action={
-                  <motion.div
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                  >
-                    <Button onClick={handleAddClick} icon={FiPlus}>
-                      Create Invoice
-                    </Button>
-                  </motion.div>
-                }
-              />
-            ) : (
-              <>
-                <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg overflow-hidden">
-                  <InvoiceTable
-                    invoices={(safeInvoices || []).map((inv) => ({
-                      ...inv,
-                      amount: inv.total ?? 0,
-                      currency: inv.currency || 'USD',
-                    }))}
-                    loading={loading}
-                    onView={handleView}
-                    onEdit={handleEditInvoice}
-                    onCancelInvoice={handleCancelInvoiceFromTable}
-                    onPayDue={handleOpenPayDue}
-                    onPrintA4={handlePrintA4}
-                    onPrintThermal={handlePrintThermal}
-                  />
-                  {totalInvoices > pageSize && (
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 0.8 }}
-                    className=""
-                  >
-                    <Pagination
-                      currentPage={currentPage}
-                      totalItems={totalInvoices}
-                      pageSize={pageSize}
-                      onPageChange={handlePageChange}
+                  }
+                />
+              ) : (
+                <>
+                  <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg overflow-hidden">
+                    <InvoiceTable
+                      invoices={(safeInvoices || []).map((inv) => ({
+                        ...inv,
+                        amount: inv.total ?? 0,
+                        currency: inv.currency || 'USD',
+                      }))}
+                      loading={loading}
+                      onView={handleView}
+                      onEdit={handleEditInvoice}
+                      onCancelInvoice={handleCancelClick}
+                      onPayDue={handleOpenPayDue}
+                      onPrintA4={handlePrintA4}
+                      onPrintThermal={handlePrintThermal}
                     />
+                    {totalInvoices > pageSize && (
+                      <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: 0.8 }}
+                        className=""
+                      >
+                        <Pagination
+                          currentPage={currentPage}
+                          totalItems={totalInvoices}
+                          pageSize={pageSize}
+                          onPageChange={handlePageChange}
+                        />
+                      </motion.div>
+                    )}
+                  </div>
+
+
+                </>
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* View Invoice Modal */}
+        <InvoiceModal
+          isOpen={showViewModal}
+          onClose={() => {
+            setShowViewModal(false)
+            setSelectedInvoice(null)
+          }}
+          invoice={selectedInvoice}
+        />
+
+
+
+        {/* Bill Generate Modal */}
+        <AnimatePresence>
+          {showBillGenerate && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+              onClick={() => setShowBillGenerate(false)}
+            >
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0, y: 20 }}
+                animate={{ scale: 1, opacity: 1, y: 0 }}
+                exit={{ scale: 0.9, opacity: 0, y: 20 }}
+                transition={{ type: "spring", stiffness: 200 }}
+                className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full p-6"
+                onClick={e => e.stopPropagation()}
+              >
+                <div className="text-center">
+                  <motion.div
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    transition={{ delay: 0.1, type: "spring", stiffness: 200 }}
+                    className="w-16 h-16 bg-green-100 dark:bg-green-900/20 rounded-full flex items-center justify-center mx-auto mb-4"
+                  >
+                    <FaReceipt className="w-8 h-8 text-green-600 dark:text-green-400" />
                   </motion.div>
-                )}
+                  <motion.h3
+                    initial={{ y: 10, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    transition={{ delay: 0.2 }}
+                    className="text-xl font-bold text-gray-900 dark:text-white mb-2"
+                  >
+                    Bill Generation
+                  </motion.h3>
+                  <motion.p
+                    initial={{ y: 10, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    transition={{ delay: 0.3 }}
+                    className="text-gray-600 dark:text-gray-400 mb-6"
+                  >
+                    Generate bills with stock management integration. This will open the bill generation page where you can create new invoices with product selection and stock management.
+                  </motion.p>
+                  <motion.div
+                    initial={{ y: 10, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    transition={{ delay: 0.4 }}
+                    className="flex space-x-3"
+                  >
+                    <motion.div
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      className="flex-1"
+                    >
+                      <Button
+                        variant="outline"
+                        onClick={() => setShowBillGenerate(false)}
+                        className="w-full"
+                      >
+                        Cancel
+                      </Button>
+                    </motion.div>
+                    <motion.div
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      className="flex-1"
+                    >
+                      <Button
+                        onClick={() => window.open('/invoice', '_blank')}
+                        className="w-full"
+                      >
+                        Open Bill Generator
+                      </Button>
+                    </motion.div>
+                  </motion.div>
                 </div>
-
-                
-              </>
-            )}
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* View Invoice Modal */}
-      <InvoiceModal
-        isOpen={showViewModal}
-        onClose={() => {
-          setShowViewModal(false)
-          setSelectedInvoice(null)
-        }}
-        invoice={selectedInvoice}
-      />
-
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </motion.div>
       {/* Delete Confirmation Modal */}
       <AnimatePresence>
         {showDeleteConfirm && (
@@ -996,7 +1138,7 @@ const handleAddSubmit = async (data) => {
         )}
       </AnimatePresence>
 
-      {/* Pay due (from table) */}
+      {/* Pay due (from table) with improved amount input */}
       <AnimatePresence>
         {showPayDueModal && payDueInvoice && (
           <motion.div
@@ -1028,29 +1170,25 @@ const handleAddSubmit = async (data) => {
               <p className="text-center text-sm text-gray-600 dark:text-gray-400 mb-4">
                 Invoice #{payDueInvoice.id}
                 <span className="block mt-1 font-medium text-orange-600 dark:text-orange-400">
-                  Due: ₹
-                  {Math.max(
-                    0,
-                    parseFloat(payDueInvoice.total_amount || 0) -
-                      parseFloat(payDueInvoice.paid_amount || 0)
-                  ).toFixed(2)}
+                  Due: ₹{getCurrentDueAmount().toFixed(2)}
                 </span>
               </p>
               <form onSubmit={handlePayDueSubmit} className="space-y-4">
-                <Input
-                  label="Amount to pay"
-                  type="number"
-                  step="0.01"
-                  min="0.01"
-                  max={Math.max(
-                    0,
-                    parseFloat(payDueInvoice.total_amount || 0) -
-                      parseFloat(payDueInvoice.paid_amount || 0)
-                  )}
-                  value={duePayAmount}
-                  onChange={(e) => setDuePayAmount(e.target.value)}
-                  required
-                />
+                <div className="space-y-2">
+                  <Input
+                    label="Amount to pay"
+                    type="text"
+                    inputMode="decimal"
+                    placeholder="0.00"
+                    value={duePayAmount}
+                    onChange={(e) => handleDueAmountChange(e.target.value)}
+                    required
+                    className="font-mono text-lg"
+                  />
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    Maximum payable amount: ₹{getCurrentDueAmount().toFixed(2)}
+                  </p>
+                </div>
                 <Select
                   label="Payment method"
                   value={duePayMethod}
@@ -1085,16 +1223,20 @@ const handleAddSubmit = async (data) => {
           </motion.div>
         )}
       </AnimatePresence>
-
-      {/* Bill Generate Modal */}
+      {/* Cancel Invoice Confirmation Modal */}
       <AnimatePresence>
-        {showBillGenerate && (
+        {showCancelConfirm && invoiceToCancel && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
-            onClick={() => setShowBillGenerate(false)}
+            onClick={() => {
+              if (!cancellingInvoice) {
+                setShowCancelConfirm(false)
+                setInvoiceToCancel(null)
+              }
+            }}
           >
             <motion.div
               initial={{ scale: 0.9, opacity: 0, y: 20 }}
@@ -1109,9 +1251,9 @@ const handleAddSubmit = async (data) => {
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
                   transition={{ delay: 0.1, type: "spring", stiffness: 200 }}
-                  className="w-16 h-16 bg-green-100 dark:bg-green-900/20 rounded-full flex items-center justify-center mx-auto mb-4"
+                  className="w-16 h-16 bg-orange-100 dark:bg-orange-900/20 rounded-full flex items-center justify-center mx-auto mb-4"
                 >
-                  <FaReceipt className="w-8 h-8 text-green-600 dark:text-green-400" />
+                  <FiAlertCircle className="w-8 h-8 text-orange-600 dark:text-orange-400" />
                 </motion.div>
                 <motion.h3
                   initial={{ y: 10, opacity: 0 }}
@@ -1119,7 +1261,7 @@ const handleAddSubmit = async (data) => {
                   transition={{ delay: 0.2 }}
                   className="text-xl font-bold text-gray-900 dark:text-white mb-2"
                 >
-                  Bill Generation
+                  Cancel Invoice
                 </motion.h3>
                 <motion.p
                   initial={{ y: 10, opacity: 0 }}
@@ -1127,7 +1269,11 @@ const handleAddSubmit = async (data) => {
                   transition={{ delay: 0.3 }}
                   className="text-gray-600 dark:text-gray-400 mb-6"
                 >
-                  Generate bills with stock management integration. This will open the bill generation page where you can create new invoices with product selection and stock management.
+                  Are you sure you want to cancel invoice <span className="font-semibold">#{invoiceToCancel?.invoiceNumber || invoiceToCancel?.id}</span>?
+                  <br />
+                  <span className="text-sm mt-2 block">
+                    Stock will be restored if applicable, customer due will be adjusted, and the invoice will be marked cancelled.
+                  </span>
                 </motion.p>
                 <motion.div
                   initial={{ y: 10, opacity: 0 }}
@@ -1142,10 +1288,14 @@ const handleAddSubmit = async (data) => {
                   >
                     <Button
                       variant="outline"
-                      onClick={() => setShowBillGenerate(false)}
+                      onClick={() => {
+                        setShowCancelConfirm(false)
+                        setInvoiceToCancel(null)
+                      }}
+                      disabled={cancellingInvoice}
                       className="w-full"
                     >
-                      Cancel
+                      No, Keep Invoice
                     </Button>
                   </motion.div>
                   <motion.div
@@ -1154,10 +1304,13 @@ const handleAddSubmit = async (data) => {
                     className="flex-1"
                   >
                     <Button
-                      onClick={() => window.open('/invoice', '_blank')}
+                      variant="danger"
+                      onClick={handleCancelInvoice}
+                      isLoading={cancellingInvoice}
+                      disabled={cancellingInvoice}
                       className="w-full"
                     >
-                      Open Bill Generator
+                      Yes, Cancel Invoice
                     </Button>
                   </motion.div>
                 </motion.div>
@@ -1166,7 +1319,8 @@ const handleAddSubmit = async (data) => {
           </motion.div>
         )}
       </AnimatePresence>
-    </motion.div>
+    </>
+
   )
 }
 
