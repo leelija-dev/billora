@@ -9,7 +9,7 @@ import FAQ from "../components/FAQ";
 import Ratings from "../components/Ratings";
 
 export const metadata = {
-  title: "Free GST Billing Software for 1-Click Invoice - The Fast Bill",
+  title: "Best Inventory Management & GST Billing Software - The Fast Bill",
 
   description:
     "Fast Bill is the best billing software for retail shops in India that creates customized GST bills within 10 seconds, & helps you manage inventory & track sales.",
