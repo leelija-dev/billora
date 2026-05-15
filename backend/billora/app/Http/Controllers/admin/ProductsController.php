@@ -27,7 +27,7 @@ use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
 use Milon\Barcode\Facades\DNS1DFacade as DNS1D;
 use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
-
+use Illuminate\Support\Facades\Cache;
 class ProductsController extends Controller
 {
     public function index(Request $request)
@@ -40,20 +40,51 @@ class ProductsController extends Controller
                 ]);
             }
             $user = Auth::user()->id;
-            $product = Products::with(['variants', 'images', 'medicine_type'])->where('user_id', $user)->where('is_active', true)->orderBy('id', 'desc')->paginate(15);
-            if ($request->has('search')) {
-                $product = Products::where('user_id', $user)->where('name', 'like', '%' . $request->search . '%')
-                    ->orWhere('sku', 'like', '%' . $request->search . '%')
-                    ->orWhere('category_id', 'like', '%' . $request->search . '%')
-                    ->orWhere('brand_id', 'like', '%' . $request->search . '%')
-                    ->orWhere('unit_id', 'like', '%' . $request->search . '%')
-                    ->orWhere('unit_amount', 'like', '%' . $request->search . '%')
-                    ->orderBy('id', 'desc')
-                    ->paginate(15);
+            $page = $request->get('page', 1);
+            $search = $request->search ?? 'all';
+
+            
+        // Unique cache key
+        $cacheKey = "products_{$user}_{$search}_page_{$page}";
+        $fromCache = Cache::has($cacheKey);
+
+        $startTime = microtime(true);
+           $product = Cache::remember($cacheKey, 600, function () use ($user, $request) {
+
+            $query = Products::with([
+                'variants',
+                'images',
+                'medicine_type'
+            ])
+            ->where('user_id', $user)
+            ->where('is_active', true);
+
+            // Search filter
+            if ($request->has('search') && !empty($request->search)) {
+
+                $query->where(function ($q) use ($request) {
+
+                    $q->where('name', 'like', '%' . $request->search . '%')
+                      ->orWhere('sku', 'like', '%' . $request->search . '%')
+                      ->orWhere('category_id', 'like', '%' . $request->search . '%')
+                      ->orWhere('brand_id', 'like', '%' . $request->search . '%')
+                      ->orWhere('unit_id', 'like', '%' . $request->search . '%')
+                      ->orWhere('unit_amount', 'like', '%' . $request->search . '%');
+
+                });
             }
+
+            return $query
+                ->orderBy('id', 'desc')
+                ->paginate(15);
+
+        });
+        $executionTime = microtime(true) - $startTime;
             return response()->json([
                 'status' => true,
                 'message' => 'Product List',
+                'source' => $fromCache ? 'Redis Cache' : 'Database',
+                'response_time' => round($executionTime, 4) . ' sec',
                 'data' => $product
             ]);
         } catch (\Exception $e) {

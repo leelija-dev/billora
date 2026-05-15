@@ -243,7 +243,7 @@ public function sendVerificationMail($customer_id)
             'verification_token' => null
         ]);
         
-        $frontendLoginUrl = env('REACT_APP_URL', 'http://localhost:4000');
+        $frontendLoginUrl = env('REACT_APP_URL', 'https://thefastbill.com');
         return redirect($frontendLoginUrl . '/login?verified=true');
     }
  // customer verify mail
