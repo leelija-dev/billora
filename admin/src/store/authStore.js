@@ -59,54 +59,66 @@ export const useAuthStore = create(
       },
 
       login: async (credentials) => {
-        set({ isLoading: true });
-        try {
-          console.log('Login attempt with:', credentials.email);
-          const response = await authService.login(credentials);
+  set({ isLoading: true });
+  try {
+    console.log('Login attempt with:', credentials.email);
+    const response = await authService.login(credentials);
 
-          const data = response.data;
-          const user = data.user;
-          // const token = data.token;
+    // Check if login was successful
+    if (!response.data || !response.data.status) {
+      throw new Error(response.data?.message || 'Login failed');
+    }
 
-          set({
-            user: user,
-            isAuthenticated: true,
-            isLoading: false,
-          });
+    const data = response.data;
+    const user = data.user;
 
-          localStorage.setItem('user', JSON.stringify(user));
-          // localStorage.setItem('auth_token', token);
+    set({
+      user: user,
+      isAuthenticated: true,
+      isLoading: false,
+    });
 
-          const { setUser: setPermissionUser, fetchUserPermissions } = usePermissionStore.getState();
-          setPermissionUser(user);
+    localStorage.setItem('user', JSON.stringify(user));
 
-          if (user && user.plan_id) {
-            fetchUserPermissions(user.id);
-          }
+    const { setUser: setPermissionUser, fetchUserPermissions } = usePermissionStore.getState();
+    setPermissionUser(user);
 
-          // ✅ Broadcast to OTHER tabs with TOKEN
-          const channel = new BroadcastChannel('auth_channel');
-          channel.postMessage({
-            type: 'LOGIN',
-            user: user,
-            // token: token,
-            sourceTabId: TAB_ID
-          });
-          setTimeout(() => channel.close(), 100);
-          // localStorage.removeItem('manual_logout');
-          sessionStorage.removeItem('manual_logout');
-          toast.success('Login successful!');
-          return { success: true };
-        } catch (error) {
-          console.error('Login error:', error);
-          set({ isLoading: false });
+    if (user && user.plan_id) {
+      fetchUserPermissions(user.id);
+    }
 
-          const errorMessage = error.message || 'Login failed';
-          toast.error(errorMessage);
-          return { success: false, error: error };
-        }
-        // sessionStorage.removeItem('manual_logout');
-      },
+    // ✅ Broadcast to OTHER tabs
+    const channel = new BroadcastChannel('auth_channel');
+    channel.postMessage({
+      type: 'LOGIN',
+      user: user,
+      sourceTabId: TAB_ID
+    });
+    setTimeout(() => channel.close(), 100);
+    
+    sessionStorage.removeItem('manual_logout');
+    toast.success('Login successful!');
+    return { success: true };
+    
+  } catch (error) {
+    console.error('Login error:', error);
+    
+    // Clear any partial state
+    set({ 
+      user: null, 
+      isAuthenticated: false, 
+      isLoading: false 
+    });
+    
+    localStorage.removeItem('user');
+    localStorage.removeItem('auth_token');
+    
+    // Don't broadcast logout on login failure
+    const errorMessage = error.message || 'Login failed';
+    toast.error(errorMessage);
+    return { success: false, error: error };
+  }
+},
 
       logout: async () => {
         set({ isLoading: true });
