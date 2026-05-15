@@ -524,6 +524,8 @@ const Invoices = () => {
   // Calculate stats with safe invoices array
   const safeInvoices = Array.isArray(invoices) ? invoices : []
 
+  // console.log("Safe Invoices ..........",safeInvoices)
+
   const stats = {
     total: totalInvoices || safeInvoices?.length || 0,
     completed: safeInvoices?.filter(i => i.status === 'completed').length || 0,
