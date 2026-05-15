@@ -501,9 +501,11 @@ class ProductsController extends Controller
     private function deleteFromCloudinary($publicId)
     {
         if ($publicId) {
-            Cloudinary::destroy($publicId);
+            // Cloudinary::destroy($publicId);
+            Cloudinary::uploadApi()->destroy($publicId);
         }
     }
+    
    
     public function update($id, Request $request)
     {   // update product
@@ -604,6 +606,19 @@ class ProductsController extends Controller
 
                     $data['image'] = $upload['url'];
                     $data['image_public_id'] = $upload['public_id'];
+                }elseif ($request->has('image') && empty($request->image)) {
+
+                    // delete old image
+                    if ($product->image_public_id) {
+
+                        $this->deleteFromCloudinary(
+                            $product->image_public_id
+                        );
+                    }
+
+                    // clear DB
+                    $data['image'] = null;
+                    $data['image_public_id'] = null;
                 }
 
                 //QR code
