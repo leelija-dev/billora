@@ -360,36 +360,47 @@ const InvoiceEditForm = ({ invoice, hasStockPermission, onCancel, onSaved, varia
   )
 
   useEffect(() => {
-    if (formData.payment_status !== 'semi_paid') return
-    const t = totals.totalAmount
-    const p = parseFloat(formData.payment_amount) || 0
-    if (p > t) {
-      setFormData((prev) => ({ ...prev, payment_amount: t }))
-    }
-  }, [totals.totalAmount, formData.payment_status])
+  if (formData.payment_status !== 'semi_paid') return;
+  const t = totals.totalAmount;
+  const p = parseFloat(formData.payment_amount) || 0;
+  if (p > t) {
+    setFormData((prev) => ({ ...prev, payment_amount: t.toString() }));
+    toast.error(`Payment amount adjusted to maximum: ₹${t.toFixed(2)}`);
+  }
+}, [totals.totalAmount, formData.payment_status]);
 
   const handlePaymentAmountChange = (value) => {
-    // Only allow digits and decimal point
-    let cleanedValue = value.replace(/[^0-9.]/g, '')
+    // Allow empty string
+    if (value === '') {
+      setFormData((prev) => ({ ...prev, payment_amount: '' }));
+      return;
+    }
+
+    // Allow only digits and decimal point
+    let cleanedValue = value.replace(/[^0-9.]/g, '');
 
     // Prevent multiple decimal points
-    const decimalCount = (cleanedValue.match(/\./g) || []).length
+    const decimalCount = (cleanedValue.match(/\./g) || []).length;
     if (decimalCount > 1) {
-      cleanedValue = cleanedValue.slice(0, cleanedValue.lastIndexOf('.'))
+      cleanedValue = cleanedValue.slice(0, cleanedValue.lastIndexOf('.'));
     }
 
     // Parse the cleaned value
-    let numValue = cleanedValue === '' ? 0 : parseFloat(cleanedValue)
-    if (isNaN(numValue)) numValue = 0
+    let numValue = cleanedValue === '' ? 0 : parseFloat(cleanedValue);
+    if (isNaN(numValue)) numValue = 0;
 
-    // Cap at total amount
-    const maxAmount = totals.totalAmount
+    // Auto-set to total amount if exceeds
+    const maxAmount = totals.totalAmount;
     if (numValue > maxAmount) {
-      numValue = maxAmount
-      cleanedValue = numValue.toString()
+      numValue = maxAmount;
+      cleanedValue = numValue.toString();
+      toast.error(`Payment amount cannot exceed total amount. Set to maximum: ₹${maxAmount.toFixed(2)}`);
     }
 
-    setFormData((prev) => ({ ...prev, payment_amount: cleanedValue === '' ? 0 : cleanedValue }))
+    setFormData((prev) => ({
+      ...prev,
+      payment_amount: cleanedValue === '' ? '' : cleanedValue
+    }));
   }
 
   const getSelectedCustomerName = () => {
@@ -702,12 +713,22 @@ const InvoiceEditForm = ({ invoice, hasStockPermission, onCancel, onSaved, varia
       }
     }
 
-    let paidAmountValue = 0
-    if (formData.payment_status === 'paid') paidAmountValue = totals.totalAmount
-    else if (formData.payment_status === 'semi_paid') {
-      const p = parseFloat(formData.payment_amount) || 0
-      paidAmountValue = Math.min(Math.max(0, p), totals.totalAmount)
-    } else paidAmountValue = 0
+    // In handleSubmit function, update the payment amount validation
+let paidAmountValue = 0
+if (formData.payment_status === 'paid') paidAmountValue = totals.totalAmount
+else if (formData.payment_status === 'semi_paid') {
+  // Handle empty or invalid values
+  const p = formData.payment_amount === '' || !formData.payment_amount 
+    ? 0 
+    : parseFloat(formData.payment_amount) || 0;
+  paidAmountValue = Math.min(Math.max(0, p), totals.totalAmount)
+} else paidAmountValue = 0
+
+// Add validation to ensure payment amount is entered for semi-paid
+if (formData.payment_status === 'semi_paid' && (!formData.payment_amount || formData.payment_amount === '' || parseFloat(formData.payment_amount) <= 0)) {
+  toast.error('Please enter a valid payment amount for semi-paid option')
+  return
+}
 
     const payload = {
       user_id: invoice.user_id,
@@ -1256,7 +1277,7 @@ const InvoiceEditForm = ({ invoice, hasStockPermission, onCancel, onSaved, varia
                               type="number"
                               value={String(item.gst)}
                               onChange={(e) => handleUpdateItem(index, 'gst', e.target.value)}
-                              className="w-16 text-sm text-center"
+                              className=" text-sm text-center min-w-[90px] w-[90px]"
                             />
                             <button
                               type="button"
@@ -1284,7 +1305,7 @@ const InvoiceEditForm = ({ invoice, hasStockPermission, onCancel, onSaved, varia
                               type="number"
                               value={String(item.discount)}
                               onChange={(e) => handleUpdateItem(index, 'discount', e.target.value)}
-                              className="w-16 text-sm text-center"
+                              className="min-w-[90px] w-[90px] text-sm text-center"
                             />
                             <button
                               type="button"
@@ -1361,17 +1382,61 @@ const InvoiceEditForm = ({ invoice, hasStockPermission, onCancel, onSaved, varia
                 {formData.payment_status === 'semi_paid' && (
                   <>
                     <Input
-                      label="Payment amount"
-                      type="text"
-                      inputMode="decimal"
-                      value={formData.payment_amount}
-                      onChange={(e) => handlePaymentAmountChange(e.target.value)}
-                      max={totals.totalAmount}
-                    />
-                    <p className="text-xs text-gray-500 dark:text-gray-400">
-                      Invoice total is ₹{totals.totalAmount.toFixed(2)}. Due after this payment: ₹
-                      {dueAfterPayment.toFixed(2)}.
-                    </p>
+  label="Payment amount"
+  type="text"
+  inputMode="decimal"
+  value={formData.payment_amount === 0 ? '' : formData.payment_amount}
+  onChange={(e) => handlePaymentAmountChange(e.target.value)}
+  onKeyDown={(e) => {
+    // Prevent 'e', 'E', '-', '+' characters
+    if (e.key === 'e' || e.key === 'E' || e.key === '-' || e.key === '+') {
+      e.preventDefault();
+    }
+  }}
+  onBlur={(e) => {
+    // Format the value on blur
+    let value = e.target.value;
+    if (value === '') {
+      // Keep it empty if user deleted everything
+      setFormData(prev => ({ ...prev, payment_amount: '' }));
+      return;
+    }
+    
+    if (value && !isNaN(parseFloat(value))) {
+      const numValue = parseFloat(value);
+      const maxAmount = totals.totalAmount;
+      // Ensure not exceeding total amount
+      if (numValue > maxAmount) {
+        setFormData(prev => ({ 
+          ...prev, 
+          payment_amount: maxAmount.toString() 
+        }));
+        toast.error(`Payment amount adjusted to maximum: ₹${maxAmount.toFixed(2)}`);
+      } else if (numValue < 0) {
+        setFormData(prev => ({ ...prev, payment_amount: '0' }));
+      } else {
+        // Format to 2 decimal places
+        setFormData(prev => ({ 
+          ...prev, 
+          payment_amount: numValue.toFixed(2) 
+        }));
+      }
+    }
+  }}
+  max={totals.totalAmount}
+  placeholder="Enter payment amount"
+/>
+                    <div className="flex justify-between items-center mt-1">
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        Invoice total is ₹{totals.totalAmount.toFixed(2)}. Due after this payment: ₹
+                        {dueAfterPayment.toFixed(2)}.
+                      </p>
+                      {(parseFloat(formData.payment_amount) || 0) > totals.totalAmount && (
+                        <p className="text-xs text-red-600 dark:text-red-400">
+                          Amount exceeds total!
+                        </p>
+                      )}
+                    </div>
                   </>
                 )}
               </div>
