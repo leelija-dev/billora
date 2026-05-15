@@ -10,9 +10,11 @@ import {
   FiPrinter,
   FiSlash,
   FiCreditCard,
+  FiX,
 } from 'react-icons/fi'
 import Table from '../../common/Table/Table'
 import StatusBadge from '../../common/StatusBadge/StatusBadge'
+import Button from '../../common/Button/Button'
 import { storeAPI } from '../../../services'
 
 
@@ -26,11 +28,11 @@ const InvoiceTable = ({
   onPrintA4,
   onPrintThermal
 }) => {
-  const [printDropdown, setPrintDropdown] = useState(null)
+  const [printModalOpen, setPrintModalOpen] = useState(false)
+  const [selectedInvoice, setSelectedInvoice] = useState(null)
   const [stores, setStores] = useState({})
   const [storesLoading, setStoresLoading] = useState(true)
   const [isResizing, setIsResizing] = useState(false)
-  const dropdownRef = useRef(null)
   
   // Cache for store data
   const storeCacheRef = useRef(new Map())
@@ -174,19 +176,32 @@ const InvoiceTable = ({
     }
   }, [invoices, isResizing])
 
-  // Close dropdown when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setPrintDropdown(null)
-      }
-    }
+  const handlePrintClick = (invoice, e) => {
+    e.stopPropagation()
+    setSelectedInvoice(invoice)
+    setPrintModalOpen(true)
+  }
 
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside)
+  const handlePrintA4Click = () => {
+    if (selectedInvoice && onPrintA4) {
+      onPrintA4(selectedInvoice)
     }
-  }, [])
+    setPrintModalOpen(false)
+    setSelectedInvoice(null)
+  }
+
+  const handlePrintThermalClick = () => {
+    if (selectedInvoice && onPrintThermal) {
+      onPrintThermal(selectedInvoice)
+    }
+    setPrintModalOpen(false)
+    setSelectedInvoice(null)
+  }
+
+  const closeModal = () => {
+    setPrintModalOpen(false)
+    setSelectedInvoice(null)
+  }
 
   const getStatusConfig = (status) => {
     const configs = {
@@ -222,7 +237,6 @@ const InvoiceTable = ({
           <p className="font-medium text-gray-900 dark:text-white">
             {row.customer_name || `Customer #${value}`}
           </p>
-         
         </div>
       ),
     },
@@ -250,7 +264,6 @@ const InvoiceTable = ({
             <p className="font-medium text-gray-900 dark:text-white">
               {storeName}
             </p>
-            
           </div>
         )
       },
@@ -392,63 +405,17 @@ const InvoiceTable = ({
             <FiSlash className="w-4 h-4" />
           </motion.button>
 
-          {/* Print Button with Dropdown */}
-          <div className="relative" ref={dropdownRef}>
-            <motion.button
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={(e) => {
-                e.stopPropagation()
-                setPrintDropdown(printDropdown === row.id ? null : row.id)
-              }}
-              className="p-1.5 text-green-600 hover:bg-green-50 dark:text-green-400 dark:hover:bg-green-900/20 rounded-lg transition-colors"
-              title="Print invoice"
-              type="button"
-            >
-              <FiPrinter className="w-4 h-4" />
-            </motion.button>
-
-            <AnimatePresence>
-              {printDropdown === row.id && (
-                <motion.div
-                  initial={{ opacity: 0, y: -10, scale: 0.95 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                  className="absolute right-0 top-full mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-50"
-                >
-                  <div className="py-1">
-                    <motion.button
-                      whileHover={{ backgroundColor: '#f3f4f6' }}
-                      whileTap={{ scale: 0.98 }}
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        onPrintA4(row)
-                        setPrintDropdown(null)
-                      }}
-                      className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center space-x-2"
-                    >
-                      <FiPrinter className="w-4 h-4" />
-                      <span>A4 Print</span>
-                    </motion.button>
-                    
-                    <motion.button
-                      whileHover={{ backgroundColor: '#f3f4f6' }}
-                      whileTap={{ scale: 0.98 }}
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        onPrintThermal(row)
-                        setPrintDropdown(null)
-                      }}
-                      className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center space-x-2"
-                    >
-                      <FiPrinter className="w-4 h-4" />
-                      <span>3" Thermal Print</span>
-                    </motion.button>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
+          {/* Print Button - Opens Modal */}
+          <motion.button
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={(e) => handlePrintClick(row, e)}
+            className="p-1.5 text-green-600 hover:bg-green-50 dark:text-green-400 dark:hover:bg-green-900/20 rounded-lg transition-colors"
+            title="Print invoice"
+            type="button"
+          >
+            <FiPrinter className="w-4 h-4" />
+          </motion.button>
         </div>
         )
       },
@@ -471,13 +438,112 @@ const InvoiceTable = ({
   ]
 
   return (
-    <Table 
-      columns={columns} 
-      data={invoices} 
-      loading={loading}
-      onRowClick={onView}
-      className="cursor-pointer"
-    />
+    <>
+      <Table 
+        columns={columns} 
+        data={invoices} 
+        loading={loading}
+        onRowClick={onView}
+        className="cursor-pointer"
+      />
+
+      {/* Print Options Modal */}
+      <AnimatePresence>
+        {printModalOpen && selectedInvoice && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+            onClick={closeModal}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              transition={{ type: "spring", stiffness: 200 }}
+              className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full p-6 relative"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Close button */}
+              <button
+                onClick={closeModal}
+                className="absolute top-4 right-4 p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+              >
+                <FiX className="w-5 h-5" />
+              </button>
+
+              <div className="text-center">
+                <motion.div
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ delay: 0.1, type: "spring", stiffness: 200 }}
+                  className="w-16 h-16 bg-green-100 dark:bg-green-900/20 rounded-full flex items-center justify-center mx-auto mb-4"
+                >
+                  <FiPrinter className="w-8 h-8 text-green-600 dark:text-green-400" />
+                </motion.div>
+                
+                <motion.h3
+                  initial={{ y: 10, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ delay: 0.2 }}
+                  className="text-xl font-bold text-gray-900 dark:text-white mb-2"
+                >
+                  Print Invoice
+                </motion.h3>
+                
+                <motion.p
+                  initial={{ y: 10, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ delay: 0.3 }}
+                  className="text-gray-600 dark:text-gray-400 mb-6"
+                >
+                  Invoice #{selectedInvoice.id}
+                  <br />
+                  <span className="text-sm mt-1 block">
+                    Total Amount: ₹{parseFloat(selectedInvoice.total_amount || 0).toFixed(2)}
+                  </span>
+                </motion.p>
+
+                <motion.div
+                  initial={{ y: 10, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ delay: 0.4 }}
+                  className="flex flex-col gap-3"
+                >
+                  <motion.div
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    <Button
+                      onClick={handlePrintA4Click}
+                      className="w-full py-3 text-lg"
+                      icon={FiPrinter}
+                    >
+                      A4 Print
+                    </Button>
+                  </motion.div>
+                  
+                  <motion.div
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    <Button
+                      onClick={handlePrintThermalClick}
+                      variant="outline"
+                      className="w-full py-3 text-lg"
+                      icon={FiPrinter}
+                    >
+                      3" Thermal Print
+                    </Button>
+                  </motion.div>
+                </motion.div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </>
   )
 }
 
