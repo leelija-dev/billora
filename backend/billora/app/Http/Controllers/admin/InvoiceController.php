@@ -19,6 +19,7 @@ use App\Models\PackageInvoice;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Cache;
 
 class InvoiceController extends Controller
 {
@@ -350,32 +351,61 @@ class InvoiceController extends Controller
     public function billHistory(Request $request)
     {
         try {
+            $start = microtime(true);
             $user = Auth::user()->id;
-            $search = $request->search;
+            $search = $request->search ?? '';
+            $page = $request->page ?? 1;
 
-            $billHistory = Invoice::with(['invoiceItems.product', 'packages'])
-                ->where('user_id', $user)
-                ->when($search, function ($query) use ($search) {
+            // Dynamic cache key
+            $cacheKey = "bill_history_{$user}_search_" . md5($search) . "_page_{$page}";
+            // Check cache exists
+            $fromCache = Cache::has($cacheKey);
+            // $billHistory = Invoice::with(['invoiceItems.product', 'packages'])
+            $billHistory = Cache::remember($cacheKey, 600, function () use ($user, $search) {
 
-                    $query->where('id', 'like', "%$search%")
-                        ->orWhere('total_amount', 'like', "%$search%")
+                return Invoice::with([
+                    'invoiceItems.product',
+                    'packages',
+                    'customer'
+                ])
+                    ->where('user_id', $user)
 
-                        ->orWhereHas('invoiceItems', function ($q) use ($search) {
-                            $q->where('price', 'like', "%$search%")
-                                ->orWhere('quantity', 'like', "%$search%");
-                        })
+                    ->when($search, function ($query) use ($search) {
 
-                        ->orWhereHas('invoiceItems.product', function ($q) use ($search) {
-                            $q->where('name', 'like', "%$search%")
-                                ->orWhere('sku', 'like', "%$search%");
+                        $query->where(function ($q) use ($search) {
+
+                            $q->where('id', 'like', "%$search%")
+                                ->orWhere('total_amount', 'like', "%$search%")
+
+                                ->orWhereHas('invoiceItems', function ($subQ) use ($search) {
+                                    $subQ->where('price', 'like', "%$search%")
+                                        ->orWhere('quantity', 'like', "%$search%");
+                                })
+
+                                ->orWhereHas('invoiceItems.product', function ($subQ) use ($search) {
+                                    $subQ->where('name', 'like', "%$search%")
+                                        ->orWhere('sku', 'like', "%$search%");
+                                })
+
+                                ->orWhereHas('customer', function ($subQ) use ($search) {
+                                    $subQ->where('name', 'like', "%$search%")
+                                        ->orWhere('phone', 'like', "%$search%")
+                                        ->orWhere('email', 'like', "%$search%");
+                                });
                         });
-                })
-                ->orderBy('created_at', 'desc')
-                ->paginate(15);
+                    })
+
+                    ->orderBy('created_at', 'desc')
+                    ->paginate(15);
+            });
+            // Response time
+            $executionTime = microtime(true) - $start;
 
             return response()->json([
                 'status'    => true,
                 'message'   => 'Bill History',
+                'response_time'  => round($executionTime, 4) . ' sec',
+                'response_from'  => $fromCache ? 'Cache' : 'Database',
                 'data'      => $billHistory
             ]);
         } catch (\Exception $e) {
@@ -454,7 +484,7 @@ class InvoiceController extends Controller
 
                 $totalAmount += $itemTotal;
             }
-            
+
             // Store invoice
             $invoice = Invoice::create([
                 'user_id'       => $request->user_id,
@@ -623,7 +653,7 @@ class InvoiceController extends Controller
             Log::info('paid_amount: ' . $request->paid_amount);
             Log::info('totalAmount: ' . $totalAmount);
             Log::info('due_amount: ' . $due_amount);
-             $invoice->update([
+            $invoice->update([
                 'customer_id'   => $request->customer_id,
                 'total_amount'  => $totalAmount,
                 'total_items'   => $totalItems,
@@ -779,7 +809,7 @@ class InvoiceController extends Controller
                     'remarks'        => 'Bill Generated',
                 ]);
             }
-            if( $billCustomer ){
+            if ($billCustomer) {
                 // $due_amount = (($billCustomer->due_amount - 
                 $billCustomer->update([
                     'due_amount' => $due_amount
