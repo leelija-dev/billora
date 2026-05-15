@@ -21,11 +21,10 @@ import {
   FiBox,
   FiGrid,
   FiBarChart2,
-  FiTag,
-  FiDollarSign
+  FiTag
 } from 'react-icons/fi';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FaFileMedical, FaStore } from 'react-icons/fa';
+import { FaFileMedical, FaRupeeSign, FaStore } from 'react-icons/fa';
 import { TbRuler2 } from "react-icons/tb";
 
 const Sidebar = () => {
@@ -79,7 +78,7 @@ const Sidebar = () => {
     'invoices': FiFileText,
     'reports': FiBarChart2,
     'plans': FiCreditCard,
-    'gst': FiDollarSign,
+    'gst': FaRupeeSign,
     'settings': FiSettings,
   };
 

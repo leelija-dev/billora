@@ -10,7 +10,7 @@ const Features = () => {
     {
       title: "Accelerate Billing Seamlessly",
       description: "With Fast Bill, you can automate invoice generation with pre-filled GST rates and serve your customers faster. By integrating these digital payment gateways, you can now seamlessly speed up your payments.",
-      extraDescription: "The Fast Bill GST billing software comes with automated reminder features and reduces your manual workload significantly. With reduced paper usage, you can now save money for other administrative resources.",
+      extraDescription: "The Fast Bill GST billing & stock management software comes with automated reminder features and reduces your manual workload significantly. With reduced paper usage, you can now save money for other administrative resources.",
       image: "/image/gst1.png",
       reverse: false,
     },
@@ -23,14 +23,14 @@ const Features = () => {
     },
     {
       title: "Data-Driven Business Insights",
-      description: "Fast Bill billing software for small businesses comes with real-time analytics and comprehensive reporting specifications that feature live dashboards and let you make rapid yet data-driven decisions on sales & profitability.",
+      description: "This invoice and inventory management software comes with real-time analytics and comprehensive reporting specifications that feature live dashboards and let you make rapid yet data-driven decisions on sales & profitability.",
       extraDescription: "Our online billing software provides in-depth performance analysis, enables your business to scale efficiently, and manages growth without any significant increase in your overall cost.",
       image: "/image/payments.png",
       reverse: false,
     },
     {
       title: "Personalized Brand-Specific Invoices",
-      description: "With Fast Bill, you can transform the boring professional invoices into customized ones by creating personalized logos, colors, and layouts that reflect your unique brand voice.",
+      description: "this inventory management and billing software, you can transform the boring professional invoices into customized ones by creating personalized logos, colors, and layouts that reflect your unique brand voice.",
       extraDescription: "You can also create custom messages and branded designs for a consistent brand identity, efficient communication, and tailor them anytime according to the industry needs for added credibility and customer loyalty.",
       image: "/image/trace.png",
       reverse: true,

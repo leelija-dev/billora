@@ -22,6 +22,7 @@ import toast from 'react-hot-toast'
 import { LucideStore } from 'lucide-react'
 import { printA4Invoice, printThermalInvoice } from '../../../templates/PrintUtils'
 import { FaRupeeSign } from 'react-icons/fa'
+import { FiCreditCard } from 'react-icons/fi'
 
 // Cache for bill generate data
 let billGenerateCache = null
@@ -65,7 +66,8 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting,
     created_by: currentUserId,
     items: [],
     payment_status: 'paid',
-    payment_amount: 0
+    payment_amount: 0,
+    payment_method: 'cash'
   })
 
   const [loading, setLoading] = useState(false)
@@ -917,6 +919,7 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting,
     return { subtotal, totalGst, totalDiscount, totalAmount }
   }
 
+  // Update the handleSubmit function to include payment_method in submission data
   const handleSubmit = async (e) => {
     e.preventDefault()
 
@@ -943,6 +946,12 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting,
         toast.error('Please enter a valid payment amount for semi-paid option')
         return
       }
+    }
+
+    // Validate payment method
+    if (!formData.payment_method) {
+      toast.error('Please select a payment method')
+      return
     }
 
     const refreshCustomers = async () => {
@@ -980,7 +989,7 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting,
     }))
 
     const submissionData = {
-      ...formData,
+      ...formData, // This now includes payment_method
       items: productItems,
       packages: packages,
       paid_amount: formData.payment_status === 'paid' ? totals.totalAmount.toString() :
@@ -994,7 +1003,8 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting,
       totalGst: totals.totalGst,
       totalDiscount: totals.totalDiscount,
       totalAmount: totals.totalAmount,
-      items: formData.items.length
+      items: formData.items.length,
+      payment_method: formData.payment_method // Log payment method
     })
 
     // Submit the bill to server first
@@ -1016,7 +1026,8 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting,
           id: apiInvoiceData.id || apiInvoiceData.invoice_id,
           invoice_number: apiInvoiceData.invoice_id || apiInvoiceData.invoice_number || `INV-${Date.now()}`,
           total_amount: apiInvoiceData.total_amount || submissionData.total_amount,
-          created_at: apiInvoiceData.created_at || new Date().toISOString()
+          created_at: apiInvoiceData.created_at || new Date().toISOString(),
+          payment_method: formData.payment_method // Ensure payment_method is included
         }
         setCreatedInvoiceData(createdInvoice)
         setGeneratedBillData(submissionData)
@@ -1924,6 +1935,23 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting,
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Left Column - Payment Options */}
               <div className="space-y-4">
+                <div className="mt-4">
+                  <Select
+                    label="Payment Method"
+                    options={[
+                      { value: 'cash', label: 'Cash' },
+                      { value: 'card', label: 'Card' },
+                      { value: 'upi', label: 'UPI' },
+                      { value: 'bank_transfer', label: 'Bank Transfer' },
+                      { value: 'cheque', label: 'Cheque' }
+
+                    ]}
+                    value={formData.payment_method}
+                    onChange={(e) => setFormData(prev => ({ ...prev, payment_method: e.target.value }))}
+                    required
+                    disabled={dataFetchError}
+                  />
+                </div>
                 <div>
                   <Select
                     label="Payment Status"
@@ -1955,13 +1983,73 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting,
                       step="0.01"
                       placeholder="Enter payment amount"
                       value={formData.payment_amount}
-                      onChange={(e) => setFormData(prev => ({ ...prev, payment_amount: e.target.value }))}
+                      onChange={(e) => {
+                        // Allow only numbers and decimal point
+                        let value = e.target.value;
+
+                        // Remove any non-numeric characters except decimal point
+                        value = value.replace(/[^\d.]/g, '');
+
+                        // Ensure only one decimal point
+                        const decimalCount = (value.match(/\./g) || []).length;
+                        if (decimalCount > 1) {
+                          return;
+                        }
+
+                        // Parse the value to number for validation
+                        const numValue = parseFloat(value);
+
+                        // Check if value exceeds total amount
+                        if (!isNaN(numValue) && numValue > totals.totalAmount) {
+                          // Auto-set to total amount instead of showing error
+                          const finalAmount = totals.totalAmount.toFixed(2);
+                          setFormData(prev => ({ ...prev, payment_amount: finalAmount }));
+                          toast.error(`Payment amount cannot exceed total amount. Set to maximum: ₹${finalAmount}`);
+                          return;
+                        }
+
+                        setFormData(prev => ({ ...prev, payment_amount: value }));
+                      }}
+                      onKeyDown={(e) => {
+                        // Prevent 'e', 'E', '-', '+' characters
+                        if (e.key === 'e' || e.key === 'E' || e.key === '-' || e.key === '+') {
+                          e.preventDefault();
+                        }
+                      }}
+                      onBlur={(e) => {
+                        // Format the value on blur
+                        let value = e.target.value;
+                        if (value && !isNaN(parseFloat(value))) {
+                          const numValue = parseFloat(value);
+                          // Ensure not exceeding total amount
+                          if (numValue > totals.totalAmount) {
+                            // Auto-set to total amount
+                            setFormData(prev => ({ ...prev, payment_amount: totals.totalAmount.toFixed(2) }));
+                            toast.error(`Payment amount adjusted to maximum: ₹${totals.totalAmount.toFixed(2)}`);
+                          } else if (numValue < 0) {
+                            // Handle negative numbers
+                            setFormData(prev => ({ ...prev, payment_amount: '0' }));
+                          } else {
+                            // Format to 2 decimal places
+                            setFormData(prev => ({ ...prev, payment_amount: numValue.toFixed(2) }));
+                          }
+                        } else if (value === '') {
+                          // Handle empty value
+                          setFormData(prev => ({ ...prev, payment_amount: '0' }));
+                        }
+                      }}
                       required
-                      max={totals.totalAmount}
                     />
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                      Remaining amount: ₹{(totals.totalAmount - (parseFloat(formData.payment_amount) || 0)).toFixed(2)}
-                    </p>
+                    <div className="flex justify-between items-center mt-1">
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        Remaining amount: ₹{(totals.totalAmount - (parseFloat(formData.payment_amount) || 0)).toFixed(2)}
+                      </p>
+                      {(parseFloat(formData.payment_amount) || 0) > totals.totalAmount && (
+                        <p className="text-xs text-red-600 dark:text-red-400">
+                          Amount exceeds total!
+                        </p>
+                      )}
+                    </div>
                   </motion.div>
                 )}
               </div>

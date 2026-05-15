@@ -30,6 +30,21 @@ import { customerAPI } from '../../../services/customerService'
 import usePackageStore from '../../../store/packageStore'
 import { useAuthStore } from '../../../store/authStore'
 
+const normalizePaymentMethod = (method) => {
+  if (!method) return 'Cash'
+  const methodLower = method.toLowerCase()
+  const methodMap = {
+    'cash': 'Cash',
+    'card': 'Card',
+    'upi': 'UPI',
+    'bank transfer': 'Bank Transfer',
+    'banktransfer': 'Bank Transfer',
+    'cheque': 'Cheque',
+    'check': 'Cheque'
+  }
+  return methodMap[methodLower] || 'Cash'
+}
+
 const getUserId = (user) => {
   if (user?.id) return user.id
   const authData = localStorage.getItem('auth')
@@ -103,10 +118,14 @@ const InvoiceEditForm = ({ invoice, hasStockPermission, onCancel, onSaved, varia
   const [formData, setFormData] = useState({
     customer_id: '',
     store_id: '',
-    payment_method: 'Cash',
+    payment_method: 'Cash', // Default value, will be updated in useEffect
     payment_status: 'paid',
     payment_amount: 0,
   })
+
+
+
+  console.log("invoice Checking .....", invoice)
 
   const [productSearch, setProductSearch] = useState('')
   const [showProductList, setShowProductList] = useState(false)
@@ -187,7 +206,7 @@ const InvoiceEditForm = ({ invoice, hasStockPermission, onCancel, onSaved, varia
           }
         }
 
-        await fetchPackages(currentUserId).catch(() => {})
+        await fetchPackages(currentUserId).catch(() => { })
 
         const rows = (invoice.invoice_items || invoice.items || []).filter((row) => !row.is_package)
         const mappedProducts = rows.map((item) => {
@@ -261,7 +280,7 @@ const InvoiceEditForm = ({ invoice, hasStockPermission, onCancel, onSaved, varia
         setFormData({
           customer_id: invoice.customer_id || '',
           store_id: invoice.store_id || '',
-          payment_method: invoice.payment_method || 'Cash',
+          payment_method: normalizePaymentMethod(invoice.payment_method),
           payment_status,
           payment_amount,
         })
@@ -341,36 +360,47 @@ const InvoiceEditForm = ({ invoice, hasStockPermission, onCancel, onSaved, varia
   )
 
   useEffect(() => {
-    if (formData.payment_status !== 'semi_paid') return
-    const t = totals.totalAmount
-    const p = parseFloat(formData.payment_amount) || 0
-    if (p > t) {
-      setFormData((prev) => ({ ...prev, payment_amount: t }))
-    }
-  }, [totals.totalAmount, formData.payment_status])
+  if (formData.payment_status !== 'semi_paid') return;
+  const t = totals.totalAmount;
+  const p = parseFloat(formData.payment_amount) || 0;
+  if (p > t) {
+    setFormData((prev) => ({ ...prev, payment_amount: t.toString() }));
+    toast.error(`Payment amount adjusted to maximum: ₹${t.toFixed(2)}`);
+  }
+}, [totals.totalAmount, formData.payment_status]);
 
   const handlePaymentAmountChange = (value) => {
-    // Only allow digits and decimal point
-    let cleanedValue = value.replace(/[^0-9.]/g, '')
-    
+    // Allow empty string
+    if (value === '') {
+      setFormData((prev) => ({ ...prev, payment_amount: '' }));
+      return;
+    }
+
+    // Allow only digits and decimal point
+    let cleanedValue = value.replace(/[^0-9.]/g, '');
+
     // Prevent multiple decimal points
-    const decimalCount = (cleanedValue.match(/\./g) || []).length
+    const decimalCount = (cleanedValue.match(/\./g) || []).length;
     if (decimalCount > 1) {
-      cleanedValue = cleanedValue.slice(0, cleanedValue.lastIndexOf('.'))
+      cleanedValue = cleanedValue.slice(0, cleanedValue.lastIndexOf('.'));
     }
-    
+
     // Parse the cleaned value
-    let numValue = cleanedValue === '' ? 0 : parseFloat(cleanedValue)
-    if (isNaN(numValue)) numValue = 0
-    
-    // Cap at total amount
-    const maxAmount = totals.totalAmount
+    let numValue = cleanedValue === '' ? 0 : parseFloat(cleanedValue);
+    if (isNaN(numValue)) numValue = 0;
+
+    // Auto-set to total amount if exceeds
+    const maxAmount = totals.totalAmount;
     if (numValue > maxAmount) {
-      numValue = maxAmount
-      cleanedValue = numValue.toString()
+      numValue = maxAmount;
+      cleanedValue = numValue.toString();
+      toast.error(`Payment amount cannot exceed total amount. Set to maximum: ₹${maxAmount.toFixed(2)}`);
     }
-    
-    setFormData((prev) => ({ ...prev, payment_amount: cleanedValue === '' ? 0 : cleanedValue }))
+
+    setFormData((prev) => ({
+      ...prev,
+      payment_amount: cleanedValue === '' ? '' : cleanedValue
+    }));
   }
 
   const getSelectedCustomerName = () => {
@@ -683,12 +713,22 @@ const InvoiceEditForm = ({ invoice, hasStockPermission, onCancel, onSaved, varia
       }
     }
 
-    let paidAmountValue = 0
-    if (formData.payment_status === 'paid') paidAmountValue = totals.totalAmount
-    else if (formData.payment_status === 'semi_paid') {
-      const p = parseFloat(formData.payment_amount) || 0
-      paidAmountValue = Math.min(Math.max(0, p), totals.totalAmount)
-    } else paidAmountValue = 0
+    // In handleSubmit function, update the payment amount validation
+let paidAmountValue = 0
+if (formData.payment_status === 'paid') paidAmountValue = totals.totalAmount
+else if (formData.payment_status === 'semi_paid') {
+  // Handle empty or invalid values
+  const p = formData.payment_amount === '' || !formData.payment_amount 
+    ? 0 
+    : parseFloat(formData.payment_amount) || 0;
+  paidAmountValue = Math.min(Math.max(0, p), totals.totalAmount)
+} else paidAmountValue = 0
+
+// Add validation to ensure payment amount is entered for semi-paid
+if (formData.payment_status === 'semi_paid' && (!formData.payment_amount || formData.payment_amount === '' || parseFloat(formData.payment_amount) <= 0)) {
+  toast.error('Please enter a valid payment amount for semi-paid option')
+  return
+}
 
     const payload = {
       user_id: invoice.user_id,
@@ -822,11 +862,11 @@ const InvoiceEditForm = ({ invoice, hasStockPermission, onCancel, onSaved, varia
         {productLinesOnly.some(
           (item) => item.stock_quantity < Infinity && item.quantity > item.stock_quantity
         ) && (
-          <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-xl p-4 text-yellow-800 dark:text-yellow-200 flex items-center gap-2">
-            <FiAlertCircle className="w-5 h-5 shrink-0" />
-            <span>Some products exceed available stock. Adjust quantities before saving.</span>
-          </div>
-        )}
+            <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-xl p-4 text-yellow-800 dark:text-yellow-200 flex items-center gap-2">
+              <FiAlertCircle className="w-5 h-5 shrink-0" />
+              <span>Some products exceed available stock. Adjust quantities before saving.</span>
+            </div>
+          )}
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div className="space-y-4">
@@ -932,7 +972,7 @@ const InvoiceEditForm = ({ invoice, hasStockPermission, onCancel, onSaved, varia
                 {formData.customer_id && !dataFetchError && (
                   <div className="p-3 bg-white dark:bg-gray-600 rounded-lg border border-gray-200 dark:border-gray-500">
                     <p className="font-medium text-gray-900 dark:text-white">{getSelectedCustomerName()}</p>
-                   
+
                   </div>
                 )}
               </div>
@@ -1153,7 +1193,7 @@ const InvoiceEditForm = ({ invoice, hasStockPermission, onCancel, onSaved, varia
                     <th className="text-center text-xs font-medium text-gray-500 pb-3 w-[100px]">Disc %</th>
                     <th className="text-center text-xs font-medium text-gray-500 pb-3 w-[100px]">Total</th>
                     <th className="w-[60px]" />
-                   </tr>
+                  </tr>
                 </thead>
                 <tbody>
                   {lineItems.map((item, index) => (
@@ -1177,7 +1217,7 @@ const InvoiceEditForm = ({ invoice, hasStockPermission, onCancel, onSaved, varia
                             </p>
                           )}
                         </div>
-                        </td>
+                      </td>
                       <td className="py-3">
                         <div className="flex items-center justify-center gap-1">
                           <button
@@ -1207,7 +1247,7 @@ const InvoiceEditForm = ({ invoice, hasStockPermission, onCancel, onSaved, varia
                             <FiPlus className="w-3 h-3" />
                           </button>
                         </div>
-                        </td>
+                      </td>
                       <td className="py-3 text-center">
                         {item.is_package ? (
                           <span className="text-sm">₹{parseFloat(item.price).toFixed(2)}</span>
@@ -1220,7 +1260,7 @@ const InvoiceEditForm = ({ invoice, hasStockPermission, onCancel, onSaved, varia
                             className="w-20 text-sm text-center mx-auto"
                           />
                         )}
-                        </td>
+                      </td>
                       <td className="py-3 text-center">
                         {item.is_package ? (
                           <span className="text-sm text-gray-400">—</span>
@@ -1237,7 +1277,7 @@ const InvoiceEditForm = ({ invoice, hasStockPermission, onCancel, onSaved, varia
                               type="number"
                               value={String(item.gst)}
                               onChange={(e) => handleUpdateItem(index, 'gst', e.target.value)}
-                              className="w-16 text-sm text-center"
+                              className=" text-sm text-center min-w-[90px] w-[90px]"
                             />
                             <button
                               type="button"
@@ -1248,7 +1288,7 @@ const InvoiceEditForm = ({ invoice, hasStockPermission, onCancel, onSaved, varia
                             </button>
                           </div>
                         )}
-                        </td>
+                      </td>
                       <td className="py-3 text-center">
                         {item.is_package ? (
                           <span className="text-sm text-gray-400">—</span>
@@ -1265,7 +1305,7 @@ const InvoiceEditForm = ({ invoice, hasStockPermission, onCancel, onSaved, varia
                               type="number"
                               value={String(item.discount)}
                               onChange={(e) => handleUpdateItem(index, 'discount', e.target.value)}
-                              className="w-16 text-sm text-center"
+                              className="min-w-[90px] w-[90px] text-sm text-center"
                             />
                             <button
                               type="button"
@@ -1276,10 +1316,10 @@ const InvoiceEditForm = ({ invoice, hasStockPermission, onCancel, onSaved, varia
                             </button>
                           </div>
                         )}
-                        </td>
+                      </td>
                       <td className="py-3 text-center font-semibold text-sm">
                         ₹{parseFloat(item.total_price || 0).toFixed(2)}
-                        </td>
+                      </td>
                       <td className="py-3 text-center">
                         <button
                           type="button"
@@ -1288,7 +1328,7 @@ const InvoiceEditForm = ({ invoice, hasStockPermission, onCancel, onSaved, varia
                         >
                           <FiTrash2 className="w-4 h-4" />
                         </button>
-                        </td>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -1342,17 +1382,61 @@ const InvoiceEditForm = ({ invoice, hasStockPermission, onCancel, onSaved, varia
                 {formData.payment_status === 'semi_paid' && (
                   <>
                     <Input
-                      label="Payment amount"
-                      type="text"
-                      inputMode="decimal"
-                      value={formData.payment_amount}
-                      onChange={(e) => handlePaymentAmountChange(e.target.value)}
-                      max={totals.totalAmount}
-                    />
-                    <p className="text-xs text-gray-500 dark:text-gray-400">
-                      Invoice total is ₹{totals.totalAmount.toFixed(2)}. Due after this payment: ₹
-                      {dueAfterPayment.toFixed(2)}.
-                    </p>
+  label="Payment amount"
+  type="text"
+  inputMode="decimal"
+  value={formData.payment_amount === 0 ? '' : formData.payment_amount}
+  onChange={(e) => handlePaymentAmountChange(e.target.value)}
+  onKeyDown={(e) => {
+    // Prevent 'e', 'E', '-', '+' characters
+    if (e.key === 'e' || e.key === 'E' || e.key === '-' || e.key === '+') {
+      e.preventDefault();
+    }
+  }}
+  onBlur={(e) => {
+    // Format the value on blur
+    let value = e.target.value;
+    if (value === '') {
+      // Keep it empty if user deleted everything
+      setFormData(prev => ({ ...prev, payment_amount: '' }));
+      return;
+    }
+    
+    if (value && !isNaN(parseFloat(value))) {
+      const numValue = parseFloat(value);
+      const maxAmount = totals.totalAmount;
+      // Ensure not exceeding total amount
+      if (numValue > maxAmount) {
+        setFormData(prev => ({ 
+          ...prev, 
+          payment_amount: maxAmount.toString() 
+        }));
+        toast.error(`Payment amount adjusted to maximum: ₹${maxAmount.toFixed(2)}`);
+      } else if (numValue < 0) {
+        setFormData(prev => ({ ...prev, payment_amount: '0' }));
+      } else {
+        // Format to 2 decimal places
+        setFormData(prev => ({ 
+          ...prev, 
+          payment_amount: numValue.toFixed(2) 
+        }));
+      }
+    }
+  }}
+  max={totals.totalAmount}
+  placeholder="Enter payment amount"
+/>
+                    <div className="flex justify-between items-center mt-1">
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        Invoice total is ₹{totals.totalAmount.toFixed(2)}. Due after this payment: ₹
+                        {dueAfterPayment.toFixed(2)}.
+                      </p>
+                      {(parseFloat(formData.payment_amount) || 0) > totals.totalAmount && (
+                        <p className="text-xs text-red-600 dark:text-red-400">
+                          Amount exceeds total!
+                        </p>
+                      )}
+                    </div>
                   </>
                 )}
               </div>
@@ -1363,7 +1447,7 @@ const InvoiceEditForm = ({ invoice, hasStockPermission, onCancel, onSaved, varia
                   {originalInvoiceFinancials.current.paid.toFixed(2)}, due ₹
                   {originalInvoiceFinancials.current.due.toFixed(2)}.
                 </p>
-                
+
                 {/* Product Lines Breakdown */}
                 <div className="space-y-1 pt-1">
                   <div className="flex justify-between">

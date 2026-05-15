@@ -191,7 +191,7 @@ const Packages = () => {
       accessor: 'package_price',
       cell: (value) => (
         <span className="text-gray-700 dark:text-gray-300">
-          ${value ? parseFloat(value).toFixed(2) : '0.00'}
+          ₹{value ? parseFloat(value).toFixed(2) : '0.00'}
         </span>
       ),
     },

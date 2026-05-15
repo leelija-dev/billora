@@ -222,7 +222,7 @@ const InvoiceTable = ({
       accessor: 'id',
       cell: (value, row) => (
         <div>
-          <p className="font-medium text-gray-900 dark:text-white">#{value}</p>
+          <p className="font-medium text-gray-900 dark:text-white">#{row.invoice_number}</p>
           <p className="text-xs text-gray-500 dark:text-gray-400">
             {new Date(row.created_at).toLocaleDateString()}
           </p>

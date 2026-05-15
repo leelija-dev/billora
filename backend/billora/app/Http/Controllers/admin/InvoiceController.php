@@ -332,6 +332,7 @@ class InvoiceController extends Controller
                 ], 404);
             }
             $billPaymentHistory = BillPaymentHistory::where('admin_id', $userId)->where('invoice_id', $id)->orderBy('id', 'asc')->first();
+            $bill['payment_method'] = $billPaymentHistory['payment_method'] ?? null;
             return response()->json([
                 'status'  => true,
                 'message' => 'Single Bill',

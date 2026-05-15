@@ -10,32 +10,32 @@ const FAQ = () => {
     {
       question: "Can one software manage multiple businesses (multi-GSTIN)?",
       answer:
-        "Yes, modern GST billing software can efficiently manage multiple businesses under one single account. Most of these advanced billing applications let users create separate profiles for each GSTIN for generating invoices, tracking inventory, and filing GST returns separately for different businesses while maintaining consolidated records. ",
+        "Yes, modern inventory and billing software can efficiently manage multiple businesses under one single account. Most of these advanced billing applications let users create separate profiles for each GSTIN for generating invoices, tracking inventory, and filing GST returns separately for different businesses while maintaining consolidated records. ",
     },
     {
-      question: "How to handle GST discrepancies and errors with GST billing applications?",
+      question: "How to handle GST discrepancies and errors with GST billing & inventory control software?",
       answer:
-        "Modern GST billing software automatically matches your purchase records with the Government’s GSTR-2B data. They not only prevent errors by checking HSN/SAC codes or auto-filling buyer details but also help you amend errors in GSTR-1 & adjust tax amounts in GSTR-3B directly. ",
+        "Modern inventory billing software automatically matches your purchase records with the Government’s GSTR-2B data. They not only prevent errors by checking HSN/SAC codes or auto-filling buyer details but also help you amend errors in GSTR-1 & adjust tax amounts in GSTR-3B directly.  ",
     },
     {
-      question: "Cloud-based vs. Desktop GST software: which is better?",
+      question: "Cloud-based vs. Desktop inventory software: which is better?",
       answer:
-        "A cloud-based GST software is generally preferred by most of the business owners as it offers auto-updates for changing tax laws and comes with lower upfront costs. Desktop billing software, on the other hand, helps you operate without the internet but requires extreme data control.",
+        "A cloud-based small business inventory software is generally preferred by most of the business owners as it offers auto-updates for changing tax laws and comes with lower upfront costs. Desktop inventory management software, on the other hand, helps you operate without the internet but requires extreme data control.",
     },
     {
-      question: "How do I generate an E-invoice (IRN) using GST online billing software?",
+      question: "Which software is recommended for doing inventory management?",
       answer:
-        "To generate an E-invoice using a free online billing software, you need to create a B2B invoice in JSON format first and then upload it to the Invoice Registration Portal via the billing software. After validation, it will add a QR code and generate a unique IRN through automatic integration via API.",
+        "The best inventory management software India are commonly cloud-based. You can choose any of the popular sales inventory management systems depending on your specific business size, industry, and need for barcode scanning or multi-location tracking. ",
     },
     {
-      question: "Is it mandatory to use software for GST billing?",
+      question: "Is it mandatory to use software for GST billing & sales inventory management?",
       answer:
-        "Not really. It’s not mandatory, however, GST billing software is highly effective in ensuring compliance, avoiding penalties, and managing filing requirements.",
+        "Not really. It’s not mandatory, however, accounting and inventory management software is highly effective in ensuring compliance, avoiding penalties, reducing manual workload, and managing filing requirements.",
     },
     {
       question: "How often does a GST billing software update tax rules?",
       answer:
-        "The best billing software in India generally updates tax rules automatically, especially when there is a change in the law or recommendations from the GST council. However, you can expect to see minor changes once every 4 months and major updates at the start of a financial year (roughly 1st April onwards).",
+        "The best billing & inventory stock control software generally updates tax rules automatically, especially when there is a change in the law or recommendations from the GST council. However, you can expect to see minor changes once every 4 months and major updates at the start of a financial year (roughly 1st April onwards).",
     },
   ];
 
