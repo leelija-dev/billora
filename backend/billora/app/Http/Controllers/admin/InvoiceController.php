@@ -97,6 +97,7 @@ class InvoiceController extends Controller
             "store_id"      => 'required|exists:store,id',
             "paid_amount"   => 'required|numeric|min:0',
             "created_by"    => 'required',
+            "payment_method" => 'nullable|string',
             // "package_name"  => 'nullable',
             // "package_price" => 'nullable|numeric|min:0',
             // "package_size"  => 'nullable',
