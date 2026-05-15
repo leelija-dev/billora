@@ -919,131 +919,131 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting,
     return { subtotal, totalGst, totalDiscount, totalAmount }
   }
 
-// Update the handleSubmit function to include payment_method in submission data
-const handleSubmit = async (e) => {
-  e.preventDefault()
+  // Update the handleSubmit function to include payment_method in submission data
+  const handleSubmit = async (e) => {
+    e.preventDefault()
 
-  if (!formData.customer_id || !formData.store_id || formData.items.length === 0) {
-    toast.error('Please fill all required fields and add at least one item')
-    return
-  }
-
-  // Check for stock validation
-  const stockIssues = formData.items.filter(item =>
-    item.stock_quantity > 0 && item.quantity > item.stock_quantity
-  )
-
-  if (stockIssues.length > 0) {
-    toast.error(`Cannot proceed. ${stockIssues.length} item(s) exceed available stock. Please adjust quantities.`)
-    return
-  }
-
-  const totals = calculateTotals()
-
-  // Validate payment amount for semi-paid
-  if (formData.payment_status === 'semi_paid') {
-    if (!formData.payment_amount || formData.payment_amount <= 0) {
-      toast.error('Please enter a valid payment amount for semi-paid option')
+    if (!formData.customer_id || !formData.store_id || formData.items.length === 0) {
+      toast.error('Please fill all required fields and add at least one item')
       return
     }
-  }
 
-  // Validate payment method
-  if (!formData.payment_method) {
-    toast.error('Please select a payment method')
-    return
-  }
+    // Check for stock validation
+    const stockIssues = formData.items.filter(item =>
+      item.stock_quantity > 0 && item.quantity > item.stock_quantity
+    )
 
-  const refreshCustomers = async () => {
+    if (stockIssues.length > 0) {
+      toast.error(`Cannot proceed. ${stockIssues.length} item(s) exceed available stock. Please adjust quantities.`)
+      return
+    }
+
+    const totals = calculateTotals()
+
+    // Validate payment amount for semi-paid
+    if (formData.payment_status === 'semi_paid') {
+      if (!formData.payment_amount || formData.payment_amount <= 0) {
+        toast.error('Please enter a valid payment amount for semi-paid option')
+        return
+      }
+    }
+
+    // Validate payment method
+    if (!formData.payment_method) {
+      toast.error('Please select a payment method')
+      return
+    }
+
+    const refreshCustomers = async () => {
+      try {
+        const response = await customerAPI.getAll(currentUserId, '')
+        let customersList = []
+
+        if (response?.data?.data?.data && Array.isArray(response.data.data.data)) {
+          customersList = response.data.data.data
+        } else if (response?.data?.data && Array.isArray(response.data.data)) {
+          customersList = response.data.data
+        } else if (Array.isArray(response?.data)) {
+          customersList = response.data
+        }
+
+        setCustomers(customersList)
+        return customersList
+      } catch (error) {
+        console.error('Failed to refresh customers:', error)
+        return []
+      }
+    }
+
+    // Separate products and packages
+    const productItems = formData.items.filter(item => !item.is_package)
+    const packageItems = formData.items.filter(item => item.is_package)
+
+    // Create packages array for API
+    const packages = packageItems.map(item => ({
+      package_id: item.product_id,
+      package_name: item.product_name,
+      package_price: item.price,
+      package_size: item.unit_name,
+      quantity: item.quantity
+    }))
+
+    const submissionData = {
+      ...formData, // This now includes payment_method
+      items: productItems,
+      packages: packages,
+      paid_amount: formData.payment_status === 'paid' ? totals.totalAmount.toString() :
+        formData.payment_status === 'semi_paid' ? formData.payment_amount.toString() : '0',
+      total_amount: totals.totalAmount.toString()
+    }
+
+    console.log('📤 Submitting invoice:', submissionData)
+    console.log('📊 Final Totals:', {
+      subtotal: totals.subtotal,
+      totalGst: totals.totalGst,
+      totalDiscount: totals.totalDiscount,
+      totalAmount: totals.totalAmount,
+      items: formData.items.length,
+      payment_method: formData.payment_method // Log payment method
+    })
+
+    // Submit the bill to server first
+    setIsSubmittingBill(true)
     try {
-      const response = await customerAPI.getAll(currentUserId, '')
-      let customersList = []
+      const response = await onSubmit(submissionData)
+      console.log('📄 Invoice submitted successfully:', response)
 
-      if (response?.data?.data?.data && Array.isArray(response.data.data.data)) {
-        customersList = response.data.data.data
-      } else if (response?.data?.data && Array.isArray(response.data.data)) {
-        customersList = response.data.data
-      } else if (Array.isArray(response?.data)) {
-        customersList = response.data
+      // Check if invoice was actually created successfully
+      if (response?.success === true || response?.status === true) {
+        // Get the created invoice data from response and merge with submission data for printing
+        const apiInvoiceData = response?.data || {}
+        const createdInvoice = {
+          ...apiInvoiceData,
+          // Ensure we have the complete items and packages data from submission
+          items: submissionData.items || [],
+          packages: submissionData.packages || [],
+          // Use API data for important fields - invoice_id is the correct invoice number
+          id: apiInvoiceData.id || apiInvoiceData.invoice_id,
+          invoice_number: apiInvoiceData.invoice_id || apiInvoiceData.invoice_number || `INV-${Date.now()}`,
+          total_amount: apiInvoiceData.total_amount || submissionData.total_amount,
+          created_at: apiInvoiceData.created_at || new Date().toISOString(),
+          payment_method: formData.payment_method // Ensure payment_method is included
+        }
+        setCreatedInvoiceData(createdInvoice)
+        setGeneratedBillData(submissionData)
+
+        // Show print choice dialog only after successful bill generation
+        setShowBillDialog(true)
+      } else {
+        toast.error(response?.message || 'Failed to generate invoice. Please try again.')
       }
-
-      setCustomers(customersList)
-      return customersList
     } catch (error) {
-      console.error('Failed to refresh customers:', error)
-      return []
+      console.error('Error generating invoice:', error)
+      toast.error('Failed to generate invoice. Please try again.')
+    } finally {
+      setIsSubmittingBill(false)
     }
   }
-
-  // Separate products and packages
-  const productItems = formData.items.filter(item => !item.is_package)
-  const packageItems = formData.items.filter(item => item.is_package)
-
-  // Create packages array for API
-  const packages = packageItems.map(item => ({
-    package_id: item.product_id,
-    package_name: item.product_name,
-    package_price: item.price,
-    package_size: item.unit_name,
-    quantity: item.quantity
-  }))
-
-  const submissionData = {
-    ...formData, // This now includes payment_method
-    items: productItems,
-    packages: packages,
-    paid_amount: formData.payment_status === 'paid' ? totals.totalAmount.toString() :
-      formData.payment_status === 'semi_paid' ? formData.payment_amount.toString() : '0',
-    total_amount: totals.totalAmount.toString()
-  }
-
-  console.log('📤 Submitting invoice:', submissionData)
-  console.log('📊 Final Totals:', {
-    subtotal: totals.subtotal,
-    totalGst: totals.totalGst,
-    totalDiscount: totals.totalDiscount,
-    totalAmount: totals.totalAmount,
-    items: formData.items.length,
-    payment_method: formData.payment_method // Log payment method
-  })
-
-  // Submit the bill to server first
-  setIsSubmittingBill(true)
-  try {
-    const response = await onSubmit(submissionData)
-    console.log('📄 Invoice submitted successfully:', response)
-
-    // Check if invoice was actually created successfully
-    if (response?.success === true || response?.status === true) {
-      // Get the created invoice data from response and merge with submission data for printing
-      const apiInvoiceData = response?.data || {}
-      const createdInvoice = {
-        ...apiInvoiceData,
-        // Ensure we have the complete items and packages data from submission
-        items: submissionData.items || [],
-        packages: submissionData.packages || [],
-        // Use API data for important fields - invoice_id is the correct invoice number
-        id: apiInvoiceData.id || apiInvoiceData.invoice_id,
-        invoice_number: apiInvoiceData.invoice_id || apiInvoiceData.invoice_number || `INV-${Date.now()}`,
-        total_amount: apiInvoiceData.total_amount || submissionData.total_amount,
-        created_at: apiInvoiceData.created_at || new Date().toISOString(),
-        payment_method: formData.payment_method // Ensure payment_method is included
-      }
-      setCreatedInvoiceData(createdInvoice)
-      setGeneratedBillData(submissionData)
-
-      // Show print choice dialog only after successful bill generation
-      setShowBillDialog(true)
-    } else {
-      toast.error(response?.message || 'Failed to generate invoice. Please try again.')
-    }
-  } catch (error) {
-    console.error('Error generating invoice:', error)
-    toast.error('Failed to generate invoice. Please try again.')
-  } finally {
-    setIsSubmittingBill(false)
-  }
-}
 
   // Click outside handlers
   useEffect(() => {
@@ -1943,8 +1943,8 @@ const handleSubmit = async (e) => {
                       { value: 'card', label: 'Card' },
                       { value: 'upi', label: 'UPI' },
                       { value: 'bank_transfer', label: 'Bank Transfer' },
-                      { value: 'cheque', label: 'Cheque' },
-                      { value: 'online', label: 'Online Payment' }
+                      { value: 'cheque', label: 'Cheque' }
+
                     ]}
                     value={formData.payment_method}
                     onChange={(e) => setFormData(prev => ({ ...prev, payment_method: e.target.value }))}
@@ -1983,13 +1983,73 @@ const handleSubmit = async (e) => {
                       step="0.01"
                       placeholder="Enter payment amount"
                       value={formData.payment_amount}
-                      onChange={(e) => setFormData(prev => ({ ...prev, payment_amount: e.target.value }))}
+                      onChange={(e) => {
+                        // Allow only numbers and decimal point
+                        let value = e.target.value;
+
+                        // Remove any non-numeric characters except decimal point
+                        value = value.replace(/[^\d.]/g, '');
+
+                        // Ensure only one decimal point
+                        const decimalCount = (value.match(/\./g) || []).length;
+                        if (decimalCount > 1) {
+                          return;
+                        }
+
+                        // Parse the value to number for validation
+                        const numValue = parseFloat(value);
+
+                        // Check if value exceeds total amount
+                        if (!isNaN(numValue) && numValue > totals.totalAmount) {
+                          // Auto-set to total amount instead of showing error
+                          const finalAmount = totals.totalAmount.toFixed(2);
+                          setFormData(prev => ({ ...prev, payment_amount: finalAmount }));
+                          toast.error(`Payment amount cannot exceed total amount. Set to maximum: ₹${finalAmount}`);
+                          return;
+                        }
+
+                        setFormData(prev => ({ ...prev, payment_amount: value }));
+                      }}
+                      onKeyDown={(e) => {
+                        // Prevent 'e', 'E', '-', '+' characters
+                        if (e.key === 'e' || e.key === 'E' || e.key === '-' || e.key === '+') {
+                          e.preventDefault();
+                        }
+                      }}
+                      onBlur={(e) => {
+                        // Format the value on blur
+                        let value = e.target.value;
+                        if (value && !isNaN(parseFloat(value))) {
+                          const numValue = parseFloat(value);
+                          // Ensure not exceeding total amount
+                          if (numValue > totals.totalAmount) {
+                            // Auto-set to total amount
+                            setFormData(prev => ({ ...prev, payment_amount: totals.totalAmount.toFixed(2) }));
+                            toast.error(`Payment amount adjusted to maximum: ₹${totals.totalAmount.toFixed(2)}`);
+                          } else if (numValue < 0) {
+                            // Handle negative numbers
+                            setFormData(prev => ({ ...prev, payment_amount: '0' }));
+                          } else {
+                            // Format to 2 decimal places
+                            setFormData(prev => ({ ...prev, payment_amount: numValue.toFixed(2) }));
+                          }
+                        } else if (value === '') {
+                          // Handle empty value
+                          setFormData(prev => ({ ...prev, payment_amount: '0' }));
+                        }
+                      }}
                       required
-                      max={totals.totalAmount}
                     />
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                      Remaining amount: ₹{(totals.totalAmount - (parseFloat(formData.payment_amount) || 0)).toFixed(2)}
-                    </p>
+                    <div className="flex justify-between items-center mt-1">
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        Remaining amount: ₹{(totals.totalAmount - (parseFloat(formData.payment_amount) || 0)).toFixed(2)}
+                      </p>
+                      {(parseFloat(formData.payment_amount) || 0) > totals.totalAmount && (
+                        <p className="text-xs text-red-600 dark:text-red-400">
+                          Amount exceeds total!
+                        </p>
+                      )}
+                    </div>
                   </motion.div>
                 )}
               </div>

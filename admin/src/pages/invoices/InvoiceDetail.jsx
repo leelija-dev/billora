@@ -87,7 +87,7 @@ const InvoiceDetail = () => {
 
         if (response.data?.status && response.data?.data) {
           const foundInvoice = response.data.data
-          console.log('🎯 Found invoice:', foundInvoice)
+          console.log('🎯 Found invoice:..................', foundInvoice)
 
           Promise.all([
             storeAPI.getByUserId(foundInvoice.user_id),
@@ -336,6 +336,8 @@ const InvoiceDetail = () => {
       setDuePaySubmitting(false)
     }
   }
+
+  console.log("Checking invoice ...........",invoice);
 
   const handlePrint = () => {
     printA4Invoice(invoice)

@@ -30,6 +30,21 @@ import { customerAPI } from '../../../services/customerService'
 import usePackageStore from '../../../store/packageStore'
 import { useAuthStore } from '../../../store/authStore'
 
+const normalizePaymentMethod = (method) => {
+  if (!method) return 'Cash'
+  const methodLower = method.toLowerCase()
+  const methodMap = {
+    'cash': 'Cash',
+    'card': 'Card',
+    'upi': 'UPI',
+    'bank transfer': 'Bank Transfer',
+    'banktransfer': 'Bank Transfer',
+    'cheque': 'Cheque',
+    'check': 'Cheque'
+  }
+  return methodMap[methodLower] || 'Cash'
+}
+
 const getUserId = (user) => {
   if (user?.id) return user.id
   const authData = localStorage.getItem('auth')
@@ -103,10 +118,14 @@ const InvoiceEditForm = ({ invoice, hasStockPermission, onCancel, onSaved, varia
   const [formData, setFormData] = useState({
     customer_id: '',
     store_id: '',
-    payment_method: 'Cash',
+    payment_method: 'Cash', // Default value, will be updated in useEffect
     payment_status: 'paid',
     payment_amount: 0,
   })
+
+
+
+  console.log("invoice Checking .....", invoice)
 
   const [productSearch, setProductSearch] = useState('')
   const [showProductList, setShowProductList] = useState(false)
@@ -187,7 +206,7 @@ const InvoiceEditForm = ({ invoice, hasStockPermission, onCancel, onSaved, varia
           }
         }
 
-        await fetchPackages(currentUserId).catch(() => {})
+        await fetchPackages(currentUserId).catch(() => { })
 
         const rows = (invoice.invoice_items || invoice.items || []).filter((row) => !row.is_package)
         const mappedProducts = rows.map((item) => {
@@ -261,7 +280,7 @@ const InvoiceEditForm = ({ invoice, hasStockPermission, onCancel, onSaved, varia
         setFormData({
           customer_id: invoice.customer_id || '',
           store_id: invoice.store_id || '',
-          payment_method: invoice.payment_method || 'Cash',
+          payment_method: normalizePaymentMethod(invoice.payment_method),
           payment_status,
           payment_amount,
         })
@@ -352,24 +371,24 @@ const InvoiceEditForm = ({ invoice, hasStockPermission, onCancel, onSaved, varia
   const handlePaymentAmountChange = (value) => {
     // Only allow digits and decimal point
     let cleanedValue = value.replace(/[^0-9.]/g, '')
-    
+
     // Prevent multiple decimal points
     const decimalCount = (cleanedValue.match(/\./g) || []).length
     if (decimalCount > 1) {
       cleanedValue = cleanedValue.slice(0, cleanedValue.lastIndexOf('.'))
     }
-    
+
     // Parse the cleaned value
     let numValue = cleanedValue === '' ? 0 : parseFloat(cleanedValue)
     if (isNaN(numValue)) numValue = 0
-    
+
     // Cap at total amount
     const maxAmount = totals.totalAmount
     if (numValue > maxAmount) {
       numValue = maxAmount
       cleanedValue = numValue.toString()
     }
-    
+
     setFormData((prev) => ({ ...prev, payment_amount: cleanedValue === '' ? 0 : cleanedValue }))
   }
 
@@ -822,11 +841,11 @@ const InvoiceEditForm = ({ invoice, hasStockPermission, onCancel, onSaved, varia
         {productLinesOnly.some(
           (item) => item.stock_quantity < Infinity && item.quantity > item.stock_quantity
         ) && (
-          <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-xl p-4 text-yellow-800 dark:text-yellow-200 flex items-center gap-2">
-            <FiAlertCircle className="w-5 h-5 shrink-0" />
-            <span>Some products exceed available stock. Adjust quantities before saving.</span>
-          </div>
-        )}
+            <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-xl p-4 text-yellow-800 dark:text-yellow-200 flex items-center gap-2">
+              <FiAlertCircle className="w-5 h-5 shrink-0" />
+              <span>Some products exceed available stock. Adjust quantities before saving.</span>
+            </div>
+          )}
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div className="space-y-4">
@@ -932,7 +951,7 @@ const InvoiceEditForm = ({ invoice, hasStockPermission, onCancel, onSaved, varia
                 {formData.customer_id && !dataFetchError && (
                   <div className="p-3 bg-white dark:bg-gray-600 rounded-lg border border-gray-200 dark:border-gray-500">
                     <p className="font-medium text-gray-900 dark:text-white">{getSelectedCustomerName()}</p>
-                   
+
                   </div>
                 )}
               </div>
@@ -1153,7 +1172,7 @@ const InvoiceEditForm = ({ invoice, hasStockPermission, onCancel, onSaved, varia
                     <th className="text-center text-xs font-medium text-gray-500 pb-3 w-[100px]">Disc %</th>
                     <th className="text-center text-xs font-medium text-gray-500 pb-3 w-[100px]">Total</th>
                     <th className="w-[60px]" />
-                   </tr>
+                  </tr>
                 </thead>
                 <tbody>
                   {lineItems.map((item, index) => (
@@ -1177,7 +1196,7 @@ const InvoiceEditForm = ({ invoice, hasStockPermission, onCancel, onSaved, varia
                             </p>
                           )}
                         </div>
-                        </td>
+                      </td>
                       <td className="py-3">
                         <div className="flex items-center justify-center gap-1">
                           <button
@@ -1207,7 +1226,7 @@ const InvoiceEditForm = ({ invoice, hasStockPermission, onCancel, onSaved, varia
                             <FiPlus className="w-3 h-3" />
                           </button>
                         </div>
-                        </td>
+                      </td>
                       <td className="py-3 text-center">
                         {item.is_package ? (
                           <span className="text-sm">₹{parseFloat(item.price).toFixed(2)}</span>
@@ -1220,7 +1239,7 @@ const InvoiceEditForm = ({ invoice, hasStockPermission, onCancel, onSaved, varia
                             className="w-20 text-sm text-center mx-auto"
                           />
                         )}
-                        </td>
+                      </td>
                       <td className="py-3 text-center">
                         {item.is_package ? (
                           <span className="text-sm text-gray-400">—</span>
@@ -1248,7 +1267,7 @@ const InvoiceEditForm = ({ invoice, hasStockPermission, onCancel, onSaved, varia
                             </button>
                           </div>
                         )}
-                        </td>
+                      </td>
                       <td className="py-3 text-center">
                         {item.is_package ? (
                           <span className="text-sm text-gray-400">—</span>
@@ -1276,10 +1295,10 @@ const InvoiceEditForm = ({ invoice, hasStockPermission, onCancel, onSaved, varia
                             </button>
                           </div>
                         )}
-                        </td>
+                      </td>
                       <td className="py-3 text-center font-semibold text-sm">
                         ₹{parseFloat(item.total_price || 0).toFixed(2)}
-                        </td>
+                      </td>
                       <td className="py-3 text-center">
                         <button
                           type="button"
@@ -1288,7 +1307,7 @@ const InvoiceEditForm = ({ invoice, hasStockPermission, onCancel, onSaved, varia
                         >
                           <FiTrash2 className="w-4 h-4" />
                         </button>
-                        </td>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -1363,7 +1382,7 @@ const InvoiceEditForm = ({ invoice, hasStockPermission, onCancel, onSaved, varia
                   {originalInvoiceFinancials.current.paid.toFixed(2)}, due ₹
                   {originalInvoiceFinancials.current.due.toFixed(2)}.
                 </p>
-                
+
                 {/* Product Lines Breakdown */}
                 <div className="space-y-1 pt-1">
                   <div className="flex justify-between">

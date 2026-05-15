@@ -328,11 +328,13 @@ class InvoiceController extends Controller
                     'message' => 'Bill not found'
                 ], 404);
             }
-
+            $billPaymentHistory = BillPaymentHistory::where('admin_id', $userId)->where('invoice_id', $id)->orderBy('id', 'asc')->first();
+            $bill['payment_method'] = $billPaymentHistory['payment_method'] ?? null;
             return response()->json([
                 'status'  => true,
                 'message' => 'Single Bill',
-                'data'    => $bill
+                'data'    => $bill,
+                'bill_payment_history' => $billPaymentHistory
             ]);
         } catch (\Exception $e) {
 
@@ -762,7 +764,7 @@ class InvoiceController extends Controller
                     ]);
                 }
             }
-            $billPaymentHistory = BillPaymentHistory::where('admin_id', $request->user_id)->where('invoice_id', $invoice->id)->first();
+            $billPaymentHistory = BillPaymentHistory::where('admin_id', $request->user_id)->where('invoice_id', $invoice->id)->orderBy('id', 'asc')->first();
             if ($billPaymentHistory) {
                 $billPaymentHistory->update([
                     'customer_id'    => $request->customer_id,
