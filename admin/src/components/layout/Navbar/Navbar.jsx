@@ -190,13 +190,7 @@ useEffect(() => {
                   <h2 className="text-base md:text-lg font-semibold bg-gradient-to-r from-gray-800 to-gray-600 dark:from-white dark:to-gray-300 bg-clip-text text-transparent truncate max-w-[150px] md:max-w-none">
                     {company?.name || 'Dashboard'}
                   </h2>
-                  <motion.span
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    className="hidden md:inline-block px-2 py-1 text-xs font-medium bg-gradient-to-r from-primary-500/10 to-primary-600/10 dark:from-primary-500/20 dark:to-primary-600/20 text-primary-600 dark:text-primary-400 rounded-full border border-primary-200 dark:border-primary-800"
-                  >
-                    {company?.plan || 'Free Plan'}
-                  </motion.span>
+                 
                 </div>
                 <p className="hidden lg:block text-xs text-gray-500 dark:text-gray-400">
                   {new Date().toLocaleDateString('en-US', { 

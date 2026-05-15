@@ -5,10 +5,18 @@ export const invoiceAPI = {
   getAll: (page = 1, filters = {}) => {
     const params = new URLSearchParams()
     
-    if (page) params.append('page', page)
-    if (filters.search) params.append('search', filters.search)
+    if (page) {
+      params.append('page', page)
+    }
+
+    if (filters.search){
+      params.delete('page', page)
+       params.append('search', filters.search)
+    }
     
     return apiClient.get(`/invoice/bill-history?${params.toString()}`)
+    
+    
   },
 
   // Get single invoice/bill with payment history filters
