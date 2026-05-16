@@ -5,6 +5,7 @@ import { FcGoogle } from "react-icons/fc";
 import { FaEye, FaEyeSlash, FaHome } from "react-icons/fa";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "../../store/authStoreZustand";
+import toast, { Toaster } from 'react-hot-toast';
 
 const RegisterPage = () => {
   const { register } = useAuthStore();
@@ -71,7 +72,7 @@ const RegisterPage = () => {
 
   const validatePassword = (value) => {
     if (!value) {
-      // setPasswordError("Password is required");
+      setPasswordError("Password is required");
       return false;
     }
     if (value.length < 8) {
@@ -171,91 +172,143 @@ const RegisterPage = () => {
     return isNameValid && isEmailValid && isPasswordValid && isPhoneValid && isCityValid && isStateValid && isCountryValid && isPincodeValid;
   };
 
- const handleRegister = async (e) => {
-  e.preventDefault();
-  
-  // Clear previous errors
-  setError("");
-  setSuccess("");
-  
-  // Validate form before submitting
-  if (!validateForm()) {
-    return;
-  }
-  
-  setLoading(true);
-  
-  try {
-    // Use authStore's register method directly
-    const result = await register({ 
-      name: name.trim(), 
-      email: email.trim().toLowerCase(), 
-      password: password,
-      phone: phone.replace(/\D/g, ''),
-      city: city.trim(),
-      state: state.trim(),
-      country: country.trim(),
-      pincode: pincode.trim()
+  const handleRegister = async (e) => {
+    e.preventDefault();
+    
+    // Clear previous errors
+    setError("");
+    setSuccess("");
+    
+    // Validate form before submitting
+    if (!validateForm()) {
+      toast.error("Please fix the validation errors", {
+        duration: 3000,
+        position: 'top-right',
+      });
+      return;
+    }
+    
+    setLoading(true);
+    
+    // Show loading toast
+    const loadingToastId = toast.loading("Creating your account...", {
+      position: 'top-right',
+      duration: Infinity,
     });
     
-    console.log('Registration result:', result);
-    
-    if (result.success) {
-      // ✅ Success case - show success message
-      const successMessage = result.message || "Registration successful! Please check your email to verify your account.";
-      setSuccess(successMessage);
+    try {
+      // Use authStore's register method directly
+      const result = await register({ 
+        name: name.trim(), 
+        email: email.trim().toLowerCase(), 
+        password: password,
+        phone: phone.replace(/\D/g, ''),
+        city: city.trim(),
+        state: state.trim(),
+        country: country.trim(),
+        pincode: pincode.trim()
+      });
       
-      // Clear form
-      setName("");
-      setEmail("");
-      setPassword("");
-      setPhone("");
-      setCity("");
-      setState("");
-      setCountry("");
-      setPincode("");
+      console.log('Registration result:', result);
       
-      // Clear validation errors
-      setNameError("");
-      setEmailError("");
-      setPasswordError("");
-      setPhoneError("");
-      setCityError("");
-      setStateError("");
-      setCountryError("");
-      setPincodeError("");
+      if (result.success) {
+        // Dismiss loading toast
+        toast.dismiss(loadingToastId);
+        
+        // Show success toast
+        toast.success(result.message || "Registration successful! Please check your email to verify your account.", {
+          duration: 5000,
+          position: 'top-right',
+          icon: '✅',
+        });
+        
+        // Set success message for UI
+        setSuccess(result.message || "Registration successful! Please check your email to verify your account.");
+        
+        // Clear form
+        setName("");
+        setEmail("");
+        setPassword("");
+        setPhone("");
+        setCity("");
+        setState("");
+        setCountry("");
+        setPincode("");
+        
+        // Clear validation errors
+        setNameError("");
+        setEmailError("");
+        setPasswordError("");
+        setPhoneError("");
+        setCityError("");
+        setStateError("");
+        setCountryError("");
+        setPincodeError("");
+        
+        // Redirect to login after 3 seconds
+        setTimeout(() => {
+          toast.success("Redirecting to login page...", {
+            duration: 2000,
+            position: 'top-right',
+          });
+          router.push("/login");
+        }, 3000);
+      } else {
+        // Dismiss loading toast
+        toast.dismiss(loadingToastId);
+        
+        // Show error toast
+        const errorMessage = result.error || "Registration failed. Please try again.";
+        toast.error(errorMessage, {
+          duration: 5000,
+          position: 'top-right',
+          icon: '❌',
+        });
+        
+        // Set error message for UI
+        setError(errorMessage);
+        
+        // Set specific field errors based on error message
+        if (errorMessage.toLowerCase().includes("email") || errorMessage.toLowerCase().includes("taken")) {
+          setEmailError("This email is already registered. Please use a different email or login.");
+        } else if (errorMessage.toLowerCase().includes("server") || errorMessage.toLowerCase().includes("connect")) {
+          setError("Cannot connect to server. Please make sure backend is running.");
+        }
+      }
       
-      // Redirect to login after 3 seconds
-      setTimeout(() => {
-        router.push("/login");
-      }, 3000);
-    } else {
-      // ✅ Error case - show error message
-      const errorMessage = result.error || "Registration failed. Please try again.";
+    } catch (error) {
+      // Dismiss loading toast
+      toast.dismiss(loadingToastId);
+      
+      console.error('Registration error:', error);
+      
+      let errorMessage = "";
+      if (error.message.includes("email") || error.message.includes("duplicate")) {
+        errorMessage = "This email is already registered. Please use a different email or login.";
+        setEmailError("This email is already registered. Please use a different email or login.");
+      } else if (error.message.includes("Failed to fetch")) {
+        errorMessage = "Cannot connect to server. Please make sure the backend is running.";
+      } else {
+        errorMessage = error.message || "Registration failed. Please try again.";
+      }
+      
       setError(errorMessage);
       
-      // Set specific field errors based on error message
-      if (errorMessage.toLowerCase().includes("email") || errorMessage.toLowerCase().includes("taken")) {
-        setEmailError("This email is already registered. Please use a different email or login.");
-      } else if (errorMessage.toLowerCase().includes("server") || errorMessage.toLowerCase().includes("connect")) {
-        setError("Cannot connect to server. Please make sure backend is running.");
-      }
+      toast.error(errorMessage, {
+        duration: 5000,
+        position: 'top-right',
+        icon: '❌',
+        style: {
+          background: '#f44336',
+          color: '#fff',
+          padding: '16px',
+          borderRadius: '12px',
+        },
+      });
+    } finally {
+      setLoading(false);
     }
-    
-  } catch (error) {
-    console.error('Registration error:', error);
-    if (error.message.includes("email") || error.message.includes("duplicate")) {
-      setEmailError("This email is already registered. Please use a different email or login.");
-      setError("This email is already registered.");
-    } else if (error.message.includes("Failed to fetch")) {
-      setError("Cannot connect to server. Please make sure the backend is running.");
-    } else {
-      setError(error.message || "Registration failed. Please try again.");
-    }
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
   // Real-time validation handlers
   const handleNameChange = (e) => {
@@ -281,10 +334,44 @@ const RegisterPage = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#ece9f1] to-[#dfe3f8] flex flex-col font-sans">
+      {/* Toaster Component */}
+      <Toaster 
+        position="top-right"
+        reverseOrder={false}
+        gutter={8}
+        containerStyle={{
+          top: 20,
+          right: 20,
+        }}
+        toastOptions={{
+          duration: 3000,
+          style: {
+            background: '#363636',
+            color: '#fff',
+            padding: '16px',
+            borderRadius: '12px',
+            fontSize: '14px',
+            maxWidth: '350px',
+          },
+          success: {
+            duration: 5000,
+            iconTheme: {
+              primary: '#4caf50',
+              secondary: '#fff',
+            },
+          },
+          error: {
+            duration: 5000,
+            iconTheme: {
+              primary: '#f44336',
+              secondary: '#fff',
+            },
+          },
+        }}
+      />
 
       <div className="flex-1 flex justify-center items-center py-20 px-4 relative">
-
-        <form onSubmit={handleRegister} className=" bg-white py-10 px-[50px] rounded-[25px] shadow-[0_8px_25px_rgba(0,0,0,0.08)]  max-md:px-8  max-sm:px-5 max-sm:py-8">
+        <form onSubmit={handleRegister} className="bg-white py-10 px-[50px] rounded-[25px] shadow-[0_8px_25px_rgba(0,0,0,0.08)] max-md:px-8 max-sm:px-5 max-sm:py-8">
 
           <h1 className="text-center text-[#2d236b] text-4xl font-bold mb-6 max-sm:text-3xl">
             Register
@@ -303,24 +390,6 @@ const RegisterPage = () => {
               {success}
             </div>
           )}
-
-          {/* Google Button */}
-          {/* <button 
-            type="button"
-            className="w-full py-3.5 rounded-xl border border-[#ddd] bg-white cursor-pointer mb-6 hover:shadow-md transition-shadow"
-            disabled={loading}
-          >
-            <div className="mx-auto flex justify-center">
-              <FcGoogle size={22} />
-            </div>
-          </button> */}
-
-          {/* OR Divider */}
-          {/* <div className="flex items-center mb-6">
-            <span className="flex-1 h-px bg-[#ccc]"></span>
-            <p className="mx-4 text-[#555] text-sm">or</p>
-            <span className="flex-1 h-px bg-[#ccc]"></span>
-          </div> */}
 
           {/* Name Field */}
           <div className="flex flex-col mb-5">
@@ -359,7 +428,6 @@ const RegisterPage = () => {
             {emailError && (
               <p className="text-red-500 text-xs mt-1 ml-2">{emailError}</p>
             )}
-            {/* <p className="text-gray-400 text-xs mt-1 ml-2">Example: name@company.com</p> */}
           </div>
 
           {/* Password Field */}
@@ -537,7 +605,6 @@ const RegisterPage = () => {
           </p>
         </form>
       </div>
-
     </div>
   );
 };
