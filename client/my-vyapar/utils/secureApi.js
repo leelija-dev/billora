@@ -1,6 +1,3 @@
-
-
-
 // utils/secureApi.js
 import axios from 'axios';
 
@@ -127,32 +124,28 @@ api.interceptors.request.use(async (config) => {
   return config;
 });
 
-// Response interceptor
+// Response interceptor - PREVENT INFINITE LOOPS
 api.interceptors.response.use(
   (response) => {
-
     if (isDevelopment) {
       console.log(
         `✅ ${response.config.method?.toUpperCase()} ${response.config.url} - ${response.status}`
       );
     }
-
     return response;
   },
-
   async (error) => {
-
     const status = error?.response?.status;
     const url = error?.config?.url || '';
 
-    // ✅ Ignore ALL logout errors
+    // ✅ Ignore ALL logout errors - DON'T propagate them
     if (url.includes('/logout')) {
-
-      console.warn('Logout request ignored');
-
+      console.warn('Logout request ignored - session already expired');
+      // Return a resolved promise to prevent error propagation
       return Promise.resolve({
         data: {
-          status: true
+          status: true,
+          message: "Logged out successfully"
         }
       });
     }
@@ -165,11 +158,9 @@ api.interceptors.response.use(
       url
     });
 
-    // ✅ Unauthorized handling
-    if (status === 401) {
-
+    // ✅ Unauthorized handling - DON'T automatically logout for check-session
+    if (status === 401 && !url.includes('check-session')) {
       if (typeof window !== 'undefined') {
-
         localStorage.removeItem('auth_token');
         localStorage.removeItem('user');
         localStorage.removeItem('auth-storage');
@@ -187,19 +178,14 @@ api.interceptors.response.use(
 
     // ✅ CSRF retry
     if (status === 419) {
-
       csrfFetched = false;
-
       const originalRequest = error.config;
 
       if (!originalRequest._retry) {
-
         originalRequest._retry = true;
 
         try {
-
           await fetchCsrfCookie();
-
           const newCsrfToken = getCsrfToken();
 
           if (newCsrfToken) {
@@ -207,9 +193,7 @@ api.interceptors.response.use(
           }
 
           return api(originalRequest);
-
         } catch (retryError) {
-
           return Promise.reject(retryError);
         }
       }

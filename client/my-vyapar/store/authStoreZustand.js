@@ -2,11 +2,11 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { logoutUser, checkSession, registerUser } from '../services/authService';
-// Remove toast import
-// import toast from 'react-hot-toast';
 
 // ✅ Generate unique tab ID to prevent self-broadcast
 const TAB_ID = Math.random().toString(36).substring(7);
+let isLoggingOut = false;
+let logoutPromise = null;
 
 export const useAuthStore = create(
   persist(
@@ -199,39 +199,69 @@ export const useAuthStore = create(
       },
 
       logout: async () => {
-        try {
-          await logoutUser();
-        } catch (error) {
-          console.error("Logout API error:", error);
+        // ✅ Prevent multiple concurrent logouts
+        if (isLoggingOut) {
+          console.log('⚠️ Logout already in progress, skipping...');
+          return;
         }
+        
+        if (logoutPromise) {
+          console.log('Logout already in progress, returning existing promise');
+          return logoutPromise;
+        }
+        
+        isLoggingOut = true;
+        
+        logoutPromise = (async () => {
+          set({ isLoading: true });
+          
+          try {
+            await logoutUser();
+          } catch (error) {
+            console.error("Logout API error:", error);
+          }
 
-        try {
-          const channel = new BroadcastChannel('auth_channel');
-          channel.postMessage({
-            type: 'LOGOUT',
-            sourceTabId: TAB_ID,
-            timestamp: Date.now()
+          // Broadcast logout to other tabs
+          try {
+            const channel = new BroadcastChannel('auth_channel');
+            channel.postMessage({
+              type: 'LOGOUT',
+              sourceTabId: TAB_ID,
+              timestamp: Date.now(),
+              skipToast: true // Add flag to prevent toast on self
+            });
+            setTimeout(() => channel.close(), 100);
+          } catch (error) {
+            console.error("Broadcast logout error:", error);
+          }
+
+          // Clear local storage
+          localStorage.removeItem("token");
+          localStorage.removeItem("auth_token");
+          localStorage.removeItem("auth-storage");
+          localStorage.removeItem("user");
+
+          sessionStorage.clear();
+
+          // Reset state
+          set({
+            user: null,
+            token: null,
+            isLoggedIn: false,
+            company: null,
+            isLoading: false
           });
-          setTimeout(() => channel.close(), 100);
-        } catch (error) {
-          console.error("Broadcast logout error:", error);
-        }
 
-        localStorage.removeItem("token");
-        localStorage.removeItem("auth_token");
-        localStorage.removeItem("auth-storage");
-        localStorage.removeItem("user");
-
-        sessionStorage.clear();
-
-        set({
-          user: null,
-          token: null,
-          isLoggedIn: false,
-          company: null
-        });
-
-        window.dispatchEvent(new Event("userLoggedOut"));
+          window.dispatchEvent(new Event("userLoggedOut"));
+          
+          // Reset locks
+          setTimeout(() => {
+            isLoggingOut = false;
+            logoutPromise = null;
+          }, 500);
+        })();
+        
+        return logoutPromise;
       },
 
       updateUser: (userData) => {
@@ -301,11 +331,14 @@ export const useAuthStore = create(
   )
 );
 
-// ✅ FIX: Cross-tab synchronization - DIRECTLY UPDATE STATE (NO API CALL)
+// ✅ FIX: Cross-tab synchronization - PREVENT INFINITE LOOPS
 if (typeof window !== 'undefined') {
+  let isProcessingLogout = false;
+  
   const channel = new BroadcastChannel('auth_channel');
 
-  channel.onmessage = (event) => {
+  channel.onmessage = async (event) => {
+    // Ignore messages from same tab
     if (event.data.sourceTabId === TAB_ID) {
       console.log('📢 Ignoring self-broadcast message');
       return;
@@ -329,18 +362,39 @@ if (typeof window !== 'undefined') {
           isLoggedIn: true,
           isLoading: false,
         });
-
-        // Remove toast notification from here
-        // toast.success(`Logged in as ${user?.email} from React app!`);
       } else {
         console.log('⚠️ No token in broadcast, falling back to API check');
         useAuthStore.getState().checkAuthStatus();
       }
     } else if (event.data.type === 'LOGOUT') {
+      // Prevent processing multiple logout messages
+      if (isProcessingLogout) {
+        console.log('⚠️ Already processing logout, skipping...');
+        return;
+      }
+      
       console.log('🔓 Logout detected from another tab - clearing state');
-      useAuthStore.getState().logout();
-      // Remove toast notification from here
-      // toast.success('Logged out from another app');
+      
+      isProcessingLogout = true;
+      
+      // Clear local state without making API call
+      localStorage.removeItem("token");
+      localStorage.removeItem("auth_token");
+      localStorage.removeItem("auth-storage");
+      localStorage.removeItem("user");
+      
+      sessionStorage.clear();
+      
+      useAuthStore.setState({
+        user: null,
+        isLoggedIn: false,
+        isLoading: false,
+      });
+      
+      // Reset flag after delay
+      setTimeout(() => {
+        isProcessingLogout = false;
+      }, 500);
     }
   };
 
