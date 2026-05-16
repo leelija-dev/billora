@@ -7,6 +7,8 @@ import toast from 'react-hot-toast';
 
 // ✅ Generate unique tab ID to prevent self-broadcast
 const TAB_ID = Math.random().toString(36).substring(7);
+let isLoggingOut = false;
+let logoutPromise = null;
 
 export const useAuthStore = create(
   persist(
@@ -19,6 +21,47 @@ export const useAuthStore = create(
 
       setHasHydrated: (state) => {
         set({ hasHydrated: state });
+      },
+
+      clearLocalAuthState: (skipToast = false) => {
+        console.log('🧹 Clearing local auth state only (no API call)');
+
+        // Stop interval
+        if (window.sessionCheckInterval) {
+          clearInterval(window.sessionCheckInterval);
+        }
+
+        // Clear state
+        set({
+          user: null,
+          company: null,
+          isAuthenticated: false,
+          isLoading: false,
+        });
+
+        // Clear storage
+        localStorage.removeItem('auth-storage');
+        localStorage.removeItem('user');
+        localStorage.removeItem('auth_token');
+
+        // Clear permissions
+        const permissionStore = usePermissionStore.getState();
+        if (permissionStore.clearPermissions) {
+          permissionStore.clearPermissions();
+        }
+
+        // Set manual logout flag
+        sessionStorage.setItem('manual_logout', 'true');
+
+        // Broadcast to other tabs (but don't show toast for this)
+        const channel = new BroadcastChannel('auth_channel');
+        channel.postMessage({ type: 'LOGOUT', skipToast: true });
+        setTimeout(() => channel.close(), 100);
+        
+        // Only show toast if not skipped
+        if (!skipToast) {
+          toast.success('Logged out successfully');
+        }
       },
 
       checkAuth: async () => {
@@ -59,101 +102,108 @@ export const useAuthStore = create(
       },
 
       login: async (credentials) => {
-  set({ isLoading: true });
-  try {
-    console.log('Login attempt with:', credentials.email);
-    const response = await authService.login(credentials);
+        set({ isLoading: true });
+        try {
+          console.log('Login attempt with:', credentials.email);
+          const response = await authService.login(credentials);
 
-    // Check if login was successful
-    if (!response.data || !response.data.status) {
-      throw new Error(response.data?.message || 'Login failed');
-    }
+          // Check if login was successful
+          if (!response.data || !response.data.status) {
+            throw new Error(response.data?.message || 'Login failed');
+          }
 
-    const data = response.data;
-    const user = data.user;
+          const data = response.data;
+          const user = data.user;
 
-    set({
-      user: user,
-      isAuthenticated: true,
-      isLoading: false,
-    });
+          set({
+            user: user,
+            isAuthenticated: true,
+            isLoading: false,
+          });
 
-    localStorage.setItem('user', JSON.stringify(user));
+          localStorage.setItem('user', JSON.stringify(user));
 
-    const { setUser: setPermissionUser, fetchUserPermissions } = usePermissionStore.getState();
-    setPermissionUser(user);
+          const { setUser: setPermissionUser, fetchUserPermissions } = usePermissionStore.getState();
+          setPermissionUser(user);
 
-    if (user && user.plan_id) {
-      fetchUserPermissions(user.id);
-    }
+          if (user && user.plan_id) {
+            fetchUserPermissions(user.id);
+          }
 
-    // ✅ Broadcast to OTHER tabs
-    const channel = new BroadcastChannel('auth_channel');
-    channel.postMessage({
-      type: 'LOGIN',
-      user: user,
-      sourceTabId: TAB_ID
-    });
-    setTimeout(() => channel.close(), 100);
-    
-    sessionStorage.removeItem('manual_logout');
-    toast.success('Login successful!');
-    return { success: true };
-    
-  } catch (error) {
-    console.error('Login error:', error);
-    
-    // Clear any partial state
-    set({ 
-      user: null, 
-      isAuthenticated: false, 
-      isLoading: false 
-    });
-    
-    localStorage.removeItem('user');
-    localStorage.removeItem('auth_token');
-    
-    // Don't broadcast logout on login failure
-    const errorMessage = error.message || 'Login failed';
-    toast.error(errorMessage);
-    return { success: false, error: error };
-  }
-},
+          // ✅ Broadcast to OTHER tabs
+          const channel = new BroadcastChannel('auth_channel');
+          channel.postMessage({
+            type: 'LOGIN',
+            user: user,
+            sourceTabId: TAB_ID
+          });
+          setTimeout(() => channel.close(), 100);
+
+          sessionStorage.removeItem('manual_logout');
+          toast.success('Login successful!');
+          return { success: true };
+
+        } catch (error) {
+          console.error('Login error:', error);
+
+          // Clear any partial state
+          set({
+            user: null,
+            isAuthenticated: false,
+            isLoading: false
+          });
+
+          localStorage.removeItem('user');
+          localStorage.removeItem('auth_token');
+
+          // Don't broadcast logout on login failure
+          const errorMessage = error.message || 'Login failed';
+          toast.error(errorMessage);
+          return { success: false, error: error };
+        }
+      },
 
       logout: async () => {
-        set({ isLoading: true });
-
-        try {
-          await authService.logout();
-        } catch (err) {
-          console.log('Logout API failed:', err);
+        // ✅ Prevent multiple concurrent logouts
+        if (isLoggingOut) {
+          console.log('⚠️ Logout already in progress, skipping...');
+          return;
         }
-
-        // ✅ STOP interval
-        if (window.sessionCheckInterval) {
-          clearInterval(window.sessionCheckInterval);
+        
+        // ✅ Debounce: return existing promise if logout is in progress
+        if (logoutPromise) {
+          console.log('Logout already in progress, returning existing promise');
+          return logoutPromise;
         }
-
-        // ✅ CLEAR STATE
-        set({
-          user: null,
-          company: null,
-          isAuthenticated: false,
-          isLoading: false,
-        });
-
-        // ✅ CLEAR STORAGE
-        localStorage.removeItem('auth-storage');
-        localStorage.removeItem('user');
-        localStorage.removeItem('auth_token');
-
-        // ✅ CLEAR PERMISSIONS
-        usePermissionStore.getState().clearPermissions();
-        sessionStorage.setItem('manual_logout', 'true');
-        // ✅ BROADCAST (no recursion)
-        const channel = new BroadcastChannel('auth_channel');
-        channel.postMessage({ type: 'LOGOUT' });
-        channel.close();
+        
+        isLoggingOut = true;
+        
+        logoutPromise = (async () => {
+          set({ isLoading: true });
+          
+          let apiCalled = false;
+          
+          try {
+            await authService.logout();
+            apiCalled = true;
+          } catch (err) {
+            console.log('Logout API failed (session may already be expired):', err);
+            // Don't retry, just clear local state
+          }
+          
+          // ✅ Clear everything without showing duplicate toast
+          get().clearLocalAuthState(apiCalled);
+          
+          set({ isLoading: false });
+          
+          // Reset locks after delay
+          setTimeout(() => {
+            isLoggingOut = false;
+            logoutPromise = null;
+          }, 500);
+        })();
+        
+        return logoutPromise;
       },
 
       updateUser: (userData) => {
@@ -195,12 +245,12 @@ export const useAuthStore = create(
         try {
           const userStr = localStorage.getItem('user');
           console.log('🔍 localStorage user string:', userStr);
-          
+
           if (!userStr) {
             console.log('❌ No user string in localStorage');
             return false;
           }
-          
+
           const user = JSON.parse(userStr);
           console.log('🔍 Parsed user from localStorage:', {
             plan_id: user?.plan_id,
@@ -208,7 +258,7 @@ export const useAuthStore = create(
             hasPlanId: !!user?.plan_id,
             isActive: user?.is_active === 1
           });
-          
+
           const hasActivePlan = user && user.plan_id && user.is_active === 1;
           console.log('🔍 hasActivePlanFromStorage result:', hasActivePlan);
           return hasActivePlan || false; // Ensure always returns boolean
@@ -266,7 +316,6 @@ if (typeof window !== 'undefined') {
           if (token && user) {
             try {
               // Store in localStorage
-              // localStorage.setItem('auth_token', token);
               localStorage.setItem('user', JSON.stringify(user));
               console.log('Token and user stored from localStorage event');
 
@@ -312,14 +361,10 @@ if (typeof window !== 'undefined') {
       clearInterval(window.sessionCheckInterval);
     }
 
-    // if (sessionCheckInterval) clearInterval(sessionCheckInterval);
-
     window.sessionCheckInterval = setInterval(async () => {
       try {
         const currentState = useAuthStore.getState();
 
-        // Only check if not authenticated
-        // if (!currentState.isAuthenticated && !currentState.isLoading) {
         const isManualLogout = sessionStorage.getItem('manual_logout');
 
         if (
@@ -391,7 +436,7 @@ if (typeof window !== 'undefined') {
       console.log('Processing message from another tab/app');
 
       if (event.data.type === 'LOGIN') {
-        const { user } = event.data; // ✅ FIX
+        const { user } = event.data;
 
         console.log('Login detected from another tab/app!');
         console.log('User:', user?.email);
@@ -425,7 +470,11 @@ if (typeof window !== 'undefined') {
         }
       } else if (event.data.type === 'LOGOUT') {
         console.log('Logout detected from another tab');
-
+        
+        // Check if we should skip toast
+        const shouldSkipToast = event.data.skipToast === true;
+        
+        // Update state without showing toast if requested
         useAuthStore.setState({
           user: null,
           isAuthenticated: false,
@@ -434,11 +483,14 @@ if (typeof window !== 'undefined') {
 
         localStorage.removeItem('auth-storage');
         localStorage.removeItem('user');
-
-        // ✅ IMPORTANT (prevent auto-login bug)
-        // localStorage.setItem('manual_logout', 'true');
         sessionStorage.setItem('manual_logout', 'true');
-        toast.success('Logged out from another app');
+        
+        // Only show toast if not skipped
+        if (!shouldSkipToast) {
+          toast.success('Logged out from another app');
+        } else {
+          console.log('Skipping toast for internal logout broadcast');
+        }
       } else {
         console.log('Unknown message type:', event.data?.type);
       }

@@ -9,12 +9,12 @@ let csrfPromise = null;
 
 const fetchCsrfCookie = async () => {
   if (csrfFetched) return true;
-  
+
   if (csrfPromise) return csrfPromise;
-  
+
   csrfPromise = new Promise(async (resolve, reject) => {
     try {
-    await axios.get(`${API_BASE_URL}/sanctum/csrf-cookie`, {
+      await axios.get(`${API_BASE_URL}/sanctum/csrf-cookie`, {
         withCredentials: true,
         baseURL: API_BASE_URL,
       });
@@ -28,7 +28,7 @@ const fetchCsrfCookie = async () => {
       csrfPromise = null;
     }
   });
-  
+
   return csrfPromise;
 };
 
@@ -52,10 +52,10 @@ apiClient.interceptors.request.use(async (config) => {
     withCredentials: config.withCredentials,
     currentDomain: window.location.hostname
   });
-  
+
   // ✅ Debug: Log all cookies React admin can access
   console.log('🍪 REACT Current cookies:', document.cookie);
-  
+
   // ✅ Debug: Check if session cookie exists
   const hasSessionCookie = document.cookie.includes('thefastbill-session');
   const hasXsrfCookie = document.cookie.includes('XSRF-TOKEN');
@@ -64,20 +64,20 @@ apiClient.interceptors.request.use(async (config) => {
     hasXsrfCookie,
     cookieCount: document.cookie.split(';').length
   });
-  
-  const skipCsrf = config.method === 'get' || 
-                   config.url.includes('csrf-cookie') ||
-                   config.url.includes('check-session');
-  
+
+  const skipCsrf = config.method === 'get' ||
+    config.url.includes('csrf-cookie') ||
+    config.url.includes('check-session');
+
   if (!skipCsrf) {
     try {
       await fetchCsrfCookie();
-      
+
       const csrfToken = document.cookie
         .split('; ')
         .find(row => row.startsWith('XSRF-TOKEN='))
         ?.split('=')[1];
-      
+
       if (csrfToken) {
         config.headers['X-XSRF-TOKEN'] = decodeURIComponent(csrfToken);
         console.log('🔐 REACT CSRF token added:', csrfToken.substring(0, 20) + '...');
@@ -88,14 +88,14 @@ apiClient.interceptors.request.use(async (config) => {
       console.error('CSRF setup failed:', error);
     }
   }
-  
+
   console.log('📤 REACT Final request headers:', {
     ...config.headers,
-    Authorization: config.headers.Authorization ? 
-      `Bearer ${config.headers.Authorization.replace('Bearer ', '').substring(0, 20)}...` : 
+    Authorization: config.headers.Authorization ?
+      `Bearer ${config.headers.Authorization.replace('Bearer ', '').substring(0, 20)}...` :
       'none'
   });
-  
+
   return config;
 });
 
@@ -134,15 +134,19 @@ apiClient.interceptors.response.use(
       }
     }
     
-    // ✅ Handle 401 - DON'T logout for login/check-session endpoints
-    const shouldSkipLogout = originalRequest.url.includes('login') || 
-                             originalRequest.url.includes('check-session') ||
-                             originalRequest.url === '/users/login';
+    // ✅ Handle 401 - DON'T trigger logout loop for certain endpoints
+    const shouldSkipAutoLogout = originalRequest.url.includes('login') || 
+                                 originalRequest.url.includes('check-session') ||
+                                 originalRequest.url === '/users/login' ||
+                                 originalRequest.url === '/users/logout'; // ← ADD THIS LINE
     
-    if (error.response?.status === 401 && !shouldSkipLogout) {
+    if (error.response?.status === 401 && !shouldSkipAutoLogout) {
       console.log('🔒 Unauthorized, logging out...');
-      // Only logout if it's not a login endpoint
       useAuthStore.getState().logout();
+    } else if (error.response?.status === 401 && originalRequest.url === '/users/logout') {
+      console.log('⚠️ Logout endpoint returned 401, session already expired. Clearing local state only.');
+      // Still clear local state without retrying
+      useAuthStore.getState().clearLocalAuthState();
     }
     
     return Promise.reject(error);
