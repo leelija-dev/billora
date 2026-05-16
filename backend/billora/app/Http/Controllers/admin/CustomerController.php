@@ -427,7 +427,7 @@ class CustomerController extends Controller
         ]);
 
         $frontendLoginUrl = env('FRONTEND_LOGIN_URL', 'https://thefastbill.com');
-        return redirect($frontendLoginUrl . '/login?verified=true');
+        return redirect($frontendLoginUrl . '/login');
     }
 
     public function resendVerificationEmail(Request $request)

@@ -32,48 +32,58 @@ class InvoiceController extends Controller
                     'message' => 'Authentication required. Please login first.'
                 ]);
             }
+            $start = microtime(true);
             $user = Auth::user()->id;
-            $customer =  Customers::findOrFail($user);
-            if ($customer->plan_id == null || $customer->is_active == false) {
-                return response()->json([
-                    'status' => false,
-                    'message' => 'You do not have any active plan. Please upgrade your plan.'
-                ]);
-            }
-            $permissions = DB::table('plan_permission_details as ppd')
-                ->join('plan_permission as pp', 'pp.id', '=', 'ppd.permission_id')
-                ->where('ppd.plan_id', $customer->plan_id)
-                ->select('pp.permission_name', 'pp.id', 'pp.slug')
-                ->get();
-            $hasStockPermission = false;
-
-            foreach ($permissions as $permission) {
-                if ($permission->slug === 'stock-management') {
-                    $hasStockPermission = true;
-                    break;
+            $cacheKey = "billing_page_data_{$user}";
+            $fromCache = Cache::tags(['billing_user_' . $user])->has($cacheKey);
+            $data = Cache::tags(['billing_user_' . $user])->remember($cacheKey, 600, function () use ($user) {
+                $customer =  Customers::findOrFail($user);
+                if ($customer->plan_id == null || $customer->is_active == false) {
+                    return response()->json([
+                        'status' => false,
+                        'message' => 'You do not have any active plan. Please upgrade your plan.'
+                    ]);
                 }
-            }
-            if ($hasStockPermission) {
-                $products = Products::where('user_id', $user)->with(['brand', 'category', 'unit', 'stocks'])
-                    ->where('is_active', true)
-                    ->whereHas('stocks')
+                $permissions = DB::table('plan_permission_details as ppd')
+                    ->join('plan_permission as pp', 'pp.id', '=', 'ppd.permission_id')
+                    ->where('ppd.plan_id', $customer->plan_id)
+                    ->select('pp.permission_name', 'pp.id', 'pp.slug')
                     ->get();
-            } else {
-                $products = Products::where('user_id', $user)
-                    ->with(['brand', 'category', 'unit'])
-                    ->where('is_active', true)
-                    ->get();
-            }
-            $customers = BillCustomer::where('admin_id', $user)->get();
-            $stores = Store::where('user_id', $user)->get();
-            return response()->json([
-                'status'    => true,
-                'message'   => 'Products and Customers List',
-                'products'  => $products,
-                'customers' => $customers,
-                'stores'    => $stores,
-                'permissions' => $permissions
-            ]);
+                $hasStockPermission = false;
+
+                foreach ($permissions as $permission) {
+                    if ($permission->slug === 'stock-management') {
+                        $hasStockPermission = true;
+                        break;
+                    }
+                }
+                if ($hasStockPermission) {
+                    $products = Products::where('user_id', $user)->with(['brand', 'category', 'unit', 'stocks'])
+                        ->where('is_active', true)
+                        ->whereHas('stocks')
+                        ->get();
+                } else {
+                    $products = Products::where('user_id', $user)
+                        ->with(['brand', 'category', 'unit'])
+                        ->where('is_active', true)
+                        ->get();
+                }
+                $customers = BillCustomer::where('admin_id', $user)->get();
+                $stores = Store::where('user_id', $user)->get();
+                return [
+                    'status' => true,
+                    'message' => 'Products and Customers List',
+                    'products' => $products,
+                    'customers' => $customers,
+                    'stores' => $stores,
+                    'permissions' => $permissions
+                ];
+            });
+            $executionTime = microtime(true) - $start;
+
+            $data['response_time'] = round($executionTime, 4) . ' sec';
+            $data['response_from'] = $fromCache ? 'Cache' : 'Database';
+            return response()->json([$data]);
         } catch (\Exception $e) {
             return response()->json([
                 'status' => false,
@@ -292,7 +302,14 @@ class InvoiceController extends Controller
                 }
             }
             DB::commit();
-
+            Cache::tags([
+                'invoice_user_' . $user,
+                'billing_user_' . $user,
+                'customer_wise_user_' . $user,
+                'single_invoice_' . $user,
+                'with_out_stock_user_' . $user,
+                
+            ])->flush();
             return response()->json([
                 'status'  => true,
                 'message' => 'Invoice Created Successfully',
@@ -312,34 +329,51 @@ class InvoiceController extends Controller
     public function show($id)
     {
         try {
-
+            $start = microtime(true);
             $userId = Auth::user()->id;
-            $customer =  Customers::findOrFail($userId);
-            if ($customer->plan_id == null || $customer->is_active == false) {
-                return response()->json([
-                    'status' => false,
-                    'message' => 'You do not have any active plan. Please upgrade your plan.'
-                ]);
-            }
-            $bill = Invoice::with('invoiceItems', 'packages')
-                ->where('user_id', $userId)
-                ->where('id', $id)
-                ->first();
+            $cacheKey = "invoice_single_data_{$userId}_{$id}";
+            $fromCache = Cache::tags([
+                'single_invoice_' . $userId
+            ])->has($cacheKey);
+            $data = Cache::tags([
+                'single_invoice_' . $userId
+            ])->remember($cacheKey, 600, function () use ($userId, $id) {
+                $customer =  Customers::findOrFail($userId);
+                if ($customer->plan_id == null || $customer->is_active == false) {
+                    return response()->json([
+                        'status' => false,
+                        'message' => 'You do not have any active plan. Please upgrade your plan.'
+                    ]);
+                }
+                $bill = Invoice::with('invoiceItems', 'packages')
+                    ->where('user_id', $userId)
+                    ->where('id', $id)
+                    ->first();
 
-            if (!$bill) {
-                return response()->json([
-                    'status' => false,
-                    'message' => 'Bill not found'
-                ], 404);
-            }
-            $billPaymentHistory = BillPaymentHistory::where('admin_id', $userId)->where('invoice_id', $id)->orderBy('id', 'asc')->first();
-            $bill['payment_method'] = $billPaymentHistory['payment_method'] ?? null;
-            return response()->json([
-                'status'  => true,
-                'message' => 'Single Bill',
-                'data'    => $bill,
-                'bill_payment_history' => $billPaymentHistory
-            ]);
+                if (!$bill) {
+                    return response()->json([
+                        'status' => false,
+                        'message' => 'Bill not found'
+                    ], 404);
+                }
+                $billPaymentHistory = BillPaymentHistory::where('admin_id', $userId)->where('invoice_id', $id)->orderBy('id', 'asc')->first();
+                $bill['payment_method'] = $billPaymentHistory['payment_method'] ?? null;
+                return [
+                    'status' => true,
+                    'message' => 'Single Bill',
+                    'data' => $bill,
+                    'bill_payment_history' => $billPaymentHistory
+                ];
+            });
+            $executionTime = microtime(true) - $start;
+
+            $data['response_from'] =
+                $fromCache ? 'Cache' : 'Database';
+
+            $data['response_time'] =
+                round($executionTime, 4) . ' sec';
+
+            return response()->json($data);
         } catch (\Exception $e) {
 
             return response()->json([
@@ -359,11 +393,11 @@ class InvoiceController extends Controller
             // Dynamic cache key
             $cacheKey = "bill_history_{$user}_search_" . md5($search) . "_page_{$page}";
             // Check cache exists
-            $fromCache = Cache::tags(['invoice_user_'.$user])->has($cacheKey);
+            $fromCache = Cache::tags(['invoice_user_' . $user])->has($cacheKey);
             // $billHistory = Invoice::with(['invoiceItems.product', 'packages'])
             // $billHistory = Cache::remember($cacheKey, 600, function () use ($user, $search) {
-            $billHistory = Cache::tags(['invoice_user_'.$user])->remember($cacheKey, 600, function () use ($user, $search) {
-                
+            $billHistory = Cache::tags(['invoice_user_' . $user])->remember($cacheKey, 600, function () use ($user, $search) {
+
 
                 return Invoice::with([
                     'invoiceItems.product',
@@ -420,35 +454,118 @@ class InvoiceController extends Controller
     }
 
     /* with out stock management bill generate */
+    // public function bill($id)
+    // {
+    //     if (!Auth::check()) {
+    //         return response()->json([
+    //             'status'    => false,
+    //             'message'   => 'Authentication required. Please login first.'
+    //         ]);
+    //     }
+    //     $start = microtime(true);
+    //     $user = Auth::user()->id;
+    //     $cacheKey = "with_out_stock_page_data_{$user}";    
+    //     $customer =  Customers::findOrFail($user);
+    //     if ($customer->plan_id == null || $customer->is_active == false) {
+    //         return response()->json([
+    //             'status' => false,
+    //             'message' => 'You do not have any active plan. Please upgrade your plan.'
+    //         ]);
+    //     }
+    //     $products = Products::with(['brand', 'category', 'unit'])
+    //         ->where('is_active', true)
+    //         ->where('user_id', $id)
+    //         ->get();
+    //     $customers = BillCustomer::where('admin_id', $id)->get();
+    //     $stores = Store::where('user_id', $id)->get();
+    //     return response()->json([
+    //         'status'    => true,
+    //         'message'   => 'Products and Customers List from product table',
+    //         'products'  => $products,
+    //         'customers' => $customers,
+    //         'stores'    => $stores
+    //     ]);
+    // }
     public function bill($id)
     {
-        if (!Auth::check()) {
-            return response()->json([
-                'status'    => false,
-                'message'   => 'Authentication required. Please login first.'
-            ]);
-        }
-        $user = Auth::user()->id;
-        $customer =  Customers::findOrFail($user);
-        if ($customer->plan_id == null || $customer->is_active == false) {
+        try {
+
+            if (!Auth::check()) {
+
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Authentication required. Please login first.'
+                ]);
+            }
+
+            $start = microtime(true);
+
+            $user = Auth::user()->id;
+
+            // Cache key
+            $cacheKey = "with_out_stock_page_data_{$user}_{$id}";
+
+            // Check cache
+            $fromCache = Cache::tags([
+                'with_out_stock_user_' . $user
+            ])->has($cacheKey);
+
+            // Cache data
+            $data = Cache::tags([
+                'with_out_stock_user_' . $user
+            ])->remember($cacheKey, 600, function () use ($user, $id) {
+
+                $customer = Customers::findOrFail($user);
+
+                if (
+                    $customer->plan_id == null ||
+                    $customer->is_active == false
+                ) {
+
+                    return [
+                        'status' => false,
+                        'message' => 'You do not have any active plan. Please upgrade your plan.'
+                    ];
+                }
+
+                $products = Products::with([
+                    'brand',
+                    'category',
+                    'unit'
+                ])
+                    ->where('is_active', true)
+                    ->where('user_id', $id)
+                    ->get();
+
+                $customers = BillCustomer::where('admin_id', $id)->get();
+
+                $stores = Store::where('user_id', $id)->get();
+
+                return [
+                    'status' => true,
+                    'message' => 'Products and Customers List from product table',
+                    'products' => $products,
+                    'customers' => $customers,
+                    'stores' => $stores
+                ];
+            });
+
+            $executionTime = microtime(true) - $start;
+
+            $data['response_from'] =
+                $fromCache ? 'Cache' : 'Database';
+
+            $data['response_time'] =
+                round($executionTime, 4) . ' sec';
+
+            return response()->json($data);
+        } catch (\Exception $e) {
+
             return response()->json([
                 'status' => false,
-                'message' => 'You do not have any active plan. Please upgrade your plan.'
+                'message' => $e->getMessage()
             ]);
         }
-        $products = Products::with(['brand', 'category', 'unit'])
-            ->where('is_active', true)
-            ->where('user_id', $id)
-            ->get();
-        $customers = BillCustomer::where('admin_id', $id)->get();
-        $stores = Store::where('user_id', $id)->get();
-        return response()->json([
-            'status'    => true,
-            'message'   => 'Products and Customers List from product table',
-            'products'  => $products,
-            'customers' => $customers,
-            'stores'    => $stores
-        ]);
     }
     public function billStore(Request $request)  // bill generate data form product table with out stock management
     {
@@ -545,7 +662,13 @@ class InvoiceController extends Controller
             ]);
 
             DB::commit();
-            Cache::tags(['invoice_user_'.$request->user_id])->flush();
+            Cache::tags([
+                'invoice_user_' . $request->user_id,
+                'billing_user_' . $request->user_id,
+                'customer_wise_user_' . $request->user_id,
+                'single_invoice_' . $request->user_id,
+                'with_out_stock_user_' . $request->user_id
+            ])->flush();
             return response()->json([
                 'status'        => true,
                 'message'       => 'Invoice Created Successfully',
@@ -818,7 +941,13 @@ class InvoiceController extends Controller
                 ]);
             }
             DB::commit();
-            Cache::tags(['invoice_user_'.$request->user_id])->flush();
+            Cache::tags([
+                'invoice_user_' . $request->user_id,
+                'billing_user_' . $request->user_id,
+                'customer_wise_user_' . $request->user_id,
+                'single_invoice_' . $request->user_id,
+                'with_out_stock_user_' . $request->user_id
+            ])->flush();
             return response()->json([
                 'status' => true,
                 'message' => 'Invoice updated successfully'
@@ -886,7 +1015,13 @@ class InvoiceController extends Controller
                     'due_amount' => ($billCustomer->due_amount - ($invoice->total_amount - $invoice->paid_amount)),
                 ]);
             DB::commit();
-            Cache::tags(['invoice_user_'.$user])->flush();
+            Cache::tags([
+                'invoice_user_' . $user,
+                'billing_user_' . $user,
+                'customer_wise_user_' . $user,
+                'single_invoice_' . $user,
+                'with_out_stock_user_' . $user
+            ])->flush();
             return response()->json([
                 'status' => true,
                 'message' => 'Invoice cancelled successfully'
@@ -910,6 +1045,7 @@ class InvoiceController extends Controller
                     'message'   => 'Authentication required. Please login first.'
                 ]);
             }
+            $start = microtime(true);
             $customer = BillCustomer::where('id', $id)->where('admin_id', $user)->first();
             if (!$customer) {
                 return response()->json([
@@ -917,16 +1053,32 @@ class InvoiceController extends Controller
                     'message'   => 'Customer not found'
                 ]);
             }
-            $invoices = Invoice::with('invoiceItems.product')->with('customer')
-                ->where('customer_id', $id)
-                ->where('user_id', $user)
-                ->orderBy('created_at', 'desc')
-                ->get();
-            Cache::tags(['invoice_user_'.$user])->flush();
+            $cacheKey = "customer_invoices_{$user}_{$id}";
+
+            $fromCache = Cache::tags([
+                'customer_wise_user_' . $user
+            ])->has($cacheKey);
+
+            $invoices = Cache::tags([
+                'customer_wise_user_' . $user
+            ])->remember($cacheKey, 600, function () use ($id, $user) {
+
+                return Invoice::with([
+                    'invoiceItems.product',
+                    'customer'
+                ])
+                    ->where('customer_id', $id)
+                    ->where('user_id', $user)
+                    ->orderBy('created_at', 'desc')
+                    ->get();
+            });
+            $executionTime = microtime(true) - $start;
             return response()->json([
-                'status'    => true,
-                'message'   => 'Customer Invoices',
-                'data'      => $invoices
+                'status' => true,
+                'message' => 'Customer Invoices',
+                'response_from' => $fromCache ? 'Cache' : 'Database',
+                'response_time' => round($executionTime, 4) . ' sec',
+                'data' => $invoices
             ]);
         } catch (\Exception $e) {
             return response()->json([
@@ -1023,7 +1175,13 @@ class InvoiceController extends Controller
                 'created_by'     => $user
             ]);
             DB::commit();
-            Cache::tags(['invoice_user_'.$user])->flush();
+            Cache::tags([
+                'invoice_user_' . $user,
+                'billing_user_' . $user,
+                'customer_wise_user_' . $user,
+                'single_invoice_' . $user,
+                'with_out_stock_user_' . $user
+            ])->flush();
             return response()->json([
                 'status' => true,
                 'message' => 'Due payment successful',
