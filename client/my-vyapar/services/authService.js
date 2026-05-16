@@ -36,6 +36,9 @@ export const loginUser = async (userData) => {
       throw new Error('Invalid password. Please try again.');
     } else if (error.response?.data.message?.includes("verify")) {
       throw new Error('Email not verified. Please check your email.');
+    } 
+   else if (error.response?.data.message?.includes("Invalid")) {
+      throw new Error('Invalid Credentials.');
     } else {
       throw error;
     }
