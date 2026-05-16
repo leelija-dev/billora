@@ -55,7 +55,6 @@ class GstController extends Controller
                 DB::raw('COUNT(*) as total_products')
             )
             ->groupBy('product_id')
-            ->orderByDesc('created_at')
             // ->with('product')
             ->get();
         return response()->json([
