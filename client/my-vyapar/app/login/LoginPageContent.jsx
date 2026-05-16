@@ -5,11 +5,10 @@ import { FcGoogle } from "react-icons/fc";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 import { useAuthStore } from "../../store/authStoreZustand";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Toaster, toast } from 'react-hot-toast';
+import { ToastContainer, toast, Bounce } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import { logger } from '../../utils/logger';
 import { loginUser } from '../../services/authService';
-
-// No need to import CSS - it's automatically included with the package
 
 const Login = () => {
   const { login, isLoggedIn, user } = useAuthStore();
@@ -45,8 +44,15 @@ const Login = () => {
         toastShown.current = true;
         setTimeout(() => {
           toast.success(`Complete your ${planData.name} plan purchase!`, {
-            duration: 4000,
-            position: 'top-right',
+            position: "top-right",
+            autoClose: 4000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            progress: undefined,
+            theme: "light",
+            transition: Bounce,
           });
         }, 100);
       } catch (e) {
@@ -152,8 +158,15 @@ const Login = () => {
     
     if (!validateForm()) {
       toast.error("Please fix the validation errors", {
-        duration: 3000,
-        position: 'top-right',
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: "light",
+        transition: Bounce,
       });
       return;
     }
@@ -163,8 +176,14 @@ const Login = () => {
     
     // Show loading toast
     const loadingToastId = toast.loading("Logging in...", {
-      position: 'top-right',
-      duration: Infinity,
+      position: "top-right",
+      hideProgressBar: false,
+      closeOnClick: false,
+      pauseOnHover: true,
+      draggable: true,
+      progress: undefined,
+      theme: "light",
+      transition: Bounce,
     });
     
     try {
@@ -179,9 +198,15 @@ const Login = () => {
         const errorMessage = responseData?.message || "Login failed. Please try again.";
         
         toast.error(errorMessage, {
-          duration: 4000,
-          position: 'top-right',
-          icon: '❌',
+          position: "top-right",
+          autoClose: 4000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          theme: "dark",
+          transition: Bounce,
         });
         
         setError(errorMessage);
@@ -197,8 +222,15 @@ const Login = () => {
         toast.dismiss(loadingToastId);
         const errorMessage = "Invalid response from server";
         toast.error(errorMessage, {
-          duration: 4000,
-          position: 'top-right',
+          position: "top-right",
+          autoClose: 4000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          theme: "dark",
+          transition: Bounce,
         });
         setError(errorMessage);
         loginAttempted.current = false;
@@ -213,15 +245,19 @@ const Login = () => {
       
       // Call store login with user data and token
       const result = login(userData, token);
-
-      
       
       if (result.success) {
-        // toast.success("Login Successful! Redirecting...", {
-        //   duration: 2000,
-        //   position: 'top-right',
-        //   icon: '✅',
-        // });
+        toast.success("Login Successful! Redirecting...", {
+          position: "top-right",
+          autoClose: 2000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          theme: "light",
+          transition: Bounce,
+        });
       } else {
         throw new Error(result.error || "Login failed");
       }
@@ -248,15 +284,15 @@ const Login = () => {
       setError(errorMessage);
       
       toast.error(errorMessage, {
-        duration: 5000,
-        position: 'top-right',
-        icon: '❌',
-        style: {
-          background: '#f44336',
-          color: '#fff',
-          padding: '16px',
-          borderRadius: '12px',
-        },
+        position: "top-right",
+        autoClose: 5000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: "dark",
+        transition: Bounce,
       });
       
     } finally {
@@ -292,40 +328,19 @@ const Login = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#ece9f1] to-[#dfe3f8] flex flex-col">
-      {/* Toaster component */}
-      <Toaster 
+      {/* ToastContainer for react-toastify */}
+      <ToastContainer
         position="top-right"
-        reverseOrder={false}
-        gutter={8}
-        containerStyle={{
-          top: 20,
-          right: 20,
-        }}
-        toastOptions={{
-          duration: 3000,
-          style: {
-            background: '#363636',
-            color: '#fff',
-            padding: '16px',
-            borderRadius: '12px',
-            fontSize: '14px',
-            maxWidth: '350px',
-          },
-          success: {
-            duration: 3000,
-            iconTheme: {
-              primary: '#4caf50',
-              secondary: '#fff',
-            },
-          },
-          error: {
-            duration: 4000,
-            iconTheme: {
-              primary: '#f44336',
-              secondary: '#fff',
-            },
-          },
-        }}
+        autoClose={3000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="light"
+        transition={Bounce}
       />
       
       <div className="flex-1 flex justify-center items-center font-sans relative py-8">
