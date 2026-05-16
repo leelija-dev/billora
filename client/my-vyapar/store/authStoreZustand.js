@@ -2,7 +2,8 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { logoutUser, checkSession, registerUser } from '../services/authService';
-import toast from 'react-hot-toast';
+// Remove toast import
+// import toast from 'react-hot-toast';
 
 // ✅ Generate unique tab ID to prevent self-broadcast
 const TAB_ID = Math.random().toString(36).substring(7);
@@ -50,8 +51,6 @@ export const useAuthStore = create(
           return { success: false, error: 'Missing user data or token' };
         }
 
-        // Note: For login, we assume success since tokens are only provided on successful login
-        // Error handling for login is done at the API/service level
         set({
           user: userData,
           isLoggedIn: true,
@@ -86,7 +85,6 @@ export const useAuthStore = create(
             timestamp: broadcastMessage.timestamp
           });
 
-          // Verify channel is supported
           if (channel.postMessage) {
             channel.postMessage(broadcastMessage);
             console.log('📢🔵 NEXT.js: Broadcast sent successfully!');
@@ -122,7 +120,6 @@ export const useAuthStore = create(
           localStorage.setItem('auth_sync_event', JSON.stringify(syncEvent));
           console.log('📢🔵 NEXT.js: auth_sync_event set in localStorage');
 
-          // Trigger storage event by removing and setting again
           setTimeout(() => {
             console.log('📢🔵 NEXT.js: Triggering storage event...');
             localStorage.removeItem('auth_sync_event');
@@ -141,102 +138,85 @@ export const useAuthStore = create(
       },
 
       register: async (userData) => {
-  console.log('📝 Store register called with user:', userData?.email);
-  set({ isLoading: true, error: null });
+        console.log('📝 Store register called with user:', userData?.email);
+        set({ isLoading: true, error: null });
 
-  try {
-    const response = await registerUser(userData);
-    console.log('📦 Store register response:', response);
+        try {
+          const response = await registerUser(userData);
+          console.log('📦 Store register response:', response);
 
-    // ✅ Check if response exists and has data
-    if (response && response.data) {
-      // ✅ Check if registration was successful (status === true)
-      if (response.data.status === true) {
-        // ✅ User data is directly in response.data.data (no token for email verification flow)
-        const userDataResponse = response.data.data;
-        
-        console.log('✅ Registration successful!');
-        console.log('User data:', userDataResponse);
-        
-        // For email verification flow, we don't auto-login the user
-        // Just clear loading state and return success
-        set({ 
-          isLoading: false,
-          error: null 
-        });
-        
-        // Optionally store user data temporarily (but don't mark as logged in)
-        // since email verification is required
-        localStorage.setItem('pending_verification_email', userDataResponse.email);
-        
-        // ✅ Broadcast to other tabs that registration happened (not login)
-        const channel = new BroadcastChannel('auth_channel');
-        channel.postMessage({
-          type: 'REGISTRATION',
-          email: userDataResponse.email,
-          sourceTabId: TAB_ID
-        });
-        setTimeout(() => channel.close(), 100);
+          if (response && response.data) {
+            if (response.data.status === true) {
+              const userDataResponse = response.data.data;
+              
+              console.log('✅ Registration successful!');
+              console.log('User data:', userDataResponse);
+              
+              set({ 
+                isLoading: false,
+                error: null 
+              });
+              
+              localStorage.setItem('pending_verification_email', userDataResponse.email);
+              
+              const channel = new BroadcastChannel('auth_channel');
+              channel.postMessage({
+                type: 'REGISTRATION',
+                email: userDataResponse.email,
+                sourceTabId: TAB_ID
+              });
+              setTimeout(() => channel.close(), 100);
 
-        console.log('✅ Store register successful - awaiting email verification');
-        return { 
-          success: true, 
-          user: userDataResponse,
-          message: response.data.message || 'Registration successful! Please check your email to verify your account.'
-        };
-      } else {
-        // ✅ Handle registration error (status === false)
-        const errorMessage = response.data.message || 'Registration failed';
-        console.log('❌ Store register error:', errorMessage);
-        set({
-          user: null,
-          isLoggedIn: false,
-          isLoading: false,
-          error: errorMessage,
-        });
-        return { success: false, error: errorMessage };
-      }
-    } else {
-      // Handle unexpected response structure
-      throw new Error('Invalid response from server');
-    }
-  } catch (error) {
-    console.error('❌ Store register error:', error);
-    const errorMessage = error.response?.data?.message || error.message || 'Registration failed';
-    set({
-      isLoading: false,
-      error: errorMessage,
-    });
-    return { success: false, error: errorMessage };
-  }
-},
+              console.log('✅ Store register successful - awaiting email verification');
+              return { 
+                success: true, 
+                user: userDataResponse,
+                message: response.data.message || 'Registration successful! Please check your email to verify your account.'
+              };
+            } else {
+              const errorMessage = response.data.message || 'Registration failed';
+              console.log('❌ Store register error:', errorMessage);
+              set({
+                user: null,
+                isLoggedIn: false,
+                isLoading: false,
+                error: errorMessage,
+              });
+              return { success: false, error: errorMessage };
+            }
+          } else {
+            throw new Error('Invalid response from server');
+          }
+        } catch (error) {
+          console.error('❌ Store register error:', error);
+          const errorMessage = error.response?.data?.message || error.message || 'Registration failed';
+          set({
+            isLoading: false,
+            error: errorMessage,
+          });
+          return { success: false, error: errorMessage };
+        }
+      },
+
       logout: async () => {
         try {
-
-          // API logout
           await logoutUser();
-
         } catch (error) {
           console.error("Logout API error:", error);
         }
 
-        // Broadcast logout to other tabs/apps
         try {
           const channel = new BroadcastChannel('auth_channel');
-
           channel.postMessage({
             type: 'LOGOUT',
             sourceTabId: TAB_ID,
             timestamp: Date.now()
           });
-
           setTimeout(() => channel.close(), 100);
-
         } catch (error) {
           console.error("Broadcast logout error:", error);
         }
 
-        // Clear storage
         localStorage.removeItem("token");
         localStorage.removeItem("auth_token");
         localStorage.removeItem("auth-storage");
@@ -244,7 +224,6 @@ export const useAuthStore = create(
 
         sessionStorage.clear();
 
-        // Clear Zustand state
         set({
           user: null,
           token: null,
@@ -327,7 +306,6 @@ if (typeof window !== 'undefined') {
   const channel = new BroadcastChannel('auth_channel');
 
   channel.onmessage = (event) => {
-    // ✅ Ignore messages from the same tab
     if (event.data.sourceTabId === TAB_ID) {
       console.log('📢 Ignoring self-broadcast message');
       return;
@@ -343,32 +321,29 @@ if (typeof window !== 'undefined') {
       console.log('🔑 Token received:', token?.substring(0, 20) + '...');
 
       if (token && user) {
-        // ✅ Store the token in localStorage
         localStorage.setItem('auth_token', token);
         localStorage.setItem('user', JSON.stringify(user));
 
-        // ✅ DIRECTLY update Zustand store (NO API CALL!)
         useAuthStore.setState({
           user: user,
           isLoggedIn: true,
           isLoading: false,
         });
 
-        // ✅ Show notification
-        toast.success(`Logged in as ${user?.email} from React app!`);
+        // Remove toast notification from here
+        // toast.success(`Logged in as ${user?.email} from React app!`);
       } else {
-        // Fallback: check via API if token not provided
         console.log('⚠️ No token in broadcast, falling back to API check');
         useAuthStore.getState().checkAuthStatus();
       }
     } else if (event.data.type === 'LOGOUT') {
       console.log('🔓 Logout detected from another tab - clearing state');
       useAuthStore.getState().logout();
-      toast.success('Logged out from another app');
+      // Remove toast notification from here
+      // toast.success('Logged out from another app');
     }
   };
 
-  // Keep channel open
   window.addEventListener('beforeunload', () => {
     channel.close();
   });
@@ -384,4 +359,3 @@ export const useHasActivePlan = () => {
 export const useAuth = () => useAuthStore();
 export const useUser = () => useAuthStore((state) => state.user);
 export const useIsLoggedIn = () => useAuthStore((state) => state.isLoggedIn);
-

@@ -2,12 +2,14 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { FcGoogle } from "react-icons/fc";
-import { FaEye, FaEyeSlash, FaHome } from "react-icons/fa";
+import { FaEye, FaEyeSlash } from "react-icons/fa";
 import { useAuthStore } from "../../store/authStoreZustand";
 import { useRouter, useSearchParams } from "next/navigation";
-import toast, { Toaster } from 'react-hot-toast';
+import { Toaster, toast } from 'react-hot-toast';
 import { logger } from '../../utils/logger';
 import { loginUser } from '../../services/authService';
+
+// No need to import CSS - it's automatically included with the package
 
 const Login = () => {
   const { login, isLoggedIn, user } = useAuthStore();
@@ -22,9 +24,10 @@ const Login = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
   
-  // ✅ Add ref to prevent double login
+  // Add ref to prevent double login
   const loginAttempted = useRef(false);
   const redirectHandled = useRef(false);
+  const toastShown = useRef(false);
 
   // Check for pending plan on mount
   useEffect(() => {
@@ -35,13 +38,17 @@ const Login = () => {
     logger.log("🔍 from param:", from);
     logger.log("🔍 pendingPlan exists:", !!pendingPlan);
     
-    if (pendingPlan) {
+    if (pendingPlan && !toastShown.current) {
       try {
         const planData = JSON.parse(pendingPlan);
         logger.log("📋 Found pending plan:", planData.name);
-        toast.success(`Complete your ${planData.name} plan purchase!`, {
-          duration: 4000,
-        });
+        toastShown.current = true;
+        setTimeout(() => {
+          toast.success(`Complete your ${planData.name} plan purchase!`, {
+            duration: 4000,
+            position: 'top-right',
+          });
+        }, 100);
       } catch (e) {
         logger.error("Error parsing pending plan:", e);
         localStorage.removeItem("pendingPlan");
@@ -56,42 +63,46 @@ const Login = () => {
     // Reset login attempt flag when component mounts
     loginAttempted.current = false;
     redirectHandled.current = false;
+    toastShown.current = false;
   }, [searchParams]);
 
-  // ✅ Handle redirect after login (using useEffect instead of direct call)
+  // Handle redirect after login with delay
   useEffect(() => {
     if (isLoggedIn && user && !redirectHandled.current) {
       redirectHandled.current = true;
       
-      const pendingPlan = localStorage.getItem("pendingPlan");
-      
-      if (pendingPlan) {
-        try {
-          const planData = JSON.parse(pendingPlan);
-          toast.success(`Proceeding to ${planData.name} checkout!`);
-          router.push("/order-summary");
-          return;
-        } catch (e) {
-          localStorage.removeItem("pendingPlan");
-        }
-      }
-      
-      const redirectUrl = searchParams.get("redirect");
-      if (redirectUrl) {
-        router.push(redirectUrl);
-      } else {
-        // Check if user has active plan
-        const hasActivePlan = user?.plan_id && user?.is_active === 1;
+      // Add a small delay to ensure toast is visible
+      const redirectTimer = setTimeout(() => {
+        const pendingPlan = localStorage.getItem("pendingPlan");
         
-        if (hasActivePlan) {
-          // User has active plan - redirect to home page
-          toast.success("Welcome back! Redirecting to your dashboard...");
-          router.push("/");
-        } else {
-          // User doesn't have active plan - redirect to pricing page
-          router.push("/pricing");
+        if (pendingPlan) {
+          try {
+            const planData = JSON.parse(pendingPlan);
+            router.push("/order-summary");
+            return;
+          } catch (e) {
+            localStorage.removeItem("pendingPlan");
+          }
         }
-      }
+        
+        const redirectUrl = searchParams.get("redirect");
+        if (redirectUrl) {
+          router.push(redirectUrl);
+        } else {
+          // Check if user has active plan
+          const hasActivePlan = user?.plan_id && user?.is_active === 1;
+          
+          if (hasActivePlan) {
+            // User has active plan - redirect to home page
+            router.push("/");
+          } else {
+            // User doesn't have active plan - redirect to pricing page
+            router.push("/pricing");
+          }
+        }
+      }, 1500); // Increased delay to ensure toast is visible
+      
+      return () => clearTimeout(redirectTimer);
     }
   }, [isLoggedIn, user, router, searchParams]);
 
@@ -128,85 +139,130 @@ const Login = () => {
     return isEmailValid && isPasswordValid;
   };
 
- const handleLogin = async (e) => {
-  e.preventDefault();
-  
-  // Prevent double login attempts
-  if (loginAttempted.current || loading) {
-    logger.log("⚠️ Login already in progress, skipping...");
-    return;
-  }
-  
-  setError("");
-  
-  if (!validateForm()) {
-    toast.error("Please fix the validation errors");
-    return;
-  }
-  
-  loginAttempted.current = true;
-  setLoading(true);
-  const loadingToast = toast.loading("Logging in...");
-  
-  try {
-    // Call loginUser API directly
-    const response = await loginUser({ email, password });
-    const responseData = response.data;
+  const handleLogin = async (e) => {
+    e.preventDefault();
     
-    if (!responseData?.status) {
+    // Prevent double login attempts
+    if (loginAttempted.current || loading) {
+      logger.log("⚠️ Login already in progress, skipping...");
+      return;
+    }
+    
+    setError("");
+    
+    if (!validateForm()) {
+      toast.error("Please fix the validation errors", {
+        duration: 3000,
+        position: 'top-right',
+      });
+      return;
+    }
+    
+    loginAttempted.current = true;
+    setLoading(true);
+    
+    // Show loading toast
+    const loadingToastId = toast.loading("Logging in...", {
+      position: 'top-right',
+      duration: Infinity,
+    });
+    
+    try {
+      // Call loginUser API directly
+      const response = await loginUser({ email, password });
+      const responseData = response.data;
+      
+      // Check if login failed
+      if (!responseData?.status) {
+        toast.dismiss(loadingToastId);
+        
+        const errorMessage = responseData?.message || "Login failed. Please try again.";
+        
+        toast.error(errorMessage, {
+          duration: 4000,
+          position: 'top-right',
+          icon: '❌',
+        });
+        
+        setError(errorMessage);
+        loginAttempted.current = false;
+        setLoading(false);
+        return;
+      }
+      
+      const userData = responseData.user;
+      const token = responseData.token;
+      
+      if (!userData || !token) {
+        toast.dismiss(loadingToastId);
+        const errorMessage = "Invalid response from server";
+        toast.error(errorMessage, {
+          duration: 4000,
+          position: 'top-right',
+        });
+        setError(errorMessage);
+        loginAttempted.current = false;
+        setLoading(false);
+        return;
+      }
+      
+      logger.log("✅ User data:", userData);
+      logger.log("✅ Token received:", token.substring(0, 20) + "...");
+      
+      toast.dismiss(loadingToastId);
+      
+      // Call store login with user data and token
+      const result = login(userData, token);
+
+      
+      
+      if (result.success) {
+        // toast.success("Login Successful! Redirecting...", {
+        //   duration: 2000,
+        //   position: 'top-right',
+        //   icon: '✅',
+        // });
+      } else {
+        throw new Error(result.error || "Login failed");
+      }
+      
+    } catch (error) {
+      toast.dismiss(loadingToastId);
       loginAttempted.current = false;
-      throw new Error(responseData.message || "Login failed");
+      
+      logger.error("❌ Login error:", error);
+      
+      let errorMessage = "";
+      
+      if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } 
+      else if (error.message) {
+        errorMessage = error.message;
+      }
+      else {
+        errorMessage = "Login failed. Please try again.";
+      }
+      
+      console.log("📢 Extracted error message:", errorMessage);
+      setError(errorMessage);
+      
+      toast.error(errorMessage, {
+        duration: 5000,
+        position: 'top-right',
+        icon: '❌',
+        style: {
+          background: '#f44336',
+          color: '#fff',
+          padding: '16px',
+          borderRadius: '12px',
+        },
+      });
+      
+    } finally {
+      setLoading(false);
     }
-    
-    const userData = responseData.user;
-    const token = responseData.token;
-    
-    if (!userData || !token) {
-      loginAttempted.current = false;
-      throw new Error("Invalid response from server");
-    }
-    
-    logger.log("✅ User data:", userData);
-    logger.log("✅ Token received:", token.substring(0, 20) + "...");
-    
-    // ✅ Call store login with user data and token (NO API CALL inside)
-    const result = login(userData, token);
-    
-    toast.dismiss(loadingToast);
-    
-    if (result.success) {
-      toast.success("Login Successful!", { duration: 1000 });
-      // The useEffect will handle redirect
-    } else {
-      throw new Error(result.error || "Login failed");
-    }
-    
-  } catch (error) {
-    loginAttempted.current = false;
-    toast.dismiss(loadingToast);
-    
-    logger.error("❌ Login error:", error);
-    
-    let errorMessage = "";
-    if (error.message?.includes("No account") || error.message?.includes("User not found")) {
-      errorMessage = "❌ No account found with this email. Please register first.";
-    } else if (error.message?.includes("password") || error.message?.includes("Invalid password")) {
-      errorMessage = "❌ Invalid password. Please try again.";
-    } else if (error.message?.includes("verify")) {
-      errorMessage = "❌ Please verify your email before logging in.";
-    } else if (error.message?.includes("Failed to fetch")) {
-      errorMessage = "Cannot connect to server. Please make sure backend is running.";
-    } else {
-      // Show the exact error message from API
-      errorMessage = error.message || "❌ Login failed. Please try again.";
-    }
-    
-    setError(errorMessage);
-    toast.error(errorMessage);
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
   const handleEmailChange = (e) => {
     const value = e.target.value;
@@ -222,7 +278,7 @@ const Login = () => {
     else setPasswordError("");
   };
 
-  // ✅ If already logged in, show loading or redirect
+  // If already logged in, show loading or redirect
   if (isLoggedIn && user && !redirectHandled.current) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -236,20 +292,24 @@ const Login = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#ece9f1] to-[#dfe3f8] flex flex-col">
+      {/* Toaster component */}
       <Toaster 
         position="top-right"
         reverseOrder={false}
         gutter={8}
-        containerClassName=""
-        containerStyle={{}}
+        containerStyle={{
+          top: 20,
+          right: 20,
+        }}
         toastOptions={{
-          className: '',
           duration: 3000,
           style: {
             background: '#363636',
             color: '#fff',
             padding: '16px',
             borderRadius: '12px',
+            fontSize: '14px',
+            maxWidth: '350px',
           },
           success: {
             duration: 3000,
@@ -392,7 +452,6 @@ const Login = () => {
           </div>
         </form>
       </div>
-      
     </div>
   );
 };
