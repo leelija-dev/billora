@@ -46,10 +46,12 @@ class ProductsController extends Controller
             
         // Unique cache key
         $cacheKey = "products_{$user}_{$search}_page_{$page}";
-        $fromCache = Cache::has($cacheKey);
+        $fromCache = Cache::tags(['products_user_'.$user])->has($cacheKey);
 
         $startTime = microtime(true);
-           $product = Cache::remember($cacheKey, 600, function () use ($user, $request) {
+        //    $product = Cache::remember($cacheKey, 600, function () use ($user, $request) {
+        $product = Cache::tags(['products_user_'.$user])
+                      ->remember($cacheKey, 600, function () use ($user, $request) {
 
             $query = Products::with([
                 'variants',
@@ -83,7 +85,7 @@ class ProductsController extends Controller
             return response()->json([
                 'status' => true,
                 'message' => 'Product List',
-                'source' => $fromCache ? 'Redis Cache' : 'Database',
+                'source' => $fromCache ? 'Cache' : 'Database',
                 'response_time' => round($executionTime, 4) . ' sec',
                 'data' => $product
             ]);
@@ -514,6 +516,7 @@ class ProductsController extends Controller
             }
 
             DB::commit();
+            Cache::tags(['products_user_'.$user])->flush();
             return response()->json([
                 'status' => true,
                 'message' => 'Product Created Successfully',
@@ -775,6 +778,7 @@ class ProductsController extends Controller
                 }
             }
             DB::commit();
+            Cache::tags(['products_user_'.$user])->flush();
             return response()->json([
                 'status' => true,
                 'message' => 'Product Updated Successfully',
