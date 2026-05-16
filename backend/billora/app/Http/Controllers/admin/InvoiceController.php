@@ -359,9 +359,11 @@ class InvoiceController extends Controller
             // Dynamic cache key
             $cacheKey = "bill_history_{$user}_search_" . md5($search) . "_page_{$page}";
             // Check cache exists
-            $fromCache = Cache::has($cacheKey);
+            $fromCache = Cache::tags(['invoice_user_'.$user])->has($cacheKey);
             // $billHistory = Invoice::with(['invoiceItems.product', 'packages'])
-            $billHistory = Cache::remember($cacheKey, 600, function () use ($user, $search) {
+            // $billHistory = Cache::remember($cacheKey, 600, function () use ($user, $search) {
+            $billHistory = Cache::tags(['invoice_user_'.$user])->remember($cacheKey, 600, function () use ($user, $search) {
+                
 
                 return Invoice::with([
                     'invoiceItems.product',
@@ -543,7 +545,7 @@ class InvoiceController extends Controller
             ]);
 
             DB::commit();
-
+            Cache::tags(['invoice_user_'.$request->user_id])->flush();
             return response()->json([
                 'status'        => true,
                 'message'       => 'Invoice Created Successfully',
@@ -816,6 +818,7 @@ class InvoiceController extends Controller
                 ]);
             }
             DB::commit();
+            Cache::tags(['invoice_user_'.$request->user_id])->flush();
             return response()->json([
                 'status' => true,
                 'message' => 'Invoice updated successfully'
@@ -883,6 +886,7 @@ class InvoiceController extends Controller
                     'due_amount' => ($billCustomer->due_amount - ($invoice->total_amount - $invoice->paid_amount)),
                 ]);
             DB::commit();
+            Cache::tags(['invoice_user_'.$user])->flush();
             return response()->json([
                 'status' => true,
                 'message' => 'Invoice cancelled successfully'
@@ -918,6 +922,7 @@ class InvoiceController extends Controller
                 ->where('user_id', $user)
                 ->orderBy('created_at', 'desc')
                 ->get();
+            Cache::tags(['invoice_user_'.$user])->flush();
             return response()->json([
                 'status'    => true,
                 'message'   => 'Customer Invoices',
@@ -1018,6 +1023,7 @@ class InvoiceController extends Controller
                 'created_by'     => $user
             ]);
             DB::commit();
+            Cache::tags(['invoice_user_'.$user])->flush();
             return response()->json([
                 'status' => true,
                 'message' => 'Due payment successful',
