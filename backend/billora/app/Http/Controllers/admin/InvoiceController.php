@@ -83,7 +83,7 @@ class InvoiceController extends Controller
 
             $data['response_time'] = round($executionTime, 4) . ' sec';
             $data['response_from'] = $fromCache ? 'Cache' : 'Database';
-            return response()->json([$data]);
+            return response()->json($data);
         } catch (\Exception $e) {
             return response()->json([
                 'status' => false,
