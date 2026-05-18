@@ -22,97 +22,82 @@ export const useInventoryStore = create((set, get) => ({
   },
 
   fetchStocks: async (page = 1, search = '', forceRefresh = false) => {
-    const now = Date.now()
-    const cacheKey = `stocks_${page}_${search || ''}`
-    
-    // Check cache first (unless force refresh)
-    if (!forceRefresh && stockCache.has(cacheKey)) {
-      const cached = stockCache.get(cacheKey)
-      if (now - cached.timestamp < CACHE_EXPIRY) {
-        console.log('Stock Store - Using cached data for:', cacheKey)
-        set({
-          stocks: cached.stocks,
-          totalStocks: cached.totalStocks,
-          currentPage: page,
-          loading: false,
-        })
-        return cached.stocks
-      } else {
-        stockCache.delete(cacheKey)
-      }
-    }
-    
-    // Prevent duplicate requests within cooldown period (unless force refresh)
-    if (!forceRefresh && now - lastFetchTime < REQUEST_COOLDOWN) {
-      console.log('Stock Store - Request cooldown active, skipping duplicate fetch')
-      return
-    }
-    
-    lastFetchTime = now
-    set({ loading: true })
-    try {
-      const response = await stocksAPI.getAll(search)
-      
-      console.log('Stock Store - Raw API Response:', response)
-      
-      // Handle your API's response structure
-      const apiData = response.data
-      const stocks = apiData.data?.data || apiData.data || []
-      const total = apiData.data?.total || stocks.length
-      
-      // Get products and units data to enrich stock information
-      const productStore = useProductStore.getState()
-      const products = productStore.products || []
-      
-      // Get units from useUnits hook - we need to access it differently
-      // Since we can't directly access hooks here, we'll use the product's unit_id
-      // and map it when we have access to units in the component
-      
-      // Enrich stocks with product information
-      const enrichedStocks = stocks.map(stock => {
-        const product = stock.product || products.find(p => p.id === stock.product_id)
-        
-        return {
-          ...stock,
-          product_name: product?.name || `Product ${stock.product_id}`,
-          product_sku: product?.sku || '',
-          unit_id: stock.unit_id,
-          // We'll map unit_name in the component where we have access to units
-        }
-      })
-      
-      // Cache the results
-      stockCache.set(cacheKey, {
-        stocks: enrichedStocks,
-        totalStocks: total,
-        timestamp: now
-      })
-      
-      console.log('Stock Store - Processed Data:', {
-        apiData,
-        stocks: enrichedStocks,
-        total,
-        stocksLength: enrichedStocks.length
-      })
-      
+  const now = Date.now()
+  const cacheKey = `stocks_${page}_${search || ''}`
+  
+  // Check cache first (unless force refresh)
+  if (!forceRefresh && stockCache.has(cacheKey)) {
+    const cached = stockCache.get(cacheKey)
+    if (now - cached.timestamp < CACHE_EXPIRY) {
+      console.log('Stock Store - Using cached data for:', cacheKey)
       set({
-        stocks: enrichedStocks,
-        totalStocks: total,
+        stocks: cached.stocks,
+        totalStocks: cached.totalStocks,
         currentPage: page,
         loading: false,
       })
-      
-      console.log('Stock Store - State Updated:', {
-        stocksCount: enrichedStocks.length,
-        totalStocks: total,
-        loading: false
-      })
-    } catch (error) {
-      console.error('Stock Store - Error:', error)
-      toast.error('Failed to fetch stocks')
-      set({ loading: false })
+      return cached.stocks
+    } else {
+      stockCache.delete(cacheKey)
     }
-  },
+  }
+  
+  // Prevent duplicate requests within cooldown period (unless force refresh)
+  if (!forceRefresh && now - lastFetchTime < REQUEST_COOLDOWN) {
+    console.log('Stock Store - Request cooldown active, skipping duplicate fetch')
+    return
+  }
+  
+  lastFetchTime = now
+  set({ loading: true })
+  try {
+    // IMPORTANT: Pass the page parameter to the API
+    const response = await stocksAPI.getAll(search, page)
+    
+    console.log('Stock Store - Raw API Response:', response)
+    
+    // Handle your API's response structure
+    const apiData = response.data
+    const stocks = apiData.data?.data || apiData.data || []
+    const total = apiData.data?.total || stocks.length
+    const currentPage = apiData.data?.current_page || page
+    
+    // Get products and units data to enrich stock information
+    const productStore = useProductStore.getState()
+    const products = productStore.products || []
+    
+    // Enrich stocks with product information
+    const enrichedStocks = stocks.map(stock => {
+      const product = stock.product || products.find(p => p.id === stock.product_id)
+      
+      return {
+        ...stock,
+        product_name: product?.name || `Product ${stock.product_id}`,
+        product_sku: product?.sku || '',
+        unit_id: stock.unit_id,
+      }
+    })
+    
+    // Cache the results
+    stockCache.set(cacheKey, {
+      stocks: enrichedStocks,
+      totalStocks: total,
+      timestamp: now
+    })
+    
+    set({
+      stocks: enrichedStocks,
+      totalStocks: total,
+      currentPage: currentPage,
+      loading: false,
+    })
+    
+  } catch (error) {
+    console.error('Stock Store - Error:', error)
+    toast.error('Failed to fetch stocks')
+    set({ loading: false })
+  }
+},
 
   createStock: async (stockData) => {
     console.log('Create Stock - Starting with data:', stockData)
@@ -121,15 +106,15 @@ export const useInventoryStore = create((set, get) => ({
       const response = await stocksAPI.create(stockData)
       const apiData = response.data
       console.log('Create Stock - API Response:', response)
-      
+
       // Handle different response formats
       let newStock = null
       if (apiData.data) {
         if (Array.isArray(apiData.data)) {
           // Backend returns array of all stocks - find the newly created one
           // The new stock should be the one with matching product_id and quantity
-          const createdStock = apiData.data.find(stock => 
-            stock.product_id == stockData.product_id && 
+          const createdStock = apiData.data.find(stock =>
+            stock.product_id == stockData.product_id &&
             stock.quantity == stockData.quantity
           )
           if (createdStock) {
@@ -152,7 +137,7 @@ export const useInventoryStore = create((set, get) => ({
       // Get products data to enrich stock information
       const productStore = useProductStore.getState()
       const products = productStore.products || []
-      
+
       // Enrich the new stock with product information
       const product = products.find(p => p.id === newStock?.product_id)
       const enrichedStock = {
@@ -170,10 +155,10 @@ export const useInventoryStore = create((set, get) => ({
         totalStocks: state.totalStocks + 1,
         loading: false,
       }))
-      
+
       // Clear cache to force refresh on next fetch
       get().clearCache()
-      
+
       toast.success('Stock created successfully')
       return { success: true }
     } catch (error) {
@@ -187,12 +172,12 @@ export const useInventoryStore = create((set, get) => ({
   updateStock: async (id, stockData) => {
     console.log(' Update Stock - Starting update for ID:', id)
     console.log(' Update Stock - Data to send:', stockData)
-    
+
     set({ loading: true })
     try {
       const response = await stocksAPI.update(id, stockData)
       console.log(' Update Stock - API Response:', response)
-      
+
       const apiData = response.data
       const stock = apiData.data || apiData
       console.log(' Update Stock - Processed stock data:', stock)
@@ -200,7 +185,7 @@ export const useInventoryStore = create((set, get) => ({
       // Get products data to enrich stock information
       const productStore = useProductStore.getState()
       const products = productStore.products || []
-      
+
       // Enrich the updated stock with product information
       const product = products.find(p => p.id === stock.product_id)
       const enrichedStock = {
@@ -224,7 +209,7 @@ export const useInventoryStore = create((set, get) => ({
           }
           return s
         })
-        
+
         console.log(' Update Stock - Before state update:', {
           currentStocks: currentStocks.length,
           updatedStocks: updatedStocks.length,
@@ -236,13 +221,13 @@ export const useInventoryStore = create((set, get) => ({
           loading: false,
         }
       })
-      
+
       // Clear cache to force refresh on next fetch
       get().clearCache()
-      
+
       // Fetch fresh data after update
       get().fetchStocks()
-      
+
       toast.success('Stock updated successfully')
       return { success: true }
     } catch (error) {
@@ -260,12 +245,12 @@ export const useInventoryStore = create((set, get) => ({
     try {
       const response = await stocksAPI.delete(id, userId)
       console.log(' Inventory Store - Delete API response:', response)
-      
+
       // Check if the delete was successful
       if (response.data?.status === false) {
         throw new Error(response.data.message || 'Failed to delete stock')
       }
-      
+
       set((state) => {
         const currentStocks = state.stocks
         const filteredStocks = currentStocks.filter(s => s.id !== id)
@@ -278,17 +263,17 @@ export const useInventoryStore = create((set, get) => ({
           totalStocks: filteredStocks.length,
           stockRemoved: !filteredStocks.some(s => s.id === id)
         })
-        
+
         return {
           stocks: filteredStocks,
           totalStocks: state.totalStocks - 1,
           loading: false,
         }
       })
-      
+
       // Clear cache to force refresh on next fetch
       get().clearCache()
-      
+
       toast.success('Stock deleted successfully')
       return { success: true }
     } catch (error) {
@@ -310,7 +295,7 @@ export const useInventoryStore = create((set, get) => ({
       // Get products data to enrich stock information
       const productStore = useProductStore.getState()
       const products = productStore.products || []
-      
+
       // Enrich the updated stock with product information
       const product = products.find(p => p.id === stock.product_id)
       const enrichedStock = {
@@ -325,10 +310,10 @@ export const useInventoryStore = create((set, get) => ({
         stocks: state.stocks.map(s => s.id === id ? enrichedStock : s),
         loading: false,
       }))
-      
+
       // Clear cache to force refresh on next fetch
       get().clearCache()
-      
+
       toast.success('Stock quantity updated successfully')
       return { success: true }
     } catch (error) {
@@ -351,7 +336,7 @@ export const useInventoryStore = create((set, get) => ({
     })
     stockCache.clear()
     console.log('Stock Store - Cache cleared after:', stockCache.size, 'entries')
-    
+
     // Also reset last fetch time to allow immediate next request
     lastFetchTime = 0
   },

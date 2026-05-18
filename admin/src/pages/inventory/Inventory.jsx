@@ -77,14 +77,14 @@ const Stock = () => {
   }, []) // Remove fetchStocks from dependency array
 
   useEffect(() => {
-    const debounceTimer = setTimeout(() => {
-      setFilters({ search: searchTerm })
-      // Manually call fetchStocks after setting filters
-      fetchStocks(1, searchTerm, false) // Use cache for search
-    }, 500)
+  const debounceTimer = setTimeout(() => {
+    setFilters({ search: searchTerm })
+    // Reset to page 1 when searching
+    fetchStocks(1, searchTerm, false)
+  }, 500)
 
-    return () => clearTimeout(debounceTimer)
-  }, [searchTerm]) // Remove setFilters and fetchStocks from dependency array
+  return () => clearTimeout(debounceTimer)
+}, [searchTerm])
 
   const handleAddStock = () => {
     setShowAddForm(true)
@@ -161,8 +161,9 @@ const Stock = () => {
   }
 
   const handlePageChange = (page) => {
-    fetchStocks(page)
-  }
+  // Pass the current search term as well
+  fetchStocks(page, searchTerm, false)
+}
 
   const handleRefresh = async () => {
     setRefreshing(true)

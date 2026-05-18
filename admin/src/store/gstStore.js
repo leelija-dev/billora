@@ -1,7 +1,6 @@
 import { create } from 'zustand';
-import { gstAPI } from '../services';
+import { gstAPI, productsAPI } from '../services';
 import toast from 'react-hot-toast';
-import { useAuthStore } from './authStore';
 
 // Cache for GST data
 const gstCache = new Map();
@@ -40,63 +39,109 @@ export const useGstStore = create((set, get) => ({
     set({ loading: true });
 
     try {
+      // Step 1: Fetch GST collections
       const response = await gstAPI.getGstCollection(userId);
       const responseData = response.data;
       
-      // Get collections and products
+      // Get collections and products from GST API
       const collections = responseData.data || [];
-      const products = responseData['all products'] || [];
+      const gstProducts = responseData['all products'] || [];
       
-      // Create a comprehensive product lookup map with all product details
-      const productMap = {};
-      products.forEach(item => {
-        // Store all product data including name
-        if (item.product_id) {
-          productMap[item.product_id] = {
-            product_id: item.product_id,
-            name: item.product?.name || item.product_name || `Product ${item.product_id}`,
-            sku: item.product?.sku || item.sku || null,
-            total_quantity: parseFloat(item.total_quantity) || 0,
-            total_purchase_price: parseFloat(item.total_purchase_price) || 0,
-            total_purchase_gst: parseFloat(item.total_purchase_gst) || 0,
-            total_selling_price: parseFloat(item.total_selling_price) || 0,
-            total_selling_gst: parseFloat(item.total_selling_gst) || 0,
-            total_products: parseInt(item.total_products) || 0,
-            product: item.product || null
-          };
+      console.log('Raw API Response:', responseData);
+      console.log('Products from GST API:', gstProducts);
+      
+      // Step 2: Fetch actual product names from products API
+      let productNameMap = {};
+      try {
+        const productsResponse = await productsAPI.getAll();
+        console.log('Products API Response:', productsResponse.data);
+        
+        // Handle nested data structure - API returns { status: true, data: { data: [...] } }
+        let allProducts = [];
+        
+        if (productsResponse.data?.data?.data) {
+          // Structure: { data: { data: [...] } }
+          allProducts = productsResponse.data.data.data;
+        } else if (productsResponse.data?.data) {
+          // Structure: { data: [...] }
+          allProducts = productsResponse.data.data;
+        } else if (Array.isArray(productsResponse.data)) {
+          // Structure: direct array
+          allProducts = productsResponse.data;
+        } else {
+          console.warn('Unexpected products response structure:', productsResponse.data);
+          allProducts = [];
         }
-      });
+        
+        console.log('All products extracted:', allProducts);
+        console.log('Number of products:', allProducts.length);
+        
+        // Create mapping of product_id to product name
+        if (Array.isArray(allProducts) && allProducts.length > 0) {
+          allProducts.forEach(product => {
+            if (product && product.id) {
+              productNameMap[product.id] = product.name || `Product ${product.id}`;
+              console.log(`Mapped product ${product.id} -> ${product.name}`);
+            }
+          });
+        }
+        
+        console.log('Product name map created:', productNameMap);
+      } catch (error) {
+        console.error('Failed to fetch product names:', error);
+      }
       
-      console.log('Product Map created:', productMap);
-      
-      // Merge product information into collections
+      // Step 3: Create enriched collections with product names
       const enrichedCollections = collections.map(collection => {
-        const productInfo = productMap[collection.product_id];
+        // Get product name from the map
+        let productName = productNameMap[collection.product_id];
+        
+        // If not found, try to get from GST products array
+        if (!productName) {
+          const gstProduct = gstProducts.find(p => p.product_id === collection.product_id);
+          if (gstProduct) {
+            productName = gstProduct.product_name || 
+                         gstProduct.name || 
+                         (gstProduct.product && gstProduct.product.name) ||
+                         `Product ${collection.product_id}`;
+          } else {
+            productName = `Product ${collection.product_id}`;
+          }
+        }
+        
+        console.log(`Collection ${collection.id} - Product ID: ${collection.product_id} - Name: ${productName}`);
+        
         return {
           ...collection,
-          product: productInfo || null,
-          product_name: productInfo?.name || `Product ${collection.product_id}`,
-          product_sku: productInfo?.sku || null,
-          product_details: productInfo // Store full product details
+          product_name: productName,
+          product_id: collection.product_id,
         };
       });
       
-      // Extract clean product data from the products array (aggregated data)
-      const cleanProducts = products.map(item => {
+      // Step 4: Create clean products array with proper names
+      const cleanProducts = gstProducts.map(item => {
+        let productName = productNameMap[item.product_id];
+        
+        if (!productName) {
+          productName = item.product_name || 
+                       item.name || 
+                       (item.product && item.product.name) ||
+                       `Product ${item.product_id}`;
+        }
+        
         return {
           product_id: item.product_id,
-          product_name: item.product?.name || item.product_name || `Product ${item.product_id}`,
+          product_name: productName,
           total_quantity: parseFloat(item.total_quantity) || 0,
           total_purchase_price: parseFloat(item.total_purchase_price) || 0,
           total_purchase_gst: parseFloat(item.total_purchase_gst) || 0,
           total_selling_price: parseFloat(item.total_selling_price) || 0,
           total_selling_gst: parseFloat(item.total_selling_gst) || 0,
           total_products: parseInt(item.total_products) || 0,
-          product: item.product || null
         };
       });
 
-      // Handle the API response structure
+      // Step 5: Build final data structure
       const gstData = {
         collections: enrichedCollections,
         products: cleanProducts,
@@ -108,9 +153,9 @@ export const useGstStore = create((set, get) => ({
         }
       };
       
-      console.log('Enriched GST Data with Product Names:', gstData);
-      console.log('Sample collection with product name:', enrichedCollections[0]);
-      console.log('Clean Products with names:', cleanProducts);
+      console.log('Final GST Data with Product Names:', gstData);
+      console.log('First collection:', enrichedCollections[0]);
+      console.log('First product in products tab:', cleanProducts[0]);
       
       set({ 
         selectedCollection: gstData,
@@ -152,11 +197,21 @@ export const useGstStore = create((set, get) => ({
     try {
       const response = await gstAPI.updateGstPaymentStatus(collectionId, statusData);
       
-      // Update the selected collection
+      // Refresh the collection data after update
       const { selectedCollection } = get();
-      if (selectedCollection && selectedCollection.id === collectionId) {
+      if (selectedCollection) {
+        // Update the specific collection's status in the local state
+        const updatedCollections = selectedCollection.collections.map(col => 
+          col.id === collectionId 
+            ? { ...col, govt_pay_status: statusData.govt_gst_pay_status }
+            : col
+        );
+        
         set({ 
-          selectedCollection: { ...selectedCollection, ...response.data },
+          selectedCollection: { 
+            ...selectedCollection, 
+            collections: updatedCollections 
+          },
           updatingStatus: false 
         });
       } else {
