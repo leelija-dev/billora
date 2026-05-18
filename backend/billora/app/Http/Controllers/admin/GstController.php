@@ -8,16 +8,22 @@ use App\Models\Invoice;
 use Illuminate\Support\Facades\Auth;
 use App\Models\GstCollection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Cache;
 class GstController extends Controller
 {
     public function index($id){   // id = register user id 
         $user = Auth::user()->id;
+        
         if($user != $id){
             return response()->json([
                 'status' =>false,
                 'message' => 'unauthorized user' 
             ]);
         }
+            $start = microtime(true);
+            $cacheKey = "gst_collection_{$user}";
+            $fromCache = Cache::tags(['gst_collection_user_' . $user])->has($cacheKey);
+            $data = Cache::tags(['gst_collection_user_' . $user])->remember($cacheKey, 600, function () use ($user) {
         $collection = GstCollection::where('user_id', $id)->get();
         // if($collection->isEmpty()){
         //     return response()->json([
@@ -57,16 +63,16 @@ class GstController extends Controller
             ->groupBy('product_id')
             // ->with('product')
             ->get();
-        return response()->json([
-            'status' =>true,
-            'message' => 'gst collection list',
-            'Total GST' => $totalGst,
-            'Govt GST Due' => $dueGstPayGovt,
-            'data' => $data,
-            'all products'=> $allProducts,
-            
-
-        ]);
+            return [
+                'status' =>true,
+                'message' => 'gst collection list',
+                'Total GST' => $totalGst,
+                'Govt GST Due' => $dueGstPayGovt,
+                'data' => $data,
+                'all products'=> $allProducts,
+                ];
+            });
+        return response()->json($data);
     }
     public function productDetails($id){
         $user = Auth::user()->id;

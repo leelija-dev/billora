@@ -58,10 +58,20 @@ class InvoiceController extends Controller
                     }
                 }
                 if ($hasStockPermission) {
-                    $products = Products::where('user_id', $user)->with(['brand', 'category', 'unit', 'stocks'])
+                    $products = Products::where('user_id', $user)
+                        ->with([
+                            'brand',
+                            'category',
+                            'unit',
+                            'stocks:id,product_id'
+                        ])
                         ->where('is_active', true)
                         ->whereHas('stocks')
                         ->get();
+
+                    // $products = Stocks::where('user_id', $user)
+                    //     ->with(['brand', 'category', 'unit', 'product'])
+                    //     ->get();
                 } else {
                     $products = Products::where('user_id', $user)
                         ->with(['brand', 'category', 'unit'])
@@ -207,6 +217,7 @@ class InvoiceController extends Controller
                         ->first();
 
                     $price = $stock->selling_price;
+                    
                 } else {
                     $product = Products::find($item['product_id']);
                     $price = $product->selling_price ?? 0;
@@ -308,7 +319,7 @@ class InvoiceController extends Controller
                 'customer_wise_user_' . $user,
                 'single_invoice_' . $user,
                 'with_out_stock_user_' . $user,
-                
+
             ])->flush();
             return response()->json([
                 'status'  => true,

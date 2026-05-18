@@ -47,20 +47,45 @@ class ProductsController extends Controller
         // Unique cache key
         $cacheKey = "products_{$user}_{$search}_page_{$page}";
         $fromCache = Cache::tags(['products_user_'.$user])->has($cacheKey);
-
+        $customer = Customers::findOrFail($user);
         $startTime = microtime(true);
+           $permissions = DB::table('plan_permission_details as ppd')
+            ->join('plan_permission as pp', 'pp.id', '=', 'ppd.permission_id')
+            ->where('ppd.plan_id', $customer->plan_id)
+            ->select('pp.slug')
+            ->get();
+
+        $hasStockPermission = $permissions
+            ->contains('slug', 'stock-management');
         //    $product = Cache::remember($cacheKey, 600, function () use ($user, $request) {
         $product = Cache::tags(['products_user_'.$user])
-                      ->remember($cacheKey, 600, function () use ($user, $request) {
+                      ->remember($cacheKey, 600, function () use ($user, $request,$hasStockPermission) {
+            
+            // $query = Products::with([
+            //  'variants',
+            //         'images',
+            //         'medicine_type'
+            // ])
+            // ->where('user_id', $user)
+            // ->where('is_active', true);
+                $relations = [
+                    'variants',
+                    'images',
+                    'medicine_type'
+                ];
+            // has stock permission
+            if ($hasStockPermission) {
 
-            $query = Products::with([
-                'variants',
-                'images',
-                'medicine_type'
-            ])
-            ->where('user_id', $user)
-            ->where('is_active', true);
+                    $relations['stocks'] = function ($query) {
 
+                        $query->select('id', 'product_id');
+
+                    };
+
+                }
+                $query = Products::with($relations)
+                    ->where('user_id', $user)
+                    ->where('is_active', true);
             // Search filter
             if ($request->has('search') && !empty($request->search)) {
 
