@@ -9,10 +9,32 @@ const Footer = () => {
   const pathname = usePathname();
   
   // Hide footer on specific pages (same as navbar)
-  const shouldHideFooter = pathname === '/login' || pathname === '/register' || pathname === '/products';
+  const shouldHideFooter = () => {
+    // Check for exact matches
+    if (pathname === '/login' || pathname === '/register') {
+      return true;
+    }
+    
+    // Check for order-success page
+    if (pathname === '/order-success') {
+      return true;
+    }
+    
+    // Check for products page with dynamic ID (e.g., /products/16)
+    if (pathname.startsWith('/products/')) {
+      return true;
+    }
+    
+    // Also hide on the base products page if needed
+    if (pathname === '/products') {
+      return true;
+    }
+    
+    return false;
+  };
   
   // Return null to hide footer completely on specified pages
-  if (shouldHideFooter) {
+  if (shouldHideFooter()) {
     return null;
   }
 
@@ -27,37 +49,37 @@ const Footer = () => {
     {
       title: 'Company',
       links: [
-        { label: 'About Us', href: '#about' },
-        { label: 'Careers', href: '#careers' },
-        { label: 'Press', href: '#press' },
-        { label: 'Blog', href: '#blog' }
+        { label: 'About Us', href: '/about' },
+        { label: 'Careers', href: '/careers' },
+        { label: 'Press', href: '/press' },
+        { label: 'Blog', href: '/blog' }
       ]
     },
     {
       title: 'Product',
       links: [
-        { label: 'Features', href: '#features' },
-        { label: 'Pricing', href: '#pricing' },
-        { label: 'Integrations', href: '#integrations' },
-        { label: 'Roadmap', href: '#roadmap' }
+        { label: 'Features', href: '/features' },
+        { label: 'Pricing', href: '/pricing' },
+        { label: 'Integrations', href: '/integrations' },
+        { label: 'Roadmap', href: '/roadmap' }
       ]
     },
     {
       title: 'Support',
       links: [
-        { label: 'Help Center', href: '#help' },
-        { label: 'Contact Us', href: '#contact' },
-        { label: 'Documentation', href: '#docs' },
-        { label: 'API', href: '#api' }
+        { label: 'Help Center', href: '/help' },
+        { label: 'Contact Us', href: '/contact' },
+        { label: 'Documentation', href: '/docs' },
+        { label: 'API', href: '/api' }
       ]
     },
     {
       title: 'Legal',
       links: [
-        { label: 'Privacy Policy', href: '#privacy' },
-        { label: 'Terms of Service', href: '#terms' },
-        { label: 'Cookie Policy', href: '#cookies' },
-        { label: 'GDPR', href: '#gdpr' }
+        { label: 'Privacy Policy', href: '/privacy' },
+        { label: 'Terms of Service', href: '/terms' },
+        { label: 'Cookie Policy', href: '/cookies' },
+        { label: 'GDPR', href: '/gdpr' }
       ]
     }
   ];
@@ -71,16 +93,13 @@ const Footer = () => {
           <div className="text-center lg:text-left">
             <div className="flex items-center justify-center lg:justify-start gap-2 mb-4 md:mb-3">
               <span className="bg-blue-600 text-white px-3 py-1.5 rounded text-xl md:text-base lg:text-xl font-bold leading-none">
-                {/* Tablet: md:text-base (16px) */}
                 B
               </span>
               <span className="text-white text-xl md:text-base lg:text-xl font-bold leading-none">
-                {/* Tablet: md:text-base (16px) */}
                 {process.env.NEXT_PUBLIC_APP_NAME || 'Billora'}
               </span>
             </div>
             <p className="text-[#94a3b8] text-sm sm:text-base md:text-xs lg:text-base leading-relaxed max-w-[300px] mx-auto lg:mx-0">
-              {/* Tablet: md:text-xs (12px) - smaller for more content */}
               Modern GST billing software for Indian businesses. Simplify your invoicing and compliance.
             </p>
           </div>
@@ -90,7 +109,6 @@ const Footer = () => {
             {footerSections.map((section, idx) => (
               <div key={idx} className="text-center sm:text-left">
                 <h4 className="text-sm sm:text-base md:text-xs lg:text-base font-semibold text-white mb-4 sm:mb-5 md:mb-2 lg:mb-5 uppercase tracking-wider">
-                  {/* Tablet: md:text-xs (12px) */}
                   {section.title}
                 </h4>
                 <ul className="space-y-2 sm:space-y-3 md:space-y-1 lg:space-y-3">
@@ -100,7 +118,6 @@ const Footer = () => {
                         href={link.href}
                         className="text-[#94a3b8] text-xs sm:text-sm md:text-[10px] lg:text-sm no-underline transition-colors duration-200 hover:text-white block py-1 md:py-0.5 lg:py-1"
                       >
-                        {/* Tablet: md:text-[10px] (10px) - smallest for maximum content */}
                         {link.label}
                       </Link>
                     </li>
@@ -114,7 +131,6 @@ const Footer = () => {
         {/* Bottom Section */}
         <div className="pt-6 sm:pt-8 md:pt-4 border-t border-[#1e293b] flex flex-col sm:flex-row justify-between items-center gap-4 sm:gap-6 md:gap-3">
           <div className="text-[#94a3b8] text-xs sm:text-sm md:text-[10px] lg:text-sm order-2 sm:order-1">
-            {/* Tablet: md:text-[10px] (10px) */}
             &copy; 2026 {process.env.NEXT_PUBLIC_APP_NAME || 'Billora'}. All rights reserved.
           </div>
           <div className="flex gap-3 sm:gap-4 md:gap-1.5 lg:gap-4 order-1 sm:order-2">
@@ -125,7 +141,6 @@ const Footer = () => {
                 className="w-10 h-10 sm:w-9 sm:h-9 md:w-6 md:h-6 lg:w-9 lg:h-9 bg-[#1e293b] text-white rounded-full flex items-center justify-center no-underline transition-all duration-200 hover:bg-[#2563eb] hover:-translate-y-1 text-base sm:text-sm md:text-[8px] lg:text-sm"
                 aria-label={social.name}
               >
-                {/* Tablet: md:text-[8px] (8px) - fits in smaller icons */}
                 {social.icon}
               </a>
             ))}

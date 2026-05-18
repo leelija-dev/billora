@@ -59,24 +59,47 @@ const Navbar = () => {
 
   const pathname = usePathname();
   const router = useRouter();
-// 🔥 Sync logout across apps
-useEffect(() => {
-  const syncLogout = async (event) => {
-    if (event.key === "logout-event") {
-      await logout();
 
-      router.push("/login");
+  // 🔥 Sync logout across apps
+  useEffect(() => {
+    const syncLogout = async (event) => {
+      if (event.key === "logout-event") {
+        await logout();
+        router.push("/login");
+      }
+    };
+
+    window.addEventListener("storage", syncLogout);
+
+    return () => {
+      window.removeEventListener("storage", syncLogout);
+    };
+  }, [logout, router]);
+
+  // ✅ Updated: Hide navbar on specific pages (including products/[id] and order-success)
+  const shouldHideNavbar = () => {
+    // Check for exact matches
+    if (pathname === '/login' || pathname === '/register') {
+      return true;
     }
+    
+    // Check for order-success page
+    if (pathname === '/order-success') {
+      return true;
+    }
+    
+    // Check for products page with dynamic ID (e.g., /products/16)
+    if (pathname.startsWith('/products/')) {
+      return true;
+    }
+    
+    // Also hide on the base products page if needed
+    if (pathname === '/products') {
+      return true;
+    }
+    
+    return false;
   };
-
-  window.addEventListener("storage", syncLogout);
-
-  return () => {
-    window.removeEventListener("storage", syncLogout);
-  };
-}, [logout, router]);
-  // ✅ Hide navbar on specific pages
-  const shouldHideNavbar = pathname === '/login' || pathname === '/register' || pathname === '/products';
 
   // ✅ Debug logging
   useEffect(() => {
@@ -87,13 +110,11 @@ useEffect(() => {
       userPlanId: user?.plan_id,
       user,
       pathname,
-      shouldHideNavbar
+      shouldHide: shouldHideNavbar()
     });
-  }, [isLoggedIn, hasActivePlan, user, pathname, shouldHideNavbar]);
+  }, [isLoggedIn, hasActivePlan, user, pathname]);
 
   const routeMap = {
-    // "/trymobile": 0,
-    // "/carrers": 1,
     "/pricing": 0,
     "/partner": 1,
     "/solution": 2,
@@ -419,8 +440,6 @@ useEffect(() => {
   }, [isNavAction, activeTab]);
 
   const navItems = [
-    // { name: "Try Mobile", href: "/trymobile" },
-    // { name: "Carrers", href: "/carrers" },
     { name: "Pricing", href: "/pricing" },
     { name: "Partner", href: "/partner" },
     { name: "Solution", href: "/solution" },
@@ -451,7 +470,7 @@ useEffect(() => {
   };
 
   // ✅ Return null to hide navbar completely on specified pages
-  if (shouldHideNavbar) {
+  if (shouldHideNavbar()) {
     return null;
   }
 
@@ -545,7 +564,7 @@ useEffect(() => {
               </ul>
             </div>
 
-            {/* ✅ FIXED: Dashboard Button Logic */}
+            {/* Dashboard Button Logic */}
             {isLoggedIn && hasActivePlan ? (
               <a
                 href={`${DASHBOARD_URL}/dashboard`}
@@ -789,7 +808,7 @@ useEffect(() => {
 
           {/* Mobile Action Buttons */}
           <div className="p-4 border-t border-gray-100 space-y-2">
-            {/* ✅ FIXED: Dashboard button for mobile */}
+            {/* Dashboard button for mobile */}
             {isLoggedIn && hasActivePlan && (
               <a
                 href={`${DASHBOARD_URL}/dashboard`}
