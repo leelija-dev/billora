@@ -44,7 +44,6 @@ const GstManagement = () => {
     updatePaymentStatus,
   } = useGstStore();
 
-  const [searchUserId, setSearchUserId] = useState("");
   const [showStatusModal, setShowStatusModal] = useState(false);
   const [initialLoading, setInitialLoading] = useState(false);
   const [selectedCollectionId, setSelectedCollectionId] = useState("");
@@ -57,23 +56,20 @@ const GstManagement = () => {
   const [exporting, setExporting] = useState(false);
   const [selectedProductDetails, setSelectedProductDetails] = useState(null);
   const [showProductDetailModal, setShowProductDetailModal] = useState(false);
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   
   const hasFetchedRef = useRef(false);
-  const toastShownRef = useRef(false);
 
-  // Auto-load GST data for current user on page mount (only once)
+  // Auto-load GST data for current logged-in user on page mount (only once)
   useEffect(() => {
     if (user?.id && !hasFetchedRef.current) {
       hasFetchedRef.current = true;
-      // Don't show toast for auto-fetch
-      fetchUserGstData(user.id.toString(), false);
+      fetchUserGstData(user.id.toString());
     }
   }, [user?.id]);
 
-  const fetchUserGstData = useCallback(async (userId, showSuccessToast = true) => {
+  const fetchUserGstData = useCallback(async (userId, showSuccessToast = false) => {
     if (!userId?.trim()) {
-      toast.error("Please enter a user ID");
+      toast.error("User ID not found");
       return false;
     }
 
@@ -81,7 +77,7 @@ const GstManagement = () => {
     try {
       await fetchGstCollectionDetails(userId.trim());
       if (showSuccessToast) {
-        toast.success("GST collection data fetched successfully");
+        toast.success("GST collection data refreshed successfully");
       }
       return true;
     } catch (error) {
@@ -93,34 +89,20 @@ const GstManagement = () => {
   }, [fetchGstCollectionDetails]);
 
   const handleRefresh = useCallback(async () => {
-    if (!searchUserId && !selectedCollection) {
-      toast.error("Please enter a user ID or fetch data first");
-      return;
-    }
-    
-    const userIdToRefresh = searchUserId || (user?.id?.toString());
-    if (!userIdToRefresh) {
-      toast.error("No user ID available to refresh");
+    if (!user?.id) {
+      toast.error("User not logged in");
       return;
     }
     
     setRefreshing(true);
     try {
-      await fetchUserGstData(userIdToRefresh, true);
+      await fetchUserGstData(user.id.toString(), true);
     } catch (error) {
       // Error already handled
     } finally {
       setRefreshing(false);
     }
-  }, [searchUserId, selectedCollection, user?.id, fetchUserGstData]);
-
-  const handleFetchUserGst = useCallback(async () => {
-    if (!searchUserId?.trim()) {
-      toast.error("Please enter a user ID");
-      return;
-    }
-    await fetchUserGstData(searchUserId.trim(), true);
-  }, [searchUserId, fetchUserGstData]);
+  }, [user?.id, fetchUserGstData]);
 
   const handleStatusUpdate = useCallback(async (collectionId, status) => {
     if (!collectionId) {
@@ -135,15 +117,14 @@ const GstManagement = () => {
       });
       setShowStatusModal(false);
       setSelectedCollectionId("");
-      const userIdToFetch = searchUserId || (user?.id?.toString());
-      if (userIdToFetch) {
-        await fetchGstCollectionDetails(userIdToFetch.trim());
+      if (user?.id) {
+        await fetchGstCollectionDetails(user.id.toString());
       }
       toast.success(`Payment status updated to ${status}`);
     } catch (error) {
       // Error is already handled in the store
     }
-  }, [updatePaymentStatus, searchUserId, user?.id, fetchGstCollectionDetails]);
+  }, [updatePaymentStatus, user?.id, fetchGstCollectionDetails]);
 
   const handleViewProductDetails = useCallback((product) => {
     setSelectedProductDetails(product);
@@ -164,6 +145,7 @@ const GstManagement = () => {
         'Collection ID': col.id,
         'Invoice ID': col.invoice_id,
         'Product ID': col.product_id,
+        'Product Name': col.product_name || `Product ${col.product_id}`,
         'Quantity': col.quantity,
         'Selling Price': col.selling_price,
         'GST %': col.selling_gst_percentage,
@@ -285,12 +267,25 @@ const GstManagement = () => {
     {
       header: 'Product',
       accessor: 'product',
-      cell: (value, row) => (
-        <div>
-          <p className="font-medium text-gray-900 dark:text-white text-sm">{value?.name || row.product_name || `Product ${row.product_id}`}</p>
-          <p className="text-xs text-gray-500 dark:text-gray-400">ID: {row.product_id}</p>
-        </div>
-      ),
+      cell: (value, row) => {
+        // Get product name from multiple possible sources
+        const productName = row.product_name || 
+                           value?.name || 
+                           row.product?.name || 
+                           row.product_details?.name ||
+                           `Product ${row.product_id}`;
+        
+        return (
+          <div>
+            <p className="font-medium text-gray-900 dark:text-white text-sm">
+              {productName}
+            </p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              ID: {row.product_id}
+            </p>
+          </div>
+        );
+      },
     },
     {
       header: 'Quantity',
@@ -385,6 +380,15 @@ const GstManagement = () => {
       cell: (value) => (
         <span className="font-mono text-sm font-medium text-gray-900 dark:text-white">
           #{value}
+        </span>
+      ),
+    },
+    {
+      header: 'Product Name',
+      accessor: 'product_name',
+      cell: (value) => (
+        <span className="text-sm text-gray-900 dark:text-white">
+          {value || `Product ${value}`}
         </span>
       ),
     },
@@ -528,7 +532,9 @@ const GstManagement = () => {
                   <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold bg-gradient-to-r from-slate-800 to-slate-600 dark:from-white dark:to-slate-300 bg-clip-text text-transparent">
                     GST Management
                   </h1>
-                 
+                  <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
+                    User ID: {user?.id || 'Not logged in'}
+                  </p>
                 </div>
               </div>
 
@@ -583,48 +589,40 @@ const GstManagement = () => {
             </div>
           </motion.div>
 
-          {/* Search Section */}
+          {/* Filter Section - Only Filters, No Search */}
           <motion.div
             initial={{ y: 20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ duration: 0.5, delay: 0.1 }}
             className="bg-white dark:bg-slate-800 rounded-xl sm:rounded-2xl shadow-lg shadow-slate-200/50 dark:shadow-slate-900/50 border border-slate-200 dark:border-slate-700 p-4 sm:p-6 mb-6 sm:mb-8"
           >
-            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
-              <div className="flex-1">
-                <Input
-                  placeholder="Enter User ID to fetch GST collection..."
-                  value={searchUserId}
-                  onChange={(e) => setSearchUserId(e.target.value)}
-                  prefix={<FiSearch className="text-slate-400" />}
-                  className="w-full"
-                  onKeyPress={(e) => {
-                    if (e.key === 'Enter') {
-                      handleFetchUserGst();
-                    }
-                  }}
-                />
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
+              <div className="flex items-center space-x-2">
+                <FiFilter className="w-4 h-4 text-slate-400" />
+                <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                  Filters
+                </span>
+                {(statusFilter !== "all" || dateRange.start || dateRange.end) && (
+                  <button
+                    onClick={() => {
+                      setStatusFilter("all");
+                      setDateRange({ start: "", end: "" });
+                    }}
+                    className="text-xs text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 ml-2"
+                  >
+                    Clear all
+                  </button>
+                )}
               </div>
-              <div className="flex items-center space-x-2 sm:space-x-3">
-                <Button
-                  onClick={handleFetchUserGst}
-                  disabled={initialLoading}
-                  size="sm"
-                  className="flex items-center space-x-2 !bg-gradient-to-r !from-indigo-600 !to-indigo-700 hover:!from-indigo-700 hover:!to-indigo-800 shadow-md shadow-indigo-200 dark:shadow-indigo-900/30 !px-3 sm:!px-4 !py-1.5 sm:!py-2 !text-xs sm:!text-sm"
-                >
-                  <FiSearch className="w-3 h-3 sm:w-4 sm:h-4" />
-                  <span>Fetch</span>
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => setShowFilters(!showFilters)}
-                  size="sm"
-                  className="flex items-center space-x-2 !border-slate-300 dark:!border-slate-600 !px-2 sm:!px-3 !py-1.5 sm:!py-2 !text-xs sm:!text-sm"
-                >
-                  <FiFilter className="w-3 h-3 sm:w-4 sm:h-4" />
-                  <span className="hidden sm:inline">Filters</span>
-                </Button>
-              </div>
+              <Button
+                variant="outline"
+                onClick={() => setShowFilters(!showFilters)}
+                size="sm"
+                className="flex items-center space-x-2 !border-slate-300 dark:!border-slate-600"
+              >
+                <FiFilter className="w-3 h-3 sm:w-4 sm:h-4" />
+                <span>{showFilters ? 'Hide Filters' : 'Show Filters'}</span>
+              </Button>
             </div>
 
             {/* Advanced Filters */}
@@ -780,7 +778,7 @@ const GstManagement = () => {
                 </motion.div>
               </motion.div>
 
-              {/* Tabs Section - Responsive */}
+              {/* Tabs Section */}
               <motion.div
                 initial={{ y: 20, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
@@ -850,7 +848,15 @@ const GstManagement = () => {
                                 <div className="space-y-1.5 sm:space-y-2 mt-2 sm:mt-3">
                                   <div className="flex items-center justify-between">
                                     <span className="text-xs sm:text-sm text-slate-500">Product:</span>
-                                    <span className="text-xs sm:text-sm font-medium">#{collection.product_id}</span>
+                                    <span className="text-xs sm:text-sm font-medium">
+                                      {collection.product_name || `Product ${collection.product_id}`}
+                                    </span>
+                                  </div>
+                                  <div className="flex items-center justify-between">
+                                    <span className="text-xs sm:text-sm text-slate-500">Product ID:</span>
+                                    <span className="text-xs sm:text-sm font-mono text-slate-600">
+                                      #{collection.product_id}
+                                    </span>
                                   </div>
                                   <div className="flex items-center justify-between">
                                     <span className="text-xs sm:text-sm text-slate-500">Quantity:</span>
@@ -978,6 +984,7 @@ const GstManagement = () => {
                                 } else {
                                   acc.push({
                                     product_id: col.product_id,
+                                    product_name: col.product_name || `Product ${col.product_id}`,
                                     gst: parseFloat(col.selling_gst_amount || 0)
                                   });
                                 }
@@ -990,7 +997,7 @@ const GstManagement = () => {
                                   <div className="flex items-center space-x-2 sm:space-x-3">
                                     <span className="text-xs sm:text-sm font-medium text-slate-500">#{idx + 1}</span>
                                     <span className="text-xs sm:text-sm font-medium text-slate-900 dark:text-white">
-                                      Product #{product.product_id}
+                                      {product.product_name}
                                     </span>
                                   </div>
                                   <span className="text-xs sm:text-sm font-semibold text-emerald-600">
@@ -1042,16 +1049,14 @@ const GstManagement = () => {
               <EmptyState
                 icon={FaFileInvoiceDollar}
                 title="No GST Data Found"
-                description="Enter a user ID to fetch GST collection details."
-                actionText="Clear Search"
-                onAction={() => setSearchUserId("")}
+                description="Loading GST data for your account..."
               />
             </motion.div>
           )}
         </div>
       </motion.div>
 
-      {/* Status Update Modal - Responsive */}
+      {/* Status Update Modal */}
       <AnimatePresence>
         {showStatusModal && selectedCollection && (
           <motion.div
@@ -1094,7 +1099,7 @@ const GstManagement = () => {
                     <option value="">Select a collection</option>
                     {selectedCollection.collections?.map((collection) => (
                       <option key={collection.id} value={collection.id}>
-                        #{collection.id} - Product #{collection.product_id} - ₹{parseFloat(collection.selling_gst_amount || 0).toFixed(2)}
+                        #{collection.id} - {collection.product_name || `Product ${collection.product_id}`} - ₹{parseFloat(collection.selling_gst_amount || 0).toFixed(2)}
                       </option>
                     ))}
                   </select>
@@ -1154,7 +1159,7 @@ const GstManagement = () => {
         )}
       </AnimatePresence>
 
-      {/* Product Details Modal - Responsive */}
+      {/* Product Details Modal */}
       <AnimatePresence>
         {showProductDetailModal && selectedProductDetails && (
           <motion.div
@@ -1177,7 +1182,7 @@ const GstManagement = () => {
                     Product Details
                   </h3>
                   <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-0.5 sm:mt-1">
-                    ID: #{selectedProductDetails.product_id}
+                    {selectedProductDetails.product_name || `Product ${selectedProductDetails.product_id}`}
                   </p>
                 </div>
                 <Button
