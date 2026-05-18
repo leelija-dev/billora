@@ -9,6 +9,7 @@ use App\Models\Unit;
 use App\Models\Customers;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 class UnitController extends Controller
 {
     public function index(Request $request)
@@ -21,9 +22,12 @@ class UnitController extends Controller
             ], 401);
         }
         $user = Auth::id();
+        $sartTime = microtime(true);
+        $cacheKey = "unit_list_{$user}";
+        $fromCache = Cache::tags(['unit_user_' . $user])->has($cacheKey);
         $search = $request->search;
-
-        $units = Unit::where('user_id', $user)
+        $units = Cache::tags(['unit_user_'.$user])->remember($cacheKey,600, function () use ($user, $search) {
+        return Unit::where('user_id', $user)
             ->when($search, function ($query) use ($search) {
                 $query->where(function ($q) use ($search) {
                     $q->where('id', 'like', "%$search%")
@@ -34,9 +38,13 @@ class UnitController extends Controller
             })
             ->paginate(15);
 
+        });
+        $executionTime = microtime(true) - $sartTime;
         return response()->json([
             'status' => true,
             'message' => 'Unit List',
+            'source' => $fromCache ? 'Cache' : 'Database',
+            'response_time' => round($executionTime, 4) . ' sec',
             'data' => $units,
             'user_id' => $user
         ]);
@@ -76,6 +84,7 @@ class UnitController extends Controller
             $data = Unit::create($unit);
             //  dd($unit);
             $units = Unit::where('user_id',$data->user_id)->get();
+            Cache::tags(['unit_user_'.$user])->flush();
             return response()->json([
                 'status' => true,
                 'message' => 'Unit Created Successfully',
@@ -143,6 +152,7 @@ class UnitController extends Controller
             // ->orWhere('user_id',auth()->user()->id),
             // ->orWhere('user_id',auth()->user()->created_by)->first();
             $unit->update($data);
+            Cache::tags(['unit_user_'.$user])->flush();
             return response()->json([
                 'status' => true,
                 'message' => 'Unit Updated Successfully',
@@ -174,6 +184,7 @@ class UnitController extends Controller
             }
             $unit = Unit::findOrFail($id);
             $unit->delete();
+            Cache::tags(['unit_user_'.$user])->flush();
             return response()->json([
                 'status' => true,
                 'message' => 'Unit Deleted Successfully',

@@ -319,6 +319,7 @@ class InvoiceController extends Controller
                 'customer_wise_user_' . $user,
                 'single_invoice_' . $user,
                 'with_out_stock_user_' . $user,
+                'gst_collection_user_' . $user
 
             ])->flush();
             return response()->json([
@@ -678,7 +679,8 @@ class InvoiceController extends Controller
                 'billing_user_' . $request->user_id,
                 'customer_wise_user_' . $request->user_id,
                 'single_invoice_' . $request->user_id,
-                'with_out_stock_user_' . $request->user_id
+                'with_out_stock_user_' . $request->user_id,
+                'gst_collection_user_' . $request->user_id
             ])->flush();
             return response()->json([
                 'status'        => true,
