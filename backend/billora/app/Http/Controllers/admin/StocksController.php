@@ -262,21 +262,21 @@ class StocksController extends Controller
                     'unit_id'       => 'required',
                     'quantity'      => 'required',
                 ]);
-                $product = Products::findOrFail($data['product_id']);
-                if(!$product){
-                    return response()->json([
-                        'status' => false,
-                        'message' => 'Product not found'
-                    ]);
-                }
+                // $product = Products::findOrFail($data['product_id']);
+                // if(!$product){
+                //     return response()->json([
+                //         'status' => false,
+                //         'message' => 'Product not found'
+                //     ]);
+                // }
                 
                 $stock = Stocks::where('user_id', $user)->where('id', $id)->first();
 
                 $stock->update($data);
-                $product->update([
-                    'selling_price' => $data['selling_price'],
-                    'purchase_price' => $data['purchase_price']
-                ]);
+                // $product->update([
+                //     'selling_price' => $data['selling_price'],
+                //     'purchase_price' => $data['purchase_price']
+                // ]);
 
                 return response()->json([
                     'status' => true,
