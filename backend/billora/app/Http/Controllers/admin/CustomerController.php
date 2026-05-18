@@ -332,34 +332,7 @@ class CustomerController extends Controller
         return $response;
     }
 
-    // public function logout(Request $request)
-    // {
-    //     // Use Laravel's built-in session logout
-    //     // This will invalidate the 'thefastbill-session' cookie
-    //     // Auth::logout();
-    //     Auth::guard('web')->logout(); 
-    //     // Also clear Sanctum tokens for backward compatibility
-    //     $token = $request->cookie('auth_token');
-    //     if ($token) {
-    //         $tokenModel = \Laravel\Sanctum\PersonalAccessToken::findToken($token);
-    //         if ($tokenModel) {
-    //             $tokenModel->delete();
-    //         }
-    //     }
-
-    //     $cookieDomain = env('AUTH_COOKIE_DOMAIN', null);
-    //     $response = response()->json([
-    //         'status' => true,
-    //         'message' => 'Logout successful'
-    //     ]);
-
-    //     // Clear all auth cookies
-    //     if ($cookieDomain) {
-    //         $response->cookie('auth_token', '', -1, '/', $cookieDomain);
-    //     }
-
-    //     return $response;
-    // }
+  
     public function logout(Request $request)
     {
         // Delete sanctum tokens
@@ -501,6 +474,273 @@ class CustomerController extends Controller
             ], 500);
         }
     }
+    public function forgotPassword(Request $request)
+{
+    try {
+
+        $request->validate([
+            'email' => 'required|email'
+        ]);
+
+        $customer = Customers::where(
+            'email',
+            $request->email
+        )->first();
+
+        if (!$customer) {
+
+            return response()->json([
+                'status' => false,
+                'message' => 'Email not found'
+            ]);
+        }
+
+        // Generate token
+        $token = Str::random(64);
+
+        // Save token
+        $customer->update([
+            'reset_password_token' => $token,
+            'reset_password_expire_at' => now()->addMinutes(10)
+        ]);
+
+        // Frontend URL
+        $resetUrl =
+            env('FRONTEND_ADMIN_URL') .
+            "/reset-password?token=" . $token;
+        $app_name = config('app.name');
+        $app_url = env('FRONTEND_LOGIN_URL');
+        // Mail HTML
+        $html = "
+            
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta charset='UTF-8'>
+                <title>Reset Your Password</title>
+            </head>
+
+            <body style='margin:0;padding:0;background:#eef2f7;font-family:Helvetica,Arial,sans-serif;'>
+
+                <table width='100%' cellpadding='0' cellspacing='0' style='padding:50px 15px;'>
+                    <tr>
+                        <td align='center'>
+
+                            <!-- Main Card -->
+                            <table width='620' cellpadding='0' cellspacing='0'
+                                style='background:#ffffff;
+                                        border-radius:18px;
+                                        overflow:hidden;
+                                        box-shadow:0 8px 30px rgba(0,0,0,0.08);'>
+
+                                <!-- Top Banner -->
+                                <tr>
+                                    <td style='background:linear-gradient(135deg,#4f46e5,#2563eb);
+                                            padding:45px 40px;
+                                            text-align:center;'>
+
+                                        <div style='background:rgba(255,255,255,0.15);
+                                                    width:80px;
+                                                    height:80px;
+                                                    line-height:80px;
+                                                    border-radius:50%;
+                                                    margin:auto;
+                                                    font-size:38px;
+                                                    color:#ffffff;'>
+
+                                            🔒
+
+                                        </div>
+
+                                        <h1 style='margin:20px 0 10px;
+                                                color:#ffffff;
+                                                font-size:30px;
+                                                font-weight:700;'>
+
+                                            Reset Password
+
+                                        </h1>
+
+                                        <p style='margin:0;
+                                                color:rgba(255,255,255,0.85);
+                                                font-size:15px;'>
+
+                                            Secure access to your account
+
+                                        </p>
+
+                                    </td>
+                                </tr>
+
+                                <!-- Content -->
+                                <tr>
+                                    <td style='padding:45px 40px;color:#1f2937;'>
+
+                                        <p style='margin-top:0;
+                                                font-size:17px;
+                                                font-weight:600;'>
+
+                                            Hi {$customer->name},
+
+                                        </p>
+
+                                        <p style='font-size:15px;
+                                                line-height:1.8;
+                                                color:#4b5563;'>
+
+                                            We received a request to reset the password
+                                            for your account. To continue, click the button below.
+
+                                        </p>
+
+                                        <!-- Button -->
+                                        <div style='text-align:center;margin:40px 0;'>
+
+                                            <a href='{$resetUrl}'
+                                            style='display:inline-block;
+                                                    background:#2563eb;
+                                                    color:#ffffff;
+                                                    padding:16px 38px;
+                                                    border-radius:50px;
+                                                    text-decoration:none;
+                                                    font-size:16px;
+                                                    font-weight:bold;
+                                                    letter-spacing:0.3px;
+                                                    box-shadow:0 4px 14px rgba(37,99,235,0.35);'>
+
+                                                Reset Password
+
+                                            </a>
+
+                                        </div>
+
+                                        <!-- Info Box -->
+                                        <div style='background:#f9fafb;
+                                                    border-left:4px solid #2563eb;
+                                                    padding:18px 20px;
+                                                    border-radius:8px;'>
+
+                                            <p style='margin:0;
+                                                    font-size:14px;
+                                                    line-height:1.7;
+                                                    color:#4b5563;'>
+
+                                                ⏳ This reset link is valid for only
+                                                <strong>10 minutes</strong>.
+                                            
+                                            </p>
+
+                                        </div>
+
+                                        <!-- Divider -->
+                                        <div style='margin:35px 0;
+                                                    border-top:1px solid #e5e7eb;'></div>
+
+                                    </td>
+                                </tr>
+
+                                <!-- Footer -->
+                                <tr>
+                                    <td align='center'
+                                        style='background:#f9fafb;
+                                            padding:25px;
+                                            font-size:12px;
+                                            color:#9ca3af;'>
+
+                                        © ".date('Y')." <a href='{$app_url}' style='color:#2563eb;'>{$app_name}</a> all rights reserved.
+                                       
+                                    </td>
+                                </tr>
+
+                            </table>
+
+                        </td>
+                    </tr>
+                </table>
+
+            </body>
+            </html>
+
+                    ";
+
+        // Send mail
+        Mail::html($html, function ($message) use ($customer) {
+
+            $message->to($customer->email)
+                ->subject('Reset Password');
+        });
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Reset password link sent to email'
+        ]);
+
+    } catch (\Exception $e) {
+
+        return response()->json([
+            'status' => false,
+            'message' => $e->getMessage()
+        ]);
+    }
+}
+public function resetPassword(Request $request)
+{
+    try {
+
+        $request->validate([
+            'token' => 'required',
+            'password' => 'required|confirmed'
+        ]);
+
+        $customer = Customers::where(
+            'reset_password_token',
+            $request->token
+        )->first();
+
+        if (!$customer) {
+
+            return response()->json([
+                'status' => false,
+                'message' => 'Invalid token'
+            ]);
+        }
+
+        // Expire check
+        if (
+            now()->gt($customer->reset_password_expire_at)
+        ) {
+
+            return response()->json([
+                'status' => false,
+                'message' => 'Token expired'
+            ]);
+        }
+
+        // Update password
+        $customer->update([
+
+            'password' => Hash::make(
+                $request->password
+            ),
+
+            'reset_password_token' => null,
+            'reset_password_expire_at' => null
+
+        ]);
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Password reset successfully'
+        ]);
+
+    } catch (\Exception $e) {
+
+        return response()->json([
+            'status' => false,
+            'message' => $e->getMessage()
+        ]);
+    }
+}
 
     // namespace App\Http\Controllers\admin;
 

@@ -34,7 +34,9 @@ protected $fillable=[
         'is_active',
         'business_type_id',
         'products_qr',
-        'products_qr_public_id'
+        'products_qr_public_id',
+        'reset_password_token',
+        'reset_password_expire_at'
 ];
 protected $hidden = [
         'password',

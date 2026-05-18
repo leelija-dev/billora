@@ -47,7 +47,15 @@ Route::get('/test', function () {
 Route::post('/users/login', [CustomerController::class, 'login']);
 Route::post('/users/register', [CustomerController::class, 'store']);
 Route::get('/verify-email/{token}', [CustomerController::class, 'verifyEmail']);
+Route::post(
+    '/forgot-password',
+    [CustomerController::class, 'forgotPassword']
+);
 
+Route::post(
+    '/reset-password',
+    [CustomerController::class, 'resetPassword']
+);
 // Protected routes (require authentication)
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/users', [CustomerController::class, 'index']);
