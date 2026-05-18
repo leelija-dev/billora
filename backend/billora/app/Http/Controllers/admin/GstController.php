@@ -23,7 +23,7 @@ class GstController extends Controller
             $start = microtime(true);
             $cacheKey = "gst_collection_{$user}";
             $fromCache = Cache::tags(['gst_collection_user_' . $user])->has($cacheKey);
-            $data = Cache::tags(['gst_collection_user_' . $user])->remember($cacheKey, 600, function () use ($user) {
+            $data = Cache::tags(['gst_collection_user_' . $user])->remember($cacheKey, 600, function () use ($user,$id) {
         $collection = GstCollection::where('user_id', $id)->get();
         // if($collection->isEmpty()){
         //     return response()->json([
