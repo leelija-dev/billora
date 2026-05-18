@@ -98,6 +98,7 @@ class GstController extends Controller
             'govt_pay_status' => true,
             
         ]);
+        Cache::tags(['gst_collection_user_' . $user])->flush();
         return response()->json([
             'status' => true,
             'message' => 'status updated successfully'

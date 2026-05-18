@@ -283,7 +283,6 @@ class CustomerController extends Controller
                 'message' => 'Please verify your email before login'
             ], 401);
         }
-
         if (!Hash::check($request->password, $user->password)) {
             return response()->json([
                 'status' => false,
