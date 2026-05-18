@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use App\Models\Brand;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;   
 class BrandController extends Controller
 {
   public function index(Request $request)
@@ -20,13 +21,21 @@ class BrandController extends Controller
         }
 
         $user = Auth::user()->id;
-        
+        $startTime = microtime(true);
+        $cacheKey ="brands_{$user}";
+        $fromCache = Cache::tags(['brands_user_'.$user])->has($cacheKey);
+        $brands = Cache::tags(['brands_user_'.$user])
+                      ->remember($cacheKey,600, function () use ($user) {
         // SIMPLE TEST - No search, no complex queries
-        $brands = Brand::where('user_id', $user)->get();
-        
+        return Brand::where('user_id', $user)->get();
+                      
+        });
+        $executionTime = microtime(true) - $startTime;
         return response()->json([
             'status' => 'success',
             'message' => 'Your Brand List',
+            'source' => $fromCache ? 'Cache' : 'Database',
+            'response_time' => round($executionTime, 4) . ' sec',
             'user_id' => $user,
             'data' => $brands
         ]);
@@ -62,6 +71,7 @@ class BrandController extends Controller
         try {
             $brand['slug'] = Str::slug($brand['name']);
             $brand = Brand::create($brand);
+            Cache::tags(['brands_user_'.$user])->flush();
             return response()->json([
                 'status' => 'success',
                 'message' => 'Brand Created Successfully',
@@ -85,6 +95,7 @@ class BrandController extends Controller
         $user =Auth::user()->id;
         try {
             $brand = Brand::where('id',$id)->where('user_id',$user)->get();
+             Cache::tags(['brands_user_'.$user])->flush();
             return response()->json([
                 'status' => 'success',
                 'message' => 'Brand Details',
@@ -119,7 +130,7 @@ class BrandController extends Controller
         $validated['slug'] = Str::slug($validated['name']);
         
         $brand->update($validated);
-
+        Cache::tags(['brands_user_'.$user])->flush();
         return response()->json([
             'status' => 'success',
             'message' => 'Brand Updated Successfully',
@@ -151,6 +162,7 @@ class BrandController extends Controller
             $user =Auth::user()->id;
             $brand = Brand::where('id',$id)->where('user_id',$user);
             $brand->delete();
+             Cache::tags(['brands_user_'.$user])->flush();
             return response()->json([
                 'status' => 'success',
                 'message' => 'Brand Deleted Successfully',

@@ -66,6 +66,7 @@ class CategoriesController extends Controller
         }
         $data['slug'] = Str::slug($data['name']);
         $category = Categories::create($data);
+        Cache::tags(['categories_user_'.$user])->flush();
         return response()->json([
             'status' => true,
             'message' => 'Category Created Successfully',
@@ -128,7 +129,7 @@ class CategoriesController extends Controller
             ], 404);
         }
         $category->update($data);
-
+        Cache::tags(['categories_user_'.$userId])->flush();
         return response()->json([
             'status' => true,
             'message' => 'Category Updated Successfully',
@@ -168,7 +169,7 @@ class CategoriesController extends Controller
         }
 
         $category->delete();
-
+        Cache::tags(['categories_user_'.$user])->flush();
         return response()->json([
             'status' => true,
             'message' => 'Category Deleted Successfully',
