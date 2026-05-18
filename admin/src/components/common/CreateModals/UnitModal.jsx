@@ -10,9 +10,7 @@ const UnitModal = ({ isOpen, onClose, onCreate, initialData = null }) => {
   const [formData, setFormData] = useState({
     name: initialData?.name || '',
     code: initialData?.code || '',
-    description: initialData?.description || '',
-    base_unit: initialData?.base_unit || '',
-    conversion_factor: initialData?.conversion_factor || '',
+    
     user_id: user?.id || '',
     is_active: initialData?.is_active || true
   })
@@ -29,9 +27,7 @@ const UnitModal = ({ isOpen, onClose, onCreate, initialData = null }) => {
       setFormData({
         name: '',
         code: '',
-        description: '',
-        base_unit: '',
-        conversion_factor: '',
+       
         user_id: user?.id || '',
         is_active: true
       })
@@ -115,37 +111,7 @@ const UnitModal = ({ isOpen, onClose, onCreate, initialData = null }) => {
                 required
               />
 
-              <Input
-                label="Base Unit"
-                name="base_unit"
-                value={formData.base_unit}
-                onChange={handleChange}
-                placeholder="Enter base unit (optional)"
-              />
-
-              <Input
-                label="Conversion Factor"
-                name="conversion_factor"
-                value={formData.conversion_factor}
-                onChange={handleChange}
-                type="number"
-                step="0.01"
-                placeholder="Enter conversion factor (optional)"
-              />
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Description
-                </label>
-                <textarea
-                  name="description"
-                  value={formData.description}
-                  onChange={handleChange}
-                  rows={3}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white resize-none"
-                  placeholder="Enter unit description (optional)"
-                />
-              </div>
+              
 
               <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200 dark:border-gray-700">
                 <Button

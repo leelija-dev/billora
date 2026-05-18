@@ -27,11 +27,12 @@ const ProductCard = ({
 
   return (
     <div
-      className={`bg-white rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden relative group border ${
+      className={`bg-white rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden relative group border flex flex-col justify-between ${
         isSelected ? 'border-blue-500 ring-2 ring-blue-200' : 'border-gray-100'
       }`}
     >
-      {/* Discount Badge */}
+      <div>
+        {/* Discount Badge */}
       {product.discount_percentage > 0 && (
         <div className="absolute top-3 left-3 z-10">
           <div className="bg-gradient-to-r from-red-500 to-orange-500 text-white px-2 py-1 rounded-md text-xs font-bold shadow-md flex items-center gap-1">
@@ -140,6 +141,7 @@ const ProductCard = ({
             </>
           )}
         </p>
+      </div>
       </div>
 
       {/* Buttons */}

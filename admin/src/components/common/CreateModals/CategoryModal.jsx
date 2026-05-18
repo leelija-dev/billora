@@ -9,7 +9,7 @@ const CategoryModal = ({ isOpen, onClose, onCreate, initialData = null }) => {
   const { user } = useAuthStore()
   const [formData, setFormData] = useState({
     name: initialData?.name || '',
-    code: initialData?.code || '',
+   
     description: initialData?.description || '',
     parent_id: initialData?.parent_id || '',
     user_id: user?.id || '',
@@ -27,7 +27,7 @@ const CategoryModal = ({ isOpen, onClose, onCreate, initialData = null }) => {
       // Reset form
       setFormData({
         name: '',
-        code: '',
+      
         description: '',
         parent_id: '',
         user_id: user?.id || '',
@@ -102,13 +102,6 @@ const CategoryModal = ({ isOpen, onClose, onCreate, initialData = null }) => {
                 required
               />
 
-              <Input
-                label="Category Code"
-                name="code"
-                value={formData.code}
-                onChange={handleChange}
-                placeholder="Enter category code (optional)"
-              />
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
