@@ -20,10 +20,12 @@ import CartSidebar from '../../components/products/CartSidebar';
 import ProductModal from '../../components/products/ProductModal';
 import RecentOrderModal from '../../components/products/RecentOrderModal';
 import PopupNotification from '../../components/products/PopupNotification';
+import SkeletonLoader from '../../components/products/SkeletonLoader';
 
 const ProductsPage = () => {
   const router = useRouter();
   const { user, token } = useAuthStore();
+  const [isLoading, setIsLoading] = useState(true);
   
   // Subscribe to store changes to ensure state synchronization
   const productsStore = useProductsStore();
@@ -70,6 +72,7 @@ const ProductsPage = () => {
   const [validationErrors, setValidationErrors] = useState({ fullName: '', phone: '' });
   const [isMobile, setIsMobile] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
 
   // Mobile detection
   useEffect(() => {
@@ -405,12 +408,15 @@ const ProductsPage = () => {
       await fetchProducts(page, categoryId, term, user, token);
     } catch (error) {
       console.error("Fetch error:", error);
+    } finally {
+      setIsInitialLoading(false);
     }
   }, [isAuthReady, user, token, fetchProducts, clearError]);
 
   const handleRetry = () => {
     setRetryCount(prev => prev + 1);
     clearError();
+    setIsInitialLoading(true);
     fetchProductsData(1, selectedCategory, searchTerm);
   };
 
@@ -466,7 +472,8 @@ const ProductsPage = () => {
     loading, 
     productsLength: products?.length || 0,
     storeError,
-    isProductsArray: Array.isArray(products)
+    isProductsArray: Array.isArray(products),
+    isInitialLoading
   });
 
   // Sort products only (no price filtering)
@@ -519,7 +526,7 @@ const ProductsPage = () => {
         {/* Main Content */}
         <div className={`flex-1 transition-all duration-300 ${showCart ? 'lg:mr-[40%]' : 'mr-0'}`}>
           <div className="px-4 sm:px-6 md:px-8 lg:px-12 py-8">
-            <div className="max-w-7xl mx-auto">
+            <div className="container mx-auto">
               {/* Header */}
               <div className="text-center mb-8">
                 <h1 className="text-4xl font-bold text-gray-900 mb-2 flex items-center justify-center gap-2">
@@ -541,7 +548,7 @@ const ProductsPage = () => {
                 <div className="flex gap-2">
                   <button
                     onClick={handleSearchSubmit}
-                    className="px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition font-medium flex items-center gap-2"
+                    className="px-6 py-3 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition font-medium flex items-center gap-2"
                   >
                     <FaSearch className="w-4 h-4" />
                     Search
@@ -571,31 +578,38 @@ const ProductsPage = () => {
                 onSortChange={setSort}
               />
 
-              {/* Product Grid with Loading, Error, and Empty States */}
-              <ProductGrid
-                products={sortedProducts}
-                cartQuantities={cartQuantities}
-                selectedItems={selectedItems}
-                onAddToCart={addToCart}
-                onBuyNow={handleBuyNow}
-                onUpdateQuantity={updateQuantity}
-                onSelect={handleCheckboxClick}
-                onImageClick={openProduct}
-                expandedDescriptions={expandedDescriptions}
-                onToggleDescription={toggleDescription}
-                showCart={showCart}
-                isLoading={loading && !storeError}
-                error={storeError}
-                onRetry={handleRetry}
-              />
+              {/* Skeleton Loading or Product Grid */}
+              {isInitialLoading || (loading && products.length === 0) ? (
+                <SkeletonLoader />
+              ) : (
+                <>
+                  {/* Product Grid with Loading, Error, and Empty States */}
+                  <ProductGrid
+                    products={sortedProducts}
+                    cartQuantities={cartQuantities}
+                    selectedItems={selectedItems}
+                    onAddToCart={addToCart}
+                    onBuyNow={handleBuyNow}
+                    onUpdateQuantity={updateQuantity}
+                    onSelect={handleCheckboxClick}
+                    onImageClick={openProduct}
+                    expandedDescriptions={expandedDescriptions}
+                    onToggleDescription={toggleDescription}
+                    showCart={showCart}
+                    isLoading={loading && !storeError && !isInitialLoading}
+                    error={storeError}
+                    onRetry={handleRetry}
+                  />
 
-              {/* Pagination - Only show when products exist and not loading */}
-              {!loading && !storeError && sortedProducts.length > 0 && pagination?.last_page > 1 && (
-                <Pagination
-                  pagination={pagination}
-                  onPageChange={(page) => fetchProductsData(page, selectedCategory, searchTerm)}
-                  loading={loading}
-                />
+                  {/* Pagination - Only show when products exist and not loading */}
+                  {!loading && !storeError && sortedProducts.length > 0 && pagination?.last_page > 1 && (
+                    <Pagination
+                      pagination={pagination}
+                      onPageChange={(page) => fetchProductsData(page, selectedCategory, searchTerm)}
+                      loading={loading}
+                    />
+                  )}
+                </>
               )}
             </div>
           </div>

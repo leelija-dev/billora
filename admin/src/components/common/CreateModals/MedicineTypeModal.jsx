@@ -9,9 +9,7 @@ const MedicineTypeModal = ({ isOpen, onClose, onCreate, initialData = null }) =>
   const { user } = useAuthStore()
   const [formData, setFormData] = useState({
     name: initialData?.name || '',
-    code: initialData?.code || '',
-    description: initialData?.description || '',
-    category: initialData?.category || '',
+   
     user_id: user?.id || '',
     is_active: true
   })
@@ -27,9 +25,7 @@ const MedicineTypeModal = ({ isOpen, onClose, onCreate, initialData = null }) =>
       // Reset form
       setFormData({
         name: '',
-        code: '',
-        description: '',
-        category: '',
+       
         user_id: user?.id || '',
         is_active: true
       })
@@ -102,35 +98,7 @@ const MedicineTypeModal = ({ isOpen, onClose, onCreate, initialData = null }) =>
                 required
               />
 
-              <Input
-                label="Medicine Type Code"
-                name="code"
-                value={formData.code}
-                onChange={handleChange}
-                placeholder="Enter medicine type code (e.g., TAB, CAP, SYR)"
-              />
-
-              <Input
-                label="Category"
-                name="category"
-                value={formData.category}
-                onChange={handleChange}
-                placeholder="Enter medicine category (e.g., Allopathic, Ayurvedic, Homeopathic)"
-              />
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Description
-                </label>
-                <textarea
-                  name="description"
-                  value={formData.description}
-                  onChange={handleChange}
-                  rows={3}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white resize-none"
-                  placeholder="Enter medicine type description (optional)"
-                />
-              </div>
+             
 
               <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200 dark:border-gray-700">
                 <Button

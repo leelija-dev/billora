@@ -9,9 +9,9 @@ const BrandModal = ({ isOpen, onClose, onCreate, initialData = null }) => {
   const { user } = useAuthStore()
   const [formData, setFormData] = useState({
     name: initialData?.name || '',
-    code: initialData?.code || '',
+ 
     description: initialData?.description || '',
-    category: initialData?.category || '',
+   
     user_id: user?.id || '',
     is_active: true
   })
@@ -27,9 +27,9 @@ const BrandModal = ({ isOpen, onClose, onCreate, initialData = null }) => {
       // Reset form
       setFormData({
         name: '',
-        code: '',
+     
         description: '',
-        category: '',
+       
         user_id: user?.id || '',
         is_active: true
       })
@@ -102,21 +102,8 @@ const BrandModal = ({ isOpen, onClose, onCreate, initialData = null }) => {
                 required
               />
 
-              <Input
-                label="Brand Code"
-                name="code"
-                value={formData.code}
-                onChange={handleChange}
-                placeholder="Enter brand code (optional)"
-              />
 
-              <Input
-                label="Category"
-                name="category"
-                value={formData.category}
-                onChange={handleChange}
-                placeholder="Enter brand category (optional)"
-              />
+             
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
