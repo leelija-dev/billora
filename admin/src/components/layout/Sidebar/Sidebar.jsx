@@ -172,13 +172,13 @@ const Sidebar = () => {
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: -20 }}
-                  transition={{ duration: 0.2 }}
+                  transition={{ duration: 0.1 }}
                   className="flex flex-col"
                 >
-                  <span className="font-bold text-xl bg-gradient-to-r from-gray-800 to-gray-600 dark:from-white dark:to-gray-300 bg-clip-text text-transparent">
-                    Billora
+                  <span className="font-semibold text-xl bg-gradient-to-r from-gray-800 to-gray-600 dark:from-white dark:to-gray-300 bg-clip-text text-transparent">
+                    The Fast Bill
                   </span>
-                  <span className="text-xs text-gray-500 dark:text-gray-400">v2.0.0</span>
+                  <span className="text-xs text-gray-500 dark:text-gray-400"></span>
                 </motion.div>
                  </>
               )}
@@ -349,24 +349,7 @@ const Sidebar = () => {
               </div>
             )}
 
-            {/* User profile section */}
-            <div className="flex items-center space-x-3 p-2 rounded-xl bg-gradient-to-r from-primary-500/5 to-secondary-500/5 dark:from-primary-500/10 dark:to-secondary-500/10">
-              <motion.div
-                whileHover={{ scale: 1.05, rotate: 5 }}
-                className="flex-shrink-0 w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center text-white font-bold shadow-lg shadow-purple-500/20"
-              >
-                {user?.name?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || 'U'}
-              </motion.div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">
-                  {user?.name || 'User'}
-                </p>
-                <p className="text-xs text-gray-500 dark:text-gray-400 truncate flex items-center">
-                  <span className="w-1.5 h-1.5 bg-green-500 rounded-full mr-1.5" />
-                  {user?.plan_name || 'Free Plan'}
-                </p>
-              </div>
-            </div>
+           
           </motion.div>
         )}
       </motion.aside>

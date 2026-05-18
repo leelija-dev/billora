@@ -34,12 +34,13 @@ const Login = () => {
   } = useForm()
 
   const onSubmit = async (data) => {
-    const result = await login(data)
-    if (result.success) {
-      const from = location.state?.from?.pathname || '/dashboard'
-      navigate(from, { replace: true })
-    }
+  const result = await login(data);
+  if (result.success) {
+    const from = location.state?.from?.pathname || '/dashboard';
+    navigate(from, { replace: true });
   }
+  // Don't do anything else on failure - the error toast is already shown
+};
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 to-secondary-100 dark:from-gray-900 dark:to-gray-800 p-4">

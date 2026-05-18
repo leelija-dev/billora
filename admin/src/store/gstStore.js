@@ -47,39 +47,51 @@ export const useGstStore = create((set, get) => ({
       const collections = responseData.data || [];
       const products = responseData['all products'] || [];
       
-      // Create a product lookup map for efficient access
+      // Create a comprehensive product lookup map with all product details
       const productMap = {};
       products.forEach(item => {
-        if (item.product && item.product_id) {
-          productMap[item.product_id] = item.product;
+        // Store all product data including name
+        if (item.product_id) {
+          productMap[item.product_id] = {
+            product_id: item.product_id,
+            name: item.product?.name || item.product_name || `Product ${item.product_id}`,
+            sku: item.product?.sku || item.sku || null,
+            total_quantity: parseFloat(item.total_quantity) || 0,
+            total_purchase_price: parseFloat(item.total_purchase_price) || 0,
+            total_purchase_gst: parseFloat(item.total_purchase_gst) || 0,
+            total_selling_price: parseFloat(item.total_selling_price) || 0,
+            total_selling_gst: parseFloat(item.total_selling_gst) || 0,
+            total_products: parseInt(item.total_products) || 0,
+            product: item.product || null
+          };
         }
       });
       
+      console.log('Product Map created:', productMap);
+      
       // Merge product information into collections
-      const enrichedCollections = collections.map(collection => ({
-        ...collection,
-        product: productMap[collection.product_id] || null,
-        product_name: productMap[collection.product_id]?.name || null,
-        product_sku: productMap[collection.product_id]?.sku || null
-      }));
+      const enrichedCollections = collections.map(collection => {
+        const productInfo = productMap[collection.product_id];
+        return {
+          ...collection,
+          product: productInfo || null,
+          product_name: productInfo?.name || `Product ${collection.product_id}`,
+          product_sku: productInfo?.sku || null,
+          product_details: productInfo // Store full product details
+        };
+      });
       
       // Extract clean product data from the products array (aggregated data)
       const cleanProducts = products.map(item => {
-        // Log the item structure for debugging
-        console.log('Processing product item:', item);
-        
-        // The API returns aggregated product data with these fields:
-        // product_id, total_quantity, total_purchase_price, total_purchase_gst,
-        // total_selling_price, total_selling_gst, total_products
         return {
           product_id: item.product_id,
+          product_name: item.product?.name || item.product_name || `Product ${item.product_id}`,
           total_quantity: parseFloat(item.total_quantity) || 0,
           total_purchase_price: parseFloat(item.total_purchase_price) || 0,
           total_purchase_gst: parseFloat(item.total_purchase_gst) || 0,
           total_selling_price: parseFloat(item.total_selling_price) || 0,
           total_selling_gst: parseFloat(item.total_selling_gst) || 0,
           total_products: parseInt(item.total_products) || 0,
-          // Keep product details if available
           product: item.product || null
         };
       });
@@ -91,16 +103,14 @@ export const useGstStore = create((set, get) => ({
         totalGST: responseData['Total GST'] || '0',
         govtGSTDue: responseData['Govt GST Due'] || '0',
         summary: {
-          totalCollections: responseData.data?.length || 0,
-          totalProducts: responseData['all products']?.length || 0
+          totalCollections: enrichedCollections.length || 0,
+          totalProducts: cleanProducts.length || 0
         }
       };
       
-      console.log('Enriched GST Data:', gstData);
-      console.log('Clean Products:', cleanProducts);
-      if (cleanProducts.length > 0) {
-        console.log('First Clean Product:', cleanProducts[0]);
-      }
+      console.log('Enriched GST Data with Product Names:', gstData);
+      console.log('Sample collection with product name:', enrichedCollections[0]);
+      console.log('Clean Products with names:', cleanProducts);
       
       set({ 
         selectedCollection: gstData,

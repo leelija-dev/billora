@@ -1,6 +1,8 @@
 // services/authService.js - Cookie-based authentication
 import { api } from "../utils/secureApi";
 
+let isLoggingOut = false;
+
 export const loginUser = async (userData) => {
   try {
     console.log('🔐 Attempting login for:', userData.email);
@@ -25,20 +27,7 @@ export const loginUser = async (userData) => {
       throw new Error(response.data.message || 'Login failed');
     }
   } catch (error) {
-    // console.error('❌ Login error:', error);
-    // console.error('❌ Error response:', error.response);
-    // console.error('❌ Error data:', error.response?.data);
-    
-    // Provide specific error messages
-    if (error.response?.data.message?.includes("User not found")) {
-      throw new Error('User not found. Please check your credentials.');
-    } else if (error.response?.data.message?.includes("password")) {
-      throw new Error('Invalid password. Please try again.');
-    } else if (error.response?.data.message?.includes("verify")) {
-      throw new Error('Email not verified. Please check your email.');
-    } else {
-      throw error;
-    }
+    throw error;
   }
 };
 
@@ -60,6 +49,14 @@ export const registerUser = async (userData) => {
 };
 
 export const logoutUser = async (userId) => {
+  // Prevent multiple simultaneous logout attempts
+  if (isLoggingOut) {
+    console.log('⚠️ Logout already in progress, skipping...');
+    return { success: true, message: "Logout already in progress" };
+  }
+  
+  isLoggingOut = true;
+  
   try {
     const response = await api.post("/users/logout", { user_id: userId });
     
@@ -70,7 +67,13 @@ export const logoutUser = async (userId) => {
     return response;
   } catch (error) {
     // Don't throw error for logout - always succeed locally
+    console.log('Logout API error (session may already be expired):', error.message);
     return { success: true, message: "Logged out successfully" };
+  } finally {
+    // Reset lock after delay
+    setTimeout(() => {
+      isLoggingOut = false;
+    }, 500);
   }
 };
 
