@@ -8,7 +8,7 @@ use App\Models\Store;
 use Illuminate\Support\Facades\Auth;
 use App\Models\Customers;
 use Illuminate\Support\Facades\File;
-
+use Illuminate\Support\Facades\Cache;
 class StoreController extends Controller
 {
     public function index(Request $request, $id)
@@ -22,9 +22,12 @@ class StoreController extends Controller
 
                 ]);
             }
+            $startTime = microtime(true);
+            $cacheKey = "store_list_{$user}";
+            $formCache = Cache::tags(['store_user_' . $user])->has($cacheKey);
             $search = $request->search;
-
-            $store = Store::where('user_id', $user)
+            $store = Cache::tags(['store_user_'.$user])->remember($cacheKey,600, function () use ($user, $search) {
+               return Store::where('user_id', $user)
                 ->where(function ($query) use ($search) {
                     $query->where('name', 'like', "%$search%")
                         ->orWhere('gst', 'like', "%$search%")
@@ -34,18 +37,20 @@ class StoreController extends Controller
                         ->orWhere('city', 'like', "%$search%");
                 })
                 ->paginate(15);
-
-            if ($store->isEmpty()) {
-                return response()->json([
-                    'status' => false,
-                    'message' => 'Does not have any data',
-                    'data' => null
-                ]);
-            }
-
+            });
+            // if ($store->isEmpty()) {
+            //     return response()->json([
+            //         'status' => false,
+            //         'message' => 'Does not have any data',
+            //         'data' => null
+            //     ]);
+            // }
+            $executionTime = microtime(true) - $startTime;
             return response()->json([
                 'status' => true,
                 'message' => 'Store List',
+                'source' => $formCache ? 'Cache' : 'Database',
+                'response_time' => round($executionTime, 4) . ' sec',
                 'data' => $store
             ]);
         } catch (\Exception $e) {
@@ -112,6 +117,7 @@ class StoreController extends Controller
         }
         try {
             $store = Store::create($store);
+            Cache::tags(['store_user_'.$user])->flush();
             return response()->json([
                 'status' => true,
                 'message' => 'Store Created Successfully',
@@ -130,6 +136,7 @@ class StoreController extends Controller
 
             $userId = Auth::user()->id;
             $customer =  Customers::findOrFail($userId);
+            Cache::tags(['store_user_'.$userId])->flush();
             if ($customer->plan_id == null || $customer->is_active == false) {
                 return response()->json([
                     'status' => false,
@@ -210,6 +217,7 @@ class StoreController extends Controller
                 $data['logo'] = 'logos/' . $fileName;
             }
             $store->update($data);
+            Cache::tags(['store_user_'.$user])->flush();
             return response()->json([
                 'status' => true,
                 'message' => 'Store Updated Successfully',
