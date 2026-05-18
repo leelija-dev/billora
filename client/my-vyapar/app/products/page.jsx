@@ -548,7 +548,7 @@ const ProductsPage = () => {
                 <div className="flex gap-2">
                   <button
                     onClick={handleSearchSubmit}
-                    className="px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition font-medium flex items-center gap-2"
+                    className="px-6 py-3 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition font-medium flex items-center gap-2"
                   >
                     <FaSearch className="w-4 h-4" />
                     Search
