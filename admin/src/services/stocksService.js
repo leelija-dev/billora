@@ -2,9 +2,21 @@ import { apiClient } from './apiClient';
 
 export const stocksAPI = {
   // Get all stocks with search
-  getAll: (search = '') => {
-    const params = search ? `?search=${encodeURIComponent(search)}` : '';
-    return apiClient.get(`/stocks${params}`);
+ getAll: (search = '', page = 1) => {
+    const params = new URLSearchParams();
+    
+    if (search) {
+      params.append('search', encodeURIComponent(search));
+    }
+    
+    if (page) {
+      params.append('page', page);
+    }
+    
+    const queryString = params.toString();
+    const url = queryString ? `/stocks?${queryString}` : '/stocks';
+    
+    return apiClient.get(url);
   },
 
   // Get single stock
