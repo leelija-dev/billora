@@ -8,13 +8,22 @@ use App\Models\Categories;
 use Illuminate\Support\Str;
 use App\Models\Customers;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 class CategoriesController extends Controller
 {
     public function index(Request $request)
 {
     $user = Auth::user()->id;
     $search = $request->search;
-    $categories = Categories::where('user_id', $user)
+    $cacheKey ='categories_' . $user . '_' . md5($search . '_' . $request->page);
+    $fromCache = Cache::tags(['categories_user_'.$user])->has($cacheKey);
+
+    $startTime = microtime(true);
+    $categories = Cache::tags(['categories_user_'.$user])
+                      ->remember($cacheKey,600, function () use ($user, $search) {
+        
+    
+    return Categories::where('user_id', $user)
         ->where(function ($query) use ($search) {
             $query->where('id', 'like', "%$search%")
                 ->orWhere('name', 'like', "%$search%")
@@ -22,10 +31,13 @@ class CategoriesController extends Controller
                 ->orWhere('slug', 'like', "%$search%");
         })
         ->paginate(15);
-
+});
+    $executionTime = microtime(true) - $startTime;
     return response()->json([
         'status' => true,
         'message' => 'Category List',
+        'source' => $fromCache ? 'Cache' : 'Database',
+        'response_time' => round($executionTime, 4) . ' sec',
         'data' => $categories
     ]);
 }
