@@ -1078,7 +1078,16 @@ class ProductsController extends Controller
     public function userProducts(Request $request, $id)
     {
         try {
-
+            $startTime = microtime(true);
+            // $cacheKey = 'products_user_' . $id;
+            $cacheKey = "products_user_{$id}_" . md5(
+                json_encode([
+                    'search' => $request->search,
+                    'page' => $request->page
+                ])
+            );
+            $fromCache = Cache::tags(['products_user_'.$id])->has($cacheKey);
+            $data = Cache::tags(['products_user_'.$id])->remember($cacheKey,600, function () use ($id, $request) {
             // $products = Products::with('brand','category','unit')->where('user_id', $id)->where('is_active',true)->paginate(15);
             $categoies = Categories::where('user_id', $id)->where('is_active', true)->get();
             $brands = Brand::where('user_id', $id)->where('is_active', true)->get();
@@ -1112,21 +1121,26 @@ class ProductsController extends Controller
                             });
                     });
                 })
+                ->orderBy('id', 'desc')
                 ->paginate(12);
-            if (!$products) {
+                return [
+                    'status' => true,
+                    'categories' => $categoies,
+                    'brands' => $brands,
+                    'stores' => $store,
+                    'products' => $products
+                ];
+            });
+            if ($data['products']->count() == 0) {
                 return response()->json([
                     'status' => false,
                     'message' => 'Product not found!'
                 ]);
             }
-            return response()->json([
-                'status' => true,
-                'categories' => $categoies,
-                'brands' => $brands,
-                'stores' => $store,
-                'products' => $products
-
-            ]);
+            $executionTime = microtime(true) - $startTime;
+             $data['response_time'] = round($executionTime, 4) . ' sec';
+             $data['source'] = $fromCache ? 'Cache' : 'Database';
+            return response()->json($data);
         } catch (\Exception $e) {
             return response()->json([
                 'status' => false,
@@ -1138,25 +1152,32 @@ class ProductsController extends Controller
     public function categoryProducts(Request $request, $id)
     {
         try {
-
+            $startTime = microtime(true);
+            $cacheKey = 'category_products'.$id;
+            $fromCache = Cache::tags(['category_products_user_'.$id])->get($cacheKey);
             $user_id = $request->user_id;
 
-            $products = Products::with('brand', 'category', 'unit')->where('category_id', $id)->where('user_id', $user_id)->paginate(12);
-            $categories = Categories::where('user_id', $user_id)
-                ->where('is_active', 1)
-                ->get();
-            if (!$products) {
+            $data = Cache::tags(['category_products_user_'.$id])->remember($cacheKey,600, function () use ($id, $user_id) {
+                $products = Products::with('brand', 'category', 'unit')->where('category_id', $id)->where('user_id', $user_id)->paginate(12);
+                $categories = Categories::where('user_id', $user_id)
+                    ->where('is_active', 1)
+                    ->get();
+                return [
+                    'status' => true,
+                    'products' => $products,
+                    'categories' => $categories
+                ];
+            });
+            if ($data['products']->count() == 0) {
                 return response()->json([
                     'status'  => false,
                     'message' => 'Product not found!'
                 ]);
             }
-            return response()->json([
-                'status' => true,
-                'products' => $products,
-                'categories' => $categories
-
-            ]);
+            $data['source'] = $fromCache ? 'Cache' : 'Database';
+            $executionTime = microtime(true) - $startTime;
+            $data['response_time'] = round($executionTime, 4) . ' sec';
+            return response()->json($data);
         } catch (\Exception $e) {
             return response()->json([
                 'status' => false,
