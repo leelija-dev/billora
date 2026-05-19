@@ -93,7 +93,7 @@ class CustomerController extends Controller
             $data['verification_token'] = Str::random(64);
             $data['password'] = Hash::make($data['password']);
             $customer = Customers::create($data);
-            $qrUrl = env('FRONTEND_ADMIN_URL', 'https://thefastbill.com') . '/products/id=' . $customer->id;
+            $qrUrl = env('FRONTEND_ADMIN_URL', 'https://thefastbill.com') . '/products/' . $customer->id;
 
             $renderer = new ImageRenderer(
                 new RendererStyle(200),

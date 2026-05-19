@@ -335,7 +335,7 @@ const Stock = () => {
       accessor: 'selling_price',
       cell: (value) => (
         <span className="font-semibold text-gray-900 dark:text-white">
-          ${value ? parseFloat(value).toFixed(2) : '0.00'}
+          ₹{value ? parseFloat(value).toFixed(2) : '0.00'}
         </span>
       ),
     },
@@ -344,7 +344,7 @@ const Stock = () => {
       accessor: 'purchase_price',
       cell: (value) => (
         <span className="text-sm text-gray-600 dark:text-gray-300">
-          ${value ? parseFloat(value).toFixed(2) : '0.00'}
+          ₹{value ? parseFloat(value).toFixed(2) : '0.00'}
         </span>
       ),
     },
@@ -357,7 +357,7 @@ const Stock = () => {
         const total = quantity * price
         return (
           <span className="font-semibold text-gray-900 dark:text-white">
-            ${total.toFixed(2)}
+            ₹{total.toFixed(2)}
           </span>
         )
       },

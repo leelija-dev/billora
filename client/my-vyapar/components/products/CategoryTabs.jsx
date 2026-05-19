@@ -15,7 +15,7 @@ const CategoryTabs = ({ categories, selectedCategory, onCategoryChange }) => {
   };
 
   return (
-    <div className="hidden md:flex gap-2 mb-8 overflow-x-auto pb-2">
+    <div className="hidden md:flex gap-2 mb-8 overflow-x-auto pb-2 flex-wrap">
       <button
         onClick={() => handleCategoryClick("All")}
         className={`px-4 py-2 rounded-full whitespace-nowrap transition-all duration-200 flex items-center gap-2 ${

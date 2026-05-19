@@ -2,14 +2,15 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { FaCheckCircle, FaTruck, FaClock, FaReceipt, FaShoppingBag } from "react-icons/fa";
+import { FaCheckCircle, FaClock, FaReceipt, FaShoppingBag } from "react-icons/fa";
 import { logger } from '../../utils/logger';
 
 const OrderSuccessPage = () => {
   const router = useRouter();
-  const [countdown, setCountdown] = useState(60);
+  const [countdown, setCountdown] = useState(5);
   const [orderDetails, setOrderDetails] = useState(null);
   const [mounted, setMounted] = useState(false);
+  const [userId, setUserId] = useState(null);
 
   useEffect(() => {
     setMounted(true);
@@ -20,47 +21,110 @@ const OrderSuccessPage = () => {
       try {
         const order = JSON.parse(pendingOrder);
         setOrderDetails(order);
+        console.log("✅ Retrieved order details:", order);
       } catch (e) {
         logger.error("Error parsing order:", e);
       }
     }
 
-    // Auto redirect after 5 seconds
-    const timer = setInterval(() => {
-      setCountdown((prev) => {
-        if (prev <= 1) {
-          clearInterval(timer);
-          window.location.href = "/products";
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-
-    return () => clearInterval(timer);
+    // Get user ID from localStorage (stored during order placement)
+    const storedUserId = localStorage.getItem("productUserId");
+    console.log("📌 Stored user ID from localStorage:", storedUserId);
+    
+    if (storedUserId) {
+      try {
+        const parsedUserId = JSON.parse(storedUserId);
+        setUserId(parsedUserId);
+        console.log("✅ Retrieved user ID for redirect:", parsedUserId);
+      } catch (e) {
+        logger.error("Error parsing user ID:", e);
+      }
+    } else {
+      console.log("⚠️ No user ID found in localStorage");
+    }
   }, []);
+
+  // Handle redirect separately when userId is available
+  useEffect(() => {
+    if (!userId && orderDetails) {
+      console.log("⚠️ Waiting for userId to be set before redirect");
+      return;
+    }
+
+    if (userId || orderDetails) {
+      console.log("🚀 Starting redirect timer with userId:", userId);
+      
+      const timer = setInterval(() => {
+        setCountdown((prev) => {
+          if (prev <= 1) {
+            clearInterval(timer);
+            
+            // Clear localStorage before redirect to prevent showing old data
+            console.log("🧹 Clearing localStorage before redirect");
+            localStorage.removeItem("productUserId");
+            localStorage.removeItem("pendingProductOrder");
+            
+            // Use router.push for client-side navigation
+            if (userId) {
+              console.log("🔄 Redirecting to products page with user ID:", userId);
+              router.push(`/products/${userId}`);
+            } else if (orderDetails?.userId) {
+              console.log("🔄 Redirecting with userId from orderDetails:", orderDetails.userId);
+              router.push(`/products/${orderDetails.userId}`);
+            } else {
+              console.log("⚠️ No user ID found, redirecting to products page");
+              router.push("/products");
+            }
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+
+      return () => clearInterval(timer);
+    }
+  }, [userId, orderDetails, router]);
+
+  // Handle manual navigation without reload
+  const handleContinueShopping = () => {
+    // Clear localStorage before redirect
+    console.log("🧹 Clearing localStorage on manual redirect");
+    localStorage.removeItem("productUserId");
+    localStorage.removeItem("pendingProductOrder");
+    
+    if (userId) {
+      console.log("🔵 Manual redirect to products with user ID:", userId);
+      router.push(`/products/${userId}`);
+    } else if (orderDetails?.userId) {
+      router.push(`/products/${orderDetails.userId}`);
+    } else {
+      router.push("/products");
+    }
+  };
 
   // Don't render anything until mounted to prevent hydration mismatch
   if (!mounted) {
     return null;
   }
-if (!orderDetails) {
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-xl p-8 max-w-md w-full text-center">
-        <h1 className="text-2xl font-bold text-gray-800">No order found</h1>
-        <p className="text-gray-600 mt-2">You have not ordered yet.</p>
 
-        <button
-          onClick={() => (window.location.href = "/products")}
-          className="mt-6 w-full bg-blue-600 text-white py-3 rounded-xl font-semibold hover:bg-blue-700 transition"
-        >
-          Go to Products
-        </button>
+  if (!orderDetails) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white flex items-center justify-center p-4">
+        <div className="bg-white rounded-2xl shadow-xl p-8 max-w-md w-full text-center">
+          <h1 className="text-2xl font-bold text-gray-800">No order found</h1>
+          <p className="text-gray-600 mt-2">You have not ordered yet.</p>
+
+          <button
+            onClick={handleContinueShopping}
+            className="mt-6 w-full bg-blue-600 text-white py-3 rounded-xl font-semibold hover:bg-blue-700 transition"
+          >
+            Go to Products
+          </button>
+        </div>
       </div>
-    </div>
-  );
-}
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 overflow-hidden relative">
       {/* Confetti Animation */}
@@ -92,7 +156,7 @@ if (!orderDetails) {
 
       <div className="relative z-10 flex items-center justify-center min-h-screen p-4">
         <div className="max-w-5xl w-full mx-auto">
-          {/* Success Card - RECTANGULAR (wider, less height) */}
+          {/* Success Card */}
           <div className="bg-white rounded-3xl shadow-2xl overflow-hidden">
             <div className="grid grid-cols-1 lg:grid-cols-2">
               {/* Left Side - Success Header & Order Info */}
@@ -147,19 +211,12 @@ if (!orderDetails) {
                 {/* Action Buttons */}
                 <div className="flex flex-col sm:flex-row gap-3">
                   <button
-                    onClick={() => window.location.href = "/products"}
+                    onClick={handleContinueShopping}
                     className="flex-1 bg-gradient-to-r from-green-500 to-emerald-600 text-white py-2.5 rounded-xl font-semibold hover:shadow-lg transition-all duration-300 hover:scale-105 flex items-center justify-center gap-2 text-sm"
                   >
                     <FaShoppingBag className="w-4 h-4" />
                     Continue Shopping
                   </button>
-                  {/* <button
-                    onClick={() => window.location.href = "/orders"}
-                    className="flex-1 bg-gray-100 text-gray-700 py-2.5 rounded-xl font-semibold hover:bg-gray-200 transition-all duration-300 flex items-center justify-center gap-2 text-sm"
-                  >
-                    <FaReceipt className="w-4 h-4" />
-                    View Orders
-                  </button> */}
                 </div>
 
                 {/* Auto Redirect Message */}
@@ -180,7 +237,7 @@ if (!orderDetails) {
                       </div>
                       <div className="flex-1">
                         <p className="font-semibold text-gray-800">Order Confirmed</p>
-                        <p className="text-sm text-gray-500">Your have successfully placed the order </p>
+                        <p className="text-sm text-gray-500">Your have successfully placed the order</p>
                       </div>
                     </div>
                     <div className="flex items-start gap-4 relative">
@@ -192,15 +249,6 @@ if (!orderDetails) {
                         <p className="text-sm text-gray-500">Your Order is being processed</p>
                       </div>
                     </div>
-                    {/* <div className="flex items-start gap-4 relative">
-                      <div className="relative z-10 w-10 h-10 bg-gray-300 rounded-full flex items-center justify-center flex-shrink-0">
-                        <FaTruck className="w-5 h-5 text-gray-500" />
-                      </div>
-                      <div className="flex-1">
-                        <p className="font-semibold text-gray-400">On the Way</p>
-                        <p className="text-sm text-gray-400">Your order is out for delivery</p>
-                      </div>
-                    </div> */}
                     <div className="flex items-start gap-4 relative">
                       <div className="relative z-10 w-10 h-10 bg-gray-300 rounded-full flex items-center justify-center flex-shrink-0">
                         <FaReceipt className="w-5 h-5 text-gray-500" />
