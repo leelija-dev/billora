@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\MedicineType;
 use Illuminate\Support\Facades\Auth;use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Cache;
 class MedicineTypeController extends Controller
 {
     public function index($id){
@@ -15,6 +16,7 @@ class MedicineTypeController extends Controller
                 'message'   => 'Authentication required. Please login first.'
             ]);
         }
+        $sartTime = microtime(true);
         $user=Auth::user()->id;
         if($id != $user){
             return response()->json([
@@ -22,11 +24,18 @@ class MedicineTypeController extends Controller
                 'message'   => 'You are not authorized to access this resource.'
             ]);
         }
+        $cacheKey = "medicine_types_{$user}";
+        $fromCache = Cache::tags(['medicine_types_user_' . $user])->has($cacheKey);
         try{
-        $medicineType = MedicineType::where('user_id', $id)->get();
+        $medicineType = Cache::tags(['medicine_types_user_' . $user])->remember($cacheKey, 600, function () use ($id) {
+            return MedicineType::where('user_id', $id)->get();
+        });
+        $executionTime = microtime(true) - $sartTime;
         return response()->json([
             'status'    => true,
             'message'   => 'Medicine Type List',
+            'source'    => $fromCache ? 'Cache' : 'Database',
+            'response_time' => round($executionTime, 4) . ' sec',
             'data'      => $medicineType
         ]);
         }catch(\Exception $e){
@@ -60,6 +69,7 @@ class MedicineTypeController extends Controller
         $data['slug'] = Str::slug($data['name']);
         $data['created_by'] = $user;
         $medicineType = MedicineType::create($data);
+        Cache::tags(['medicine_types_user_' . $user])->flush();
         return response()->json([
             'status'    => true,
             'message'   => 'Medicine Type Created Successfully',
@@ -80,7 +90,10 @@ class MedicineTypeController extends Controller
                     'message'   => 'Authentication required. Please login first.'
                 ]);
             }
+            Cache::tags(['medicine_types_user_' . Auth::user()->id])->flush();
+             $user = Auth::user()->id;
             $user = Auth::user()->id;
+
         $medicineType = MedicineType::where('id', $id)->where('user_id', $user)->first();
         return response()->json([
             'status'    => true,
@@ -123,6 +136,7 @@ class MedicineTypeController extends Controller
         }
         $data['slug'] = Str::slug($data['name']);
         $medicineType->update($data);
+        Cache::tags(['medicine_types_user_' . $user])->flush();
         return response()->json([
             'status'    => true,
             'message'   => 'Medicine Type Updated Successfully',
@@ -154,6 +168,7 @@ class MedicineTypeController extends Controller
             ]);
         }
         $medicineType->delete();
+        Cache::tags(['medicine_types_user_' . $user])->flush();
         return response()->json([
             'status'    => true,
             'message'   => 'Medicine Type Deleted Successfully',

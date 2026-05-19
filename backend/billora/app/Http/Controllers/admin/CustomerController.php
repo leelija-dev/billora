@@ -104,8 +104,8 @@ class CustomerController extends Controller
             $tempFile = sys_get_temp_dir() . '/qr_' . $customer->id . '.svg';
 
             $writer->writeFile($qrUrl, $tempFile);
-           $upload = Cloudinary::uploadApi()->upload(
-            $tempFile,
+            $upload = Cloudinary::uploadApi()->upload(
+                $tempFile,
                 [
                     'folder' => 'Thefastbill/customer_products',
                     'public_id' => 'customer_qr_' . $customer->id,
@@ -120,7 +120,7 @@ class CustomerController extends Controller
                 'products_qr' => $upload['secure_url'],
                 'products_qr_public_id' => $upload['public_id']
             ]);
-           
+
             Log::info('QR Generated Successfully');
 
             // $customer->notify(new VerifyEmailNotification($data['verification_token']));
@@ -331,7 +331,7 @@ class CustomerController extends Controller
         return $response;
     }
 
-  
+
     public function logout(Request $request)
     {
         // Delete sanctum tokens
@@ -474,43 +474,43 @@ class CustomerController extends Controller
         }
     }
     public function forgotPassword(Request $request)
-{
-    try {
+    {
+        try {
 
-        $request->validate([
-            'email' => 'required|email'
-        ]);
-
-        $customer = Customers::where(
-            'email',
-            $request->email
-        )->first();
-
-        if (!$customer) {
-
-            return response()->json([
-                'status' => false,
-                'message' => 'Email not found'
+            $request->validate([
+                'email' => 'required|email'
             ]);
-        }
 
-        // Generate token
-        $token = Str::random(64);
+            $customer = Customers::where(
+                'email',
+                $request->email
+            )->first();
 
-        // Save token
-        $customer->update([
-            'reset_password_token' => $token,
-            'reset_password_expire_at' => now()->addMinutes(10)
-        ]);
+            if (!$customer) {
 
-        // Frontend URL
-        $resetUrl =
-            env('FRONTEND_ADMIN_URL') .
-            "/reset-password?token=" . $token;
-        $app_name = config('app.name');
-        $app_url = env('FRONTEND_LOGIN_URL');
-        // Mail HTML
-        $html = "
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Email not found'
+                ]);
+            }
+
+            // Generate token
+            $token = Str::random(64);
+
+            // Save token
+            $customer->update([
+                'reset_password_token' => $token,
+                'reset_password_expire_at' => now()->addMinutes(10)
+            ]);
+
+            // Frontend URL
+            $resetUrl =
+                env('FRONTEND_ADMIN_URL') .
+                "/reset-password?token=" . $token;
+            $app_name = config('app.name');
+            $app_url = env('FRONTEND_LOGIN_URL');
+            // Mail HTML
+            $html = "
             
             <!DOCTYPE html>
             <html>
@@ -646,7 +646,7 @@ class CustomerController extends Controller
                                             font-size:12px;
                                             color:#9ca3af;'>
 
-                                        © ".date('Y')." <a href='{$app_url}' style='color:#2563eb;'>{$app_name}</a> all rights reserved.
+                                        © " . date('Y') . " <a href='{$app_url}' style='color:#2563eb;'>{$app_name}</a> all rights reserved.
                                        
                                     </td>
                                 </tr>
@@ -662,84 +662,82 @@ class CustomerController extends Controller
 
                     ";
 
-        // Send mail
-        Mail::html($html, function ($message) use ($customer) {
+            // Send mail
+            Mail::html($html, function ($message) use ($customer) {
 
-            $message->to($customer->email)
-                ->subject('Reset Password');
-        });
+                $message->to($customer->email)
+                    ->subject('Reset Password');
+            });
 
-        return response()->json([
-            'status' => true,
-            'message' => 'Reset password link sent to email'
-        ]);
-
-    } catch (\Exception $e) {
-
-        return response()->json([
-            'status' => false,
-            'message' => $e->getMessage()
-        ]);
-    }
-}
-public function resetPassword(Request $request)
-{
-    try {
-
-        $request->validate([
-            'token' => 'required',
-            'password' => 'required|confirmed'
-        ]);
-
-        $customer = Customers::where(
-            'reset_password_token',
-            $request->token
-        )->first();
-
-        if (!$customer) {
+            return response()->json([
+                'status' => true,
+                'message' => 'Reset password link sent to email'
+            ]);
+        } catch (\Exception $e) {
 
             return response()->json([
                 'status' => false,
-                'message' => 'Invalid token'
+                'message' => $e->getMessage()
             ]);
         }
+    }
+    public function resetPassword(Request $request)
+    {
+        try {
 
-        // Expire check
-        if (
-            now()->gt($customer->reset_password_expire_at)
-        ) {
+            $request->validate([
+                'token' => 'required',
+                'password' => 'required|confirmed'
+            ]);
+
+            $customer = Customers::where(
+                'reset_password_token',
+                $request->token
+            )->first();
+
+            if (!$customer) {
+
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Invalid token'
+                ]);
+            }
+
+            // Expire check
+            if (
+                now()->gt($customer->reset_password_expire_at)
+            ) {
+
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Token expired'
+                ]);
+            }
+
+            // Update password
+            $customer->update([
+
+                'password' => Hash::make(
+                    $request->password
+                ),
+
+                'reset_password_token' => null,
+                'reset_password_expire_at' => null
+
+            ]);
+
+            return response()->json([
+                'status' => true,
+                'message' => 'Password reset successfully'
+            ]);
+        } catch (\Exception $e) {
 
             return response()->json([
                 'status' => false,
-                'message' => 'Token expired'
+                'message' => $e->getMessage()
             ]);
         }
-
-        // Update password
-        $customer->update([
-
-            'password' => Hash::make(
-                $request->password
-            ),
-
-            'reset_password_token' => null,
-            'reset_password_expire_at' => null
-
-        ]);
-
-        return response()->json([
-            'status' => true,
-            'message' => 'Password reset successfully'
-        ]);
-
-    } catch (\Exception $e) {
-
-        return response()->json([
-            'status' => false,
-            'message' => $e->getMessage()
-        ]);
     }
-}
 
     // namespace App\Http\Controllers\admin;
 
@@ -1733,5 +1731,52 @@ public function resetPassword(Request $request)
 </html>
     ";
         return $html;
+    }
+
+    public function createQR($id)
+    {
+        try {
+            $customer = Customers::find($id);
+            $qrUrl = env('FRONTEND_ADMIN_URL', 'https://thefastbill.com') . '/products/' . $customer->id;
+
+            $renderer = new ImageRenderer(
+                new RendererStyle(200),
+                new SvgImageBackEnd()
+            );
+
+            $writer = new Writer($renderer);
+            $tempFile = sys_get_temp_dir() . '/qr_' . $customer->id . '.svg';
+
+            $writer->writeFile($qrUrl, $tempFile);
+            $upload = Cloudinary::uploadApi()->upload(
+                $tempFile,
+                [
+                    'folder' => 'Thefastbill/customer_products',
+                    'public_id' => 'customer_qr_' . $customer->id,
+                    'overwrite' => true,
+                    'resource_type' => 'image'
+                ]
+            );
+            if (file_exists($tempFile)) {
+                unlink($tempFile);
+            }
+            $customer->update([
+                'products_qr' => $upload['secure_url'],
+                'products_qr_public_id' => $upload['public_id']
+            ]);
+
+            Log::info('QR Generated Successfully');
+            return response()->json([
+                'status' => true,
+                'message' => 'QR code generated and uploaded successfully',
+                'qr_url' => $upload['secure_url']
+            ]);
+        } catch (\Exception $e) {
+            Log::error('QR Generation Failed', ['error' => $e->getMessage()]);
+            return response()->json([
+                'status' => false,
+                'message' => 'Failed to generate QR code: ' . $e->getMessage()
+            ]);
+        }
     }
 }

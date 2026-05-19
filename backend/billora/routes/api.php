@@ -64,6 +64,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/users/edit/{id}', [CustomerController::class, 'edit']);
     Route::put('/users/update/{id}', [CustomerController::class, 'update']);
     Route::put('/users/update-password/{id}', [CustomerController::class, 'updatePassword']);
+   Route::post('/users/qr-re-generate/{id}',[CustomerController::class, 'createQR']);
 });
 // Route::prefix('auth/session')->group(function () {
 //     Route::post('/login', [CustomerController::class, 'login']);
