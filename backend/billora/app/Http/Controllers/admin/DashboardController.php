@@ -9,13 +9,17 @@ use App\Models\Invoice;
 use App\Models\InvoiceItems;
 use App\Models\Products;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 class DashboardController extends Controller
 {
     public function index($id){
         
     try {
-
+        $startTime = microtime(true);
+        $cacheKey = "dashboard_{$id}";
+        $fromCache = Cache::tags(['dashboards_'.$id])->has($cacheKey);
+        $data = Cache::tags(['dashboards_'.$id])->remember($cacheKey, 300, function () use ($id) {
         // TOTAL STATS
         $totalRevenue = Invoice::where('user_id',$id)->sum('total_amount');
         $totalOrders = Invoice::where('user_id',$id)->count();
@@ -107,9 +111,8 @@ class DashboardController extends Controller
                     'createdAt' => $invoice->created_at
                 ];
             });
-
-        return response()->json([
-            'stats' => [
+            return [
+                'stats' => [
                 'totalRevenue'   => $totalRevenue,
                 'totalDue'       =>$totalDue,
                 'totalOrders'    => $totalOrders,
@@ -127,7 +130,14 @@ class DashboardController extends Controller
             'orderStatus'  => $orderStatus,
             'topProducts'  => $topProducts,
             'recentOrders' => $recentOrders
-        ]);
+            ];
+        });
+        $executionTime = microtime(true) - $startTime;
+        $data['source'] = $fromCache ? 'cache' : 'database';
+        $data['executionTime'] = round($executionTime, 4) . ' sec';
+        $data["executionTimeInMs"] = round($executionTime * 1000, 2) . ' ms';
+
+        return response()->json($data);
 
     } catch (\Exception $e) {
 
