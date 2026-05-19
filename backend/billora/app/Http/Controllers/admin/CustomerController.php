@@ -5,6 +5,7 @@
 namespace App\Http\Controllers\admin;
 
 use App\Http\Controllers\Controller;
+use App\Jobs\CustomerRegistrationJob;
 use Illuminate\Http\Request;
 use App\Models\Customers;
 use Illuminate\Support\Facades\File;
@@ -93,59 +94,63 @@ class CustomerController extends Controller
             $data['verification_token'] = Str::random(64);
             $data['password'] = Hash::make($data['password']);
             $customer = Customers::create($data);
-            $qrUrl = env('FRONTEND_ADMIN_URL', 'https://thefastbill.com') . '/products/' . $customer->id;
+            // $qrUrl = env('FRONTEND_ADMIN_URL', 'https://thefastbill.com') . '/products/' . $customer->id;
 
-            $renderer = new ImageRenderer(
-                new RendererStyle(200),
-                new SvgImageBackEnd()
+            // $renderer = new ImageRenderer(
+            //     new RendererStyle(200),
+            //     new SvgImageBackEnd()
+            // );
+
+            // $writer = new Writer($renderer);
+            // $tempFile = sys_get_temp_dir() . '/qr_' . $customer->id . '.svg';
+
+            // $writer->writeFile($qrUrl, $tempFile);
+            // $upload = Cloudinary::uploadApi()->upload(
+            //     $tempFile,
+            //     [
+            //         'folder' => 'Thefastbill/customer_products',
+            //         'public_id' => 'customer_qr_' . $customer->id,
+            //         'overwrite' => true,
+            //         'resource_type' => 'image'
+            //     ]
+            // );
+            // if (file_exists($tempFile)) {
+            //     unlink($tempFile);
+            // }
+            // $customer->update([
+            //     'products_qr' => $upload['secure_url'],
+            //     'products_qr_public_id' => $upload['public_id']
+            // ]);
+            CustomerRegistrationJob::dispatch(      // send 
+                $customer->id,
+                $data['verification_token']
             );
-
-            $writer = new Writer($renderer);
-            $tempFile = sys_get_temp_dir() . '/qr_' . $customer->id . '.svg';
-
-            $writer->writeFile($qrUrl, $tempFile);
-            $upload = Cloudinary::uploadApi()->upload(
-                $tempFile,
-                [
-                    'folder' => 'Thefastbill/customer_products',
-                    'public_id' => 'customer_qr_' . $customer->id,
-                    'overwrite' => true,
-                    'resource_type' => 'image'
-                ]
-            );
-            if (file_exists($tempFile)) {
-                unlink($tempFile);
-            }
-            $customer->update([
-                'products_qr' => $upload['secure_url'],
-                'products_qr_public_id' => $upload['public_id']
-            ]);
-
+            
             Log::info('QR Generated Successfully');
 
             // $customer->notify(new VerifyEmailNotification($data['verification_token']));
-            try {
-                $customerMail = $this->CustomerMail($customer->id, $data['verification_token']);
-                $adminMail = $this->AdminMail($customer->id);
-                $admin_mail_id = config('app.admin_mail');
-                // Send admin mail
-                Mail::html($adminMail, function ($message) use ($admin_mail_id) {
-                    $message->to($admin_mail_id)
-                        ->subject("New User Registered");
-                });
-                //customer mail
+            // try {
+            //     $customerMail = $this->CustomerMail($customer->id, $data['verification_token']);
+            //     $adminMail = $this->AdminMail($customer->id);
+            //     $admin_mail_id = config('app.admin_mail');
+            //     // Send admin mail
+            //     Mail::html($adminMail, function ($message) use ($admin_mail_id) {
+            //         $message->to($admin_mail_id)
+            //             ->subject("New User Registered");
+            //     });
+            //     //customer mail
 
-                Mail::html($customerMail, function ($message) use ($customer) {
-                    $message->to($customer->email)
-                        ->subject('Welcome! Please Verify Your Email');
-                });
-            } catch (\Exception $e) {
-                // Log the error or handle it as needed
-                Log::error('Mail sending failed', [
-                    'error' => $e->getMessage(),
-                    'user_id' => $customer->id
-                ]);
-            }
+            //     Mail::html($customerMail, function ($message) use ($customer) {
+            //         $message->to($customer->email)
+            //             ->subject('Welcome! Please Verify Your Email');
+            //     });
+            // } catch (\Exception $e) {
+            //     // Log the error or handle it as needed
+            //     Log::error('Mail sending failed', [
+            //         'error' => $e->getMessage(),
+            //         'user_id' => $customer->id
+            //     ]);
+            // }
             return response()->json([
                 'status' => true,
                 'message' => 'User Register Successfully.Plase check your email for verification link.',
