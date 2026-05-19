@@ -13,6 +13,7 @@ use App\Models\PlanPurchaseHistory;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 
 class PlansController extends Controller
 {
@@ -94,6 +95,7 @@ class PlansController extends Controller
                     ]);
                 }
             }
+            Cache::tags(['users_plans'])->flush();
             return redirect()->route('admin.plans.index')->with('success', 'Plan Created Successfully');
         } catch (\Exception $e) {
 
@@ -189,7 +191,7 @@ class PlansController extends Controller
                     'business_type_id' => $typeId
                 ]);
             }
-
+            Cache::tags(['users_plans'])->flush();
             return redirect()->route('admin.plans.index')
                 ->with('success', 'Plan Updated Successfully');
         } catch (\Exception $e) {
@@ -201,6 +203,7 @@ class PlansController extends Controller
         try {
             $plan = Plans::findOrFail($id);
             $plan->delete();
+            Cache::tags(['users_plans'])->flush();
             return redirect()->route('admin.plans.index')->with('success', 'Plan Deleted Successfully');
         } catch (\Exception $e) {
             return redirect()->back()->with('error', $e->getMessage());
@@ -217,6 +220,7 @@ class PlansController extends Controller
         try {
             $plan = Plans::withTrashed()->findOrFail($id);
             $plan->restore();
+            Cache::tags(['users_plans'])->flush();
             return redirect()->route('admin.plans.deleted')->with('success', 'Plan Restored Successfully');
         } catch (\Exception $e) {
             return redirect()->back()->with('error', $e->getMessage());
@@ -227,6 +231,7 @@ class PlansController extends Controller
         try {
             $plan = Plans::withTrashed()->findOrFail($id);
             $plan->forceDelete();
+            Cache::tags(['users_plans'])->flush();
             return redirect()->route('admin.plans.deleted')->with('success', 'Plan Deleted Permanently');
         } catch (\Exception $e) {
             return redirect()->back()->with('error', $e->getMessage());

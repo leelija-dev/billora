@@ -11,6 +11,7 @@ use App\Models\Plans;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 
@@ -179,6 +180,7 @@ class PaymentController extends Controller
                 'business_type_id' => $bussiness_type->business_type_id,
                 'is_active' => true
             ]);
+            Cache::tags(['plan_purchase_history_' . $customer->id])->flush();
             // Generate mail
             $adminMail = $this->adminMail(
                 $customer->id,

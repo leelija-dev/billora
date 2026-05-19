@@ -8,17 +8,31 @@ use App\Models\PlanPermission;
 use Illuminate\Http\Request;
 use App\Models\Plans;
 use App\Models\PlanPermissionDetails;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 
 class PlanController extends Controller
 {
     public function index()
     {
-        $data = Plans::with('permissions','business_types.businessType')->where('is_active', true)->get();
+        $startTime = microtime(true);
+        $cacheKey = 'plans_user';
+        $fromCache = Cache::tags(['users_plans'])->has($cacheKey);
+
+        $data =Cache::tags(['users_plans'])->remember($cacheKey, 600, function () {
+            return Plans::with('permissions', 'business_types.businessType')
+                ->where('is_active', true)
+                ->get();
+        });
+         Plans::with('permissions','business_types.businessType')->where('is_active', true)->get();
+        $executionTime = microtime(true) - $startTime;
         return response()->json([
             'status' => true,
             'message' => 'Plan List',
-            'data' => $data
+            'source' => $fromCache ? 'Cache' : 'Database',
+            'response_time' => round($executionTime, 4) . ' sec',
+            'data' => $data,
+            
         ]);
     }
     public function store(Request $request)
@@ -54,7 +68,12 @@ class PlanController extends Controller
 
         // Get Plan
         $plan = Plans::findOrFail($id);
-
+        $startTime = microtime(true);
+        $cacheKey = "plan_details_{$id}";
+        $fromCache = Cache::tags(['plan_details'])->has($cacheKey);
+         $plans = Cache::tags(['plan_details'])->remember($cacheKey, 600, function () use ($id,$plan) {
+            // return Plans::findOrFail($id);
+        //  });
         // Get Plan Permission IDs
         $planPermissions = PlanPermissionDetails::where('plan_id', $plan->id)
             ->pluck('permission_id')
@@ -79,8 +98,7 @@ class PlanController extends Controller
             })
             ->unique('id') // remove duplicates
             ->values();
-
-        return response()->json([
+        return [
             'status' => true,
             'message' => 'Plan Details',
 
@@ -94,8 +112,13 @@ class PlanController extends Controller
 
             //  FINAL SIDEBAR PERMISSIONS
             'customer_sidebar_permission' => $sidebarPermissions
+        ];
 
-        ]);
+         });
+         $exucationTime = microtime(true) - $startTime;
+         $plans['source'] = $fromCache ? 'Cache' : 'Database';
+         $plans['response_time'] = round($exucationTime, 4) . ' sec';
+        return response()->json($plans);
 
     } catch (\Exception $e) {
 
@@ -204,23 +227,30 @@ class PlanController extends Controller
 {
     try {
         $search = $request->search;
-
+        $startTime = microtime(true);
+        $cacheKey = 'plans_search_' . $search;
+        $fromCache = Cache::tags(['plans_search'])->has($cacheKey);
+        $plans = Cache::tags(['plans_search'])->remember($cacheKey, 600, function () use ($search) {
+            
         if ($search == 'all') {
-            $plans = Plans::with('permissions', 'business_types.businessType')
+            return  Plans::with('permissions', 'business_types.businessType')
                 ->where('is_active', true)
                 ->get();
         } else {
-            $plans = Plans::with('permissions', 'business_types.businessType')
+            return Plans::with('permissions', 'business_types.businessType')
                 ->where('is_active', true)
                 ->whereHas('business_types', function ($q) use ($search) {
                     $q->where('business_type_id', $search);
                 })
                 ->get();
         }
-
+    });
+        $executionTime = microtime(true) - $startTime;
         return response()->json([
             'status' => true,
             'message' => 'All Plan List',
+            'source' => $fromCache ? 'Cache' : 'Database',
+            'response_time' => round($executionTime, 4) . ' sec',
             'data' => $plans
         ]);
 
