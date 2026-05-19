@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\DB;
 use Monolog\Handler\SyslogUdp\UdpSocket;
 use Illuminate\Support\Facades\Http;
 use function PHPSTORM_META\map;
-
+use Illuminate\Support\Facades\Cache;
 class UserOrdersController extends Controller
 {
     public function store(Request $request)   // store order and order items
@@ -209,9 +209,14 @@ class UserOrdersController extends Controller
 }
 
 
-    public function userOrderHistory($id){      //all user order history
+    public function userOrderHistory($id ,Request $request){      //all user order history
         try{
+        $startTime = microtime(true);
+        $search = $request->search;
         $user = Auth::user()->id;
+        $cacheKey = "user_orders_" . Auth::user()->id . "_" . md5($request->search . '_' . $request->page);
+            
+           
         if($user != $id){
             return response()->json([
                 'status'=>false,
@@ -219,12 +224,45 @@ class UserOrdersController extends Controller
                 'message'=>'Unauthorized user'
             ]);
         }
-        $orderHistory = UserOrders::with(['items.product'])
+         $formCache = Cache::tags(['order_user_' . Auth::user()->id])->has($cacheKey);
+             $tag = "order_user_{$user}";
+        $orderHistory = Cache::tags([$tag])->remember($cacheKey, 600, function () use ($id, $search) {
+        return UserOrders::with(['items.product'])
             ->where('user_id', $id)->orderBy('id','desc')
+            ->when($search, function ($query) use ($search) {
+
+                    $query->where(function ($q) use ($search) {
+
+                        // Search by order id
+                        if (is_numeric($search)) {
+                            $q->orWhere('id', $search);
+                        }
+
+                        // Search by order number
+                        $q->orWhere('order_id', 'like', "%{$search}%")
+                            ->orWhere('payment_status', 'like', "%{$search}%")
+                            ->orWhere('customer_name', 'like', "%{$search}%")
+                            ->orWhere('customer_phone', 'like', "%{$search}%")
+                            ->orWhere('order_status', 'like', "%{$search}%")
+                            ->orWhere('payment_method', 'like', "%{$search}%")
+                            ->orWhere('total_amount', 'like', "%{$search}%")
+                            ->orwhere('paid_amount', 'like', "%{$search}%")
+
+                            // Search by product name
+                            ->orWhereHas('items.product', function ($q2) use ($search) {
+
+                                $q2->where('name', 'like', "%{$search}%");
+                            });
+                    });
+                })
+        
             ->get();
+        });
         return response()->json([
             'status' => true,
             'message' => 'Order History',
+            'response_from' => $formCache ? 'Cache' : 'Database',
+            'response_time' => microtime(true) - $startTime,
             'data' => $orderHistory 
         ]);
         }catch(\Exception $e){
@@ -249,6 +287,7 @@ class UserOrdersController extends Controller
                     'status' => $data['order_status']
                 ]);
             }
+            Cache::tags(['order_user_' . Auth::user()->id])->flush();
             return response()->json([
                 'status' => true,
                 'message' => 'Order status updated successfully',
@@ -269,6 +308,7 @@ class UserOrdersController extends Controller
             ]);
             $order = UserOrders::where('user_id', $user)->where('id', $id)->first();
             $order->update($data);
+            Cache::tags(['order_user_' . Auth::user()->id])->flush();
             return response()->json([
                 'status' => true,
                 'message' => 'Payment status updated successfully',
@@ -293,13 +333,14 @@ class UserOrdersController extends Controller
                     'message' =>"Unauthorized user"
                 ]);
             }
-            $order = UserOrders::where('id', $id)->where('user_id',$data['user_id'])->get();
+            $order = UserOrders::where('id', $id)->where('user_id',$data['user_id'])->first();
             if(!$order){
                 return response()->json([
                     'status' => false,
                     'message' => 'Order not found'
                 ]);
             }
+            Cache::tags(['order_user_' . Auth::user()->id])->flush();
             return response()->json([
                 'status' => true,
                 'message' => 'Order due',
@@ -334,6 +375,7 @@ class UserOrdersController extends Controller
                 'paid_amount'=> (float)$order->paid_amount + $data['paid_amount'],
                 'payment_status' => $status
             ]);
+            Cache::tags(['order_user_' . Auth::user()->id])->flush();
             return response()->json([
                 'status' => true,
                 'message' => 'Payment updated successfully',
