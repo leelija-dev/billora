@@ -10,31 +10,37 @@ use App\Models\Unit;
 use App\Models\Customers;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-
+use Illuminate\Support\Facades\Cache;
 class StocksController extends Controller
 {
 
     public function index(Request $request)
     {
         try {
-            // check permission 
+           
+            $startTime = microtime(true);
+
             $customer =  Customers::findOrFail(Auth::user()->id);
+            
+             // check permission 
             $permissions = DB::table('plan_permission_details as ppd')
                 ->join('plan_permission as pp', 'pp.id', '=', 'ppd.permission_id')
                 ->where('ppd.plan_id', $customer->plan_id)
                 ->pluck('pp.slug')
                 ->toArray();
-
+            
             $hasStockPermission = in_array('stock-management', $permissions);
 
-
+            $cacheKey = "stock_list_" . Auth::user()->id . "_" . md5($request->search . '_' . $request->page);
+            
+            $formCache = Cache::tags(['stock_user_' . Auth::user()->id])->has($cacheKey);
             if ($hasStockPermission) {
                 $user = Auth::user()->id; // authenticated user
                 $search = $request->search;
-
-                $stocks = Stocks::with('product')
-                    ->where('user_id', $user)
-                    ->when($search, function ($query) use ($search) {
+                $stocks = Cache::tags(['stock_user_' . $user])->remember($cacheKey, 600, function () use ($user, $search) {
+                     return Stocks::with('product')
+                      ->where('user_id', $user)
+                      ->when($search, function ($query) use ($search) {
 
                         $query->where(function ($q) use ($search) {
                             $q->where('id', 'like', "%$search%")
@@ -47,10 +53,13 @@ class StocksController extends Controller
                     })
                     ->orderBy('id','desc')
                     ->paginate(15);
-
+                });
+                $executionTime = microtime(true) - $startTime;
                 return response()->json([
                     'status' => true,
                     'message' => 'Stock List',
+                    'source' => $formCache ? 'Cache' : 'Database',
+                    'response_time' => round($executionTime, 4) . ' sec',
                     'data' => $stocks
                 ]);
             } else {
@@ -71,6 +80,7 @@ class StocksController extends Controller
     {
         try {
             // check permission 
+            Cache::tags(['stocks_user_' . Auth::user()->id])->flush();
             $customer =  Customers::findOrFail(Auth::user()->id);
             $permissions = DB::table('plan_permission_details as ppd')
                 ->join('plan_permission as pp', 'pp.id', '=', 'ppd.permission_id')
@@ -155,6 +165,7 @@ class StocksController extends Controller
                 $stocks['created_by'] = $user;
                 $stock = Stocks::create($stocks);
                 $stocks = Stocks::where('user_id', $user)->get();
+                Cache::tags(['stocks_user_' . $user])->flush();
                 return response()->json([
                     'status' => true,
                     'message' => 'Stock created successfully',
@@ -177,6 +188,7 @@ class StocksController extends Controller
     {
         try {
             //check authenticated user
+            Cache::tags(['stocks_user_' . $id])->flush();
             if (!Auth::check()) {
                 return response()->json([
                     'status' => false,
@@ -277,7 +289,7 @@ class StocksController extends Controller
                 //     'selling_price' => $data['selling_price'],
                 //     'purchase_price' => $data['purchase_price']
                 // ]);
-
+                Cache::tags(['stocks_user_' . $user])->flush();
                 return response()->json([
                     'status' => true,
                     'message' => 'edit stock',
@@ -335,6 +347,7 @@ class StocksController extends Controller
                     ->where('user_id', $user_id)
                     ->firstOrFail();
                 $stock->delete();
+                Cache::tags(['stocks_user_' . Auth::user()->id])->flush();
                 return response()->json([
                     'status' => true,
                     'message' => 'Stock Deleted Successfully',
@@ -395,7 +408,7 @@ class StocksController extends Controller
                 $stock->update([
                     'quantity' => ((float)$stock->quantity + (float)$data['quantity']),
                 ]);
-
+                Cache::tags(['stocks_user_' . Auth::user()->id])->flush();
                 return response()->json([
                     'status' => true,
                     'message' => 'Stock Updated Successfully',
