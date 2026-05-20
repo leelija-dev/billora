@@ -78,14 +78,18 @@ const Reports = () => {
             const customer = customerResponse.data?.data || customerResponse.data || {}
             const store = storeResponse.data?.data?.data || storeResponse.data?.data || []
             const storeData = store[0] || {}
+
+            console.log("checking ...................",  report)
             
             return {
               ...report,
               customer: customer,
               store: storeData,
               customer_name: customer.name || `Customer #${report.customer_id}`,
-              store_name: storeData.name || `Store #${report.store_id}`
+              store_name: storeData.name || `Deleted`
             }
+
+
           } catch (error) {
             console.error('Failed to fetch customer/store details:', error)
             return {
@@ -984,20 +988,24 @@ const handleExportToPDF = () => {
     {
       header: 'Invoice ID',
       accessor: 'id',
-      cell: (value) => (
+      cell: (value,row) => (
         <span className="font-mono font-medium text-primary-600 dark:text-primary-400">
-          #{value}
+          #{row.invoice_number}
         </span>
       ),
     },
     {
-      header: 'Date',
+      header: 'Date & Time',
       accessor: 'created_at',
       cell: (value) => (
         <div className="flex items-center">
           <FiCalendar className="w-4 h-4 text-gray-400 mr-2" />
           <span className="text-gray-700 dark:text-gray-300">
-            {value ? new Date(value).toLocaleDateString() : 'N/A'}
+           {
+  value
+    ? new Date(value).toLocaleString()
+    : 'N/A'
+}
           </span>
         </div>
       ),
@@ -1014,9 +1022,7 @@ const handleExportToPDF = () => {
           </div>
           <div>
             <p className="font-medium text-gray-900 dark:text-white">{value}</p>
-            <p className="text-xs text-gray-500 dark:text-gray-400">
-              ID: {row.customer_id}
-            </p>
+            
           </div>
         </div>
       ),
