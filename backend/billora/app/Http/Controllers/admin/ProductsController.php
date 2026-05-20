@@ -840,6 +840,7 @@ class ProductsController extends Controller
             if ($stocksProduct) {
                 $stocksProduct->delete();
             }
+            Cache::tags(['products_user_' . $user])->flush();
             return response()->json([
                 'status' => true,
                 'message' => 'Product Deleted Successfully',
@@ -879,6 +880,7 @@ class ProductsController extends Controller
                 $stocksProduct->delete();
             }
             }
+            Cache::tags(['products_user_' . $user])->flush();
             return response()->json([
                 'status' => true,
                 'message' => 'Product Deleted Successfully',
@@ -937,6 +939,7 @@ class ProductsController extends Controller
                 $stocks['created_by'] = $user;
                 $stock = Stocks::create($stocks);
             }
+            Cache::tags(['products_user_' . $user])->flush();
             return response()->json([
                 'status' => true,
                 'message' => 'Product Restored Successfully',
@@ -996,6 +999,7 @@ class ProductsController extends Controller
                 }
             }
             $product->forceDelete();
+            Cache::tags(['products_user_' . $user])->flush();
             return response()->json([
                 'status' => true,
                 'message' => 'Product Deleted Permanently',

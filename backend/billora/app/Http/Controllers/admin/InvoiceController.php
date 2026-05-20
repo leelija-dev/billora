@@ -865,7 +865,7 @@ class InvoiceController extends Controller
                         $gstCollections->update([
                             'purchase_price' => $product->purchase_price,
                             'purchase_gst_percentage' => $product->purchase_gst_percentage ?? 0,
-                            'purchase_gst_amount' => $item['discount'] ?? 0,
+                            'purchase_gst_amount' => $product->purchase_price * $product->purchase_gst_percentage / 100 ?? 0,//$item['discount'] ?? 0,
                             'selling_price'  => $item['price'] ?? 0,
                             'selling_discount_percentage' => $item['discount'] ?? 0,
                             'selling_gst_percentage' => $item['gst'] ?? 0,
@@ -882,7 +882,7 @@ class InvoiceController extends Controller
                             'customer_id' => $request->customer_id,
                             'purchase_price' => $product->purchase_price,
                             'purchase_gst_percentage' => $product->purchase_gst_percentage ?? 0,
-                            'purchase_gst_amount' => $item['discount'] ?? 0,
+                            'purchase_gst_amount' => $product->purchase_price * $product->purchase_gst_percentage / 100 ?? 0,//$item['discount'] ?? 0,
                             'selling_price'  => $item['price'] ?? 0,
                             'selling_discount_percentage' => $item['discount'] ?? 0,
                             'selling_gst_percentage' => $item['gst'] ?? 0,

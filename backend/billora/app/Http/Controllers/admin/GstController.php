@@ -33,7 +33,7 @@ class GstController extends Controller
         //     ]);
         // }
         $data = GstCollection::where('user_id',$id)->where('invoice_status','completed')->orderBy('created_at', 'desc')->get();
-        $totalGst = GstCollection::where('user_id',$id)->sum('selling_gst_amount'); 
+        $totalGst = GstCollection::where('user_id', $id)->sum(DB::raw('selling_gst_amount * quantity'));
         $dueGstPayGovt = GstCollection::where('user_id', $id)->where('govt_pay_status', false)->where('invoice_status','completed')->sum(DB::raw('selling_gst_amount * quantity'));
         // $allProducts = GstCollection::where('user_id',$id)->get();
        $allProducts = GstCollection::where('user_id', $id)
