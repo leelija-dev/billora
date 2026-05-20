@@ -369,10 +369,29 @@ class InvoiceController extends Controller
                     ], 404);
                 }
                 $billPaymentHistory = BillPaymentHistory::where('admin_id', $userId)->where('invoice_id', $id)->orderBy('id', 'asc')->first();
+                // $bill_summery = InvoiceItems::where('invoice_id', $id)->where('user_id', $userId)->get();
+                $billSummary = InvoiceItems::where('invoice_id', $id)
+                    ->where('user_id', $userId)
+                    ->selectRaw('
+                        SUM(price * quantity) as subtotal,
+                        SUM(((price * quantity) * discount) / 100) as total_discount,
+                        SUM((((price * quantity) - (((price * quantity) * discount) / 100)) * gst) / 100) as total_gst,
+                        SUM(total_price) as grand_total
+                    ')
+                    ->first();
+                
+                $packages = PackageInvoice::where('invoice_id', $id)
+                    ->where('user_id', $userId)
+                    ->selectRaw('
+                        SUM(package_price * quantity) as total_package_price
+                    ')
+                    ->first();
+                $billSummary['packages'] = $packages;
                 $bill['payment_method'] = $billPaymentHistory['payment_method'] ?? null;
                 return [
                     'status' => true,
                     'message' => 'Single Bill',
+                    'bill_summary' => $billSummary,
                     'data' => $bill,
                     'bill_payment_history' => $billPaymentHistory
                 ];
