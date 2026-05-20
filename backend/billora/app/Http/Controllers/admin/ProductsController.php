@@ -28,6 +28,7 @@ use Illuminate\Support\Facades\DB;
 use Milon\Barcode\Facades\DNS1DFacade as DNS1D;
 use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Crypt;
 class ProductsController extends Controller
 {
     public function index(Request $request)
@@ -1082,6 +1083,8 @@ class ProductsController extends Controller
     public function userProducts(Request $request, $id)
     {
         try {
+            // $id = base64_decode($id);
+            $id = Crypt::decryptString($id);
             $startTime = microtime(true);
             // $cacheKey = 'products_user_' . $id;
             $cacheKey = "products_user_{$id}_" . md5(
