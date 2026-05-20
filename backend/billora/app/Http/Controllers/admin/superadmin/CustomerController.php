@@ -44,7 +44,7 @@ class CustomerController extends Controller
       }
     }
 
-    $customers = $query->paginate(10)->withQueryString();
+    $customers = $query->orderBy('id', 'desc')->paginate(10)->withQueryString();
     $totalCustomers = Customers::all()->count();
     $activeCustomers = Customers::where('is_active', true)->count();
     $inactiveCustomers = Customers::where('is_active', false)->count();
