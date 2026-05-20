@@ -11,6 +11,8 @@ use App\Models\Customers;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
+
 class StocksController extends Controller
 {
 
@@ -80,7 +82,7 @@ class StocksController extends Controller
     {
         try {
             // check permission 
-            Cache::tags(['stocks_user_' . Auth::user()->id])->flush();
+            Cache::tags(['stock_user_' . Auth::user()->id])->flush();
             $customer =  Customers::findOrFail(Auth::user()->id);
             $permissions = DB::table('plan_permission_details as ppd')
                 ->join('plan_permission as pp', 'pp.id', '=', 'ppd.permission_id')
@@ -132,6 +134,7 @@ class StocksController extends Controller
             'unit_id'           => 'nullable',
 
         ]);
+        // Log::info('stock details: ' . json_encode($stocks));
         try {
             // check permission 
             $customer =  Customers::findOrFail(Auth::user()->id);
@@ -164,8 +167,9 @@ class StocksController extends Controller
                 $stocks['user_id'] = $user;
                 $stocks['created_by'] = $user;
                 $stock = Stocks::create($stocks);
+                // Log::info('Stock created: ' . json_encode($stock));
                 $stocks = Stocks::where('user_id', $user)->get();
-                Cache::tags(['stocks_user_' . $user])->flush();
+                Cache::tags(['stock_user_' . $user])->flush();
                 return response()->json([
                     'status' => true,
                     'message' => 'Stock created successfully',
@@ -188,7 +192,7 @@ class StocksController extends Controller
     {
         try {
             //check authenticated user
-            Cache::tags(['stocks_user_' . $id])->flush();
+            Cache::tags(['stock_user_' . Auth::user()->id])->flush();
             if (!Auth::check()) {
                 return response()->json([
                     'status' => false,
@@ -281,15 +285,18 @@ class StocksController extends Controller
                 //         'message' => 'Product not found'
                 //     ]);
                 // }
-                
+                // Log::info('stock id'.$id);
+                // Log::info('Updating stock id: ' . $id);
+                // Log::info('stock data: ' . json_encode($data));
                 $stock = Stocks::where('user_id', $user)->where('id', $id)->first();
 
                 $stock->update($data);
+                // Log::info('Stock updated: ' . json_encode($stock));
                 // $product->update([
                 //     'selling_price' => $data['selling_price'],
                 //     'purchase_price' => $data['purchase_price']
                 // ]);
-                Cache::tags(['stocks_user_' . $user])->flush();
+                Cache::tags(['stock_user_' . $user])->flush();
                 return response()->json([
                     'status' => true,
                     'message' => 'edit stock',
@@ -347,7 +354,7 @@ class StocksController extends Controller
                     ->where('user_id', $user_id)
                     ->firstOrFail();
                 $stock->delete();
-                Cache::tags(['stocks_user_' . Auth::user()->id])->flush();
+                Cache::tags(['stock_user_' . Auth::user()->id])->flush();
                 return response()->json([
                     'status' => true,
                     'message' => 'Stock Deleted Successfully',
@@ -408,7 +415,7 @@ class StocksController extends Controller
                 $stock->update([
                     'quantity' => ((float)$stock->quantity + (float)$data['quantity']),
                 ]);
-                Cache::tags(['stocks_user_' . Auth::user()->id])->flush();
+                Cache::tags(['stock_user_' . Auth::user()->id])->flush();
                 return response()->json([
                     'status' => true,
                     'message' => 'Stock Updated Successfully',
