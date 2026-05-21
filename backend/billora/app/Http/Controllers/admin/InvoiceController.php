@@ -382,11 +382,12 @@ class InvoiceController extends Controller
                 
                 $packages = PackageInvoice::where('invoice_id', $id)
                     ->where('user_id', $userId)
-                    ->selectRaw('
-                        SUM(package_price * quantity) as total_package_price
+                    ->selectRaw('COALESCE(
+                        SUM(package_price * quantity),0) as total_package_price
                     ')
                     ->first();
-                $billSummary['packages'] = $packages;
+
+                $billSummary['packagess'] = $packages ;
                 $bill['payment_method'] = $billPaymentHistory['payment_method'] ?? null;
                 return [
                     'status' => true,
