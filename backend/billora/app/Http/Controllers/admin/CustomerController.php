@@ -20,7 +20,7 @@ use BaconQrCode\Renderer\Image\SvgImageBackEnd;
 use BaconQrCode\Renderer\RendererStyle\RendererStyle;
 use BaconQrCode\Writer;
 use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
-
+use Illuminate\Support\Facades\Crypt;
 class CustomerController extends Controller
 {
     public function index()
@@ -1741,8 +1741,10 @@ class CustomerController extends Controller
     public function createQR($id)
     {
         try {
+
             $customer = Customers::find($id);
-            $qrUrl = env('FRONTEND_ADMIN_URL', 'https://thefastbill.com') . '/products/' . $customer->id;
+            $customer_id = Crypt::encryptString($customer->id);
+            $qrUrl = env('FRONTEND_ADMIN_URL', 'https://thefastbill.com') . '/products/' . $customer_id;
 
             $renderer = new ImageRenderer(
                 new RendererStyle(200),
