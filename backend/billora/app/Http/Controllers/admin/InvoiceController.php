@@ -23,7 +23,7 @@ use Illuminate\Support\Facades\Cache;
 
 class InvoiceController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
         try {
             if (!Auth::check()) {
@@ -38,6 +38,7 @@ class InvoiceController extends Controller
             $fromCache = Cache::tags(['billing_user_' . $user])->has($cacheKey);
             $data = Cache::tags(['billing_user_' . $user])->remember($cacheKey, 600, function () use ($user) {
                 $customer =  Customers::findOrFail($user);
+                $search = $request->search ?? '';
                 if ($customer->plan_id == null || $customer->is_active == false) {
                     return response()->json([
                         'status' => false,
@@ -63,11 +64,16 @@ class InvoiceController extends Controller
                             'brand',
                             'category',
                             'unit',
-                            'stocks:id,product_id'
+                            'stocks'
                         ])
                         ->where('is_active', true)
+                        ->where(function ($query) use ($search) {
+                            $query->where('name', 'like', "%$search%")
+                                ->orWhere('sku', 'like', "%$search%");
+                        })
                         ->whereHas('stocks')
-                        ->get();
+                        ->paginate(5);
+                        
 
                     // $products = Stocks::where('user_id', $user)
                     //     ->with(['brand', 'category', 'unit', 'product'])
@@ -76,7 +82,8 @@ class InvoiceController extends Controller
                     $products = Products::where('user_id', $user)
                         ->with(['brand', 'category', 'unit'])
                         ->where('is_active', true)
-                        ->get();
+                        ->paginate(5);
+                        // ->get();
                 }
                 $customers = BillCustomer::where('admin_id', $user)->get();
                 $stores = Store::where('user_id', $user)->get();
