@@ -282,11 +282,7 @@ const Brands = () => {
           </motion.div>
           <div>
             <p className="font-medium text-gray-900 dark:text-white">{value}</p>
-            {row.description && (
-              <p className="text-sm text-gray-500 dark:text-gray-400 truncate max-w-xs">
-                {row.description}
-              </p>
-            )}
+           
           </div>
         </div>
       ),
@@ -313,15 +309,7 @@ const Brands = () => {
         )
       },
     },
-    {
-      header: 'Created By',
-      accessor: 'created_by',
-      cell: (value) => (
-        <span className="text-gray-600 dark:text-gray-400">
-          {value || '-'}
-        </span>
-      ),
-    },
+   
     {
       header: 'Actions',
       accessor: 'actions',
