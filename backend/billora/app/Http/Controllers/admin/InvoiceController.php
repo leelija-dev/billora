@@ -812,6 +812,7 @@ class InvoiceController extends Controller
             Log::info('due_amount: ' . $due_amount);
             $invoice->update([
                 'customer_id'   => $request->customer_id,
+                'store_id'      => $request->store_id,
                 'total_amount'  => $totalAmount,
                 'total_items'   => $totalItems,
                 'paid_amount'   => $request->paid_amount,

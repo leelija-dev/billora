@@ -25,7 +25,6 @@ import {
   FiCopy,
   FiCalendar,
   FiMapPin,
-
   FiBriefcase,
   FiArchive,
   FiRefreshCw
@@ -83,11 +82,15 @@ const InvoiceDetail = () => {
         console.log('🔍 Fetching invoice for ID:', id)
 
         const response = await invoiceAPI.getById(id)
-        console.log('📋 Invoice response:', response)
+        console.log('📋 Invoice response:,,,,,,,,,,,,,', response)
 
         if (response.data?.status && response.data?.data) {
           const foundInvoice = response.data.data
+          const billSummary = response.data.bill_summary || {}
+          
+          
           console.log('🎯 Found invoice:..................', foundInvoice)
+          console.log('📊 Bill Summary:', billSummary)
 
           Promise.all([
             storeAPI.getByUserId(foundInvoice.user_id),
@@ -168,7 +171,14 @@ const InvoiceDetail = () => {
                   store_email: storeData.email || foundInvoice.store_email || 'store@business.com',
                   store_phone: storeData.mobile || storeData.phone || foundInvoice.store_phone || '123-456-7890',
                   items: displayItems,
-                  packages: displayPackages
+                  packages: displayPackages,
+                  // Add bill summary data
+                  bill_summary: {
+                    subtotal: parseFloat(billSummary.subtotal + billSummary.packages?.total_package_price || 0),
+                    total_discount: parseFloat(billSummary.total_discount || 0),
+                    total_gst: parseFloat(billSummary.total_gst || 0),
+                    grand_total: parseFloat(billSummary.grand_total || foundInvoice.total_amount || 0)
+                  }
                 }
                 setInvoice(enhancedInvoice)
                 setLoading(false)
@@ -208,7 +218,13 @@ const InvoiceDetail = () => {
                   store_email: storeData.email || foundInvoice.store_email || 'store@business.com',
                   store_phone: storeData.mobile || storeData.phone || foundInvoice.store_phone || '123-456-7890',
                   items: fallbackItems,
-                  packages: fallbackPackages
+                  packages: fallbackPackages,
+                  bill_summary: {
+                    subtotal: parseFloat(billSummary.subtotal + billSummary.packages?.total_package_price || 0),
+                    total_discount: parseFloat(billSummary.total_discount || 0),
+                    total_gst: parseFloat(billSummary.total_gst || 0),
+                    grand_total: parseFloat(billSummary.grand_total || foundInvoice.total_amount || 0)
+                  }
                 }
                 setInvoice(fallbackInvoice)
                 setLoading(false)
@@ -228,14 +244,29 @@ const InvoiceDetail = () => {
                 store_email: storeData.email || foundInvoice.store_email || 'store@business.com',
                 store_phone: storeData.mobile || storeData.phone || foundInvoice.store_phone || '123-456-7890',
                 items: [],
-                packages: []
+                packages: [],
+                bill_summary: {
+                  subtotal: parseFloat(billSummary.subtotal + billSummary.packages?.total_package_price || 0),
+                  total_discount: parseFloat(billSummary.total_discount || 0),
+                  total_gst: parseFloat(billSummary.total_gst || 0),
+                  grand_total: parseFloat(billSummary.grand_total || foundInvoice.total_amount || 0)
+                }
               }
               setInvoice(fallbackInvoice)
               setLoading(false)
             }
           }).catch(error => {
             console.error('Failed to fetch store/customer data:', error)
-            setInvoice(foundInvoice)
+            const fallbackInvoice = {
+              ...foundInvoice,
+              bill_summary: {
+                subtotal: parseFloat(billSummary.subtotal + billSummary.packages?.total_package_price || 0),
+                total_discount: parseFloat(billSummary.total_discount || 0),
+                total_gst: parseFloat(billSummary.total_gst || 0),
+                grand_total: parseFloat(billSummary.grand_total || foundInvoice.total_amount || 0)
+              }
+            }
+            setInvoice(fallbackInvoice)
             setLoading(false)
           })
         } else {
@@ -293,7 +324,7 @@ const InvoiceDetail = () => {
   const handleDuePay = async (e) => {
     e.preventDefault()
     if (!invoice?.id || invoice.status === 'cancelled') return
-    const total = parseFloat(invoice.total_amount || 0)
+    const total = parseFloat(invoice.bill_summary?.grand_total || invoice.total_amount || 0)
     const paid = parseFloat(invoice.paid_amount || 0)
     const due = Math.max(0, total - paid)
     const amount = parseFloat(duePayAmount)
@@ -425,7 +456,15 @@ const InvoiceDetail = () => {
     )
   }
 
-  const totalAmountNum = parseFloat(invoice.total_amount || 0)
+  console.log("Rendering invoice ...........",invoice);
+
+  console.log("Invoice bill summary ...........",invoice.bill_summary);
+
+  // Use bill summary values for calculations
+  const totalAmountNum = invoice.bill_summary?.grand_total || parseFloat(invoice.total_amount || 0)
+  const subtotalNum = invoice.bill_summary?.subtotal || totalAmountNum
+  const totalGstNum = invoice.bill_summary?.total_gst || 0
+  const totalDiscountNum = invoice.bill_summary?.total_discount || 0
   const paidAmountNum = parseFloat(invoice.paid_amount || 0)
   const dueBalance = Math.max(0, totalAmountNum - paidAmountNum)
   const showDuePayment = invoice.status !== 'cancelled' && dueBalance > 0.001
@@ -859,12 +898,12 @@ const InvoiceDetail = () => {
 
               {/* Right Column - Summary & Actions */}
               <div className="space-y-6">
-                {/* Financial Summary Card */}
+                {/* Financial Summary Card - Using bill_summary data */}
                 <motion.div
                   initial={{ opacity: 0, x: 20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.4 }}
-                  className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg overflow-hidden "
+                  className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg overflow-hidden"
                 >
                   <div className="p-6 border-b border-gray-200 dark:border-gray-700">
                     <div className="flex items-center gap-3">
@@ -877,30 +916,20 @@ const InvoiceDetail = () => {
                   <div className="p-6 space-y-4">
                     <div className="flex justify-between items-center pb-3 border-b border-gray-100 dark:border-gray-700">
                       <span className="text-gray-600 dark:text-gray-400">Subtotal</span>
-                      <span className="font-medium text-gray-900 dark:text-white">{formatCurrency(totalAmountNum)}</span>
+                      <span className="font-medium text-gray-900 dark:text-white">{formatCurrency(subtotalNum)}</span>
                     </div>
 
                     <div className="flex justify-between items-center pb-3 border-b border-gray-100 dark:border-gray-700">
                       <span className="text-gray-600 dark:text-gray-400">Total GST</span>
                       <span className="font-medium text-gray-900 dark:text-white">
-                        {formatCurrency(invoice.items?.reduce((sum, item) => {
-                          const itemPrice = typeof item.price === 'string' ? parseFloat(item.price) : (typeof item.price === 'number' ? item.price : 0);
-                          const itemGst = typeof item.gst === 'string' ? parseFloat(item.gst) : (typeof item.gst === 'number' ? item.gst : 0);
-                          const subtotal = itemPrice * parseFloat(item.quantity || 0);
-                          return sum + (subtotal * itemGst / 100);
-                        }, 0))}
+                        {formatCurrency(totalGstNum)}
                       </span>
                     </div>
 
                     <div className="flex justify-between items-center pb-3 border-b border-gray-100 dark:border-gray-700">
                       <span className="text-gray-600 dark:text-gray-400">Total Discount</span>
                       <span className="font-medium text-green-600 dark:text-green-400">
-                        -{formatCurrency(invoice.items?.reduce((sum, item) => {
-                          const itemPrice = typeof item.price === 'string' ? parseFloat(item.price) : (typeof item.price === 'number' ? item.price : 0);
-                          const itemDiscount = typeof item.discount === 'string' ? parseFloat(item.discount) : (typeof item.discount === 'number' ? item.discount : 0);
-                          const subtotal = itemPrice * parseFloat(item.quantity || 0);
-                          return sum + (subtotal * itemDiscount / 100);
-                        }, 0))}
+                        -{formatCurrency(totalDiscountNum)}
                       </span>
                     </div>
 
