@@ -14,11 +14,17 @@ export const useSettingsStore = create(
       savingNotifications: false,
 
       profile: {
-        firstName: '',
-        lastName: '',
+        name: '',  // Changed from firstName/lastName to name
         email: '',
         phone: '',
         avatar: '',
+        company_name: '',
+        gst_number: '',
+        address: '',
+        city: '',
+        state: '',
+        country: '',
+        pincode: '',
       },
 
       notifications: {
@@ -51,14 +57,9 @@ export const useSettingsStore = create(
           const res = await authService.getUserById(user?.id)
           const userData = res?.data?.data || res?.data || {}
 
-          const fullName = userData?.name || ''
-          const [firstNameFromName = '', ...rest] = fullName.split(' ')
-          const lastNameFromName = rest.join(' ')
-
           set({
             profile: {
-              firstName: firstNameFromName,
-              lastName: lastNameFromName,
+              name: userData?.name || '',
               email: userData?.email || '',
               phone: userData?.phone || '',
               avatar: userData?.avatar || '',
@@ -86,7 +87,7 @@ export const useSettingsStore = create(
         try {
           const payload = {
             id: user?.id,
-            name: `${profile.firstName} ${profile.lastName}`.trim(),
+            name: profile.name,  // Changed to use name directly
             phone: profile.phone,
             company_name: profile.company_name,
             gst_number: profile.gst_number,

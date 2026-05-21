@@ -181,8 +181,19 @@ const StockForm = ({ stock, onSubmit, onCancel, isSubmitting, products, units })
         unit_id: stock.unit_id,
         product_package_id: stock.product_package_id,
       })
+
+      // Find and set the selected product for prefilling the SearchSelect
+      if (stock.product_id) {
+        const product = products?.find(p => p.id === stock.product_id)
+        if (product) {
+          console.log('📝 StockForm - Setting selected product:', product)
+          setSelectedProduct(product)
+        } else {
+          console.log('📝 StockForm - Product not found for ID:', stock.product_id)
+        }
+      }
     }
-  }, [stock, reset])
+  }, [stock, reset, products])
 
   const onFormSubmit = (data) => {
     const stockData = {
