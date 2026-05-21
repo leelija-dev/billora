@@ -36,20 +36,22 @@ class GstController extends Controller
         $totalGst = GstCollection::where('user_id', $id)->sum(DB::raw('selling_gst_amount * quantity'));
         $dueGstPayGovt = GstCollection::where('user_id', $id)->where('govt_pay_status', false)->where('invoice_status','completed')->sum(DB::raw('selling_gst_amount * quantity'));
         // $allProducts = GstCollection::where('user_id',$id)->get();
-       $allProducts = GstCollection::where('user_id', $id)
+       $allProducts = GstCollection::where('gst_collection.user_id', $id)
+       ->join('products', 'gst_collection.product_id', '=', 'products.id')
             ->select(
-                'product_id',
+                'gst_collection.product_id',
+                'products.name',
 
                 // Quantity
-                DB::raw('SUM(quantity) as total_quantity'),
+                DB::raw('SUM(gst_collection.quantity) as total_quantity'),
 
                 // Purchase
-                DB::raw('SUM(purchase_price * quantity) as total_purchase_price'),
-                DB::raw('SUM(purchase_gst_amount * quantity) as total_purchase_gst'),
+                DB::raw('SUM(gst_collection.purchase_price * gst_collection.quantity) as total_purchase_price'),
+                DB::raw('SUM(gst_collection.purchase_gst_amount * gst_collection.quantity) as total_purchase_gst'),
 
                 // Selling
-                DB::raw('SUM(selling_price * quantity) as total_selling_price'),
-                DB::raw('SUM(selling_gst_amount * quantity) as total_selling_gst'),
+                DB::raw('SUM(gst_collection.selling_price * gst_collection.quantity) as total_selling_price'),
+                DB::raw('SUM(gst_collection.selling_gst_amount * gst_collection.quantity) as total_selling_gst'),
 
                 // Discount
                 // DB::raw('SUM(selling_discount_percentage) as total_discount_percentage'),
@@ -60,7 +62,8 @@ class GstController extends Controller
                 // Total entries
                 DB::raw('COUNT(*) as total_products')
             )
-            ->groupBy('product_id')
+            ->groupBy('gst_collection.product_id',
+                        'products.name')
             // ->with('product')
             ->get();
             return [
@@ -72,6 +75,9 @@ class GstController extends Controller
                 'all products'=> $allProducts,
                 ];
             });
+        $executionTime = microtime(true) - $start;  
+        $data['source'] = $fromCache ? 'Cache' : 'Database';
+        $data['response_time'] = round($executionTime, 4) . ' sec';
         return response()->json($data);
     }
     public function productDetails($id){
