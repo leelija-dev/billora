@@ -15,11 +15,13 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Auth;
-
+use Illuminate\Support\Facades\Cache;
 class BlogController extends Controller
 {
     public function index(Request $request)
     {
+        $cacheKey = "blogs_index_" . md5($request->fullUrl());
+        $data = Cache::tags(['blogs'])->remember($cacheKey,600,function () use ($request) {
         $blogs = Blog::when($request->search, function ($query) use ($request) {
             $query->where('title', 'like', '%' . $request->search . '%')
                 ->orWhere('slug', 'like', '%' . $request->search . '%')
@@ -36,7 +38,15 @@ class BlogController extends Controller
         $totalBlog = Blog::withTrashed()->count();
         $activeBlog = Blog::where('status', true)->count();
         $inactiveBlog = Blog::where('status', false)->count();
-        return view('admin.blogs.index', compact('blogs', 'deletedBlog', 'totalBlog', 'activeBlog', 'inactiveBlog'));
+        return [
+            'blogs' => $blogs,
+            'deletedBlog' => $deletedBlog,
+            'totalBlog' => $totalBlog,
+            'activeBlog' => $activeBlog,
+            'inactiveBlog' => $inactiveBlog
+        ];
+        });
+        return view('admin.blogs.index', $data);
     }
     public function create()
     {
@@ -190,7 +200,7 @@ class BlogController extends Controller
                   }
             }
             DB::commit();
-
+            Cache::tags(['blogs'])->flush();
             return redirect()
                 ->route('admin.blogs.index')
                 ->with('success', 'Blog created successfully.');
@@ -213,6 +223,7 @@ class BlogController extends Controller
 
     public function edit($id)
     {
+         Cache::tags(['blogs'])->flush();
         $blog =  Blog::with(['categories', 'tags','faqs'])->withTrashed()->findOrFail($id);
         $categories = Category::where('status', true)->get();
         $tags = BlogTags::where('blog_id', $id)->get();
@@ -365,7 +376,7 @@ class BlogController extends Controller
                 }
             }
             DB::commit();
-
+             Cache::tags(['blogs'])->flush();
             return redirect()
                 ->route('admin.blogs.index')
                 ->with('success', 'Blog updated successfully.');
@@ -392,6 +403,7 @@ class BlogController extends Controller
                 unlink(public_path($blog->feature_image));
             }
             $blog->delete();
+             Cache::tags(['blogs','trashed_blogs'])->flush();
             return redirect()->route('admin.blogs.index')->with('success', 'Blog deleted successfully');
         } catch (\Exception $e) {
             return back()->with('error', $e->getMessage());
@@ -400,7 +412,9 @@ class BlogController extends Controller
     public function trashed(Request $request)
     {
 
-        // $blogs = Blog::onlyTrashed()->paginate(10);
+        // $blogs = Blog::onlyTrashed()->paginate(10);\
+        $cacheKey = "blogs_trashed_" . md5($request->fullUrl());
+        $data = Cache::tags(['trashed_blogs'])->remember($cacheKey,600,function () use ($request) {
         $blogs = Blog::onlyTrashed()
             ->when($request->search, function ($query) use ($request) {
 
@@ -417,14 +431,21 @@ class BlogController extends Controller
                 });
             })
             ->paginate(10);
+            return [
+            'blogs' => $blogs
+            ];
+        });
 
-        return view('admin.blogs.trashed', compact('blogs'));
+        return view('admin.blogs.trashed', $data);
     }
     public function restore($id)
     {
         $blog = Blog::withTrashed()->findOrFail($id);
         if ($blog->trashed()) {
             $blog->restore();
+             Cache::tags(['blogs',
+             'trashed_blogs'
+             ])->flush();
             return redirect()->route('admin.blogs.trash')->with('success', 'Blog restored successfully');
         } else {
             return redirect()->route('admin.blogs.trash')->with('error', 'Blog is not in trashed state');
@@ -438,6 +459,9 @@ class BlogController extends Controller
                 unlink(public_path($blog->feature_image));
             }
             $blog->forceDelete();
+            Cache::tags(['blogs',
+             'trashed_blogs'
+             ])->flush();
             return redirect()->route('admin.blogs.trash')->with('success', 'Blog permanently deleted successfully');
         } catch (\Exception $e) {
             return back()->with('error', $e->getMessage());
