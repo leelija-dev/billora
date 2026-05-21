@@ -183,8 +183,8 @@ class InvoiceController extends Controller
                 }
                 // $price = $item['price'];
                 $qty = $item['quantity'];
-                $discount = ((($price * $qty) * $item['discount'] ?? 0) / 100);
-                $gst = (((($price * $qty) - $discount) * $item['gst'] ?? 0) / 100);
+                $discount = ((($price * $qty) * ($item['discount'] ?? 0)) / 100);
+                $gst = (((($price * $qty) - $discount) * ($item['gst'] ?? 0)) / 100);
 
                 $itemTotal = ((($price * $qty) - $discount) + $gst);
 
@@ -225,7 +225,7 @@ class InvoiceController extends Controller
                 // $price = $item['price'];
                 $qty = $item['quantity'];
 
-                $discount = ((($price * $qty) * $item['discount'] ?? 0) / 100);
+                $discount = ((($price * $qty) * ($item['discount'] ?? 0)) / 100);
                 $gst = (((($price * $qty) - $discount) * $item['gst'] ?? 0) / 100);
                 $totalPrice = ((($price * $qty) - $discount) + $gst);
                 $product = Products::find($item['product_id']);
@@ -628,8 +628,8 @@ class InvoiceController extends Controller
 
                 $price = $item['price'];
                 $qty = $item['quantity'];
-                $discount = ((($price * $qty) * $item['discount'] ?? 0) / 100);
-                $gst = (((($price * $qty) - $discount) * $item['gst'] ?? 0) / 100);
+                $discount = ((($price * $qty) * ($item['discount'] ?? 0)) / 100);
+                $gst = (((($price * $qty) - $discount) * ($item['gst'] ?? 0)) / 100);
 
                 $itemTotal = ((($price * $qty) - $discount) + $gst);
 
@@ -653,8 +653,8 @@ class InvoiceController extends Controller
                 $price = $item['price'];
                 $qty = $item['quantity'];
 
-                $discount = ((($price * $qty) * $item['discount'] ?? 0) / 100);
-                $gst = (((($price * $qty) - $discount) * $item['gst'] ?? 0) / 100);
+                $discount = ((($price * $qty) * ($item['discount'] ?? 0)) / 100);
+                $gst = (((($price * $qty) - $discount) * ($item['gst'] ?? 0)) / 100);
                 $totalPrice = ((($price * $qty) - $discount) + $gst);
 
                 InvoiceItems::create([
@@ -799,8 +799,8 @@ class InvoiceController extends Controller
                 }
                 // $price = $item['price'];
                 $qty = $item['quantity'];
-                $discount = ((($price * $qty) * $item['discount'] ?? 0) / 100);
-                $gst = (((($price * $qty) - $discount) * $item['gst'] ?? 0) / 100);
+                $discount = ((($price * $qty) * ($item['discount'] ?? 0)) / 100);
+                $gst = (((($price * $qty) - $discount) * ($item['gst'] ?? 0)) / 100);
 
                 $itemTotal = ((($price * $qty) - $discount) + $gst);
 
@@ -813,6 +813,7 @@ class InvoiceController extends Controller
             Log::info('due_amount: ' . $due_amount);
             $invoice->update([
                 'customer_id'   => $request->customer_id,
+                'store_id'      => $request->store_id,
                 'total_amount'  => $totalAmount,
                 'total_items'   => $totalItems,
                 'paid_amount'   => $request->paid_amount,
@@ -842,8 +843,8 @@ class InvoiceController extends Controller
                 }
                 $qty = $item['quantity'];
                 $product = Products::find($item['product_id']);
-                $discount = ((($price * $qty) * $item['discount'] ?? 0) / 100);
-                $gst = (((($price * $qty) - $discount) * $item['gst'] ?? 0) / 100);
+                $discount = ((($price * $qty) * ($item['discount'] ?? 0)) / 100);
+                $gst = (((($price * $qty) - $discount) * ($item['gst'] ?? 0)) / 100);
                 $totalPrice = ((($price * $qty) - $discount) + $gst);
                 if ($exist) {
                     if ($hasStockPermission) {
