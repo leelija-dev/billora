@@ -27,12 +27,11 @@ export const invoiceAPI = {
     if (endDate) params.append("end_date", endDate);
 
     // Decode Base64
-  const decoded = atob(id);
+    const decoded = atob(id);
+    // Remove secret key from end
+    const originalId = decoded.replace(secretKey, "");
 
-  // Remove secret key from end
-  const originalId = decoded.replace(secretKey, "");
-
-  console.log("Original ID:", originalId);
+    console.log("Original ID:", originalId);
 
     return apiClient.get(`/invoice/${originalId}?${params.toString()}`);
   },
@@ -43,7 +42,7 @@ export const invoiceAPI = {
       console.error("User ID is required for getBillGenerateData");
       return apiClient.get("/invoice");
     }
-    console.log("Fetching bill generate data for user ID:", userId); // Debug log
+    console.log("Fetching bill generate data for user ID:", userId);
     return apiClient.get("/invoice", {
       params: { user_id: userId },
     });
@@ -54,20 +53,19 @@ export const invoiceAPI = {
     return apiClient.get(`/customer/show/${customerId}`);
   },
 
-  // Get store details by ID
+  // Get store details by ID - Using the correct edit endpoint
   getStore: (storeId) => {
-    return apiClient.get(`/store/${storeId}`);
+    return apiClient.get(`/store/edit/${storeId}`);
   },
 
   // Create/store new invoice/bill
   create: (invoiceData) => {
-    console.log("Creating invoice with data:", invoiceData); // Debug log
+    console.log("Creating invoice with data:", invoiceData);
     return apiClient.post("/invoice/store", invoiceData);
   },
 
   // Update invoice/bill
   update: (id, invoiceData) => {
-    
     return apiClient.put(`/invoice/${id}`, invoiceData);
   },
 

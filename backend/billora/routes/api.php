@@ -138,6 +138,7 @@ Route::middleware('auth:sanctum')->prefix('brands')->group(function () {
 //invoices & bill generate from stock table(stock management)
 Route::middleware('auth:sanctum')->prefix('invoice')->group(function () {
    Route::get('/', [InvoiceController::class, 'index']); //for bill generate
+   Route::get('/products',[InvoiceController::class, 'products']);
    Route::post('/store', [InvoiceController::class, 'store']);
    Route::put('/{id}', [InvoiceController::class, 'update']);
    Route::get('/bill-history', [InvoiceController::class, 'billHistory']);

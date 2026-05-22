@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import {
   FiPlus,
   FiSearch,
@@ -70,6 +70,10 @@ const Invoices = () => {
   const hasStockPermission = canAccess("stock-management");
   const secretKey = import.meta.env.VITE_SECRET_ENCRYPTION_KEY;
 
+  // Refs to prevent duplicate requests
+  const isInitialMount = useRef(true);
+  const isFetchingRef = useRef(false);
+  const abortControllerRef = useRef(null);
 
   const [searchTerm, setSearchTerm] = useState(filters.search || "");
   const [showAddForm, setShowAddForm] = useState(false);
@@ -88,6 +92,9 @@ const Invoices = () => {
   const [duePayAmount, setDuePayAmount] = useState("");
   const [duePayMethod, setDuePayMethod] = useState("Cash");
   const [duePaySubmitting, setDuePaySubmitting] = useState(false);
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  const [invoiceToCancel, setInvoiceToCancel] = useState(null);
+  const [cancellingInvoice, setCancellingInvoice] = useState(false);
 
   // Handle resize events to prevent unnecessary API calls
   useEffect(() => {
@@ -102,7 +109,7 @@ const Invoices = () => {
       clearTimeout(resizeTimeout);
       resizeTimeout = setTimeout(() => {
         setIsResizing(false);
-      }, 150); // Wait for resize to finish
+      }, 150);
     };
 
     window.addEventListener("resize", handleResizeStart);
@@ -115,28 +122,69 @@ const Invoices = () => {
     };
   }, []);
 
+  // Initial fetch with deduplication
   useEffect(() => {
+    // Cancel any in-flight request
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+
+    abortControllerRef.current = new AbortController();
+
     const fetchData = async () => {
+      // Prevent multiple simultaneous fetches
+      if (isFetchingRef.current) {
+        console.log("Fetch already in progress, skipping...");
+        return;
+      }
+
+      isFetchingRef.current = true;
+
       try {
         await fetchInvoices();
+      } catch (error) {
+        if (error.name !== "AbortError") {
+          console.error("Failed to fetch invoices:", error);
+        }
       } finally {
         setInitialLoading(false);
+        isFetchingRef.current = false;
       }
     };
-    fetchData();
-  }, []);
 
+    // Only fetch on mount
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      fetchData();
+    }
+
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+      // Cleanup store requests on unmount
+      if (useInvoiceStore.getState().cleanup) {
+        useInvoiceStore.getState().cleanup();
+      }
+    };
+  }, []); // Empty dependency array - only run once
+
+  // Debounced search with resize protection
   useEffect(() => {
     const debounceTimer = setTimeout(() => {
-      if (!isResizing) {
+      if (!isResizing && !isFetchingRef.current) {
         setFilters({ search: searchTerm });
       }
     }, 500);
 
     return () => clearTimeout(debounceTimer);
-  }, [searchTerm]);
+  }, [searchTerm, setFilters, isResizing]);
 
   const handlePageChange = (page) => {
+    if (isFetchingRef.current) {
+      console.log("Page change skipped - fetch in progress");
+      return;
+    }
     setPageLoading(true);
     fetchInvoices(page).finally(() => {
       setPageLoading(false);
@@ -144,25 +192,15 @@ const Invoices = () => {
   };
 
   const handleView = (invoice) => {
-  
-
     let encodedId = btoa(invoice.id.toString() + secretKey);
-
     navigate(`/invoices/detail/${encodedId}`);
   };
 
   const handleEditInvoice = (invoice) => {
     let encodedId = btoa(invoice.id.toString() + secretKey);
-   
     navigate(`/invoices/detail/${encodedId}`, { state: { openEdit: true } });
   };
 
-  // Add these state variables with the other state declarations (around line 60-70)
-  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
-  const [invoiceToCancel, setInvoiceToCancel] = useState(null);
-  const [cancellingInvoice, setCancellingInvoice] = useState(false);
-
-  // Replace the existing handleCancelInvoiceFromTable function with these:
   const handleCancelClick = (invoice) => {
     if (!invoice?.id || invoice.status === "cancelled") return;
     setInvoiceToCancel(invoice);
@@ -175,7 +213,6 @@ const Invoices = () => {
     try {
       const res = await cancelInvoice(invoiceToCancel.id);
       if (res?.success) {
-        // toast.success('Invoice cancelled successfully')
         setShowCancelConfirm(false);
         setInvoiceToCancel(null);
         await fetchInvoices(currentPage);
@@ -201,27 +238,20 @@ const Invoices = () => {
     setShowPayDueModal(true);
   };
 
-  // Handle due payment amount change with validation
   const handleDueAmountChange = (value) => {
-    // Only allow digits and decimal point
     let cleanedValue = value.replace(/[^0-9.]/g, "");
-
-    // Prevent multiple decimal points
     const decimalCount = (cleanedValue.match(/\./g) || []).length;
     if (decimalCount > 1) {
       cleanedValue = cleanedValue.slice(0, cleanedValue.lastIndexOf("."));
     }
 
-    // Parse the cleaned value
     let numValue = cleanedValue === "" ? 0 : parseFloat(cleanedValue);
     if (isNaN(numValue)) numValue = 0;
 
-    // Get max allowed amount (due amount)
     const total = parseFloat(payDueInvoice?.total_amount || 0);
     const paid = parseFloat(payDueInvoice?.paid_amount || 0);
     const maxAmount = Math.max(0, total - paid);
 
-    // Cap at due amount
     if (numValue > maxAmount) {
       numValue = maxAmount;
       cleanedValue = numValue.toString();
@@ -280,12 +310,6 @@ const Invoices = () => {
     }
   };
 
-  const handleDownload = (invoice) => {
-    if (invoice?.pdfUrl) {
-      window.open(invoice.pdfUrl, "_blank");
-    }
-  };
-
   const handleAddClick = () => {
     setShowAddForm(true);
   };
@@ -321,7 +345,6 @@ const Invoices = () => {
 
       if (res?.status === true || res?.success) {
         toast.success("Invoice created successfully");
-        // Return the created invoice data
         return { success: true, data: res?.data || res };
       } else {
         toast.error(res?.message || "Failed to create invoice");
@@ -341,17 +364,11 @@ const Invoices = () => {
     setFilters({ search: "", status: "" });
   };
 
-  const handleBillGenerate = () => {
-    navigate("/invoice");
-  };
-
   const handlePrintA4 = async (invoice) => {
     try {
-      // Use cached data from invoice store instead of making new API calls
       let customerData = invoice.customer || {};
       let storeData = invoice.store || {};
 
-      // Only fetch if data is missing from cache
       if (!customerData.name && invoice.customer_id) {
         const customerResponse = await customerAPI.getById(invoice.customer_id);
         customerData = customerResponse.data?.data || {};
@@ -371,7 +388,6 @@ const Invoices = () => {
       let enhancedItems = [];
 
       if (invoiceItems.length > 0) {
-        // Batch fetch products with caching
         const uniqueProductIds = [
           ...new Set(
             invoiceItems.map((item) => item.product_id).filter(Boolean),
@@ -472,11 +488,9 @@ const Invoices = () => {
 
   const handlePrintThermal = async (invoice) => {
     try {
-      // Use cached data from invoice store instead of making new API calls
       let customerData = invoice.customer || {};
       let storeData = invoice.store || {};
 
-      // Only fetch if data is missing from cache
       if (!customerData.name && invoice.customer_id) {
         const customerResponse = await customerAPI.getById(invoice.customer_id);
         customerData = customerResponse.data?.data || {};
@@ -496,7 +510,6 @@ const Invoices = () => {
       let enhancedItems = [];
 
       if (invoiceItems.length > 0) {
-        // Batch fetch products with caching
         const uniqueProductIds = [
           ...new Set(
             invoiceItems.map((item) => item.product_id).filter(Boolean),
@@ -598,8 +611,6 @@ const Invoices = () => {
   // Calculate stats with safe invoices array
   const safeInvoices = Array.isArray(invoices) ? invoices : [];
 
-  // console.log("Safe Invoices ..........",safeInvoices)
-
   const stats = {
     total: totalInvoices || safeInvoices?.length || 0,
     completed:
@@ -677,7 +688,6 @@ const Invoices = () => {
     </motion.div>
   );
 
-  // Get the due amount for the current invoice
   const getCurrentDueAmount = () => {
     if (!payDueInvoice) return 0;
     const total = parseFloat(payDueInvoice.total_amount || 0);
@@ -753,7 +763,6 @@ const Invoices = () => {
               className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6"
             >
               {initialLoading ? (
-                // Loading skeleton for stats cards
                 Array.from({ length: 4 }).map((_, index) => (
                   <motion.div
                     key={index}
@@ -826,9 +835,7 @@ const Invoices = () => {
                 isSubmitting={formSubmitting}
                 hasStockPermission={hasStockPermission}
                 onSuccess={() => {
-                  // This will close the form and show the invoice table
                   setShowAddForm(false);
-                  // Refresh the invoices list
                   fetchInvoices(currentPage);
                 }}
               />
@@ -848,7 +855,6 @@ const Invoices = () => {
               className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6"
             >
               {initialLoading ? (
-                // Loading skeleton for filters
                 <div className="animate-pulse">
                   <div className="flex flex-col sm:flex-row gap-4">
                     <div className="flex-1">
@@ -994,7 +1000,6 @@ const Invoices = () => {
               transition={{ delay: 0.8 }}
             >
               {initialLoading || pageLoading ? (
-                // Loading skeleton for table
                 <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-12">
                   <div className="flex flex-col items-center justify-center">
                     <motion.div
@@ -1161,6 +1166,7 @@ const Invoices = () => {
           )}
         </AnimatePresence>
       </motion.div>
+
       {/* Delete Confirmation Modal */}
       <AnimatePresence>
         {showDeleteConfirm && (
@@ -1336,6 +1342,7 @@ const Invoices = () => {
           </motion.div>
         )}
       </AnimatePresence>
+
       {/* Cancel Invoice Confirmation Modal */}
       <AnimatePresence>
         {showCancelConfirm && invoiceToCancel && (
