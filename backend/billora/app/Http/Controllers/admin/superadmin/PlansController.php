@@ -254,13 +254,32 @@ class PlansController extends Controller
 
         return view('admin.plans.edit', compact('plan', 'permissions', 'planPermissions'));
     }
-    public function purchaseHistory()
+    public function purchaseHistory(Request $request)
     {
-        $planPurchaseHistory =  PlanPurchaseHistory::latest()->paginate(10);
-        $totalplanHistory = PlanPurchaseHistory::count();
-        $successPayment = PlanPurchaseHistory::where('payment_status', 'success')->count();
-        $planExpire = PlanPurchaseHistory::where('payment_status', 'pending')->count();
-        $cancelledPayment = PlanPurchaseHistory::where('payment_status', 'failed')->count();
-        return view('admin.plans.plan-purchase-history', compact('planPurchaseHistory', 'totalplanHistory', 'successPayment', 'planExpire', 'cancelledPayment'));
+        $cacheKey = 'plan_purchase_history_' . md5($request->fullUrl());
+
+            $data = Cache::tags(['plan_purchase_history'])
+                ->remember($cacheKey, 600, function () use ($request) {
+                $search = $request->search;
+
+                $planPurchaseHistory = PlanPurchaseHistory::when($search, function ($query) use ($search) {
+                        $query->where('id', 'like', '%' . $search . '%')
+                        ->orWhere('payment_id', 'like', '%' . $search . '%');
+                    })
+                    ->latest()
+                    ->paginate(10);
+                $totalplanHistory = PlanPurchaseHistory::count();
+                $successPayment = PlanPurchaseHistory::where('payment_status', 'success')->count();
+                $planExpire = PlanPurchaseHistory::where('payment_status', 'pending')->count();
+                $cancelledPayment = PlanPurchaseHistory::where('payment_status', 'failed')->count();
+                return [
+                    'planPurchaseHistory'=>$planPurchaseHistory,
+                    'totalplanHistory'=>$totalplanHistory,
+                    'successPayment'=>$successPayment,
+                    'planExpire'=>$planExpire,
+                    'cancelledPayment'=>$cancelledPayment
+                ];
+        });
+        return view('admin.plans.plan-purchase-history', $data);
     }
 }
