@@ -7,6 +7,7 @@ use App\Models\ContactUs;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Cache;
 class ContactUsController extends Controller
 {
     public function index(){
@@ -44,6 +45,7 @@ class ContactUsController extends Controller
                     ->subject($data['subject']);
         });
         }
+        Cache::tags(['contacts'])->flush();
         return response()->json([
             'status' => true,
             'message' => 'Message sent successfully'

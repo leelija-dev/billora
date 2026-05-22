@@ -66,34 +66,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/users/update-password/{id}', [CustomerController::class, 'updatePassword']);
    Route::post('/users/qr-re-generate/{id}',[CustomerController::class, 'createQR']);
 });
-// Route::prefix('auth/session')->group(function () {
-//     Route::post('/login', [CustomerController::class, 'login']);
-//     Route::post('/logout', [CustomerController::class, 'logout']);
-//     Route::get('/check', [CustomerController::class, 'checkSession']);
-// });
-//admin user
-// Route::prefix('users')->group(function () {
-//    //    Route::get('/', [CustomerController::class, 'index']);
-//    Route::middleware('auth:sanctum')->get('/', [CustomerController::class, 'index']);
-
-//    Route::post('/register', [CustomerController::class, 'store']);
-//    Route::post('/login', [CustomerController::class, 'login']);
-//    Route::middleware('auth:sanctum')->get('/edit/{id}', [CustomerController::class, 'edit']);
-//    Route::middleware('auth:sanctum')->put('/update/{id}', [CustomerController::class, 'update']);
-//    Route::middleware('auth:sanctum')->put('/update-password/{id}', [CustomerController::class, 'updatePassword']);
-//    // Route::get
-//    //    Route::post('/logout', [CustomerController::class, 'logout']);
-//    Route::middleware('auth:sanctum')->post('/logout', [CustomerController::class, 'logout']);
-//    //due RBAC
-
-// });
-// 
-// Route::middleware('auth:sanctum')->group(function () {
-//     Route::get('/', [CustomerController::class, 'index']);
-//     Route::post('/store', [CustomerController::class, 'store']);
-//     Route::post('/login', [CustomerController::class, 'login']);
-//     Route::post('/users/logout', [CustomerController::class, 'logout']);
-// });
 
 //Products
 Route::middleware('auth:sanctum')->prefix('products')->group(function () {

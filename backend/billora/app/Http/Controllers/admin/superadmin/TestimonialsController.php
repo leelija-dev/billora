@@ -5,11 +5,16 @@ namespace App\Http\Controllers\admin\superadmin;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Testimonials;
+use Illuminate\Support\Facades\Cache;
 
 class TestimonialsController extends Controller
 {
     public function index(Request $request)
     {
+        $cacheKey = "testimonials_index_" . md5($request->fullUrl());
+        $data = Cache::tags(['testimonials'])->remember($cacheKey ,600,function () use ($request){
+
+        
         $search = $request->input('search');
 
         $testimonials = Testimonials::when($search, function ($query, $search) {
@@ -24,7 +29,14 @@ class TestimonialsController extends Controller
         $totalTestimonials = Testimonials::count();
         $activeTestimonials = Testimonials::where('is_active', true)->count();
         $inactiveTestimonials = Testimonials::where('is_active', false)->count();
-        return view('admin.testimonial.index', compact('testimonials','totalTestimonials','activeTestimonials','inactiveTestimonials'));
+        return [
+            'testimonials' => $testimonials,
+            'totalTestimonials' => $totalTestimonials,
+            'activeTestimonials' => $activeTestimonials,
+            'inactiveTestimonials' => $inactiveTestimonials
+        ];
+        });
+        return view('admin.testimonial.index', $data);//compact('testimonials','totalTestimonials','activeTestimonials','inactiveTestimonials'));
     }
     public function create()
     {
@@ -65,6 +77,7 @@ class TestimonialsController extends Controller
                 $data['image'] = 'images/testimonials/' . $filename;
             }
             Testimonials::create($data);
+            Cache::tags(['testimonials'])->flush();
             return redirect()->route('admin.testimonial.index')->with('success', 'Testimonial created successfully.');
         } catch (\Exception $e) {
             return redirect()->back()->with('error', 'An error occurred while creating the testimonial: ' . $e->getMessage());
@@ -73,6 +86,7 @@ class TestimonialsController extends Controller
     public function edit($id)
     {
         $testimonial = Testimonials::findOrFail($id);
+        Cache::tags(['testimonials'])->flush();
         return view('admin.testimonial.edit', compact('testimonial'));
     }
     public function update(Request $request, $id)
@@ -125,7 +139,7 @@ class TestimonialsController extends Controller
 
             //Update record
             $testimonial->update($data);
-
+            Cache::tags(['testimonials'])->flush();
             return redirect()
                 ->route('admin.testimonial.index')
                 ->with('success', 'Testimonial updated successfully.');
@@ -141,6 +155,7 @@ class TestimonialsController extends Controller
         try {
             $testimonial = Testimonials::findOrFail($id);
             $testimonial->delete();
+            Cache::tags(['testimonials'])->flush();
             return redirect()->route('admin.testimonials.index')->with('success', 'Testimonial deleted successfully.');
         } catch (\Exception $e) {
             return redirect()->back()->with('error', 'An error occurred while deleting the testimonial: ' . $e->getMessage());

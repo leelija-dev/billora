@@ -10,10 +10,13 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Log;
 use App\Jobs\SendCustomerMailJob;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Cache;
 class CustomerController extends Controller
 {
   public function index(Request $request)
   {
+    $cacheKey = "customers_index_" . md5($request->fullUrl());
+    $data = Cache::tags(['customers'])->remember($cacheKey,600,function () use ($request) {
     $query = Customers::query();
 
     // Search logic
@@ -49,13 +52,21 @@ class CustomerController extends Controller
     $activeCustomers = Customers::where('is_active', true)->count();
     $inactiveCustomers = Customers::where('is_active', false)->count();
     $verifiedCustomers = Customers::where('email_verified_at', '!=', null)->count();
-
-    return view('admin.customers.index', compact('customers','activeCustomers', 'inactiveCustomers', 'totalCustomers','verifiedCustomers'));
+    return [
+      'customers'=>$customers,
+      'activeCustomers'=>$activeCustomers,
+      'inactiveCustomers'=>$inactiveCustomers,
+      'totalCustomers'=>$totalCustomers,
+      'verifiedCustomers'=>$verifiedCustomers
+    ];
+    });
+    return view('admin.customers.index', $data);
   }
   public function plans($id)
   {
     $customer = Customers::find($id);
     $plans = PlanPurchaseHistory::with('plan')->where('user_id', $id)->orderBy('id', 'desc')->paginate(10)->withQueryString();
+    
     return view('admin.customers.customer_plan', compact('customer', 'plans', 'id'));
   }
   public function customerMail(Request $request)
@@ -242,7 +253,7 @@ public function sendVerificationMail($customer_id)
             'email_verified_at' => now(),
             'verification_token' => null
         ]);
-        
+        Cache::tags(['customers'])->flush();
         $frontendLoginUrl = env('REACT_APP_URL', 'https://thefastbill.com');
         return redirect($frontendLoginUrl . '/login?verified=true');
     }

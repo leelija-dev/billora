@@ -6,10 +6,13 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\ContactUs;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Cache;
 class ContactController extends Controller
 {
     public function index(Request $request)
 {
+  $cacheKey = "contacts_index_" . md5($request->fullUrl());
+    $data = Cache::tags(['contacts'])->remember($cacheKey,600,function () use ($request) {
     $search = $request->input('search');
 
     $contacts = ContactUs::query()
@@ -28,13 +31,18 @@ class ContactController extends Controller
         })
         ->orderBy('created_at', 'desc')
         ->paginate(10);
+        return [
+          'contacts' => $contacts
+        ];
+    });
 
-    return view('admin.contact_us.index', compact('contacts'));
-}
+    return view('admin.contact_us.index', $data);
+  }
     public function view($id){
         $contacts = ContactUs::findOrFail($id);
         $contacts->view_status = true;
         $contacts->save();
+        Cache::tags(['contacts'])->flush();
         return view('admin.contact_us.view', compact('contacts'));
     }
     public function sendMail($id){
