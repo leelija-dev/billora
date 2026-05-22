@@ -29,7 +29,12 @@ import Button from "../../components/common/Button/Button";
 import Input from "../../components/common/Input/Input";
 import Table from "../../components/common/Table/Table";
 import EmptyState from "../../components/common/EmptyState/EmptyState";
-import { FaRupeeSign, FaFileInvoiceDollar, FaPercentage, FaLandmark } from "react-icons/fa";
+import {
+  FaRupeeSign,
+  FaFileInvoiceDollar,
+  FaPercentage,
+  FaLandmark,
+} from "react-icons/fa";
 import toast from "react-hot-toast";
 
 const GstManagement = () => {
@@ -56,7 +61,7 @@ const GstManagement = () => {
   const [exporting, setExporting] = useState(false);
   const [selectedProductDetails, setSelectedProductDetails] = useState(null);
   const [showProductDetailModal, setShowProductDetailModal] = useState(false);
-  
+
   const hasFetchedRef = useRef(false);
 
   // Auto-load GST data for current logged-in user on page mount (only once)
@@ -67,33 +72,36 @@ const GstManagement = () => {
     }
   }, [user?.id]);
 
-  const fetchUserGstData = useCallback(async (userId, showSuccessToast = false) => {
-    if (!userId?.trim()) {
-      toast.error("User ID not found");
-      return false;
-    }
-
-    setInitialLoading(true);
-    try {
-      await fetchGstCollectionDetails(userId.trim());
-      if (showSuccessToast) {
-        toast.success("GST collection data refreshed successfully");
+  const fetchUserGstData = useCallback(
+    async (userId, showSuccessToast = false) => {
+      if (!userId?.trim()) {
+        toast.error("User ID not found");
+        return false;
       }
-      return true;
-    } catch (error) {
-      // Error is already handled in the store
-      return false;
-    } finally {
-      setInitialLoading(false);
-    }
-  }, [fetchGstCollectionDetails]);
+
+      setInitialLoading(true);
+      try {
+        await fetchGstCollectionDetails(userId.trim());
+        if (showSuccessToast) {
+          toast.success("GST collection data refreshed successfully");
+        }
+        return true;
+      } catch (error) {
+        // Error is already handled in the store
+        return false;
+      } finally {
+        setInitialLoading(false);
+      }
+    },
+    [fetchGstCollectionDetails],
+  );
 
   const handleRefresh = useCallback(async () => {
     if (!user?.id) {
       toast.error("User not logged in");
       return;
     }
-    
+
     setRefreshing(true);
     try {
       await fetchUserGstData(user.id.toString(), true);
@@ -104,27 +112,31 @@ const GstManagement = () => {
     }
   }, [user?.id, fetchUserGstData]);
 
-  const handleStatusUpdate = useCallback(async (collectionId, status) => {
-    if (!collectionId) {
-      toast.error("Please select a collection");
-      return;
-    }
-    
-    try {
-      await updatePaymentStatus(collectionId, { 
-        govt_gst_pay_status: status === 'paid' ? 1 : status === 'pending' ? 0 : 2,
-        updated_at: new Date().toISOString()
-      });
-      setShowStatusModal(false);
-      setSelectedCollectionId("");
-      if (user?.id) {
-        await fetchGstCollectionDetails(user.id.toString());
+  const handleStatusUpdate = useCallback(
+    async (collectionId, status) => {
+      if (!collectionId) {
+        toast.error("Please select a collection");
+        return;
       }
-      toast.success(`Payment status updated to ${status}`);
-    } catch (error) {
-      // Error is already handled in the store
-    }
-  }, [updatePaymentStatus, user?.id, fetchGstCollectionDetails]);
+
+      try {
+        await updatePaymentStatus(collectionId, {
+          govt_gst_pay_status:
+            status === "paid" ? 1 : status === "pending" ? 0 : 2,
+          updated_at: new Date().toISOString(),
+        });
+        setShowStatusModal(false);
+        setSelectedCollectionId("");
+        if (user?.id) {
+          await fetchGstCollectionDetails(user.id.toString());
+        }
+        toast.success(`Payment status updated to ${status}`);
+      } catch (error) {
+        // Error is already handled in the store
+      }
+    },
+    [updatePaymentStatus, user?.id, fetchGstCollectionDetails],
+  );
 
   const handleViewProductDetails = useCallback((product) => {
     setSelectedProductDetails(product);
@@ -136,41 +148,43 @@ const GstManagement = () => {
       toast.error("No data to export");
       return;
     }
-    
+
     setExporting(true);
     try {
       // Create CSV data
       const collections = getFilteredCollections();
-      const csvData = collections.map(col => ({
-        'Collection ID': col.id,
-        'Invoice ID': col.invoice_id,
-        'Product ID': col.product_id,
-        'Product Name': col.product_name || `Product ${col.product_id}`,
-        'Quantity': col.quantity,
-        'Selling Price': col.selling_price,
-        'GST %': col.selling_gst_percentage,
-        'GST Amount': col.selling_gst_amount,
-        'Status': getStatusText(col.govt_pay_status),
-        'Date': new Date(col.created_at).toLocaleDateString()
+      const csvData = collections.map((col) => ({
+        "Collection ID": col.id,
+        "Invoice ID": col.invoice_id,
+        "Product ID": col.product_id,
+        "Product Name": col.product_name || `Product ${col.product_id}`,
+        Quantity: col.quantity,
+        "Selling Price": col.selling_price,
+        "GST %": col.selling_gst_percentage,
+        "GST Amount": col.selling_gst_amount,
+        Status: getStatusText(col.govt_pay_status),
+        Date: new Date(col.created_at).toLocaleDateString(),
       }));
-      
+
       // Convert to CSV
       const headers = Object.keys(csvData[0] || {});
       const csvRows = [
-        headers.join(','),
-        ...csvData.map(row => headers.map(header => JSON.stringify(row[header] || '')).join(','))
+        headers.join(","),
+        ...csvData.map((row) =>
+          headers.map((header) => JSON.stringify(row[header] || "")).join(","),
+        ),
       ];
-      
-      const blob = new Blob([csvRows.join('\n')], { type: 'text/csv' });
+
+      const blob = new Blob([csvRows.join("\n")], { type: "text/csv" });
       const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
+      const a = document.createElement("a");
       a.href = url;
-      a.download = `gst-data-${new Date().toISOString().split('T')[0]}.csv`;
+      a.download = `gst-data-${new Date().toISOString().split("T")[0]}.csv`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-      
+
       toast.success("GST data exported successfully");
     } catch (error) {
       toast.error("Failed to export data");
@@ -181,22 +195,39 @@ const GstManagement = () => {
 
   const getStatusText = (status) => {
     const statusValue = status?.toString();
-    if (statusValue === '1' || status === 'paid') return 'Paid';
-    if (statusValue === '0' || status === 'pending') return 'Pending';
-    if (statusValue === '2' || status === 'failed') return 'Failed';
-    return 'Unknown';
+    if (statusValue === "1" || status === "paid") return "Paid";
+    if (statusValue === "0" || status === "pending") return "Pending";
+    if (statusValue === "2" || status === "failed") return "Failed";
+    return "Unknown";
   };
 
   const getPaymentStatusBadge = (status) => {
     const config = {
-      paid: { bg: 'bg-emerald-50 dark:bg-emerald-500/10', text: 'text-emerald-700 dark:text-emerald-400', border: 'border-emerald-200 dark:border-emerald-500/20', label: 'Paid' },
-      pending: { bg: 'bg-amber-50 dark:bg-amber-500/10', text: 'text-amber-700 dark:text-amber-400', border: 'border-amber-200 dark:border-amber-500/20', label: 'Pending' },
-      failed: { bg: 'bg-rose-50 dark:bg-rose-500/10', text: 'text-rose-700 dark:text-rose-400', border: 'border-rose-200 dark:border-rose-500/20', label: 'Failed' },
+      paid: {
+        bg: "bg-emerald-50 dark:bg-emerald-500/10",
+        text: "text-emerald-700 dark:text-emerald-400",
+        border: "border-emerald-200 dark:border-emerald-500/20",
+        label: "Paid",
+      },
+      pending: {
+        bg: "bg-amber-50 dark:bg-amber-500/10",
+        text: "text-amber-700 dark:text-amber-400",
+        border: "border-amber-200 dark:border-amber-500/20",
+        label: "Pending",
+      },
+      failed: {
+        bg: "bg-rose-50 dark:bg-rose-500/10",
+        text: "text-rose-700 dark:text-rose-400",
+        border: "border-rose-200 dark:border-rose-500/20",
+        label: "Failed",
+      },
     };
     const key = getStatusText(status).toLowerCase();
     const style = config[key] || config.pending;
     return (
-      <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${style.bg} ${style.text} border ${style.border}`}>
+      <span
+        className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${style.bg} ${style.text} border ${style.border}`}
+      >
         {style.label}
       </span>
     );
@@ -205,50 +236,62 @@ const GstManagement = () => {
   // Filter collections based on status and date range
   const getFilteredCollections = useCallback(() => {
     if (!selectedCollection?.collections) return [];
-    
+
     let filtered = [...selectedCollection.collections];
-    
+
     if (statusFilter !== "all") {
-      filtered = filtered.filter(col => 
-        getStatusText(col.govt_pay_status).toLowerCase() === statusFilter.toLowerCase()
+      filtered = filtered.filter(
+        (col) =>
+          getStatusText(col.govt_pay_status).toLowerCase() ===
+          statusFilter.toLowerCase(),
       );
     }
-    
+
     if (dateRange.start) {
-      filtered = filtered.filter(col => 
-        new Date(col.created_at) >= new Date(dateRange.start)
+      filtered = filtered.filter(
+        (col) => new Date(col.created_at) >= new Date(dateRange.start),
       );
     }
-    
+
     if (dateRange.end) {
-      filtered = filtered.filter(col => 
-        new Date(col.created_at) <= new Date(dateRange.end)
+      filtered = filtered.filter(
+        (col) => new Date(col.created_at) <= new Date(dateRange.end),
       );
     }
-    
+
     return filtered;
   }, [selectedCollection, statusFilter, dateRange]);
 
   const calculateSummary = useCallback(() => {
     const filtered = getFilteredCollections();
-    const paidGST = filtered.reduce((sum, col) => 
-      sum + (getStatusText(col.govt_pay_status) === "Paid" ? (parseFloat(col.selling_gst_amount) || 0) : 0), 0
+    const paidGST = filtered.reduce(
+      (sum, col) =>
+        sum +
+        (getStatusText(col.govt_pay_status) === "Paid"
+          ? parseFloat(col.selling_gst_amount) || 0
+          : 0),
+      0,
     );
-    const pendingGST = filtered.reduce((sum, col) => 
-      sum + (getStatusText(col.govt_pay_status) === "Pending" ? (parseFloat(col.selling_gst_amount) || 0) : 0), 0
+    const pendingGST = filtered.reduce(
+      (sum, col) =>
+        sum +
+        (getStatusText(col.govt_pay_status) === "Pending"
+          ? parseFloat(col.selling_gst_amount) || 0
+          : 0),
+      0,
     );
-    
+
     const totalGST = parseFloat(selectedCollection?.totalGST) || 0;
     const govtGSTDue = parseFloat(selectedCollection?.govtGSTDue) || 0;
-    
+
     return { totalGST, paidGST, pendingGST, govtGSTDue };
   }, [getFilteredCollections, selectedCollection]);
 
   // Table columns for GST collections
   const columns = [
     {
-      header: 'Collection ID',
-      accessor: 'id',
+      header: "Collection ID",
+      accessor: "id",
       cell: (value) => (
         <span className="font-mono text-sm font-medium text-gray-900 dark:text-white">
           #{value}
@@ -256,8 +299,8 @@ const GstManagement = () => {
       ),
     },
     {
-      header: 'Invoice ID',
-      accessor: 'invoice_id',
+      header: "Invoice ID",
+      accessor: "invoice_id",
       cell: (value) => (
         <span className="font-mono text-sm text-gray-600 dark:text-gray-400">
           INV-{value}
@@ -265,31 +308,53 @@ const GstManagement = () => {
       ),
     },
     {
-      header: 'Product',
-      accessor: 'product',
+      header: "Product",
+      accessor: "product",
       cell: (value, row) => {
-        // Get product name from multiple possible sources
-        const productName = row.product_name || 
-                           value?.name || 
-                           row.product?.name || 
-                           row.product_details?.name ||
-                           `Product ${row.product_id}`;
-        
+        // Get product name from multiple possible sources with priority
+        let productName = "Unknown Product";
+
+        // Priority 1: Direct product_name from collection
+        if (
+          row.product_name &&
+          row.product_name !== `Product ${row.product_id}`
+        ) {
+          productName = row.product_name;
+        }
+        // Priority 2: From product_details
+        else if (row.product_details?.name) {
+          productName = row.product_details.name;
+        }
+        // Priority 3: From value object
+        else if (value?.name) {
+          productName = value.name;
+        }
+        // Priority 4: From row.product
+        else if (row.product?.name) {
+          productName = row.product.name;
+        }
+        // Priority 5: Fallback to product ID with proper formatting
+        else {
+          productName = `Product ID: ${row.product_id || "N/A"}`;
+        }
+
         return (
           <div>
             <p className="font-medium text-gray-900 dark:text-white text-sm">
               {productName}
             </p>
-            <p className="text-xs text-gray-500 dark:text-gray-400">
-              ID: {row.product_id}
-            </p>
+            {row.product_id && (
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                ID: {row.product_id}
+              </p>
+            )}
           </div>
         );
       },
     },
     {
-      header: 'Quantity',
-      accessor: 'quantity',
+      header: "Quantity",
+      accessor: "quantity",
       cell: (value) => (
         <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg text-xs font-medium">
           {parseFloat(value || 0).toFixed(2)} units
@@ -297,23 +362,23 @@ const GstManagement = () => {
       ),
     },
     {
-      header: 'Selling Price',
-      accessor: 'selling_price',
+      header: "Selling Price",
+      accessor: "selling_price",
       cell: (value) => {
         const price = parseFloat(value) || 0;
         return (
           <div className="flex items-center space-x-1">
             <FaRupeeSign className="text-green-500 text-xs" />
             <span className="font-medium text-gray-900 dark:text-white text-sm">
-              ₹{price.toFixed(2)}
+              {price.toFixed(2)}
             </span>
           </div>
         );
       },
     },
     {
-      header: 'GST %',
-      accessor: 'selling_gst_percentage',
+      header: "GST %",
+      accessor: "selling_gst_percentage",
       cell: (value) => (
         <span className="px-2 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded-lg text-xs font-medium">
           {parseFloat(value || 0).toFixed(2)}%
@@ -321,40 +386,40 @@ const GstManagement = () => {
       ),
     },
     {
-      header: 'GST Amount',
-      accessor: 'selling_gst_amount',
+      header: "GST Amount",
+      accessor: "selling_gst_amount",
       cell: (value) => {
         const gstAmount = parseFloat(value) || 0;
         return (
           <div className="flex items-center space-x-1">
             <FaRupeeSign className="text-orange-500 text-xs" />
             <span className="font-medium text-orange-600 dark:text-orange-400 text-sm">
-              ₹{gstAmount.toFixed(2)}
+              {gstAmount.toFixed(2)}
             </span>
           </div>
         );
       },
     },
     {
-      header: 'Status',
-      accessor: 'govt_pay_status',
+      header: "Status",
+      accessor: "govt_pay_status",
       cell: (value) => getPaymentStatusBadge(value),
     },
     {
-      header: 'Date',
-      accessor: 'created_at',
+      header: "Date",
+      accessor: "created_at",
       cell: (value) => (
         <div className="flex items-center space-x-2">
           <FiCalendar className="w-3 h-3 text-gray-400" />
           <span className="text-xs text-gray-600 dark:text-gray-400">
-            {value ? new Date(value).toLocaleDateString() : 'N/A'}
+            {value ? new Date(value).toLocaleDateString() : "N/A"}
           </span>
         </div>
       ),
     },
     {
-      header: 'Actions',
-      accessor: 'actions',
+      header: "Actions",
+      accessor: "actions",
       cell: (_, row) => (
         <motion.button
           whileHover={{ scale: 1.1 }}
@@ -373,122 +438,135 @@ const GstManagement = () => {
   ];
 
   // Product table columns
-  const productColumns = [
-    {
-      header: 'Product ID',
-      accessor: 'product_id',
-      cell: (value) => (
-        <span className="font-mono text-sm font-medium text-gray-900 dark:text-white">
-          #{value}
-        </span>
-      ),
-    },
-    {
-      header: 'Product Name',
-      accessor: 'product_name',
-      cell: (value) => (
-        <span className="text-sm text-gray-900 dark:text-white">
-          {value || `Product ${value}`}
-        </span>
-      ),
-    },
-    {
-      header: 'Total Quantity',
-      accessor: 'total_quantity',
-      cell: (value) => {
-        const qty = parseFloat(value) || 0;
-        return (
-          <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg text-xs font-medium">
-            {qty.toFixed(2)} units
+ const productColumns = [
+  {
+    header: "Product ID",
+    accessor: "product_id",
+    cell: (value) => (
+      <span className="font-mono text-sm font-medium text-gray-900 dark:text-white">
+        #{value}
+      </span>
+    ),
+  },
+  {
+    header: "Product Name",
+    accessor: "product_name",
+    cell: (value, row) => {
+      // Get the best available product name
+      let displayName = value;
+      
+      if (!displayName || displayName === `Product ${row.product_id}`) {
+        displayName = row.product_details?.name || 
+                     row.name || 
+                     `Product ${row.product_id}`;
+      }
+      
+      return (
+        <div>
+          <span className="text-sm text-gray-900 dark:text-white font-medium">
+            {displayName}
           </span>
-        );
-      },
+        </div>
+      );
     },
-    {
-      header: 'Total Purchase',
-      accessor: 'total_purchase_price',
-      cell: (value) => {
-        const price = parseFloat(value) || 0;
-        return (
-          <div className="flex items-center space-x-1">
-            <FaRupeeSign className="text-orange-500 text-xs" />
-            <span className="font-medium text-orange-600 dark:text-orange-400 text-sm">
-              ₹{price.toFixed(2)}
-            </span>
-          </div>
-        );
-      },
-    },
-    {
-      header: 'Purchase GST',
-      accessor: 'total_purchase_gst',
-      cell: (value) => {
-        const gst = parseFloat(value) || 0;
-        return (
-          <div className="flex items-center space-x-1">
-            <FaRupeeSign className="text-red-500 text-xs" />
-            <span className="font-medium text-red-600 dark:text-red-400 text-sm">
-              ₹{gst.toFixed(2)}
-            </span>
-          </div>
-        );
-      },
-    },
-    {
-      header: 'Total Selling',
-      accessor: 'total_selling_price',
-      cell: (value) => {
-        const price = parseFloat(value) || 0;
-        return (
-          <div className="flex items-center space-x-1">
-            <FaRupeeSign className="text-green-500 text-xs" />
-            <span className="font-medium text-green-600 dark:text-green-400 text-sm">
-              ₹{price.toFixed(2)}
-            </span>
-          </div>
-        );
-      },
-    },
-    {
-      header: 'Selling GST',
-      accessor: 'total_selling_gst',
-      cell: (value) => {
-        const gst = parseFloat(value) || 0;
-        return (
-          <div className="flex items-center space-x-1">
-            <FaRupeeSign className="text-emerald-500 text-xs" />
-            <span className="font-medium text-emerald-600 dark:text-emerald-400 text-sm">
-              ₹{gst.toFixed(2)}
-            </span>
-          </div>
-        );
-      },
-    },
-    {
-      header: 'Transactions',
-      accessor: 'total_products',
-      cell: (value) => (
-        <span className="px-2 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded-lg text-xs font-medium">
-          {parseInt(value) || 0}
+  },
+  {
+    header: "Total Quantity",
+    accessor: "total_quantity",
+    cell: (value) => {
+      const qty = parseFloat(value) || 0;
+      return (
+        <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg text-xs font-medium">
+          {qty.toFixed(2)} units
         </span>
-      ),
+      );
     },
-    {
-      header: 'Actions',
-      accessor: 'actions',
-      cell: (_, row) => (
-        <motion.button
-          whileHover={{ scale: 1.1 }}
-          whileTap={{ scale: 0.95 }}
-          onClick={() => handleViewProductDetails(row)}
-          className="p-1.5 text-blue-600 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
-          title="View product details"
-        >
-          <FiEye className="w-4 h-4" />
-        </motion.button>
-      ),
+  },
+  {
+    header: "Total Purchase",
+    accessor: "total_purchase_price",
+    cell: (value) => {
+      const price = parseFloat(value) || 0;
+      return (
+        <div className="flex items-center space-x-1">
+          <FaRupeeSign className="text-orange-500 text-xs" />
+          <span className="font-medium text-orange-600 dark:text-orange-400 text-sm">
+            {price.toFixed(2)}
+          </span>
+        </div>
+      );
     },
-  ];
+  },
+  {
+    header: "Purchase GST",
+    accessor: "total_purchase_gst",
+    cell: (value) => {
+      const gst = parseFloat(value) || 0;
+      return (
+        <div className="flex items-center space-x-1">
+          <FaRupeeSign className="text-red-500 text-xs" />
+          <span className="font-medium text-red-600 dark:text-red-400 text-sm">
+            {gst.toFixed(2)}
+          </span>
+        </div>
+      );
+    },
+  },
+  {
+    header: "Total Selling",
+    accessor: "total_selling_price",
+    cell: (value) => {
+      const price = parseFloat(value) || 0;
+      return (
+        <div className="flex items-center space-x-1">
+          <FaRupeeSign className="text-green-500 text-xs" />
+          <span className="font-medium text-green-600 dark:text-green-400 text-sm">
+            {price.toFixed(2)}
+          </span>
+        </div>
+      );
+    },
+  },
+  {
+    header: "Selling GST",
+    accessor: "total_selling_gst",
+    cell: (value) => {
+      const gst = parseFloat(value) || 0;
+      return (
+        <div className="flex items-center space-x-1">
+          <FaRupeeSign className="text-emerald-500 text-xs" />
+          <span className="font-medium text-emerald-600 dark:text-emerald-400 text-sm">
+            {gst.toFixed(2)}
+          </span>
+        </div>
+      );
+    },
+  },
+  {
+    header: "Transactions",
+    accessor: "total_products",
+    cell: (value) => (
+      <span className="px-2 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded-lg text-xs font-medium">
+        {parseInt(value) || 0}
+      </span>
+    ),
+  },
+  {
+    header: "Actions",
+    accessor: "actions",
+    cell: (_, row) => (
+      <motion.button
+        whileHover={{ scale: 1.1 }}
+        whileTap={{ scale: 0.95 }}
+        onClick={() => handleViewProductDetails(row)}
+        className="p-1.5 text-blue-600 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
+        title="View product details"
+      >
+        <FiEye className="w-4 h-4" />
+      </motion.button>
+    ),
+  },
+];
 
   if (initialLoading) {
     return (
@@ -500,7 +578,9 @@ const GstManagement = () => {
               <FaPercentage className="w-5 h-5 sm:w-6 sm:h-6 text-indigo-600 animate-pulse" />
             </div>
           </div>
-          <p className="text-slate-600 dark:text-slate-400 font-medium text-sm sm:text-base">Loading GST data...</p>
+          <p className="text-slate-600 dark:text-slate-400 font-medium text-sm sm:text-base">
+            Loading GST data...
+          </p>
         </div>
       </div>
     );
@@ -533,7 +613,7 @@ const GstManagement = () => {
                     GST Management
                   </h1>
                   <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
-                    User ID: {user?.id || 'Not logged in'}
+                    User ID: {user?.id || "Not logged in"}
                   </p>
                 </div>
               </div>
@@ -543,11 +623,11 @@ const GstManagement = () => {
                   <motion.button
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
-                    onClick={() => setViewMode('table')}
+                    onClick={() => setViewMode("table")}
                     className={`p-1.5 sm:p-2 rounded-lg transition-all ${
-                      viewMode === 'table'
-                        ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 shadow-sm'
-                        : 'text-slate-600 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400'
+                      viewMode === "table"
+                        ? "bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 shadow-sm"
+                        : "text-slate-600 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400"
                     }`}
                   >
                     <FiList className="w-4 h-4" />
@@ -555,11 +635,11 @@ const GstManagement = () => {
                   <motion.button
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
-                    onClick={() => setViewMode('grid')}
+                    onClick={() => setViewMode("grid")}
                     className={`p-1.5 sm:p-2 rounded-lg transition-all ${
-                      viewMode === 'grid'
-                        ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 shadow-sm'
-                        : 'text-slate-600 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400'
+                      viewMode === "grid"
+                        ? "bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 shadow-sm"
+                        : "text-slate-600 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400"
                     }`}
                   >
                     <FiGrid className="w-4 h-4" />
@@ -574,7 +654,7 @@ const GstManagement = () => {
                   size="sm"
                   className="!bg-white dark:!bg-slate-800 !text-indigo-600 dark:!text-indigo-400 !border-indigo-200 dark:!border-indigo-800 hover:!bg-indigo-50 dark:hover:!bg-indigo-900/30 !px-2 sm:!px-3 !py-1.5 sm:!py-2 !text-xs sm:!text-sm"
                 >
-                  {exporting ? 'Exporting...' : 'Export'}
+                  {exporting ? "Exporting..." : "Export"}
                 </Button>
 
                 <motion.button
@@ -583,7 +663,9 @@ const GstManagement = () => {
                   onClick={handleRefresh}
                   className="p-2 sm:p-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 transition-all shadow-sm"
                 >
-                  <FiRefreshCw className={`w-4 h-4 sm:w-5 sm:h-5 text-slate-600 dark:text-slate-300 ${refreshing ? 'animate-spin' : ''}`} />
+                  <FiRefreshCw
+                    className={`w-4 h-4 sm:w-5 sm:h-5 text-slate-600 dark:text-slate-300 ${refreshing ? "animate-spin" : ""}`}
+                  />
                 </motion.button>
               </div>
             </div>
@@ -602,7 +684,9 @@ const GstManagement = () => {
                 <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
                   Filters
                 </span>
-                {(statusFilter !== "all" || dateRange.start || dateRange.end) && (
+                {(statusFilter !== "all" ||
+                  dateRange.start ||
+                  dateRange.end) && (
                   <button
                     onClick={() => {
                       setStatusFilter("all");
@@ -621,7 +705,7 @@ const GstManagement = () => {
                 className="flex items-center space-x-2 !border-slate-300 dark:!border-slate-600"
               >
                 <FiFilter className="w-3 h-3 sm:w-4 sm:h-4" />
-                <span>{showFilters ? 'Hide Filters' : 'Show Filters'}</span>
+                <span>{showFilters ? "Hide Filters" : "Show Filters"}</span>
               </Button>
             </div>
 
@@ -657,7 +741,12 @@ const GstManagement = () => {
                       <input
                         type="date"
                         value={dateRange.start}
-                        onChange={(e) => setDateRange(prev => ({ ...prev, start: e.target.value }))}
+                        onChange={(e) =>
+                          setDateRange((prev) => ({
+                            ...prev,
+                            start: e.target.value,
+                          }))
+                        }
                         className="w-full px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:bg-slate-700 dark:text-white"
                       />
                     </div>
@@ -668,7 +757,12 @@ const GstManagement = () => {
                       <input
                         type="date"
                         value={dateRange.end}
-                        onChange={(e) => setDateRange(prev => ({ ...prev, end: e.target.value }))}
+                        onChange={(e) =>
+                          setDateRange((prev) => ({
+                            ...prev,
+                            end: e.target.value,
+                          }))
+                        }
                         className="w-full px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:bg-slate-700 dark:text-white"
                       />
                     </div>
@@ -693,7 +787,9 @@ const GstManagement = () => {
                 >
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mb-0.5 sm:mb-1">Total Collections</p>
+                      <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mb-0.5 sm:mb-1">
+                        Total Collections
+                      </p>
                       <p className="text-lg sm:text-2xl font-bold text-slate-900 dark:text-white">
                         {selectedCollection.summary?.totalCollections || 0}
                       </p>
@@ -715,7 +811,9 @@ const GstManagement = () => {
                 >
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mb-0.5 sm:mb-1">Total GST</p>
+                      <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mb-0.5 sm:mb-1">
+                        Total GST
+                      </p>
                       <p className="text-lg sm:text-2xl font-bold text-emerald-600 dark:text-emerald-400">
                         ₹{summary.totalGST.toFixed(2)}
                       </p>
@@ -732,7 +830,9 @@ const GstManagement = () => {
                 >
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mb-0.5 sm:mb-1">Govt Due</p>
+                      <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mb-0.5 sm:mb-1">
+                        Govt Due
+                      </p>
                       <p className="text-lg sm:text-2xl font-bold text-purple-600 dark:text-purple-400">
                         ₹{summary.govtGSTDue.toFixed(2)}
                       </p>
@@ -749,30 +849,15 @@ const GstManagement = () => {
                 >
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mb-0.5 sm:mb-1">Paid GST</p>
+                      <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mb-0.5 sm:mb-1">
+                        Paid GST
+                      </p>
                       <p className="text-lg sm:text-2xl font-bold text-teal-600 dark:text-teal-400">
                         ₹{summary.paidGST.toFixed(2)}
                       </p>
                     </div>
                     <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-teal-100 dark:bg-teal-900/30 flex items-center justify-center">
                       <FiCheckCircle className="w-4 h-4 sm:w-5 sm:h-5 text-teal-600 dark:text-teal-400" />
-                    </div>
-                  </div>
-                </motion.div>
-
-                <motion.div
-                  whileHover={{ y: -2 }}
-                  className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-3 sm:p-5 hover:shadow-md transition-all col-span-2 sm:col-span-1"
-                >
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mb-0.5 sm:mb-1">Pending GST</p>
-                      <p className="text-lg sm:text-2xl font-bold text-amber-600 dark:text-amber-400">
-                        ₹{summary.pendingGST.toFixed(2)}
-                      </p>
-                    </div>
-                    <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
-                      <FiAlertCircle className="w-4 h-4 sm:w-5 sm:h-5 text-amber-600 dark:text-amber-400" />
                     </div>
                   </div>
                 </motion.div>
@@ -788,18 +873,23 @@ const GstManagement = () => {
                 <div className="border-b border-slate-200 dark:border-slate-700 overflow-x-auto">
                   <nav className="flex px-2 sm:px-4 min-w-max">
                     {[
-                      { id: 'collections', label: 'Collections', icon: FiFileText },
-                      { id: 'products', label: 'Products', icon: FiPackage },
-                      { id: 'summary', label: 'Summary', icon: FiBarChart2 },
+                      {
+                        id: "collections",
+                        label: "Collections",
+                        icon: FiFileText,
+                      },
+                      { id: "products", label: "Products", icon: FiPackage },
+                      { id: "summary", label: "Summary", icon: FiBarChart2 },
                     ].map((tab) => (
                       <button
                         key={tab.id}
                         onClick={() => setActiveTab(tab.id)}
                         className={`
                           flex items-center space-x-1 sm:space-x-2 px-3 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm font-medium border-b-2 transition-all duration-200 whitespace-nowrap
-                          ${activeTab === tab.id
-                            ? 'border-indigo-500 text-indigo-600 dark:text-indigo-400'
-                            : 'border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300'
+                          ${
+                            activeTab === tab.id
+                              ? "border-indigo-500 text-indigo-600 dark:text-indigo-400"
+                              : "border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300"
                           }
                         `}
                       >
@@ -812,7 +902,7 @@ const GstManagement = () => {
 
                 <div className="p-3 sm:p-6 overflow-x-auto">
                   {/* Collections Tab */}
-                  {activeTab === 'collections' && (
+                  {activeTab === "collections" && (
                     <motion.div
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
@@ -841,35 +931,62 @@ const GstManagement = () => {
                                     <span className="font-mono text-xs sm:text-sm font-medium text-slate-900 dark:text-white">
                                       #{collection.id}
                                     </span>
-                                    <p className="text-xs text-slate-500 mt-0.5">INV-{collection.invoice_id}</p>
+                                    <p className="text-xs text-slate-500 mt-0.5">
+                                      INV-{collection.invoice_id}
+                                    </p>
                                   </div>
-                                  {getPaymentStatusBadge(collection.govt_pay_status)}
+                                  {getPaymentStatusBadge(
+                                    collection.govt_pay_status,
+                                  )}
                                 </div>
                                 <div className="space-y-1.5 sm:space-y-2 mt-2 sm:mt-3">
                                   <div className="flex items-center justify-between">
-                                    <span className="text-xs sm:text-sm text-slate-500">Product:</span>
+                                    <span className="text-xs sm:text-sm text-slate-500">
+                                      Product:
+                                    </span>
                                     <span className="text-xs sm:text-sm font-medium">
-                                      {collection.product_name || `Product ${collection.product_id}`}
+                                      {collection.product_name ||
+                                        `Product ${collection.product_id}`}
                                     </span>
                                   </div>
                                   <div className="flex items-center justify-between">
-                                    <span className="text-xs sm:text-sm text-slate-500">Product ID:</span>
+                                    <span className="text-xs sm:text-sm text-slate-500">
+                                      Product ID:
+                                    </span>
                                     <span className="text-xs sm:text-sm font-mono text-slate-600">
                                       #{collection.product_id}
                                     </span>
                                   </div>
                                   <div className="flex items-center justify-between">
-                                    <span className="text-xs sm:text-sm text-slate-500">Quantity:</span>
-                                    <span className="text-xs sm:text-sm font-medium">{parseFloat(collection.quantity || 0).toFixed(2)}</span>
+                                    <span className="text-xs sm:text-sm text-slate-500">
+                                      Quantity:
+                                    </span>
+                                    <span className="text-xs sm:text-sm font-medium">
+                                      {parseFloat(
+                                        collection.quantity || 0,
+                                      ).toFixed(2)}
+                                    </span>
                                   </div>
                                   <div className="flex items-center justify-between">
-                                    <span className="text-xs sm:text-sm text-slate-500">GST %:</span>
-                                    <span className="text-xs sm:text-sm font-medium text-purple-600">{parseFloat(collection.selling_gst_percentage || 0).toFixed(2)}%</span>
+                                    <span className="text-xs sm:text-sm text-slate-500">
+                                      GST %:
+                                    </span>
+                                    <span className="text-xs sm:text-sm font-medium text-purple-600">
+                                      {parseFloat(
+                                        collection.selling_gst_percentage || 0,
+                                      ).toFixed(2)}
+                                      %
+                                    </span>
                                   </div>
                                   <div className="flex items-center justify-between">
-                                    <span className="text-xs sm:text-sm text-slate-500">GST Amount:</span>
+                                    <span className="text-xs sm:text-sm text-slate-500">
+                                      GST Amount:
+                                    </span>
                                     <span className="text-xs sm:text-sm font-medium text-emerald-600">
-                                      ₹{parseFloat(collection.selling_gst_amount || 0).toFixed(2)}
+                                      ₹
+                                      {parseFloat(
+                                        collection.selling_gst_amount || 0,
+                                      ).toFixed(2)}
                                     </span>
                                   </div>
                                 </div>
@@ -881,7 +998,8 @@ const GstManagement = () => {
                                     }}
                                     className="text-indigo-600 hover:text-indigo-700 text-xs sm:text-sm flex items-center transition-colors"
                                   >
-                                    <FiEdit className="w-3 h-3 sm:w-4 sm:h-4 mr-1" /> Update Status
+                                    <FiEdit className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />{" "}
+                                    Update Status
                                   </button>
                                 </div>
                               </motion.div>
@@ -904,12 +1022,13 @@ const GstManagement = () => {
                   )}
 
                   {/* Products Tab */}
-                  {activeTab === 'products' && (
+                  {activeTab === "products" && (
                     <motion.div
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                     >
-                      {selectedCollection?.products && selectedCollection.products.length > 0 ? (
+                      {selectedCollection?.products &&
+                      selectedCollection.products.length > 0 ? (
                         <div className="overflow-x-auto">
                           <Table
                             columns={productColumns}
@@ -928,7 +1047,7 @@ const GstManagement = () => {
                   )}
 
                   {/* Summary Report Tab */}
-                  {activeTab === 'summary' && selectedCollection && (
+                  {activeTab === "summary" && selectedCollection && (
                     <motion.div
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
@@ -941,26 +1060,35 @@ const GstManagement = () => {
                             Payment Status
                           </h3>
                           <div className="space-y-3 sm:space-y-4">
-                            {['Paid', 'Pending', 'Failed'].map((status) => {
+                            {["Paid", "Pending", "Failed"].map((status) => {
                               const count = filteredCollections.filter(
-                                c => getStatusText(c.govt_pay_status) === status
+                                (c) =>
+                                  getStatusText(c.govt_pay_status) === status,
                               ).length;
-                              const percentage = filteredCollections.length > 0 
-                                ? (count / filteredCollections.length) * 100 
-                                : 0;
+                              const percentage =
+                                filteredCollections.length > 0
+                                  ? (count / filteredCollections.length) * 100
+                                  : 0;
                               return (
                                 <div key={status}>
                                   <div className="flex justify-between text-xs sm:text-sm mb-1">
-                                    <span className="text-slate-600 dark:text-slate-400">{status}</span>
-                                    <span className="font-medium text-xs sm:text-sm">{count} ({percentage.toFixed(1)}%)</span>
+                                    <span className="text-slate-600 dark:text-slate-400">
+                                      {status}
+                                    </span>
+                                    <span className="font-medium text-xs sm:text-sm">
+                                      {count} ({percentage.toFixed(1)}%)
+                                    </span>
                                   </div>
                                   <div className="w-full h-1.5 sm:h-2 bg-slate-200 dark:bg-slate-600 rounded-full overflow-hidden">
                                     <motion.div
                                       initial={{ width: 0 }}
                                       animate={{ width: `${percentage}%` }}
                                       className={`h-full rounded-full ${
-                                        status === 'Paid' ? 'bg-emerald-500' :
-                                        status === 'Pending' ? 'bg-amber-500' : 'bg-rose-500'
+                                        status === "Paid"
+                                          ? "bg-emerald-500"
+                                          : status === "Pending"
+                                            ? "bg-amber-500"
+                                            : "bg-rose-500"
                                       }`}
                                     />
                                   </div>
@@ -978,14 +1106,22 @@ const GstManagement = () => {
                           <div className="space-y-2 sm:space-y-3">
                             {filteredCollections
                               .reduce((acc, col) => {
-                                const existing = acc.find(p => p.product_id === col.product_id);
+                                const existing = acc.find(
+                                  (p) => p.product_id === col.product_id,
+                                );
                                 if (existing) {
-                                  existing.gst += parseFloat(col.selling_gst_amount || 0);
+                                  existing.gst += parseFloat(
+                                    col.selling_gst_amount || 0,
+                                  );
                                 } else {
                                   acc.push({
                                     product_id: col.product_id,
-                                    product_name: col.product_name || `Product ${col.product_id}`,
-                                    gst: parseFloat(col.selling_gst_amount || 0)
+                                    product_name:
+                                      col.product_name ||
+                                      `Product ${col.product_id}`,
+                                    gst: parseFloat(
+                                      col.selling_gst_amount || 0,
+                                    ),
                                   });
                                 }
                                 return acc;
@@ -993,9 +1129,14 @@ const GstManagement = () => {
                               .sort((a, b) => b.gst - a.gst)
                               .slice(0, 5)
                               .map((product, idx) => (
-                                <div key={product.product_id} className="flex items-center justify-between p-2 hover:bg-white dark:hover:bg-slate-600/50 rounded-lg transition-colors">
+                                <div
+                                  key={product.product_id}
+                                  className="flex items-center justify-between p-2 hover:bg-white dark:hover:bg-slate-600/50 rounded-lg transition-colors"
+                                >
                                   <div className="flex items-center space-x-2 sm:space-x-3">
-                                    <span className="text-xs sm:text-sm font-medium text-slate-500">#{idx + 1}</span>
+                                    <span className="text-xs sm:text-sm font-medium text-slate-500">
+                                      #{idx + 1}
+                                    </span>
                                     <span className="text-xs sm:text-sm font-medium text-slate-900 dark:text-white">
                                       {product.product_name}
                                     </span>
@@ -1011,21 +1152,35 @@ const GstManagement = () => {
 
                       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                         <div className="bg-gradient-to-br from-indigo-50 to-indigo-100 dark:from-indigo-900/20 dark:to-indigo-900/10 rounded-xl p-3 sm:p-5">
-                          <p className="text-xs sm:text-sm text-indigo-600 dark:text-indigo-400">Average GST per Collection</p>
+                          <p className="text-xs sm:text-sm text-indigo-600 dark:text-indigo-400">
+                            Average GST per Collection
+                          </p>
                           <p className="text-lg sm:text-2xl font-bold text-indigo-700 dark:text-indigo-300">
-                            ₹{(summary.totalGST / (filteredCollections.length || 1)).toFixed(2)}
+                            ₹
+                            {(
+                              summary.totalGST /
+                              (filteredCollections.length || 1)
+                            ).toFixed(2)}
                           </p>
                         </div>
 
                         <div className="bg-gradient-to-br from-emerald-50 to-emerald-100 dark:from-emerald-900/20 dark:to-emerald-900/10 rounded-xl p-3 sm:p-5">
-                          <p className="text-xs sm:text-sm text-emerald-600 dark:text-emerald-400">Collection Efficiency</p>
+                          <p className="text-xs sm:text-sm text-emerald-600 dark:text-emerald-400">
+                            Collection Efficiency
+                          </p>
                           <p className="text-lg sm:text-2xl font-bold text-emerald-700 dark:text-emerald-300">
-                            {((summary.paidGST / summary.totalGST) * 100).toFixed(1)}%
+                            {(
+                              (summary.paidGST / summary.totalGST) *
+                              100
+                            ).toFixed(1)}
+                            %
                           </p>
                         </div>
 
                         <div className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-900/10 rounded-xl p-3 sm:p-5">
-                          <p className="text-xs sm:text-sm text-purple-600 dark:text-purple-400">Total Products</p>
+                          <p className="text-xs sm:text-sm text-purple-600 dark:text-purple-400">
+                            Total Products
+                          </p>
                           <p className="text-lg sm:text-2xl font-bold text-purple-700 dark:text-purple-300">
                             {selectedCollection.summary?.totalProducts || 0}
                           </p>
@@ -1091,7 +1246,7 @@ const GstManagement = () => {
                   <label className="block text-xs sm:text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5 sm:mb-2">
                     Select Collection
                   </label>
-                  <select 
+                  <select
                     className="w-full px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-slate-700 dark:text-white"
                     onChange={(e) => setSelectedCollectionId(e.target.value)}
                     value={selectedCollectionId}
@@ -1099,7 +1254,13 @@ const GstManagement = () => {
                     <option value="">Select a collection</option>
                     {selectedCollection.collections?.map((collection) => (
                       <option key={collection.id} value={collection.id}>
-                        #{collection.id} - {collection.product_name || `Product ${collection.product_id}`} - ₹{parseFloat(collection.selling_gst_amount || 0).toFixed(2)}
+                        #{collection.id} -{" "}
+                        {collection.product_name ||
+                          `Product ${collection.product_id}`}{" "}
+                        - ₹
+                        {parseFloat(collection.selling_gst_amount || 0).toFixed(
+                          2,
+                        )}
                       </option>
                     ))}
                   </select>
@@ -1112,7 +1273,10 @@ const GstManagement = () => {
                   <div className="grid grid-cols-3 gap-1.5 sm:gap-2">
                     <Button
                       variant="outline"
-                      onClick={() => selectedCollectionId && handleStatusUpdate(selectedCollectionId, 'paid')}
+                      onClick={() =>
+                        selectedCollectionId &&
+                        handleStatusUpdate(selectedCollectionId, "paid")
+                      }
                       disabled={updatingStatus || !selectedCollectionId}
                       size="sm"
                       className="flex items-center justify-center space-x-1 text-emerald-600 border-emerald-200 hover:bg-emerald-50 dark:border-emerald-800 dark:hover:bg-emerald-900/20 !px-1 sm:!px-2 !py-1 sm:!py-1.5 !text-xs"
@@ -1122,7 +1286,10 @@ const GstManagement = () => {
                     </Button>
                     <Button
                       variant="outline"
-                      onClick={() => selectedCollectionId && handleStatusUpdate(selectedCollectionId, 'pending')}
+                      onClick={() =>
+                        selectedCollectionId &&
+                        handleStatusUpdate(selectedCollectionId, "pending")
+                      }
                       disabled={updatingStatus || !selectedCollectionId}
                       size="sm"
                       className="flex items-center justify-center space-x-1 text-amber-600 border-amber-200 hover:bg-amber-50 dark:border-amber-800 dark:hover:bg-amber-900/20 !px-1 sm:!px-2 !py-1 sm:!py-1.5 !text-xs"
@@ -1132,7 +1299,10 @@ const GstManagement = () => {
                     </Button>
                     <Button
                       variant="outline"
-                      onClick={() => selectedCollectionId && handleStatusUpdate(selectedCollectionId, 'failed')}
+                      onClick={() =>
+                        selectedCollectionId &&
+                        handleStatusUpdate(selectedCollectionId, "failed")
+                      }
                       disabled={updatingStatus || !selectedCollectionId}
                       size="sm"
                       className="flex items-center justify-center space-x-1 text-rose-600 border-rose-200 hover:bg-rose-50 dark:border-rose-800 dark:hover:bg-rose-900/20 !px-1 sm:!px-2 !py-1 sm:!py-1.5 !text-xs"
@@ -1182,7 +1352,8 @@ const GstManagement = () => {
                     Product Details
                   </h3>
                   <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-0.5 sm:mt-1">
-                    {selectedProductDetails.product_name || `Product ${selectedProductDetails.product_id}`}
+                    {selectedProductDetails.product_name ||
+                      `Product ${selectedProductDetails.product_id}`}
                   </p>
                 </div>
                 <Button
@@ -1204,16 +1375,37 @@ const GstManagement = () => {
                       </h4>
                       <div className="space-y-1.5 sm:space-y-2">
                         <div className="flex justify-between">
-                          <span className="text-xs sm:text-sm text-slate-500">Total Quantity:</span>
-                          <span className="text-xs sm:text-sm font-medium">{parseFloat(selectedProductDetails.total_quantity || 0).toFixed(2)} units</span>
+                          <span className="text-xs sm:text-sm text-slate-500">
+                            Total Quantity:
+                          </span>
+                          <span className="text-xs sm:text-sm font-medium">
+                            {parseFloat(
+                              selectedProductDetails.total_quantity || 0,
+                            ).toFixed(2)}{" "}
+                            units
+                          </span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-xs sm:text-sm text-slate-500">Total Purchase:</span>
-                          <span className="text-xs sm:text-sm font-medium text-emerald-600">₹{parseFloat(selectedProductDetails.total_purchase_price || 0).toFixed(2)}</span>
+                          <span className="text-xs sm:text-sm text-slate-500">
+                            Total Purchase:
+                          </span>
+                          <span className="text-xs sm:text-sm font-medium text-emerald-600">
+                            ₹
+                            {parseFloat(
+                              selectedProductDetails.total_purchase_price || 0,
+                            ).toFixed(2)}
+                          </span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-xs sm:text-sm text-slate-500">Purchase GST:</span>
-                          <span className="text-xs sm:text-sm font-medium text-amber-600">₹{parseFloat(selectedProductDetails.total_purchase_gst || 0).toFixed(2)}</span>
+                          <span className="text-xs sm:text-sm text-slate-500">
+                            Purchase GST:
+                          </span>
+                          <span className="text-xs sm:text-sm font-medium text-amber-600">
+                            ₹
+                            {parseFloat(
+                              selectedProductDetails.total_purchase_gst || 0,
+                            ).toFixed(2)}
+                          </span>
                         </div>
                       </div>
                     </div>
@@ -1225,16 +1417,34 @@ const GstManagement = () => {
                       </h4>
                       <div className="space-y-1.5 sm:space-y-2">
                         <div className="flex justify-between">
-                          <span className="text-xs sm:text-sm text-slate-500">Total Selling:</span>
-                          <span className="text-xs sm:text-sm font-medium text-emerald-600">₹{parseFloat(selectedProductDetails.total_selling_price || 0).toFixed(2)}</span>
+                          <span className="text-xs sm:text-sm text-slate-500">
+                            Total Selling:
+                          </span>
+                          <span className="text-xs sm:text-sm font-medium text-emerald-600">
+                            ₹
+                            {parseFloat(
+                              selectedProductDetails.total_selling_price || 0,
+                            ).toFixed(2)}
+                          </span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-xs sm:text-sm text-slate-500">Selling GST:</span>
-                          <span className="text-xs sm:text-sm font-medium text-purple-600">₹{parseFloat(selectedProductDetails.total_selling_gst || 0).toFixed(2)}</span>
+                          <span className="text-xs sm:text-sm text-slate-500">
+                            Selling GST:
+                          </span>
+                          <span className="text-xs sm:text-sm font-medium text-purple-600">
+                            ₹
+                            {parseFloat(
+                              selectedProductDetails.total_selling_gst || 0,
+                            ).toFixed(2)}
+                          </span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-xs sm:text-sm text-slate-500">Transactions:</span>
-                          <span className="text-xs sm:text-sm font-medium text-indigo-600">{selectedProductDetails.total_products || 0}</span>
+                          <span className="text-xs sm:text-sm text-slate-500">
+                            Transactions:
+                          </span>
+                          <span className="text-xs sm:text-sm font-medium text-indigo-600">
+                            {selectedProductDetails.total_products || 0}
+                          </span>
                         </div>
                       </div>
                     </div>
@@ -1247,21 +1457,57 @@ const GstManagement = () => {
                     </h4>
                     <div className="space-y-2 sm:space-y-3">
                       <div className="flex justify-between items-center pb-1.5 sm:pb-2 border-b border-slate-200 dark:border-slate-600">
-                        <span className="text-xs sm:text-sm text-slate-500">Avg Selling Price:</span>
+                        <span className="text-xs sm:text-sm text-slate-500">
+                          Avg Selling Price:
+                        </span>
                         <span className="text-xs sm:text-sm font-semibold">
-                          ₹{(parseFloat(selectedProductDetails.total_selling_price || 0) / (parseFloat(selectedProductDetails.total_quantity || 0) || 1)).toFixed(2)}
+                          ₹
+                          {(
+                            parseFloat(
+                              selectedProductDetails.total_selling_price || 0,
+                            ) /
+                            (parseFloat(
+                              selectedProductDetails.total_quantity || 0,
+                            ) || 1)
+                          ).toFixed(2)}
                         </span>
                       </div>
                       <div className="flex justify-between items-center pb-1.5 sm:pb-2 border-b border-slate-200 dark:border-slate-600">
-                        <span className="text-xs sm:text-sm text-slate-500">Avg Purchase Price:</span>
+                        <span className="text-xs sm:text-sm text-slate-500">
+                          Avg Purchase Price:
+                        </span>
                         <span className="text-xs sm:text-sm font-semibold">
-                          ₹{(parseFloat(selectedProductDetails.total_purchase_price || 0) / (parseFloat(selectedProductDetails.total_quantity || 0) || 1)).toFixed(2)}
+                          ₹
+                          {(
+                            parseFloat(
+                              selectedProductDetails.total_purchase_price || 0,
+                            ) /
+                            (parseFloat(
+                              selectedProductDetails.total_quantity || 0,
+                            ) || 1)
+                          ).toFixed(2)}
                         </span>
                       </div>
                       <div className="flex justify-between items-center pt-1.5 sm:pt-2">
-                        <span className="text-xs sm:text-sm text-slate-500">Profit Margin:</span>
+                        <span className="text-xs sm:text-sm text-slate-500">
+                          Profit Margin:
+                        </span>
                         <span className="text-xs sm:text-sm font-semibold text-emerald-600">
-                          {((parseFloat(selectedProductDetails.total_selling_price || 0) - parseFloat(selectedProductDetails.total_purchase_price || 0)) / (parseFloat(selectedProductDetails.total_purchase_price || 0) || 1) * 100).toFixed(2)}%
+                          {(
+                            ((parseFloat(
+                              selectedProductDetails.total_selling_price || 0,
+                            ) -
+                              parseFloat(
+                                selectedProductDetails.total_purchase_price ||
+                                  0,
+                              )) /
+                              (parseFloat(
+                                selectedProductDetails.total_purchase_price ||
+                                  0,
+                              ) || 1)) *
+                            100
+                          ).toFixed(2)}
+                          %
                         </span>
                       </div>
                     </div>

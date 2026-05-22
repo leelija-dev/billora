@@ -34,12 +34,62 @@ export const useGstStore = create((set, get) => ({
   lastFetchTime: null,
   cacheKey: null,
 
+  // Fetch all products for name mapping
+  fetchAllProductsForMapping: async () => {
+    try {
+      const response = await productsAPI.getAll();
+      console.log('Products API Response for mapping:', response.data);
+      
+      // Handle nested data structure - API returns { status: true, data: { data: [...] } }
+      let allProducts = [];
+      
+      if (response.data?.data?.data) {
+        // Structure: { data: { data: [...] } }
+        allProducts = response.data.data.data;
+      } else if (response.data?.data) {
+        // Structure: { data: [...] }
+        allProducts = response.data.data;
+      } else if (Array.isArray(response.data)) {
+        // Structure: direct array
+        allProducts = response.data;
+      } else if (response.data?.status === true && response.data?.data) {
+        // Structure: { status: true, data: [...] }
+        allProducts = response.data.data;
+      }
+      
+      // Create mapping of product_id to product name
+      const productNameMap = new Map();
+      const productDetailsMap = new Map();
+      
+      if (Array.isArray(allProducts) && allProducts.length > 0) {
+        allProducts.forEach(product => {
+          if (product && product.id) {
+            const productId = parseInt(product.id);
+            const productName = product.name || product.product_name || `Product ${productId}`;
+            productNameMap.set(productId, productName);
+            productDetailsMap.set(productId, product);
+            console.log(`Mapped product ${productId} -> ${productName}`);
+          }
+        });
+      }
+      
+      console.log('Product name map created with size:', productNameMap.size);
+      return { productNameMap, productDetailsMap };
+    } catch (error) {
+      console.error('Failed to fetch products for mapping:', error);
+      return { productNameMap: new Map(), productDetailsMap: new Map() };
+    }
+  },
+
   // Fetch GST collection details for a specific user
   fetchGstCollectionDetails: async (userId) => {
     set({ loading: true });
 
     try {
-      // Step 1: Fetch GST collections
+      // Step 1: Fetch all products for name mapping FIRST
+      const { productNameMap, productDetailsMap } = await get().fetchAllProductsForMapping();
+      
+      // Step 2: Fetch GST collections
       const response = await gstAPI.getGstCollection(userId);
       const responseData = response.data;
       
@@ -49,88 +99,52 @@ export const useGstStore = create((set, get) => ({
       
       console.log('Raw API Response:', responseData);
       console.log('Products from GST API:', gstProducts);
-      
-      // Step 2: Fetch actual product names from products API
-      let productNameMap = {};
-      try {
-        const productsResponse = await productsAPI.getAll();
-        console.log('Products API Response:', productsResponse.data);
-        
-        // Handle nested data structure - API returns { status: true, data: { data: [...] } }
-        let allProducts = [];
-        
-        if (productsResponse.data?.data?.data) {
-          // Structure: { data: { data: [...] } }
-          allProducts = productsResponse.data.data.data;
-        } else if (productsResponse.data?.data) {
-          // Structure: { data: [...] }
-          allProducts = productsResponse.data.data;
-        } else if (Array.isArray(productsResponse.data)) {
-          // Structure: direct array
-          allProducts = productsResponse.data;
-        } else {
-          console.warn('Unexpected products response structure:', productsResponse.data);
-          allProducts = [];
-        }
-        
-        console.log('All products extracted:', allProducts);
-        console.log('Number of products:', allProducts.length);
-        
-        // Create mapping of product_id to product name
-        if (Array.isArray(allProducts) && allProducts.length > 0) {
-          allProducts.forEach(product => {
-            if (product && product.id) {
-              productNameMap[product.id] = product.name || `Product ${product.id}`;
-              console.log(`Mapped product ${product.id} -> ${product.name}`);
-            }
-          });
-        }
-        
-        console.log('Product name map created:', productNameMap);
-      } catch (error) {
-        console.error('Failed to fetch product names:', error);
-      }
+      console.log('Product Name Map size:', productNameMap.size);
       
       // Step 3: Create enriched collections with product names
       const enrichedCollections = collections.map(collection => {
-        // Get product name from the map
-        let productName = productNameMap[collection.product_id];
+        const productId = parseInt(collection.product_id);
         
-        // If not found, try to get from GST products array
+        // Try to get product name from the map first
+        let productName = productNameMap.get(productId);
+        
+        // If not found in map, try to get from GST products array
         if (!productName) {
-          const gstProduct = gstProducts.find(p => p.product_id === collection.product_id);
+          const gstProduct = gstProducts.find(p => parseInt(p.product_id) === productId);
           if (gstProduct) {
             productName = gstProduct.product_name || 
                          gstProduct.name || 
                          (gstProduct.product && gstProduct.product.name) ||
-                         `Product ${collection.product_id}`;
+                         `Product ${productId}`;
           } else {
-            productName = `Product ${collection.product_id}`;
+            productName = `Product ${productId}`;
           }
         }
         
-        console.log(`Collection ${collection.id} - Product ID: ${collection.product_id} - Name: ${productName}`);
+        console.log(`Collection ${collection.id} - Product ID: ${productId} - Name: ${productName}`);
         
         return {
           ...collection,
           product_name: productName,
-          product_id: collection.product_id,
+          product_id: productId,
+          product_details: productDetailsMap.get(productId) || null,
         };
       });
       
       // Step 4: Create clean products array with proper names
       const cleanProducts = gstProducts.map(item => {
-        let productName = productNameMap[item.product_id];
+        const productId = parseInt(item.product_id);
+        let productName = productNameMap.get(productId);
         
         if (!productName) {
           productName = item.product_name || 
                        item.name || 
                        (item.product && item.product.name) ||
-                       `Product ${item.product_id}`;
+                       `Product ${productId}`;
         }
         
         return {
-          product_id: item.product_id,
+          product_id: productId,
           product_name: productName,
           total_quantity: parseFloat(item.total_quantity) || 0,
           total_purchase_price: parseFloat(item.total_purchase_price) || 0,
@@ -138,6 +152,7 @@ export const useGstStore = create((set, get) => ({
           total_selling_price: parseFloat(item.total_selling_price) || 0,
           total_selling_gst: parseFloat(item.total_selling_gst) || 0,
           total_products: parseInt(item.total_products) || 0,
+          product_details: productDetailsMap.get(productId) || null,
         };
       });
 

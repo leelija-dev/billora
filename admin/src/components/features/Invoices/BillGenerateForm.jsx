@@ -1472,9 +1472,7 @@ const BillGenerateForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting,
                     <p className="font-medium text-gray-900 dark:text-white">
                       {getSelectedCustomerName()}
                     </p>
-                    <p className="text-sm text-gray-500 dark:text-gray-300">
-                      Customer ID: #{formData.customer_id}
-                    </p>
+                   
                   </motion.div>
                 )}
               </div>

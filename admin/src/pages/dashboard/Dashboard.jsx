@@ -32,10 +32,12 @@ import {
   handleExcelExport, 
   handlePrint 
 } from '../../utils/exportHandlers'
+import { Link } from 'react-router-dom'
 
 const Dashboard = () => {
   const { company, user } = useAuthStore()
   const [timeRange, setTimeRange] = useState('7d')
+
   const [stats, setStats] = useState({
     revenue: 0,
     orders: 0,
@@ -520,13 +522,17 @@ const Dashboard = () => {
                   You have {recentOrders.length} orders this period
                 </p>
               </div>
+              <Link to="/orders" className="flex items-center space-x-2">
               <motion.button
                 whileHover={{ x: 5 }}
                 className="flex items-center space-x-2 text-sm font-medium text-primary-600 hover:text-primary-700 dark:text-primary-400"
               >
+                   
+                
                 <span>View all orders</span>
                 <FiArrowRight className="w-4 h-4" />
               </motion.button>
+              </Link>
             </div>
           </div>
           

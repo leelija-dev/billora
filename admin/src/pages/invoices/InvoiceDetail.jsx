@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useRef } from 'react'
 import {
   FiArrowLeft,
   FiEdit2,
@@ -25,10 +25,10 @@ import {
   FiCopy,
   FiCalendar,
   FiMapPin,
-
   FiBriefcase,
   FiArchive,
-  FiRefreshCw
+  FiRefreshCw,
+  FiAlertTriangle
 } from 'react-icons/fi'
 import { useNavigate, useParams, useLocation } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -63,6 +63,7 @@ const InvoiceDetail = () => {
   const { cancelInvoice } = useInvoiceStore()
   const { canAccess } = usePermissionStore()
   const hasStockPermission = canAccess('stock-management')
+  
   const [invoice, setInvoice] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -73,184 +74,344 @@ const InvoiceDetail = () => {
   const [duePayMethod, setDuePayMethod] = useState('Cash')
   const [duePaySubmitting, setDuePaySubmitting] = useState(false)
   const [showPaymentModal, setShowPaymentModal] = useState(false)
+  const [storeNotFound, setStoreNotFound] = useState(false)
+  const [paymentError, setPaymentError] = useState('')
+
+  // Refs for cleanup and preventing duplicate requests
+  const isMountedRef = useRef(true)
+  const abortControllerRef = useRef(null)
+  const isFetchingRef = useRef(false)
+  const lastFetchIdRef = useRef(null)
+
+  // Cleanup on unmount
+  useEffect(() => {
+    isMountedRef.current = true
+    return () => {
+      isMountedRef.current = false
+      // Cancel any ongoing requests when component unmounts
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort()
+      }
+    }
+  }, [])
 
   useEffect(() => {
+    // Don't fetch if already fetching
+    if (isFetchingRef.current) {
+      console.log('⏭️ Skipping fetch - already fetching')
+      return
+    }
+
     const fetchInvoice = async () => {
+      // Cancel previous request if exists
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort()
+      }
+      
+      // Create new abort controller
+      abortControllerRef.current = new AbortController()
+      isFetchingRef.current = true
+      
+      const fetchId = Date.now()
+      lastFetchIdRef.current = fetchId
+      
       try {
+        if (!isMountedRef.current) return
+        
         setLoading(true)
         setError(null)
+        setStoreNotFound(false)
 
         console.log('🔍 Fetching invoice for ID:', id)
 
-        const response = await invoiceAPI.getById(id)
+        const response = await invoiceAPI.getById(id, {
+          signal: abortControllerRef.current.signal
+        })
+        
+        // Check if this is still the latest request
+        if (lastFetchIdRef.current !== fetchId) {
+          console.log('⏭️ Skipping stale response')
+          return
+        }
+        
+        if (!isMountedRef.current) return
+        
         console.log('📋 Invoice response:', response)
 
         if (response.data?.status && response.data?.data) {
           const foundInvoice = response.data.data
-          console.log('🎯 Found invoice:..................', foundInvoice)
+          const billSummary = response.data.bill_summary || {}
+          
+          // Fetch store and customer data in parallel
+          console.log('🔍 Fetching store with ID:', foundInvoice.store_id)
+          console.log('🔍 Fetching customer with ID:', foundInvoice.customer_id)
+          
+          let storeData = {}
+          let customerData = {}
+          let isStoreDeleted = false
+          
+          try {
+            // Try multiple store API methods
+            let storeResponse = null
+            
+            if (storeAPI.getStoreById) {
+              storeResponse = await storeAPI.getStoreById(foundInvoice.store_id)
+            } else if (storeAPI.getById) {
+              storeResponse = await storeAPI.getById(foundInvoice.store_id)
+            } else if (storeAPI.edit) {
+              storeResponse = await storeAPI.edit(foundInvoice.store_id)
+            } else if (storeAPI.getStore) {
+              storeResponse = await storeAPI.getStore(foundInvoice.store_id)
+            } else {
+              console.warn('No suitable store API method found')
+            }
+            
+            if (storeResponse) {
+              if (storeResponse.data?.status === true && storeResponse.data?.data) {
+                storeData = storeResponse.data.data
+              } else if (storeResponse.data?.data && typeof storeResponse.data.data === 'object') {
+                storeData = storeResponse.data.data
+              } else if (storeResponse.data && typeof storeResponse.data === 'object' && storeResponse.data.id) {
+                storeData = storeResponse.data
+              }
+            }
+            
+            // Check if store data is empty or indicates not found
+            if (!storeData || Object.keys(storeData).length === 0 || storeData.error || storeData.message === 'Store not found') {
+              isStoreDeleted = true
+              setStoreNotFound(true)
+              console.warn('Store not found or deleted for ID:', foundInvoice.store_id)
+            }
+          } catch (storeError) {
+            console.error('Failed to fetch store:', storeError)
+            isStoreDeleted = true
+            setStoreNotFound(true)
+          }
+          
+          try {
+            // Fetch customer data
+            const customerResponse = await customerAPI.getById(foundInvoice.customer_id)
+            if (customerResponse.data?.status === true && customerResponse.data?.data) {
+              customerData = customerResponse.data.data
+            } else if (customerResponse.data?.data && typeof customerResponse.data.data === 'object') {
+              customerData = customerResponse.data.data
+            } else if (customerResponse.data && typeof customerResponse.data === 'object' && customerResponse.data.id) {
+              customerData = customerResponse.data
+            }
+          } catch (customerError) {
+            console.error('Failed to fetch customer:', customerError)
+          }
+          
+          // Check if this is still the latest request
+          if (lastFetchIdRef.current !== fetchId) {
+            console.log('⏭️ Skipping stale store/customer response')
+            return
+          }
+          
+          if (!isMountedRef.current) return
 
-          Promise.all([
-            storeAPI.getByUserId(foundInvoice.user_id),
-            customerAPI.getById(foundInvoice.customer_id)
-          ]).then(([storeResponse, customerResponse]) => {
-            console.log('🏪 Store response:', storeResponse)
-            console.log('👤 Customer response:', customerResponse)
+          console.log('🏪 Store data:', storeData)
+          console.log('👤 Customer data:', customerData)
 
-            const storesArray = storeResponse.data?.data?.data || storeResponse.data?.data || []
-            const customerData = customerResponse.data?.data || {}
-            const storeData = storesArray.find(store => store.id === foundInvoice.store_id) || storesArray[0] || {}
+          // Prepare store data - mark as deleted if not found
+          let finalStoreData = {}
+          if (isStoreDeleted || !storeData || Object.keys(storeData).length === 0) {
+            finalStoreData = {
+              id: foundInvoice.store_id,
+              name: 'Store Deleted/Not Found',
+              address: 'N/A',
+              gst: 'N/A',
+              email: 'N/A',
+              mobile: 'N/A',
+              is_deleted: true
+            }
+          } else {
+            finalStoreData = {
+              id: storeData.id || foundInvoice.store_id,
+              name: storeData.name || storeData.store_name || foundInvoice.store_name || 'Unknown Store',
+              address: storeData.address ? 
+                (typeof storeData.address === 'string' ? storeData.address : `${storeData.address}, ${storeData.city || ''}`) 
+                : foundInvoice.store_address || 'N/A',
+              gst: storeData.gst || storeData.gst_number || foundInvoice.store_gst || 'N/A',
+              email: storeData.email || storeData.store_email || foundInvoice.store_email || 'N/A',
+              mobile: storeData.mobile || storeData.phone || storeData.store_phone || foundInvoice.store_phone || 'N/A',
+              is_deleted: false
+            }
+          }
 
-            const invoiceItems = foundInvoice.invoice_items || foundInvoice.items || []
-            const packagesData = foundInvoice.packages
-            const invoicePackages = Array.isArray(packagesData) ? packagesData : (packagesData ? [packagesData] : [])
+          // Prepare customer data
+          const finalCustomerData = {
+            id: customerData.id || foundInvoice.customer_id,
+            name: customerData.name || customerData.customer_name || foundInvoice.customer_name || 'Walk-in Customer',
+            phone: customerData.phone || customerData.mobile || foundInvoice.customer_phone || 'N/A',
+            email: customerData.email || foundInvoice.customer_email || 'N/A',
+            address: customerData.address ? 
+              (typeof customerData.address === 'string' ? customerData.address : `${customerData.address}, ${customerData.city || ''}`) 
+              : foundInvoice.customer_address || 'N/A',
+            gst: customerData.gst || foundInvoice.customer_gst || 'N/A'
+          }
 
-            const allItems = [...invoiceItems, ...invoicePackages.map(pkg => ({
-              ...pkg,
-              is_package: true
-            }))]
+          const invoiceItems = foundInvoice.invoice_items || foundInvoice.items || []
+          const packagesData = foundInvoice.packages
+          const invoicePackages = Array.isArray(packagesData) ? packagesData : (packagesData ? [packagesData] : [])
 
-            if (allItems.length > 0) {
-              const productPromises = allItems.map(item => {
-                if (item.is_package) {
-                  return Promise.resolve({
-                    ...item,
-                    product_name: item.package_name || item.product_name || `Package #${item.package_id || item.id || 'Unknown'}`,
-                    price: parseFloat(item.package_price || 0),
-                    quantity: parseFloat(item.quantity || 1),
-                    total_price: parseFloat(item.package_total || item.total_price || 0),
-                    gst: 0,
-                    discount: 0
-                  })
-                } else {
-                  return productsAPI.getById(item.product_id)
-                    .then(productResponse => {
-                      const productData = productResponse.data?.data || productResponse.data || {}
-                      return {
-                        ...item,
-                        product_name: productData.name || item.product_name || item.name || `Product #${item.product_id || item.id || 'Unknown'}`,
-                        price: parseFloat(item.price || productData.selling_price || 0),
-                        quantity: parseFloat(item.quantity || item.item_count || 1),
-                        total_price: parseFloat(item.total_price || item.total || 0),
-                        gst: parseFloat(item.gst || productData.gst_percentage || 0),
-                        discount: parseFloat(item.discount || productData.discount_percentage || 0)
-                      }
-                    })
-                    .catch(error => {
-                      console.error(`Failed to fetch product ${item.product_id}:`, error)
-                      return {
-                        ...item,
-                        product_name: item.product_name || item.name || `Product #${item.product_id || item.id || 'Unknown'}`,
-                        price: parseFloat(item.price || 0),
-                        quantity: parseFloat(item.quantity || item.item_count || 1),
-                        total_price: parseFloat(item.total_price || item.total || 0),
-                        gst: parseFloat(item.gst || 0),
-                        discount: parseFloat(item.discount || 0)
-                      }
-                    })
-                }
-              })
+          const allItems = [...invoiceItems, ...invoicePackages.map(pkg => ({
+            ...pkg,
+            is_package: true
+          }))]
 
-              Promise.all(productPromises).then(enhancedItems => {
-                const displayItems = enhancedItems.filter(item => !item.is_package)
-                const displayPackages = enhancedItems.filter(item => item.is_package)
+          let enhancedInvoice = null
 
-                const enhancedInvoice = {
-                  ...foundInvoice,
-                  invoice_number: foundInvoice.invoice_number || `INV-${foundInvoice.id}`,
-                  customer_name: customerData.name || foundInvoice.customer_name || 'Walk-in Customer',
-                  customer_phone: customerData.phone || foundInvoice.customer_phone || 'N/A',
-                  customer_email: customerData.email || foundInvoice.customer_email || 'N/A',
-                  customer_address: customerData.address ? `${customerData.address}, ${customerData.city}` : foundInvoice.customer_address || 'N/A',
-                  customer_gst: customerData.gst || foundInvoice.customer_gst || 'N/A',
-                  store_name: storeData.name || foundInvoice.store_name || 'Your Store Name',
-                  store_address: storeData.address ? `${storeData.address}, ${storeData.city}` : foundInvoice.store_address || '123 Business Street, City',
-                  store_gst: storeData.gst || foundInvoice.store_gst || 'GSTIN123456',
-                  store_email: storeData.email || foundInvoice.store_email || 'store@business.com',
-                  store_phone: storeData.mobile || storeData.phone || foundInvoice.store_phone || '123-456-7890',
-                  items: displayItems,
-                  packages: displayPackages
-                }
-                setInvoice(enhancedInvoice)
-                setLoading(false)
-              }).catch(error => {
-                console.error('Failed to fetch product details:', error)
-                const fallbackItems = invoiceItems.map(item => ({
+          if (allItems.length > 0) {
+            // Fetch products in parallel with Promise.all for better performance
+            const productPromises = allItems.map(item => {
+              if (item.is_package) {
+                return Promise.resolve({
                   ...item,
-                  product_name: item.product_name || item.name || `Product #${item.product_id || item.id || 'Unknown'}`,
-                  price: parseFloat(item.price || 0),
-                  quantity: parseFloat(item.quantity || item.item_count || 1),
-                  total_price: parseFloat(item.total_price || item.total || 0),
-                  gst: parseFloat(item.gst || 0),
-                  discount: parseFloat(item.discount || 0)
-                }))
-
-                const fallbackPackages = invoicePackages.map(pkg => ({
-                  ...pkg,
-                  product_name: pkg.package_name || `Package #${pkg.package_id || pkg.id || 'Unknown'}`,
-                  price: parseFloat(pkg.package_price || 0),
-                  quantity: parseFloat(pkg.quantity || 1),
-                  total_price: parseFloat(pkg.package_total || 0),
+                  product_name: item.package_name || item.product_name || `Package #${item.package_id || item.id || 'Unknown'}`,
+                  price: parseFloat(item.package_price || 0),
+                  quantity: parseFloat(item.quantity || 1),
+                  total_price: parseFloat(item.package_total || item.total_price || 0),
                   gst: 0,
                   discount: 0
-                }))
-
-                const fallbackInvoice = {
-                  ...foundInvoice,
-                  invoice_number: foundInvoice.invoice_number || `INV-${foundInvoice.id}`,
-                  customer_name: customerData.name || foundInvoice.customer_name || 'Walk-in Customer',
-                  customer_phone: customerData.phone || foundInvoice.customer_phone || 'N/A',
-                  customer_email: customerData.email || foundInvoice.customer_email || 'N/A',
-                  customer_address: customerData.address ? `${customerData.address}, ${customerData.city}` : foundInvoice.customer_address || 'N/A',
-                  customer_gst: customerData.gst || foundInvoice.customer_gst || 'N/A',
-                  store_name: storeData.name || foundInvoice.store_name || 'Your Store Name',
-                  store_address: storeData.address ? `${storeData.address}, ${storeData.city}` : foundInvoice.store_address || '123 Business Street, City',
-                  store_gst: storeData.gst || foundInvoice.store_gst || 'GSTIN123456',
-                  store_email: storeData.email || foundInvoice.store_email || 'store@business.com',
-                  store_phone: storeData.mobile || storeData.phone || foundInvoice.store_phone || '123-456-7890',
-                  items: fallbackItems,
-                  packages: fallbackPackages
-                }
-                setInvoice(fallbackInvoice)
-                setLoading(false)
-              })
-            } else {
-              const fallbackInvoice = {
-                ...foundInvoice,
-                invoice_number: foundInvoice.invoice_number || `INV-${foundInvoice.id}`,
-                customer_name: customerData.name || foundInvoice.customer_name || 'Walk-in Customer',
-                customer_phone: customerData.phone || foundInvoice.customer_phone || 'N/A',
-                customer_email: customerData.email || foundInvoice.customer_email || 'N/A',
-                customer_address: customerData.address ? `${customerData.address}, ${customerData.city}` : foundInvoice.customer_address || 'N/A',
-                customer_gst: customerData.gst || foundInvoice.customer_gst || 'N/A',
-                store_name: storeData.name || foundInvoice.store_name || 'Your Store Name',
-                store_address: storeData.address ? `${storeData.address}, ${storeData.city}` : foundInvoice.store_address || '123 Business Street, City',
-                store_gst: storeData.gst || foundInvoice.store_gst || 'GSTIN123456',
-                store_email: storeData.email || foundInvoice.store_email || 'store@business.com',
-                store_phone: storeData.mobile || storeData.phone || foundInvoice.store_phone || '123-456-7890',
-                items: [],
-                packages: []
+                })
+              } else {
+                return productsAPI.getById(item.product_id)
+                  .then(productResponse => {
+                    let productData = {}
+                    if (productResponse.data?.status === true && productResponse.data?.data) {
+                      productData = productResponse.data.data
+                    } else if (productResponse.data?.data && typeof productResponse.data.data === 'object') {
+                      productData = productResponse.data.data
+                    } else if (productResponse.data && typeof productResponse.data === 'object') {
+                      productData = productResponse.data
+                    }
+                    
+                    return {
+                      ...item,
+                      product_name: productData.name || item.product_name || item.name || `Product #${item.product_id || item.id || 'Unknown'}`,
+                      price: parseFloat(item.price || productData.selling_price || 0),
+                      quantity: parseFloat(item.quantity || item.item_count || 1),
+                      total_price: parseFloat(item.total_price || item.total || 0),
+                      gst: parseFloat(item.gst || productData.gst_percentage || 0),
+                      discount: parseFloat(item.discount || productData.discount_percentage || 0)
+                    }
+                  })
+                  .catch(error => {
+                    console.error(`Failed to fetch product ${item.product_id}:`, error)
+                    return {
+                      ...item,
+                      product_name: item.product_name || item.name || `Product #${item.product_id || item.id || 'Unknown'}`,
+                      price: parseFloat(item.price || 0),
+                      quantity: parseFloat(item.quantity || item.item_count || 1),
+                      total_price: parseFloat(item.total_price || item.total || 0),
+                      gst: parseFloat(item.gst || 0),
+                      discount: parseFloat(item.discount || 0)
+                    }
+                  })
               }
-              setInvoice(fallbackInvoice)
-              setLoading(false)
+            })
+
+            const enhancedItems = await Promise.all(productPromises)
+            
+            // Check if this is still the latest request
+            if (lastFetchIdRef.current !== fetchId) {
+              console.log('⏭️ Skipping stale product response')
+              return
             }
-          }).catch(error => {
-            console.error('Failed to fetch store/customer data:', error)
-            setInvoice(foundInvoice)
+            
+            if (!isMountedRef.current) return
+
+            const displayItems = enhancedItems.filter(item => !item.is_package)
+            const displayPackages = enhancedItems.filter(item => item.is_package)
+
+            enhancedInvoice = {
+              ...foundInvoice,
+              invoice_number: foundInvoice.invoice_number || `INV-${foundInvoice.id}`,
+              customer_name: finalCustomerData.name,
+              customer_phone: finalCustomerData.phone,
+              customer_email: finalCustomerData.email,
+              customer_address: finalCustomerData.address,
+              customer_gst: finalCustomerData.gst,
+              store_name: finalStoreData.name,
+              store_address: finalStoreData.address,
+              store_gst: finalStoreData.gst,
+              store_email: finalStoreData.email,
+              store_phone: finalStoreData.mobile,
+              store_is_deleted: finalStoreData.is_deleted || false,
+              items: displayItems,
+              packages: displayPackages,
+              bill_summary: {
+                subtotal: parseFloat(billSummary.subtotal + (billSummary.packages?.total_package_price || 0)),
+                total_discount: parseFloat(billSummary.total_discount || 0),
+                total_gst: parseFloat(billSummary.total_gst || 0),
+                grand_total: parseFloat(billSummary.grand_total || foundInvoice.total_amount || 0)
+              }
+            }
+          } else {
+            enhancedInvoice = {
+              ...foundInvoice,
+              invoice_number: foundInvoice.invoice_number || `INV-${foundInvoice.id}`,
+              customer_name: finalCustomerData.name,
+              customer_phone: finalCustomerData.phone,
+              customer_email: finalCustomerData.email,
+              customer_address: finalCustomerData.address,
+              customer_gst: finalCustomerData.gst,
+              store_name: finalStoreData.name,
+              store_address: finalStoreData.address,
+              store_gst: finalStoreData.gst,
+              store_email: finalStoreData.email,
+              store_phone: finalStoreData.mobile,
+              store_is_deleted: finalStoreData.is_deleted || false,
+              items: [],
+              packages: [],
+              bill_summary: {
+                subtotal: parseFloat(billSummary.subtotal + (billSummary.packages?.total_package_price || 0)),
+                total_discount: parseFloat(billSummary.total_discount || 0),
+                total_gst: parseFloat(billSummary.total_gst || 0),
+                grand_total: parseFloat(billSummary.grand_total || foundInvoice.total_amount || 0)
+              }
+            }
+          }
+          
+          // Single setState call at the end
+          if (isMountedRef.current && lastFetchIdRef.current === fetchId) {
+            console.log('✅ Setting invoice with store:', enhancedInvoice.store_name, 'Store deleted:', enhancedInvoice.store_is_deleted)
+            setInvoice(enhancedInvoice)
             setLoading(false)
-          })
+          }
         } else {
-          setError(`Invoice #${id} not found`)
-          setLoading(false)
+          if (isMountedRef.current && lastFetchIdRef.current === fetchId) {
+            setError(`Invoice #${id} not found`)
+            setLoading(false)
+          }
         }
       } catch (error) {
+        if (error.name === 'AbortError') {
+          console.log('Request was cancelled')
+          return
+        }
         console.error('Failed to fetch invoice:', error)
-        setError(`Failed to load invoice #${id}`)
-        setLoading(false)
+        if (isMountedRef.current && lastFetchIdRef.current === fetchId) {
+          setError(`Failed to load invoice #${id}`)
+          setLoading(false)
+        }
+      } finally {
+        if (lastFetchIdRef.current === fetchId) {
+          isFetchingRef.current = false
+        }
       }
     }
 
     if (id) {
       fetchInvoice()
+    }
+    
+    // Cleanup function
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort()
+      }
     }
   }, [id, refetchVersion])
 
@@ -284,27 +445,91 @@ const InvoiceDetail = () => {
       if (res?.success) {
         setIsEditing(false)
         setRefetchVersion((v) => v + 1)
+        toast.success('Invoice cancelled successfully')
       }
+    } catch (error) {
+      console.error('Failed to cancel invoice:', error)
+      toast.error('Failed to cancel invoice')
     } finally {
       setCancelSubmitting(false)
     }
   }
 
+  // Payment amount validation function
+  const validatePaymentAmount = (amount, dueBalance) => {
+    if (!amount || amount === '') {
+      return 'Please enter an amount'
+    }
+    
+    const numAmount = parseFloat(amount)
+    
+    if (isNaN(numAmount)) {
+      return 'Please enter a valid number'
+    }
+    
+    if (numAmount <= 0) {
+      return 'Amount must be greater than 0'
+    }
+    
+    if (numAmount > dueBalance) {
+      return `Amount cannot exceed due amount of ${formatCurrency(dueBalance)}`
+    }
+    
+    return null
+  }
+
+  // Handle payment amount change with validation
+  const handlePaymentAmountChange = (e) => {
+    let value = e.target.value
+    
+    // Remove any non-digit characters except decimal point
+    value = value.replace(/[^\d.]/g, '')
+    
+    // Ensure only one decimal point
+    const decimalCount = (value.match(/\./g) || []).length
+    if (decimalCount > 1) {
+      return
+    }
+    
+    // Limit decimal places to 2
+    if (value.includes('.') && value.split('.')[1]?.length > 2) {
+      return
+    }
+    
+    setDuePayAmount(value)
+    setPaymentError('')
+    
+    // Real-time validation
+    if (value && value !== '.') {
+      const total = parseFloat(invoice.bill_summary?.grand_total || invoice.total_amount || 0)
+      const paid = parseFloat(invoice.paid_amount || 0)
+      const due = Math.max(0, total - paid)
+      const error = validatePaymentAmount(value, due)
+      if (error) {
+        setPaymentError(error)
+      }
+    }
+  }
+
   const handleDuePay = async (e) => {
     e.preventDefault()
+    
     if (!invoice?.id || invoice.status === 'cancelled') return
-    const total = parseFloat(invoice.total_amount || 0)
+    
+    const total = parseFloat(invoice.bill_summary?.grand_total || invoice.total_amount || 0)
     const paid = parseFloat(invoice.paid_amount || 0)
     const due = Math.max(0, total - paid)
+    
+    // Validate amount before submission
+    const validationError = validatePaymentAmount(duePayAmount, due)
+    if (validationError) {
+      setPaymentError(validationError)
+      toast.error(validationError)
+      return
+    }
+    
     const amount = parseFloat(duePayAmount)
-    if (Number.isNaN(amount) || amount <= 0) {
-      toast.error('Enter a valid payment amount')
-      return
-    }
-    if (amount - due > 0.0001) {
-      toast.error(`Amount cannot exceed due (₹${due.toFixed(2)})`)
-      return
-    }
+    
     setDuePaySubmitting(true)
     try {
       const res = await invoiceAPI.invoiceDuePay(invoice.id, {
@@ -312,9 +537,10 @@ const InvoiceDetail = () => {
         payment_method: duePayMethod,
       })
       if (res.data?.status === true) {
-        toast.success(res.data?.message || 'Payment recorded')
+        toast.success(res.data?.message || 'Payment recorded successfully')
         setDuePayAmount('')
         setDuePayMethod('Cash')
+        setPaymentError('')
         setShowPaymentModal(false)
         try {
           const ch = new BroadcastChannel('app-cache-invalidation')
@@ -336,8 +562,6 @@ const InvoiceDetail = () => {
       setDuePaySubmitting(false)
     }
   }
-
-  console.log("Checking invoice ...........",invoice);
 
   const handlePrint = () => {
     printA4Invoice(invoice)
@@ -425,7 +649,11 @@ const InvoiceDetail = () => {
     )
   }
 
-  const totalAmountNum = parseFloat(invoice.total_amount || 0)
+  // Use bill summary values for calculations
+  const totalAmountNum = invoice.bill_summary?.grand_total || parseFloat(invoice.total_amount || 0)
+  const subtotalNum = invoice.bill_summary?.subtotal || totalAmountNum
+  const totalGstNum = invoice.bill_summary?.total_gst || 0
+  const totalDiscountNum = invoice.bill_summary?.total_discount || 0
   const paidAmountNum = parseFloat(invoice.paid_amount || 0)
   const dueBalance = Math.max(0, totalAmountNum - paidAmountNum)
   const showDuePayment = invoice.status !== 'cancelled' && dueBalance > 0.001
@@ -478,154 +706,149 @@ const InvoiceDetail = () => {
             <motion.div
               initial={{ opacity: 0, y: -20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="mb-8 sticky top-[70px] z-[1]"
+              className="mb-8"
             >
-              <div className="">
-                {/* Glass Morphism Header */}
-                <div className="backdrop-blur-xl bg-white/80 dark:bg-gray-900/80 rounded-2xl shadow-lg border border-white/20 dark:border-gray-700/50 p-4">
-                  <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-                    {/* Navigation & Title */}
-                    <div className="flex items-center gap-4">
-                      <Button
-                        onClick={() => navigate('/invoices')}
-                        variant="ghost"
-                        className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-300 group"
-                      >
-                        <FiArrowLeft className="w-5 h-5 transition-transform group-hover:-translate-x-1" />
-                      </Button>
+              <div className="backdrop-blur-xl bg-white/80 dark:bg-gray-900/80 rounded-2xl shadow-lg border border-white/20 dark:border-gray-700/50 p-4">
+                <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                  {/* Navigation & Title */}
+                  <div className="flex items-center gap-4">
+                    <Button
+                      onClick={() => navigate('/invoices')}
+                      variant="ghost"
+                      className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-300 group"
+                    >
+                      <FiArrowLeft className="w-5 h-5 transition-transform group-hover:-translate-x-1" />
+                    </Button>
 
-                      <div className="h-8 w-px bg-gray-200 dark:bg-gray-700"></div>
+                    <div className="h-8 w-px bg-gray-200 dark:bg-gray-700"></div>
 
-                      <div className="flex items-center gap-3">
-                        <div className="p-2 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl shadow-lg">
-                          <FiFileText className="w-4 h-4 text-white" />
-                        </div>
-                        <div>
-                          <h1 className="text-xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-gray-400 bg-clip-text text-transparent">
-                            Invoice #{invoice.invoice_number || invoice.id}
-                          </h1>
-                          <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
-                            <FiCalendar className="w-3 h-3" />
-                            <span>{formatDate(invoice.created_at)}</span>
-                          </div>
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl shadow-lg">
+                        <FiFileText className="w-4 h-4 text-white" />
+                      </div>
+                      <div>
+                        <h1 className="text-xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-gray-400 bg-clip-text text-transparent">
+                          Invoice #{invoice.invoice_number || invoice.id}
+                        </h1>
+                        <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+                          <FiCalendar className="w-3 h-3" />
+                          <span>{formatDate(invoice.created_at)}</span>
                         </div>
                       </div>
-
-                      <StatusBadge
-                        status={invoice.status || 'unpaid'}
-                        className="text-xs"
-                        icon={statusConfig.icon}
-                      />
                     </div>
 
-                    {/* Action Buttons Group */}
-                    <div className="flex flex-wrap gap-2">
-                      {invoice.status !== 'cancelled' && (
-                        <>
-                          <Button
-                            onClick={() => setIsEditing(true)}
-                            size="sm"
-                            className="gap-1.5 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 shadow-md shadow-amber-500/20 transition-all duration-300"
-                            
-                          >
-                            <FiEdit2 className="w-3.5 h-3.5" />
-                            Edit
-                          </Button>
-
-                          <Button
-                            onClick={handleCancelInvoice}
-                            size="sm"
-                            disabled={cancelSubmitting}
-                            className="gap-1.5 bg-gradient-to-r from-red-500 to-rose-600 hover:from-red-600 hover:to-rose-700 shadow-md shadow-red-500/20 transition-all duration-300"
-                            
-                          >
-                            <FiSlash className="w-3.5 h-3.5" />
-                            {cancelSubmitting ? '...' : 'Cancel'}
-                          </Button>
-                        </>
-                      )}
-
-                      <div className="w-px h-6 bg-gray-200 dark:bg-gray-700 mx-1"></div>
-
-                      <Button
-                        onClick={handlePrintThermal}
-                        size="sm"
-                        variant="outline"
-                        className="gap-1.5 border-emerald-200 dark:border-emerald-800 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/20"
-                        icon={FiPrinter}
-                      >
-                        Thermal
-                      </Button>
-
-                      <Button
-                        onClick={handlePrint}
-                        size="sm"
-                        variant="outline"
-                        className="gap-1.5 border-blue-200 dark:border-blue-800 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/20"
-                        icon={FiPrinter}
-                      >
-                        A4
-                      </Button>
-
-                      <Button
-                        onClick={handleDownloadPDF}
-                        size="sm"
-                        className="gap-1.5 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 shadow-md shadow-purple-500/20"
-                        icon={FiDownload}
-                      >
-                        PDF
-                      </Button>
-                    </div>
+                    <StatusBadge
+                      status={invoice.status || 'unpaid'}
+                      className="text-xs"
+                      icon={statusConfig.icon}
+                    />
                   </div>
 
-                  {/* Payment Status Bar */}
-                  {invoice.status !== 'cancelled' && (
-                    <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2 text-sm">
-                          <span className="text-gray-600 dark:text-gray-400">Payment Status:</span>
-                          <span className={`font-semibold flex items-center gap-1 ${dueBalance > 0 ? 'text-orange-600 dark:text-orange-400' : 'text-green-600 dark:text-green-400'
-                            }`}>
-                            {dueBalance > 0 ? (
-                              <>Due: {formatCurrency(dueBalance)}</>
-                            ) : (
-                              <>✓ Fully Paid</>
-                            )}
-                          </span>
-                        </div>
+                  {/* Action Buttons Group */}
+                  <div className="flex flex-wrap gap-2">
+                    {invoice.status !== 'cancelled' && (
+                      <>
+                        <Button
+                          onClick={() => setIsEditing(true)}
+                          size="sm"
+                          className="gap-1.5 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 shadow-md shadow-amber-500/20 transition-all duration-300"
+                        >
+                          <FiEdit2 className="w-3.5 h-3.5" />
+                          Edit
+                        </Button>
 
-                        {dueBalance > 0 && (
-                          <Button
-                            onClick={() => setShowPaymentModal(true)}
-                            size="sm"
-                            className="gap-1.5 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 shadow-md shadow-green-500/20"
-                            icon={FiCreditCard}
-                          >
-                            Pay Now
-                          </Button>
-                        )}
+                        <Button
+                          onClick={handleCancelInvoice}
+                          size="sm"
+                          disabled={cancelSubmitting}
+                          className="gap-1.5 bg-gradient-to-r from-red-500 to-rose-600 hover:from-red-600 hover:to-rose-700 shadow-md shadow-red-500/20 transition-all duration-300"
+                        >
+                          <FiSlash className="w-3.5 h-3.5" />
+                          {cancelSubmitting ? '...' : 'Cancel'}
+                        </Button>
+                      </>
+                    )}
+
+                    <div className="w-px h-6 bg-gray-200 dark:bg-gray-700 mx-1"></div>
+
+                    <Button
+                      onClick={handlePrintThermal}
+                      size="sm"
+                      variant="outline"
+                      className="gap-1.5 border-emerald-200 dark:border-emerald-800 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/20"
+                      icon={FiPrinter}
+                    >
+                      Thermal
+                    </Button>
+
+                    <Button
+                      onClick={handlePrint}
+                      size="sm"
+                      variant="outline"
+                      className="gap-1.5 border-blue-200 dark:border-blue-800 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/20"
+                      icon={FiPrinter}
+                    >
+                      A4
+                    </Button>
+
+                    <Button
+                      onClick={handleDownloadPDF}
+                      size="sm"
+                      className="gap-1.5 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 shadow-md shadow-purple-500/20"
+                      icon={FiDownload}
+                    >
+                      PDF
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Payment Status Bar */}
+                {invoice.status !== 'cancelled' && (
+                  <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2 text-sm">
+                        <span className="text-gray-600 dark:text-gray-400">Payment Status:</span>
+                        <span className={`font-semibold flex items-center gap-1 ${dueBalance > 0 ? 'text-orange-600 dark:text-orange-400' : 'text-green-600 dark:text-green-400'
+                          }`}>
+                          {dueBalance > 0 ? (
+                            <>Due: {formatCurrency(dueBalance)}</>
+                          ) : (
+                            <>✓ Fully Paid</>
+                          )}
+                        </span>
                       </div>
 
-                      {/* Payment Progress Bar */}
-                      {dueBalance > 0 && totalAmountNum > 0 && (
-                        <div className="mt-2">
-                          <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mb-1">
-                            <span>Paid: {formatCurrency(paidAmountNum)}</span>
-                            <span>Due: {formatCurrency(dueBalance)}</span>
-                          </div>
-                          <div className="h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                            <motion.div
-                              initial={{ width: 0 }}
-                              animate={{ width: `${(paidAmountNum / totalAmountNum) * 100}%` }}
-                              transition={{ duration: 0.5 }}
-                              className="h-full bg-gradient-to-r from-green-500 to-emerald-500 rounded-full"
-                            />
-                          </div>
-                        </div>
+                      {dueBalance > 0 && (
+                        <Button
+                          onClick={() => setShowPaymentModal(true)}
+                          size="sm"
+                          className="gap-1.5 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 shadow-md shadow-green-500/20"
+                          icon={FiCreditCard}
+                        >
+                          Pay Now
+                        </Button>
                       )}
                     </div>
-                  )}
-                </div>
+
+                    {/* Payment Progress Bar */}
+                    {dueBalance > 0 && totalAmountNum > 0 && (
+                      <div className="mt-2">
+                        <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mb-1">
+                          <span>Paid: {formatCurrency(paidAmountNum)}</span>
+                          <span>Due: {formatCurrency(dueBalance)}</span>
+                        </div>
+                        <div className="h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                          <motion.div
+                            initial={{ width: 0 }}
+                            animate={{ width: `${(paidAmountNum / totalAmountNum) * 100}%` }}
+                            transition={{ duration: 0.5 }}
+                            className="h-full bg-gradient-to-r from-green-500 to-emerald-500 rounded-full"
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             </motion.div>
 
@@ -643,42 +866,70 @@ const InvoiceDetail = () => {
                   <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-blue-500/5 to-purple-500/5 rounded-full blur-3xl -mr-16 -mt-16"></div>
                   <div className="relative p-6">
                     <div className="flex items-center gap-3 mb-5">
-                      <div className="p-2.5 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-lg shadow-blue-500/25">
+                      <div className={`p-2.5 rounded-xl shadow-lg ${invoice.store_is_deleted 
+                        ? 'bg-gradient-to-br from-red-500 to-red-600 shadow-red-500/25' 
+                        : 'bg-gradient-to-br from-blue-500 to-blue-600 shadow-blue-500/25'}`}>
                         <FaBuilding className="w-5 h-5 text-white" />
                       </div>
                       <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Store Information</h3>
+                      {invoice.store_is_deleted && (
+                        <span className="ml-2 px-2 py-1 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 text-xs font-medium rounded-full flex items-center gap-1">
+                          <FiAlertTriangle className="w-3 h-3" />
+                          Deleted
+                        </span>
+                      )}
                     </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div className="space-y-1">
-                        <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Store Name</p>
-                        <p className="font-semibold text-gray-900 dark:text-white">{invoice.store_name}</p>
-                      </div>
-                      <div className="space-y-1">
-                        <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">GST Number</p>
-                        <p className="font-mono text-sm text-gray-700 dark:text-gray-300">{invoice.store_gst || 'N/A'}</p>
-                      </div>
-                      <div className="sm:col-span-2 space-y-1">
-                        <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Address</p>
-                        <div className="flex items-start gap-2">
-                          <FiMapPin className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" />
-                          <p className="text-gray-700 dark:text-gray-300">{invoice.store_address}</p>
+                    
+                    {invoice.store_is_deleted ? (
+                      <div className="bg-red-50 dark:bg-red-900/20 rounded-xl p-4 border border-red-200 dark:border-red-800">
+                        <div className="flex items-center gap-3">
+                          <FiAlertTriangle className="w-8 h-8 text-red-500" />
+                          <div>
+                            <p className="font-semibold text-red-700 dark:text-red-400">Store Not Found or Deleted</p>
+                            <p className="text-sm text-red-600 dark:text-red-300 mt-1">
+                              The store associated with this invoice (ID: {invoice.store_is_deleted ? invoice.store_name?.split(' ')[0] === 'Store' ? invoice.id : invoice.store_id : invoice.store_id}) appears to have been deleted or is no longer accessible.
+                            </p>
+                            {invoice.store_name && invoice.store_name !== 'Store Deleted/Not Found' && (
+                              <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
+                                Last known name: {invoice.store_name}
+                              </p>
+                            )}
+                          </div>
                         </div>
                       </div>
-                      <div className="space-y-1">
-                        <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Email</p>
-                        <div className="flex items-center gap-2">
-                          <FiMail className="w-4 h-4 text-gray-400" />
-                          <p className="text-sm text-gray-700 dark:text-gray-300">{invoice.store_email}</p>
+                    ) : (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="space-y-1">
+                          <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Store Name</p>
+                          <p className="font-semibold text-gray-900 dark:text-white">{invoice.store_name}</p>
+                        </div>
+                        <div className="space-y-1">
+                          <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">GST Number</p>
+                          <p className="font-mono text-sm text-gray-700 dark:text-gray-300">{invoice.store_gst || 'N/A'}</p>
+                        </div>
+                        <div className="sm:col-span-2 space-y-1">
+                          <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Address</p>
+                          <div className="flex items-start gap-2">
+                            <FiMapPin className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" />
+                            <p className="text-gray-700 dark:text-gray-300">{invoice.store_address}</p>
+                          </div>
+                        </div>
+                        <div className="space-y-1">
+                          <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Email</p>
+                          <div className="flex items-center gap-2">
+                            <FiMail className="w-4 h-4 text-gray-400" />
+                            <p className="text-sm text-gray-700 dark:text-gray-300">{invoice.store_email}</p>
+                          </div>
+                        </div>
+                        <div className="space-y-1">
+                          <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Phone</p>
+                          <div className="flex items-center gap-2">
+                            <FiPhone className="w-4 h-4 text-gray-400" />
+                            <p className="text-sm text-gray-700 dark:text-gray-300">{invoice.store_phone}</p>
+                          </div>
                         </div>
                       </div>
-                      <div className="space-y-1">
-                        <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Phone</p>
-                        <div className="flex items-center gap-2">
-                          <FiPhone className="w-4 h-4 text-gray-400" />
-                          <p className="text-sm text-gray-700 dark:text-gray-300">{invoice.store_phone}</p>
-                        </div>
-                      </div>
-                    </div>
+                    )}
                   </div>
                 </motion.div>
 
@@ -864,7 +1115,7 @@ const InvoiceDetail = () => {
                   initial={{ opacity: 0, x: 20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.4 }}
-                  className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg overflow-hidden "
+                  className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg overflow-hidden"
                 >
                   <div className="p-6 border-b border-gray-200 dark:border-gray-700">
                     <div className="flex items-center gap-3">
@@ -877,30 +1128,20 @@ const InvoiceDetail = () => {
                   <div className="p-6 space-y-4">
                     <div className="flex justify-between items-center pb-3 border-b border-gray-100 dark:border-gray-700">
                       <span className="text-gray-600 dark:text-gray-400">Subtotal</span>
-                      <span className="font-medium text-gray-900 dark:text-white">{formatCurrency(totalAmountNum)}</span>
+                      <span className="font-medium text-gray-900 dark:text-white">{formatCurrency(subtotalNum)}</span>
                     </div>
 
                     <div className="flex justify-between items-center pb-3 border-b border-gray-100 dark:border-gray-700">
                       <span className="text-gray-600 dark:text-gray-400">Total GST</span>
                       <span className="font-medium text-gray-900 dark:text-white">
-                        {formatCurrency(invoice.items?.reduce((sum, item) => {
-                          const itemPrice = typeof item.price === 'string' ? parseFloat(item.price) : (typeof item.price === 'number' ? item.price : 0);
-                          const itemGst = typeof item.gst === 'string' ? parseFloat(item.gst) : (typeof item.gst === 'number' ? item.gst : 0);
-                          const subtotal = itemPrice * parseFloat(item.quantity || 0);
-                          return sum + (subtotal * itemGst / 100);
-                        }, 0))}
+                        {formatCurrency(totalGstNum)}
                       </span>
                     </div>
 
                     <div className="flex justify-between items-center pb-3 border-b border-gray-100 dark:border-gray-700">
                       <span className="text-gray-600 dark:text-gray-400">Total Discount</span>
                       <span className="font-medium text-green-600 dark:text-green-400">
-                        -{formatCurrency(invoice.items?.reduce((sum, item) => {
-                          const itemPrice = typeof item.price === 'string' ? parseFloat(item.price) : (typeof item.price === 'number' ? item.price : 0);
-                          const itemDiscount = typeof item.discount === 'string' ? parseFloat(item.discount) : (typeof item.discount === 'number' ? item.discount : 0);
-                          const subtotal = itemPrice * parseFloat(item.quantity || 0);
-                          return sum + (subtotal * itemDiscount / 100);
-                        }, 0))}
+                        -{formatCurrency(totalDiscountNum)}
                       </span>
                     </div>
 
@@ -1011,7 +1252,7 @@ const InvoiceDetail = () => {
         )}
       </div>
 
-      {/* Payment Modal */}
+      {/* Payment Modal with Enhanced Validation */}
       <AnimatePresence>
         {showPaymentModal && (
           <motion.div
@@ -1019,7 +1260,11 @@ const InvoiceDetail = () => {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-            onClick={() => setShowPaymentModal(false)}
+            onClick={() => {
+              setShowPaymentModal(false)
+              setPaymentError('')
+              setDuePayAmount('')
+            }}
           >
             <motion.div
               initial={{ scale: 0.95, opacity: 0 }}
@@ -1031,40 +1276,65 @@ const InvoiceDetail = () => {
               <div className="p-6 border-b border-gray-200 dark:border-gray-700">
                 <h3 className="text-xl font-bold text-gray-900 dark:text-white">Record Payment</h3>
                 <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                  Due amount: {formatCurrency(dueBalance)}
+                  Due amount: <span className="font-semibold text-orange-600 dark:text-orange-400">{formatCurrency(dueBalance)}</span>
                 </p>
               </div>
               <form onSubmit={handleDuePay} className="p-6 space-y-4">
-                <Input
-                  label="Amount to Pay"
-                  type="number"
-                  step="0.01"
-                  min="0.01"
-                  max={dueBalance}
-                  placeholder={`Max ${formatCurrency(dueBalance)}`}
-                  value={duePayAmount}
-                  onChange={(e) => setDuePayAmount(e.target.value)}
-                  required
-                />
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Amount to Pay
+                  </label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400">₹</span>
+                    <input
+                      type="text"
+                      inputMode="decimal"
+                      placeholder={`0.00 (Max ${formatCurrency(dueBalance)})`}
+                      value={duePayAmount}
+                      onChange={handlePaymentAmountChange}
+                      className={`w-full pl-8 pr-4 py-2.5 rounded-xl border-2 ${
+                        paymentError 
+                          ? 'border-red-500 focus:border-red-500 focus:ring-red-500' 
+                          : 'border-gray-300 dark:border-gray-600 focus:border-green-500 focus:ring-green-500'
+                      } bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 transition-all duration-200`}
+                      required
+                    />
+                  </div>
+                  {paymentError && (
+                    <p className="mt-2 text-sm text-red-600 dark:text-red-400 flex items-center gap-1">
+                      <FiAlertCircle className="w-4 h-4" />
+                      {paymentError}
+                    </p>
+                  )}
+                  <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                    Enter amount between ₹0.01 and {formatCurrency(dueBalance)}
+                  </p>
+                </div>
+                
                 <Select
                   label="Payment Method"
                   value={duePayMethod}
                   onChange={(e) => setDuePayMethod(e.target.value)}
                   options={DUE_PAYMENT_METHOD_OPTIONS}
                 />
+                
                 <div className="flex gap-3 pt-4">
                   <Button
                     type="button"
                     variant="outline"
-                    onClick={() => setShowPaymentModal(false)}
+                    onClick={() => {
+                      setShowPaymentModal(false)
+                      setPaymentError('')
+                      setDuePayAmount('')
+                    }}
                     className="flex-1"
                   >
                     Cancel
                   </Button>
                   <Button
                     type="submit"
-                    className="flex-1 gap-2 bg-gradient-to-r from-green-600 to-emerald-600"
-                    disabled={duePaySubmitting}
+                    className="flex-1 gap-2 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                    disabled={duePaySubmitting || !!paymentError || !duePayAmount || parseFloat(duePayAmount) <= 0 || parseFloat(duePayAmount) > dueBalance}
                     isLoading={duePaySubmitting}
                     icon={FiCreditCard}
                   >

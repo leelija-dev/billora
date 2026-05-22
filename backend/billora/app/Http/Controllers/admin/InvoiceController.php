@@ -23,7 +23,7 @@ use Illuminate\Support\Facades\Cache;
 
 class InvoiceController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
         try {
             if (!Auth::check()) {
@@ -38,12 +38,13 @@ class InvoiceController extends Controller
             $fromCache = Cache::tags(['billing_user_' . $user])->has($cacheKey);
             $data = Cache::tags(['billing_user_' . $user])->remember($cacheKey, 600, function () use ($user) {
                 $customer =  Customers::findOrFail($user);
-                if ($customer->plan_id == null || $customer->is_active == false) {
-                    return response()->json([
-                        'status' => false,
-                        'message' => 'You do not have any active plan. Please upgrade your plan.'
-                    ]);
-                }
+                // $search = $request->search ?? '';
+                // if ($customer->plan_id == null || $customer->is_active == false) {
+                //     return response()->json([
+                //         'status' => false,
+                //         'message' => 'You do not have any active plan. Please upgrade your plan.'
+                //     ]);
+                // }
                 $permissions = DB::table('plan_permission_details as ppd')
                     ->join('plan_permission as pp', 'pp.id', '=', 'ppd.permission_id')
                     ->where('ppd.plan_id', $customer->plan_id)
@@ -51,39 +52,45 @@ class InvoiceController extends Controller
                     ->get();
                 $hasStockPermission = false;
 
-                foreach ($permissions as $permission) {
-                    if ($permission->slug === 'stock-management') {
-                        $hasStockPermission = true;
-                        break;
-                    }
-                }
-                if ($hasStockPermission) {
-                    $products = Products::where('user_id', $user)
-                        ->with([
-                            'brand',
-                            'category',
-                            'unit',
-                            'stocks:id,product_id'
-                        ])
-                        ->where('is_active', true)
-                        ->whereHas('stocks')
-                        ->get();
+                // foreach ($permissions as $permission) {
+                //     if ($permission->slug === 'stock-management') {
+                //         $hasStockPermission = true;
+                //         break;
+                //     }
+                // }
+                // if ($hasStockPermission) {
+                //     $products = Products::where('user_id', $user)
+                //         ->with([
+                //             'brand',
+                //             'category',
+                //             'unit',
+                //             'stocks'
+                //         ])
+                //         ->where('is_active', true)
+                //         ->where(function ($query) use ($search) {
+                //             $query->where('name', 'like', "%$search%")
+                //                 ->orWhere('sku', 'like', "%$search%");
+                //         })
+                //         ->whereHas('stocks')
+                //         ->paginate(5);
+                        
 
-                    // $products = Stocks::where('user_id', $user)
-                    //     ->with(['brand', 'category', 'unit', 'product'])
-                    //     ->get();
-                } else {
-                    $products = Products::where('user_id', $user)
-                        ->with(['brand', 'category', 'unit'])
-                        ->where('is_active', true)
-                        ->get();
-                }
+                //     // $products = Stocks::where('user_id', $user)
+                //     //     ->with(['brand', 'category', 'unit', 'product'])
+                //     //     ->get();
+                // } else {
+                //     $products = Products::where('user_id', $user)
+                //         ->with(['brand', 'category', 'unit'])
+                //         ->where('is_active', true)
+                //         ->paginate(5);
+                //         // ->get();
+                // }
                 $customers = BillCustomer::where('admin_id', $user)->get();
                 $stores = Store::where('user_id', $user)->get();
                 return [
                     'status' => true,
                     'message' => 'Products and Customers List',
-                    'products' => $products,
+                    // 'products' => $products,
                     'customers' => $customers,
                     'stores' => $stores,
                     'permissions' => $permissions
@@ -170,6 +177,7 @@ class InvoiceController extends Controller
             'data' => $products
         ]);
     }
+
 
     public function store(Request $request)  // bill generate data store
     {
