@@ -135,7 +135,10 @@ class InvoiceController extends Controller
 
                 $query->where(function ($q) use ($search) {
 
-                    $q->where('name', 'like', "%{$search}%")
+                  $q->whereRaw(
+                            "REPLACE(LOWER(name), \"'\", '') LIKE ?",
+                            ['%' . str_replace("'", '', strtolower($search)) . '%']
+                        )
                         ->orWhere('id', 'like', "%{$search}%")
                         ->orWhere('barcode', 'like', "%{$search}%")
                         ->orWhere('sku', 'like', "%{$search}%")

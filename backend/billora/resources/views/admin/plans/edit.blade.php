@@ -815,7 +815,7 @@
                 <!-- Form Actions -->
                 <div class="form-actions">
                     <a href="{{ route('admin.plans.index') }}"><button type="button"
-                            class="btn btn-secondary">Cancel</button></a>
+                            class="btn btn-secondary" style="color:white;background-color:red;">Cancel</button></a>
                     <button type="submit" class="btn btn-primary">
                         <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: white;">
                             <path

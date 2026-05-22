@@ -880,8 +880,9 @@
 
                 <!-- Form Actions -->
                 <div class="form-actions">
-                    <button type="button" class="btn btn-white" style="background: red;"><span
-                            style="color: white">Cancel</span></button>
+                    <a href="{{route('admin.blogs.index')}}">
+                    <button type="button" class="btn btn-white" style="color:white; background-color: red;"><span
+                            style="color: white">Cancel</span></button></a>
                     <button type="submit" class="btn btn-primary">
                         <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: white;">
                             <path

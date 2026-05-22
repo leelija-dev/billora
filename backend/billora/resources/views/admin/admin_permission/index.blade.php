@@ -497,7 +497,7 @@
                                 </td>
                                 <td>
                                     <div class="action-buttons">
-                                        <a href="{{ route('admin.permissions.edit', $permission->id) }}">
+                                        <a href="#">
                                             <button>
                                                 <i data-feather="edit-2"></i>
                                             </button>
