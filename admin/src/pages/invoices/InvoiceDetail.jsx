@@ -663,13 +663,15 @@ const InvoiceDetail = () => {
     )
   }
 
+  console.log("inner chekcing ............,",invoice)
   // Use bill summary values for calculations
   const totalAmountNum = invoice.bill_summary?.grand_total || parseFloat(invoice.total_amount || 0)
   const subtotalNum = invoice.bill_summary?.subtotal || totalAmountNum
   const totalGstNum = invoice.bill_summary?.total_gst || 0
   const totalDiscountNum = invoice.bill_summary?.total_discount || 0
   const paidAmountNum = parseFloat(invoice.paid_amount || 0)
-  const dueBalance = Math.max(0, totalAmountNum - paidAmountNum)
+  const dueBalance = totalAmountNum - paidAmountNum;
+ 
   const showDuePayment = invoice.status !== 'cancelled' && dueBalance > 0.001
   const isEditMode = isEditing && invoice.status !== 'cancelled'
   const statusConfig = getStatusConfig(invoice.status)
