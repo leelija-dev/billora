@@ -142,7 +142,7 @@ class InvoiceController extends Controller
 
                 $query->where(function ($q) use ($search) {
 
-                  $q->whereRaw(
+                     $q->whereRaw(
                             "REPLACE(LOWER(name), \"'\", '') LIKE ?",
                             ['%' . str_replace("'", '', strtolower($search)) . '%']
                         )
@@ -433,7 +433,7 @@ class InvoiceController extends Controller
                         'message' => 'You do not have any active plan. Please upgrade your plan.'
                     ]);
                 }
-                $bill = Invoice::with('invoiceItems', 'packages','invoiceItems.stock')
+                $bill = Invoice::with('invoiceItems', 'packages','store','customer','invoiceItems.stock')
                     ->where('user_id', $userId)
                     ->where('id', $id)
                     ->first();

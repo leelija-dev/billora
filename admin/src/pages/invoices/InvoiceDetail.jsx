@@ -142,64 +142,78 @@ const InvoiceDetail = () => {
           const foundInvoice = response.data.data
           const billSummary = response.data.bill_summary || {}
           
-          // Fetch store and customer data in parallel
-          console.log('🔍 Fetching store with ID:', foundInvoice.store_id)
-          console.log('🔍 Fetching customer with ID:', foundInvoice.customer_id)
-          
+          // Check if store data is already in the invoice response
           let storeData = {}
           let customerData = {}
           let isStoreDeleted = false
-          
-          try {
-            // Try multiple store API methods
-            let storeResponse = null
-            
-            if (storeAPI.getStoreById) {
-              storeResponse = await storeAPI.getStoreById(foundInvoice.store_id)
-            } else if (storeAPI.getById) {
-              storeResponse = await storeAPI.getById(foundInvoice.store_id)
-            } else if (storeAPI.edit) {
-              storeResponse = await storeAPI.edit(foundInvoice.store_id)
-            } else if (storeAPI.getStore) {
-              storeResponse = await storeAPI.getStore(foundInvoice.store_id)
-            } else {
-              console.warn('No suitable store API method found')
-            }
-            
-            if (storeResponse) {
-              if (storeResponse.data?.status === true && storeResponse.data?.data) {
-                storeData = storeResponse.data.data
-              } else if (storeResponse.data?.data && typeof storeResponse.data.data === 'object') {
-                storeData = storeResponse.data.data
-              } else if (storeResponse.data && typeof storeResponse.data === 'object' && storeResponse.data.id) {
-                storeData = storeResponse.data
+
+          // FIRST, check if store data is already embedded in the invoice response
+          if (foundInvoice.store && typeof foundInvoice.store === 'object' && Object.keys(foundInvoice.store).length > 0) {
+            console.log('✅ Using store data from invoice response:', foundInvoice.store)
+            storeData = foundInvoice.store
+            isStoreDeleted = false
+          } else {
+            // Only fetch store separately if not embedded
+            console.log('🔍 Store not in invoice response, attempting to fetch with ID:', foundInvoice.store_id)
+            try {
+              // Try multiple store API methods
+              let storeResponse = null
+              
+              if (storeAPI.getStoreById) {
+                storeResponse = await storeAPI.getStoreById(foundInvoice.store_id)
+              } else if (storeAPI.getById) {
+                storeResponse = await storeAPI.getById(foundInvoice.store_id)
+              } else if (storeAPI.edit) {
+                storeResponse = await storeAPI.edit(foundInvoice.store_id)
+              } else if (storeAPI.getStore) {
+                storeResponse = await storeAPI.getStore(foundInvoice.store_id)
+              } else {
+                console.warn('No suitable store API method found')
               }
-            }
-            
-            // Check if store data is empty or indicates not found
-            if (!storeData || Object.keys(storeData).length === 0 || storeData.error || storeData.message === 'Store not found') {
+              
+              if (storeResponse) {
+                if (storeResponse.data?.status === true && storeResponse.data?.data) {
+                  storeData = storeResponse.data.data
+                } else if (storeResponse.data?.data && typeof storeResponse.data.data === 'object') {
+                  storeData = storeResponse.data.data
+                } else if (storeResponse.data && typeof storeResponse.data === 'object' && storeResponse.data.id) {
+                  storeData = storeResponse.data
+                }
+              }
+              
+              // Check if store data is empty or indicates not found
+              if (!storeData || Object.keys(storeData).length === 0 || storeData.error || storeData.message === 'Store not found') {
+                isStoreDeleted = true
+                setStoreNotFound(true)
+                console.warn('Store not found or deleted for ID:', foundInvoice.store_id)
+              }
+            } catch (storeError) {
+              console.error('Failed to fetch store:', storeError)
               isStoreDeleted = true
               setStoreNotFound(true)
-              console.warn('Store not found or deleted for ID:', foundInvoice.store_id)
             }
-          } catch (storeError) {
-            console.error('Failed to fetch store:', storeError)
-            isStoreDeleted = true
-            setStoreNotFound(true)
           }
-          
-          try {
-            // Fetch customer data
-            const customerResponse = await customerAPI.getById(foundInvoice.customer_id)
-            if (customerResponse.data?.status === true && customerResponse.data?.data) {
-              customerData = customerResponse.data.data
-            } else if (customerResponse.data?.data && typeof customerResponse.data.data === 'object') {
-              customerData = customerResponse.data.data
-            } else if (customerResponse.data && typeof customerResponse.data === 'object' && customerResponse.data.id) {
-              customerData = customerResponse.data
+
+          // Check if customer data is already embedded
+          if (foundInvoice.customer && typeof foundInvoice.customer === 'object' && Object.keys(foundInvoice.customer).length > 0) {
+            console.log('✅ Using customer data from invoice response:', foundInvoice.customer)
+            customerData = foundInvoice.customer
+          } else {
+            // Only fetch customer separately if not embedded
+            console.log('👤 Customer not in invoice response, fetching with ID:', foundInvoice.customer_id)
+            try {
+              // Fetch customer data
+              const customerResponse = await customerAPI.getById(foundInvoice.customer_id)
+              if (customerResponse.data?.status === true && customerResponse.data?.data) {
+                customerData = customerResponse.data.data
+              } else if (customerResponse.data?.data && typeof customerResponse.data.data === 'object') {
+                customerData = customerResponse.data.data
+              } else if (customerResponse.data && typeof customerResponse.data === 'object' && customerResponse.data.id) {
+                customerData = customerResponse.data
+              }
+            } catch (customerError) {
+              console.error('Failed to fetch customer:', customerError)
             }
-          } catch (customerError) {
-            console.error('Failed to fetch customer:', customerError)
           }
           
           // Check if this is still the latest request

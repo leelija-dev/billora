@@ -21,20 +21,38 @@ export const invoiceAPI = {
 
   // Get single invoice/bill with payment history filters
   getById: (id, startDate = "", endDate = "") => {
-    const params = new URLSearchParams();
+  const params = new URLSearchParams();
 
-    if (startDate) params.append("start_date", startDate);
-    if (endDate) params.append("end_date", endDate);
+  if (startDate) params.append("start_date", startDate);
+  if (endDate) params.append("end_date", endDate);
 
-    // Decode Base64
-    const decoded = atob(id);
-    // Remove secret key from end
-    const originalId = decoded.replace(secretKey, "");
+  let originalId = id;
+  
+  // Check if the ID is a string that looks like Base64 (has length > 0 and contains only Base64 chars)
+  // If it's a number or plain ID, use it directly
+  if (typeof id === 'string' && id.length > 0 && !/^\d+$/.test(id)) {
+    try {
+      // Decode Base64
+      const decoded = atob(id);
+      // Remove secret key from end
+      originalId = decoded.replace(secretKey, "");
+      console.log("Decoded ID from Base64:", originalId);
+    } catch (error) {
+      console.error("Failed to decode Base64 ID, using original:", id);
+      originalId = id;
+    }
+  } else {
+    console.log("Using plain ID:", originalId);
+  }
 
-    console.log("Original ID:", originalId);
+  // Ensure we have a valid ID
+  if (!originalId || originalId === '×}') {
+    console.error("Invalid invoice ID:", originalId);
+    throw new Error(`Invalid invoice ID: ${originalId}`);
+  }
 
-    return apiClient.get(`/invoice/${originalId}?${params.toString()}`);
-  },
+  return apiClient.get(`/invoice/${originalId}?${params.toString()}`);
+},
 
   // Get bill generate page data
   getBillGenerateData: (userId) => {
