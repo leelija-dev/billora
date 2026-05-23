@@ -6,15 +6,22 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Category;   
 use Illuminate\Support\Str; 
+use Illuminate\Support\Facades\Cache;
 class BlogCategoriesController extends Controller
 {
     public function index(Request $request){
+        $cacheKey = "blog_category_index_" . md5($request->fullUrl());
+        $data = Cache::tags(['blog_categories'])->remember($cacheKey,600,function () use ($request) {
         $Categories = Category::when($request->search, function ($query) use ($request) {
             $query->where('name', 'like', '%' . $request->search . '%')
                   ->orWhere('description', 'like', '%' . $request->search . '%')    
                   ->orWhere('slug', 'like', '%' . $request->search . '%');
         })->paginate(10);
-        return view('admin.blog_category.index',compact('Categories'));
+        return[
+            'Categories' => $Categories
+        ];
+        });
+        return view('admin.blog_category.index', $data);
     }
     public function create(){
         return view('admin.blog_category.create');
@@ -29,6 +36,7 @@ class BlogCategoriesController extends Controller
         $data['slug'] = Str::slug($data['name']);
         try{
             Category::create($data);
+            Cache::tags(['blog_categories'])->flush();
             return redirect()->route('admin.category.index')
                 ->with('success', 'Category created successfully.');
         } catch (\Exception $e) {
@@ -37,6 +45,7 @@ class BlogCategoriesController extends Controller
         }
     }
     public function edit($id){
+        Cache::tags(['blog_categories'])->flush();
         $category = Category::findOrFail($id);
         return view('admin.blog_category.edit',compact('category'));
     }
@@ -52,6 +61,7 @@ class BlogCategoriesController extends Controller
         
         try{
             $category->update($data);
+            Cache::tags(['blog_categories'])->flush();
             return redirect()->route('admin.category.index')
                 ->with('success', 'Category updated successfully.');
         } catch (\Exception $e) {
@@ -63,6 +73,7 @@ class BlogCategoriesController extends Controller
         $category = Category::findOrFail($id);
         try{
             $category->delete();
+            Cache::tags(['blog_categories'])->flush();
             return redirect()->route('admin.category.index')
                 ->with('success', 'Category deleted successfully.');
         } catch (\Exception $e) {

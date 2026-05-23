@@ -28,6 +28,7 @@ use Illuminate\Support\Facades\DB;
 use Milon\Barcode\Facades\DNS1DFacade as DNS1D;
 use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Crypt;
 class ProductsController extends Controller
 {
     public function index(Request $request)
@@ -840,6 +841,7 @@ class ProductsController extends Controller
             if ($stocksProduct) {
                 $stocksProduct->delete();
             }
+            Cache::tags(['products_user_' . $user])->flush();
             return response()->json([
                 'status' => true,
                 'message' => 'Product Deleted Successfully',
@@ -879,6 +881,7 @@ class ProductsController extends Controller
                 $stocksProduct->delete();
             }
             }
+            Cache::tags(['products_user_' . $user])->flush();
             return response()->json([
                 'status' => true,
                 'message' => 'Product Deleted Successfully',
@@ -937,6 +940,7 @@ class ProductsController extends Controller
                 $stocks['created_by'] = $user;
                 $stock = Stocks::create($stocks);
             }
+            Cache::tags(['products_user_' . $user])->flush();
             return response()->json([
                 'status' => true,
                 'message' => 'Product Restored Successfully',
@@ -996,6 +1000,7 @@ class ProductsController extends Controller
                 }
             }
             $product->forceDelete();
+            Cache::tags(['products_user_' . $user])->flush();
             return response()->json([
                 'status' => true,
                 'message' => 'Product Deleted Permanently',
@@ -1078,6 +1083,8 @@ class ProductsController extends Controller
     public function userProducts(Request $request, $id)
     {
         try {
+            // $id = base64_decode($id);
+            $id = Crypt::decryptString($id);
             $startTime = microtime(true);
             // $cacheKey = 'products_user_' . $id;
             $cacheKey = "products_user_{$id}_" . md5(

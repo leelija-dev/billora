@@ -20,7 +20,8 @@ use BaconQrCode\Renderer\Image\SvgImageBackEnd;
 use BaconQrCode\Renderer\RendererStyle\RendererStyle;
 use BaconQrCode\Writer;
 use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
-
+use Illuminate\Support\Facades\Crypt;
+use Illuminate\Support\Facades\Cache;
 class CustomerController extends Controller
 {
     public function index()
@@ -125,7 +126,7 @@ class CustomerController extends Controller
                 $customer->id,
                 $data['verification_token']
             );
-            
+           
             Log::info('QR Generated Successfully');
 
             // $customer->notify(new VerifyEmailNotification($data['verification_token']));
@@ -151,6 +152,7 @@ class CustomerController extends Controller
             //         'user_id' => $customer->id
             //     ]);
             // }
+            Cache::tags(['customers'])->flush();
             return response()->json([
                 'status' => true,
                 'message' => 'User Register Successfully.Plase check your email for verification link.',
@@ -214,7 +216,7 @@ class CustomerController extends Controller
 
             $customer = Customers::findOrFail($id);
             $customer->update($data);
-
+            Cache::tags(['customers'])->flush();
             return response()->json([
                 'status' => true,
                 'message' => 'User Updated Successfully',
@@ -402,7 +404,7 @@ class CustomerController extends Controller
             'email_verified_at' => now(),
             'verification_token' => null
         ]);
-
+        Cache::tags(['customers'])->flush();
         $frontendLoginUrl = env('FRONTEND_LOGIN_URL', 'https://thefastbill.com');
         return redirect($frontendLoginUrl . '/login');
     }
@@ -429,6 +431,8 @@ class CustomerController extends Controller
             $customer->update([
                 'verification_token' => $newToken
             ]);
+
+            Cache::tags(['customers'])->flush();
 
             // Send verification email
             try {
@@ -1741,8 +1745,10 @@ class CustomerController extends Controller
     public function createQR($id)
     {
         try {
+
             $customer = Customers::find($id);
-            $qrUrl = env('FRONTEND_ADMIN_URL', 'https://thefastbill.com') . '/products/' . $customer->id;
+            $customer_id = Crypt::encryptString($customer->id);
+            $qrUrl = env('FRONTEND_ADMIN_URL', 'https://thefastbill.com') . '/products/' . $customer_id;
 
             $renderer = new ImageRenderer(
                 new RendererStyle(200),

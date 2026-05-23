@@ -13,6 +13,7 @@ use BaconQrCode\Writer;
 use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Crypt;
 class CustomerRegistrationJob implements ShouldQueue
 {
     use Dispatchable, Queueable;
@@ -38,7 +39,8 @@ class CustomerRegistrationJob implements ShouldQueue
         if (!$customer) {
             return;
         }
-            $qrUrl = env('FRONTEND_ADMIN_URL', 'https://thefastbill.com') . '/products/' . $customer->id;
+        $id = Crypt::encryptString($customer->id);
+            $qrUrl = env('FRONTEND_ADMIN_URL', 'https://thefastbill.com') . '/products/' . $id;
             $renderer = new ImageRenderer(
             new RendererStyle(200),
             new SvgImageBackEnd()

@@ -102,6 +102,71 @@ class InvoiceController extends Controller
         }
     }
 
+    public function products(Request $request)
+    {
+        $user = Auth::id();
+        $search = $request->search;
+
+        $customer = Customers::findOrFail($user);
+
+        if ($customer->plan_id == null || $customer->is_active == false) {
+            return response()->json([
+                'status' => false,
+                'message' => 'You do not have any active plan. Please upgrade your plan.'
+            ]);
+        }
+
+        $permissions = DB::table('plan_permission_details as ppd')
+            ->join('plan_permission as pp', 'pp.id', '=', 'ppd.permission_id')
+            ->where('ppd.plan_id', $customer->plan_id)
+            ->pluck('pp.slug');
+
+        $hasStockPermission = $permissions->contains('stock-management');
+
+        $query = Products::where('user_id', $user)
+            ->with([
+                'brand',
+                'category',
+                'unit'
+            ])
+            ->where('is_active', true)
+
+            ->when($search, function ($query) use ($search) {
+
+                $query->where(function ($q) use ($search) {
+
+                    $q->where('name', 'like', "%{$search}%")
+                        ->orWhere('id', 'like', "%{$search}%")
+                        ->orWhere('barcode', 'like', "%{$search}%")
+                        ->orWhere('sku', 'like', "%{$search}%")
+
+                        ->orWhereHas('brand', function ($brand) use ($search) {
+                            $brand->where('name', 'like', "%{$search}%");
+                        })
+
+                        ->orWhereHas('category', function ($category) use ($search) {
+                            $category->where('name', 'like', "%{$search}%");
+                        })
+
+                        ->orWhereHas('unit', function ($unit) use ($search) {
+                            $unit->where('name', 'like', "%{$search}%");
+                        });
+                });
+            });
+
+        if ($hasStockPermission) {
+
+            $query->with('stocks')
+                ->whereHas('stocks');
+        }
+
+        $products = $query->paginate(5);
+
+        return response()->json([
+            'status' => true,
+            'data' => $products
+        ]);
+    }
 
     public function store(Request $request)  // bill generate data store
     {
@@ -183,8 +248,8 @@ class InvoiceController extends Controller
                 }
                 // $price = $item['price'];
                 $qty = $item['quantity'];
-                $discount = ((($price * $qty) * $item['discount'] ?? 0) / 100);
-                $gst = (((($price * $qty) - $discount) * $item['gst'] ?? 0) / 100);
+                $discount = ((($price * $qty) * ($item['discount'] ?? 0)) / 100);
+                $gst = (((($price * $qty) - $discount) * ($item['gst'] ?? 0)) / 100);
 
                 $itemTotal = ((($price * $qty) - $discount) + $gst);
 
@@ -217,7 +282,6 @@ class InvoiceController extends Controller
                         ->first();
 
                     $price = $stock->selling_price;
-                    
                 } else {
                     $product = Products::find($item['product_id']);
                     $price = $product->selling_price ?? 0;
@@ -225,7 +289,7 @@ class InvoiceController extends Controller
                 // $price = $item['price'];
                 $qty = $item['quantity'];
 
-                $discount = ((($price * $qty) * $item['discount'] ?? 0) / 100);
+                $discount = ((($price * $qty) * ($item['discount'] ?? 0)) / 100);
                 $gst = (((($price * $qty) - $discount) * $item['gst'] ?? 0) / 100);
                 $totalPrice = ((($price * $qty) - $discount) + $gst);
                 $product = Products::find($item['product_id']);
@@ -369,10 +433,30 @@ class InvoiceController extends Controller
                     ], 404);
                 }
                 $billPaymentHistory = BillPaymentHistory::where('admin_id', $userId)->where('invoice_id', $id)->orderBy('id', 'asc')->first();
+                // $bill_summery = InvoiceItems::where('invoice_id', $id)->where('user_id', $userId)->get();
+                $billSummary = InvoiceItems::where('invoice_id', $id)
+                    ->where('user_id', $userId)
+                    ->selectRaw('
+                        SUM(price * quantity) as subtotal,
+                        SUM(((price * quantity) * discount) / 100) as total_discount,
+                        SUM((((price * quantity) - (((price * quantity) * discount) / 100)) * gst) / 100) as total_gst,
+                        SUM(total_price) as grand_total
+                    ')
+                    ->first();
+
+                $packages = PackageInvoice::where('invoice_id', $id)
+                    ->where('user_id', $userId)
+                    ->selectRaw('COALESCE(
+                        SUM(package_price * quantity),0) as total_package_price
+                    ')
+                    ->first();
+
+                $billSummary['packagess'] = $packages;
                 $bill['payment_method'] = $billPaymentHistory['payment_method'] ?? null;
                 return [
                     'status' => true,
                     'message' => 'Single Bill',
+                    'bill_summary' => $billSummary,
                     'data' => $bill,
                     'bill_payment_history' => $billPaymentHistory
                 ];
@@ -608,8 +692,8 @@ class InvoiceController extends Controller
 
                 $price = $item['price'];
                 $qty = $item['quantity'];
-                $discount = ((($price * $qty) * $item['discount'] ?? 0) / 100);
-                $gst = (((($price * $qty) - $discount) * $item['gst'] ?? 0) / 100);
+                $discount = ((($price * $qty) * ($item['discount'] ?? 0)) / 100);
+                $gst = (((($price * $qty) - $discount) * ($item['gst'] ?? 0)) / 100);
 
                 $itemTotal = ((($price * $qty) - $discount) + $gst);
 
@@ -633,8 +717,8 @@ class InvoiceController extends Controller
                 $price = $item['price'];
                 $qty = $item['quantity'];
 
-                $discount = ((($price * $qty) * $item['discount'] ?? 0) / 100);
-                $gst = (((($price * $qty) - $discount) * $item['gst'] ?? 0) / 100);
+                $discount = ((($price * $qty) * ($item['discount'] ?? 0)) / 100);
+                $gst = (((($price * $qty) - $discount) * ($item['gst'] ?? 0)) / 100);
                 $totalPrice = ((($price * $qty) - $discount) + $gst);
 
                 InvoiceItems::create([
@@ -779,8 +863,8 @@ class InvoiceController extends Controller
                 }
                 // $price = $item['price'];
                 $qty = $item['quantity'];
-                $discount = ((($price * $qty) * $item['discount'] ?? 0) / 100);
-                $gst = (((($price * $qty) - $discount) * $item['gst'] ?? 0) / 100);
+                $discount = ((($price * $qty) * ($item['discount'] ?? 0)) / 100);
+                $gst = (((($price * $qty) - $discount) * ($item['gst'] ?? 0)) / 100);
 
                 $itemTotal = ((($price * $qty) - $discount) + $gst);
 
@@ -793,6 +877,7 @@ class InvoiceController extends Controller
             Log::info('due_amount: ' . $due_amount);
             $invoice->update([
                 'customer_id'   => $request->customer_id,
+                'store_id'      => $request->store_id,
                 'total_amount'  => $totalAmount,
                 'total_items'   => $totalItems,
                 'paid_amount'   => $request->paid_amount,
@@ -822,8 +907,8 @@ class InvoiceController extends Controller
                 }
                 $qty = $item['quantity'];
                 $product = Products::find($item['product_id']);
-                $discount = ((($price * $qty) * $item['discount'] ?? 0) / 100);
-                $gst = (((($price * $qty) - $discount) * $item['gst'] ?? 0) / 100);
+                $discount = ((($price * $qty) * ($item['discount'] ?? 0)) / 100);
+                $gst = (((($price * $qty) - $discount) * ($item['gst'] ?? 0)) / 100);
                 $totalPrice = ((($price * $qty) - $discount) + $gst);
                 if ($exist) {
                     if ($hasStockPermission) {
@@ -865,7 +950,7 @@ class InvoiceController extends Controller
                         $gstCollections->update([
                             'purchase_price' => $product->purchase_price,
                             'purchase_gst_percentage' => $product->purchase_gst_percentage ?? 0,
-                            'purchase_gst_amount' => $item['discount'] ?? 0,
+                            'purchase_gst_amount' => $product->purchase_price * $product->purchase_gst_percentage / 100 ?? 0, //$item['discount'] ?? 0,
                             'selling_price'  => $item['price'] ?? 0,
                             'selling_discount_percentage' => $item['discount'] ?? 0,
                             'selling_gst_percentage' => $item['gst'] ?? 0,
@@ -882,7 +967,7 @@ class InvoiceController extends Controller
                             'customer_id' => $request->customer_id,
                             'purchase_price' => $product->purchase_price,
                             'purchase_gst_percentage' => $product->purchase_gst_percentage ?? 0,
-                            'purchase_gst_amount' => $item['discount'] ?? 0,
+                            'purchase_gst_amount' => $product->purchase_price * $product->purchase_gst_percentage / 100 ?? 0, //$item['discount'] ?? 0,
                             'selling_price'  => $item['price'] ?? 0,
                             'selling_discount_percentage' => $item['discount'] ?? 0,
                             'selling_gst_percentage' => $item['gst'] ?? 0,

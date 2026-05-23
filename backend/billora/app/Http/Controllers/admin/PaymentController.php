@@ -91,7 +91,7 @@ class PaymentController extends Controller
         if (str_ends_with($sessionId, 'paymentpayment')) {
             $sessionId = str_replace('paymentpayment', '', $sessionId);
         }
-
+        Cache::tags(['plan_purchase_history'])->flush();
         $encodedSessionId = urlencode($sessionId);
         // Create correct payment URL
         $paymentUrl = "https://sandbox.cashfree.com/pg/checkout?session_id=" . $encodedSessionId;
@@ -181,6 +181,7 @@ class PaymentController extends Controller
                 'is_active' => true
             ]);
             Cache::tags(['plan_purchase_history_' . $customer->id])->flush();
+            Cache::tags(['plan_purchase_history'])->flush();
             // Generate mail
             $adminMail = $this->adminMail(
                 $customer->id,
