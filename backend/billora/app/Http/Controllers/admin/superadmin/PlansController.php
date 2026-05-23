@@ -264,10 +264,14 @@ class PlansController extends Controller
 
                 $planPurchaseHistory = PlanPurchaseHistory::when($search, function ($query) use ($search) {
                         $query->where('id', 'like', '%' . $search . '%')
-                        ->orWhere('payment_id', 'like', '%' . $search . '%');
+                        ->orWhere('payment_id', 'like', '%' . $search . '%')
+                        ->orWhereHas('plan', function ($q) use ($search) {
+                            $q->where('name', 'like', "%{$search}%");
+                        });
                     })
                     ->latest()
-                    ->paginate(10);
+                    ->paginate(10)
+                    ->withQueryString();
                 $totalplanHistory = PlanPurchaseHistory::count();
                 $successPayment = PlanPurchaseHistory::where('payment_status', 'success')->count();
                 $planExpire = PlanPurchaseHistory::where('payment_status', 'pending')->count();
