@@ -899,7 +899,7 @@
 
     <!-- jQuery (Required) -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <!-- Summernote JS -->
     <script src="https://cdn.jsdelivr.net/npm/summernote@0.8.20/dist/summernote-lite.min.js"></script>
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
@@ -1114,7 +1114,13 @@
             if (faqItems.length > 1) {
                 button.closest('.faq-item').remove();
             } else {
-                alert('At least one FAQ is required');
+                // alert('At least one FAQ is required');
+                Swal.fire({
+                icon: "warning",
+                title: "Cannot Remove",
+                text: "At least one FAQ is required!",
+                });
+
             }
         }
 

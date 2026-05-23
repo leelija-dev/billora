@@ -26,7 +26,8 @@ class AuthController extends Controller
         if(!Hash::check($credentials['password'], $admin->password)){
             return response()->json(['message' => 'Invalid credentials'], 401);
         }
-        
+        $request->session()->regenerate();
+
         //last login
         $admin->update(['last_login_at' => now()]);
         //login user session
