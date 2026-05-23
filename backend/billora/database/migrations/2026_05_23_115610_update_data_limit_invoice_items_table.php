@@ -14,6 +14,7 @@ return new class extends Migration
         Schema::table('invoice_items', function (Blueprint $table) {
             $table->decimal('price', 12, 2)->default(0)->change();
             $table->decimal('total_price', 12, 2)->default(0)->change();
+            $table->unsignedBigInteger('stock_id')->nullable()->after('product_id');
         });
     }
 
@@ -25,6 +26,7 @@ return new class extends Migration
         Schema::table('invoice_items', function (Blueprint $table) {
             $table->decimal('price', 10, 2)->default(0)->change();
             $table->decimal('total_price', 10, 2)->default(0)->change();
+            $table->dropColumn('stock_id');
         });
     }
 };

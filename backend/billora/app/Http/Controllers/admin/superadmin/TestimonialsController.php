@@ -24,7 +24,7 @@ class TestimonialsController extends Controller
                 ->orWhere('message', 'like', '%' . $search . '%');
         })
             ->latest()
-            ->paginate(15)
+            ->paginate(10)
             ->withQueryString();
         $totalTestimonials = Testimonials::count();
         $activeTestimonials = Testimonials::where('is_active', true)->count();
