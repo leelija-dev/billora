@@ -1589,78 +1589,7 @@
                     <a href="{{ route('admin.customers.index') }}"><button class="see-all-btn">See All
                             Customers</button></a>
                 </div>
-
-                <div class="info-card">
-                    <div class="card-header-custom">
-                        <div class="card-icon">💳</div>
-                        <span>Plans</span>
-                    </div>
-                    <div class="item-list" id="plansList">
-                        @php
-                            $planCount = 0;
-                        @endphp
-                        @foreach ($toalPlan as $plan)
-                            <a href="{{ route('admin.plans.edit', $plan->id) }}">
-                                <div class="list-item">
-                                    <div>
-                                        <div class="item-name">{{ $plan->name ? ucfirst($plan->name) : '' }}</div>
-                                        <div class="item-detail">{!! $plan->description ? ucfirst(Str::limit($plan->description, 28)) : '' !!}</div>
-                                    </div>
-                                    @if ($plan->is_active)
-                                        <span class="item-status status-active">Active</span>
-                                    @else
-                                        <span class="item-status status-inactive">Inactive</span>
-                                    @endif
-                                </div>
-                            </a>
-                            @php $planCount++ @endphp
-                            @if ($planCount == 5)
-                                @break
-                            @endif
-                        @endforeach
-                        @if ($planCount === 0)
-                            <div class="list-item-empty">
-                                No Plans found
-                            </div>
-                        @endif
-
-                    </div>
-                    <a href="{{ route('admin.plans.index') }}"><button class="see-all-btn">See All Plans</button></a>
-                </div>
-
-                <div class="info-card">
-                    <div class="card-header-custom">
-                        <div class="card-icon">🔄</div>
-                        <span>Recent Plan Purchases</span>
-                    </div>
-                    <div class="item-list" id="ordersList">
-
-                        @php $orderCount = 0; @endphp
-                        @foreach ($totalPlanPurchase as $order)
-                            <div class="list-item">
-                                <div>
-                                    <div class="item-name">#{{ $order->id }} - {{ $order->plan->name }}</div>
-                                    <div class="item-detail">{{ $order->user->email ? $order->user->email : '' }}</div>
-                                </div>
-                                <span
-                                    class="item-status status-completed">{{ $order->payment_status ? ucfirst($order->payment_status) : '' }}</span>
-                            </div>
-                            @php $orderCount++ @endphp
-                            @if ($orderCount == 5)
-                                @break
-                            @endif
-                        @endforeach
-                        @if ($orderCount === 0)
-                            <div class="list-item-empty">
-                                No Orders found
-                            </div>
-                        @endif
-
-                    </div>
-                    <a href="{{ route('admin.plans.purchase-history') }}"><button class="see-all-btn">See All
-                            Orders</button></a>
-                </div>
-                <div class="info-card">
+                 <div class="info-card">
                     <div class="card-header-custom">
                         <div class="card-icon">🔄</div>
                         <span>Recent Contacts</span>
@@ -1712,6 +1641,77 @@
                     <a href="{{ route('admin.contacts.index') }}"><button class="see-all-btn">See All
                             Contacts</button></a>
                 </div>
+
+                <div class="info-card">
+                    <div class="card-header-custom">
+                        <div class="card-icon">🔄</div>
+                        <span>Recent Plan Purchases</span>
+                    </div>
+                    <div class="item-list" id="ordersList">
+
+                        @php $orderCount = 0; @endphp
+                        @foreach ($totalPlanPurchase as $order)
+                            <div class="list-item">
+                                <div>
+                                    <div class="item-name">#{{ $order->id }} - {{ $order->plan->name }}</div>
+                                    <div class="item-detail">{{ $order->user->email ? $order->user->email : '' }}</div>
+                                </div>
+                                <span
+                                    class="item-status status-completed">{{ $order->payment_status ? ucfirst($order->payment_status) : '' }}</span>
+                            </div>
+                            @php $orderCount++ @endphp
+                            @if ($orderCount == 5)
+                                @break
+                            @endif
+                        @endforeach
+                        @if ($orderCount === 0)
+                            <div class="list-item-empty">
+                                No Orders found
+                            </div>
+                        @endif
+
+                    </div>
+                    <a href="{{ route('admin.plans.purchase-history') }}"><button class="see-all-btn">See All
+                            Orders</button></a>
+                </div>
+                <div class="info-card">
+                    <div class="card-header-custom">
+                        <div class="card-icon">💳</div>
+                        <span>Plans</span>
+                    </div>
+                    <div class="item-list" id="plansList">
+                        @php
+                            $planCount = 0;
+                        @endphp
+                        @foreach ($toalPlan as $plan)
+                            <a href="{{ route('admin.plans.edit', $plan->id) }}">
+                                <div class="list-item">
+                                    <div>
+                                        <div class="item-name">{{ $plan->name ? ucfirst($plan->name) : '' }}</div>
+                                        <div class="item-detail">{!! $plan->description ? ucfirst(Str::limit($plan->description, 28)) : '' !!}</div>
+                                    </div>
+                                    @if ($plan->is_active)
+                                        <span class="item-status status-active">Active</span>
+                                    @else
+                                        <span class="item-status status-inactive">Inactive</span>
+                                    @endif
+                                </div>
+                            </a>
+                            @php $planCount++ @endphp
+                            @if ($planCount == 5)
+                                @break
+                            @endif
+                        @endforeach
+                        @if ($planCount === 0)
+                            <div class="list-item-empty">
+                                No Plans found
+                            </div>
+                        @endif
+
+                    </div>
+                    <a href="{{ route('admin.plans.index') }}"><button class="see-all-btn">See All Plans</button></a>
+                </div>
+               
             </div>
 
             <div class="footer-note">

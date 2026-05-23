@@ -677,7 +677,14 @@
                             <td class="text-center">{{ $permission->slug  ?? ''}}</td>
                             <td class="text-center">{{ $permission->description }}</td>
                             <td class="text-center">
-                                
+                                <span class="px-2 py-1 text-xs font-semibold rounded-full 
+                                    {{ $permission->is_active == 1 
+                                        ? 'bg-green-100 text-green-700' 
+                                        : 'bg-red-100 text-red-700' }}">
+                                        
+                                    {{ $permission->is_active == 1 ? 'Active' : 'Inactive' }}
+
+                                </span>
                             </td>
                             <td class="text-center">
                                 {{ $permission->created_at->format('M d, Y h:i A') }}

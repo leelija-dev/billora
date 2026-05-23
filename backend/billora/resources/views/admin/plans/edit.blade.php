@@ -815,7 +815,7 @@
                 <!-- Form Actions -->
                 <div class="form-actions">
                     <a href="{{ route('admin.plans.index') }}"><button type="button"
-                            class="btn btn-secondary">Cancel</button></a>
+                            class="btn btn-secondary" style="color:white;background-color:red;">Cancel</button></a>
                     <button type="submit" class="btn btn-primary">
                         <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: white;">
                             <path
@@ -832,7 +832,7 @@
 
     <!-- jQuery (Required) -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <!-- Summernote JS -->
     <script src="https://cdn.jsdelivr.net/npm/summernote@0.8.20/dist/summernote-lite.min.js"></script>
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
@@ -865,7 +865,11 @@
             if (container.children.length > 1) {
                 featureItem.remove();
             } else {
-                alert('You need at least one feature');
+                Swal.fire({
+                icon: "warning",
+                title: "Cannot Remove",
+                text: "You need at least one feature!",
+                });
             }
         }
     </script>

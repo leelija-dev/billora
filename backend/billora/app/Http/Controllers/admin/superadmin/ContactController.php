@@ -35,7 +35,6 @@ class ContactController extends Controller
           'contacts' => $contacts
         ];
     });
-
     return view('admin.contact_us.index', $data);
   }
     public function view($id){

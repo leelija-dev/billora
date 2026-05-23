@@ -739,18 +739,18 @@
             </div>
 
             <!-- TABS SECTION -->
-            <div class="tabs-section-modern">
+            {{-- <div class="tabs-section-modern">
                 <div class="tabs-container">
-                    <button class="tab-btn-modern {{ !request('status') || request('status') == 'all' ? 'active' : '' }}"
+                    <button class="tab-btn-modern {{ !request('view_status') || request('view_status') == 'all' ? 'active' : '' }}"
                         onclick="filterByStatus('all')">All Messages</button>
-                    <button class="tab-btn-modern {{ request('status') == 'unread' ? 'active' : '' }}"
-                        onclick="filterByStatus('unread')">Unread</button>
-                    <button class="tab-btn-modern {{ request('status') == 'read' ? 'active' : '' }}"
-                        onclick="filterByStatus('read')">Read</button>
-                    <button class="tab-btn-modern {{ request('status') == 'replied' ? 'active' : '' }}"
+                    <button class="tab-btn-modern {{ request('view_status') == '0' ? 'active' : '' }}"
+                        onclick="filterByStatus('0')">Unread</button>
+                    <button class="tab-btn-modern {{ request('view_status') == '1' ? 'active' : '' }}"
+                        onclick="filterByStatus('1')">Read</button>
+                    <button class="tab-btn-modern {{ request('view_status') == 'replied' ? 'active' : '' }}"
                         onclick="filterByStatus('replied')">Replied</button>
                 </div>
-            </div>
+            </div> --}}
 
             <!-- SELECTION TOOLBAR -->
             <div class="selection-toolbar" id="selectionToolbar" style="display: none;">
@@ -910,15 +910,15 @@
         }
 
         // Filter by Status
-        function filterByStatus(status) {
-            let url = new URL(window.location.href);
-            if (status === 'all') {
-                url.searchParams.delete('status');
-            } else {
-                url.searchParams.set('status', status);
-            }
-            window.location.href = url.toString();
-        }
+        // function filterByStatus(status) {
+        //     let url = new URL(window.location.href);
+        //     if (status === 'all') {
+        //         url.searchParams.delete('view_status');
+        //     } else {
+        //         url.searchParams.set('view_status', status);
+        //     }
+        //     window.location.href = url.toString();
+        // }
 
         // Select All functionality
         const selectAllCheckbox = document.getElementById('select_all');

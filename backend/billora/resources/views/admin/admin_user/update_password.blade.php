@@ -702,7 +702,7 @@
                 <div class="form-actions">
 
                     <!-- Cancel Button -->
-                    <a href="{{ route('admin.admin-users.index') }}" class="btn btn-secondary">
+                    <a href="{{ route('admin.admin-users.index') }}" class="btn btn-secondary" style="color:white;background-color:red;">
                         Cancel
                     </a>
 

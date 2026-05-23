@@ -116,7 +116,7 @@ class BillCustomerController extends Controller
                     'created_by'    => $data['created_by']
                 ]
             );
-                Cache::tags(['bill_customers_user_' . $user])->flush();
+                Cache::tags(['bill_customers_user_' . $user,'billing_user_' . $user,'single_invoice_' . $user])->flush();
             return response()->json([
                 'status' => true,
                 'message' => 'Bill Customer Created Successfully',
@@ -229,7 +229,9 @@ class BillCustomerController extends Controller
             $billCustomer->update($data);
             Cache::tags([
                 'bill_customers_user_' . $user,
-                'bill_customer_show_' . $user
+                'bill_customer_show_' . $user,
+                'billing_user_' . $user,
+                'single_invoice_' . $user
             ])->flush();
             return response()->json([
                 'status'    => true,
@@ -269,7 +271,9 @@ class BillCustomerController extends Controller
             $billCustomer->delete();
               Cache::tags([
                 'bill_customers_user_' . $user,
-                'bill_customer_show_' . $user
+                'bill_customer_show_' . $user,
+                'billing_user_' . $user,
+                'single_invoice_' . $user
             ])->flush();
             return response()->json([
                 'status'    => true,
@@ -325,7 +329,9 @@ class BillCustomerController extends Controller
             $billCustomer->restore();
               Cache::tags([
                 'bill_customers_user_' . $user,
-                'bill_customer_show_' . $user
+                'bill_customer_show_' . $user,
+                'billing_user_' . $user,
+                'single_invoice_' . $user
             ])->flush();
             return response()->json([
                 'status'    => true,
@@ -361,7 +367,9 @@ class BillCustomerController extends Controller
             $billCustomer->forceDelete();
               Cache::tags([
                 'bill_customers_user_' . $user,
-                'bill_customer_show_' . $user
+                'bill_customer_show_' . $user,
+                'billing_user_' . $user,
+                'single_invoice_' . $user
             ])->flush();
             return response()->json([
                 'status'    => true,
@@ -456,7 +464,9 @@ class BillCustomerController extends Controller
             DB::commit();
             Cache::tags([
                 'bill_customers_user_' . $user,
-                'bill_customer_show_' . $user
+                'bill_customer_show_' . $user,
+                'billing_user_' . $user,
+                'single_invoice_' . $user
             ])->flush();
             return response()->json([
                 'status'    => true,
