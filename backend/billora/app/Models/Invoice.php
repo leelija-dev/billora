@@ -39,4 +39,7 @@ class Invoice extends Model
 public function packages(){
     return $this->belongsTo(PackageInvoice::class , 'id' , 'invoice_id');
 }
+public  function store(){
+    return $this->belongsTo(Store::class,'store_id');
+}
 }

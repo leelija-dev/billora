@@ -117,7 +117,7 @@ class StoreController extends Controller
         }
         try {
             $store = Store::create($store);
-            Cache::tags(['store_user_'.$user])->flush();
+            Cache::tags(['store_user_'.$user,'billing_user_' . $user,'single_invoice_' . $user])->flush();
             return response()->json([
                 'status' => true,
                 'message' => 'Store Created Successfully',
@@ -136,7 +136,7 @@ class StoreController extends Controller
 
             $userId = Auth::user()->id;
             $customer =  Customers::findOrFail($userId);
-            Cache::tags(['store_user_'.$userId])->flush();
+            Cache::tags(['store_user_'.$userId,'billing_user_' . $userId,'single_invoice_' . $userId])->flush();
             if ($customer->plan_id == null || $customer->is_active == false) {
                 return response()->json([
                     'status' => false,
@@ -217,7 +217,7 @@ class StoreController extends Controller
                 $data['logo'] = 'logos/' . $fileName;
             }
             $store->update($data);
-            Cache::tags(['store_user_'.$user])->flush();
+            Cache::tags(['store_user_'.$user,'billing_user_'.$user,'single_invoice_' . $user])->flush();
             return response()->json([
                 'status' => true,
                 'message' => 'Store Updated Successfully',
@@ -241,8 +241,9 @@ class StoreController extends Controller
                     'message' => 'You do not have any active plan. Please upgrade your plan.'
                 ]);
             }
-            $store = Store::where('user_id', $user)->where('id', $id)->first();
+            $store = Store::where('user_id', $user)->where('id', $id)->firstOrFail();
             $store->delete();
+            Cache::tags(['store_user_'.$user,'billing_user_' . $user,'single_invoice_' . $user])->flush();
             return response()->json([
                 'status' => true,
                 'message' => 'Store Deleted Successfully',
@@ -251,7 +252,8 @@ class StoreController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'status' => false,
-                'message' => $e->getMessage()
+                'user' => $user,
+                'message' => $e->getMessage(),
             ]);
         }
     }
