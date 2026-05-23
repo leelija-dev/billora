@@ -880,8 +880,9 @@
 
                 <!-- Form Actions -->
                 <div class="form-actions">
-                    <button type="button" class="btn btn-white" style="background: red;"><span
-                            style="color: white">Cancel</span></button>
+                    <a href="{{route('admin.blogs.index')}}">
+                    <button type="button" class="btn btn-white" style="color:white; background-color: red;"><span
+                            style="color: white">Cancel</span></button></a>
                     <button type="submit" class="btn btn-primary">
                         <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: white;">
                             <path
@@ -898,7 +899,7 @@
 
     <!-- jQuery (Required) -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <!-- Summernote JS -->
     <script src="https://cdn.jsdelivr.net/npm/summernote@0.8.20/dist/summernote-lite.min.js"></script>
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
@@ -1113,7 +1114,13 @@
             if (faqItems.length > 1) {
                 button.closest('.faq-item').remove();
             } else {
-                alert('At least one FAQ is required');
+                // alert('At least one FAQ is required');
+                Swal.fire({
+                icon: "warning",
+                title: "Cannot Remove",
+                text: "At least one FAQ is required!",
+                });
+
             }
         }
 

@@ -308,6 +308,7 @@ class InvoiceController extends Controller
                     'user_id'       => $request->user_id,
                     'invoice_id'    => $invoice->id,
                     'product_id'    => $item['product_id'],
+                    'stock_id'      => $item['stock_id'] ?? null,
                     'quantity'      => $qty,
                     'item_count'    => $qty,
                     'unit_id'       => $item['unit_id'],
@@ -432,7 +433,7 @@ class InvoiceController extends Controller
                         'message' => 'You do not have any active plan. Please upgrade your plan.'
                     ]);
                 }
-                $bill = Invoice::with('invoiceItems', 'packages','store','customer')
+                $bill = Invoice::with('invoiceItems', 'packages','store','customer','invoiceItems.stock')
                     ->where('user_id', $userId)
                     ->where('id', $id)
                     ->first();
@@ -994,7 +995,8 @@ class InvoiceController extends Controller
                         'user_id'       => $data['user_id'],
                         'invoice_id'    => $invoice->id,
                         'product_id'    => $item['product_id'],
-                        'quantity'      => $item['quantity'],
+                        'stock_id'      => $item['stock_id'] ?? null,
+                        'quantity'      => $item['quantity'],  
                         'item_count'    => $item['quantity'],
                         'unit_id'       => $item['unit_id'],
                         'price'         => $item['price'] ?? 0,
@@ -1174,6 +1176,7 @@ class InvoiceController extends Controller
 
                 return Invoice::with([
                     'invoiceItems.product',
+                    'invoiceItems.stock',
                     'customer'
                 ])
                     ->where('customer_id', $id)

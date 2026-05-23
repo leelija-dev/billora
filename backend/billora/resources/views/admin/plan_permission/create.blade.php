@@ -644,8 +644,8 @@
             <!-- Form Actions -->
             <div class="form-actions-modern">
                 <a href="{{ route('admin.plan-permission.index') }}">
-                    <button type="button" class="btn-modern btn-secondary-modern">
-                        ❌ Cancel
+                    <button type="button" class="btn-modern btn-secondary-modern" style="color:white;background-color:red;">
+                         Cancel
                     </button>
                 </a>
                 <button type="submit" class="btn-modern btn-primary-modern">
