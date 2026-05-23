@@ -79,7 +79,7 @@ class ProductsController extends Controller
 
                     $relations['stocks'] = function ($query) {
 
-                        $query->select('id', 'product_id');
+                        // $query->select('id', 'product_id');
 
                     };
 
