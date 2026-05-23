@@ -262,7 +262,7 @@ class InvoiceController extends Controller
                 $discount = ((($price * $qty) * ($item['discount'] ?? 0)) / 100);
                 $gst = (((($price * $qty) - $discount) * ($item['gst'] ?? 0)) / 100);
 
-                $itemTotal = ((($price * $qty) - $discount) + $gst);
+                $itemTotal = ((($price * $qty) - $discount) + $gst); 
 
                 $totalAmount += $itemTotal;
             }
