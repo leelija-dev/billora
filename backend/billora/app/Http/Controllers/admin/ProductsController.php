@@ -1220,4 +1220,19 @@ class ProductsController extends Controller
             ]);
         }
     }
+    public function decript($encryptedId)
+    {
+        try {
+            $decryptedId = Crypt::decryptString($encryptedId);
+            return response()->json([
+                'status' => true,
+                'decrypted_id' => $decryptedId
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => false,
+                'message' => $e->getMessage()
+            ]);
+        }
+    }
 }
