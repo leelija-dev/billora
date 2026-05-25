@@ -74,9 +74,9 @@ export const validateScheduleType = (type) => {
   return !type || /^[A-Z]{1,5}$/.test(type)
 }
 
-// GST HSN Code validation (numeric only, up to 12 digits)
+// GST HSN Code validation (numeric only, up to 8 digits)
 export const validateGSTHSNCode = (code) => {
-  return !code || /^[0-9]{1,12}$/.test(code)
+  return !code || /^[0-9]{1,8}$/.test(code)
 }
 
 // Percentage validation (0-100)
@@ -292,9 +292,9 @@ export const validationRules = {
     message: 'Schedule type must be 1-5 uppercase letters'
   },
   gstHsnCode: { 
-    pattern: /^[0-9]{1,12}$/, 
-    maxLength: 12,
-    message: 'HSN code must contain only numbers (1-12 digits)'
+    pattern: /^[0-9]{1,8}$/, 
+    maxLength: 8,
+    message: 'HSN code must contain only numbers (1-8 digits)'
   },
   
   // Numeric fields

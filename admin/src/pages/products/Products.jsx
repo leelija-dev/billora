@@ -38,6 +38,7 @@ import ProductModal from "../../components/features/Products/ProductModal";
 import Select from "../../components/common/Select/Select";
 import ProductForm from "../../components/features/Products/ProductForm";
 import StockAddModal from "../../components/common/CreateModals/StockAddModal";
+import { usePermissionStore } from "../../store/permissionStore";
 
 const Products = () => {
   const {
@@ -56,6 +57,11 @@ const Products = () => {
     updateProduct,
     setFilters,
   } = useProductStore();
+  const { canAccess } = usePermissionStore();
+
+  const hasStockPermission = canAccess("stock-management");
+
+  
 
   // Refs to track initialization
   const initializedRef = useRef(false);
@@ -794,7 +800,9 @@ const Products = () => {
         const lowStockThreshold = parseFloat(row.minimum_stock_quantity) || 10;
 
         return (
-          <div className="space-y-2">
+          <>
+          {hasStockPermission ? (
+            <div className="space-y-2">
             <div className="flex items-center gap-2">
               <div className="w-16 h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
                 <motion.div
@@ -866,6 +874,8 @@ const Products = () => {
               </div>
             )}
           </div>
+          ):(<div className="text-sm text-gray-500">Not applicable</div>)}
+          </>
         );
       },
     },

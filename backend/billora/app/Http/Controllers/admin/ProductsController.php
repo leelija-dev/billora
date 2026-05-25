@@ -257,7 +257,7 @@ class ProductsController extends Controller
     }
         $user = Auth::user()->id;
         try{
-        $product = Products::where('user_id', $user)->where('id', $id)->with(['images','category','brand','unit','user','stocks'])->firstOrFail();
+        $product = Products::where('user_id', $user)->where('id', $id)->with(['images','category','brand','unit','user','stocks','variants'])->firstOrFail();
         if(!$product){
             return response()->json([
                 'status' => false,

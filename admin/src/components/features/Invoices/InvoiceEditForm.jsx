@@ -228,6 +228,8 @@ const InvoiceEditForm = ({
                   brand: product.brand,
                   category: product.category,
                   unit: product.unit,
+                  attributes: product.attributes || [],
+                  variants: product.variants || [],
                   price: parseFloat(stock.selling_price),
                   purchase_price: parseFloat(stock.purchase_price),
                   gst_percentage: parseFloat(product.gst_percentage),
@@ -249,6 +251,8 @@ const InvoiceEditForm = ({
                 brand: product.brand,
                 category: product.category,
                 unit: product.unit,
+                attributes: product.attributes || [],
+                variants: product.variants || [],
                 price: parseFloat(product.selling_price),
                 purchase_price: parseFloat(product.purchase_price),
                 gst_percentage: parseFloat(product.gst_percentage),
@@ -364,9 +368,6 @@ const InvoiceEditForm = ({
 
         await fetchPackages(currentUserId).catch(() => {});
 
-        // Find this section in your useEffect where rows are being mapped (around line 200-260)
-        // Replace the mapping logic with this updated version:
-
         const rows = (invoice.invoice_items || invoice.items || []).filter(
           (row) => !row.is_package,
         );
@@ -388,11 +389,18 @@ const InvoiceEditForm = ({
               const productResponse = await productsAPI.getById(
                 item.product_id,
               );
+              
               if (
                 productResponse.data?.status === true &&
                 productResponse.data?.data
               ) {
                 product = productResponse.data.data;
+                console.log('Fetched product data:', {
+                  id: product.id,
+                  name: product.name,
+                  attributes: product.attributes,
+                  variants: product.variants,
+                });
               }
             } catch (error) {
               console.error(
@@ -408,9 +416,11 @@ const InvoiceEditForm = ({
 
           if (hasStockPermission && item.stock_id) {
             try {
-              // Fetch the specific stock entry to get current quantity
               const stockResponse = await stockAPI.getById(item.stock_id);
-              console.log(`Fetched stock for stock_id ${item.stock_id}:`, stockResponse);
+              console.log(
+                `Fetched stock for stock_id ${item.stock_id}:`,
+                stockResponse,
+              );
               if (
                 stockResponse.data?.status === true &&
                 stockResponse.data?.data
@@ -420,7 +430,6 @@ const InvoiceEditForm = ({
               }
             } catch (error) {
               console.error(`Failed to fetch stock ${item.stock_id}:`, error);
-              // Fallback: try to find in stockList
               const stock = stockList.find((s) => s.id === item.stock_id);
               if (stock) {
                 currentStockQuantity = parseFloat(stock.quantity ?? 0);
@@ -428,7 +437,6 @@ const InvoiceEditForm = ({
               }
             }
           } else if (hasStockPermission && !item.stock_id) {
-            // If no stock_id but we have product, try to get from product's stock
             const stock = stockList.find(
               (s) => s.product_id === item.product_id,
             );
@@ -438,9 +446,8 @@ const InvoiceEditForm = ({
             }
           }
 
-          // The available stock for editing should be current stock + original quantity
           const availableStock = hasStockPermission
-            ? currentStockQuantity 
+            ? currentStockQuantity
             : Infinity;
 
           const unit = Array.isArray(bd.units)
@@ -452,7 +459,6 @@ const InvoiceEditForm = ({
             item.discount ?? product?.discount_percentage ?? 0,
           );
 
-          // Get product name - prioritize from fetched product
           let productName = "";
           if (product?.name) {
             productName = product.name;
@@ -467,7 +473,6 @@ const InvoiceEditForm = ({
             productName = `Product #${item.product_id}`;
           }
 
-          // Get product code
           let productCode = "";
           if (product?.sku) {
             productCode = product.sku;
@@ -479,7 +484,6 @@ const InvoiceEditForm = ({
             productCode = item.code;
           }
 
-          // Get unit name
           let unitName = "pcs";
           if (item.unit_name) {
             unitName = item.unit_name;
@@ -493,7 +497,39 @@ const InvoiceEditForm = ({
             unitName = product.unit.name;
           }
 
-          console.log("checkin .......................current:",currentStockQuantity)
+          // Extract attributes from product
+          let productAttributes = [];
+          let productVariants = [];
+
+          if (product) {
+            // Get attributes
+            if (product.attributes && Array.isArray(product.attributes)) {
+              productAttributes = product.attributes;
+            } else if (product.attribute && Array.isArray(product.attribute)) {
+              productAttributes = product.attribute;
+            }
+
+            // Get variants
+            if (product.variants && Array.isArray(product.variants)) {
+              productVariants = product.variants;
+            } else if (product.variant && Array.isArray(product.variant)) {
+              productVariants = product.variant;
+            }
+
+            // If stock entry has variant info, use that
+            if (stockEntry && stockEntry.variant_info) {
+              if (!productVariants.length && stockEntry.variant_info) {
+                productVariants = [stockEntry.variant_info];
+              }
+            }
+          }
+
+          console.log(
+            `Product ${productName} attributes:`,
+            productAttributes,
+            "variants:",
+            productVariants,
+          );
 
           mappedProducts.push({
             id: item.id,
@@ -509,11 +545,13 @@ const InvoiceEditForm = ({
             discount: discount,
             total_price: calculateItemTotal(price, qty, gst, discount),
             status: "completed",
-            stock_quantity: availableStock, // This is the maximum quantity that can be added (current stock + original quantity)
-            current_stock: currentStockQuantity, // Store the actual current stock separately
+            stock_quantity: availableStock,
+            current_stock: currentStockQuantity,
             stock_id: item.stock_id || stockEntry?.id || null,
             is_package: false,
             variant_info: item.variant_info || stockEntry?.variant_info || null,
+            attributes: productAttributes,
+            variants: productVariants,
           });
         }
         console.log("Mapped products with stock info:", mappedProducts);
@@ -541,6 +579,8 @@ const InvoiceEditForm = ({
             parseFloat(p.package_price || 0) * parseFloat(p.quantity || 1),
           stock_quantity: 0,
           stock_id: null,
+          attributes: [],
+          variants: [],
         }));
 
         initialPackageSnapshot.current = JSON.stringify(
@@ -809,6 +849,8 @@ const InvoiceEditForm = ({
         (parseFloat(selectedPackage.package_price) || 0) * packageQuantity,
       stock_quantity: 0,
       stock_id: null,
+      attributes: [],
+      variants: [],
     };
     setLineItems((prev) => [...prev, packageItem]);
     setSelectedPackage(null);
@@ -817,9 +859,7 @@ const InvoiceEditForm = ({
     toast.success(`Package added: ${packageItem.product_name}`);
   };
 
-  // Enhanced handleAddItem with stock variant support
   const handleAddItem = async (product) => {
-    // Check if product already exists in line items (considering stock_id for variants)
     const existingItemIndex = lineItems.findIndex(
       (item) =>
         !item.is_package &&
@@ -828,7 +868,6 @@ const InvoiceEditForm = ({
     );
 
     if (existingItemIndex !== -1) {
-      // Update existing item quantity
       const existingItem = lineItems[existingItemIndex];
       const newQuantity = parseFloat(existingItem.quantity) + 1;
 
@@ -864,7 +903,6 @@ const InvoiceEditForm = ({
       return;
     }
 
-    // Add new item
     let stockQuantity = null;
     let stockId = null;
 
@@ -913,6 +951,8 @@ const InvoiceEditForm = ({
       status: "completed",
       stock_quantity: stockQuantity,
       variant_info: hasStockPermission ? product.variant_info : null,
+      attributes: product.attributes || [],
+      variants: product.variants || [],
       is_package: false,
     };
 
@@ -951,7 +991,6 @@ const InvoiceEditForm = ({
       const row = { ...next[index] };
       if (field === "quantity") {
         const newQuantity = parseFloat(value) || 0;
-        // Use stock_quantity which already includes the original quantity
         if (
           row.stock_quantity !== undefined &&
           row.stock_quantity < Infinity &&
@@ -980,20 +1019,23 @@ const InvoiceEditForm = ({
     });
   };
 
- const handleIncrementQuantity = (index) => {
-  const item = lineItems[index];
-  if (item.is_package) {
-    handleUpdateItem(index, "quantity", parseFloat(item.quantity) + 1);
-    return;
-  }
-  const max = item.stock_quantity < Infinity ? item.stock_quantity : undefined;
-  const n = parseFloat(item.quantity) + 1;
-  if (max != null && n > max) {
-    toast.error(`Maximum quantity allowed: ${max}. Current stock available: ${item.current_stock || item.stock_quantity - (item.quantity - 1)}`);
-    return;
-  }
-  handleUpdateItem(index, "quantity", n);
-};
+  const handleIncrementQuantity = (index) => {
+    const item = lineItems[index];
+    if (item.is_package) {
+      handleUpdateItem(index, "quantity", parseFloat(item.quantity) + 1);
+      return;
+    }
+    const max =
+      item.stock_quantity < Infinity ? item.stock_quantity : undefined;
+    const n = parseFloat(item.quantity) + 1;
+    if (max != null && n > max) {
+      toast.error(
+        `Maximum quantity allowed: ${max}. Current stock available: ${item.current_stock || item.stock_quantity - (item.quantity - 1)}`,
+      );
+      return;
+    }
+    handleUpdateItem(index, "quantity", n);
+  };
 
   const handleDecrementQuantity = (index) => {
     const item = lineItems[index];
@@ -1559,28 +1601,129 @@ const InvoiceEditForm = ({
                                       </span>
                                     )}
                                 </div>
-                                <div className="text-sm text-gray-500 dark:text-gray-400 space-y-1">
-                                  <div>📦 SKU: {product.sku || "N/A"}</div>
+
+                                <div className="text-sm text-gray-500 dark:text-gray-400 mb-1">
+                                  📦 SKU: {product.sku || "N/A"}
+                                </div>
+
+                                <div className="flex flex-wrap gap-2 mb-2">
                                   {product.brand?.name && (
-                                    <div>🏷️ Brand: {product.brand.name}</div>
+                                    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300">
+                                      🏷️ {product.brand.name}
+                                    </span>
                                   )}
                                   {product.category?.name && (
-                                    <div>
-                                      📂 Category: {product.category.name}
-                                    </div>
+                                    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300">
+                                      📂 {product.category.name}
+                                    </span>
                                   )}
-                                  {hasStockPermission && (
-                                    <div
-                                      className={`text-xs font-medium ${product.stock_quantity > 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}
-                                    >
-                                      📊 Stock Available:{" "}
-                                      {product.stock_quantity > 0
-                                        ? product.stock_quantity
-                                        : "Out of Stock"}
-                                    </div>
+                                  {product.unit?.name && (
+                                    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300">
+                                      📦 Unit: {product.unit.name}
+                                    </span>
                                   )}
                                 </div>
+
+                                {product.attributes &&
+                                  Array.isArray(product.attributes) &&
+                                  product.attributes.length > 0 && (
+                                    <div className="mb-2">
+                                      <div className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+                                        ✨ Attributes:
+                                      </div>
+                                      <div className="flex flex-wrap gap-1">
+                                        {product.attributes.map(
+                                          (attr, attrIdx) => {
+                                            if (
+                                              typeof attr === "object" &&
+                                              attr !== null
+                                            ) {
+                                              return Object.entries(attr).map(
+                                                ([key, value]) => (
+                                                  <span
+                                                    key={`${attrIdx}-${key}`}
+                                                    className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300"
+                                                  >
+                                                    {key}: {value}
+                                                  </span>
+                                                ),
+                                              );
+                                            }
+                                            return (
+                                              <span
+                                                key={attrIdx}
+                                                className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300"
+                                              >
+                                                {attr}
+                                              </span>
+                                            );
+                                          },
+                                        )}
+                                      </div>
+                                    </div>
+                                  )}
+
+                                {product.variants &&
+                                  Array.isArray(product.variants) &&
+                                  product.variants.length > 0 && (
+                                    <div className="mb-2">
+                                      <div className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+                                        🎨 Variants:
+                                      </div>
+                                      <div className="flex flex-wrap gap-1">
+                                        {product.variants
+                                          .slice(0, 3)
+                                          .map((variant, variantIdx) => {
+                                            const variantValues = [];
+                                            if (variant.size)
+                                              variantValues.push(
+                                                `Size: ${variant.size}`,
+                                              );
+                                            if (variant.color)
+                                              variantValues.push(
+                                                `Color: ${variant.color}`,
+                                              );
+                                            if (variant.material)
+                                              variantValues.push(
+                                                `Material: ${variant.material}`,
+                                              );
+                                            if (variant.gender)
+                                              variantValues.push(
+                                                `Gender: ${variant.gender}`,
+                                              );
+
+                                            return variantValues.map(
+                                              (val, valIdx) => (
+                                                <span
+                                                  key={`${variantIdx}-${valIdx}`}
+                                                  className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300"
+                                                >
+                                                  {val}
+                                                </span>
+                                              ),
+                                            );
+                                          })}
+                                        {product.variants.length > 3 && (
+                                          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400">
+                                            +{product.variants.length - 3} more
+                                          </span>
+                                        )}
+                                      </div>
+                                    </div>
+                                  )}
+
+                                {hasStockPermission && (
+                                  <div
+                                    className={`text-xs font-medium mt-1 ${product.stock_quantity > 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}
+                                  >
+                                    📊 Stock Available:{" "}
+                                    {product.stock_quantity > 0
+                                      ? product.stock_quantity
+                                      : "Out of Stock"}
+                                  </div>
+                                )}
                               </div>
+
                               <div className="text-right ml-4">
                                 <div className="font-semibold text-gray-900 dark:text-white flex justify-end items-center">
                                   <FaRupeeSign className="text-[13px] me-[2px]" />
@@ -1626,7 +1769,6 @@ const InvoiceEditForm = ({
               )}
             </div>
 
-            {/* Quick summary of added product lines */}
             {productLinesOnly.length > 0 && (
               <div className="mt-4">
                 <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -1722,6 +1864,11 @@ const InvoiceEditForm = ({
                           )}
                           <p className="font-medium text-gray-900 dark:text-white text-sm">
                             {item.product_name}
+                            {hasStockPermission && item.variant_info && (
+                              <span className="ml-2 text-xs text-gray-500 dark:text-gray-400">
+                                ({item.variant_info})
+                              </span>
+                            )}
                           </p>
                           <p className="text-xs text-gray-500">
                             {item.product_code}
@@ -1729,6 +1876,64 @@ const InvoiceEditForm = ({
                           <p className="text-xs text-gray-400">
                             {item.unit_name}
                           </p>
+
+                          {/* Display attributes in table */}
+                          {item.attributes &&
+                            Array.isArray(item.attributes) &&
+                            item.attributes.length > 0 && (
+                              <div className="flex flex-wrap gap-1 mt-1">
+                                {item.attributes.map((attr, attrIdx) => {
+                                  if (typeof attr === "object" && attr !== null) {
+                                    return Object.entries(attr).map(([key, value]) => (
+                                      <span
+                                        key={`${attrIdx}-${key}`}
+                                        className="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300"
+                                      >
+                                        {key}: {value}
+                                      </span>
+                                    ));
+                                  }
+                                  return (
+                                    <span
+                                      key={attrIdx}
+                                      className="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300"
+                                    >
+                                      {attr}
+                                    </span>
+                                  );
+                                })}
+                              </div>
+                            )}
+
+                          {/* Display variants in table */}
+                          {item.variants &&
+                            Array.isArray(item.variants) &&
+                            item.variants.length > 0 && (
+                              <div className="flex flex-wrap gap-1 mt-1">
+                                {item.variants.slice(0, 2).map((variant, variantIdx) => {
+                                  const variantValues = [];
+                                  if (variant.size) variantValues.push(`Size: ${variant.size}`);
+                                  if (variant.color) variantValues.push(`Color: ${variant.color}`);
+                                  if (variant.material) variantValues.push(`Material: ${variant.material}`);
+                                  if (variant.gender) variantValues.push(`Gender: ${variant.gender}`);
+
+                                  return variantValues.map((val, valIdx) => (
+                                    <span
+                                      key={`${variantIdx}-${valIdx}`}
+                                      className="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300"
+                                    >
+                                      {val}
+                                    </span>
+                                  ));
+                                })}
+                                {item.variants.length > 2 && (
+                                  <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400">
+                                    +{item.variants.length - 2} more
+                                  </span>
+                                )}
+                              </div>
+                            )}
+
                           {!item.is_package &&
                             item.stock_quantity !== undefined &&
                             item.stock_quantity < Infinity && (
@@ -1866,7 +2071,7 @@ const InvoiceEditForm = ({
                         >
                           <FiTrash2 className="w-4 h-4" />
                         </button>
-                      </td>
+                       </td>
                     </tr>
                   ))}
                 </tbody>
