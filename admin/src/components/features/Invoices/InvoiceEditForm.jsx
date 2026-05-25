@@ -1221,7 +1221,7 @@ const InvoiceEditForm = ({
         onSubmit={handleSubmit}
         className={formShellClass}
       >
-        <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-gray-200 dark:border-gray-700">
+        <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-gray-200 dark:border-gray-700 sticky top-[62px] bg-white z-50 pt-4">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-primary-100 dark:bg-primary-900/20 rounded-lg">
               <FiShoppingCart className="w-5 h-5 text-primary-600 dark:text-primary-400" />
