@@ -1,4 +1,3 @@
-// components/features/Stocks/StockForm.js
 import React, { useState, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { motion } from 'framer-motion'
@@ -16,6 +15,7 @@ const StockForm = ({ stock, onSubmit, onCancel, isSubmitting, products, units })
   const [selectedProduct, setSelectedProduct] = useState(null)
   const [searchResults, setSearchResults] = useState([])
   const [isSearching, setIsSearching] = useState(false)
+  const [optionsList, setOptionsList] = useState([])
 
   const {
     register,
@@ -23,14 +23,20 @@ const StockForm = ({ stock, onSubmit, onCancel, isSubmitting, products, units })
     formState: { errors },
     setValue,
     reset,
+    watch,
   } = useForm()
 
   // Handle product selection
   const handleProductSelect = (productId) => {
-    const product = searchResults.length > 0 ? searchResults.find(p => p.id === productId) : products?.find(p => p.id === productId)
+    // Convert to number if needed
+    const id = parseInt(productId)
+    const product = searchResults.length > 0 
+      ? searchResults.find(p => p.id === id) 
+      : products?.find(p => p.id === id)
+    
     if (product) {
       setSelectedProduct(product)
-      setValue('product_id', productId)
+      setValue('product_id', id)
 
       // Pre-fill other fields except quantity
       setValue('selling_price', product.selling_price || product.price || '')
@@ -61,7 +67,7 @@ const StockForm = ({ stock, onSubmit, onCancel, isSubmitting, products, units })
 
   // Custom render function for product options
   const renderProductOption = (option, index, isHighlighted, isSelected) => {
-    const product = products?.find(p => p.id === option.value)
+    const product = products?.find(p => p.id === parseInt(option.value)) || searchResults.find(p => p.id === parseInt(option.value))
     return (
       <div
         key={option.value}
@@ -164,6 +170,8 @@ const StockForm = ({ stock, onSubmit, onCancel, isSubmitting, products, units })
   useEffect(() => {
     if (stock) {
       console.log('📝 StockForm - Stock prop received:', stock)
+      console.log('📝 StockForm - Products available:', products)
+      
       // Set form values for editing
       reset({
         product_id: stock.product_id,
@@ -173,23 +181,75 @@ const StockForm = ({ stock, onSubmit, onCancel, isSubmitting, products, units })
         unit_id: stock.unit_id,
         product_package_id: stock.product_package_id,
       })
+      
       console.log('📝 StockForm - Form values set after reset:', {
         product_id: stock.product_id,
         quantity: stock.quantity,
         selling_price: stock.selling_price,
         purchase_price: stock.purchase_price,
         unit_id: stock.unit_id,
-        product_package_id: stock.product_package_id,
       })
 
       // Find and set the selected product for prefilling the SearchSelect
       if (stock.product_id) {
-        const product = products?.find(p => p.id === stock.product_id)
+        // Try to find product in products array first
+        let product = products?.find(p => p.id === stock.product_id)
+        
+        // If not found, try to get from stock.product object
+        if (!product && stock.product) {
+          product = stock.product
+        }
+        
+        // If still not found and we have products, try to fetch it
+        if (!product && products && products.length > 0) {
+          product = products.find(p => p.id === parseInt(stock.product_id))
+        }
+        
         if (product) {
           console.log('📝 StockForm - Setting selected product:', product)
           setSelectedProduct(product)
+          // Also ensure the product is in the options list for SearchSelect
+          // Create an option for this product if it's not already in the list
+          const productOption = {
+            value: product.id.toString(),
+            label: product.name || product.product_name,
+            description: `📦 SKU: ${product.sku || product.code || product.product_code || 'N/A'}`,
+            subtext: product.brand?.name ? `🏷️ Brand: ${product.brand.name}` : null
+          }
+          
+          // Add to options list if not already present
+          setOptionsList(prev => {
+            const exists = prev.some(opt => opt.value === productOption.value)
+            if (!exists) {
+              return [productOption, ...prev]
+            }
+            return prev
+          })
         } else {
           console.log('📝 StockForm - Product not found for ID:', stock.product_id)
+          console.log('📝 StockForm - Available product IDs:', products?.map(p => p.id))
+          
+          // Try to fetch the product if not found in the list
+          const fetchProduct = async () => {
+            try {
+              const response = await productsAPI.getById(stock.product_id)
+              const productData = response.data?.data || response.data
+              if (productData) {
+                console.log('📝 StockForm - Fetched product:', productData)
+                setSelectedProduct(productData)
+                const productOption = {
+                  value: productData.id.toString(),
+                  label: productData.name || productData.product_name,
+                  description: `📦 SKU: ${productData.sku || productData.code || 'N/A'}`,
+                  subtext: productData.brand?.name ? `🏷️ Brand: ${productData.brand.name}` : null
+                }
+                setOptionsList(prev => [productOption, ...prev])
+              }
+            } catch (error) {
+              console.error('Failed to fetch product:', error)
+            }
+          }
+          fetchProduct()
         }
       }
     }
@@ -206,6 +266,38 @@ const StockForm = ({ stock, onSubmit, onCancel, isSubmitting, products, units })
     onSubmit(stockData)
   }
 
+  // Prepare options for SearchSelect - combine products and search results
+  const getProductOptions = () => {
+    // Use products as the base list
+    let productList = products || []
+    
+    // If we have search results, use them instead (for search functionality)
+    if (searchResults.length > 0) {
+      productList = searchResults
+    }
+    
+    // Convert to options format
+    const options = productList.map(product => ({
+      value: product.id.toString(),
+      label: product.name || product.product_name,
+      description: `📦 SKU: ${product.sku || product.code || product.product_code || 'N/A'}`,
+      subtext: product.brand?.name ? `🏷️ Brand: ${product.brand.name}` : null
+    }))
+    
+    // If we have custom options from editing (selected product not in list), add them
+    if (optionsList.length > 0) {
+      const allOptions = [...optionsList]
+      options.forEach(opt => {
+        if (!allOptions.some(existing => existing.value === opt.value)) {
+          allOptions.push(opt)
+        }
+      })
+      return allOptions
+    }
+    
+    return options
+  }
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -219,18 +311,8 @@ const StockForm = ({ stock, onSubmit, onCancel, isSubmitting, products, units })
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <SearchSelect
           label="Product"
-          options={searchResults.length > 0 ? searchResults.map(product => ({
-            value: product.id,
-            label: product.name || product.product_name,
-            description: `📦 SKU: ${product.sku || product.code || product.product_code || 'N/A'}`,
-            subtext: product.brand?.name ? `🏷️ Brand: ${product.brand.name}` : null
-          })) : products?.map(product => ({
-            value: product.id,
-            label: product.name || product.product_name,
-            description: `📦 SKU: ${product.sku || product.code || product.product_code || 'N/A'}`,
-            subtext: product.brand?.name ? `🏷️ Brand: ${product.brand.name}` : null
-          })) || []}
-          value={selectedProduct?.id || ''}
+          options={getProductOptions()}
+          value={selectedProduct?.id?.toString() || ''}
           onChange={handleProductSelect}
           placeholder="Search product by name, SKU, brand..."
           required
@@ -287,18 +369,16 @@ const StockForm = ({ stock, onSubmit, onCancel, isSubmitting, products, units })
           options={[
             { value: '', label: 'Select Unit' },
             ...(units?.map(unit => ({
-              value: unit.id,
+              value: unit.id.toString(),
               label: `${unit.name} (${unit.code})`,
             })) || [])
           ]}
           error={errors.unit_id?.message}
           {...register('unit_id', { 
             required: 'Unit is required',
-            valueAsNumber: true 
+            valueAsNumber: true,
+            setValueAs: (value) => value ? parseInt(value) : null
           })}
-          onChange={(e) => {
-            setValue('unit_id', e.target.value)
-          }}
         />
 
         <div>

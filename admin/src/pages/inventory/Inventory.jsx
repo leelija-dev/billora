@@ -35,7 +35,9 @@ const Stock = () => {
     pageSize,
     loading,
     filters,
+    pagination,
     fetchStocks,
+    fetchStocksByUrl,
     createStock,
     updateStock,
     deleteStock,
@@ -50,6 +52,7 @@ const Stock = () => {
   const [showAddForm, setShowAddForm] = useState(false)
   const [showEditForm, setShowEditForm] = useState(false)
   const [selectedStock, setSelectedStock] = useState(null)
+  const [selectedStockWithProduct, setSelectedStockWithProduct] = useState(null)
   const [searchTerm, setSearchTerm] = useState(filters.search || '')
   const [showFilters, setShowFilters] = useState(false)
   const [formSubmitting, setFormSubmitting] = useState(false)
@@ -74,24 +77,48 @@ const Stock = () => {
       }
     }
     fetchData()
-  }, []) // Remove fetchStocks from dependency array
+  }, [])
 
   useEffect(() => {
-  const debounceTimer = setTimeout(() => {
-    setFilters({ search: searchTerm })
-    // Reset to page 1 when searching
-    fetchStocks(1, searchTerm, false)
-  }, 500)
+    const debounceTimer = setTimeout(() => {
+      setFilters({ search: searchTerm })
+      // Reset to page 1 when searching
+      fetchStocks(1, searchTerm, false)
+    }, 500)
 
-  return () => clearTimeout(debounceTimer)
-}, [searchTerm])
+    return () => clearTimeout(debounceTimer)
+  }, [searchTerm])
 
   const handleAddStock = () => {
     setShowAddForm(true)
   }
 
-  const handleEditStock = (stock) => {
+  const handleEditStock = async (stock) => {
+    console.log('Editing stock:', stock)
     setSelectedStock(stock)
+    
+    // Fetch full product details if stock has product_id but no product object
+    if (stock.product_id && (!stock.product || !stock.product.name)) {
+      try {
+        const { productsAPI } = await import('../../services/productsService')
+        const response = await productsAPI.getById(stock.product_id)
+        const productData = response.data?.data || response.data
+        console.log('Fetched product for edit:', productData)
+        
+        // Create enriched stock object with product data
+        const enrichedStock = {
+          ...stock,
+          product: productData
+        }
+        setSelectedStockWithProduct(enrichedStock)
+      } catch (error) {
+        console.error('Failed to fetch product details:', error)
+        setSelectedStockWithProduct(stock)
+      }
+    } else {
+      setSelectedStockWithProduct(stock)
+    }
+    
     setShowEditForm(true)
   }
 
@@ -99,6 +126,7 @@ const Stock = () => {
     setShowAddForm(false)
     setShowEditForm(false)
     setSelectedStock(null)
+    setSelectedStockWithProduct(null)
   }
 
   const handleSubmitStock = async (stockData) => {
@@ -106,16 +134,40 @@ const Stock = () => {
     try {
       if (showEditForm && selectedStock) {
         await updateStock(selectedStock.id, stockData)
-        // Don't refetch all stocks after update - state should already be updated
-        console.log(' Stock updated in place, no refetch needed')
+        console.log('Stock updated, refreshing current page')
+        
+        // Clear cache if your store has cache
+        if (useInventoryStore.getState().clearCache) {
+          useInventoryStore.getState().clearCache()
+        }
+        
+        // Get the current page from pagination state
+        const currentPageNumber = pagination?.current_page || currentPage || 1
+        
+        // Refresh the current page data
+        if (fetchStocksByUrl && pagination?.first_page_url) {
+          // Construct URL for current page
+          const baseUrl = pagination.first_page_url.split('?')[0]
+          const currentPageUrl = `${baseUrl}?page=${currentPageNumber}`
+          await fetchStocksByUrl(currentPageUrl)
+        } else {
+          await fetchStocks(currentPageNumber, searchTerm, true)
+        }
       } else {
         await createStock({
           ...stockData,
           user_id: user.id,
           created_by: user.id,
         })
-        // Don't refetch after create - store already handles state update
-        console.log(' Stock created, no refetch needed - store updated state')
+        console.log('Stock created, refreshing first page')
+        
+        // Clear cache if your store has cache
+        if (useInventoryStore.getState().clearCache) {
+          useInventoryStore.getState().clearCache()
+        }
+        
+        // Refresh first page after creation
+        await fetchStocks(1, searchTerm, true)
       }
       handleCancelForm()
     } catch (error) {
@@ -136,6 +188,15 @@ const Stock = () => {
         await deleteStock(stockToDelete.id, user.id)
         setShowDeleteConfirm(false)
         setStockToDelete(null)
+        
+        // Clear cache if your store has cache
+        if (useInventoryStore.getState().clearCache) {
+          useInventoryStore.getState().clearCache()
+        }
+        
+        // Refresh current page after deletion
+        const currentPageNumber = pagination?.current_page || currentPage || 1
+        await fetchStocks(currentPageNumber, searchTerm, true)
       } catch (error) {
         console.error('Error deleting stock:', error)
       }
@@ -158,16 +219,20 @@ const Stock = () => {
 
   const handleAddStockFromModal = async (stockId, quantity) => {
     await addStockQuantity(stockId, user.id, quantity)
+    // Refresh current page after adding quantity
+    const currentPageNumber = pagination?.current_page || currentPage || 1
+    await fetchStocks(currentPageNumber, searchTerm, true)
   }
 
   const handlePageChange = (page) => {
-  // Pass the current search term as well
-  fetchStocks(page, searchTerm, false)
-}
+    // Pass the current search term as well
+    fetchStocks(page, searchTerm, false)
+  }
 
   const handleRefresh = async () => {
     setRefreshing(true)
-    await fetchStocks(1, '', true) // Force refresh to get latest data
+    const currentPageNumber = pagination?.current_page || currentPage || 1
+    await fetchStocks(currentPageNumber, searchTerm, true) // Force refresh to get latest data
     setRefreshing(false)
   }
 
@@ -288,10 +353,6 @@ const Stock = () => {
                     <span>SKU: {product.sku}</span>
                   </div>
                 )}
-
-                
-                
-                
                 
                 {/* Product Attributes */}
                 {formatAttributes(product?.attributes)}
@@ -481,7 +542,7 @@ const Stock = () => {
       {/* Conditional rendering: Show form or table */}
       {showAddForm || showEditForm ? (
         <StockForm
-          stock={selectedStock}
+          stock={showEditForm ? (selectedStockWithProduct || selectedStock) : null}
           onSubmit={handleSubmitStock}
           onCancel={handleCancelForm}
           isSubmitting={formSubmitting}
@@ -666,6 +727,7 @@ const Stock = () => {
                   currentPage={currentPage}
                   totalItems={totalStocks}
                   pageSize={pageSize}
+                  pagination={pagination}
                   onPageChange={handlePageChange}
                 />
               </>
