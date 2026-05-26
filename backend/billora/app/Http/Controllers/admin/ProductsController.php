@@ -639,6 +639,9 @@ class ProductsController extends Controller
                 'variants.*.material'   => 'nullable|string',
                 'variants.*.gender'     => 'nullable|string',
 
+                'old_images' => 'nullable|array',
+                'old_images.*' => 'nullable|string',
+
             ]);
             if ($product) {
                 if ($request->hasFile('image')) {
@@ -738,24 +741,27 @@ class ProductsController extends Controller
                     // Log::info('stocks created'. $stocks);
                 }
             }
-            //update multiple images
-            if ($request->hasFile('images')) {
+            if ($request->hasFile('images') || $request->has('old_images')) {
+                $keepImages = $request->old_images ?? [];
+                 // Get old DB images
+                $oldDbImages = ProductImages::where('product_id', $product->id)->get();
+                foreach ($oldDbImages as $img) {
 
-                //  Delete old images from DB + Drive
-                $oldImages = ProductImages::where('product_id', $product->id)->get();
+                    if (!in_array($img->image, $keepImages)) {
 
-                foreach ($oldImages as $img) {
-                    if ($img->image) {
-                        // $fileId = $this->getFileIdFromUrl($img->image);
-                        // if ($fileId) {
-                        // $this->deleteFromDrive($fileId);
-                        $this->deleteFromCloudinary(
-                            $img->image_public_id
-                        );
-                        // }
+                        if ($img->image_public_id) {
+
+                            $this->deleteFromCloudinary(
+                                $img->image_public_id
+                            );
+                        }
+
+                        $img->delete();
                     }
-                    $img->delete();
                 }
+            
+            //update new images
+            if ($request->hasFile('images')) {
 
                 //  Insert new images
                 foreach ($request->file('images') as $image) {
@@ -773,6 +779,7 @@ class ProductsController extends Controller
                         'created_by' => $user,
                     ]);
                 }
+            }
             }
             //update variants
             if ($request->has('variants')) {
