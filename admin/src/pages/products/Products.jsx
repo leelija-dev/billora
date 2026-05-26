@@ -600,20 +600,13 @@ const Products = () => {
               SKU: {row.sku}
             </p>
 
-            {row.unit_id && (
+           
               <div className="flex items-center mt-1">
                 <span className="text-xs text-gray-500 dark:text-gray-400">
-                  {(() => {
-                    const unit = Array.isArray(units)
-                      ? units.find((u) => u.id === row.unit_id)
-                      : null;
-                    return unit
-                      ? `${row.unit_amount || "1"} ${unit.name}`
-                      : `Unit ${row.unit_id}`;
-                  })()}
+                 {row.unit_amount }: {row.unit ? row.unit.name : "N/A"}
                 </span>
               </div>
-            )}
+          
 
             {row.attributes && (
               <div className="mt-1">
@@ -765,13 +758,11 @@ const Products = () => {
     {
       header: "Category",
       accessor: "category_id",
-      cell: (value) => {
-        const category = Array.isArray(categories)
-          ? categories.find((cat) => cat.id === value)
-          : null;
+      cell: (value,row) => {
+        
         return (
           <span className="px-3 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg text-sm">
-            {category?.name || `Category ${value}`}
+            {row.category.name || `Not specified`}
           </span>
         );
       },
@@ -779,13 +770,12 @@ const Products = () => {
     {
       header: "Brand",
       accessor: "brand_id",
-      cell: (value) => {
-        const brand = Array.isArray(brands)
-          ? brands.find((b) => b.id === value)
-          : null;
+      cell: (value,row) => {
+        // console.log("Rendering brand cell - value:", value, "row:", row);
+       
         return (
           <span className="px-3 py-1 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded-lg text-sm">
-            {brand?.name || `Brand ${value}`}
+           {row.brand.name || `Not specified`}
           </span>
         );
       },

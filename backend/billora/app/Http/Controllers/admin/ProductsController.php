@@ -70,6 +70,9 @@ class ProductsController extends Controller
             // ->where('user_id', $user)
             // ->where('is_active', true);
                 $relations = [
+                    'brand:id,name',
+                    'category:id,name',
+                    'unit:id,name',
                     'variants',
                     'images',
                     'medicine_type'

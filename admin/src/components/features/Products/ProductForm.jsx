@@ -54,6 +54,12 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
   const [multipleImagePreviews, setMultipleImagePreviews] = useState([]);
   const [variants, setVariants] = useState([]);
 
+  // Add these with your other state declarations
+  const [brandSearchTerm, setBrandSearchTerm] = useState("");
+  const [categorySearchTerm, setCategorySearchTerm] = useState("");
+  const [unitSearchTerm, setUnitSearchTerm] = useState("");
+  const [medicineTypeSearchTerm, setMedicineTypeSearchTerm] = useState("");
+
   // State for dynamic attributes
   const [attributes, setAttributes] = useState([{ key: "", value: "" }]);
 
@@ -992,55 +998,47 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
           />
 
           <SearchSelect
-            label="Brand"
-            options={
-              createPageData.brands?.map((brand) => ({
-                value: brand.id,
-                label: brand.name,
-                description: brand.code ? `Code: ${brand.code}` : null,
-                subtext: brand.category ? `Category: ${brand.category}` : null,
-              })) || []
-            }
-            value={watch("brand_id") || ""}
-            onChange={(value) =>
-              setValue("brand_id", value, { shouldValidate: true })
-            }
-            error={errors.brand_id?.message}
-            placeholder="Search for a brand..."
-            required
-            onCreateNew={(searchTerm) => {
-              setShowBrandModal(true);
-            }}
-          />
+  label="Brand"
+  options={createPageData.brands?.map((brand) => ({
+    value: brand.id,
+    label: brand.name,
+    description: brand.code ? `Code: ${brand.code}` : null,
+    subtext: brand.category ? `Category: ${brand.category}` : null,
+  })) || []}
+  value={watch("brand_id") || ""}
+  onChange={(value) => setValue("brand_id", value, { shouldValidate: true })}
+  error={errors.brand_id?.message}
+  placeholder="Search for a brand..."
+  required
+  onCreateNew={(searchTerm) => {
+    setBrandSearchTerm(searchTerm || ''); // Capture the search term
+    setShowBrandModal(true);
+  }}
+/>
           <input
             type="hidden"
             {...register("brand_id")}
             value={watch("brand_id") || ""}
           />
 
-          <SearchSelect
-            label="Category"
-            options={
-              createPageData.categories?.map((category) => ({
-                value: category.id,
-                label: category.name,
-                description: category.code ? `Code: ${category.code}` : null,
-                subtext: category.parent_name
-                  ? `Parent: ${category.parent_name}`
-                  : null,
-              })) || []
-            }
-            value={watch("category_id") || ""}
-            onChange={(value) =>
-              setValue("category_id", value, { shouldValidate: true })
-            }
-            error={errors.category_id?.message}
-            placeholder="Search for a category..."
-            required
-            onCreateNew={(searchTerm) => {
-              setShowCategoryModal(true);
-            }}
-          />
+         <SearchSelect
+  label="Category"
+  options={createPageData.categories?.map((category) => ({
+    value: category.id,
+    label: category.name,
+    description: category.code ? `Code: ${category.code}` : null,
+    subtext: category.parent_name ? `Parent: ${category.parent_name}` : null,
+  })) || []}
+  value={watch("category_id") || ""}
+  onChange={(value) => setValue("category_id", value, { shouldValidate: true })}
+  error={errors.category_id?.message}
+  placeholder="Search for a category..."
+  required
+  onCreateNew={(searchTerm) => {
+    setCategorySearchTerm(searchTerm || '');
+    setShowCategoryModal(true);
+  }}
+/>
           <input
             type="hidden"
             {...register("category_id", { required: "Category is required" })}
@@ -1076,26 +1074,23 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
           />
 
           <SearchSelect
-            label="Unit"
-            options={
-              createPageData.units?.map((unit) => ({
-                value: unit.id,
-                label: `${unit.name} (${unit.code})`,
-                description: unit.code ? `Code: ${unit.code}` : null,
-                subtext: unit.base_unit ? `Base: ${unit.base_unit}` : null,
-              })) || []
-            }
-            value={watch("unit_id") || ""}
-            onChange={(value) =>
-              setValue("unit_id", value, { shouldValidate: true })
-            }
-            error={errors.unit_id?.message}
-            placeholder="Search for a unit..."
-            required
-            onCreateNew={(searchTerm) => {
-              setShowUnitModal(true);
-            }}
-          />
+  label="Unit"
+  options={createPageData.units?.map((unit) => ({
+    value: unit.id,
+    label: `${unit.name} (${unit.code})`,
+    description: unit.code ? `Code: ${unit.code}` : null,
+    subtext: unit.base_unit ? `Base: ${unit.base_unit}` : null,
+  })) || []}
+  value={watch("unit_id") || ""}
+  onChange={(value) => setValue("unit_id", value, { shouldValidate: true })}
+  error={errors.unit_id?.message}
+  placeholder="Search for a unit..."
+  required
+  onCreateNew={(searchTerm) => {
+    setUnitSearchTerm(searchTerm || '');
+    setShowUnitModal(true);
+  }}
+/>
 
           <input
             type="hidden"
@@ -1566,27 +1561,22 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
             {renderField(
               "medicine_type_id",
               <SearchSelect
-                label="Medicine Type"
-                options={
-                  createPageData.medicineTypes?.map((type) => ({
-                    value: type.id,
-                    label: type.name,
-                    description: type.code ? `Code: ${type.code}` : null,
-                    subtext: type.category
-                      ? `Category: ${type.category}`
-                      : null,
-                  })) || []
-                }
-                value={watch("medicine_type_id") || ""}
-                onChange={(value) =>
-                  setValue("medicine_type_id", value, { shouldValidate: true })
-                }
-                error={errors.medicine_type_id?.message}
-                placeholder="Search for a medicine type..."
-                onCreateNew={(searchTerm) => {
-                  setShowMedicineTypeModal(true);
-                }}
-              />,
+  label="Medicine Type"
+  options={createPageData.medicineTypes?.map((type) => ({
+    value: type.id,
+    label: type.name,
+    description: type.code ? `Code: ${type.code}` : null,
+    subtext: type.category ? `Category: ${type.category}` : null,
+  })) || []}
+  value={watch("medicine_type_id") || ""}
+  onChange={(value) => setValue("medicine_type_id", value, { shouldValidate: true })}
+  error={errors.medicine_type_id?.message}
+  placeholder="Search for a medicine type..."
+  onCreateNew={(searchTerm) => {
+    setMedicineTypeSearchTerm(searchTerm || '');
+    setShowMedicineTypeModal(true);
+  }}
+/>,
             )}
             <input
               type="hidden"
@@ -2032,30 +2022,46 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
         </div>
       </div>
 
-      {/* Create Modals */}
-      <CategoryModal
-        isOpen={showCategoryModal}
-        onClose={() => setShowCategoryModal(false)}
-        onCreate={handleCreateCategory}
-      />
+     {/* Create Modals */}
+<CategoryModal
+  isOpen={showCategoryModal}
+  onClose={() => {
+    setShowCategoryModal(false);
+    setCategorySearchTerm(''); // Clear the search term
+  }}
+  onCreate={handleCreateCategory}
+  initialName={categorySearchTerm}
+/>
 
-      <BrandModal
-        isOpen={showBrandModal}
-        onClose={() => setShowBrandModal(false)}
-        onCreate={handleCreateBrand}
-      />
+<BrandModal
+  isOpen={showBrandModal}
+  onClose={() => {
+    setShowBrandModal(false);
+    setBrandSearchTerm(''); // Clear the search term
+  }}
+  onCreate={handleCreateBrand}
+  initialName={brandSearchTerm}
+/>
 
-      <UnitModal
-        isOpen={showUnitModal}
-        onClose={() => setShowUnitModal(false)}
-        onCreate={handleCreateUnit}
-      />
+<UnitModal
+  isOpen={showUnitModal}
+  onClose={() => {
+    setShowUnitModal(false);
+    setUnitSearchTerm(''); // Clear the search term
+  }}
+  onCreate={handleCreateUnit}
+  initialName={unitSearchTerm}
+/>
 
-      <MedicineTypeModal
-        isOpen={showMedicineTypeModal}
-        onClose={() => setShowMedicineTypeModal(false)}
-        onCreate={handleCreateMedicineType}
-      />
+<MedicineTypeModal
+  isOpen={showMedicineTypeModal}
+  onClose={() => {
+    setShowMedicineTypeModal(false);
+    setMedicineTypeSearchTerm(''); // Clear the search term
+  }}
+  onCreate={handleCreateMedicineType}
+  initialName={medicineTypeSearchTerm}
+/>
     </motion.div>
   );
 };
