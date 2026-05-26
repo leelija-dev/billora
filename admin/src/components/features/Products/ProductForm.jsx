@@ -2000,7 +2000,7 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
       <input type="hidden" {...register("updated_by")} value={user?.id || ""} />
 
       {/* Form Actions */}
-      <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700">
+      <div className="bg-white dark:bg-gray-800 py-3 px-6 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 sticky bottom-[10px]">
         <div className="flex items-center justify-between">
           <div>
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white">

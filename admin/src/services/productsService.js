@@ -398,18 +398,17 @@ export const productsAPI = {
           }
         }
 
-        // Handle multiple images - send the current images array directly
-        if (productData.images && Array.isArray(productData.images)) {
-          productData.images.forEach((image, index) => {
-            if (image instanceof File) {
-              formData.append(`images[${index}]`, image);
-            } else if (typeof image === "string") {
-              // Send existing image URLs as strings
-              formData.append(`images[${index}]`, image);
-            }
-          });
-        }
+      
 
+       if (productData.images && Array.isArray(productData.images)) {
+  productData.images.forEach((image) => {
+    if (image instanceof File) {
+      formData.append("images[]", image);
+    } else if (typeof image === "string") {
+      formData.append("old_images[]", image);
+    }
+  });
+}
         // Handle variants (array) - send as individual objects for proper parsing
         if (productData.variants && Array.isArray(productData.variants)) {
           productData.variants.forEach((variant, index) => {
@@ -433,19 +432,19 @@ export const productsAPI = {
           },
         });
       } else {
-  // Use JSON for updates without new images (cleaner and faster)
-  const cleanedData = { ...productData };
+        // Use JSON for updates without new images (cleaner and faster)
+        const cleanedData = { ...productData };
 
-  // Keep images for JSON update - don't delete it
-  // Remove fields that shouldn't be sent in update
-  delete cleanedData.created_at;
-  delete cleanedData.updated_at;
-  delete cleanedData.deleted_at;
-  delete cleanedData.lowStock;
-  delete cleanedData.lowStockThreshold;
-  delete cleanedData.maxStock;
-  delete cleanedData.stock;
-  delete cleanedData.slug;
+        // Keep images for JSON update - don't delete it
+        // Remove fields that shouldn't be sent in update
+        delete cleanedData.created_at;
+        delete cleanedData.updated_at;
+        delete cleanedData.deleted_at;
+        delete cleanedData.lowStock;
+        delete cleanedData.lowStockThreshold;
+        delete cleanedData.maxStock;
+        delete cleanedData.stock;
+        delete cleanedData.slug;
 
         // Handle warranty_months - if empty or null, don't send it
         if (

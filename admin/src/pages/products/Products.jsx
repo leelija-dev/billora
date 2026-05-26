@@ -1053,7 +1053,7 @@ const Products = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 20 }}
-            className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6"
+            className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 relative"
           >
             <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">
               {showEditForm ? "Edit Product" : "Add New Product"}
