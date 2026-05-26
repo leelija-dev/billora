@@ -301,7 +301,7 @@ const GstManagement = () => {
     {
       header: "Invoice ID",
       accessor: "invoice_id",
-      cell: (value) => (
+      cell: (value,row) => (
         <span className="font-mono text-sm text-gray-600 dark:text-gray-400">
           INV-{value}
         </span>
@@ -343,11 +343,7 @@ const GstManagement = () => {
             <p className="font-medium text-gray-900 dark:text-white text-sm">
               {productName}
             </p>
-            {row.product_id && (
-              <p className="text-xs text-gray-500 dark:text-gray-400">
-                ID: {row.product_id}
-              </p>
-            )}
+            
           </div>
         );
       },

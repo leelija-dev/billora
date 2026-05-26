@@ -137,6 +137,7 @@ class InvoiceController extends Controller
                 'category',
                 'unit',
                 'variants'
+
             ])
             ->where('is_active', true)
 
@@ -449,7 +450,7 @@ class InvoiceController extends Controller
                 }
                 $billPaymentHistory = BillPaymentHistory::where('admin_id', $userId)->where('invoice_id', $id)->orderBy('id', 'asc')->first();
                 // $bill_summery = InvoiceItems::where('invoice_id', $id)->where('user_id', $userId)->get();
-                $billSummary = InvoiceItems::where('invoice_id', $id)
+                $billSummary = InvoiceItems::where('invoice_id', $id)->with('product',)
                     ->where('user_id', $userId)
                     ->selectRaw('
                         SUM(price * quantity) as subtotal,

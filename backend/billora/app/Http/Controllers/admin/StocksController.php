@@ -296,7 +296,7 @@ class StocksController extends Controller
                 //     'selling_price' => $data['selling_price'],
                 //     'purchase_price' => $data['purchase_price']
                 // ]);
-                Cache::tags(['stock_user_' . $user])->flush();
+                Cache::tags(['stock_user_' . $user,'products_user_'.$user])->flush();
                 return response()->json([
                     'status' => true,
                     'message' => 'edit stock',
@@ -354,7 +354,7 @@ class StocksController extends Controller
                     ->where('user_id', $user_id)
                     ->firstOrFail();
                 $stock->delete();
-                Cache::tags(['stock_user_' . Auth::user()->id])->flush();
+                Cache::tags(['stock_user_' . Auth::user()->id,'products_user_'.$user])->flush();
                 return response()->json([
                     'status' => true,
                     'message' => 'Stock Deleted Successfully',
@@ -415,7 +415,7 @@ class StocksController extends Controller
                 $stock->update([
                     'quantity' => ((float)$stock->quantity + (float)$data['quantity']),
                 ]);
-                Cache::tags(['stock_user_' . Auth::user()->id])->flush();
+                Cache::tags(['stock_user_' . Auth::user()->id,'products_user_'.$user])->flush();
                 return response()->json([
                     'status' => true,
                     'message' => 'Stock Updated Successfully',

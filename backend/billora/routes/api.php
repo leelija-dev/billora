@@ -217,6 +217,7 @@ Route::middleware('auth:sanctum')->prefix('plan-expire-reminder')->group(functio
 Route::prefix('restaurant-all-products')->group(function () {
    Route::get('/{id}', [ProductsController::class, 'userProducts']);  // for user products by id
    Route::get('/category/{id}', [ProductsController::class, 'categoryProducts']);  // for user products by category({slug}')  
+   Route::get('/decrypt/{encryptedId}', [ProductsController::class, 'decript']);
 
 });
 

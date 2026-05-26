@@ -13,6 +13,7 @@ use Monolog\Handler\SyslogUdp\UdpSocket;
 use Illuminate\Support\Facades\Http;
 use function PHPSTORM_META\map;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Crypt;
 class UserOrdersController extends Controller
 {
     public function store(Request $request)   // store order and order items
@@ -22,7 +23,7 @@ class UserOrdersController extends Controller
     try {
 
         $data = $request->validate([
-            'user_id' => 'required',
+            // 'user_id' => 'required',
             'store_id' => 'required',
             'customer_name' => 'nullable',
             'customer_phone' => 'required',
@@ -36,7 +37,7 @@ class UserOrdersController extends Controller
             'unit_id'      => 'required|array',
             'payment_mode' => 'required',
         ]);
-
+        $data['user_id'] = Crypt::decryptString($request->user_id);
         // Generate order_id
         $lastOrderId = UserOrders::where('user_id', $data['user_id'])
             ->lockForUpdate()

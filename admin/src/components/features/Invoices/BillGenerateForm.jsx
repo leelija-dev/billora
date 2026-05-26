@@ -71,11 +71,14 @@ const BillGenerateForm = ({
   } = usePackageStore();
   const { createCustomer, fetchCustomers } = useCustomerStore();
 
+  
   // Use refs to track mounted state and prevent duplicate calls
   const isMounted = useRef(true);
   const hasFetchedInitialData = useRef(false);
   const fetchInProgress = useRef(false);
   const productDropdownRef = useRef(null);
+
+ 
 
   // Get current user ID
   const getUserId = useCallback(() => {
@@ -298,6 +301,8 @@ const BillGenerateForm = ({
 
           const transformedProducts = [];
 
+          console.log("chekig ................", productsData);
+
           productsData.forEach((product) => {
             if (
               hasStockPermission &&
@@ -314,6 +319,8 @@ const BillGenerateForm = ({
                   brand: product.brand,
                   category: product.category,
                   unit: product.unit,
+                  attributes: product.attributes || [],
+                  variants: product.variants || [],
                   price: parseFloat(stock.selling_price),
                   purchase_price: parseFloat(stock.purchase_price),
                   gst_percentage: parseFloat(product.gst_percentage),
@@ -336,6 +343,8 @@ const BillGenerateForm = ({
                 category: product.category,
                 unit: product.unit,
                 price: parseFloat(product.selling_price),
+                attributes: product.attributes || [],
+                variants: product.variants || [],
                 purchase_price: parseFloat(product.purchase_price),
                 gst_percentage: parseFloat(product.gst_percentage),
                 discount_percentage: parseFloat(product.discount_percentage),
@@ -877,6 +886,7 @@ const BillGenerateForm = ({
       const timeout = setTimeout(async () => {
         try {
           const result = await fetchProductsWithStock(searchTerm);
+          console.log("Fetched products with stock:", result);
           setFilteredProducts(result.products);
           setProductPagination(result.pagination);
         } catch (error) {
@@ -891,114 +901,118 @@ const BillGenerateForm = ({
     },
     [fetchProductsWithStock, productSearchTimeout],
   );
+  // console.log("Filtered Products:", filteredProducts);
 
-  const handleAddItem = useCallback(
-    async (product) => {
-      try {
-        const existingItemIndex = formData.items.findIndex(
-          (item) =>
-            item.product_id === product.id &&
-            (hasStockPermission ? item.stock_id === product.stock_id : true),
+ const handleAddItem = useCallback(
+  async (product) => {
+    try {
+      const existingItemIndex = formData.items.findIndex(
+        (item) =>
+          item.product_id === product.id &&
+          (hasStockPermission ? item.stock_id === product.stock_id : true),
+      );
+
+      if (existingItemIndex !== -1) {
+        const updatedItems = [...formData.items];
+        const newQuantity = updatedItems[existingItemIndex].quantity + 1;
+        const item = updatedItems[existingItemIndex];
+
+        if (
+          hasStockPermission &&
+          product.stock_quantity > 0 &&
+          newQuantity > product.stock_quantity
+        ) {
+          toast.error(
+            `Cannot add more than available stock. Available: ${product.stock_quantity}`,
+          );
+          return;
+        }
+
+        updatedItems[existingItemIndex] = {
+          ...item,
+          quantity: newQuantity,
+          item_count: newQuantity,
+          total_price: calculateItemTotal(
+            item.price,
+            newQuantity,
+            item.gst,
+            item.discount,
+          ),
+        };
+
+        setFormData((prev) => ({
+          ...prev,
+          items: updatedItems,
+        }));
+      } else {
+        const unit = product.unit;
+        const sellingPrice = product.price;
+        const purchasePrice = product.purchase_price;
+        const gst = product.gst_percentage;
+        const discount = product.discount_percentage;
+        const stockQuantity = hasStockPermission
+          ? product.stock_quantity
+          : null;
+        const stockId = hasStockPermission ? product.stock_id : null;
+
+        const quantity = 1;
+        const totalPrice = calculateItemTotal(
+          sellingPrice,
+          quantity,
+          gst,
+          discount,
         );
 
-        if (existingItemIndex !== -1) {
-          const updatedItems = [...formData.items];
-          const newQuantity = updatedItems[existingItemIndex].quantity + 1;
-          const item = updatedItems[existingItemIndex];
-
-          if (
-            hasStockPermission &&
-            product.stock_quantity > 0 &&
-            newQuantity > product.stock_quantity
-          ) {
-            toast.error(
-              `Cannot add more than available stock. Available: ${product.stock_quantity}`,
-            );
-            return;
-          }
-
-          updatedItems[existingItemIndex] = {
-            ...item,
-            quantity: newQuantity,
-            item_count: newQuantity,
-            total_price: calculateItemTotal(
-              item.price,
-              newQuantity,
-              item.gst,
-              item.discount,
-            ),
-          };
-
-          setFormData((prev) => ({
-            ...prev,
-            items: updatedItems,
-          }));
-        } else {
-          const unit = product.unit;
-          const sellingPrice = product.price;
-          const purchasePrice = product.purchase_price;
-          const gst = product.gst_percentage;
-          const discount = product.discount_percentage;
-          const stockQuantity = hasStockPermission
-            ? product.stock_quantity
-            : null;
-          const stockId = hasStockPermission ? product.stock_id : null;
-
-          const quantity = 1;
-          const totalPrice = calculateItemTotal(
-            sellingPrice,
-            quantity,
-            gst,
-            discount,
-          );
-
-          let unitName = "pcs";
-          if (unit) {
-            unitName = unit.short_name || unit.name || "pcs";
-          }
-
-          const newItem = {
-            product_id: product.id,
-            stock_id: stockId,
-            product_name: product.name,
-            product_code: product.sku,
-            quantity: quantity,
-            item_count: quantity,
-            unit_id: unit?.id || null,
-            unit_name: unitName,
-            price: sellingPrice,
-            purchase_price: purchasePrice,
-            gst: gst,
-            discount: discount,
-            total_price: totalPrice,
-            status: "completed",
-            stock_quantity: stockQuantity,
-            variant_info: hasStockPermission ? product.variant_info : null,
-          };
-
-          setFormData((prev) => ({
-            ...prev,
-            items: [...prev.items, newItem],
-          }));
-
-          setShowProductList(false);
-          setProductSearch("");
-
-          const variantText =
-            hasStockPermission && product.variant_info
-              ? ` (${product.variant_info})`
-              : "";
-          toast.success(
-            `${newItem.product_name}${variantText} added to invoice`,
-          );
+        let unitName = "pcs";
+        if (unit) {
+          unitName = unit.short_name || unit.name || "pcs";
         }
-      } catch (error) {
-        console.error("Failed to add item:", error);
-        toast.error("Failed to add product. Please try again.");
+
+        const newItem = {
+          product_id: product.id,
+          stock_id: stockId,
+          product_name: product.name,
+          product_code: product.sku,
+          quantity: quantity,
+          item_count: quantity,
+          unit_id: unit?.id || null,
+          unit_name: unitName,
+          price: sellingPrice,
+          purchase_price: purchasePrice,
+          gst: gst,
+          discount: discount,
+          total_price: totalPrice,
+          status: "completed",
+          stock_quantity: stockQuantity,
+          variant_info: hasStockPermission ? product.variant_info : null,
+          // Add attributes and variants to the item
+          attributes: product.attributes || [],
+          variants: product.variants || [],
+        };
+
+        setFormData((prev) => ({
+          ...prev,
+          items: [...prev.items, newItem],
+        }));
+
+        setShowProductList(false);
+        setProductSearch("");
+
+        const variantText =
+          hasStockPermission && product.variant_info
+            ? ` (${product.variant_info})`
+            : "";
+        toast.success(
+          `${newItem.product_name}${variantText} added to invoice`,
+        );
       }
-    },
-    [formData.items, hasStockPermission, calculateItemTotal],
-  );
+    } catch (error) {
+      console.error("Failed to add item:", error);
+      toast.error("Failed to add product. Please try again.");
+    }
+  },
+  [formData.items, hasStockPermission, calculateItemTotal],
+);
 
   const handleUpdateItem = useCallback(
     (index, field, value) => {
@@ -1991,9 +2005,9 @@ const BillGenerateForm = ({
                                   className="p-4 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer border-b border-gray-100 dark:border-gray-700 last:border-b-0"
                                   onClick={() => handleAddItem(product)}
                                 >
-                                  {/* Product item content remains the same */}
                                   <div className="flex justify-between items-start">
                                     <div className="flex-1">
+                                      {/* Product Name */}
                                       <div className="font-medium text-gray-900 dark:text-white mb-1">
                                         {product.name}
                                         {hasStockPermission &&
@@ -2003,32 +2017,135 @@ const BillGenerateForm = ({
                                             </span>
                                           )}
                                       </div>
-                                      <div className="text-sm text-gray-500 dark:text-gray-400 space-y-1">
-                                        <div>
-                                          📦 SKU: {product.sku || "N/A"}
-                                        </div>
+
+                                      {/* SKU */}
+                                      <div className="text-sm text-gray-500 dark:text-gray-400 mb-1">
+                                        📦 SKU: {product.sku || "N/A"}
+                                      </div>
+
+                                      {/* Brand and Category */}
+                                      <div className="flex flex-wrap gap-2 mb-2">
                                         {product.brand?.name && (
-                                          <div>
-                                            🏷️ Brand: {product.brand.name}
-                                          </div>
+                                          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300">
+                                            🏷️ {product.brand.name}
+                                          </span>
                                         )}
                                         {product.category?.name && (
-                                          <div>
-                                            📂 Category: {product.category.name}
-                                          </div>
+                                          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300">
+                                            📂 {product.category.name}
+                                          </span>
                                         )}
-                                        {hasStockPermission && (
-                                          <div
-                                            className={`text-xs font-medium ${product.stock_quantity > 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}
-                                          >
-                                            📊 Stock Available:{" "}
-                                            {product.stock_quantity > 0
-                                              ? product.stock_quantity
-                                              : "Out of Stock"}
-                                          </div>
+                                        {product.unit?.name && (
+                                          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300">
+                                            📦 Unit: {product.unit.name}
+                                          </span>
                                         )}
                                       </div>
+
+                                      {/* Product Attributes */}
+                                      {product.attributes &&
+                                        Array.isArray(product.attributes) &&
+                                        product.attributes.length > 0 && (
+                                          <div className="mb-2">
+                                            <div className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+                                              ✨ Attributes:
+                                            </div>
+                                            <div className="flex flex-wrap gap-1">
+                                              {product.attributes.map(
+                                                (attr, attrIdx) => {
+                                                  if (
+                                                    typeof attr === "object" &&
+                                                    attr !== null
+                                                  ) {
+                                                    return Object.entries(
+                                                      attr,
+                                                    ).map(([key, value]) => (
+                                                      <span
+                                                        key={`${attrIdx}-${key}`}
+                                                        className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300"
+                                                      >
+                                                        {key}: {value}
+                                                      </span>
+                                                    ));
+                                                  }
+                                                  return (
+                                                    <span
+                                                      key={attrIdx}
+                                                      className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300"
+                                                    >
+                                                      {attr}
+                                                    </span>
+                                                  );
+                                                },
+                                              )}
+                                            </div>
+                                          </div>
+                                        )}
+
+                                      {/* Product Variants */}
+                                      {product.variants &&
+                                        Array.isArray(product.variants) &&
+                                        product.variants.length > 0 && (
+                                          <div className="mb-2">
+                                            <div className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+                                              🎨 Variants:
+                                            </div>
+                                            <div className="flex flex-wrap gap-1">
+                                              {product.variants
+                                                .slice(0, 3)
+                                                .map((variant, variantIdx) => {
+                                                  const variantValues = [];
+                                                  if (variant.size)
+                                                    variantValues.push(
+                                                      `Size: ${variant.size}`,
+                                                    );
+                                                  if (variant.color)
+                                                    variantValues.push(
+                                                      `Color: ${variant.color}`,
+                                                    );
+                                                  if (variant.material)
+                                                    variantValues.push(
+                                                      `Material: ${variant.material}`,
+                                                    );
+                                                  if (variant.gender)
+                                                    variantValues.push(
+                                                      `Gender: ${variant.gender}`,
+                                                    );
+
+                                                  return variantValues.map(
+                                                    (val, valIdx) => (
+                                                      <span
+                                                        key={`${variantIdx}-${valIdx}`}
+                                                        className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300"
+                                                      >
+                                                        {val}
+                                                      </span>
+                                                    ),
+                                                  );
+                                                })}
+                                              {product.variants.length > 3 && (
+                                                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400">
+                                                  +{product.variants.length - 3}{" "}
+                                                  more
+                                                </span>
+                                              )}
+                                            </div>
+                                          </div>
+                                        )}
+
+                                      {/* Stock Status */}
+                                      {hasStockPermission && (
+                                        <div
+                                          className={`text-xs font-medium mt-1 ${product.stock_quantity > 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}
+                                        >
+                                          📊 Stock Available:{" "}
+                                          {product.stock_quantity > 0
+                                            ? product.stock_quantity
+                                            : "Out of Stock"}
+                                        </div>
+                                      )}
                                     </div>
+
                                     <div className="text-right ml-4">
                                       <div className="font-semibold text-gray-900 dark:text-white flex justify-end items-center">
                                         <FaRupeeSign className="text-[13px] me-[2px]" />
@@ -2181,14 +2298,84 @@ const BillGenerateForm = ({
                           <p className="text-xs text-gray-400 dark:text-gray-500">
                             {item.unit_name}
                           </p>
+
+                          {/* Display attributes in table */}
+                          {item.attributes &&
+                            Array.isArray(item.attributes) &&
+                            item.attributes.length > 0 && (
+                              <div className="flex flex-wrap gap-1 mt-1">
+                                {item.attributes.map((attr, attrIdx) => {
+                                  if (
+                                    typeof attr === "object" &&
+                                    attr !== null
+                                  ) {
+                                    return Object.entries(attr).map(
+                                      ([key, value]) => (
+                                        <span
+                                          key={`${attrIdx}-${key}`}
+                                          className="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300"
+                                        >
+                                          {key}: {value}
+                                        </span>
+                                      ),
+                                    );
+                                  }
+                                  return null;
+                                })}
+                              </div>
+                            )}
+
+                          {/* Display variants in table */}
+                          {item.variants &&
+                            Array.isArray(item.variants) &&
+                            item.variants.length > 0 && (
+                              <div className="flex flex-wrap gap-1 mt-1">
+                                {item.variants
+                                  .slice(0, 2)
+                                  .map((variant, variantIdx) => {
+                                    const variantValues = [];
+                                    if (variant.size)
+                                      variantValues.push(
+                                        `Size: ${variant.size}`,
+                                      );
+                                    if (variant.color)
+                                      variantValues.push(
+                                        `Color: ${variant.color}`,
+                                      );
+                                    if (variant.material)
+                                      variantValues.push(
+                                        `Material: ${variant.material}`,
+                                      );
+                                    if (variant.gender)
+                                      variantValues.push(
+                                        `Gender: ${variant.gender}`,
+                                      );
+
+                                    return variantValues.map((val, valIdx) => (
+                                      <span
+                                        key={`${variantIdx}-${valIdx}`}
+                                        className="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300"
+                                      >
+                                        {val}
+                                      </span>
+                                    ));
+                                  })}
+                                {item.variants.length > 2 && (
+                                  <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400">
+                                    +{item.variants.length - 2} more
+                                  </span>
+                                )}
+                              </div>
+                            )}
+
                           {hasStockPermission &&
                             item.stock_quantity !== undefined &&
                             (item.stock_quantity > 0 ? (
-                              <p className="text-xs text-blue-600 dark:text-blue-400">
+                              <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
                                 Stock: {item.stock_quantity}
                               </p>
                             ) : (
-                              <p className="text-xs text-red-600 dark:text-red-400">
+                              <p className="text-xs text-red-600 dark:text-red-400 mt-1">
                                 Please Add Stock
                               </p>
                             ))}

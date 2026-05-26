@@ -1,19 +1,39 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { FiX, FiSave } from 'react-icons/fi'
 import { useAuthStore } from '../../../store/authStore'
 import Button from '../Button/Button'
 import Input from '../Input/Input'
 
-const MedicineTypeModal = ({ isOpen, onClose, onCreate, initialData = null }) => {
+const MedicineTypeModal = ({ isOpen, onClose, onCreate, initialData = null, initialName = '' }) => {
   const { user } = useAuthStore()
   const [formData, setFormData] = useState({
-    name: initialData?.name || '',
-   
+    name: initialData?.name || initialName || '',
     user_id: user?.id || '',
     is_active: true
   })
   const [isSubmitting, setIsSubmitting] = useState(false)
+
+  // Reset form when modal opens with new initialName (for new items)
+  useEffect(() => {
+    if (isOpen && initialName && !initialData) {
+      setFormData(prev => ({
+        ...prev,
+        name: initialName
+      }))
+    }
+  }, [isOpen, initialName, initialData])
+
+  // Reset form when modal closes
+  useEffect(() => {
+    if (!isOpen) {
+      setFormData({
+        name: '',
+        user_id: user?.id || '',
+        is_active: true
+      })
+    }
+  }, [isOpen, user?.id])
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -25,7 +45,6 @@ const MedicineTypeModal = ({ isOpen, onClose, onCreate, initialData = null }) =>
       // Reset form
       setFormData({
         name: '',
-       
         user_id: user?.id || '',
         is_active: true
       })
@@ -97,8 +116,6 @@ const MedicineTypeModal = ({ isOpen, onClose, onCreate, initialData = null }) =>
                 placeholder="Enter medicine type name (e.g., Tablet, Capsule, Syrup)"
                 required
               />
-
-             
 
               <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200 dark:border-gray-700">
                 <Button

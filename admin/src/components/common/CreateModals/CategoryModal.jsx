@@ -1,21 +1,43 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { FiX, FiSave } from 'react-icons/fi'
 import { useAuthStore } from '../../../store/authStore'
 import Button from '../Button/Button'
 import Input from '../Input/Input'
 
-const CategoryModal = ({ isOpen, onClose, onCreate, initialData = null }) => {
+const CategoryModal = ({ isOpen, onClose, onCreate, initialData = null, initialName = '' }) => {
   const { user } = useAuthStore()
   const [formData, setFormData] = useState({
-    name: initialData?.name || '',
-   
+    name: initialData?.name || initialName || '',
     description: initialData?.description || '',
     parent_id: initialData?.parent_id || '',
     user_id: user?.id || '',
     is_active: true
   })
   const [isSubmitting, setIsSubmitting] = useState(false)
+
+  // Reset form when modal opens with new initialName (for new items)
+  useEffect(() => {
+    if (isOpen && initialName && !initialData) {
+      setFormData(prev => ({
+        ...prev,
+        name: initialName
+      }))
+    }
+  }, [isOpen, initialName, initialData])
+
+  // Reset form when modal closes
+  useEffect(() => {
+    if (!isOpen) {
+      setFormData({
+        name: '',
+        description: '',
+        parent_id: '',
+        user_id: user?.id || '',
+        is_active: true
+      })
+    }
+  }, [isOpen, user?.id])
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -27,7 +49,6 @@ const CategoryModal = ({ isOpen, onClose, onCreate, initialData = null }) => {
       // Reset form
       setFormData({
         name: '',
-      
         description: '',
         parent_id: '',
         user_id: user?.id || '',
@@ -101,7 +122,6 @@ const CategoryModal = ({ isOpen, onClose, onCreate, initialData = null }) => {
                 placeholder="Enter category name"
                 required
               />
-
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">

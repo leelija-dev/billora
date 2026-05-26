@@ -1,21 +1,41 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { FiX, FiSave } from 'react-icons/fi'
 import { useAuthStore } from '../../../store/authStore'
 import Button from '../Button/Button'
 import Input from '../Input/Input'
 
-const BrandModal = ({ isOpen, onClose, onCreate, initialData = null }) => {
+const BrandModal = ({ isOpen, onClose, onCreate, initialData = null, initialName = '' }) => {
   const { user } = useAuthStore()
   const [formData, setFormData] = useState({
-    name: initialData?.name || '',
- 
+    name: initialData?.name || initialName || '',
     description: initialData?.description || '',
-   
     user_id: user?.id || '',
     is_active: true
   })
   const [isSubmitting, setIsSubmitting] = useState(false)
+
+  // Reset form when modal opens with new initialName (for new items)
+  useEffect(() => {
+    if (isOpen && initialName && !initialData) {
+      setFormData(prev => ({
+        ...prev,
+        name: initialName
+      }))
+    }
+  }, [isOpen, initialName, initialData])
+
+  // Reset form when modal closes
+  useEffect(() => {
+    if (!isOpen) {
+      setFormData({
+        name: initialData?.name || '',
+        description: initialData?.description || '',
+        user_id: user?.id || '',
+        is_active: true
+      })
+    }
+  }, [isOpen, initialData, user?.id])
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -27,9 +47,7 @@ const BrandModal = ({ isOpen, onClose, onCreate, initialData = null }) => {
       // Reset form
       setFormData({
         name: '',
-     
         description: '',
-       
         user_id: user?.id || '',
         is_active: true
       })
@@ -101,9 +119,6 @@ const BrandModal = ({ isOpen, onClose, onCreate, initialData = null }) => {
                 placeholder="Enter brand name"
                 required
               />
-
-
-             
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
