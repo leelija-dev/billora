@@ -129,6 +129,8 @@ const InvoiceEditForm = ({
   const currentUserId = invoice.user_id || getUserId(user);
   const createdBy = user?.id || invoice.created_by;
 
+  console.log("InvoiceEditForm rendered with invoice:", invoice);
+
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [dataFetchError, setDataFetchError] = useState(false);
@@ -362,35 +364,85 @@ const InvoiceEditForm = ({
 
         await fetchPackages(currentUserId).catch(() => {});
 
+        // Find this section in your useEffect where rows are being mapped (around line 200-260)
+        // Replace the mapping logic with this updated version:
+
         const rows = (invoice.invoice_items || invoice.items || []).filter(
           (row) => !row.is_package,
         );
 
-        // Fetch product details for each item individually
+        // Fetch current stock quantities for each item
         const mappedProducts = [];
-        
+
         for (const item of rows) {
           const qty = parseFloat(item.quantity ?? item.item_count ?? 1);
-          
+
           // Try to find product in local products first
           let product = (bd.products || []).find(
             (p) => p.id === item.product_id,
           );
-          
+
           // If not found locally, fetch from API
           if (!product || !product.name) {
             try {
-              const productResponse = await productsAPI.getById(item.product_id);
-              if (productResponse.data?.status === true && productResponse.data?.data) {
+              const productResponse = await productsAPI.getById(
+                item.product_id,
+              );
+              if (
+                productResponse.data?.status === true &&
+                productResponse.data?.data
+              ) {
                 product = productResponse.data.data;
               }
             } catch (error) {
-              console.error(`Failed to fetch product ${item.product_id}:`, error);
+              console.error(
+                `Failed to fetch product ${item.product_id}:`,
+                error,
+              );
             }
           }
-          
-          const stock = stockList.find((s) => s.product_id === item.product_id);
-          const available = parseFloat(stock?.quantity ?? 0) + qty;
+
+          // Fetch current stock quantity using stock_id from invoice item
+          let currentStockQuantity = 0;
+          let stockEntry = null;
+
+          if (hasStockPermission && item.stock_id) {
+            try {
+              // Fetch the specific stock entry to get current quantity
+              const stockResponse = await stockAPI.getById(item.stock_id);
+              console.log(`Fetched stock for stock_id ${item.stock_id}:`, stockResponse);
+              if (
+                stockResponse.data?.status === true &&
+                stockResponse.data?.data
+              ) {
+                stockEntry = stockResponse.data.data;
+                currentStockQuantity = parseFloat(stockEntry.quantity || 0);
+              }
+            } catch (error) {
+              console.error(`Failed to fetch stock ${item.stock_id}:`, error);
+              // Fallback: try to find in stockList
+              const stock = stockList.find((s) => s.id === item.stock_id);
+              if (stock) {
+                currentStockQuantity = parseFloat(stock.quantity ?? 0);
+                stockEntry = stock;
+              }
+            }
+          } else if (hasStockPermission && !item.stock_id) {
+            // If no stock_id but we have product, try to get from product's stock
+            const stock = stockList.find(
+              (s) => s.product_id === item.product_id,
+            );
+            if (stock) {
+              currentStockQuantity = parseFloat(stock.quantity ?? 0);
+              stockEntry = stock;
+            }
+          }
+
+          // The available stock for editing should be current stock + original quantity
+          const availableStock = hasStockPermission
+            ? currentStockQuantity 
+            : Infinity;
+
           const unit = Array.isArray(bd.units)
             ? bd.units.find((u) => u.id === (item.unit_id || product?.unit_id))
             : null;
@@ -404,7 +456,10 @@ const InvoiceEditForm = ({
           let productName = "";
           if (product?.name) {
             productName = product.name;
-          } else if (item.product_name && item.product_name !== "Product #undefined") {
+          } else if (
+            item.product_name &&
+            item.product_name !== "Product #undefined"
+          ) {
             productName = item.product_name;
           } else if (item.name && item.name !== "Product #undefined") {
             productName = item.name;
@@ -438,6 +493,8 @@ const InvoiceEditForm = ({
             unitName = product.unit.name;
           }
 
+          console.log("checkin .......................current:",currentStockQuantity)
+
           mappedProducts.push({
             id: item.id,
             product_id: item.product_id,
@@ -452,12 +509,14 @@ const InvoiceEditForm = ({
             discount: discount,
             total_price: calculateItemTotal(price, qty, gst, discount),
             status: "completed",
-            stock_quantity: hasStockPermission ? available : Infinity,
-            stock_id: stock?.id ?? item.stock_id ?? null,
+            stock_quantity: availableStock, // This is the maximum quantity that can be added (current stock + original quantity)
+            current_stock: currentStockQuantity, // Store the actual current stock separately
+            stock_id: item.stock_id || stockEntry?.id || null,
             is_package: false,
-            variant_info: item.variant_info || null,
+            variant_info: item.variant_info || stockEntry?.variant_info || null,
           });
         }
+        console.log("Mapped products with stock info:", mappedProducts);
 
         const pkgData = invoice.packages;
         const invoicePackages = Array.isArray(pkgData)
@@ -892,8 +951,15 @@ const InvoiceEditForm = ({
       const row = { ...next[index] };
       if (field === "quantity") {
         const newQuantity = parseFloat(value) || 0;
-        if (row.stock_quantity < Infinity && newQuantity > row.stock_quantity) {
-          toast.error(`Cannot exceed stock (${row.stock_quantity})`);
+        // Use stock_quantity which already includes the original quantity
+        if (
+          row.stock_quantity !== undefined &&
+          row.stock_quantity < Infinity &&
+          newQuantity > row.stock_quantity
+        ) {
+          toast.error(
+            `Cannot exceed available stock. Maximum allowed: ${row.stock_quantity}`,
+          );
           return prev;
         }
         row.quantity = newQuantity;
@@ -914,21 +980,20 @@ const InvoiceEditForm = ({
     });
   };
 
-  const handleIncrementQuantity = (index) => {
-    const item = lineItems[index];
-    if (item.is_package) {
-      handleUpdateItem(index, "quantity", parseFloat(item.quantity) + 1);
-      return;
-    }
-    const max =
-      item.stock_quantity < Infinity ? item.stock_quantity : undefined;
-    const n = parseFloat(item.quantity) + 1;
-    if (max != null && n > max) {
-      toast.error(`Maximum: ${max}`);
-      return;
-    }
-    handleUpdateItem(index, "quantity", n);
-  };
+ const handleIncrementQuantity = (index) => {
+  const item = lineItems[index];
+  if (item.is_package) {
+    handleUpdateItem(index, "quantity", parseFloat(item.quantity) + 1);
+    return;
+  }
+  const max = item.stock_quantity < Infinity ? item.stock_quantity : undefined;
+  const n = parseFloat(item.quantity) + 1;
+  if (max != null && n > max) {
+    toast.error(`Maximum quantity allowed: ${max}. Current stock available: ${item.current_stock || item.stock_quantity - (item.quantity - 1)}`);
+    return;
+  }
+  handleUpdateItem(index, "quantity", n);
+};
 
   const handleDecrementQuantity = (index) => {
     const item = lineItems[index];
