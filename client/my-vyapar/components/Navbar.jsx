@@ -466,7 +466,7 @@ const Navbar = () => {
   // Function to handle dashboard click - opens in new tab
   const handleDashboardClick = (e) => {
     e.preventDefault();
-    window.open(`${DASHBOARD_URL}/dashboard`, '_blank');
+    window.open(`${DASHBOARD_URL}dashboard`, '_blank');
   };
 
   // ✅ Return null to hide navbar completely on specified pages
@@ -567,7 +567,7 @@ const Navbar = () => {
             {/* Dashboard Button Logic */}
             {isLoggedIn && hasActivePlan ? (
               <a
-                href={`${DASHBOARD_URL}/dashboard`}
+                href={`${DASHBOARD_URL}dashboard`}
                 onClick={handleDashboardClick}
                 className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-full text-sm font-semibold transition-all duration-200 hover:shadow-md hover:scale-105 whitespace-nowrap cursor-pointer"
                 target="_blank"
@@ -645,11 +645,11 @@ const Navbar = () => {
                       {/* Dashboard link in dropdown menu */}
                       {hasActivePlan && (
                         <a
-                          href={`${DASHBOARD_URL}/dashboard`}
+                          href={`${DASHBOARD_URL}dashboard`}
                           onClick={(e) => {
                             e.preventDefault();
                             setShowUserMenu(false);
-                            window.open(`${DASHBOARD_URL}/dashboard`, '_blank');
+                            window.open(`${DASHBOARD_URL}dashboard`, '_blank');
                           }}
                           className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer"
                           target="_blank"
@@ -811,11 +811,11 @@ const Navbar = () => {
             {/* Dashboard button for mobile */}
             {isLoggedIn && hasActivePlan && (
               <a
-                href={`${DASHBOARD_URL}/dashboard`}
+                href={`${DASHBOARD_URL}dashboard`}
                 onClick={(e) => {
                   e.preventDefault();
                   setIsMobileMenuOpen(false);
-                  window.open(`${DASHBOARD_URL}/dashboard`, '_blank');
+                  window.open(`${DASHBOARD_URL}dashboard`, '_blank');
                 }}
                 className="flex items-center justify-center gap-2 w-full px-4 py-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-xl text-sm font-semibold transition-all duration-200 cursor-pointer"
                 target="_blank"

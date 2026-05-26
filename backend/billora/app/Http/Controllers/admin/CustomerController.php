@@ -1744,6 +1744,7 @@ class CustomerController extends Controller
 
     public function createQR($id)
     {
+        
         try {
 
             $customer = Customers::find($id);

@@ -257,7 +257,7 @@ class ProductsController extends Controller
     }
         $user = Auth::user()->id;
         try{
-        $product = Products::where('user_id', $user)->where('id', $id)->with(['images','category','brand','unit','user','stocks'])->firstOrFail();
+        $product = Products::where('user_id', $user)->where('id', $id)->with(['images','category','brand','unit','user','stocks','variants'])->firstOrFail();
         if(!$product){
             return response()->json([
                 'status' => false,
@@ -1219,6 +1219,21 @@ class ProductsController extends Controller
             return response()->json([
                 'status' => true,
                 'products' => $products
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => false,
+                'message' => $e->getMessage()
+            ]);
+        }
+    }
+    public function decript($encryptedId)
+    {
+        try {
+            $decryptedId = Crypt::decryptString($encryptedId);
+            return response()->json([
+                'status' => true,
+                'decrypted_id' => $decryptedId
             ]);
         } catch (\Exception $e) {
             return response()->json([
