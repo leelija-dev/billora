@@ -262,3 +262,10 @@ Route::middleware('auth:sanctum')->prefix('gst-collection')->group(function () {
    Route::get('/all-products/{id}', [GstController::class, 'productDetails']);   //product id
    Route::put('/update-status/{id}', [GstController::class, 'updateStatus']);
 });
+
+//public invoice
+Route::prefix('public-invoice')->group(function (){
+   Route::get('/{id}',[InvoiceController::class,'publicInvoice']); // this is for admin generate invoice details
+   Route::get('/customer-invoice/{id}',[InvoiceController::class,'publicUserInvioce']);  // this is for user self generate invoice history
+
+});

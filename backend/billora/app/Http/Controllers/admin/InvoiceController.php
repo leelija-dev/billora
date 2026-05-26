@@ -16,6 +16,7 @@ use App\Models\BillCustomer;
 use App\Models\BillPaymentHistory;
 use App\Models\GstCollection;
 use App\Models\PackageInvoice;
+use App\Models\UserOrders;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
@@ -134,7 +135,8 @@ class InvoiceController extends Controller
             ->with([
                 'brand',
                 'category',
-                'unit'
+                'unit',
+                'variants'
             ])
             ->where('is_active', true)
 
@@ -174,6 +176,7 @@ class InvoiceController extends Controller
 
         return response()->json([
             'status' => true,
+            'message' => 'Products List',
             'data' => $products
         ]);
     }
@@ -1312,4 +1315,50 @@ class InvoiceController extends Controller
             ]);
         }
     }
-}
+
+
+    public function publicInvoice($id){    //public invoice details from admin created invoice 
+        try{
+            $invoice = Invoice::where('id', $id)->with('invoiceItems.product.variants','packages','customer','store')->firstOrFail();
+            if(!$invoice){
+                return response()->json([
+                    'status'    => false,
+                    'message'   => 'Invoice not found'
+                ]);
+            }
+            return response()->json([
+                'status'    => true,
+                'message'   => 'Public invoice details',
+                'data'      => $invoice
+            ]);
+        }catch(\Exception $e){
+            return response()->json([
+                'status'    => false,
+                'message'   => $e->getMessage()
+            ]);
+        }
+    }
+    public function publicUserInvioce($id){
+        try{
+            $userOrder = UserOrders::where('id',$id)->with('items.product.variants','store')->firstOrFail();
+            if(!$userOrder){
+                return response()->json([
+                    'status'    => false,
+                    'message'   => 'Invoice not found'
+                ]);
+            }
+            return response()->json([
+                'status'    => true,
+                'message'   => 'Public user invoice details',
+                'data'      => $userOrder
+
+            ]);
+        }catch(\Exception $e){
+            return response()->json([
+                'status'    => false,
+                'message'   => $e->getMessage()
+            ]);
+        }
+    }
+    }
+

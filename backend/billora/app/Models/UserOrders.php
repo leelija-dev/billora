@@ -29,4 +29,9 @@ class UserOrders extends Model
     public function items(){
         return $this->hasMany(UserOrderItems::class ,'customer_order_id');
     }
+    public function store(){
+        return $this->belongsTo(Store::class);
+    }
+    
+    
 }
