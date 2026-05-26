@@ -77,6 +77,32 @@ export const logoutUser = async (userId) => {
   }
 };
 
+// Forgot password - Request reset link
+export const forgotPassword = async (email) => {
+  try {
+    const response = await api.post("/forgot-password", { email });
+    return response.data;
+  } catch (error) {
+    console.error('Forgot password error:', error);
+    throw error;
+  }
+};
+
+// Reset password - Set new password with token
+export const resetPassword = async (token, password, passwordConfirmation) => {
+  try {
+    const response = await api.post("/reset-password", {
+      token,
+      password,
+      password_confirmation: passwordConfirmation
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Reset password error:', error);
+    throw error;
+  }
+};
+
 export const checkSession = async () => {
   try {
     const response = await api.get("/users/check-session");
