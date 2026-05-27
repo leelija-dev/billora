@@ -17,13 +17,17 @@ import {
   FaLayerGroup,
   FaTags,
   FaGem,
-  FaInfoCircle
-} from 'react-icons/fa';
-import { IoMdTrendingUp } from 'react-icons/io';
-import { RiVipCrownFill } from 'react-icons/ri';
-import { GiRoundStar } from 'react-icons/gi';
+  FaInfoCircle,
+} from "react-icons/fa";
+import { IoMdTrendingUp } from "react-icons/io";
+import { RiVipCrownFill } from "react-icons/ri";
+import { GiRoundStar } from "react-icons/gi";
 
-const Pricing = ({ limit = 3, showFilters = true, showViewAllButton = true }) => {
+const Pricing = ({
+  limit = 3,
+  showFilters = true,
+  showViewAllButton = true,
+}) => {
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [planEligibility, setPlanEligibility] = useState({});
   const [checkingEligibility, setCheckingEligibility] = useState({});
@@ -44,14 +48,14 @@ const Pricing = ({ limit = 3, showFilters = true, showViewAllButton = true }) =>
     fetchPlans,
     selectPlan,
     subscribeToPlan,
-    clearError
+    clearError,
   } = usePricingStore();
 
   const {
     filters,
     updateFilter,
     searchPlans: searchWithFilters,
-    setSortBy
+    setSortBy,
   } = useFilterStore();
   const [pendingPlan, setPendingPlan] = useState(null);
   const [selectedBusinessType, setSelectedBusinessType] = useState("all");
@@ -61,7 +65,13 @@ const Pricing = ({ limit = 3, showFilters = true, showViewAllButton = true }) =>
   const cardRefs = useRef([]);
   const router = useRouter();
 
-  const { user, token, isLoggedIn, hasActivePlan, checkPlanPurchaseEligibility } = useAuthStore();
+  const {
+    user,
+    token,
+    isLoggedIn,
+    hasActivePlan,
+    checkPlanPurchaseEligibility,
+  } = useAuthStore();
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -110,10 +120,13 @@ const Pricing = ({ limit = 3, showFilters = true, showViewAllButton = true }) =>
   const transformPlan = (plan, index) => {
     const features = plan.features || [];
     const monthlyPrice = parseFloat(plan.price);
-    const yearlyPrice = plan.price?.yearly ? parseFloat(plan.price.yearly) : monthlyPrice * (plan.yearly_multiplier || 12);
+    const yearlyPrice = plan.price?.yearly
+      ? parseFloat(plan.price.yearly)
+      : monthlyPrice * (plan.yearly_multiplier || 12);
     const discount = parseFloat(plan.discount) || 0;
-    const monthlyDiscountedPrice = monthlyPrice - (monthlyPrice * discount / 100);
-    const yearlyDiscountedPrice = yearlyPrice - (yearlyPrice * discount / 100);
+    const monthlyDiscountedPrice =
+      monthlyPrice - (monthlyPrice * discount) / 100;
+    const yearlyDiscountedPrice = yearlyPrice - (yearlyPrice * discount) / 100;
     const gstRate = parseFloat(plan.gst) || 0;
 
     const transformedBusinessTypes = (plan.business_types || []).map((bt) => ({
@@ -124,7 +137,9 @@ const Pricing = ({ limit = 3, showFilters = true, showViewAllButton = true }) =>
       custom_price: bt.custom_price || null,
     }));
 
-    const supportedBusinessTypeIds = transformedBusinessTypes.map((bt) => bt.id);
+    const supportedBusinessTypeIds = transformedBusinessTypes.map(
+      (bt) => bt.id,
+    );
 
     return {
       id: plan.id,
@@ -150,7 +165,9 @@ const Pricing = ({ limit = 3, showFilters = true, showViewAllButton = true }) =>
       gst: gstRate,
       businessTypes: transformedBusinessTypes,
       supportedBusinessTypeIds: supportedBusinessTypeIds,
-      description: plan.description ? plan.description.replace(/<[^>]*>?/gm, "") : "",
+      description: plan.description
+        ? plan.description.replace(/<[^>]*>?/gm, "")
+        : "",
       features: features,
       color: index === 1 ? "#8b5cf6" : "#1e293b",
       buttonText: `Select Plan`,
@@ -160,7 +177,11 @@ const Pricing = ({ limit = 3, showFilters = true, showViewAllButton = true }) =>
 
   const transformPlans = (plansData) => {
     if (!Array.isArray(plansData)) {
-      console.error("transformPlans expected array but got:", typeof plansData, plansData);
+      console.error(
+        "transformPlans expected array but got:",
+        typeof plansData,
+        plansData,
+      );
       return [];
     }
 
@@ -178,7 +199,7 @@ const Pricing = ({ limit = 3, showFilters = true, showViewAllButton = true }) =>
 
         setFilteredPlans(transformedPlans);
       } else {
-        updateFilter('search', businessTypeId);
+        updateFilter("search", businessTypeId);
         const searchResults = await searchWithFilters();
 
         if (searchResults && searchResults.length > 0) {
@@ -238,16 +259,22 @@ const Pricing = ({ limit = 3, showFilters = true, showViewAllButton = true }) =>
         const eligibilityData = {};
 
         for (const plan of filteredPlans) {
-          setCheckingEligibility(prev => ({ ...prev, [plan.id]: true }));
+          setCheckingEligibility((prev) => ({ ...prev, [plan.id]: true }));
 
           try {
             const eligibility = await checkPlanPurchaseEligibility(plan.id);
             eligibilityData[plan.id] = eligibility;
           } catch (error) {
-            console.error(`Error checking eligibility for plan ${plan.id}:`, error);
-            eligibilityData[plan.id] = { canPurchase: false, reason: 'Error checking eligibility' };
+            console.error(
+              `Error checking eligibility for plan ${plan.id}:`,
+              error,
+            );
+            eligibilityData[plan.id] = {
+              canPurchase: false,
+              reason: "Error checking eligibility",
+            };
           } finally {
-            setCheckingEligibility(prev => ({ ...prev, [plan.id]: false }));
+            setCheckingEligibility((prev) => ({ ...prev, [plan.id]: false }));
           }
         }
 
@@ -263,7 +290,7 @@ const Pricing = ({ limit = 3, showFilters = true, showViewAllButton = true }) =>
 
     if (selectedBusinessType !== "all" && showFilters) {
       const businessTypeForPlan = plan.businessTypes?.find(
-        (bt) => bt.id === parseInt(selectedBusinessType)
+        (bt) => bt.id === parseInt(selectedBusinessType),
       );
 
       if (businessTypeForPlan && businessTypeForPlan.custom_price) {
@@ -292,7 +319,7 @@ const Pricing = ({ limit = 3, showFilters = true, showViewAllButton = true }) =>
   const getOriginalPrice = (plan) => {
     if (selectedBusinessType !== "all" && showFilters) {
       const businessTypeForPlan = plan.businessTypes?.find(
-        (bt) => bt.id === parseInt(selectedBusinessType)
+        (bt) => bt.id === parseInt(selectedBusinessType),
       );
 
       if (businessTypeForPlan && businessTypeForPlan.custom_price) {
@@ -317,7 +344,10 @@ const Pricing = ({ limit = 3, showFilters = true, showViewAllButton = true }) =>
       if (!eligibility) {
         try {
           const eligibilityResult = await checkPlanPurchaseEligibility(plan.id);
-          setPlanEligibility(prev => ({ ...prev, [plan.id]: eligibilityResult }));
+          setPlanEligibility((prev) => ({
+            ...prev,
+            [plan.id]: eligibilityResult,
+          }));
 
           if (!eligibilityResult.canPurchase) {
             alert(eligibilityResult.reason);
@@ -350,9 +380,12 @@ const Pricing = ({ limit = 3, showFilters = true, showViewAllButton = true }) =>
       gst: plan.gst,
       gstAmount: gstAmount,
       totalAmount: totalAmount,
-      businessType: selectedBusinessType !== "all" && showFilters
-        ? allBusinessTypes.find((bt) => bt.id === parseInt(selectedBusinessType))
-        : plan.businessTypes?.[0] || null,
+      businessType:
+        selectedBusinessType !== "all" && showFilters
+          ? allBusinessTypes.find(
+              (bt) => bt.id === parseInt(selectedBusinessType),
+            )
+          : plan.businessTypes?.[0] || null,
       hasCustomPrice: currentPriceData.hasCustomPrice,
       eligibility: planEligibility[plan.id] || null,
     };
@@ -364,14 +397,15 @@ const Pricing = ({ limit = 3, showFilters = true, showViewAllButton = true }) =>
     }
 
     const eligibility = planEligibility[plan.id];
-    const isUpgrade = eligibility && eligibility.action === 'upgrade';
+    const isUpgrade = eligibility && eligibility.action === "upgrade";
 
     if (isUpgrade) {
-      const dashboardUrl = process.env.NEXT_PUBLIC_DASHBOARD_URL || 'http://localhost:3000';
-      window.open(`${dashboardUrl}/billing`, '_blank');
+      const dashboardUrl =
+        process.env.NEXT_PUBLIC_DASHBOARD_URL || "http://localhost:3000";
+      window.open(`${dashboardUrl}/billing`, "_blank");
     } else {
       selectPlan(selectedPlanData);
-      localStorage.setItem('selectedPlan', JSON.stringify(selectedPlanData));
+      localStorage.setItem("selectedPlan", JSON.stringify(selectedPlanData));
       router.push("/order-summary");
     }
   };
@@ -425,16 +459,37 @@ const Pricing = ({ limit = 3, showFilters = true, showViewAllButton = true }) =>
     if (!showLoginModal) return null;
 
     return (
-      <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-300" onClick={() => setShowLoginModal(false)}>
-        <div className="bg-white rounded-3xl max-w-md w-full p-8 shadow-2xl transform animate-in zoom-in-95 duration-300" onClick={(e) => e.stopPropagation()}>
+      <div
+        className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-300"
+        onClick={() => setShowLoginModal(false)}
+      >
+        <div
+          className="bg-white rounded-3xl max-w-md w-full p-8 shadow-2xl transform animate-in zoom-in-95 duration-300"
+          onClick={(e) => e.stopPropagation()}
+        >
           <div className="text-center mb-8">
             <div className="w-24 h-24 bg-gradient-to-br from-purple-100 to-purple-200 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg">
-              <svg className="w-12 h-12 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+              <svg
+                className="w-12 h-12 text-purple-600"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+                />
               </svg>
             </div>
-            <h3 className="text-2xl font-bold text-gray-900 mb-3">Unlock Premium Features</h3>
-            <p className="text-gray-600">Sign in to continue with your subscription and access exclusive benefits</p>
+            <h3 className="text-2xl font-bold text-gray-900 mb-3">
+              Unlock Premium Features
+            </h3>
+            <p className="text-gray-600">
+              Sign in to continue with your subscription and access exclusive
+              benefits
+            </p>
             {pendingPlan && (
               <div className="mt-5 p-4 bg-gradient-to-r from-purple-50 to-purple-100 rounded-xl">
                 <p className="text-sm text-purple-900 font-semibold">
@@ -442,7 +497,9 @@ const Pricing = ({ limit = 3, showFilters = true, showViewAllButton = true }) =>
                 </p>
                 <p className="text-2xl font-bold text-purple-600 mt-1">
                   ₹{pendingPlan.displayPrice}
-                  <span className="text-sm font-normal text-gray-600">/month</span>
+                  <span className="text-sm font-normal text-gray-600">
+                    /month
+                  </span>
                 </p>
               </div>
             )}
@@ -466,14 +523,22 @@ const Pricing = ({ limit = 3, showFilters = true, showViewAllButton = true }) =>
     );
   };
 
-  // Skeleton Loading Component
+  // Skeleton Loading Component with equal height
   const PricingCardSkeleton = ({ isPopular = false }) => (
-    <div className={`group relative transition-all duration-500 transform ${isPopular ? 'lg:scale-105 z-20' : ''
-      }`}>
-      <div className={`absolute -inset-0.5 bg-gradient-to-r from-purple-600 to-purple-400 rounded-2xl blur opacity-0 ${isPopular ? 'opacity-30 animate-pulse' : ''
-        }`}></div>
+    <div
+      className={`group relative transition-all duration-500 transform ${
+        isPopular ? "lg:scale-105 z-20" : ""
+      }`}
+    >
+      <div
+        className={`absolute -inset-0.5 bg-gradient-to-r from-purple-600 to-purple-400 rounded-2xl blur opacity-0 ${
+          isPopular ? "opacity-30 animate-pulse" : ""
+        }`}
+      ></div>
 
-      <div className={`relative bg-white rounded-2xl overflow-hidden shadow-xl`}>
+      <div
+        className={`relative bg-white rounded-2xl overflow-hidden shadow-xl h-full flex flex-col`}
+      >
         {isPopular && (
           <div className="absolute top-4 right-4 z-10">
             <div className="bg-gray-200 text-gray-200 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider animate-pulse">
@@ -482,10 +547,13 @@ const Pricing = ({ limit = 3, showFilters = true, showViewAllButton = true }) =>
           </div>
         )}
 
-        <div className="p-8">
+        <div className="p-8 flex-1 flex flex-col">
           <div className="mb-6">
-            <div className={`w-14 h-14 rounded-xl mb-4 bg-gray-200 animate-pulse ${isPopular ? 'shadow-lg' : ''
-              }`}></div>
+            <div
+              className={`w-14 h-14 rounded-xl mb-4 bg-gray-200 animate-pulse ${
+                isPopular ? "shadow-lg" : ""
+              }`}
+            ></div>
             <div className="h-8 bg-gray-200 rounded-lg mb-2 animate-pulse"></div>
             <div className="h-4 bg-gray-200 rounded animate-pulse mb-1"></div>
             <div className="h-4 bg-gray-200 rounded w-3/4 animate-pulse"></div>
@@ -504,7 +572,7 @@ const Pricing = ({ limit = 3, showFilters = true, showViewAllButton = true }) =>
             </div>
           </div>
 
-          <div className="mb-8">
+          <div className="mb-8 flex-1">
             <div className="h-4 bg-gray-200 rounded w-24 mb-4 animate-pulse"></div>
             <div className="space-y-3.5">
               {[1, 2, 3, 4, 5].map((i) => (
@@ -512,14 +580,16 @@ const Pricing = ({ limit = 3, showFilters = true, showViewAllButton = true }) =>
                   <div className="w-5 h-5 bg-gray-200 rounded-full animate-pulse"></div>
                   <div className="flex-1">
                     <div className="h-4 bg-gray-200 rounded animate-pulse mb-1"></div>
-                    {i % 2 === 0 && <div className="h-4 bg-gray-200 rounded w-3/4 animate-pulse"></div>}
+                    {i % 2 === 0 && (
+                      <div className="h-4 bg-gray-200 rounded w-3/4 animate-pulse"></div>
+                    )}
                   </div>
                 </div>
               ))}
             </div>
           </div>
 
-          <div className="h-12 bg-gray-200 rounded-xl animate-pulse"></div>
+          <div className="h-12 bg-gray-200 rounded-xl animate-pulse mt-auto"></div>
         </div>
       </div>
     </div>
@@ -561,7 +631,10 @@ const Pricing = ({ limit = 3, showFilters = true, showViewAllButton = true }) =>
             <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-200 p-6">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {[1, 2, 3].map((i) => (
-                  <div key={i} className="flex items-center gap-3 justify-center">
+                  <div
+                    key={i}
+                    className="flex items-center gap-3 justify-center"
+                  >
                     <div className="w-10 h-10 bg-gray-200 rounded-full animate-pulse"></div>
                     <div>
                       <div className="h-4 bg-gray-200 rounded w-24 mb-1 animate-pulse"></div>
@@ -576,10 +649,18 @@ const Pricing = ({ limit = 3, showFilters = true, showViewAllButton = true }) =>
 
         <style jsx>{`
           @keyframes blob {
-            0% { transform: translate(0px, 0px) scale(1); }
-            33% { transform: translate(30px, -50px) scale(1.1); }
-            66% { transform: translate(-20px, 20px) scale(0.9); }
-            100% { transform: translate(0px, 0px) scale(1); }
+            0% {
+              transform: translate(0px, 0px) scale(1);
+            }
+            33% {
+              transform: translate(30px, -50px) scale(1.1);
+            }
+            66% {
+              transform: translate(-20px, 20px) scale(0.9);
+            }
+            100% {
+              transform: translate(0px, 0px) scale(1);
+            }
           }
           .animate-blob {
             animation: blob 7s infinite;
@@ -597,11 +678,23 @@ const Pricing = ({ limit = 3, showFilters = true, showViewAllButton = true }) =>
       <div className="py-40 bg-gradient-to-br from-gray-50 via-white to-gray-50 min-h-[600px] flex items-center justify-center">
         <div className="text-center bg-white p-10 rounded-3xl shadow-2xl max-w-md">
           <div className="w-24 h-24 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
-            <svg className="w-12 h-12 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            <svg
+              className="w-12 h-12 text-red-500"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+              />
             </svg>
           </div>
-          <h3 className="text-2xl font-bold text-gray-800 mb-3">Oops! Something went wrong</h3>
+          <h3 className="text-2xl font-bold text-gray-800 mb-3">
+            Oops! Something went wrong
+          </h3>
           <p className="text-gray-600 mb-6">{error}</p>
           <button
             onClick={() => window.location.reload()}
@@ -614,12 +707,18 @@ const Pricing = ({ limit = 3, showFilters = true, showViewAllButton = true }) =>
     );
   }
 
-  const displayPlans = showFilters ? filteredPlans : (plans && plans.length > 0 ? plans.slice(0, limit) : []);
+  const displayPlans = showFilters
+    ? filteredPlans
+    : plans && plans.length > 0
+      ? plans.slice(0, limit)
+      : [];
 
   // Get selected business type name for display
   const getSelectedBusinessTypeName = () => {
     if (selectedBusinessType === "all") return "All Business Types";
-    const selected = allBusinessTypes.find(bt => bt.id === parseInt(selectedBusinessType));
+    const selected = allBusinessTypes.find(
+      (bt) => bt.id === parseInt(selectedBusinessType),
+    );
     return selected ? selected.name : "Select Business Type";
   };
 
@@ -627,7 +726,7 @@ const Pricing = ({ limit = 3, showFilters = true, showViewAllButton = true }) =>
   const getCurrentPlanDetails = () => {
     if (!isLoggedIn || !user?.plan_id) return null;
 
-    const currentPlan = plans.find(plan => plan.id === user.plan_id);
+    const currentPlan = plans.find((plan) => plan.id === user.plan_id);
     return currentPlan || null;
   };
 
@@ -640,7 +739,7 @@ const Pricing = ({ limit = 3, showFilters = true, showViewAllButton = true }) =>
         isUpgrade: false,
         isDowngrade: false,
         isSame: false,
-        canPurchase: true
+        canPurchase: true,
       };
     }
 
@@ -651,7 +750,7 @@ const Pricing = ({ limit = 3, showFilters = true, showViewAllButton = true }) =>
       isUpgrade: planPrice > currentPlanPrice,
       isDowngrade: planPrice < currentPlanPrice,
       isSame: planPrice === currentPlanPrice,
-      canPurchase: planPrice !== currentPlanPrice
+      canPurchase: planPrice !== currentPlanPrice,
     };
   };
 
@@ -676,7 +775,8 @@ const Pricing = ({ limit = 3, showFilters = true, showViewAllButton = true }) =>
             Choose Your Perfect Plan
           </h2>
           <p className="text-gray-600 text-lg max-w-2xl mx-auto">
-            Start for free, scale with confidence. No hidden fees, cancel anytime.
+            Start for free, scale with confidence. No hidden fees, cancel
+            anytime.
           </p>
         </div>
 
@@ -689,18 +789,35 @@ const Pricing = ({ limit = 3, showFilters = true, showViewAllButton = true }) =>
                 className="flex items-center justify-between gap-3 bg-white rounded-[40px] px-6 py-3 min-w-[260px] shadow-md border border-gray-200 hover:border-purple-300 transition-all duration-300"
               >
                 <div className="flex items-center gap-2">
-                  <svg className="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                  <svg
+                    className="w-5 h-5 text-purple-600"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
+                    />
                   </svg>
-                  <span className="text-gray-700 font-medium">{getSelectedBusinessTypeName()}</span>
+                  <span className="text-gray-700 font-medium">
+                    {getSelectedBusinessTypeName()}
+                  </span>
                 </div>
                 <svg
-                  className={`w-5 h-5 text-gray-400 transition-transform duration-300 ${isDropdownOpen ? 'rotate-180' : ''}`}
+                  className={`w-5 h-5 text-gray-400 transition-transform duration-300 ${isDropdownOpen ? "rotate-180" : ""}`}
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
                 >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M19 9l-7 7-7-7"
+                  />
                 </svg>
               </button>
 
@@ -712,16 +829,39 @@ const Pricing = ({ limit = 3, showFilters = true, showViewAllButton = true }) =>
                       setSelectedBusinessType("all");
                       setIsDropdownOpen(false);
                     }}
-                    className={`w-full px-6 py-3 text-left hover:bg-purple-50 transition-colors duration-200 flex items-center gap-2 ${selectedBusinessType === "all" ? "bg-purple-50 text-purple-700" : "text-gray-700"
-                      }`}
+                    className={`w-full px-6 py-3 text-left hover:bg-purple-50 transition-colors duration-200 flex items-center gap-2 ${
+                      selectedBusinessType === "all"
+                        ? "bg-purple-50 text-purple-700"
+                        : "text-gray-700"
+                    }`}
                   >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                    <svg
+                      className="w-4 h-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"
+                      />
                     </svg>
                     All Business Types
                     {selectedBusinessType === "all" && (
-                      <svg className="w-4 h-4 ml-auto text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      <svg
+                        className="w-4 h-4 ml-auto text-purple-600"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M5 13l4 4L19 7"
+                        />
                       </svg>
                     )}
                   </button>
@@ -733,16 +873,39 @@ const Pricing = ({ limit = 3, showFilters = true, showViewAllButton = true }) =>
                         setSelectedBusinessType(businessType.id.toString());
                         setIsDropdownOpen(false);
                       }}
-                      className={`w-full px-6 py-3 text-left hover:bg-purple-50 transition-colors duration-200 flex items-center gap-2 ${selectedBusinessType === businessType.id.toString() ? "bg-purple-50 text-purple-700" : "text-gray-700"
-                        }`}
+                      className={`w-full px-6 py-3 text-left hover:bg-purple-50 transition-colors duration-200 flex items-center gap-2 ${
+                        selectedBusinessType === businessType.id.toString()
+                          ? "bg-purple-50 text-purple-700"
+                          : "text-gray-700"
+                      }`}
                     >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                      <svg
+                        className="w-4 h-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                        />
                       </svg>
                       {businessType.name}
                       {selectedBusinessType === businessType.id.toString() && (
-                        <svg className="w-4 h-4 ml-auto text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        <svg
+                          className="w-4 h-4 ml-auto text-purple-600"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M5 13l4 4L19 7"
+                          />
                         </svg>
                       )}
                     </button>
@@ -753,16 +916,31 @@ const Pricing = ({ limit = 3, showFilters = true, showViewAllButton = true }) =>
           </div>
         )}
 
-        {/* Pricing Cards Grid */}
+        {/* Pricing Cards Grid - Equal Height Cards */}
         {displayPlans.length === 0 && !loading && hasLoadedOnce ? (
           <div className="text-center py-24 relative z-10">
             <div className="w-32 h-32 bg-gradient-to-br from-gray-100 to-gray-200 rounded-full flex items-center justify-center mx-auto mb-8 shadow-lg">
-              <svg className="w-16 h-16 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+              <svg
+                className="w-16 h-16 text-gray-400"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"
+                />
               </svg>
             </div>
-            <h3 className="text-3xl font-bold text-gray-800 mb-3">No Plans Available</h3>
-            <p className="text-gray-600 text-lg">No plans found for this business type. Please try another selection.</p>
+            <h3 className="text-3xl font-bold text-gray-800 mb-3">
+              No Plans Available
+            </h3>
+            <p className="text-gray-600 text-lg">
+              No plans found for this business type. Please try another
+              selection.
+            </p>
           </div>
         ) : (
           <>
@@ -774,27 +952,35 @@ const Pricing = ({ limit = 3, showFilters = true, showViewAllButton = true }) =>
                 const isHovered = hoveredPlan === plan.id;
                 const planAction = getPlanAction(plan);
 
+                
+
                 return (
                   <div
                     key={plan.id}
                     ref={(el) => (cardRefs.current[index] = el)}
                     onMouseEnter={() => setHoveredPlan(plan.id)}
                     onMouseLeave={() => setHoveredPlan(null)}
-                    className={`relative transition-all duration-500 ${isPopular
-                        ? 'lg:-mt-4 lg:mb-4 z-20'
-                        : 'hover:lg:-translate-y-3'
-                      }`}
+                    className={`relative transition-all duration-500 h-full ${
+                      isPopular
+                        ? "lg:-mt-4 lg:mb-4 z-20"
+                        : "hover:lg:-translate-y-3"
+                    }`}
                   >
                     {/* Floating glow effect */}
-                    <div className={`absolute -inset-2 bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-3xl blur-2xl transition duration-700 ${isHovered ? 'opacity-100' : 'opacity-0'
-                      }`}></div>
+                    <div
+                      className={`absolute -inset-2 bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-3xl blur-2xl transition duration-700 ${
+                        isHovered ? "opacity-100" : "opacity-0"
+                      }`}
+                    ></div>
 
-                    {/* Main Card */}
-                    <div className={`relative bg-white rounded-3xl overflow-hidden transition-all duration-500 ${isPopular
-                        ? 'shadow-2xl ring-2 ring-purple-500'
-                        : 'shadow-lg hover:shadow-2xl'
-                      } ${isHovered ? 'shadow-2xl' : ''}`}>
-
+                    {/* Main Card - Equal height using h-full and flex flex-col */}
+                    <div
+                      className={`relative bg-white rounded-3xl overflow-hidden transition-all duration-500 h-full flex flex-col ${
+                        isPopular
+                          ? "shadow-2xl ring-2 ring-purple-500"
+                          : "shadow-lg hover:shadow-2xl"
+                      } ${isHovered ? "shadow-2xl" : ""}`}
+                    >
                       {/* Modern Popular Banner */}
                       {isPopular && (
                         <div className="absolute top-0 inset-x-0 z-10">
@@ -807,9 +993,11 @@ const Pricing = ({ limit = 3, showFilters = true, showViewAllButton = true }) =>
                         </div>
                       )}
 
-                      <div className={`p-8 ${isPopular ? 'pt-16' : 'pt-8'} text-center`}>
+                      <div
+                        className={`p-8 flex-1 flex flex-col ${isPopular ? "pt-16" : "pt-8"}`}
+                      >
                         {/* Header - Centered */}
-                        <div className="mb-3">
+                        <div className="mb-3 text-center">
                           <h3 className="text-2xl font-bold text-gray-900 mb-3">
                             {plan.name}
                           </h3>
@@ -821,25 +1009,39 @@ const Pricing = ({ limit = 3, showFilters = true, showViewAllButton = true }) =>
                         {/* Price Section - Centered */}
                         <div className="mb-6 pb-6 border-b border-gray-100">
                           <div className="flex items-baseline justify-center gap-1">
-                            <span className="text-3xl font-bold text-gray-900">₹</span>
-                            <span className={`text-5xl font-black tracking-tight ${isPopular ? 'bg-gradient-to-r from-purple-600 to-pink-500 bg-clip-text text-transparent' : 'text-gray-900'
-                              }`}>
+                            <span className="text-3xl font-bold text-gray-900">
+                              ₹
+                            </span>
+                            <span
+                              className={`text-5xl font-black tracking-tight ${
+                                isPopular
+                                  ? "bg-gradient-to-r from-purple-600 to-pink-500 bg-clip-text text-transparent"
+                                  : "text-gray-900"
+                              }`}
+                            >
                               {currentPriceData.displayPrice}
                             </span>
-                            <span className="text-gray-500 font-medium">/ month</span>
+                            <span className="text-gray-500 font-medium">
+                              /{plan.plan_duration} Days
+                            </span>
                           </div>
 
                           {/* Savings Badge - Centered */}
-                          {plan.discount > 0 && !currentPriceData.hasCustomPrice && (
-                            <div className="mt-4 inline-flex items-center gap-2 bg-gradient-to-r from-green-50 to-emerald-50 px-3 py-1.5 rounded-full mx-auto">
-                              <span className="text-sm text-gray-400 line-through">
-                                ₹{originalPriceData.displayPrice}
-                              </span>
-                              <span className="text-xs font-bold text-green-700">
-                                Save ₹{(originalPriceData.price - currentPriceData.price).toLocaleString('en-IN')}
-                              </span>
-                            </div>
-                          )}
+                          {plan.discount > 0 &&
+                            !currentPriceData.hasCustomPrice && (
+                              <div className="mt-4 inline-flex items-center gap-2 bg-gradient-to-r from-green-50 to-emerald-50 px-3 py-1.5 rounded-full mx-auto">
+                                <span className="text-sm text-gray-400 line-through">
+                                  ₹{originalPriceData.displayPrice}
+                                </span>
+                                <span className="text-xs font-bold text-green-700">
+                                  Save ₹
+                                  {(
+                                    originalPriceData.price -
+                                    currentPriceData.price
+                                  ).toLocaleString("en-IN")}
+                                </span>
+                              </div>
+                            )}
 
                           {/* Special Pricing - Centered */}
                           {currentPriceData.hasCustomPrice && (
@@ -849,30 +1051,42 @@ const Pricing = ({ limit = 3, showFilters = true, showViewAllButton = true }) =>
                                   <div className="absolute inset-0 bg-purple-500 rounded-full blur-sm opacity-50"></div>
                                   <FaTags className="w-4 h-4 text-purple-600 relative" />
                                 </div>
-                                <span className="text-xs font-semibold text-purple-700">Special Pricing Available</span>
+                                <span className="text-xs font-semibold text-purple-700">
+                                  Special Pricing Available
+                                </span>
                               </div>
                             </div>
                           )}
                         </div>
 
-                        {/* Features Section - Centered */}
-                        <div className="mb-8">
+                        {/* Features Section - Centered - flex-grow to push button down */}
+                        <div className="mb-8 flex-1">
                           <div className="flex items-center justify-between mb-4">
                             <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider flex items-center gap-1">
                               <FaLayerGroup className="w-3 h-3" />
                               What's Included
                             </h4>
-                            <span className="text-xs text-gray-400">{plan.features.length} features</span>
+                            <span className="text-xs text-gray-400">
+                              {plan.features.length} features
+                            </span>
                           </div>
 
                           <div className="space-y-3 text-left max-w-sm mx-auto">
                             {plan.features.slice(0, 5).map((feature, idx) => (
-                              <div key={idx} className="flex items-start gap-3 group/item">
-                                <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 mt-0.5 transition-all duration-300 ${isPopular
-                                    ? 'bg-purple-100 group-hover/item:bg-purple-200'
-                                    : 'bg-green-100 group-hover/item:bg-green-200'
-                                  }`}>
-                                  <FaCheck className={`w-3 h-3 ${isPopular ? 'text-purple-600' : 'text-green-600'}`} />
+                              <div
+                                key={idx}
+                                className="flex items-start gap-3 group/item"
+                              >
+                                <div
+                                  className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 mt-0.5 transition-all duration-300 ${
+                                    isPopular
+                                      ? "bg-purple-100 group-hover/item:bg-purple-200"
+                                      : "bg-green-100 group-hover/item:bg-green-200"
+                                  }`}
+                                >
+                                  <FaCheck
+                                    className={`w-3 h-3 ${isPopular ? "text-purple-600" : "text-green-600"}`}
+                                  />
                                 </div>
                                 <span className="text-sm text-gray-700 group-hover/item:text-gray-900 transition-colors">
                                   {feature}
@@ -883,8 +1097,8 @@ const Pricing = ({ limit = 3, showFilters = true, showViewAllButton = true }) =>
 
                           {plan.features.length > 5 && (
                             <button className="mt-3 text-xs font-medium text-purple-600 hover:text-purple-700 flex items-center justify-center gap-1 mx-auto transition-colors">
-                              <FaInfoCircle className="w-3 h-3" />
-                              +{plan.features.length - 5} more features
+                              <FaInfoCircle className="w-3 h-3" />+
+                              {plan.features.length - 5} more features
                             </button>
                           )}
                         </div>
@@ -892,24 +1106,32 @@ const Pricing = ({ limit = 3, showFilters = true, showViewAllButton = true }) =>
                         {/* Eligibility Status - Modern Design - Centered */}
                         {isLoggedIn && planEligibility[plan.id] && (
                           <div className="mb-6">
-                            <div className={`p-3 rounded-xl inline-block w-full ${planEligibility[plan.id].canPurchase
-                                ? 'bg-gradient-to-r from-green-50 to-emerald-50 border-l-4 border-green-500'
-                                : 'bg-gray-50 border-l-4 border-gray-300'
-                              }`}>
+                            <div
+                              className={`p-3 rounded-xl inline-block w-full ${
+                                planEligibility[plan.id].canPurchase
+                                  ? "bg-gradient-to-r from-green-50 to-emerald-50 border-l-4 border-green-500"
+                                  : "bg-gray-50 border-l-4 border-gray-300"
+                              }`}
+                            >
                               <div className="flex items-center justify-center gap-2 text-sm font-medium">
                                 {planEligibility[plan.id].canPurchase ? (
                                   <>
                                     <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
                                     <span className="text-green-700">
-                                      {planEligibility[plan.id].action === 'upgrade' && ' Ready to Upgrade'}
-                                      {planEligibility[plan.id].action === 'renewal' && ' Eligible for Renewal'}
-                                      {planEligibility[plan.id].action === 'new_purchase' && ' Available Now'}
+                                      {planEligibility[plan.id].action ===
+                                        "upgrade" && " Ready to Upgrade"}
+                                      {planEligibility[plan.id].action ===
+                                        "renewal" && " Eligible for Renewal"}
+                                      {planEligibility[plan.id].action ===
+                                        "new_purchase" && " Available Now"}
                                     </span>
                                   </>
                                 ) : (
                                   <>
                                     <FaSpinner className="w-4 h-4 text-gray-400" />
-                                    <span className="text-gray-500 text-xs">{planEligibility[plan.id].reason}</span>
+                                    <span className="text-gray-500 text-xs">
+                                      {planEligibility[plan.id].reason}
+                                    </span>
                                   </>
                                 )}
                               </div>
@@ -917,35 +1139,48 @@ const Pricing = ({ limit = 3, showFilters = true, showViewAllButton = true }) =>
                           </div>
                         )}
 
-                        {/* CTA Button - Modern Design */}
+                        {/* CTA Button - Modern Design - mt-auto to stick to bottom */}
                         <button
                           onClick={() => handleSubscribe(plan)}
                           disabled={
                             subscribing === plan.id ||
-                            (isLoggedIn && planEligibility[plan.id] && !planEligibility[plan.id].canPurchase) ||
+                            (isLoggedIn &&
+                              planEligibility[plan.id] &&
+                              !planEligibility[plan.id].canPurchase) ||
                             checkingEligibility[plan.id] ||
                             (isLoggedIn && planAction.isSame) ||
                             (isLoggedIn && planAction.isDowngrade)
                           }
-                          className={`relative w-full py-4 rounded-xl font-bold transition-all duration-300 overflow-hidden group
-                ${isPopular
-                              ? 'bg-gradient-to-r from-purple-600 via-purple-500 to-pink-500 text-white shadow-lg hover:shadow-xl'
-                              : planAction.isUpgrade
-                                ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white shadow-lg hover:shadow-xl'
-                                : planAction.isDowngrade
-                                  ? 'bg-gray-400 text-white shadow-lg hover:shadow-xl hover:bg-gray-500'
-                                  : 'bg-gray-900 text-white hover:bg-gray-800 shadow-md'
-                            }
-                ${(subscribing === plan.id || checkingEligibility[plan.id] || (isLoggedIn && planEligibility[plan.id] && !planEligibility[plan.id].canPurchase) || (isLoggedIn && planAction.isSame))
-                              ? 'opacity-60 cursor-not-allowed'
-                              : 'hover:scale-105 active:scale-95'
-                            }
-              `}>
+                          className={`relative w-full py-4 rounded-xl font-bold transition-all duration-300 overflow-hidden group mt-auto
+                ${
+                  isPopular
+                    ? "bg-gradient-to-r from-purple-600 via-purple-500 to-pink-500 text-white shadow-lg hover:shadow-xl"
+                    : planAction.isUpgrade
+                      ? "bg-gradient-to-r from-green-500 to-emerald-500 text-white shadow-lg hover:shadow-xl"
+                      : planAction.isDowngrade
+                        ? " text-white shadow-lg hover:shadow-xl bg-gray-500"
+                        : "bg-gray-900 text-white hover:bg-gray-800 shadow-md"
+                }
+                ${
+                  subscribing === plan.id ||
+                  checkingEligibility[plan.id] ||
+                  (isLoggedIn &&
+                    planEligibility[plan.id] &&
+                    !planEligibility[plan.id].canPurchase) ||
+                  (isLoggedIn && planAction.isSame)
+                    ? "opacity-60 cursor-not-allowed"
+                    : "hover:scale-105 active:scale-95"
+                }
+              `}
+                        >
                           {/* Animated shine effect */}
-                          <div className={`absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-700 ${isPopular
-                              ? 'bg-gradient-to-r from-transparent via-white/20 to-transparent'
-                              : 'bg-gradient-to-r from-transparent via-gray-400/10 to-transparent'
-                            }`}></div>
+                          <div
+                            className={`absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-700 ${
+                              isPopular
+                                ? "bg-gradient-to-r from-transparent via-white/20 to-transparent"
+                                : "bg-gradient-to-r from-transparent via-gray-400/10 to-transparent"
+                            }`}
+                          ></div>
 
                           <span className="relative flex items-center justify-center gap-2">
                             {subscribing === plan.id ? (
@@ -961,14 +1196,18 @@ const Pricing = ({ limit = 3, showFilters = true, showViewAllButton = true }) =>
                             ) : isLoggedIn && planEligibility[plan.id] ? (
                               planEligibility[plan.id].canPurchase ? (
                                 <>
-                                  {planAction.isUpgrade && '🚀 Upgrade Now'}
-                                  {planAction.isDowngrade && '� Downgrade Now'}
-                                  {planEligibility[plan.id].action === 'renewal' && '🔄 Renew Now'}
-                                  {planEligibility[plan.id].action === 'new_purchase' && '✨ Get Started'}
+                                  {planAction.isUpgrade && "🚀 Upgrade Now"}
+                                  {planAction.isDowngrade && "� Downgrade Now"}
+                                  {planEligibility[plan.id].action ===
+                                    "renewal" && "🔄 Renew Now"}
+                                  {planEligibility[plan.id].action ===
+                                    "new_purchase" && "✨ Get Started"}
                                   <FaArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                                 </>
+                              ) : planAction.isSame ? (
+                                "🔒 Current Plan"
                               ) : (
-                                planAction.isSame ? '🔒 Current Plan' : '🔒 Currently Unavailable'
+                                "🔒 Currently Unavailable"
                               )
                             ) : (
                               <>
@@ -995,8 +1234,6 @@ const Pricing = ({ limit = 3, showFilters = true, showViewAllButton = true }) =>
               })}
             </div>
 
-
-
             {/* View All Button */}
             {showViewAllButton && (
               <div className="text-center relative z-10">
@@ -1005,8 +1242,18 @@ const Pricing = ({ limit = 3, showFilters = true, showViewAllButton = true }) =>
                   className="group inline-flex items-center gap-3 px-8 py-3.5 bg-white text-purple-600 rounded-xl font-semibold shadow-lg hover:shadow-xl border-2 border-purple-200 hover:border-purple-400 transition-all duration-300 hover:-translate-y-0.5"
                 >
                   <span>View All Plans</span>
-                  <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                  <svg
+                    className="w-5 h-5 group-hover:translate-x-1 transition-transform"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M17 8l4 4m0 0l-4 4m4-4H3"
+                    />
                   </svg>
                 </a>
               </div>
@@ -1019,10 +1266,18 @@ const Pricing = ({ limit = 3, showFilters = true, showViewAllButton = true }) =>
 
       <style jsx>{`
         @keyframes blob {
-          0% { transform: translate(0px, 0px) scale(1); }
-          33% { transform: translate(30px, -50px) scale(1.1); }
-          66% { transform: translate(-20px, 20px) scale(0.9); }
-          100% { transform: translate(0px, 0px) scale(1); }
+          0% {
+            transform: translate(0px, 0px) scale(1);
+          }
+          33% {
+            transform: translate(30px, -50px) scale(1.1);
+          }
+          66% {
+            transform: translate(-20px, 20px) scale(0.9);
+          }
+          100% {
+            transform: translate(0px, 0px) scale(1);
+          }
         }
         .animate-blob {
           animation: blob 7s infinite;
