@@ -265,12 +265,12 @@ const Hero = () => {
                       {screenState === 2 && (
                         <div className="w-full h-full fade-in relative">
                           <Image 
-                            src="/image/desktop.png" 
+                            src="/image/dashboard.webp" 
                             alt="PC Dashboard" 
                             fill 
                             className="object-cover" 
                             priority 
-                            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                            
                           />
                         </div>
                       )}
@@ -383,11 +383,11 @@ const Hero = () => {
               <div className="flex-1 w-full">
                 <div className="w-full aspect-video bg-slate-100 rounded-xl sm:rounded-2xl overflow-hidden border border-slate-200 shadow-inner relative">
                   <Image 
-                    src="/image/desktop.png" 
+                    src="/image/dashboard.webp" 
                     alt="Dashboard" 
                     fill 
                     className="object-cover"
-                    sizes="(max-width: 768px) 100vw, 500px"
+                   
                   />
                 </div>
               </div>

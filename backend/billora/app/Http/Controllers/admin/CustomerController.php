@@ -514,7 +514,7 @@ class CustomerController extends Controller
 
             // Frontend URL
             $resetUrl =
-                env('FRONTEND_ADMIN_URL') .
+                env('FRONTEND_URL') .
                 "/reset-password?token=" . $token;
             $app_name = config('app.name');
             $app_url = env('FRONTEND_LOGIN_URL');

@@ -97,6 +97,12 @@ const Navbar = () => {
     if (pathname === '/products') {
       return true;
     }
+    if (pathname === '/forgot-password') {
+      return true;
+    }
+    if (pathname === '/reset-password') {
+      return true;
+    }
     
     return false;
   };
