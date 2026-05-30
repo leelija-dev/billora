@@ -742,7 +742,7 @@ body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height
             ->where('plan_id', $customer->plan_id)
             ->latest()
             ->first();
-        Log::info('last plan  amount ' . $request->amount);
+        // Log::info('last plan  amount ' . $request->amount);
         $orderId = 'order_' . uniqid();
         $url = config('cashfree.base_url') . '/orders';
 
@@ -769,17 +769,17 @@ body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height
         $gstAmount = ($totalAmount * $plan->gst) / 100;
         $totalPriceWithGst = $totalAmount + $gstAmount;
        
-         Log::info("Upgrade Plan Calculation: Remaining Days: {$remaningDays}, Duration: {$duration}, Per Day Price: {$perDayPrice}, Remaining Amount: {$remainingAmount}, Total Amount to Pay: {$totalPriceWithGst}");
-        Log::info('last paln purchase price '.$lastPlanPurchase->price);
-        Log::info('total amount: ' . $request->amount);
-        Log::info([
-    'plan_price' => $plan->price,
-    'discount' => $discount,
-    'remainingAmount' => $remainingAmount,
-    'totalAmount' => $totalAmount,
-    'gstAmount' => $gstAmount,
-    'totalPriceWithGst' => $totalPriceWithGst
-]);
+        //  Log::info("Upgrade Plan Calculation: Remaining Days: {$remaningDays}, Duration: {$duration}, Per Day Price: {$perDayPrice}, Remaining Amount: {$remainingAmount}, Total Amount to Pay: {$totalPriceWithGst}");
+        // Log::info('last paln purchase price '.$lastPlanPurchase->price);
+        // Log::info('total amount: ' . $request->amount);
+//         Log::info([
+//     'plan_price' => $plan->price,
+//     'discount' => $discount,
+//     'remainingAmount' => $remainingAmount,
+//     'totalAmount' => $totalAmount,
+//     'gstAmount' => $gstAmount,
+//     'totalPriceWithGst' => $totalPriceWithGst
+// ]);
         $response = Http::withHeaders([
             'x-client-id' => config('cashfree.app_id'),
             'x-client-secret' => config('cashfree.secret_key'),
