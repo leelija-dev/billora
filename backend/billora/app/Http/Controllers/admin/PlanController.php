@@ -3,14 +3,17 @@
 namespace App\Http\Controllers\admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Customers;
 use App\Models\PlanBusinessType;
 use App\Models\PlanPermission;
 use Illuminate\Http\Request;
 use App\Models\Plans;
 use App\Models\PlanPermissionDetails;
+use App\Models\PlanPurchaseHistory;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
-
+use Carbon\Carbon;
 class PlanController extends Controller
 {
     public function index()
@@ -260,5 +263,57 @@ class PlanController extends Controller
             'message' => $e->getMessage()
         ]);
     }
+}
+
+public function recentPlan($id){
+    
+    $user = Auth::user()->id;
+    if(!$id){
+        return response()->json([
+            'status' => false,
+            'message' => 'id is null'
+        ]);
+    }
+    if($user != $id){
+        return response()->json([
+            'status' => false,
+            'message' => 'Unauthorized user'
+        ]);
+    }
+    try{
+    $customer = Customers::findOrFail($id);
+    $plan = Plans::findOrFail($customer->plan_id);
+    $lastPlanPurchase = PlanPurchaseHistory::where('user_id', $customer->id)
+        ->where('plan_id', $customer->plan_id)
+        ->latest()
+        ->first();
+    $startDate = Carbon::parse($lastPlanPurchase->start_date)->startOfDay();
+    $endDate   = Carbon::parse($lastPlanPurchase->end_date)->startOfDay();
+    $remaningDays = max(0, now()->startOfDay()->diffInDays($endDate));
+    $duration = max(1, $startDate->diffInDays($endDate));
+    $perDayPrice = $lastPlanPurchase->price / $duration;
+    // Remaining value
+    $remainingAmount = $perDayPrice * $remaningDays;
+    return response()->json([
+        'status' => true,
+        'message' => 'Recent Plan and remaining days',
+        'data' => [
+            'plan' => $plan,
+            'lastPlanPurchase' => $lastPlanPurchase,
+            'start_day' => $startDate,
+            'end_day' => $endDate,
+            'total_duration'=> $duration,
+            'remainingDays' => $remaningDays,
+            'perDayPrice' => $perDayPrice,
+            'remainingAmount' => $remainingAmount
+        ]
+    ]);
+    }catch(\Exception $e){
+        return response()->json([
+            'status' => false,
+            'message' => $e->getMessage()
+        ]);
+    }
+    
 }
 }

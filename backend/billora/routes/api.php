@@ -270,3 +270,7 @@ Route::prefix('public-invoice')->group(function (){
    Route::get('/customer-invoice/{id}',[InvoiceController::class,'publicUserInvioce']);  // this is for user self generate invoice history
 
 });
+Route::middleware('auth:sanctum')->prefix('recent-plan')->group(function (){
+   Route::get('/{id}',[PlanController::class,'recentPlan']);
+
+});
