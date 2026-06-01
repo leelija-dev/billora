@@ -294,6 +294,7 @@ public function recentPlan($id){
     $perDayPrice = $lastPlanPurchase->price / $duration;
     // Remaining value
     $remainingAmount = $perDayPrice * $remaningDays;
+    Cache::tags(['plan_purchase_history_user_' . $user])->flush();
     return response()->json([
         'status' => true,
         'message' => 'Recent Plan and remaining days',

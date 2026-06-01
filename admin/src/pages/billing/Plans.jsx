@@ -1,6 +1,12 @@
-import React, { useEffect, useMemo, useState } from 'react'
-import { 
-  FiCreditCard, 
+import React, {
+  useEffect,
+  useMemo,
+  useState,
+  useRef,
+  useCallback,
+} from "react";
+import {
+  FiCreditCard,
   FiArrowLeft,
   FiRefreshCw,
   FiCheckCircle,
@@ -17,734 +23,897 @@ import {
   FiDatabase,
   FiCpu,
   FiShoppingCart,
-  FiPackage
-} from 'react-icons/fi'
-import { motion, AnimatePresence } from 'framer-motion'
-import { plansAPI, invoiceAPI, billingAPI } from '../../services'
-import { usePermissionStore } from '../../store/permissionStore'
-import SubscriptionCard from '../../components/features/Billing/SubscriptionCard'
-import PaymentHistory from '../../components/features/Billing/PaymentHistory'
-import SubscriptionForm from '../../components/features/Billing/SubscriptionForm'
-import Select from '../../components/common/Select/Select'
-import Pagination from '../../components/common/Pagination/Pagination'
-import Button from '../../components/common/Button/Button'
-import EmptyState from '../../components/common/EmptyState/EmptyState'
-import StatusBadge from '../../components/common/StatusBadge/StatusBadge'
-import Input from '../../components/common/Input/Input'
-import ProtectedRoute from '../../components/features/Auth/ProtectedRoute'
-import toast from 'react-hot-toast'
+  FiPackage,
+} from "react-icons/fi";
+import { motion, AnimatePresence } from "framer-motion";
+import { plansAPI, invoiceAPI, billingAPI } from "../../services";
+import { usePermissionStore } from "../../store/permissionStore";
+import SubscriptionCard from "../../components/features/Billing/SubscriptionCard";
+import PaymentHistory from "../../components/features/Billing/PaymentHistory";
+import SubscriptionForm from "../../components/features/Billing/SubscriptionForm";
+import Select from "../../components/common/Select/Select";
+import Pagination from "../../components/common/Pagination/Pagination";
+import Button from "../../components/common/Button/Button";
+import EmptyState from "../../components/common/EmptyState/EmptyState";
+import StatusBadge from "../../components/common/StatusBadge/StatusBadge";
+import Input from "../../components/common/Input/Input";
+import ProtectedRoute from "../../components/features/Auth/ProtectedRoute";
+import toast from "react-hot-toast";
 
 const Plans = () => {
-  const { canAccess, user, permissions } = usePermissionStore()
-  const [loading, setLoading] = useState(true)
-  const [actionLoading, setActionLoading] = useState(false)
-  const [initialLoading, setInitialLoading] = useState(true)
-  const [showChangePlanForm, setShowChangePlanForm] = useState(false)
-  const [showCancelConfirm, setShowCancelConfirm] = useState(false)
-  const [showInvoiceModal, setShowInvoiceModal] = useState(false)
-  const [selectedInvoice, setSelectedInvoice] = useState(null)
-  const [error, setError] = useState(null)
-  const [successMessage, setSuccessMessage] = useState(null)
+  const { canAccess, user, permissions } = usePermissionStore();
+  const [loading, setLoading] = useState(true);
+  const [actionLoading, setActionLoading] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
+  const [showChangePlanForm, setShowChangePlanForm] = useState(false);
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  const [showInvoiceModal, setShowInvoiceModal] = useState(false);
+  const [selectedInvoice, setSelectedInvoice] = useState(null);
+  const [error, setError] = useState(null);
+  const [successMessage, setSuccessMessage] = useState(null);
 
-  const [subscription, setSubscription] = useState(null)
-  const [plans, setPlans] = useState([])
-  const [payments, setPayments] = useState([])
-  const [paymentsCount, setPaymentsCount] = useState(0)
-  const [invoices, setInvoices] = useState([])
-  const [invoicesCount, setInvoicesCount] = useState(0)
+  const [subscription, setSubscription] = useState(null);
+  const [plans, setPlans] = useState([]);
+  const [payments, setPayments] = useState([]);
+  const [paymentsCount, setPaymentsCount] = useState(0);
+  const [invoices, setInvoices] = useState([]);
+  const [invoicesCount, setInvoicesCount] = useState(0);
+  
+  // New state for recent plan data
+  const [recentPlanData, setRecentPlanData] = useState(null);
 
-  const [paymentStatus, setPaymentStatus] = useState('')
-  const [currentPage, setCurrentPage] = useState(1)
-  const [invoicePage, setInvoicePage] = useState(1)
-  const [selectedPlan, setSelectedPlan] = useState(null)
-  const [showPurchaseForm, setShowPurchaseForm] = useState(false)
+  const [paymentStatus, setPaymentStatus] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [invoicePage, setInvoicePage] = useState(1);
+  const [selectedPlan, setSelectedPlan] = useState(null);
+  const [showPurchaseForm, setShowPurchaseForm] = useState(false);
   const [purchaseData, setPurchaseData] = useState({
-    plan_id: '',
-    customer_id: '',
-    amount: 0
-  })
-  const [showUpgradeForm, setShowUpgradeForm] = useState(false)
+    plan_id: "",
+    customer_id: "",
+    amount: 0,
+  });
+  const [showUpgradeForm, setShowUpgradeForm] = useState(false);
   const [upgradeData, setUpgradeData] = useState({
-    plan_id: '',
-    business_type_id: '',
-    customer_id: '',
-    customer_phone: '',
+    plan_id: "",
+    business_type_id: "",
+    customer_id: "",
+    customer_phone: "",
     amount: 0,
     gst: 0,
     discount: 0,
     gstPercentage: 0,
-  })
-  
-  const pageSize = 10
+  });
+
+  const pageSize = 10;
+
+  // Refs for preventing duplicate API calls
+  const fetchInProgressRef = useRef(false);
+  const initialFetchDoneRef = useRef(false);
+  const subscriptionFetchedRef = useRef(false);
+  const abortControllerRef = useRef(null);
 
   // Check if user has billing access
-  const hasBillingAccess = canAccess('billing')
+  const hasBillingAccess = canAccess("billing");
 
   const currentPlan = useMemo(() => {
-    if (!subscription?.plan) return null
-    // First check if we have plan details from subscription
+    if (!subscription?.plan) return null;
     if (subscription?.planDetails) {
-      return subscription.planDetails
+      return subscription.planDetails;
     }
-    // Fallback to finding plan in plans array
-    return plans.find((p) => p.id === subscription.plan) || null
-  }, [plans, subscription?.plan, subscription?.planDetails])
+    return plans.find((p) => p.id === subscription.plan) || null;
+  }, [plans, subscription?.plan, subscription?.planDetails]);
+
+  const upgradablePlans = useMemo(() => {
+    if (!plans.length) return [];
+    
+    // If no current plan, show all plans (for first-time purchase)
+    if (!currentPlan) return plans;
+    
+    const currentPrice = parseFloat(currentPlan.price || currentPlan.amount || 0);
+    
+    // Filter plans with price greater than current plan
+    const filtered = plans.filter(plan => {
+      const planPrice = parseFloat(plan.price || plan.amount || 0);
+      return planPrice > currentPrice;
+    });
+    
+    // Sort by price ascending (cheapest upgrade first)
+    return filtered.sort((a, b) => {
+      const priceA = parseFloat(a.price || a.amount || 0);
+      const priceB = parseFloat(b.price || b.amount || 0);
+      return priceA - priceB;
+    });
+  }, [plans, currentPlan]);
 
   // Get user ID from user object or localStorage
-  const getUserId = () => {
-    return user?.id || localStorage.getItem('user_id') || localStorage.getItem('userId') || 1
-  }
+  const getUserId = useCallback(() => {
+    return (
+      user?.id ||
+      localStorage.getItem("user_id") ||
+      localStorage.getItem("userId") ||
+      1
+    );
+  }, [user?.id]);
 
-  // Load Cashfree SDK - same as order summary page
-  const loadCashfreeSDK = () => {
+  // Load Cashfree SDK
+  const loadCashfreeSDK = useCallback(() => {
     return new Promise((resolve, reject) => {
       if (window.Cashfree) {
         resolve(window.Cashfree);
         return;
       }
 
-      const script = document.createElement('script');
-      script.src = 'https://sdk.cashfree.com/js/v3/cashfree.js';
+      const script = document.createElement("script");
+      script.src = "https://sdk.cashfree.com/js/v3/cashfree.js";
       script.async = true;
       script.onload = () => {
         if (window.Cashfree) {
           resolve(window.Cashfree);
         } else {
-          reject(new Error('Cashfree SDK failed to load'));
+          reject(new Error("Cashfree SDK failed to load"));
         }
       };
-      script.onerror = () => reject(new Error('Failed to load Cashfree SDK'));
+      script.onerror = () => reject(new Error("Failed to load Cashfree SDK"));
       document.body.appendChild(script);
     });
-  };
+  }, []);
 
-  const fetchAll = async () => {
-    setLoading(true)
-    setError(null)
+  // Helper function to map payment status to UI status
+  const mapPaymentStatus = useCallback((paymentStatus) => {
+    const statusMap = {
+      success: "succeeded",
+      pending: "pending",
+      failed: "failed",
+      refunded: "refunded",
+      processing: "pending",
+    };
+    return statusMap[paymentStatus] || "pending";
+  }, []);
+
+  // Function to fetch recent plan data from /api/recent-plan/{user_id}
+  const fetchRecentPlan = useCallback(async () => {
     try {
-      const userId = getUserId()
+      const userId = getUserId();
+      console.log("📅 Fetching recent plan for user:", userId);
+      const response = await billingAPI.getRecentPlan(userId);
       
-      // Fetch plans using new API
-      const plansRes = await plansAPI.getAll().catch(err => {
-        console.warn('Failed to fetch plans:', err)
-        return { data: [] }
-      })
+      const responseData = response?.data;
+      const recentData = responseData?.data || responseData;
       
-      // Extract plans array from response data
-      setPlans(plansRes?.data?.data || plansRes?.data || [])
-      
-      // Fetch invoice history using new API
-      const invoicesRes = await invoiceAPI.getAll(1, {}).catch(err => {
-        console.warn('Failed to fetch invoices:', err)
-        return { data: [] }
-      })
-      
+      if (recentData && (recentData.remainingAmount !== undefined || recentData.remainingDays !== undefined)) {
+        console.log("📅 Recent plan data received:", recentData);
+        console.log("📅 Remaining Amount:", recentData.remainingAmount);
+        console.log("📅 Remaining Days:", recentData.remainingDays);
+        
+        setRecentPlanData({
+          remainingAmount: parseFloat(recentData.remainingAmount) || 0,
+          remainingDays: parseInt(recentData.remainingDays) || 0,
+          perDayPrice: parseFloat(recentData.perDayPrice) || 0,
+          totalDuration: recentData.total_duration || 0,
+          startDay: recentData.start_day,
+          endDay: recentData.end_day,
+          plan: responseData?.plan || null
+        });
+        
+        return {
+          remainingAmount: parseFloat(recentData.remainingAmount) || 0,
+          remainingDays: parseInt(recentData.remainingDays) || 0,
+          perDayPrice: parseFloat(recentData.perDayPrice) || 0,
+          totalDuration: recentData.total_duration || 0
+        };
+      }
+      return null;
+    } catch (error) {
+      console.error("Failed to fetch recent plan:", error);
+      return null;
+    }
+  }, [getUserId]);
+
+  // Function to fetch only subscription data
+  const fetchSubscription = useCallback(async () => {
+    if (subscriptionFetchedRef.current) {
+      console.log("✅ Subscription already fetched, skipping...");
+      return;
+    }
+
+    try {
+      const userId = getUserId();
+      console.log("🔄 Fetching subscription for user:", userId);
+
+      const historyRes = await billingAPI.getPlanPurchaseHistory(
+        userId,
+        1,
+        100,
+      );
+
+      let historyData = [];
+      if (
+        historyRes?.data?.data?.data &&
+        Array.isArray(historyRes.data.data.data)
+      ) {
+        historyData = historyRes.data.data.data;
+      } else if (
+        historyRes?.data?.data &&
+        Array.isArray(historyRes.data.data)
+      ) {
+        historyData = historyRes.data.data;
+      } else if (historyRes?.data && Array.isArray(historyRes.data)) {
+        historyData = historyRes.data;
+      }
+
+      const successfulPurchases = historyData.filter(
+        (p) => p.payment_status === "success" && p.status === "active",
+      );
+
+      if (successfulPurchases.length > 0) {
+        const latestPurchase = successfulPurchases.sort(
+          (a, b) => new Date(b.created_at) - new Date(a.created_at),
+        )[0];
+
+        if (latestPurchase.plan_id) {
+          if (latestPurchase.plan) {
+            setSubscription({
+              id: latestPurchase.id,
+              plan: latestPurchase.plan.name || `Plan ${latestPurchase.plan_id}`,
+              planId: latestPurchase.plan_id,
+              status: latestPurchase.status || "active",
+              currentPeriodStart: latestPurchase.start_date,
+              currentPeriodEnd: latestPurchase.end_date,
+              amount: parseFloat(latestPurchase.price) || 0,
+              interval: latestPurchase.plan.interval || "month",
+              planDetails: latestPurchase.plan,
+              paymentId: latestPurchase.payment_id,
+            });
+          } else {
+            const planRes = await plansAPI.getById(latestPurchase.plan_id);
+            const planData = planRes?.data?.["Single Plan"] || planRes?.data?.data;
+            if (planData) {
+              setSubscription({
+                id: latestPurchase.id,
+                plan: planData.name || `Plan ${latestPurchase.plan_id}`,
+                planId: latestPurchase.plan_id,
+                status: latestPurchase.status || "active",
+                currentPeriodStart: latestPurchase.start_date,
+                currentPeriodEnd: latestPurchase.end_date,
+                amount: parseFloat(latestPurchase.price) || 0,
+                interval: planData.interval || "month",
+                planDetails: planData,
+                paymentId: latestPurchase.payment_id,
+              });
+            }
+          }
+        }
+      } else if (user?.plan_id) {
+        const planRes = await plansAPI.getById(user.plan_id);
+        const planData = planRes?.data?.["Single Plan"] || planRes?.data?.data;
+        if (planData) {
+          setSubscription({
+            plan: planData.name || `Plan ${user.plan_id}`,
+            planId: user.plan_id,
+            status: "active",
+            currentPeriodEnd: null,
+            amount: parseFloat(planData.price) || 0,
+            interval: planData.interval || "month",
+            planDetails: planData,
+          });
+        }
+      }
+
+      subscriptionFetchedRef.current = true;
+    } catch (error) {
+      console.error("Failed to fetch subscription:", error);
+    }
+  }, [getUserId, user?.plan_id]);
+
+  // Function to fetch paginated payment history
+  const fetchPaymentHistory = useCallback(async () => {
+    try {
+      const userId = getUserId();
+      console.log("🔄 Fetching payment history for page:", currentPage);
+
+      const historyRes = await billingAPI.getPlanPurchaseHistory(
+        userId,
+        currentPage,
+        pageSize,
+      );
+
+      let historyData = [];
+      let totalRecords = 0;
+
+      if (
+        historyRes?.data?.data?.data &&
+        Array.isArray(historyRes.data.data.data)
+      ) {
+        historyData = historyRes.data.data.data;
+        totalRecords = historyRes.data.data.total || 0;
+      } else if (
+        historyRes?.data?.data &&
+        Array.isArray(historyRes.data.data)
+      ) {
+        historyData = historyRes.data.data;
+        totalRecords = historyRes.data.total || historyRes.data.data.length;
+      } else if (historyRes?.data && Array.isArray(historyRes.data)) {
+        historyData = historyRes.data;
+        totalRecords = historyRes.data.length;
+      }
+
+      const transformedPayments = historyData.map((purchase) => ({
+        id: purchase.id,
+        createdAt: purchase.created_at,
+        amount: parseFloat(purchase.price) || 0,
+        currency: purchase.currency || "INR",
+        status: mapPaymentStatus(purchase.payment_status),
+        paymentMethod: purchase.payment_method || "cashfree",
+        description: purchase.plan?.name || `Plan #${purchase.plan_id}`,
+        invoiceNumber: purchase.payment_id,
+        invoiceId: purchase.id,
+        planId: purchase.plan_id,
+        planName: purchase.plan?.name || "Unknown Plan",
+        planDetails: purchase.plan || null,
+        startDate: purchase.start_date,
+        endDate: purchase.end_date,
+        paymentStatus: purchase.payment_status,
+        rawStatus: purchase.status,
+        paymentId: purchase.payment_id,
+        price: purchase.price,
+        remarks: purchase.remarks,
+      }));
+
+      setPayments(transformedPayments);
+      setPaymentsCount(totalRecords);
+    } catch (error) {
+      console.error("Failed to fetch payment history:", error);
+      setPayments([]);
+      setPaymentsCount(0);
+    }
+  }, [getUserId, currentPage, pageSize, mapPaymentStatus]);
+
+  // Function to fetch plans
+  const fetchPlans = useCallback(async () => {
+    try {
+      const plansRes = await plansAPI.getAll().catch((err) => {
+        console.warn("Failed to fetch plans:", err);
+        return { data: [] };
+      });
+      setPlans(plansRes?.data?.data || plansRes?.data || []);
+    } catch (error) {
+      console.error("Failed to fetch plans:", error);
+    }
+  }, []);
+
+  // Function to fetch invoices
+  const fetchInvoices = useCallback(async () => {
+    try {
+      const invoicesRes = await invoiceAPI.getAll(1, {}).catch((err) => {
+        console.warn("Failed to fetch invoices:", err);
+        return { data: [] };
+      });
       const invoiceData = invoicesRes?.data?.data;
       if (Array.isArray(invoiceData)) {
         setInvoices(invoiceData);
       } else if (invoicesRes?.data && Array.isArray(invoicesRes.data)) {
         setInvoices(invoicesRes.data);
       } else {
-        console.warn('Unexpected invoice data format:', invoicesRes);
         setInvoices([]);
       }
       setInvoicesCount(invoicesRes?.data?.total || 0);
-      
-      // Fetch user plan purchase history using service
-      try {
-        const historyRes = await billingAPI.getPlanPurchaseHistory(userId)
-        const historyData = historyRes?.data?.data?.data && Array.isArray(historyRes.data.data.data) 
-          ? historyRes.data.data.data 
-          : historyRes?.data?.data || []
-        setPayments(historyData)
-        setPaymentsCount(historyData?.length || 0)
-        
-        // Set current subscription from user's plan_id (from login) if no purchase history
-        if (user?.plan_id) {
-          // Fetch current plan details using user's plan_id
-          try {
-            const planRes = await plansAPI.getById(user.plan_id);
-            const planData = planRes?.data?.['Single Plan'];
-            if (planData) {
-              setSubscription({
-                plan: planData.id,
-                status: 'active', // User has an active plan from login
-                currentPeriodEnd: null, // Not available in login data
-                amount: parseFloat(planData.price) || 0,
-                planDetails: planData
-              });
-            }
-          } catch (planError) {
-            console.warn('Failed to fetch user plan details:', planError);
-          }
-        } else if (historyData && historyData.length > 0) {
-          // Fallback to purchase history if available
-          const latestPurchase = historyData[0] // Assuming first is latest
-          
-          setSubscription({
-            plan: latestPurchase.plan_id,
-            status: latestPurchase.status || 'active',
-            currentPeriodEnd: latestPurchase.end_date,
-            amount: latestPurchase.amount
-          })
-        }
-      } catch (err) {
-        console.warn('Failed to fetch plan purchase history:', err)
-        setPayments([])
-        setPaymentsCount(0)
-      }
-      
     } catch (error) {
-      console.error('Failed to fetch billing data:', error)
-      setError('Failed to load billing information. Please try again.')
-    } finally {
-      setLoading(false)
-      setInitialLoading(false)
+      console.error("Failed to fetch invoices:", error);
     }
-  }
+  }, []);
 
-  useEffect(() => {
-    fetchAll()
-  }, [])
-
-  const handlePurchasePlan = (plan) => {
-    setSelectedPlan(plan)
-    setPurchaseData({
-      plan_id: plan.id,
-      customer_id: '', // Will be set by user
-      amount: plan.price || plan.amount || 0
-    })
-    setShowPurchaseForm(true)
-  }
-
-  const handlePlanPurchase = async (e) => {
-    e.preventDefault()
-    if (!purchaseData.plan_id || !purchaseData.customer_id || !purchaseData.amount) {
-      setError('Please fill all required fields')
-      return
+  // Main fetch function - only for initial load
+  const fetchInitialData = useCallback(async () => {
+    if (fetchInProgressRef.current) {
+      console.log("⏳ Fetch already in progress, skipping...");
+      return;
     }
 
-    setActionLoading(true)
-    setError(null)
-    const loadingToast = toast.loading('Creating order...')
-    
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+
+    abortControllerRef.current = new AbortController();
+    fetchInProgressRef.current = true;
+    setLoading(true);
+    setError(null);
+
     try {
-      // Create Cashfree order using service
-      const orderResponse = await billingAPI.createCashfreeOrder({
-        amount: purchaseData.amount,
-        plan_id: purchaseData.plan_id,
-        customer_id: purchaseData.customer_id
-      })
-      
-      const orderData = orderResponse?.data
-      
-      if (orderData?.session_id) {
-        toast.success('Order created! Redirecting to payment...', { id: loadingToast })
-        
-        // Load and initialize Cashfree SDK
-        const Cashfree = await loadCashfreeSDK();
-        const cashfree = new Cashfree({
-          // mode: process.env.REACT_APP_CASHFREE_MODE === 'production' ? 'production' : 'sandbox',
-          mode: import.meta.env.VITE_CASHFREE_MODE === 'production' ? 'production' : 'sandbox',
-
-        });
-        
-        // Store order info before redirect
-        const orderInfo = {
-          paymentSessionId: orderData.session_id,
-          planName: selectedPlan?.name || 'Plan Purchase',
-          amount: purchaseData.amount,
-          customerId: purchaseData.customer_id,
-          timestamp: Date.now()
-        };
-        localStorage.setItem('pendingPayment', JSON.stringify(orderInfo));
-        
-        // Open checkout using SDK
-        const paymentResult = await cashfree.checkout({
-          paymentSessionId: orderData.session_id,
-          redirectTarget: "_self"
-        });
-        
-        console.log("Payment checkout result:", paymentResult);
-        
-      } else {
-        toast.dismiss(loadingToast)
-        setError(orderData?.message || 'Failed to create order')
-      }
+      await Promise.all([
+        fetchPlans(),
+        fetchInvoices(),
+        fetchSubscription(),
+        fetchRecentPlan(),
+      ]);
+      await fetchPaymentHistory();
     } catch (error) {
-      toast.dismiss(loadingToast)
-      console.error('Failed to purchase plan:', error)
+      if (error.name !== "AbortError") {
+        console.error("Failed to fetch billing data:", error);
+        setError("Failed to load billing information. Please try again.");
+      }
+    } finally {
+      setLoading(false);
+      setInitialLoading(false);
+      fetchInProgressRef.current = false;
+    }
+  }, [fetchPlans, fetchInvoices, fetchSubscription, fetchRecentPlan, fetchPaymentHistory]);
+
+  // Initial fetch - only runs once
+  useEffect(() => {
+    if (!initialFetchDoneRef.current) {
+      initialFetchDoneRef.current = true;
+      fetchInitialData();
+    }
+
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
+  }, [fetchInitialData]);
+
+  // When page changes, ONLY fetch payment history
+  useEffect(() => {
+    if (initialFetchDoneRef.current) {
+      fetchPaymentHistory();
+    }
+  }, [currentPage, fetchPaymentHistory]);
+
+  // Refresh function (manual refresh)
+  const refreshData = useCallback(async () => {
+    if (fetchInProgressRef.current) {
+      console.log("⏳ Refresh already in progress, skipping...");
+      return;
+    }
+
+    fetchInProgressRef.current = true;
+    setLoading(true);
+
+    try {
+      await Promise.all([
+        fetchPlans(),
+        fetchInvoices(),
+        fetchSubscription(),
+        fetchRecentPlan(),
+      ]);
+      await fetchPaymentHistory();
+    } catch (error) {
+      console.error("Failed to refresh data:", error);
+      setError("Failed to refresh billing information. Please try again.");
+    } finally {
+      setLoading(false);
+      fetchInProgressRef.current = false;
+    }
+  }, [fetchPlans, fetchInvoices, fetchSubscription, fetchRecentPlan, fetchPaymentHistory]);
+
+  // Reset subscription ref when needed (e.g., after upgrade)
+  const resetAndRefetchSubscription = useCallback(async () => {
+    subscriptionFetchedRef.current = false;
+    await fetchSubscription();
+    await fetchRecentPlan();
+  }, [fetchSubscription, fetchRecentPlan]);
+
+  // Updated calculateProratedUpgrade function using recent plan API data
+  const calculateProratedUpgrade = useCallback(
+    async (newPlan, currentPlan, subscriptionData) => {
+      const newPlanPrice = parseFloat(newPlan?.price) || 
+                          parseFloat(newPlan?.amount) || 
+                          parseFloat(newPlan?.base_price) || 0;
+      const gstPercentage = parseFloat(newPlan?.gst) || 18;
       
-      let errorMessage = 'Payment failed. Please try again.'
-      if (error.message?.includes('customer_id')) {
-        errorMessage = 'Invalid customer ID format. Please try again.'
-      } else if (error.message?.includes('plan_id')) {
-        errorMessage = 'Invalid plan selected. Please try again.'
-      } else if (error.message?.includes('amount')) {
-        errorMessage = 'Invalid amount. Please try again.'
-      } else if (error.message) {
-        errorMessage = error.message
+      let recentPlan = recentPlanData;
+      if (!recentPlan) {
+        recentPlan = await fetchRecentPlan();
       }
       
-      setError(errorMessage)
-      toast.error(errorMessage)
-    } finally {
-      setActionLoading(false)
-    }
-  }
-
-  // Calculate prorated upgrade amount using new workflow
-  const calculateProratedUpgrade = async (newPlan, currentPlan, subscription) => {
-    console.log(' Calculating prorated upgrade with new workflow:', { newPlan, currentPlan, subscription })
-    
-    // Extract new plan price from multiple possible fields
-    const newPlanPrice = parseFloat(newPlan?.price) || parseFloat(newPlan?.amount) || parseFloat(newPlan?.base_price) || 0
-    console.log(' New plan price:', newPlanPrice)
-    const gstPercentage = parseFloat(newPlan?.gst)
-    if (!currentPlan || !subscription) {
-      // No current plan, treat as new purchase
-      const gst = newPlanPrice * gstPercentage //0.18
-      console.log(' No current plan - treating as new purchase:', { baseAmount: newPlanPrice, gst })
+      if (recentPlan && recentPlan.remainingAmount !== undefined && recentPlan.remainingAmount > 0) {
+        const remainingAmount = parseFloat(recentPlan.remainingAmount) || 0;
+        const remainingDays = parseInt(recentPlan.remainingDays) || 0;
+        
+        const discountPercentage = parseFloat(newPlan?.discount) || 0;
+        const discountAmount = (newPlanPrice * discountPercentage) / 100;
+        const discountedPrice = newPlanPrice - discountAmount;
+        
+        let upgradeAmount = discountedPrice - remainingAmount;
+        upgradeAmount = Math.max(0, upgradeAmount);
+        
+        const gst = (upgradeAmount * gstPercentage) / 100;
+        const totalAmount = upgradeAmount + gst;
+        
+        return {
+          baseAmount: newPlanPrice,
+          discountPercentage: discountPercentage,
+          discountAmount: discountAmount,
+          discountedAmount: discountedPrice,
+          currentPlanRemaining: remainingAmount,
+          upgradeAmount: upgradeAmount,
+          gst: gst,
+          totalAmount: totalAmount,
+          daysRemaining: remainingDays,
+          monthsRemaining: Math.ceil(remainingDays / 30),
+          gstPercentage: gstPercentage,
+          remainingAmount: remainingAmount,
+          usingRecentPlanData: true
+        };
+      }
+      
+      if (recentPlan && recentPlan.remainingAmount === 0) {
+        const discountPercentage = parseFloat(newPlan?.discount) || 0;
+        const discountAmount = (newPlanPrice * discountPercentage) / 100;
+        const discountedPrice = newPlanPrice - discountAmount;
+        const gst = (discountedPrice * gstPercentage) / 100;
+        const totalAmount = discountedPrice + gst;
+        
+        return {
+          baseAmount: newPlanPrice,
+          discountPercentage: discountPercentage,
+          discountAmount: discountAmount,
+          discountedAmount: discountedPrice,
+          currentPlanRemaining: 0,
+          upgradeAmount: discountedPrice,
+          gst: gst,
+          totalAmount: totalAmount,
+          daysRemaining: 0,
+          monthsRemaining: 0,
+          gstPercentage: gstPercentage,
+          remainingAmount: 0,
+          usingRecentPlanData: true
+        };
+      }
+      
+      console.warn("Recent plan data not available, using fallback calculation");
+      
+      if (!currentPlan || !subscriptionData) {
+        const discountPercentage = parseFloat(newPlan?.discount) || 0;
+        const discountAmount = (newPlanPrice * discountPercentage) / 100;
+        const discountedPrice = newPlanPrice - discountAmount;
+        const gst = (discountedPrice * gstPercentage) / 100;
+        const totalAmount = discountedPrice + gst;
+        
+        return {
+          baseAmount: newPlanPrice,
+          currentPlanRemaining: 0,
+          upgradeAmount: discountedPrice,
+          gst,
+          totalAmount,
+          daysRemaining: 0,
+          monthsRemaining: 0,
+          gstPercentage: gstPercentage,
+          discountPercentage: discountPercentage,
+          discountAmount: discountAmount,
+          discountedAmount: discountedPrice,
+          usingRecentPlanData: false
+        };
+      }
+      
+      const discountPercentage = parseFloat(newPlan?.discount) || 0;
+      const discountAmount = (newPlanPrice * discountPercentage) / 100;
+      const discountedPrice = newPlanPrice - discountAmount;
+      const gst = (discountedPrice * gstPercentage) / 100;
+      const totalAmount = discountedPrice + gst;
+      
       return {
         baseAmount: newPlanPrice,
+        discountPercentage: discountPercentage,
+        discountAmount: discountAmount,
+        discountedAmount: discountedPrice,
         currentPlanRemaining: 0,
-        upgradeAmount: newPlanPrice,
-        gst,
-        totalAmount: newPlanPrice + gst,
+        upgradeAmount: discountedPrice,
+        gst: gst,
+        totalAmount: totalAmount,
         daysRemaining: 0,
         monthsRemaining: 0,
-        gstPercentage: gstPercentage
+        gstPercentage: gstPercentage,
+        usingRecentPlanData: false
+      };
+    },
+    [getUserId, fetchRecentPlan, recentPlanData],
+  );
+
+  // Updated handleUpgrade function - this will be called when user selects a plan from SubscriptionForm
+  const handleUpgrade = useCallback(
+    async (plan) => {
+      setSelectedPlan(plan);
+      
+      try {
+        // Hide the subscription form and show upgrade form
+        setShowChangePlanForm(false);
+        
+        // Fetch the latest recent plan data
+        const recentPlan = await fetchRecentPlan();
+        
+        // Calculate pricing with the latest data
+        const pricing = await calculateProratedUpgrade(
+          plan,
+          currentPlan,
+          subscription,
+        );
+        
+        setUpgradeData({
+          plan_id: plan.id,
+          business_type_id: user?.business_type_id || "",
+          customer_id: user?.customer_id || getUserId(),
+          customer_phone: user?.phone || "",
+          amount: pricing.baseAmount,
+          discount_percentage: pricing.discountPercentage,
+          discount_amount: pricing.discountAmount,
+          discounted_amount: pricing.discountedAmount,
+          current_plan_remaining: pricing.currentPlanRemaining,
+          upgrade_amount: pricing.upgradeAmount,
+          gst: pricing.gst,
+          total_amount: pricing.totalAmount,
+          days_remaining: pricing.daysRemaining,
+          months_remaining: pricing.monthsRemaining,
+          actual_paid_amount: pricing.actualPaidAmount || 0,
+          gstPercentage: pricing.gstPercentage,
+          recent_plan_remaining_amount: recentPlan?.remainingAmount || pricing.currentPlanRemaining,
+          recent_plan_remaining_days: recentPlan?.remainingDays || pricing.daysRemaining,
+        });
+        
+        // Show the upgrade form
+        setShowUpgradeForm(true);
+      } catch (error) {
+        console.error("Failed to calculate upgrade pricing:", error);
+        setError("Failed to calculate upgrade pricing. Please try again.");
+        // If error, go back to subscription form
+        setShowChangePlanForm(true);
       }
-    }
+    },
+    [calculateProratedUpgrade, currentPlan, subscription, user, getUserId, fetchRecentPlan],
+  );
 
-    // Extract current plan price from multiple possible fields
-    const currentPlanPrice = parseFloat(currentPlan?.price) || parseFloat(currentPlan?.amount) || parseFloat(currentPlan?.base_price) || 0
-    const currentPlanDuration = parseInt(currentPlan?.duration_days) || 0 // Default 12 months
-    
-    console.log(' Current plan details:', { price: currentPlanPrice, duration: currentPlanDuration })
-    
-    try {
-      // Fetch user's plan purchase history to get actual paid amount and remaining days
-      const userId = getUserId()
-      const historyResponse = await billingAPI.getPlanPurchaseHistory(userId)
-      
-      // Handle paginated response structure: response.data.data contains the array
-      const purchaseHistory = historyResponse?.data?.data?.data || []
-      
-      console.log(' Purchase history response structure:', {
-        fullResponse: historyResponse,
-        data: historyResponse?.data,
-        innerData: historyResponse?.data?.data,
-        purchaseArray: purchaseHistory
-      })
-      
-      if (purchaseHistory.length === 0) {
-        console.warn(' No purchase history found, falling back to basic calculation')
-        return fallbackCalculation(newPlan,newPlanPrice, currentPlanPrice, currentPlanDuration, subscription)
-      }
-      
-      // Get the most recent active purchase
-      // const latestPurchase = purchaseHistory[0]
-      // Filter purchases with success payment, active/expired status, and valid dates
-const validPurchases = purchaseHistory.filter(purchase => 
-  purchase.payment_status === 'success' &&
-  (purchase.status === 'active' || purchase.status === 'expired') &&
-  purchase.start_date !== null &&
-  purchase.end_date !== null
-)
-
-if (validPurchases.length === 0) {
-  console.warn(' No valid purchase found with success payment and valid dates, falling back to basic calculation')
-  return fallbackCalculation(newPlanPrice, currentPlanPrice, currentPlanDuration, subscription)
-}
-
-// Get the most recent valid purchase (sort by created_at descending)
-const latestPurchase = validPurchases.sort((a, b) => 
-  new Date(b.created_at) - new Date(a.created_at)
-)[0]
-
-console.log(' Latest valid purchase for upgrade calculation:', latestPurchase)
-      console.log(' Latest purchase:', latestPurchase)
-      
-      // Calculate remaining days based on purchase history
-      const endDate = new Date(latestPurchase.end_date)
-      const today = new Date()
-      const daysRemaining = Math.max(0, Math.ceil((endDate - today) / (1000 * 60 * 60 * 24)))
-      
-      console.log(' Period calculation:', { endDate, today, daysRemaining })
-      
-      // Calculate current plan remaining value based on actual paid amount from purchase history
-      const actualPaidAmount = parseFloat(latestPurchase.price) || 0 // Use the actual paid amount from purchase history
-      const currentPlanDailyPrice = (actualPaidAmount / currentPlanDuration)//actualPaidAmount / (currentPlanDuration * 30) // 30 days per month
-      const currentPlanRemainingValue = currentPlanDailyPrice * daysRemaining
-      
-      console.log(' Current plan value calculation:', {
-        actualPaidAmount,
-        dailyPrice: currentPlanDailyPrice,
-        remainingValue: currentPlanRemainingValue,
-        daysRemaining
-      })
-      
-      // NEW WORKFLOW: Base Amount → Discount → Previous Plan Deduction → GST
-      
-      // Step 1: Base Amount (new plan price)
-      const baseAmount = newPlanPrice
-      
-      // Step 2: Apply 14% Discount (from new plan data)
-      const discountPercentage = parseFloat(newPlan?.discount) || 0 // Default 14%
-      const discountAmount = baseAmount * (discountPercentage / 100)
-      const discountedAmount = baseAmount - discountAmount
-      const gstPercentage = parseFloat(newPlan?.gst) // 
-      console.log(' Discount calculation:', {
-        baseAmount,
-        discountPercentage,
-        discountAmount,
-        discountedAmount
-      })
-      
-      // Step 3: Deduct Current Plan Remaining
-      const upgradeBaseAmount = discountedAmount - currentPlanRemainingValue
-      
-      // Ensure upgrade amount is not negative
-      const finalUpgradeAmount = Math.max(0, upgradeBaseAmount)
-      
-      console.log(' Upgrade amount calculation:', {
-        discountedAmount,
-        currentPlanRemainingValue,
-        upgradeBaseAmount,
-        finalUpgradeAmount
-      })
-      
-      // Step 4: Apply 18% GST on discounted amount
-      const gst = (finalUpgradeAmount * gstPercentage)/100 //0.18
-      const totalAmount = finalUpgradeAmount  + gst
-      
-      const result = {
-        baseAmount,
-        discountPercentage,
-        discountAmount,
-        discountedAmount,
-        currentPlanRemaining: currentPlanRemainingValue,
-        upgradeAmount: finalUpgradeAmount,
-        gst,
-        totalAmount,
-        daysRemaining,
-        monthsRemaining: Math.ceil(daysRemaining / 30),
-        actualPaidAmount,
-        gstPercentage
-      }
-      
-      console.log(' Final upgrade calculation (NEW WORKFLOW):', result)
-      return result
-      
-    } catch (error) {
-      console.error(' Failed to fetch purchase history, using fallback calculation:', error)
-      return fallbackCalculation(newPlan,newPlanPrice, currentPlanPrice, currentPlanDuration, subscription)
-    }
-  }
-
-  // Fallback calculation method
-  const fallbackCalculation = (newPlan,newPlanPrice, currentPlanPrice, currentPlanDuration, subscription) => {
-    console.log(' Using fallback calculation method')
-    
-    // Calculate subscription period
-    let startDate, endDate, totalDays, daysUsed, daysRemaining
-    
-    if (subscription.currentPeriodStart && subscription.currentPeriodEnd) {
-      startDate = new Date(subscription.currentPeriodStart)
-      endDate = new Date(subscription.currentPeriodEnd)
-      totalDays = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24))
-      daysUsed = Math.ceil((new Date() - startDate) / (1000 * 60 * 60 * 24))
-      daysRemaining = Math.max(0, totalDays - daysUsed)
-    } else {
-      // Fallback: assume 12-month period starting from subscription creation or 1 month ago
-      startDate = subscription.createdAt ? new Date(subscription.createdAt) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
-      endDate = new Date(startDate.getTime() + 12 * 30 * 24 * 60 * 60 * 1000) // 12 months later
-      totalDays = 365 // Approximate 12 months
-      daysUsed = Math.ceil((new Date() - startDate) / (1000 * 60 * 60 * 24))
-      daysRemaining = Math.max(0, totalDays - daysUsed)
-    }
-    
-    // Calculate remaining value of current plan (prorated)
-    const currentPlanMonthlyPrice = currentPlanPrice / currentPlanDuration
-    const currentPlanDailyPrice = currentPlanMonthlyPrice /// 30 // Approximate 30 days per month
-    const currentPlanRemainingValue = daysRemaining * currentPlanDailyPrice//currentPlanDailyPrice * daysRemaining
-    
-    // NEW WORKFLOW: Base Amount → Discount → Previous Plan Deduction → GST
-    
-    // Step 1: Base Amount
-    const baseAmount = newPlanPrice
-    
-    // Step 2: Apply 14% Discount
-    const discountPercentage = 14 // Default 14%
-    const discountAmount = baseAmount * (discountPercentage / 100)
-    const discountedAmount = baseAmount - discountAmount
-    
-    // Step 3: Deduct Current Plan Remaining
-    const upgradeBaseAmount = discountedAmount - currentPlanRemainingValue
-    const finalUpgradeAmount = Math.max(0, upgradeBaseAmount)
-    
-    // Step 4: Apply 18% GST
-   const gst = (finalUpgradeAmount * gstPercentage) / 100
-    const totalAmount = finalUpgradeAmount + gst
-    
-    return {
-      baseAmount,
-      discountPercentage,
-      discountAmount,
-      discountedAmount,
-      currentPlanRemaining: currentPlanRemainingValue,
-      upgradeAmount: finalUpgradeAmount,
-      gst,
-      totalAmount,
-      daysRemaining,
-      monthsRemaining: Math.ceil(daysRemaining / 30),
-      actualPaidAmount: currentPlanPrice,
-      gstPercentage: parseFloat(newPlan?.gst) || 0
-    }
-  }
-
-  const handleUpgrade = async (plan) => {
-    setSelectedPlan(plan)
-    
-    try {
-      // Calculate prorated upgrade using new async function
-      const pricing = await calculateProratedUpgrade(plan, currentPlan, subscription)
-      
-      setUpgradeData({
-        plan_id: plan.id,
-        business_type_id: user?.business_type_id || '', // Will be set by user
-        customer_id: user?.customer_id || getUserId(), // Use current user ID
-        customer_phone: user?.phone || '', // Will be set by user
-        amount: pricing.baseAmount,
-        discount_percentage: pricing.discountPercentage,
-        discount_amount: pricing.discountAmount,
-        discounted_amount: pricing.discountedAmount,
-        current_plan_remaining: pricing.currentPlanRemaining,
-        upgrade_amount: pricing.upgradeAmount,
-        gst: pricing.gst,
-        total_amount: pricing.totalAmount,
-        days_remaining: pricing.daysRemaining,
-        months_remaining: pricing.monthsRemaining,
-        actual_paid_amount: pricing.actualPaidAmount,
-        gstPercentage: pricing.gstPercentage
-      })
-      setShowUpgradeForm(true)
-    } catch (error) {
-      console.error(' Failed to calculate upgrade pricing:', error)
-      setError('Failed to calculate upgrade pricing. Please try again.')
-    }
-  }
-
+  // Updated handlePlanUpgrade function
   const handlePlanUpgrade = async (e) => {
-    e.preventDefault()
+    e.preventDefault();
     
-    // Validation
     if (!upgradeData.plan_id || !upgradeData.customer_id || !upgradeData.customer_phone) {
-      setError('Please fill all required fields')
-      return
+      setError("Please fill all required fields");
+      return;
     }
-
-    // Allow 0 upgrade amount for free upgrades (when current plan credit covers the cost)
+    
     if (upgradeData.upgrade_amount < 0) {
-      setError('Invalid upgrade amount calculation')
-      return
+      setError("Invalid upgrade amount calculation");
+      return;
     }
-
-    setActionLoading(true)
-    setError(null)
-    const loadingToast = toast.loading('Processing upgrade...')
+    
+    setActionLoading(true);
+    setError(null);
+    const loadingToast = toast.loading("Processing upgrade...");
     
     try {
-      // Calculate final amount using prorated upgrade amount with GST and discount
-      const upgradeAmount = parseFloat(upgradeData.upgrade_amount || 0)
-      const gstAmount = parseFloat(upgradeData.gst) || (upgradeAmount * 0)
-      const discountAmount = parseFloat(upgradeData.discount) || 0
-      const finalAmount = upgradeAmount  - discountAmount + gstAmount
-        console.log(' Final upgrade amount:', finalAmount)
-      // For free upgrades (0 amount), still send the total_amount which includes GST
-    const amountToSend = parseFloat(upgradeData.total_amount || 0)
-
+      const amountToSend = parseFloat(upgradeData.total_amount || 0);
+      
       const upgradePayload = {
-        amount: amountToSend, // Send final amount (discounted amount + GST) to backend
+        amount: amountToSend,
         plan_id: upgradeData.plan_id,
         business_type_id: upgradeData.business_type_id,
         customer_id: upgradeData.customer_id,
-        customer_phone: upgradeData.customer_phone
-      }
-
-      console.log(' Initiating plan upgrade:', upgradePayload)
+        customer_phone: upgradeData.customer_phone,
+        upgrade_amount: upgradeData.upgrade_amount,
+        remaining_amount: upgradeData.current_plan_remaining,
+        days_remaining: upgradeData.days_remaining
+      };
       
-      // Call upgrade plan API
-      const upgradeResponse = await billingAPI.upgradePlan(upgradePayload)
-      const responseData = upgradeResponse?.data
+      console.log("Sending upgrade payload:", upgradePayload);
+      
+      const upgradeResponse = await billingAPI.upgradePlan(upgradePayload);
+      const responseData = upgradeResponse?.data;
       
       if (responseData?.session_id) {
-        toast.success('Upgrade initiated! Redirecting to payment...', { id: loadingToast })
-        
-        // Load and initialize Cashfree SDK
-        const Cashfree = await loadCashfreeSDK();
-        const cashfree = new Cashfree({
-          // mode: process.env.REACT_APP_CASHFREE_MODE === 'production' ? 'production' : 'sandbox',
-          mode: import.meta.env.VITE_CASHFREE_MODE === 'production' ? 'production' : 'sandbox',
+        toast.success("Upgrade initiated! Redirecting to payment...", {
+          id: loadingToast,
         });
         
-        // Store order info before redirect
+        const Cashfree = await loadCashfreeSDK();
+        const cashfree = new Cashfree({
+          mode: import.meta.env.VITE_CASHFREE_MODE === "production" ? "production" : "sandbox",
+        });
+        
         const orderInfo = {
           paymentSessionId: responseData.session_id,
-          planName: selectedPlan?.name || 'Plan Upgrade',
+          planName: selectedPlan?.name || "Plan Upgrade",
           amount: amountToSend,
           customerId: upgradeData.customer_id,
           timestamp: Date.now(),
-          isUpgrade: true
+          isUpgrade: true,
+          upgradeDetails: {
+            fromPlan: currentPlan?.name,
+            toPlan: selectedPlan?.name,
+            remainingAmount: upgradeData.current_plan_remaining,
+            upgradeAmount: upgradeData.upgrade_amount
+          }
         };
-        localStorage.setItem('pendingPayment', JSON.stringify(orderInfo));
+        localStorage.setItem("pendingPayment", JSON.stringify(orderInfo));
         
-        // Handle both paid and free upgrades
         if (amountToSend > 0) {
-          // Open checkout using SDK for paid upgrades
-          const paymentResult = await cashfree.checkout({
+          await cashfree.checkout({
             paymentSessionId: responseData.session_id,
-            redirectTarget: "_self"
+            redirectTarget: "_self",
           });
-          
-          console.log("Payment checkout result:", paymentResult);
         } else {
-          // Free upgrade - no payment needed
-          toast.success('Plan upgraded successfully! Your new plan is now active.')
-          setShowUpgradeForm(false)
-          setSelectedPlan(null)
+          toast.success("Plan upgraded successfully! Your new plan is now active.");
+          setShowUpgradeForm(false);
+          setSelectedPlan(null);
           setUpgradeData({
-            plan_id: '',
-            business_type_id: '',
-            customer_id: '',
-            customer_phone: '',
+            plan_id: "",
+            business_type_id: "",
+            customer_id: "",
+            customer_phone: "",
             amount: 0,
             gst: 0,
             discount: 0,
             gstPercentage: 0,
-          })
-          
-          // Refresh data after a delay
+          });
+          subscriptionFetchedRef.current = false;
           setTimeout(() => {
-            fetchAll()
-          }, 3000)
+            resetAndRefetchSubscription();
+            fetchPaymentHistory();
+          }, 3000);
         }
       } else {
-        toast.dismiss(loadingToast)
-        setError(responseData?.message || 'Failed to initiate plan upgrade')
+        toast.dismiss(loadingToast);
+        setError(responseData?.message || "Failed to initiate plan upgrade");
       }
     } catch (error) {
-      toast.dismiss(loadingToast)
-      console.error('Failed to upgrade plan:', error)
+      toast.dismiss(loadingToast);
+      console.error("Failed to upgrade plan:", error);
       
-      let errorMessage = 'Upgrade failed. Please try again.'
-      if (error.message?.includes('customer_id')) {
-        errorMessage = 'Invalid customer ID format. Please try again.'
-      } else if (error.message?.includes('plan_id')) {
-        errorMessage = 'Invalid plan selected. Please try again.'
-      } else if (error.message?.includes('amount')) {
-        errorMessage = 'Invalid upgrade amount. Please try again.'
+      let errorMessage = "Upgrade failed. Please try again.";
+      if (error.message?.includes("customer_id")) {
+        errorMessage = "Invalid customer ID format. Please try again.";
+      } else if (error.message?.includes("plan_id")) {
+        errorMessage = "Invalid plan selected. Please try again.";
+      } else if (error.message?.includes("amount")) {
+        errorMessage = "Invalid upgrade amount. Please try again.";
       } else if (error.message) {
-        errorMessage = error.message
+        errorMessage = error.message;
       }
       
-      setError(errorMessage)
-      toast.error(errorMessage)
+      setError(errorMessage);
+      toast.error(errorMessage);
     } finally {
-      setActionLoading(false)
+      setActionLoading(false);
     }
-  }
+  };
+
+  const handlePurchasePlan = (plan) => {
+    setSelectedPlan(plan);
+    setPurchaseData({
+      plan_id: plan.id,
+      customer_id: "",
+      amount: plan.price || plan.amount || 0,
+    });
+    setShowPurchaseForm(true);
+  };
+
+  const handlePlanPurchase = async (e) => {
+    e.preventDefault();
+    if (!purchaseData.plan_id || !purchaseData.customer_id || !purchaseData.amount) {
+      setError("Please fill all required fields");
+      return;
+    }
+
+    setActionLoading(true);
+    setError(null);
+    const loadingToast = toast.loading("Creating order...");
+
+    try {
+      const orderResponse = await billingAPI.createCashfreeOrder({
+        amount: purchaseData.amount,
+        plan_id: purchaseData.plan_id,
+        customer_id: purchaseData.customer_id,
+      });
+
+      const orderData = orderResponse?.data;
+
+      if (orderData?.session_id) {
+        toast.success("Order created! Redirecting to payment...", {
+          id: loadingToast,
+        });
+
+        const Cashfree = await loadCashfreeSDK();
+        const cashfree = new Cashfree({
+          mode: import.meta.env.VITE_CASHFREE_MODE === "production" ? "production" : "sandbox",
+        });
+
+        const orderInfo = {
+          paymentSessionId: orderData.session_id,
+          planName: selectedPlan?.name || "Plan Purchase",
+          amount: purchaseData.amount,
+          customerId: purchaseData.customer_id,
+          timestamp: Date.now(),
+        };
+        localStorage.setItem("pendingPayment", JSON.stringify(orderInfo));
+
+        await cashfree.checkout({
+          paymentSessionId: orderData.session_id,
+          redirectTarget: "_self",
+        });
+      } else {
+        toast.dismiss(loadingToast);
+        setError(orderData?.message || "Failed to create order");
+      }
+    } catch (error) {
+      toast.dismiss(loadingToast);
+      console.error("Failed to purchase plan:", error);
+      setError(error.message || "Payment failed. Please try again.");
+      toast.error(error.message || "Payment failed. Please try again.");
+    } finally {
+      setActionLoading(false);
+    }
+  };
 
   const handleCancel = async () => {
-    setActionLoading(true)
+    setActionLoading(true);
     try {
-      // TODO: Implement subscription cancellation
-      alert('Subscription cancellation functionality will be implemented.')
-      setShowCancelConfirm(false)
+      alert("Subscription cancellation functionality will be implemented.");
+      setShowCancelConfirm(false);
     } catch (error) {
-      console.error('Failed to cancel subscription:', error)
-      setError('Failed to cancel subscription. Please try again.')
+      console.error("Failed to cancel subscription:", error);
+      setError("Failed to cancel subscription. Please try again.");
     } finally {
-      setActionLoading(false)
+      setActionLoading(false);
     }
-  }
+  };
 
   const handleReactivate = async () => {
-    setActionLoading(true)
+    setActionLoading(true);
     try {
-      // TODO: Implement subscription reactivation
-      alert('Subscription reactivation functionality will be implemented.')
+      alert("Subscription reactivation functionality will be implemented.");
     } catch (error) {
-      console.error('Failed to reactivate subscription:', error)
-      setError('Failed to reactivate subscription. Please try again.')
+      console.error("Failed to reactivate subscription:", error);
+      setError("Failed to reactivate subscription. Please try again.");
     } finally {
-      setActionLoading(false)
+      setActionLoading(false);
     }
-  }
+  };
 
   const handleUpdatePaymentMethod = async (paymentMethod) => {
-    setActionLoading(true)
+    setActionLoading(true);
     try {
-      // TODO: Implement payment method update
-      alert('Payment method update functionality will be implemented.')
+      alert("Payment method update functionality will be implemented.");
     } catch (error) {
-      console.error('Failed to update payment method:', error)
-      setError('Failed to update payment method. Please try again.')
+      console.error("Failed to update payment method:", error);
+      setError("Failed to update payment method. Please try again.");
     } finally {
-      setActionLoading(false)
+      setActionLoading(false);
     }
-  }
+  };
 
   const handleDownloadInvoice = (invoice) => {
     if (invoice?.pdfUrl) {
-      window.open(invoice.pdfUrl, '_blank')
+      window.open(invoice.pdfUrl, "_blank");
     } else if (invoice?.receiptUrl) {
-      window.open(invoice.receiptUrl, '_blank')
+      window.open(invoice.receiptUrl, "_blank");
     } else {
-      alert('Invoice PDF is not available for download')
+      alert("Invoice PDF is not available for download");
     }
-  }
+  };
 
   const handleViewInvoice = (invoice) => {
-    setSelectedInvoice(invoice)
-    setShowInvoiceModal(true)
-  }
+    setSelectedInvoice(invoice);
+    setShowInvoiceModal(true);
+  };
 
   const handleSendInvoice = async (invoice) => {
     try {
-      // TODO: Implement invoice sending
-      alert('Invoice sending functionality will be implemented.')
+      alert("Invoice sending functionality will be implemented.");
     } catch (error) {
-      console.error('Failed to send invoice:', error)
-      setError('Failed to send invoice. Please try again.')
+      console.error("Failed to send invoice:", error);
+      setError("Failed to send invoice. Please try again.");
     }
-  }
+  };
 
-  // Calculate usage percentages for progress bars
-  const calculateUsagePercentage = (used, limit) => {
-    if (!limit || limit === 0) return 0
-    return Math.min((used / limit) * 100, 100)
-  }
-
-  // Get color based on usage percentage
-  const getUsageColor = (percentage) => {
-    if (percentage >= 90) return 'bg-red-500'
-    if (percentage >= 70) return 'bg-yellow-500'
-    return 'bg-green-500'
-  }
-
-  // Calculate billing stats
   const stats = {
     totalSpent: payments?.reduce((sum, p) => sum + (p.amount || 0), 0) || 0,
-    successfulPayments: payments?.filter(p => p.status === 'succeeded' || p.status === 'paid').length || 0,
-    failedPayments: payments?.filter(p => p.status === 'failed').length || 0,
-    pendingPayments: payments?.filter(p => p.status === 'pending').length || 0,
+    successfulPayments: payments?.filter((p) => p.status === "succeeded" || p.status === "paid").length || 0,
+    failedPayments: payments?.filter((p) => p.status === "failed").length || 0,
+    pendingPayments: payments?.filter((p) => p.status === "pending").length || 0,
     nextBilling: subscription?.currentPeriodEnd || null,
-    daysUntilBilling: subscription?.currentPeriodEnd 
+    daysUntilBilling: subscription?.currentPeriodEnd
       ? Math.ceil((new Date(subscription.currentPeriodEnd) - new Date()) / (1000 * 60 * 60 * 24))
       : 0,
-  }
+  };
 
   const StatCard = ({ title, value, icon: Icon, color, subtitle, delay }) => (
     <motion.div
@@ -754,14 +923,20 @@ console.log(' Latest valid purchase for upgrade calculation:', latestPurchase)
       whileHover={{ y: -2 }}
       className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 relative overflow-hidden group"
     >
-      <div className={`absolute top-0 right-0 w-20 h-20 bg-gradient-to-br ${color} opacity-10 rounded-full -mr-6 -mt-6 group-hover:scale-150 transition-transform duration-500`} />
+      <div
+        className={`absolute top-0 right-0 w-20 h-20 bg-gradient-to-br ${color} opacity-10 rounded-full -mr-6 -mt-6 group-hover:scale-150 transition-transform duration-500`}
+      />
       <div className="relative">
         <div className="flex items-center justify-between">
           <div>
             <p className="text-sm text-gray-600 dark:text-gray-400">{title}</p>
-            <p className="text-2xl font-bold text-gray-900 dark:text-white mt-2">{value}</p>
+            <p className="text-2xl font-bold text-gray-900 dark:text-white mt-2">
+              {value}
+            </p>
             {subtitle && (
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{subtitle}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                {subtitle}
+              </p>
             )}
           </div>
           <div className={`p-3 rounded-xl bg-gradient-to-br ${color} shadow-lg`}>
@@ -770,34 +945,34 @@ console.log(' Latest valid purchase for upgrade calculation:', latestPurchase)
         </div>
       </div>
     </motion.div>
-  )
+  );
 
-  // Show error state
   if (error && !subscription && !loading) {
     return (
       <ProtectedRoute>
         <div className="space-y-6 p-6">
           <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-6 text-center">
             <FiAlertCircle className="w-12 h-12 mx-auto text-red-500 mb-3" />
-            <h3 className="text-lg font-medium text-red-800 dark:text-red-200 mb-2">Error Loading Data</h3>
+            <h3 className="text-lg font-medium text-red-800 dark:text-red-200 mb-2">
+              Error Loading Data
+            </h3>
             <p className="text-red-600 dark:text-red-300 mb-4">{error}</p>
-            <Button onClick={fetchAll} icon={FiRefreshCw}>
+            <Button onClick={() => refreshData()} icon={FiRefreshCw}>
               Try Again
             </Button>
           </div>
         </div>
       </ProtectedRoute>
-    )
+    );
   }
 
   return (
     <ProtectedRoute>
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         className="space-y-6 p-6"
-      >  
-        {/* Error and Success Messages */}
+      >
         <AnimatePresence>
           {(error || successMessage) && (
             <motion.div
@@ -805,41 +980,43 @@ console.log(' Latest valid purchase for upgrade calculation:', latestPurchase)
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
               className={`fixed top-4 right-4 z-50 max-w-sm p-4 rounded-xl shadow-lg ${
-                error 
-                  ? 'bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800' 
-                  : 'bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800'
+                error
+                  ? "bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800"
+                  : "bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800"
               }`}
             >
               <div className="flex items-center space-x-3">
-                <div className={`p-2 rounded-lg ${
-                  error 
-                    ? 'bg-red-100 dark:bg-red-900/30' 
-                    : 'bg-green-100 dark:bg-green-900/30'
-                }`}>
+                <div
+                  className={`p-2 rounded-lg ${
+                    error
+                      ? "bg-red-100 dark:bg-red-900/30"
+                      : "bg-green-100 dark:bg-green-900/30"
+                  }`}
+                >
                   {error ? (
-                    <FiAlertCircle className={`w-5 h-5 ${error ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`} />
+                    <FiAlertCircle className={`w-5 h-5 ${error ? "text-red-600 dark:text-red-400" : "text-green-600 dark:text-green-400"}`} />
                   ) : (
                     <FiCheckCircle className="w-5 h-5 text-green-600 dark:text-green-400" />
                   )}
                 </div>
                 <div className="flex-1">
                   <p className={`text-sm font-medium ${
-                    error 
-                      ? 'text-red-800 dark:text-red-200' 
-                      : 'text-green-800 dark:text-green-200'
+                    error
+                      ? "text-red-800 dark:text-red-200"
+                      : "text-green-800 dark:text-green-200"
                   }`}>
                     {error || successMessage}
                   </p>
                 </div>
                 <button
                   onClick={() => {
-                    setError(null)
-                    setSuccessMessage(null)
+                    setError(null);
+                    setSuccessMessage(null);
                   }}
                   className={`p-1 rounded-lg ${
-                    error 
-                      ? 'text-red-600 hover:bg-red-100 dark:text-red-400 dark:hover:bg-red-900/30' 
-                      : 'text-green-600 hover:bg-green-100 dark:text-green-400 dark:hover:bg-green-900/30'
+                    error
+                      ? "text-red-600 hover:bg-red-100 dark:text-red-400 dark:hover:bg-red-900/30"
+                      : "text-green-600 hover:bg-green-100 dark:text-green-400 dark:hover:bg-green-900/30"
                   }`}
                 >
                   <FiX className="w-4 h-4" />
@@ -862,19 +1039,24 @@ console.log(' Latest valid purchase for upgrade calculation:', latestPurchase)
             </h1>
             <p className="text-gray-600 dark:text-gray-400 mt-2 flex items-center">
               <FiCreditCard className="w-4 h-4 mr-2" />
-              {showChangePlanForm ? 'Change Your Plan' : 'Manage your subscription and billing information'}
+              {showChangePlanForm
+                ? "Change Your Plan"
+                : showUpgradeForm
+                ? "Upgrade Plan"
+                : "Manage your subscription and billing information"}
             </p>
           </div>
-          
+
           <div className="flex items-center space-x-3">
-            {showChangePlanForm ? (
-              <motion.div
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-              >
+            {(showChangePlanForm || showUpgradeForm) ? (
+              <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }}>
                 <Button
                   variant="outline"
-                  onClick={() => setShowChangePlanForm(false)}
+                  onClick={() => {
+                    setShowChangePlanForm(false);
+                    setShowUpgradeForm(false);
+                    setSelectedPlan(null);
+                  }}
                   icon={FiArrowLeft}
                 >
                   Back to Overview
@@ -885,10 +1067,10 @@ console.log(' Latest valid purchase for upgrade calculation:', latestPurchase)
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
-                  onClick={fetchAll}
+                  onClick={() => refreshData()}
                   className="p-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shadow-sm"
                 >
-                  <FiRefreshCw className={`w-5 h-5 text-gray-600 dark:text-gray-300 ${loading ? 'animate-spin' : ''}`} />
+                  <FiRefreshCw className={`w-5 h-5 text-gray-600 dark:text-gray-300 ${loading ? "animate-spin" : ""}`} />
                 </motion.button>
               </>
             )}
@@ -908,20 +1090,18 @@ console.log(' Latest valid purchase for upgrade calculation:', latestPurchase)
           />
         ) : (
           <>
-            {/* Stats Cards - Hide when change plan form is shown */}
             <AnimatePresence mode="wait">
-              {!showChangePlanForm && (
+              {!showChangePlanForm && !showUpgradeForm && (
                 <motion.div
                   key="stats"
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
-                  className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6"
+                  className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
                 >
                   {initialLoading ? (
-                    // Loading skeleton for stats cards
                     Array.from({ length: 5 }).map((_, index) => (
-                      <motion.div 
+                      <motion.div
                         key={index}
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
@@ -952,13 +1132,7 @@ console.log(' Latest valid purchase for upgrade calculation:', latestPurchase)
                         subtitle={`${((stats.successfulPayments / (payments.length || 1)) * 100).toFixed(1)}% success rate`}
                         delay={0.2}
                       />
-                      <StatCard
-                        title="Failed Payments"
-                        value={stats.failedPayments}
-                        icon={FiXCircle}
-                        color="from-red-500 to-pink-500"
-                        delay={0.3}
-                      />
+                      
                       <StatCard
                         title="Pending"
                         value={stats.pendingPayments}
@@ -968,10 +1142,10 @@ console.log(' Latest valid purchase for upgrade calculation:', latestPurchase)
                       />
                       <StatCard
                         title="Next Billing"
-                        value={stats.daysUntilBilling > 0 ? `${stats.daysUntilBilling} days` : 'Today'}
+                        value={stats.daysUntilBilling > 0 ? `${stats.daysUntilBilling} days` : "Today"}
                         icon={FiCalendar}
                         color="from-purple-500 to-indigo-500"
-                        subtitle={stats.nextBilling ? new Date(stats.nextBilling).toLocaleDateString() : 'N/A'}
+                        subtitle={stats.nextBilling ? new Date(stats.nextBilling).toLocaleDateString() : "N/A"}
                         delay={0.5}
                       />
                     </>
@@ -980,9 +1154,8 @@ console.log(' Latest valid purchase for upgrade calculation:', latestPurchase)
               )}
             </AnimatePresence>
 
-            {/* Change Plan Form */}
             <AnimatePresence mode="wait">
-              {showChangePlanForm && (
+              {showChangePlanForm && !showUpgradeForm && (
                 <motion.div
                   key="form"
                   initial={{ opacity: 0, y: 20 }}
@@ -990,18 +1163,32 @@ console.log(' Latest valid purchase for upgrade calculation:', latestPurchase)
                   exit={{ opacity: 0, y: -20 }}
                   transition={{ duration: 0.3 }}
                 >
-                  <SubscriptionForm
-                    plans={plans}
-                    currentPlan={currentPlan}
-                    onSubmit={handleUpgrade}
-                    onCancel={() => setShowChangePlanForm(false)}
-                    isSubmitting={actionLoading}
-                  />
+                  {upgradablePlans.length === 0 && currentPlan ? (
+                    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-8 text-center">
+                      <FiAlertCircle className="w-12 h-12 mx-auto text-gray-400 mb-3" />
+                      <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+                        No Upgrades Available
+                      </h3>
+                      <p className="text-gray-600 dark:text-gray-400 mb-4">
+                        You are currently on our highest tier plan. No upgrades are available at this time.
+                      </p>
+                      <Button variant="outline" onClick={() => setShowChangePlanForm(false)}>
+                        Back to Overview
+                      </Button>
+                    </div>
+                  ) : (
+                    <SubscriptionForm
+                      plans={upgradablePlans}
+                      currentPlan={currentPlan}
+                      onSubmit={handleUpgrade}
+                      onCancel={() => setShowChangePlanForm(false)}
+                      isSubmitting={actionLoading}
+                    />
+                  )}
                 </motion.div>
               )}
             </AnimatePresence>
 
-            {/* Upgrade Plan Form */}
             <AnimatePresence mode="wait">
               {showUpgradeForm && (
                 <motion.div
@@ -1018,20 +1205,23 @@ console.log(' Latest valid purchase for upgrade calculation:', latestPurchase)
                           Upgrade Plan
                         </h2>
                         <p className="text-gray-600 dark:text-gray-400 mt-1">
-                          Upgrade to {selectedPlan?.name || 'Selected Plan'}
+                          Review and confirm your upgrade to {selectedPlan?.name || "Selected Plan"}
                         </p>
                       </div>
                       <Button
                         variant="outline"
-                        onClick={() => setShowUpgradeForm(false)}
-                        icon={FiX}
+                        onClick={() => {
+                          setShowUpgradeForm(false);
+                          setShowChangePlanForm(true);
+                          setSelectedPlan(null);
+                        }}
+                        icon={FiArrowLeft}
                       >
-                        Cancel
+                        Back to Plans
                       </Button>
                     </div>
 
                     <form onSubmit={handlePlanUpgrade} className="space-y-6">
-                      {/* Plan Details */}
                       {selectedPlan && (
                         <div className="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-4">
                           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">
@@ -1039,38 +1229,36 @@ console.log(' Latest valid purchase for upgrade calculation:', latestPurchase)
                           </h3>
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
-                              <p className="text-sm text-gray-600 dark:text-gray-400">Plan Name</p>
+                              <p className="text-sm text-gray-600 dark:text-gray-400">
+                                Current Plan
+                              </p>
                               <p className="font-medium text-gray-900 dark:text-white">
-                                {selectedPlan.name}
+                                {currentPlan?.name || "No Active Plan"}
                               </p>
                             </div>
                             <div>
-                              <p className="text-sm text-gray-600 dark:text-gray-400">Base Price</p>
-                              <p className="font-medium text-gray-900 dark:text-white">
-                                ₹{parseFloat(selectedPlan.price || selectedPlan.amount || 0).toFixed(2)}
+                              <p className="text-sm text-gray-600 dark:text-gray-400">
+                                New Plan
+                              </p>
+                              <p className="font-medium text-primary-600 dark:text-primary-400">
+                                {selectedPlan.name}
                               </p>
                             </div>
                           </div>
                         </div>
                       )}
 
-                      {/* Customer ID */}
-                      <div>
-                        {/*<label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                          Customer ID *
-                        </label>  */}
-                        <Input
-                          type="text"
-                          
-                          value={upgradeData.customer_id}
-                          onChange={(e) => setUpgradeData(prev => ({ ...prev, customer_id: e.target.value }))}
-                          placeholder="Enter customer ID"
-                          required
-                          hidden
-                        />
-                      </div>
+                      <Input
+                        type="hidden"
+                        value={upgradeData.customer_id}
+                        onChange={(e) =>
+                          setUpgradeData((prev) => ({
+                            ...prev,
+                            customer_id: e.target.value,
+                          }))
+                        }
+                      />
 
-                      {/* Customer Phone */}
                       <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                           Customer Phone *
@@ -1078,145 +1266,149 @@ console.log(' Latest valid purchase for upgrade calculation:', latestPurchase)
                         <Input
                           type="tel"
                           value={upgradeData.customer_phone}
-                          onChange={(e) => setUpgradeData(prev => ({ ...prev, customer_phone: e.target.value }))}
+                          onChange={(e) =>
+                            setUpgradeData((prev) => ({
+                              ...prev,
+                              customer_phone: e.target.value,
+                            }))
+                          }
                           placeholder="Enter customer phone number"
                           required
                         />
                       </div>
 
-                      {/* Amount Calculation - NEW WORKFLOW */}
                       <div className="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-4">
                         <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                          Upgrade Calculation (New Workflow)
+                          Upgrade Calculation
                         </h3>
-                        <div className="space-y-3">
-                          {/* Step 1: Base Amount */}
-                          <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3">
+                        
+                        {/* Show remaining amount from recent plan */}
+                        {upgradeData.current_plan_remaining > 0 && (
+                          <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3 mb-3">
                             <p className="text-sm text-blue-800 dark:text-blue-200 font-medium mb-2">
-                              Step 1: Base Amount
+                              Remaining Value from Current Plan
                             </p>
                             <div className="flex justify-between items-center">
-                              <span className="text-blue-700 dark:text-blue-300">New Plan Price:</span>
+                              <span className="text-blue-700 dark:text-blue-300">
+                                Remaining Days: {upgradeData.days_remaining || 0} days
+                              </span>
                               <span className="font-medium text-blue-800 dark:text-blue-200">
-                                ${parseFloat(upgradeData.amount || 0).toFixed(2)}
+                                -₹{parseFloat(upgradeData.current_plan_remaining || 0).toFixed(2)}
                               </span>
                             </div>
                           </div>
-
-                          {/* Step 2: Discount */}
+                        )}
+                        
+                        <div className="space-y-3">
                           <div className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-3">
                             <p className="text-sm text-purple-800 dark:text-purple-200 font-medium mb-2">
-                              Step 2: Apply {upgradeData.discount_percentage || 14}% Discount
+                              Plan Pricing
                             </p>
                             <div className="flex justify-between items-center">
-                              <span className="text-purple-700 dark:text-purple-300">Discount Amount:</span>
+                              <span className="text-purple-700 dark:text-purple-300">
+                                New Plan Price:
+                              </span>
                               <span className="font-medium text-purple-800 dark:text-purple-200">
-                                -${parseFloat(upgradeData.discount_amount || 0).toFixed(2)}
+                                ₹{parseFloat(upgradeData.amount || 0).toFixed(2)}
                               </span>
                             </div>
-                            <div className="flex justify-between items-center mt-1">
-                              <span className="text-purple-700 dark:text-purple-300">After Discount:</span>
-                              <span className="font-medium text-purple-800 dark:text-purple-200">
-                                ${parseFloat(upgradeData.discounted_amount || 0).toFixed(2)}
-                              </span>
-                            </div>
+                            
+                            {upgradeData.discount_percentage > 0 && (
+                              <>
+                                <div className="flex justify-between items-center mt-1">
+                                  <span className="text-purple-700 dark:text-purple-300">
+                                    Discount ({upgradeData.discount_percentage}%):
+                                  </span>
+                                  <span className="font-medium text-green-600 dark:text-green-400">
+                                    -₹{parseFloat(upgradeData.discount_amount || 0).toFixed(2)}
+                                  </span>
+                                </div>
+                                <div className="flex justify-between items-center mt-1 border-t border-purple-200 dark:border-purple-700 pt-2">
+                                  <span className="text-purple-700 dark:text-purple-300 font-medium">
+                                    After Discount:
+                                  </span>
+                                  <span className="font-semibold text-purple-800 dark:text-purple-200">
+                                    ₹{parseFloat(upgradeData.discounted_amount || 0).toFixed(2)}
+                                  </span>
+                                </div>
+                              </>
+                            )}
                           </div>
 
-                          {/* Step 3: Current Plan Deduction */}
                           {upgradeData.current_plan_remaining > 0 && (
                             <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-3">
                               <p className="text-sm text-green-800 dark:text-green-200 font-medium mb-2">
-                                Step 3: Deduct Current Plan Remaining ({upgradeData.days_remaining || 0} months left)
+                                Deduction from Current Plan
                               </p>
                               <div className="flex justify-between items-center">
-                                <span className="text-green-700 dark:text-green-300">Current Plan Credit:</span>
+                                <span className="text-green-700 dark:text-green-300">
+                                  Remaining Credit ({upgradeData.days_remaining || 0} days left):
+                                </span>
                                 <span className="font-medium text-green-800 dark:text-green-200">
-                                  -${parseFloat(upgradeData.current_plan_remaining || 0).toFixed(2)}
+                                  -₹{parseFloat(upgradeData.current_plan_remaining || 0).toFixed(2)}
+                                </span>
+                              </div>
+                              <div className="flex justify-between items-center mt-2 pt-2 border-t border-green-200 dark:border-green-700">
+                                <span className="text-green-700 dark:text-green-300 font-medium">
+                                  Upgrade Base Amount:
+                                </span>
+                                <span className="font-semibold text-green-800 dark:text-green-200">
+                                  ₹{parseFloat(upgradeData.upgrade_amount || 0).toFixed(2)}
                                 </span>
                               </div>
                             </div>
                           )}
 
-                          {/* Step 4: GST (Backend Calculation) */}
-                          <div className="bg-orange-50 dark:bg-orange-900/20 rounded-lg p-3">
-                            <p className="text-sm text-orange-800 dark:text-orange-200 font-medium mb-2">
-                              Step 4: GST ({upgradeData.gstPercentage}%) - Calculated by Backend
-                            </p>
-                            <div className="flex justify-between items-center">
-                              <span className="text-orange-700 dark:text-orange-300">GST Amount:</span>
-                              <span className="font-medium text-orange-800 dark:text-orange-200">
-                                Will be calculated by backend
-                              </span>
-                            </div>
-                          </div>
-
-                          {/* Final Amount */}
                           <div className="border-t border-gray-200 dark:border-gray-600 pt-3">
                             <div className="flex justify-between items-center">
+                              <span className="text-gray-600 dark:text-gray-400">
+                                GST ({upgradeData.gstPercentage || 0}%):
+                              </span>
+                              <span className="font-medium text-gray-900 dark:text-white">
+                                +₹{parseFloat(upgradeData.gst || 0).toFixed(2)}
+                              </span>
+                            </div>
+                            <div className="flex justify-between items-center mt-2 pt-2 border-t border-gray-200 dark:border-gray-600">
                               <span className="text-lg font-semibold text-gray-900 dark:text-white">
-                                Amount to Backend (After Discount)
+                                Total Amount to Pay
                               </span>
-                              <span className="text-lg font-bold text-primary-600 dark:text-primary-400">
-                                ${parseFloat(upgradeData.discounted_amount || 0).toFixed(2)}
-                              </span>
-                            </div>
-                            <div className="flex justify-between items-center mt-2">
-                              <span className="text-sm text-gray-600 dark:text-gray-400">
-                                GST will be applied on this amount:
-                              </span>
-                              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                                {upgradeData.gstPercentage || 0}% of ${parseFloat(upgradeData.discounted_amount || 0).toFixed(2)}
-                              </span>
-                            </div>
-                            <div className="flex justify-between items-center mt-2">
-                              <span className="text-sm text-gray-600 dark:text-gray-400">
-                                Final Amount (with GST):
-                              </span>
-                              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                                Will be calculated by backend
+                              <span className="text-2xl font-bold text-primary-600 dark:text-primary-400">
+                                ₹{parseFloat(upgradeData.total_amount || 0).toFixed(2)}
                               </span>
                             </div>
                           </div>
 
-                          {/* Summary */}
-                          <div className="bg-gray-100 dark:bg-gray-700 rounded-lg p-3 mt-4">
-                            <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">
-                              <strong>Calculation Summary:</strong>
-                            </p>
-                            <div className="text-xs text-gray-500 dark:text-gray-400 space-y-1">
-                              <p>• Base: ${parseFloat(upgradeData.amount || 0).toFixed(2)}</p>
-                              <p>• Discount: -${parseFloat(upgradeData.discount_amount || 0).toFixed(2)}</p>
-                              {upgradeData.current_plan_remaining > 0 && (
-                                <p>• Current Plan Credit: -${parseFloat(upgradeData.current_plan_remaining || 0).toFixed(2)}</p>
-                              )}
-                              <p>• GST: +${parseFloat(upgradeData.gst || 0).toFixed(2)}</p>
-                              <p className="font-semibold text-primary-600 dark:text-primary-400">
-                                • Total: ${parseFloat(upgradeData.total_amount || 0).toFixed(2)}
-                              </p>
-                            </div>
-                          </div>
-
-                          {/* Savings Information */}
                           {upgradeData.current_plan_remaining > 0 && (
                             <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-3 mt-4">
                               <p className="text-sm text-green-800 dark:text-green-200">
-                                <strong>💰 You're saving:</strong> ${parseFloat(upgradeData.current_plan_remaining || 0).toFixed(2)} 
-                                {' '}from your current plan remaining value!
+                                <strong>💰 You're saving:</strong> ₹
+                                {parseFloat(upgradeData.current_plan_remaining || 0).toFixed(2)}{" "}
+                                from your current plan!
+                              </p>
+                            </div>
+                          )}
+                          
+                          {upgradeData.total_amount === 0 && (
+                            <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3 mt-4">
+                              <p className="text-sm text-blue-800 dark:text-blue-200">
+                                <strong>🎉 Free Upgrade!</strong> Your remaining plan value covers the full cost of the new plan.
                               </p>
                             </div>
                           )}
                         </div>
                       </div>
 
-                      {/* Action Buttons */}
                       <div className="flex items-center justify-end space-x-3">
                         <Button
                           type="button"
                           variant="outline"
-                          onClick={() => setShowUpgradeForm(false)}
+                          onClick={() => {
+                            setShowUpgradeForm(false);
+                            setShowChangePlanForm(true);
+                          }}
                           disabled={actionLoading}
                         >
-                          Cancel
+                          Back
                         </Button>
                         <Button
                           type="submit"
@@ -1224,7 +1416,7 @@ console.log(' Latest valid purchase for upgrade calculation:', latestPurchase)
                           loading={actionLoading}
                           disabled={actionLoading}
                         >
-                          {actionLoading ? 'Processing...' : 'Proceed to Payment'}
+                          {actionLoading ? "Processing..." : "Proceed to Payment"}
                         </Button>
                       </div>
                     </form>
@@ -1233,9 +1425,8 @@ console.log(' Latest valid purchase for upgrade calculation:', latestPurchase)
               )}
             </AnimatePresence>
 
-            {/* Main Content - Hide when change plan form is shown */}
             <AnimatePresence mode="wait">
-              {!showChangePlanForm && (
+              {!showChangePlanForm && !showUpgradeForm && (
                 <motion.div
                   key="content"
                   initial={{ opacity: 0 }}
@@ -1244,11 +1435,8 @@ console.log(' Latest valid purchase for upgrade calculation:', latestPurchase)
                   className="space-y-6"
                 >
                   {initialLoading ? (
-                    // Loading skeleton for all content blocks
                     <>
-                      {/* Subscription Cards Skeleton */}
                       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                        {/* Subscription Card Skeleton */}
                         <motion.div
                           initial={{ opacity: 0, y: 20 }}
                           animate={{ opacity: 1, y: 0 }}
@@ -1269,12 +1457,11 @@ console.log(' Latest valid purchase for upgrade calculation:', latestPurchase)
                           </div>
                         </motion.div>
 
-                        {/* Plan Details Card Skeleton */}
                         <motion.div
-                          initial={{ opacity: 0, y: 20 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ delay: 0.3 }}
-                          className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6"
+                          initial={{ opacity: 0, x: 20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: 0.2 }}
+                          className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 h-fit"
                         >
                           <div className="animate-pulse">
                             <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-1/4 mb-4"></div>
@@ -1296,11 +1483,10 @@ console.log(' Latest valid purchase for upgrade calculation:', latestPurchase)
                         </motion.div>
                       </div>
 
-                      {/* Payment History Card Skeleton */}
                       <motion.div
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.4 }}
+                        transition={{ delay: 0.3 }}
                         className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6"
                       >
                         <div className="animate-pulse">
@@ -1328,11 +1514,8 @@ console.log(' Latest valid purchase for upgrade calculation:', latestPurchase)
                       </motion.div>
                     </>
                   ) : (
-                    // Actual content when not loading
                     <>
-                      {/* Subscription Cards */}
                       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                        {/* Subscription Card */}
                         <SubscriptionCard
                           subscription={subscription}
                           onUpgrade={() => setShowChangePlanForm(true)}
@@ -1342,7 +1525,6 @@ console.log(' Latest valid purchase for upgrade calculation:', latestPurchase)
                           loading={actionLoading}
                         />
 
-                        {/* Plan Details & Payment History */}
                         <motion.div
                           initial={{ opacity: 0, x: 20 }}
                           animate={{ opacity: 1, x: 0 }}
@@ -1350,29 +1532,93 @@ console.log(' Latest valid purchase for upgrade calculation:', latestPurchase)
                           className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 h-fit"
                         >
                           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                            Current Plan
+                            Current Plan Details
                           </h3>
-                          {currentPlan ? (
+
+                          {subscription ? (
                             <div className="space-y-3">
                               <div className="flex items-center justify-between">
-                                <span className="text-gray-600 dark:text-gray-400">Plan</span>
+                                <span className="text-gray-600 dark:text-gray-400">
+                                  Plan Name
+                                </span>
                                 <span className="font-medium text-gray-900 dark:text-white">
-                                  {currentPlan.name || 'Basic Plan'}
+                                  {subscription.plan || subscription.planDetails?.name || "N/A"}
                                 </span>
                               </div>
+
                               <div className="flex items-center justify-between">
-                                <span className="text-gray-600 dark:text-gray-400">Price</span>
+                                <span className="text-gray-600 dark:text-gray-400">
+                                  Price
+                                </span>
                                 <span className="font-medium text-gray-900 dark:text-white">
-                                  ₹{currentPlan.price || currentPlan.amount || 0}/{currentPlan.interval || 'month'}
+                                  ₹{parseFloat(subscription.amount || 0).toFixed(2)}/{subscription.interval || "month"}
                                 </span>
                               </div>
+
                               <div className="flex items-center justify-between">
-                                <span className="text-gray-600 dark:text-gray-400">Status</span>
+                                <span className="text-gray-600 dark:text-gray-400">
+                                  Status
+                                </span>
                                 <StatusBadge
-                                  status={subscription?.status || 'active'}
-                                  variant={subscription?.status === 'active' ? 'success' : 'warning'}
+                                  status={subscription.status || "active"}
+                                  variant={subscription.status === "active" ? "success" : "warning"}
                                 />
                               </div>
+
+                              {subscription.currentPeriodStart && (
+                                <div className="flex items-center justify-between">
+                                  <span className="text-gray-600 dark:text-gray-400">
+                                    Start Date
+                                  </span>
+                                  <span className="text-sm text-gray-900 dark:text-white">
+                                    {new Date(subscription.currentPeriodStart).toLocaleDateString()}
+                                  </span>
+                                </div>
+                              )}
+
+                              {subscription.currentPeriodEnd && (
+                                <div className="flex items-center justify-between">
+                                  <span className="text-gray-600 dark:text-gray-400">
+                                    End Date
+                                  </span>
+                                  <span className="text-sm text-gray-900 dark:text-white">
+                                    {new Date(subscription.currentPeriodEnd).toLocaleDateString()}
+                                  </span>
+                                </div>
+                              )}
+
+                              {recentPlanData && recentPlanData.remainingDays > 0 && (
+                                <div className="flex items-center justify-between">
+                                  <span className="text-gray-600 dark:text-gray-400">
+                                    Remaining Days
+                                  </span>
+                                  <span className="text-sm font-medium text-blue-600 dark:text-blue-400">
+                                    {recentPlanData.remainingDays} days
+                                  </span>
+                                </div>
+                              )}
+
+                              {recentPlanData && recentPlanData.remainingAmount > 0 && (
+                                <div className="flex items-center justify-between">
+                                  <span className="text-gray-600 dark:text-gray-400">
+                                    Remaining Value
+                                  </span>
+                                  <span className="text-sm font-medium text-green-600 dark:text-green-400">
+                                    ₹{parseFloat(recentPlanData.remainingAmount).toFixed(2)}
+                                  </span>
+                                </div>
+                              )}
+
+                              {subscription.paymentId && (
+                                <div className="flex items-center justify-between">
+                                  <span className="text-gray-600 dark:text-gray-400">
+                                    Payment ID
+                                  </span>
+                                  <span className="text-xs text-gray-500 dark:text-gray-400 font-mono">
+                                    {subscription.paymentId}
+                                  </span>
+                                </div>
+                              )}
                             </div>
                           ) : (
                             <div className="text-center py-4">
@@ -1384,7 +1630,6 @@ console.log(' Latest valid purchase for upgrade calculation:', latestPurchase)
                         </motion.div>
                       </div>
 
-                      {/* Payment History */}
                       <motion.div
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
@@ -1400,34 +1645,35 @@ console.log(' Latest valid purchase for upgrade calculation:', latestPurchase)
                               value={paymentStatus}
                               onChange={setPaymentStatus}
                               options={[
-                                { value: '', label: 'All Payments' },
-                                { value: 'succeeded', label: 'Successful' },
-                                { value: 'failed', label: 'Failed' },
-                                { value: 'pending', label: 'Pending' }
+                                { value: "", label: "All Payments" },
+                                { value: "succeeded", label: "Successful" },
+                                { value: "failed", label: "Failed" },
+                                { value: "pending", label: "Pending" },
                               ]}
                               className="w-40"
                             />
                             <motion.button
                               whileHover={{ scale: 1.05 }}
                               whileTap={{ scale: 0.95 }}
-                              onClick={fetchAll}
+                              onClick={() => refreshData()}
                               className="p-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shadow-sm"
                             >
-                              <FiRefreshCw className={`w-4 h-4 text-gray-600 dark:text-gray-300 ${loading ? 'animate-spin' : ''}`} />
+                              <FiRefreshCw className={`w-4 h-4 text-gray-600 dark:text-gray-300 ${loading ? "animate-spin" : ""}`} />
                             </motion.button>
                           </div>
                         </div>
                         <PaymentHistory
                           payments={payments}
                           loading={loading}
-                          onPaymentClick={(payment) => console.log('Payment clicked:', payment)}
+                          onViewInvoice={handleViewInvoice}
+                          onDownloadInvoice={handleDownloadInvoice}
                         />
-                        {paymentsCount > pageSize && (
+                        {paymentsCount > 0 && pageSize > 0 && (
                           <div className="mt-4 flex justify-center">
                             <Pagination
                               currentPage={currentPage}
                               totalItems={paymentsCount}
-                              itemsPerPage={pageSize}
+                              pageSize={pageSize}
                               onPageChange={setCurrentPage}
                             />
                           </div>
@@ -1438,11 +1684,10 @@ console.log(' Latest valid purchase for upgrade calculation:', latestPurchase)
                 </motion.div>
               )}
             </AnimatePresence>
-
           </>
         )}
 
-        {/* Cancel Subscription Confirmation Modal */}
+        {/* Cancel Subscription Modal */}
         <AnimatePresence>
           {showCancelConfirm && (
             <motion.div
@@ -1457,10 +1702,10 @@ console.log(' Latest valid purchase for upgrade calculation:', latestPurchase)
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.9, opacity: 0 }}
                 className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full p-6"
-                onClick={e => e.stopPropagation()}
+                onClick={(e) => e.stopPropagation()}
               >
                 <div className="text-center">
-                  <motion.div 
+                  <motion.div
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}
                     transition={{ delay: 0.1, type: "spring", stiffness: 200 }}
@@ -1468,8 +1713,8 @@ console.log(' Latest valid purchase for upgrade calculation:', latestPurchase)
                   >
                     <FiX className="w-8 h-8 text-red-600 dark:text-red-400" />
                   </motion.div>
-                  
-                  <motion.h3 
+
+                  <motion.h3
                     initial={{ y: 10, opacity: 0 }}
                     animate={{ y: 0, opacity: 1 }}
                     transition={{ delay: 0.2 }}
@@ -1477,8 +1722,8 @@ console.log(' Latest valid purchase for upgrade calculation:', latestPurchase)
                   >
                     Cancel Subscription
                   </motion.h3>
-                  
-                  <motion.p 
+
+                  <motion.p
                     initial={{ y: 10, opacity: 0 }}
                     animate={{ y: 0, opacity: 1 }}
                     transition={{ delay: 0.3 }}
@@ -1486,8 +1731,8 @@ console.log(' Latest valid purchase for upgrade calculation:', latestPurchase)
                   >
                     Are you sure you want to cancel your subscription? This action cannot be undone.
                   </motion.p>
-                  
-                  <motion.div 
+
+                  <motion.div
                     initial={{ y: 10, opacity: 0 }}
                     animate={{ y: 0, opacity: 1 }}
                     transition={{ delay: 0.4 }}
@@ -1509,7 +1754,7 @@ console.log(' Latest valid purchase for upgrade calculation:', latestPurchase)
                         isLoading={actionLoading}
                         className="w-full"
                       >
-                        {actionLoading ? 'Cancelling...' : 'Cancel Anyway'}
+                        {actionLoading ? "Cancelling..." : "Cancel Anyway"}
                       </Button>
                     </motion.div>
                   </motion.div>
@@ -1519,7 +1764,7 @@ console.log(' Latest valid purchase for upgrade calculation:', latestPurchase)
           )}
         </AnimatePresence>
 
-        {/* Plan Purchase Modal */}
+        {/* Purchase Plan Modal */}
         <AnimatePresence>
           {showPurchaseForm && selectedPlan && (
             <motion.div
@@ -1535,10 +1780,10 @@ console.log(' Latest valid purchase for upgrade calculation:', latestPurchase)
                 exit={{ scale: 0.9, opacity: 0, y: 20 }}
                 transition={{ type: "spring", stiffness: 200 }}
                 className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full p-6"
-                onClick={e => e.stopPropagation()}
+                onClick={(e) => e.stopPropagation()}
               >
                 <div className="text-center">
-                  <motion.div 
+                  <motion.div
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}
                     transition={{ delay: 0.1, type: "spring", stiffness: 200 }}
@@ -1546,8 +1791,8 @@ console.log(' Latest valid purchase for upgrade calculation:', latestPurchase)
                   >
                     <FiShoppingCart className="w-8 h-8 text-green-600 dark:text-green-400" />
                   </motion.div>
-                  
-                  <motion.h3 
+
+                  <motion.h3
                     initial={{ y: 10, opacity: 0 }}
                     animate={{ y: 0, opacity: 1 }}
                     transition={{ delay: 0.2 }}
@@ -1555,8 +1800,8 @@ console.log(' Latest valid purchase for upgrade calculation:', latestPurchase)
                   >
                     Purchase Plan
                   </motion.h3>
-                  
-                  <motion.div 
+
+                  <motion.div
                     initial={{ y: 10, opacity: 0 }}
                     animate={{ y: 0, opacity: 1 }}
                     transition={{ delay: 0.3 }}
@@ -1566,14 +1811,14 @@ console.log(' Latest valid purchase for upgrade calculation:', latestPurchase)
                       {selectedPlan.name}
                     </h4>
                     <p className="text-2xl font-bold text-primary-600 dark:text-primary-400">
-                      ₹{selectedPlan.price || selectedPlan.amount || 0}/{selectedPlan.interval || 'month'}
+                      ₹{selectedPlan.price || selectedPlan.amount || 0}/{selectedPlan.interval || "month"}
                     </p>
                     <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
-                      {selectedPlan.description || 'No description available'}
+                      {selectedPlan.description || "No description available"}
                     </p>
                   </motion.div>
-                  
-                  <motion.form 
+
+                  <motion.form
                     initial={{ y: 10, opacity: 0 }}
                     animate={{ y: 0, opacity: 1 }}
                     transition={{ delay: 0.4 }}
@@ -1586,35 +1831,44 @@ console.log(' Latest valid purchase for upgrade calculation:', latestPurchase)
                       value={purchaseData.plan_id}
                       readOnly
                     />
-                    
+
                     <Input
                       label="Customer ID"
                       type="number"
                       placeholder="Enter customer ID"
                       value={purchaseData.customer_id}
-                      onChange={(e) => setPurchaseData({ ...purchaseData, customer_id: e.target.value })}
+                      onChange={(e) =>
+                        setPurchaseData({
+                          ...purchaseData,
+                          customer_id: e.target.value,
+                        })
+                      }
                       required
                     />
-                    
+
                     <Input
                       type="hidden"
                       name="amount"
                       value={purchaseData.amount}
                       readOnly
                     />
-                    
+
                     {error && (
                       <div className="p-3 bg-red-50 dark:bg-red-900/20 rounded-lg">
-                        <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+                        <p className="text-sm text-red-600 dark:text-red-400">
+                          {error}
+                        </p>
                       </div>
                     )}
-                    
+
                     {successMessage && (
                       <div className="p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
-                        <p className="text-sm text-green-600 dark:text-green-400">{successMessage}</p>
+                        <p className="text-sm text-green-600 dark:text-green-400">
+                          {successMessage}
+                        </p>
                       </div>
                     )}
-                    
+
                     <div className="flex space-x-3">
                       <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="flex-1">
                         <Button
@@ -1632,7 +1886,7 @@ console.log(' Latest valid purchase for upgrade calculation:', latestPurchase)
                           disabled={actionLoading}
                           className="w-full"
                         >
-                          {actionLoading ? 'Processing...' : 'Complete Purchase'}
+                          {actionLoading ? "Processing..." : "Complete Purchase"}
                         </Button>
                       </motion.div>
                     </div>
@@ -1658,7 +1912,7 @@ console.log(' Latest valid purchase for upgrade calculation:', latestPurchase)
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.9, opacity: 0 }}
                 className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-2xl w-full p-6"
-                onClick={e => e.stopPropagation()}
+                onClick={(e) => e.stopPropagation()}
               >
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-xl font-bold text-gray-900 dark:text-white">
@@ -1671,26 +1925,32 @@ console.log(' Latest valid purchase for upgrade calculation:', latestPurchase)
                     <FiX className="w-5 h-5 text-gray-500" />
                   </button>
                 </div>
-                
+
                 <div className="space-y-4">
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">Date</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                        Date
+                      </p>
                       <p className="font-medium text-gray-900 dark:text-white">
                         {new Date(selectedInvoice.date || selectedInvoice.createdAt).toLocaleDateString()}
                       </p>
                     </div>
                     <div>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">Amount</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                        Amount
+                      </p>
                       <p className="font-medium text-gray-900 dark:text-white">
-                        ${(selectedInvoice.amount || selectedInvoice.total || 0).toFixed(2)}
+                        ₹{(selectedInvoice.amount || selectedInvoice.total || 0).toFixed(2)}
                       </p>
                     </div>
                     <div>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">Status</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                        Status
+                      </p>
                       <StatusBadge
-                        status={selectedInvoice.status || 'paid'}
-                        variant={selectedInvoice.status === 'paid' ? 'success' : 'warning'}
+                        status={selectedInvoice.status || "paid"}
+                        variant={selectedInvoice.status === "paid" ? "success" : "warning"}
                       />
                     </div>
                   </div>
@@ -1717,7 +1977,7 @@ console.log(' Latest valid purchase for upgrade calculation:', latestPurchase)
         </AnimatePresence>
       </motion.div>
     </ProtectedRoute>
-  )
-}
+  );
+};
 
-export default Plans
+export default Plans;
