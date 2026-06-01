@@ -152,7 +152,7 @@ class DashboardController extends Controller
         return response()->json([
                 'stats' => [
                 'totalRevenue'   => $totalRevenue,
-                'totalDue'       =>$totalDue,
+                'totalDue'       => $totalDue,
                 'totalOrders'    => $totalOrders,
                 'totalCustomers' => $totalCustomers,
                 'totalProducts'  => $totalProducts,

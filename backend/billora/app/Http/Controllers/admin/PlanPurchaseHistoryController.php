@@ -31,7 +31,7 @@ class PlanPurchaseHistoryController extends Controller
             ]);
         }
         $plans = Cache::tags(['plan_purchase_history_user_' . $user])->remember($cacheKey, 600, function () use ($user, $id) {
-           return PlanPurchaseHistory::where('user_id', $id)->paginate(15)->withQueryString();
+           return PlanPurchaseHistory::where('user_id', $id)->orderBy('id', 'desc')->paginate(15)->withQueryString();
             // if($plans->isEmpty()){
             //     return response()->json([
             //         'status' => false,
