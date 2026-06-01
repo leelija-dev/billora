@@ -108,7 +108,7 @@
         .password-toggle {
             position: absolute;
             right: 16px;
-            color: #9CA3AF;
+            color:#9CA3AF;
             display: flex;
             align-items: center;
             justify-content: center;

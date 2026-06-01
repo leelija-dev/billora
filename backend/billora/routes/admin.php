@@ -130,7 +130,7 @@ Route::middleware(['web', 'admin.auth'])->prefix('admin')->group(function () {
         Route::delete('/delete/{id}',[BlogController::class,'destroy'])->name('admin.blogs.destroy');
         Route::get('/trashed',[BlogController::class,'trashed'])->name('admin.blogs.trash');
         Route::delete('/force-delete/{id}',[BlogController::class,'forceDelete'])->name('admin.blogs.force-delete');
-         Route::post('/restore/{id}',[BlogController::class,'restore'])->name('admin.blogs.restore');
+        Route::post('/restore/{id}',[BlogController::class,'restore'])->name('admin.blogs.restore');
         
     });
     Route::prefix('blog-tag')->group(function (){
@@ -148,6 +148,6 @@ Route::middleware(['web', 'admin.auth'])->prefix('admin')->group(function () {
         Route::get('/edit/{id}', [BlogCategoriesController::class, 'edit'])->name('admin.category.edit');
         Route::post('/update/{id}', [BlogCategoriesController::class, 'update'])->name('admin.category.update');
         Route::post('/delete/{id}', [BlogCategoriesController::class, 'destroy'])->name('admin.category.destroy');    
-    
     });  
+    
 });
