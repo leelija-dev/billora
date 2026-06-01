@@ -41,12 +41,12 @@ class PlanPurchaseHistoryController extends Controller
             //     ]);
             // }
         });
-        $exucationTime = microtime(true) - $startTime;
+        $executionTime = microtime(true) - $startTime;
         return response()->json([
             'status' => true,
             'message' => 'Plan purchase history',
             'source' => $fromCache ? 'Cache' : 'Database',
-            'response_time' => round($exucationTime, 4) . ' sec',
+            'response_time' => round($executionTime, 4) . ' sec',
             'data' => $plans
         ]);
     }

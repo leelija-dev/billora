@@ -108,7 +108,7 @@
         .password-toggle {
             position: absolute;
             right: 16px;
-            color: #9CA3AF;
+            color:#9CA3AF;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -384,6 +384,7 @@
     // Send login request
     fetch('/admin/login', {
         method: 'POST',
+        credentials: 'same-origin',
         headers: {
             'Content-Type': 'application/json',
             'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content'),
