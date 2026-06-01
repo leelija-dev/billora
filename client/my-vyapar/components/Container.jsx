@@ -9,7 +9,7 @@ const Container = ({
     <div className={`
       w-full mx-auto
       container          /* Match navbar's max-w */
-      px-4 sm:px-5 lg:px-10    /* Match navbar's padding */
+      px-4 sm:px-5    /* Match navbar's padding */
       ${className}
     `}>
       {children}

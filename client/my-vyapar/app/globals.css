@@ -1,99 +1,164 @@
-@import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  /* Hero gradient colors */
+  --hero-bg-start: #e2e8f0;
+  --hero-bg-mid1: #cbd5e1;
+  --hero-bg-mid2: #e0e7ff;
+  --hero-bg-end: #c7d2fe;
+  
+  /* Device backgrounds */
+  --device-dark: #1f2937;
+  --device-darker: #111827;
+  
+  /* Gradient stops */
+  --gradient-sky-600: #0284c7;
+  --gradient-indigo-700: #4338ca;
+  --gradient-sky-700: #0369a1;
+  --gradient-purple-700: #7e22ce;
+  --gradient-indigo-600: #4f46e5;
+  --gradient-purple-600: #9333ea;
+  
+  /* Text colors */
+  --text-slate-700: #334155;
+  --text-slate-800: #1e293b;
+  --text-emerald-600: #059669;
+  
+  /* Border colors */
+  --border-gray-300: #d1d5db;
+  --border-gray-500: #6b7280;
+  
+  /* Feature badge colors */
+  --feature-amber: #f59e0b;
+  --feature-purple: #9333ea;
+  --feature-emerald: #10b981;
+  --feature-sky: #0ea5e9;
+  --feature-indigo: #6366f1;
+  --feature-rose: #f43f5e;
 }
 
 body {
-  background: var(--background);
+  background: white !important;
   color: black;
   font-family: Arial, Helvetica, sans-serif;
 }
+main {
+  background: white !important;
+}
 @keyframes float {
-  0%,100% { transform: translateY(0); }
-  50% { transform: translateY(-15px); }
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-15px);
+  }
 }
 
-@keyframes floatBadge {a
-  0%,100% { transform: translate(0,0); }
-  25% { transform: translate(5px,-5px); }
-  50% { transform: translate(0,-10px); }
-  75% { transform: translate(-5px,-5px); }
+@keyframes floatBadge {
+  a 0%,
+  100% {
+    transform: translate(0, 0);
+  }
+  25% {
+    transform: translate(5px, -5px);
+  }
+  50% {
+    transform: translate(0, -10px);
+  }
+  75% {
+    transform: translate(-5px, -5px);
+  }
 }
-.animated-bg{
-background: linear-gradient(
--45deg,
-#dbeafe,
-#e0e7ff,
-#ede9fe,
-#dbeafe
-);
+.animated-bg {
+  background: linear-gradient(-45deg, #dbeafe, #e0e7ff, #ede9fe, #dbeafe);
 
-
-background-size: 400% 400%;
-animation: gradientMove 12s ease infinite;
+  background-size: 400% 400%;
+  animation: gradientMove 12s ease infinite;
 }
 
 @keyframes gradientMove {
+  0% {
+    background-position: 0% 50%;
+  }
 
-0%{
-background-position:0% 50%;
+  50% {
+    background-position: 100% 50%;
+  }
+
+  100% {
+    background-position: 0% 50%;
+  }
 }
-
-50%{
-background-position:100% 50%;
-}
-
-100%{
-background-position:0% 50%;
-}
-
-}
-
-
-
 
 .card-visible {
-          opacity: 1 !important;
-          transform: translateY(0) !important;
-        }
-        
-        @keyframes slide-in {
-          from {
-            opacity: 0;
-            transform: translateX(100%);
-          }
-          to {
-            opacity: 1;
-            transform: translateX(0);
-          }
-        }
-        
-        .animate-slide-in {
-          animation: slide-in 0.3s ease-out;
-        }
-        
-        @keyframes spin {
-          to {
-            transform: rotate(360deg);
-          }
-        }
-        
-        .animate-spin {
-          animation: spin 1s linear infinite;
-        }
+  opacity: 1 !important;
+  transform: translateY(0) !important;
+}
+
+@keyframes slide-in {
+  from {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.animate-slide-in {
+  animation: slide-in 0.3s ease-out;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 0.8s ease-out forwards;
+}
+
+.animation-delay-1000 {
+  animation-delay: 1s;
+}
+
+.animation-delay-2000 {
+  animation-delay: 2s;
+}
+
+.animation-delay-3000 {
+  animation-delay: 3s;
+}
+
+.animation-delay-4000 {
+  animation-delay: 4s;
+}
+
+.animation-delay-5000 {
+  animation-delay: 5s;
+}
+
+.animation-delay-6000 {
+  animation-delay: 6s;
+}
