@@ -1,13 +1,14 @@
 import { apiClient } from './apiClient'
 
 export const reportsAPI = {
-  // Get reports with optional date filtering
-  getReports: (startDate = '', endDate = '') => {
+  // Get reports with optional date filtering and pagination
+  getReports: (startDate = '', endDate = '', page = 1) => {
     let url = '/reports'
     const params = new URLSearchParams()
     
     if (startDate) params.append('start_date', startDate)
     if (endDate) params.append('end_date', endDate)
+    if (page) params.append('page', page)
     
     if (params.toString()) {
       url += `?${params.toString()}`
@@ -17,7 +18,8 @@ export const reportsAPI = {
       url,
       params: {
         start_date: startDate,
-        end_date: endDate
+        end_date: endDate,
+        page: page
       }
     })
     
@@ -26,6 +28,17 @@ export const reportsAPI = {
       return response
     }).catch(error => {
       console.error('❌ Reports API Error:', error)
+      throw error
+    })
+  },
+
+  getSingleReport: (reportId) => {
+    console.log('📊 Fetching single report:', reportId)
+    return apiClient.get(`/reports/single-invoice/${reportId}`).then(response => {
+      console.log('✅ Single Report Response:', response)
+      return response
+    }).catch(error => {
+      console.error('❌ Single Report API Error:', error)
       throw error
     })
   },

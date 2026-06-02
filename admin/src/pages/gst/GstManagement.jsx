@@ -608,9 +608,6 @@ const GstManagement = () => {
                   <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold bg-gradient-to-r from-slate-800 to-slate-600 dark:from-white dark:to-slate-300 bg-clip-text text-transparent">
                     GST Management
                   </h1>
-                  <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
-                    User ID: {user?.id || "Not logged in"}
-                  </p>
                 </div>
               </div>
 

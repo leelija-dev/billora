@@ -1,3 +1,5 @@
+// Update SubscriptionCard.js with renew functionality
+
 import React from "react";
 import { motion } from "framer-motion";
 import {
@@ -7,6 +9,7 @@ import {
   FiXCircle,
   FiRefreshCw,
   FiTag,
+  FiRotateCcw, // Add this import for renew icon
 } from "react-icons/fi";
 import Button from "../../common/Button/Button";
 import StatusBadge from "../../common/StatusBadge/StatusBadge";
@@ -17,6 +20,7 @@ const SubscriptionCard = ({
   onCancel,
   onReactivate,
   onUpdatePaymentMethod,
+  onRenew, // Add this new prop
   loading,
 }) => {
   // Helper function to calculate discounted price
@@ -26,9 +30,11 @@ const SubscriptionCard = ({
     const discountedPrice = originalPrice - (originalPrice * discount) / 100;
     return discountedPrice;
   };
+  
+  console.log("checking SubscriptonCard", subscription);
 
   const getOriginalPrice = () => {
-    return parseFloat(subscription?.amount || subscription?.planDetails?.price || 0);
+    return parseFloat( subscription?.planDetails?.price || 0);
   };
 
   const getDiscountPercentage = () => {
@@ -39,6 +45,23 @@ const SubscriptionCard = ({
   const discountPercentage = getDiscountPercentage();
   const hasDiscount = discountPercentage > 0;
   const discountedPrice = calculateDiscountedPrice(originalPrice, discountPercentage);
+  
+  // Check if plan is near expiry (e.g., within 7 days)
+  const isNearExpiry = () => {
+    if (!subscription?.currentPeriodEnd) return false;
+    const endDate = new Date(subscription.currentPeriodEnd);
+    const today = new Date();
+    const daysRemaining = Math.ceil((endDate - today) / (1000 * 60 * 60 * 24));
+    return daysRemaining <= 7 && daysRemaining > 0;
+  };
+  
+  // Check if plan is expired
+  const isExpired = () => {
+    if (!subscription?.currentPeriodEnd) return false;
+    const endDate = new Date(subscription.currentPeriodEnd);
+    const today = new Date();
+    return endDate < today;
+  };
 
   return (
     <motion.div
@@ -75,12 +98,12 @@ const SubscriptionCard = ({
             <div className="text-right">
               {hasDiscount ? (
                 <>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1">
                     <span className="font-bold text-gray-900 dark:text-white text-lg">
                       ₹{discountedPrice.toFixed(2)}
                     </span>
                     <span className="text-sm text-gray-500 dark:text-gray-400">
-                      /{subscription.interval || "month"}
+                      /{subscription.planDetails?.duration_days || "month"} Days
                     </span>
                   </div>
                   <div className="flex items-center justify-end gap-2 mt-1">
@@ -133,12 +156,14 @@ const SubscriptionCard = ({
                   {new Date(subscription.currentPeriodEnd).toLocaleDateString()}
                 </span>
                 {subscription.currentPeriodEnd && (
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                    {Math.ceil(
-                      (new Date(subscription.currentPeriodEnd) - new Date()) /
-                        (1000 * 60 * 60 * 24)
-                    )}{" "}
-                    days remaining
+                  <p className={`text-xs mt-1 ${
+                    isExpired() ? "text-red-500 dark:text-red-400" : 
+                    isNearExpiry() ? "text-yellow-500 dark:text-yellow-400" : 
+                    "text-gray-500 dark:text-gray-400"
+                  }`}>
+                    {isExpired() ? "Expired" : 
+                     isNearExpiry() ? "Expiring soon" : 
+                     `${Math.ceil((new Date(subscription.currentPeriodEnd) - new Date()) / (1000 * 60 * 60 * 24))} days remaining`}
                   </p>
                 )}
               </div>
@@ -157,7 +182,21 @@ const SubscriptionCard = ({
           )}
 
           <div className="pt-2 space-y-2">
-            {subscription.status === "active" ? (
+            {/* Renew button - show for active or expired plans */}
+            {subscription.status === "active" && !isExpired() && (
+              <Button
+                onClick={onRenew}
+                variant="secondary"
+                icon={FiRotateCcw}
+                fullWidth
+                loading={loading}
+                className="bg-blue-50 hover:bg-blue-100 text-blue-600 dark:bg-blue-900/20 dark:hover:bg-blue-900/30 dark:text-blue-400"
+              >
+                Renew Plan
+              </Button>
+            )}
+            
+            {subscription.status === "active" && !isExpired() && (
               <>
                 <Button
                   onClick={onUpgrade}
@@ -178,7 +217,9 @@ const SubscriptionCard = ({
                   Cancel Subscription
                 </Button>
               </>
-            ) : subscription.status === "canceled" ? (
+            )}
+            
+            {subscription.status === "canceled" && (
               <Button
                 onClick={onReactivate}
                 variant="primary"
@@ -188,7 +229,20 @@ const SubscriptionCard = ({
               >
                 Reactivate Subscription
               </Button>
-            ) : null}
+            )}
+            
+            {/* Show renew button for expired plans too */}
+            {isExpired() && (
+              <Button
+                onClick={onRenew}
+                variant="primary"
+                icon={FiRotateCcw}
+                fullWidth
+                loading={loading}
+              >
+                Renew Subscription
+              </Button>
+            )}
           </div>
         </div>
       ) : (

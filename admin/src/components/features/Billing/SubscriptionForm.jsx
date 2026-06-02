@@ -286,7 +286,7 @@ const SubscriptionForm = ({
                                 ₹{discountedPrice.toFixed(2)}
                               </span>
                               <span className="text-sm text-gray-500 dark:text-gray-400">
-                                /{displayInterval}
+                                / {plan.duration_days } Days
                               </span>
                             </div>
                             <div className="flex items-center gap-2 mt-2">

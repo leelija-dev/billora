@@ -465,7 +465,7 @@ const Customers = () => {
       accessor: "due_amount",
       cell: (value) => (
         <motion.div whileHover={{ scale: 1.05 }} className="flex items-center">
-          <FaRupeeSign className="w-3 h-3 mr-1 text-gray-400" />
+        
           <span className="text-sm font-semibold text-gray-900 dark:text-white">
             ₹{parseFloat(value || 0).toFixed(2)}
           </span>

@@ -15,11 +15,12 @@ import {
   FiAlertCircle,
   FiPrinter,
   FiFile,
+  FiChevronLeft,
+  FiChevronRight,
 } from "react-icons/fi";
 import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "../../store/authStore";
 import { reportsAPI } from "../../services/reportsService";
-import apiClient from "../../services/apiClient";
 import Button from "../../components/common/Button/Button";
 import Input from "../../components/common/Input/Input";
 import LoadingSpinner from "../../components/common/Spinner/Spinner";
@@ -31,6 +32,7 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
 const Reports = () => {
+    const secretKey = import.meta.env.VITE_SECRET_ENCRYPTION_KEY;
   const { user } = useAuthStore();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
@@ -44,71 +46,87 @@ const Reports = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [showExportDropdown, setShowExportDropdown] = useState(false);
   const [selectedFilter, setSelectedFilter] = useState("30days");
+  
+  // Pagination state
+  const [pagination, setPagination] = useState({
+    currentPage: 1,
+    perPage: 10,
+    total: 0,
+    lastPage: 1,
+    from: 0,
+    to: 0,
+  });
+  
+  // Summary statistics
+  const [summaryStats, setSummaryStats] = useState({
+    totalSalesItems: "0",
+    totalSalesAmount: "0",
+    totalDue: "0",
+    totalProfit: "0",
+    customerDues: [],
+    productWiseSales: [],
+  });
 
-  // Fetch today's reports by default
-  const fetchReports = async (start = "", end = "") => {
+  // Fetch reports with pagination and date filtering
+  const fetchReports = async (page = 1, start = "", end = "") => {
     setLoading(true);
     setError(null);
 
     try {
-      const response = await reportsAPI.getReports(start, end);
+      const response = await reportsAPI.getReports(start, end, page);
       console.log("✅ Reports API Response:", response);
 
-      // Handle the actual API response structure
-      let reportsData = [];
-
-      if (
-        response.data?.data?.salesItem_details &&
-        Array.isArray(response.data.data.salesItem_details)
-      ) {
-        reportsData = response.data.data.salesItem_details;
-      } else if (
-        response.data?.salesItem_details &&
-        Array.isArray(response.data.salesItem_details)
-      ) {
-        reportsData = response.data.salesItem_details;
+      // Handle the API response structure
+      const responseData = response.data?.data || response.data;
+      
+      if (responseData?.salesItem_details) {
+        const paginatedData = responseData.salesItem_details;
+        
+        // Extract reports data from paginated response
+        const reportsData = paginatedData.data || [];
+        
+        // Set summary statistics
+        setSummaryStats({
+          totalSalesItems: responseData.total_sales_items || "0",
+          totalSalesAmount: responseData.total_sales_amount || "0",
+          totalDue: responseData.total_due || "0",
+          totalProfit: responseData.total_profit || "0",
+          customerDues: responseData.customer_dues || [],
+          productWiseSales: responseData.product_wise_sales || [],
+        });
+        
+        // Set pagination info
+        setPagination({
+          currentPage: paginatedData.current_page || 1,
+          perPage: paginatedData.per_page || 10,
+          total: paginatedData.total || 0,
+          lastPage: paginatedData.last_page || 1,
+          from: paginatedData.from || 0,
+          to: paginatedData.to || 0,
+        });
+        
+        // Format reports data
+        const formattedReports = reportsData.map((report) => ({
+          ...report,
+          customer_name: report.customer?.name || `Deleted`,
+          store_name: report.store?.name || `Deleted`,
+        }));
+        
+        setReports(formattedReports);
+        setFilteredReports(formattedReports);
+      } else if (Array.isArray(responseData)) {
+        // Fallback for non-paginated response
+        const formattedReports = responseData.map((report) => ({
+          ...report,
+          customer_name: report.customer?.name || `Deleted`,
+          store_name: report.store?.name || `Deleted`,
+        }));
+        setReports(formattedReports);
+        setFilteredReports(formattedReports);
+      } else {
+        setReports([]);
+        setFilteredReports([]);
       }
-
-      // Enrich reports with customer and store names
-      const enrichedReports = await Promise.all(
-        reportsData.map(async (report, index) => {
-          try {
-            // Add delay to prevent overwhelming the server
-            await new Promise((resolve) => setTimeout(resolve, 50 * index));
-
-            const [customerResponse, storeResponse] = await Promise.all([
-              reportsAPI.getCustomer(report.customer_id),
-              reportsAPI.getStore(report.store_id),
-            ]);
-
-            const customer =
-              customerResponse.data?.data || customerResponse.data || {};
-            const store =
-              storeResponse.data?.data?.data || storeResponse.data?.data || [];
-            const storeData = store[0] || {};
-
-            console.log("checking ...................", report);
-
-            return {
-              ...report,
-              customer: customer,
-              store: storeData,
-              customer_name: customer.name || `Customer #${report.customer_id}`,
-              store_name: storeData.name || `Deleted`,
-            };
-          } catch (error) {
-            console.error("Failed to fetch customer/store details:", error);
-            return {
-              ...report,
-              customer_name: `Customer #${report.customer_id}`,
-              store_name: `Store #${report.store_id}`,
-            };
-          }
-        }),
-      );
-
-      setReports(enrichedReports);
-      setFilteredReports(enrichedReports);
     } catch (error) {
       console.error("❌ Failed to fetch reports:", error);
       setError(error.response?.data?.message || "Failed to fetch reports");
@@ -122,7 +140,7 @@ const Reports = () => {
     handleQuickFilter("30days");
   }, []);
 
-  // Apply search filter
+  // Apply search filter locally
   useEffect(() => {
     if (!reports.length) return;
 
@@ -130,21 +148,24 @@ const Reports = () => {
       const searchLower = searchTerm.toLowerCase();
       return (
         (report.id && report.id.toString().includes(searchLower)) ||
-        (report.customer_name &&
-          report.customer_name.toLowerCase().includes(searchLower)) ||
-        (report.store_name &&
-          report.store_name.toLowerCase().includes(searchLower)) ||
-        (report.invoice_number &&
-          report.invoice_number.toLowerCase().includes(searchLower))
+        (report.invoice_number && report.invoice_number.toLowerCase().includes(searchLower)) ||
+        (report.customer_name && report.customer_name.toLowerCase().includes(searchLower)) ||
+        (report.store_name && report.store_name.toLowerCase().includes(searchLower))
       );
     });
 
     setFilteredReports(filtered);
   }, [searchTerm, reports]);
 
+  // Handle page change
+  const handlePageChange = (newPage) => {
+    if (newPage < 1 || newPage > pagination.lastPage) return;
+    fetchReports(newPage, startDate, endDate);
+  };
+
   // Handle date filter
   const handleDateFilter = () => {
-    fetchReports(startDate, endDate);
+    fetchReports(1, startDate, endDate);
     setShowFilters(false);
   };
 
@@ -155,7 +176,7 @@ const Reports = () => {
     setSearchTerm("");
     setShowFilters(false);
     setSelectedFilter("all");
-    fetchReports();
+    fetchReports(1, "", "");
   };
 
   // Get today's date for default input values
@@ -219,13 +240,21 @@ const Reports = () => {
 
     setStartDate(start);
     setEndDate(end);
-    fetchReports(start, end);
+    fetchReports(1, start, end);
   };
 
-  // Calculate report statistics
+  // Calculate report statistics from filtered reports
   const calculateStats = () => {
-    if (!filteredReports.length)
-      return { total: 0, revenue: 0, orders: 0, products: 0, averageOrder: 0 };
+    if (!filteredReports.length) {
+      return { 
+        total: 0, 
+        revenue: 0, 
+        orders: 0, 
+        products: 0, 
+        averageOrder: 0,
+        due: 0 
+      };
+    }
 
     const stats = filteredReports.reduce(
       (acc, report) => ({
@@ -233,8 +262,9 @@ const Reports = () => {
         revenue: acc.revenue + (parseFloat(report.paid_amount) || 0),
         orders: acc.orders + 1,
         products: acc.products + (parseInt(report.total_items) || 0),
+        due: acc.due + ((parseFloat(report.total_amount) || 0) - (parseFloat(report.paid_amount) || 0)),
       }),
-      { total: 0, revenue: 0, orders: 0, products: 0 },
+      { total: 0, revenue: 0, orders: 0, products: 0, due: 0 },
     );
 
     return {
@@ -245,10 +275,11 @@ const Reports = () => {
 
   const stats = calculateStats();
 
-  // Prepare data for export
+  // Prepare data for export (using all data from API, not just current page)
   const prepareExportData = () => {
     const headers = [
       "Invoice ID",
+      "Invoice Number",
       "Date",
       "Customer Name",
       "Customer ID",
@@ -264,12 +295,13 @@ const Reports = () => {
 
     const data = filteredReports.map((report) => [
       report.id || "",
+      report.invoice_number || "",
       report.created_at
         ? new Date(report.created_at).toLocaleDateString()
         : "N/A",
-      report.customer_name || `Customer #${report.customer_id}`,
+      report.customer_name || `Deleted`,
       report.customer_id || "",
-      report.store_name || `Store #${report.store_id}`,
+      report.store_name || `Deleted`,
       report.store_id || "",
       parseFloat(report.total_amount || 0).toFixed(2),
       parseFloat(report.paid_amount || 0).toFixed(2),
@@ -290,116 +322,15 @@ const Reports = () => {
     try {
       const { headers, data } = prepareExportData();
 
-      // Create workbook and worksheet
       const wsData = [headers, ...data];
       const ws = XLSX.utils.aoa_to_sheet(wsData);
 
-      // Set column widths
       const colWidths = headers.map(() => ({ wch: 15 }));
       ws["!cols"] = colWidths;
 
-      // Add styling to header row
-      const headerRange = XLSX.utils.decode_range(ws["!ref"]);
-      for (let C = headerRange.s.c; C <= headerRange.e.c; ++C) {
-        const cellAddress = XLSX.utils.encode_cell({ r: 0, c: C });
-        if (!ws[cellAddress]) continue;
-        ws[cellAddress].s = {
-          fill: { fgColor: { rgb: "4F46E5" } },
-          font: { color: { rgb: "FFFFFF" }, bold: true },
-          alignment: { horizontal: "center" },
-        };
-      }
-
-      // Add summary statistics
-      const summaryData = [
-        ["", "", "", "", "", "", "SUMMARY STATISTICS", "", "", "", ""],
-        [
-          "",
-          "",
-          "",
-          "",
-          "",
-          "",
-          "Total Revenue:",
-          `₹${stats.revenue.toFixed(2)}`,
-          "",
-          "",
-          "",
-        ],
-        ["", "", "", "", "", "", "Total Orders:", stats.orders, "", "", ""],
-        [
-          "",
-          "",
-          "",
-          "",
-          "",
-          "",
-          "Total Products Sold:",
-          stats.products,
-          "",
-          "",
-          "",
-        ],
-        [
-          "",
-          "",
-          "",
-          "",
-          "",
-          "",
-          "Average Order Value:",
-          `₹${stats.averageOrder.toFixed(2)}`,
-          "",
-          "",
-          "",
-        ],
-        [
-          "",
-          "",
-          "",
-          "",
-          "",
-          "",
-          `Report Period: ${startDate || "All"} to ${endDate || "All"}`,
-          "",
-          "",
-          "",
-          "",
-        ],
-        [
-          "",
-          "",
-          "",
-          "",
-          "",
-          "",
-          `Generated on: ${new Date().toLocaleString()}`,
-          "",
-          "",
-          "",
-          "",
-        ],
-      ];
-
-      // Add summary to new rows
-      const startRow = data.length + 2;
-      summaryData.forEach((row, idx) => {
-        row.forEach((value, colIdx) => {
-          const cellAddress = XLSX.utils.encode_cell({
-            r: startRow + idx,
-            c: colIdx,
-          });
-          if (value) {
-            ws[cellAddress] = { t: "s", v: value };
-          }
-        });
-      });
-
-      // Create workbook and save
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, "Reports Data");
 
-      // Generate filename
       const filename = `reports_${startDate || "all"}_${endDate || "all"}_${new Date().toISOString().split("T")[0]}.xlsx`;
       XLSX.writeFile(wb, filename);
 
@@ -410,7 +341,7 @@ const Reports = () => {
     }
   };
 
-  // Fixed PDF Export with proper string conversion
+  // Fixed PDF Export
   const handleExportToPDF = () => {
     try {
       const doc = new jsPDF({
@@ -422,18 +353,9 @@ const Reports = () => {
       const pageWidth = doc.internal.pageSize.getWidth();
       const pageHeight = doc.internal.pageSize.getHeight();
 
-      // Modern header with gradient effect (using solid colors)
-      doc.setFillColor(67, 56, 202); // Indigo
+      doc.setFillColor(67, 56, 202);
       doc.rect(0, 0, pageWidth, 45, "F");
 
-      // Add subtle pattern overlay
-      doc.setDrawColor(99, 102, 241);
-      doc.setLineWidth(0.15);
-      for (let i = 0; i < 30; i++) {
-        doc.line(i * 25, 0, i * 25 + 15, 45);
-      }
-
-      // Title
       doc.setTextColor(255, 255, 255);
       doc.setFontSize(28);
       doc.setFont("helvetica", "bold");
@@ -445,7 +367,6 @@ const Reports = () => {
         align: "center",
       });
 
-      // Date badge
       doc.setFillColor(255, 255, 255);
       doc.roundedRect(pageWidth - 42, 12, 32, 10, 2, 2, "F");
       doc.setTextColor(67, 56, 202);
@@ -453,11 +374,9 @@ const Reports = () => {
       const todayDate = new Date().toLocaleDateString("en-GB");
       doc.text(todayDate, pageWidth - 26, 19, { align: "center" });
 
-      // Helper function to format numbers with Rs.
       const formatCurrency = (amount) => {
         const num = parseFloat(amount);
         if (isNaN(num)) return "Rs. 0.00";
-        // Format with commas for thousands
         const formatted = num.toLocaleString("en-IN", {
           minimumFractionDigits: 2,
           maximumFractionDigits: 2,
@@ -465,12 +384,10 @@ const Reports = () => {
         return `Rs. ${formatted}`;
       };
 
-      // Helper to format plain number
       const formatNumber = (num) => {
         return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
       };
 
-      // Statistics cards
       const statsCards = [
         {
           label: "Total Revenue",
@@ -501,23 +418,15 @@ const Reports = () => {
       const cardWidth = (pageWidth - 40) / 4;
       statsCards.forEach((card, idx) => {
         const x = 15 + idx * cardWidth;
-
-        // Card background
         doc.setFillColor(...card.bgColor);
         doc.roundedRect(x, 55, cardWidth - 5, 38, 4, 4, "F");
-
-        // Label
         doc.setTextColor(75, 85, 99);
         doc.setFontSize(9);
         doc.setFont("helvetica", "normal");
         doc.text(card.label, x + 8, 70);
-
-        // Value
         doc.setTextColor(...card.color);
         doc.setFontSize(14);
         doc.setFont("helvetica", "bold");
-
-        // Handle text truncation for long values
         let displayValue = card.value;
         if (displayValue.length > 22) {
           displayValue = displayValue.substring(0, 19) + "...";
@@ -525,35 +434,17 @@ const Reports = () => {
         doc.text(displayValue, x + 8, 86);
       });
 
-      // Quick insights bar
       const insightY = 102;
       doc.setFillColor(249, 250, 251);
       doc.roundedRect(15, insightY, pageWidth - 30, 18, 3, 3, "F");
 
-      const avgOrderFormatted = formatCurrency(stats.averageOrder);
-      const insights = [
-        `${formatNumber(stats.orders)} Orders`,
-        `${avgOrderFormatted}`,
-        `${formatNumber(stats.products)} Items`,
-        `${avgOrderFormatted}/Order`,
-      ];
-
-      doc.setTextColor(31, 41, 55);
-      doc.setFontSize(8);
-      const insightSpacing = (pageWidth - 40) / 4;
-      insights.forEach((insight, idx) => {
-        const xPos = 20 + idx * insightSpacing;
-        doc.text(insight, xPos, insightY + 12);
-      });
-
-      // Table data with proper formatting
       const tableData = filteredReports.map((report) => {
         const totalAmount = parseFloat(report.total_amount || 0);
         const paidAmount = parseFloat(report.paid_amount || 0);
 
         return [
           {
-            content: `#${report.id || ""}`,
+            content: `#${report.invoice_number || report.id || ""}`,
             styles: { fontStyle: "bold", textColor: [79, 70, 229] },
           },
           {
@@ -563,15 +454,11 @@ const Reports = () => {
             styles: { halign: "center" },
           },
           {
-            content: (
-              report.customer_name || `Customer #${report.customer_id}`
-            ).substring(0, 22),
+            content: (report.customer_name || `Deleted`).substring(0, 22),
             styles: { cellWidth: 42 },
           },
           {
-            content: (
-              report.store_name || `Store #${report.store_id}`
-            ).substring(0, 20),
+            content: (report.store_name || `Deleted`).substring(0, 20),
             styles: { cellWidth: 38 },
           },
           {
@@ -615,7 +502,7 @@ const Reports = () => {
       autoTable(doc, {
         head: [
           [
-            { content: "INVOICE", styles: { halign: "center", cellWidth: 24 } },
+            { content: "INVOICE", styles: { halign: "center", cellWidth: 28 } },
             { content: "DATE", styles: { halign: "center", cellWidth: 24 } },
             { content: "CUSTOMER", styles: { cellWidth: 42 } },
             { content: "STORE", styles: { cellWidth: 38 } },
@@ -634,7 +521,6 @@ const Reports = () => {
           fontSize: 9,
           fontStyle: "bold",
           halign: "center",
-          lineWidth: 0,
         },
         bodyStyles: {
           fontSize: 8,
@@ -648,12 +534,9 @@ const Reports = () => {
         didDrawPage: (data) => {
           const pageCount = doc.internal.getNumberOfPages();
           const currentPage = doc.internal.getCurrentPageInfo().pageNumber;
-
-          // Footer
           doc.setDrawColor(203, 213, 225);
           doc.setLineWidth(0.3);
           doc.line(15, pageHeight - 10, pageWidth - 15, pageHeight - 10);
-
           doc.setFontSize(7);
           doc.setTextColor(100, 116, 139);
           doc.text(
@@ -665,71 +548,17 @@ const Reports = () => {
         },
       });
 
-      // Summary section after table
-      const finalY = doc.lastAutoTable.finalY + 8;
-      const totalRevenue = stats.revenue;
-      const totalPaid = filteredReports.reduce(
-        (sum, r) => sum + (parseFloat(r.paid_amount) || 0),
-        0,
-      );
-      const totalDue = totalRevenue - totalPaid;
-
-      // Summary box
-      doc.setFillColor(245, 245, 245);
-      doc.roundedRect(15, finalY, pageWidth - 30, 28, 3, 3, "F");
-
-      doc.setTextColor(0, 0, 0);
-      doc.setFontSize(9);
-      doc.setFont("helvetica", "bold");
-      doc.text("Summary", 20, finalY + 6);
-
-      doc.setFontSize(7);
-      doc.setFont("helvetica", "normal");
-      doc.setTextColor(75, 85, 99);
-
-      const summaryItems = [
-        `Total Revenue: ${formatCurrency(totalRevenue)}`,
-        `Total Paid: ${formatCurrency(totalPaid)}`,
-        `Total Due: ${formatCurrency(totalDue)}`,
-        `Total Items: ${formatNumber(stats.products)}`,
-        `Avg Order: ${formatCurrency(stats.averageOrder)}`,
-      ];
-
-      const summarySpacing = (pageWidth - 40) / 5;
-      summaryItems.forEach((item, idx) => {
-        let displayItem = item;
-        if (displayItem.length > 26) {
-          displayItem = displayItem.substring(0, 23) + "...";
-        }
-        doc.text(displayItem, 20 + idx * summarySpacing, finalY + 14);
-      });
-
-      // Disclaimer
-      doc.setFontSize(6);
-      doc.setTextColor(150, 150, 150);
-      doc.text(
-        "* This report is generated automatically. Please verify all data for accuracy.",
-        15,
-        finalY + 24,
-      );
-
-      // Save PDF
-      const filename = `reports_${startDate || "all"}_${endDate || "all"}_${new Date().toISOString().split("T")[0]}.pdf`;
-      doc.save(filename);
-
+      doc.save(`reports_${startDate || "all"}_${endDate || "all"}_${new Date().toISOString().split("T")[0]}.pdf`);
       setShowExportDropdown(false);
     } catch (error) {
       console.error("PDF export failed:", error);
-      alert(
-        "Failed to export to PDF. Please try again. Error: " + error.message,
-      );
+      alert("Failed to export to PDF. Please try again.");
     }
   };
 
-  // Enhanced Word Export
+  // Word Export
   const handleExportToWord = () => {
     try {
-      // Create HTML content
       const htmlContent = `
         <!DOCTYPE html>
         <html>
@@ -737,91 +566,19 @@ const Reports = () => {
           <title>Reports Export</title>
           <meta charset="utf-8">
           <style>
-            body {
-              font-family: 'Segoe UI', Arial, sans-serif;
-              margin: 40px;
-              color: #333;
-            }
-            .header {
-              background: linear-gradient(135deg, #4F46E5 0%, #6366F1 100%);
-              padding: 30px;
-              border-radius: 10px;
-              margin-bottom: 30px;
-              color: white;
-            }
-            .header h1 {
-              margin: 0 0 10px 0;
-              font-size: 28px;
-            }
-            .header p {
-              margin: 0;
-              opacity: 0.9;
-            }
-            .company-info {
-              margin-top: 15px;
-              font-size: 12px;
-              border-top: 1px solid rgba(255,255,255,0.3);
-              padding-top: 15px;
-            }
-            .summary-cards {
-              display: flex;
-              gap: 20px;
-              margin-bottom: 30px;
-              flex-wrap: wrap;
-            }
-            .card {
-              background: #f8f9fa;
-              border-radius: 8px;
-              padding: 20px;
-              flex: 1;
-              min-width: 200px;
-              border-left: 4px solid #4F46E5;
-            }
-            .card h3 {
-              margin: 0 0 10px 0;
-              font-size: 14px;
-              color: #666;
-            }
-            .card .value {
-              font-size: 24px;
-              font-weight: bold;
-              color: #4F46E5;
-            }
-            table {
-              width: 100%;
-              border-collapse: collapse;
-              margin-top: 20px;
-              font-size: 12px;
-            }
-            th {
-              background: #4F46E5;
-              color: white;
-              padding: 12px;
-              text-align: left;
-              font-weight: bold;
-            }
-            td {
-              padding: 10px;
-              border-bottom: 1px solid #e0e0e0;
-            }
-            tr:hover {
-              background: #f5f5f5;
-            }
-            .footer {
-              margin-top: 30px;
-              padding-top: 20px;
-              border-top: 1px solid #e0e0e0;
-              font-size: 10px;
-              color: #999;
-              text-align: center;
-            }
-            .status-badge {
-              display: inline-block;
-              padding: 4px 8px;
-              border-radius: 4px;
-              font-size: 11px;
-              font-weight: bold;
-            }
+            body { font-family: 'Segoe UI', Arial, sans-serif; margin: 40px; color: #333; }
+            .header { background: linear-gradient(135deg, #4F46E5 0%, #6366F1 100%); padding: 30px; border-radius: 10px; margin-bottom: 30px; color: white; }
+            .header h1 { margin: 0 0 10px 0; font-size: 28px; }
+            .header p { margin: 0; opacity: 0.9; }
+            .summary-cards { display: flex; gap: 20px; margin-bottom: 30px; flex-wrap: wrap; }
+            .card { background: #f8f9fa; border-radius: 8px; padding: 20px; flex: 1; min-width: 200px; border-left: 4px solid #4F46E5; }
+            .card h3 { margin: 0 0 10px 0; font-size: 14px; color: #666; }
+            .card .value { font-size: 24px; font-weight: bold; color: #4F46E5; }
+            table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 12px; }
+            th { background: #4F46E5; color: white; padding: 12px; text-align: left; }
+            td { padding: 10px; border-bottom: 1px solid #e0e0e0; }
+            .footer { margin-top: 30px; padding-top: 20px; border-top: 1px solid #e0e0e0; font-size: 10px; color: #999; text-align: center; }
+            .status-badge { display: inline-block; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; }
             .status-completed { background: #d4edda; color: #155724; }
             .status-pending { background: #fff3cd; color: #856404; }
             .status-cancelled { background: #f8d7da; color: #721c24; }
@@ -831,30 +588,13 @@ const Reports = () => {
           <div class="header">
             <h1>Reports Dashboard</h1>
             <p>Comprehensive Business Report</p>
-            <div class="company-info">
-              Your Company Name<br>
-              123 Business Street, City, Country<br>
-              Email: info@company.com | Phone: +1 234 567 890
-            </div>
           </div>
           
           <div class="summary-cards">
-            <div class="card">
-              <h3>Total Revenue</h3>
-              <div class="value">₹${stats.revenue.toFixed(2)}</div>
-            </div>
-            <div class="card">
-              <h3>Total Orders</h3>
-              <div class="value">${stats.orders}</div>
-            </div>
-            <div class="card">
-              <h3>Products Sold</h3>
-              <div class="value">${stats.products}</div>
-            </div>
-            <div class="card">
-              <h3>Avg Order Value</h3>
-              <div class="value">₹${stats.averageOrder.toFixed(2)}</div>
-            </div>
+            <div class="card"><h3>Total Revenue</h3><div class="value">₹${stats.revenue.toFixed(2)}</div></div>
+            <div class="card"><h3>Total Orders</h3><div class="value">${stats.orders}</div></div>
+            <div class="card"><h3>Products Sold</h3><div class="value">${stats.products}</div></div>
+            <div class="card"><h3>Avg Order Value</h3><div class="value">₹${stats.averageOrder.toFixed(2)}</div></div>
           </div>
           
           <div style="margin-bottom: 20px;">
@@ -863,40 +603,24 @@ const Reports = () => {
             <strong>Total Records:</strong> ${filteredReports.length}
           </div>
           
-           <table>
-            <thead>
-              <tr>
-                <th>Invoice ID</th>
-                <th>Date</th>
-                <th>Customer Name</th>
-                <th>Store Name</th>
-                <th>Total Amount</th>
-                <th>Paid Amount</th>
-                <th>Total Items</th>
-                <th>Status</th>
-              </tr>
-            </thead>
+          <table>
+            <thead><tr>
+              <th>Invoice #</th><th>Date</th><th>Customer Name</th><th>Store Name</th>
+              <th>Total Amount</th><th>Paid Amount</th><th>Total Items</th><th>Status</th>
+            </tr></thead>
             <tbody>
-              ${filteredReports
-                .map(
-                  (report) => `
+              ${filteredReports.map((report) => `
                 <tr>
-                  <td>#${report.id || ""}</td>
+                  <td>#${report.invoice_number || report.id}</td>
                   <td>${report.created_at ? new Date(report.created_at).toLocaleDateString() : "N/A"}</td>
-                  <td>${report.customer_name || `Customer #${report.customer_id}`}</td>
-                  <td>${report.store_name || `Store #${report.store_id}`}</td>
+                  <td>${report.customer_name || `Deleted`}</td>
+                  <td>${report.store_name || `Deleted`}</td>
                   <td>₹${parseFloat(report.total_amount || 0).toFixed(2)}</td>
                   <td>₹${parseFloat(report.paid_amount || 0).toFixed(2)}</td>
                   <td>${report.total_items || 0}</td>
-                  <td>
-                    <span class="status-badge status-${(report.status || "completed").toLowerCase()}">
-                      ${report.status || "N/A"}
-                    </span>
-                  </td>
+                  <td><span class="status-badge status-${(report.status || "completed").toLowerCase()}">${report.status || "N/A"}</span></td>
                 </tr>
-              `,
-                )
-                .join("")}
+              `).join("")}
             </tbody>
           </table>
           
@@ -908,10 +632,7 @@ const Reports = () => {
         </html>
       `;
 
-      // Create blob and download
-      const blob = new Blob([htmlContent], {
-        type: "application/msword",
-      });
+      const blob = new Blob([htmlContent], { type: "application/msword" });
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
@@ -920,7 +641,6 @@ const Reports = () => {
       a.click();
       document.body.removeChild(a);
       window.URL.revokeObjectURL(url);
-
       setShowExportDropdown(false);
     } catch (error) {
       console.error("Word export failed:", error);
@@ -928,41 +648,29 @@ const Reports = () => {
     }
   };
 
-  // Enhanced CSV Export
+  // CSV Export
   const handleExportToCSV = () => {
     try {
       const { headers, data } = prepareExportData();
-
-      // Create CSV content
       const csvRows = [];
       csvRows.push(headers.join(","));
-
       data.forEach((row) => {
         const escapedRow = row.map((cell) => {
-          if (
-            typeof cell === "string" &&
-            (cell.includes(",") || cell.includes('"') || cell.includes("\n"))
-          ) {
+          if (typeof cell === "string" && (cell.includes(",") || cell.includes('"') || cell.includes("\n"))) {
             return `"${cell.replace(/"/g, '""')}"`;
           }
           return cell;
         });
         csvRows.push(escapedRow.join(","));
       });
-
-      // Add summary statistics
       csvRows.push("");
       csvRows.push("SUMMARY STATISTICS");
       csvRows.push(`Total Revenue,₹${stats.revenue.toFixed(2)}`);
       csvRows.push(`Total Orders,${stats.orders}`);
       csvRows.push(`Total Products Sold,${stats.products}`);
       csvRows.push(`Average Order Value,₹${stats.averageOrder.toFixed(2)}`);
-      csvRows.push(`Report Period,${startDate || "All"} - ${endDate || "All"}`);
-      csvRows.push(`Generated on,${new Date().toLocaleString()}`);
-
+      
       const csvContent = csvRows.join("\n");
-
-      // Create blob and download
       const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -972,7 +680,6 @@ const Reports = () => {
       a.click();
       document.body.removeChild(a);
       window.URL.revokeObjectURL(url);
-
       setShowExportDropdown(false);
     } catch (error) {
       console.error("CSV export failed:", error);
@@ -980,7 +687,6 @@ const Reports = () => {
     }
   };
 
-  // Main export handler
   const handleExport = (format) => {
     switch (format) {
       case "excel":
@@ -1000,7 +706,6 @@ const Reports = () => {
     }
   };
 
-  // Print function
   const handlePrint = () => {
     const printWindow = window.open("", "_blank");
     printWindow.document.write(`
@@ -1009,124 +714,47 @@ const Reports = () => {
       <head>
         <title>Reports Print</title>
         <style>
-          body {
-            font-family: Arial, sans-serif;
-            margin: 20px;
-          }
-          h1 {
-            color: #333;
-            margin-bottom: 20px;
-          }
-          table {
-            border-collapse: collapse;
-            width: 100%;
-            margin-top: 20px;
-          }
-          th, td {
-            border: 1px solid #ddd;
-            padding: 8px;
-            text-align: left;
-          }
-          th {
-            background-color: #f2f2f2;
-            font-weight: bold;
-          }
-          .stats {
-            display: flex;
-            gap: 20px;
-            margin-bottom: 30px;
-            flex-wrap: wrap;
-          }
-          .stat-card {
-            background: #f8f9fa;
-            border-radius: 8px;
-            padding: 15px;
-            flex: 1;
-            border-left: 4px solid #4F46E5;
-          }
-          .stat-card h3 {
-            margin: 0 0 5px 0;
-            font-size: 12px;
-            color: #666;
-          }
-          .stat-card .value {
-            font-size: 20px;
-            font-weight: bold;
-            color: #4F46E5;
-          }
-          @media print {
-            body { margin: 0; padding: 20px; }
-            table { page-break-inside: avoid; }
-            tr { page-break-inside: avoid; }
-          }
+          body { font-family: Arial, sans-serif; margin: 20px; }
+          h1 { color: #333; margin-bottom: 20px; }
+          table { border-collapse: collapse; width: 100%; margin-top: 20px; }
+          th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+          th { background-color: #f2f2f2; font-weight: bold; }
+          .stats { display: flex; gap: 20px; margin-bottom: 30px; flex-wrap: wrap; }
+          .stat-card { background: #f8f9fa; border-radius: 8px; padding: 15px; flex: 1; border-left: 4px solid #4F46E5; }
+          .stat-card h3 { margin: 0 0 5px 0; font-size: 12px; color: #666; }
+          .stat-card .value { font-size: 20px; font-weight: bold; color: #4F46E5; }
+          @media print { body { margin: 0; padding: 20px; } table { page-break-inside: avoid; } }
         </style>
       </head>
       <body>
         <h1>Reports Dashboard</h1>
         <p>Generated on: ${new Date().toLocaleString()}</p>
-        
         <div class="stats">
-          <div class="stat-card">
-            <h3>Total Revenue</h3>
-            <div class="value">₹${stats.revenue.toFixed(2)}</div>
-          </div>
-          <div class="stat-card">
-            <h3>Total Orders</h3>
-            <div class="value">${stats.orders}</div>
-          </div>
-          <div class="stat-card">
-            <h3>Products Sold</h3>
-            <div class="value">${stats.products}</div>
-          </div>
-          <div class="stat-card">
-            <h3>Avg Order Value</h3>
-            <div class="value">₹${stats.averageOrder.toFixed(2)}</div>
-          </div>
+          <div class="stat-card"><h3>Total Revenue</h3><div class="value">₹${stats.revenue.toFixed(2)}</div></div>
+          <div class="stat-card"><h3>Total Orders</h3><div class="value">${stats.orders}</div></div>
+          <div class="stat-card"><h3>Products Sold</h3><div class="value">${stats.products}</div></div>
+          <div class="stat-card"><h3>Avg Order Value</h3><div class="value">₹${stats.averageOrder.toFixed(2)}</div></div>
         </div>
-        
-        ${
-          filteredReports.length === 0
-            ? "<p>No reports found</p>"
-            : `
+        ${filteredReports.length === 0 ? "<p>No reports found</p>" : `
           <table>
-            <thead>
-              <tr>
-                <th>Invoice ID</th>
-                <th>Date</th>
-                <th>Customer Name</th>
-                <th>Store Name</th>
-                <th>Total Amount</th>
-                <th>Paid Amount</th>
-                <th>Total Items</th>
-                <th>Status</th>
-              </tr>
-            </thead>
+            <thead><tr><th>Invoice #</th><th>Date</th><th>Customer Name</th><th>Store Name</th><th>Total Amount</th><th>Paid Amount</th><th>Items</th><th>Status</th></tr></thead>
             <tbody>
-              ${filteredReports
-                .map(
-                  (report) => `
+              ${filteredReports.map((report) => `
                 <tr>
-                  <td>#${report.id || ""}</td>
+                  <td>#${report.invoice_number || report.id}</td>
                   <td>${report.created_at ? new Date(report.created_at).toLocaleDateString() : "N/A"}</td>
                   <td>${report.customer_name || `Customer #${report.customer_id}`}</td>
-                  <td>${report.store_name || `Store #${report.store_id}`}</td>
+                  <td>${report.store_name || `Deleted`}</td>
                   <td>₹${parseFloat(report.total_amount || 0).toFixed(2)}</td>
                   <td>₹${parseFloat(report.paid_amount || 0).toFixed(2)}</td>
                   <td>${report.total_items || 0}</td>
                   <td>${report.status || "N/A"}</td>
                 </tr>
-              `,
-                )
-                .join("")}
+              `).join("")}
             </tbody>
           </table>
-        `
-        }
-        
-        <p style="margin-top: 30px; font-size: 10px; color: #999; text-align: center;">
-          Confidential - For Internal Use Only<br>
-          Generated on: ${new Date().toLocaleString()}
-        </p>
+        `}
+        <p style="margin-top: 30px; font-size: 10px; color: #999; text-align: center;">Confidential - For Internal Use Only</p>
       </body>
       </html>
     `);
@@ -1136,21 +764,124 @@ const Reports = () => {
 
   const handleRefresh = async () => {
     setRefreshing(true);
-    await fetchReports(startDate, endDate);
+    await fetchReports(pagination.currentPage, startDate, endDate);
     setRefreshing(false);
   };
 
   const handleViewDetails = (report) => {
-    navigate(`/reports/${report.id}`);
+    let encodedId = btoa(report.id.toString() + secretKey);
+    navigate(`/reports/${encodedId}`);
+  };
+
+  // Pagination component
+  const Pagination = () => {
+    if (pagination.total <= pagination.perPage) return null;
+    
+    const pages = [];
+    const maxVisible = 5;
+    let startPage = Math.max(1, pagination.currentPage - Math.floor(maxVisible / 2));
+    let endPage = Math.min(pagination.lastPage, startPage + maxVisible - 1);
+    
+    if (endPage - startPage + 1 < maxVisible) {
+      startPage = Math.max(1, endPage - maxVisible + 1);
+    }
+    
+    for (let i = startPage; i <= endPage; i++) {
+      pages.push(i);
+    }
+    
+    return (
+      <div className="flex items-center justify-between px-6 py-4 border-t border-gray-200 dark:border-gray-700">
+        <div className="text-sm text-gray-500 dark:text-gray-400">
+          Showing <span className="font-medium">{pagination.from || 0}</span> to{" "}
+          <span className="font-medium">{pagination.to || 0}</span> of{" "}
+          <span className="font-medium">{pagination.total}</span> results
+        </div>
+        
+        <div className="flex items-center space-x-2">
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => handlePageChange(pagination.currentPage - 1)}
+            disabled={pagination.currentPage === 1}
+            className={`p-2 rounded-lg border transition-colors ${
+              pagination.currentPage === 1
+                ? "border-gray-200 dark:border-gray-700 text-gray-400 cursor-not-allowed"
+                : "border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+            }`}
+          >
+            <FiChevronLeft className="w-5 h-5" />
+          </motion.button>
+          
+          {startPage > 1 && (
+            <>
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => handlePageChange(1)}
+                className="px-3 py-2 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+              >
+                1
+              </motion.button>
+              {startPage > 2 && <span className="text-gray-400">...</span>}
+            </>
+          )}
+          
+          {pages.map((page) => (
+            <motion.button
+              key={page}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => handlePageChange(page)}
+              className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                pagination.currentPage === page
+                  ? "bg-primary-500 text-white shadow-md"
+                  : "text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+              }`}
+            >
+              {page}
+            </motion.button>
+          ))}
+          
+          {endPage < pagination.lastPage && (
+            <>
+              {endPage < pagination.lastPage - 1 && <span className="text-gray-400">...</span>}
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => handlePageChange(pagination.lastPage)}
+                className="px-3 py-2 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+              >
+                {pagination.lastPage}
+              </motion.button>
+            </>
+          )}
+          
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => handlePageChange(pagination.currentPage + 1)}
+            disabled={pagination.currentPage === pagination.lastPage}
+            className={`p-2 rounded-lg border transition-colors ${
+              pagination.currentPage === pagination.lastPage
+                ? "border-gray-200 dark:border-gray-700 text-gray-400 cursor-not-allowed"
+                : "border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+            }`}
+          >
+            <FiChevronRight className="w-5 h-5" />
+          </motion.button>
+        </div>
+      </div>
+    );
   };
 
   const columns = [
     {
       header: "Invoice ID",
-      accessor: "id",
+      accessor: "invoice_number",
       cell: (value, row) => (
         <span className="font-mono font-medium text-primary-600 dark:text-primary-400">
-          #{row.invoice_number}
+          #{row.invoice_number || row.id}
         </span>
       ),
     },
@@ -1182,7 +913,7 @@ const Reports = () => {
         <div className="flex items-center">
           <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-100 to-blue-200 dark:from-blue-900/30 dark:to-blue-800/30 flex items-center justify-center mr-3">
             <span className="text-sm font-medium text-blue-600 dark:text-blue-400">
-              {value.charAt(0).toUpperCase()}
+              {value?.charAt(0).toUpperCase() || "C"}
             </span>
           </div>
           <div>
@@ -1334,7 +1065,7 @@ const Reports = () => {
       animate={{ opacity: 1 }}
       className="space-y-6 p-6"
     >
-      {/* Header with Gradient */}
+      {/* Header */}
       <motion.div
         initial={{ y: -20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
@@ -1352,7 +1083,6 @@ const Reports = () => {
         </div>
 
         <div className="flex items-center space-x-3">
-          {/* Refresh Button */}
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
@@ -1364,7 +1094,6 @@ const Reports = () => {
             />
           </motion.button>
 
-          {/* Print Button */}
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
@@ -1375,7 +1104,6 @@ const Reports = () => {
             <span>Print</span>
           </motion.button>
 
-          {/* Export Dropdown */}
           <div className="relative">
             <motion.button
               whileHover={{ scale: 1.05 }}
@@ -1400,73 +1128,28 @@ const Reports = () => {
                   className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg z-50"
                 >
                   <div className="py-2">
-                    <motion.button
-                      whileHover={{ backgroundColor: "rgba(0, 0, 0, 0.05)" }}
-                      whileTap={{ scale: 0.98 }}
-                      onClick={() => handleExport("excel")}
-                      className="w-full px-4 py-3 text-left text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center space-x-3 transition-colors"
-                    >
-                      <div className="w-8 h-8 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center">
-                        <FiFile className="w-4 h-4 text-green-600 dark:text-green-400" />
-                      </div>
-                      <div>
-                        <p className="font-medium">Excel</p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">
-                          .xlsx format
-                        </p>
-                      </div>
-                    </motion.button>
-
-                    <motion.button
-                      whileHover={{ backgroundColor: "rgba(0, 0, 0, 0.05)" }}
-                      whileTap={{ scale: 0.98 }}
-                      onClick={() => handleExport("pdf")}
-                      className="w-full px-4 py-3 text-left text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center space-x-3 transition-colors"
-                    >
-                      <div className="w-8 h-8 bg-red-100 dark:bg-red-900/30 rounded-lg flex items-center justify-center">
-                        <FiFile className="w-4 h-4 text-red-600 dark:text-red-400" />
-                      </div>
-                      <div>
-                        <p className="font-medium">PDF</p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">
-                          Professional format
-                        </p>
-                      </div>
-                    </motion.button>
-
-                    <motion.button
-                      whileHover={{ backgroundColor: "rgba(0, 0, 0, 0.05)" }}
-                      whileTap={{ scale: 0.98 }}
-                      onClick={() => handleExport("word")}
-                      className="w-full px-4 py-3 text-left text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center space-x-3 transition-colors"
-                    >
-                      <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
-                        <FiFile className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                      </div>
-                      <div>
-                        <p className="font-medium">Word</p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">
-                          .doc format
-                        </p>
-                      </div>
-                    </motion.button>
-
-                    <motion.button
-                      whileHover={{ backgroundColor: "rgba(0, 0, 0, 0.05)" }}
-                      whileTap={{ scale: 0.98 }}
-                      onClick={() => handleExport("csv")}
-                      className="w-full px-4 py-3 text-left text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center space-x-3 transition-colors"
-                    >
-                      <div className="w-8 h-8 bg-purple-100 dark:bg-purple-900/30 rounded-lg flex items-center justify-center">
-                        <FiFile className="w-4 h-4 text-purple-600 dark:text-purple-400" />
-                      </div>
-                      <div>
-                        <p className="font-medium">CSV</p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">
-                          Raw data format
-                        </p>
-                      </div>
-                    </motion.button>
+                    {[
+                      { format: "excel", label: "Excel", color: "green", ext: ".xlsx" },
+                      { format: "pdf", label: "PDF", color: "red", ext: "Professional format" },
+                      { format: "word", label: "Word", color: "blue", ext: ".doc format" },
+                      { format: "csv", label: "CSV", color: "purple", ext: "Raw data format" },
+                    ].map((item) => (
+                      <motion.button
+                        key={item.format}
+                        whileHover={{ backgroundColor: "rgba(0, 0, 0, 0.05)" }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={() => handleExport(item.format)}
+                        className="w-full px-4 py-3 text-left text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center space-x-3 transition-colors"
+                      >
+                        <div className={`w-8 h-8 bg-${item.color}-100 dark:bg-${item.color}-900/30 rounded-lg flex items-center justify-center`}>
+                          <FiFile className={`w-4 h-4 text-${item.color}-600 dark:text-${item.color}-400`} />
+                        </div>
+                        <div>
+                          <p className="font-medium">{item.label}</p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">{item.ext}</p>
+                        </div>
+                      </motion.button>
+                    ))}
                   </div>
                 </motion.div>
               )}
@@ -1487,28 +1170,28 @@ const Reports = () => {
           >
             <StatCard
               title="Total Revenue"
-              value={`Rs.${stats.revenue.toFixed(2)}`}
+              value={`₹${parseFloat(summaryStats.totalSalesAmount || stats.revenue).toFixed(2)}`}
               icon={FiDollarSign}
               color="from-blue-500 to-cyan-500"
               delay={0.1}
             />
             <StatCard
               title="Total Orders"
-              value={stats.orders}
+              value={pagination.total || stats.orders}
               icon={FiPackage}
               color="from-green-500 to-emerald-500"
               delay={0.2}
             />
             <StatCard
               title="Products Sold"
-              value={stats.products}
+              value={summaryStats.totalSalesItems || stats.products}
               icon={FiBarChart2}
               color="from-purple-500 to-indigo-500"
               delay={0.3}
             />
             <StatCard
-              title="Avg Order Value"
-              value={`Rs.${stats.averageOrder.toFixed(2)}`}
+              title="Total Due"
+              value={`₹${parseFloat(summaryStats.totalDue || stats.due).toFixed(2)}`}
               icon={FiTrendingUp}
               color="from-orange-500 to-red-500"
               delay={0.4}
@@ -1577,76 +1260,34 @@ const Reports = () => {
               className="overflow-hidden"
             >
               <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
-                {/* Quick Filter Capsules */}
                 <div className="mb-6">
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
                     Quick Filters
                   </label>
                   <div className="flex flex-wrap gap-2">
-                    <button
-                      onClick={() => handleQuickFilter("all")}
-                      className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
-                        selectedFilter === "all"
-                          ? "bg-primary-500 text-white shadow-md"
-                          : "bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
-                      }`}
-                    >
-                      All Time
-                    </button>
-                    <button
-                      onClick={() => handleQuickFilter("today")}
-                      className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
-                        selectedFilter === "today"
-                          ? "bg-primary-500 text-white shadow-md"
-                          : "bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
-                      }`}
-                    >
-                      Today
-                    </button>
-                    <button
-                      onClick={() => handleQuickFilter("currentMonth")}
-                      className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
-                        selectedFilter === "currentMonth"
-                          ? "bg-primary-500 text-white shadow-md"
-                          : "bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
-                      }`}
-                    >
-                      Current Month
-                    </button>
-                    <button
-                      onClick={() => handleQuickFilter("7days")}
-                      className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
-                        selectedFilter === "7days"
-                          ? "bg-primary-500 text-white shadow-md"
-                          : "bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
-                      }`}
-                    >
-                      Last 7 Days
-                    </button>
-                    <button
-                      onClick={() => handleQuickFilter("30days")}
-                      className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
-                        selectedFilter === "30days"
-                          ? "bg-primary-500 text-white shadow-md"
-                          : "bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
-                      }`}
-                    >
-                      Last 30 Days
-                    </button>
-                    <button
-                      onClick={() => handleQuickFilter("pastMonth")}
-                      className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
-                        selectedFilter === "pastMonth"
-                          ? "bg-primary-500 text-white shadow-md"
-                          : "bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
-                      }`}
-                    >
-                      Past Month
-                    </button>
+                    {[
+                      { id: "all", label: "All Time" },
+                      { id: "today", label: "Today" },
+                      { id: "currentMonth", label: "Current Month" },
+                      { id: "7days", label: "Last 7 Days" },
+                      { id: "30days", label: "Last 30 Days" },
+                      { id: "pastMonth", label: "Past Month" },
+                    ].map((filter) => (
+                      <button
+                        key={filter.id}
+                        onClick={() => handleQuickFilter(filter.id)}
+                        className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                          selectedFilter === filter.id
+                            ? "bg-primary-500 text-white shadow-md"
+                            : "bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
+                        }`}
+                      >
+                        {filter.label}
+                      </button>
+                    ))}
                   </div>
                 </div>
 
-                {/* Custom Date Range */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -1717,7 +1358,7 @@ const Reports = () => {
                 {error}
               </p>
               <Button
-                onClick={() => fetchReports(startDate, endDate)}
+                onClick={() => fetchReports(pagination.currentPage, startDate, endDate)}
                 className="mt-4"
               >
                 Try Again
@@ -1751,9 +1392,10 @@ const Reports = () => {
                 data={filteredReports}
                 loading={loading}
               />
+              <Pagination />
             </div>
             <div className="mt-4 text-right text-sm text-gray-500 dark:text-gray-400">
-              Showing {filteredReports.length} of {reports.length} reports
+              Showing {filteredReports.length} of {reports.length} reports on this page
             </div>
           </>
         )}
