@@ -21,7 +21,9 @@ class PlanPurchaseHistoryController extends Controller
         }
         $user = Auth::user()->id;
         $startTime = microtime(true);
-        $cacheKey = "plan_purchase_history_{$user}";
+        $page = request()->get('page', 1);
+
+        $cacheKey = "plan_purchase_history_{$user}page{$page}";
         $fromCache = Cache::tags(['plan_purchase_history_user_' . $user])->has($cacheKey);
         
         if($user != $id){
@@ -31,7 +33,7 @@ class PlanPurchaseHistoryController extends Controller
             ]);
         }
         $plans = Cache::tags(['plan_purchase_history_user_' . $user])->remember($cacheKey, 600, function () use ($user, $id) {
-           return PlanPurchaseHistory::where('user_id', $id)->orderBy('id', 'desc')->paginate(15)->withQueryString();
+           return PlanPurchaseHistory::where('user_id', $id)->with('plan')->orderBy('id', 'desc')->paginate(10)->withQueryString();
             // if($plans->isEmpty()){
             //     return response()->json([
             //         'status' => false,

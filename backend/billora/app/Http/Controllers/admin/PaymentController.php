@@ -92,7 +92,7 @@ class PaymentController extends Controller
         if (str_ends_with($sessionId, 'paymentpayment')) {
             $sessionId = str_replace('paymentpayment', '', $sessionId);
         }
-        Cache::tags(['plan_purchase_history'])->flush();
+        Cache::tags(['plan_purchase_history_user_' . $request->customer_id])->flush();
         $encodedSessionId = urlencode($sessionId);
         // Create correct payment URL
         $paymentUrl = "https://sandbox.cashfree.com/pg/checkout?session_id=" . $encodedSessionId;
