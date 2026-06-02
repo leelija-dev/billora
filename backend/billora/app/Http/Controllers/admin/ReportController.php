@@ -21,10 +21,10 @@ class ReportController extends Controller
     public function index(Request $request)
     {
         $userId = Auth::user()->id;
-
-        $cacheKey = "report_{$userId}_" .
+        $page = $request->query('page', 1);
+       $cacheKey = "report_{$userId}_" .
             ($request->start_date ?? 'today') . "_" .
-            ($request->end_date ?? 'today');
+            ($request->end_date ?? 'today') . "page{$page}";
 
         $fromCache = Cache::has($cacheKey);
 
@@ -61,9 +61,10 @@ class ReportController extends Controller
             $customerDues = BillCustomer::where('admin_id', $userId)
                 ->where('due_amount', '>', 0)
                 ->get();
-            $salesInvoice = Invoice::where('user_id', $userId)->with('invoiceItems')
+            $salesInvoice = Invoice::where('user_id', $userId)->with('customer','store','invoiceItems')
                 ->whereBetween('created_at', [$startDate, $endDate])
-                ->get();
+                ->orderBy('id', 'desc')
+                ->paginate(10);
             $productSales = DB::table('invoice_items as ii')
                 ->join('products as p', 'ii.product_id', '=', 'p.id')
                 ->join('invoice as i', 'ii.invoice_id', '=', 'i.id')
@@ -118,5 +119,27 @@ class ReportController extends Controller
 
             'data' => $data
         ]);
+    }
+    public function singleReport(Request $request,$id){
+        $user = Auth::user()->id;
+        try{
+        $invoice = Invoice::where('user_id',$user)->where('id',$id)->with('customer','store','invoiceItems')->firstOrFail();
+        if(!$invoice){
+            return response()->json([
+                'status' => false,
+                'message' => 'Invoice not found'
+            ]);
+        }
+        return response()->json([
+            'status' => true,
+            'message' => 'Invoice details',
+            'data' => $invoice
+        ]);
+        }catch(\Exception $e){
+            return response()->json([
+                'status' => false,
+                'message' => $e->getMessage()
+            ]);
+        }
     }
 }

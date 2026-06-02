@@ -26,6 +26,7 @@ const SubscriptionCard = ({
     const discountedPrice = originalPrice - (originalPrice * discount) / 100;
     return discountedPrice;
   };
+  console.log("checking SubscriptonCard - subscription data:", subscription);
 
   const getOriginalPrice = () => {
     return parseFloat(subscription?.amount || subscription?.planDetails?.price || 0);
@@ -75,12 +76,12 @@ const SubscriptionCard = ({
             <div className="text-right">
               {hasDiscount ? (
                 <>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1">
                     <span className="font-bold text-gray-900 dark:text-white text-lg">
                       ₹{discountedPrice.toFixed(2)}
                     </span>
                     <span className="text-sm text-gray-500 dark:text-gray-400">
-                      /{subscription.interval || "month"}
+                      /{subscription.planDetails?.duration_days || "month"} Days
                     </span>
                   </div>
                   <div className="flex items-center justify-end gap-2 mt-1">

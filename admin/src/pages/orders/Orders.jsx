@@ -455,7 +455,7 @@ const Orders = () => {
         <div className="flex items-center">
           <span className="text-gray-400 mr-1">₹</span>
           <span className="font-semibold text-gray-900 dark:text-white">
-            ₹{parseFloat(value || 0).toFixed(2)}
+            {parseFloat(value || 0).toFixed(2)}
           </span>
         </div>
       ),
@@ -467,7 +467,7 @@ const Orders = () => {
         <div className="flex items-center">
           <span className="text-green-400 mr-1">₹</span>
           <span className="font-semibold text-green-600 dark:text-green-400">
-            ₹{parseFloat(value || 0).toFixed(2)}
+            {parseFloat(value || 0).toFixed(2)}
           </span>
         </div>
       ),
@@ -479,7 +479,7 @@ const Orders = () => {
         const dueAmount = parseFloat(row.total_amount || 0) - parseFloat(row.paid_amount || 0)
         return (
           <div className="flex items-center">
-            <span className="text-red-400 mr-1">₹</span>
+            
             <span className={`font-semibold ${dueAmount > 0 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>
               ₹{dueAmount.toFixed(2)}
             </span>

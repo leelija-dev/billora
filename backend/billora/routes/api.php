@@ -195,6 +195,7 @@ Route::prefix('dashboard')->group(function (){
 //reports 
 Route::middleware('auth:sanctum')->prefix('reports')->group(function () {
    Route::get('/', [ReportController::class, 'index']);
+   Route::get('/single-invoice/{id}', [ReportController::class, 'singleReport']); 
 });
 // plan purchase history
 Route::middleware('auth:sanctum')->prefix('plans-purchase-history')->group(function () {

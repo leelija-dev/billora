@@ -42,11 +42,33 @@ export const plansAPI = {
 };
 
 export const dashboardAPI = {
-  // Get dashboard overview by user ID
-  getOverview: async (userId) => {
+  // Get dashboard overview by user ID with time range filter
+  getOverview: async (userId, timeRange = '7d') => {
     try {
-      console.log(`📊 Fetching dashboard overview for user: ${userId}`);
-      const response = await apiClient.get(`/dashboard/overview/${userId}`);
+      let daysToFetch = 7; // default
+      
+      // Convert timeRange to number of days
+      switch(timeRange) {
+        case '7d':
+          daysToFetch = 7;
+          break;
+        case '30d':
+          daysToFetch = 30;
+          break;
+        case '90d':
+          daysToFetch = 90;
+          break;
+        case '12m':
+          daysToFetch = 365; // 12 months
+          break;
+        default:
+          daysToFetch = 7;
+      }
+      
+      console.log(`📊 Fetching dashboard overview for user: ${userId} with range: ${daysToFetch} days`);
+      const response = await apiClient.get(`/dashboard/overview/${userId}?search=${daysToFetch}`, {
+       
+      });
       console.log("📊 Dashboard overview fetched:", response.data);
       return response;
     } catch (error) {

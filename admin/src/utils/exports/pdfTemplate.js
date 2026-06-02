@@ -62,7 +62,7 @@ export const generateProfessionalPDF = (data) => {
   yPosition += 12
 
   const metrics = [
-    { label: 'Total Revenue', value: `$${Number(stats.revenue).toLocaleString()}`, change: stats.revenueChange },
+    { label: 'Total Revenue', value: `Rs${Number(stats.revenue).toLocaleString()}`, change: stats.revenueChange },
     { label: 'Total Orders', value: Number(stats.orders).toLocaleString(), change: stats.ordersChange },
     { label: 'Products', value: Number(stats.products).toLocaleString(), change: stats.productsChange },
     { label: 'Customers', value: Number(stats.customers).toLocaleString(), change: stats.customersChange }
@@ -142,7 +142,7 @@ export const generateProfessionalPDF = (data) => {
     head: [['Date', 'Revenue (USD)']],
     body: revenueData.map(item => [
       item.date,
-      `$${Number(item.revenue).toLocaleString(undefined, { minimumFractionDigits: 2 })}`
+      `Rs ${Number(item.revenue).toLocaleString(undefined, { minimumFractionDigits: 2 })}`
     ]),
     theme: 'striped',
     styles: {
@@ -173,7 +173,7 @@ export const generateProfessionalPDF = (data) => {
     startY: yPosition,
     head: [['Metric', 'Value', 'Change']],
     body: [
-      ['Total Revenue', `$${Number(stats.revenue).toLocaleString()}`, stats.revenueChange ?? 'N/A'],
+      ['Total Revenue', `Rs ${Number(stats.revenue).toLocaleString()}`, stats.revenueChange ?? 'N/A'],
       ['Total Orders', stats.orders, stats.ordersChange ?? 'N/A'],
       ['Products', stats.products, stats.productsChange ?? 'N/A'],
       ['Customers', stats.customers, stats.customersChange ?? 'N/A'],
@@ -211,7 +211,7 @@ export const generateProfessionalPDF = (data) => {
       body: topProducts.map(p => [
         p.name,
         p.sales,
-        `$${Number(p.revenue).toLocaleString()}`
+        `Rs ${Number(p.revenue).toLocaleString()}`
       ]),
       theme: 'striped',
       styles: {
@@ -244,7 +244,7 @@ export const generateProfessionalPDF = (data) => {
       body: recentOrders.slice(0, 15).map(o => [
         o.orderNumber,
         o.customer?.name || 'Unknown',
-        `$${Number(o.total).toLocaleString()}`,
+        `Rs ${Number(o.total).toLocaleString()}`,
         o.status,
         new Date(o.createdAt).toLocaleDateString()
       ]),

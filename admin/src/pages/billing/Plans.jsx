@@ -1551,7 +1551,7 @@ const Plans = () => {
                                   Price
                                 </span>
                                 <span className="font-medium text-gray-900 dark:text-white">
-                                  ₹{parseFloat(subscription.amount || 0).toFixed(2)}/{subscription.interval || "month"}
+                                  <span className="text-lg font-bold">₹{parseFloat(subscription.amount || 0).toFixed(2)}</span>/{subscription.planDetails?.duration_days || "month"} Days
                                 </span>
                               </div>
 

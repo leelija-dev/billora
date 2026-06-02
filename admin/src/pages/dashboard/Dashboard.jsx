@@ -88,8 +88,8 @@ const Dashboard = () => {
         return
       }
 
-      const response = await dashboardAPI.getOverview(user.id)
-      const data = response.data
+       const response = await dashboardAPI.getOverview(user.id, timeRange)
+    const data = response.data
       const normalizedStats = {
         revenue: parseFloat(data?.stats?.totalRevenue || 0),
         orders: parseInt(data?.stats?.totalOrders || 0),
