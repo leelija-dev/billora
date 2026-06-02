@@ -402,6 +402,7 @@ class InvoiceController extends Controller
                 'gst_collection_user_' . $user
 
             ])->flush();
+            Cache::forget("report_{$invoice->user_id}_today_today_page_1");
             return response()->json([
                 'status'  => true,
                 'message' => 'Invoice Created Successfully',

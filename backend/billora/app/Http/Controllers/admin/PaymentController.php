@@ -86,6 +86,7 @@ class PaymentController extends Controller
             'payment_method' => 'cashfree',
             'remarks' => 'new purchase'
         ]);
+        
         $sessionId = $data['payment_session_id'];
         // Remove any extra "paymentpayment" suffix if present
         if (str_ends_with($sessionId, 'paymentpayment')) {
@@ -167,19 +168,72 @@ class PaymentController extends Controller
             $payment->update([
                 'status' => 'SUCCESS'
             ]);
+            $isRenewal = $planPurchase->remarks === 'Renewal Purchase';
 
-            $planPurchase->update([
-                'status' => 'active',
-                'payment_status' => 'success',
-                'start_date' => Carbon::now(),
-                'end_date' => Carbon::now()->addDays($plan->duration_days ?? 30)
-            ]);
-            //customer plan activate
-            $customer->update([
-                'plan_id' => $plan->id,
-                'business_type_id' => $bussiness_type->business_type_id,
-                'is_active' => true
-            ]);
+                $currentPlan = PlanPurchaseHistory::where('user_id', $customer->id)
+                    ->where('status', 'active')
+                    ->where('id', '!=', $planPurchase->id)
+                    ->latest()
+                    ->first();
+
+                if ($isRenewal) {
+
+                    if (
+                        $currentPlan &&
+                        $currentPlan->end_date &&
+                        Carbon::parse($currentPlan->end_date)->gt(now())
+                    ) {
+
+                        // Current plan still active
+                        // Renewal waits
+
+                        $planPurchase->update([
+                            'payment_status' => 'success',
+                            'status' => 'pending'
+                        ]);
+
+                    } else {
+
+                        // Current plan expired
+                        // Activate immediately
+
+                        $startDate = now();
+
+                        $endDate = now()->addDays($plan->duration_days);
+
+                        $planPurchase->update([
+                            'status' => 'active',
+                            'payment_status' => 'success',
+                            'start_date' => $startDate,
+                            'end_date' => $endDate
+                        ]);
+
+                        $customer->update([
+                            'is_active' => true
+                        ]);
+                    }
+
+                } else {
+
+                    // New purchase / Upgrade
+
+                    $planPurchase->update([
+                        'status' => 'active',
+                        'payment_status' => 'success',
+                        'start_date' => now(),
+                        'end_date' => now()->addDays($plan->duration_days)
+                    ]);
+
+                   
+                }
+                 if (!$isRenewal || $planPurchase->status === 'active') {
+
+                        $customer->update([
+                            'plan_id' => $plan->id,
+                            'business_type_id' => $bussiness_type->business_type_id,
+                            'is_active' => true
+                        ]);
+                    }
             Cache::tags(['plan_purchase_history_' . $customer->id])->flush();
             Cache::tags(['plan_purchase_history'])->flush();
             // Generate mail
@@ -853,4 +907,214 @@ body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height
             'data' => $data
         ]);
     }
+    public function renewPlan(Request $request)
+    {
+        $data = $request->validate([
+            'plan_id'=>'required|exists:plans,id',
+            'customer_id'=>'required|exists:customers,id',
+            'amount'=>'required|numeric|min:1',
+            
+        ]);
+        $customer = Customers::findOrFail($data['customer_id']);
+        if (!$customer->plan_id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No active plan found.'
+            ], 422);
+        }
+        $plan = Plans::findOrFail($data['plan_id']);
+        $orderId = 'order_' . uniqid();
+        $url = config('cashfree.base_url').'/orders';
+        $gstAmt = ($plan->price * $plan->gst) / 100;
+        $disAmt = ($plan->price * $plan->discount) / 100;
+        $amount = (($plan->price - $disAmt) + $gstAmt); 
+        $response = Http::withHeaders([
+                'x-client-id' => config('cashfree.app_id'),
+                'x-client-secret' => config('cashfree.secret_key'),
+                'x-api-version' => '2022-09-01',
+                'Content-Type' => 'application/json'
+            ])->post($url, [
+                "order_id" => $orderId,
+                "order_amount" => $amount,
+                "order_currency" => "INR",
+                "customer_details" => [
+                    "customer_id" => (string)$customer->id,
+                    "customer_email" => $customer->email,
+                    "customer_phone" => $request->customer_phone
+                ],
+                "order_meta" => [
+                    "return_url" => url('/api/cashfree/verify/' . $orderId)
+                ]
+            ]);
+
+            $data = $response->json();
+            if ($response->failed()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Cashfree API failed',
+                    'error' => $data
+                ]);
+            }
+            PaymentHistory::create([
+            'customer_id' => $request->customer_id,
+            'plan_id' => $request->plan_id,
+            'amount' => $amount,
+            'payment_method' => 'cashfree',
+            'transaction_id' => $orderId,
+            'status' => 'PENDING'
+        ]);
+        PlanPurchaseHistory::create([
+        'user_id' => $customer->id,
+        'plan_id' => $plan->id,
+        'price' => $amount,
+        'currency' => 'INR',
+
+        'start_date' => null,
+        'end_date' => null,
+
+        'status' => 'pending', // waiting renewal
+        'payment_status' => 'pending',
+
+        'payment_method' => 'cashfree',
+        'payment_id' => $orderId,
+
+        'remarks' => 'Renewal Purchase'
+    ]);
+    $sessionId = $data['payment_session_id'];
+    $paymentUrl = "https://sandbox.cashfree.com/pg/checkout?session_id="
+        . urlencode($sessionId);
+
+    return response()->json([
+        'success' => true,
+        'session_id' => $sessionId,
+        'payment_url' => $paymentUrl,
+        'data' => $data
+    ]);
+       
+    }
+
+    public function renewMail($customer_id, $plan_id, $purchase_id)
+{
+    $customer = Customers::findOrFail($customer_id);
+    $plan = Plans::findOrFail($plan_id);
+    $planPurchase = PlanPurchaseHistory::find($purchase_id);
+    $admin_mail_id = config('app.admin_mail');
+    
+    $html = "
+<!DOCTYPE html>
+<html lang='en'>
+<head>
+<meta charset='UTF-8'>
+<meta name='viewport' content='width=device-width, initial-scale=1.0'>
+<title>Plan Renewal Confirmation</title>
+<style>
+body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; background-color: #f4f4f4; }
+.container { max-width: 600px; margin: 20px auto; padding: 0; background-color: #ffffff; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+.header { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); color: white; padding: 30px; text-align: center; }
+.header h1 { margin: 0; font-size: 28px; }
+.header p { margin: 10px 0 0; opacity: 0.9; }
+.content { padding: 40px 30px; }
+.thank-you { font-size: 24px; margin-bottom: 20px; color: #4facfe; }
+.plan-details { background: #f8f9fa; border-radius: 8px; padding: 20px; margin: 20px 0; border-left: 4px solid #4facfe; }
+.plan-name { font-size: 20px; font-weight: bold; color: #333; margin-bottom: 10px; }
+.plan-price { font-size: 28px; font-weight: bold; color: #4facfe; margin: 10px 0; }
+.details-grid { display: grid; grid-template-columns: 1fr 2fr; gap: 10px; margin: 20px 0; }
+.details-label { font-weight: bold; color: #555; }
+.details-value { color: #333; }
+.transaction-id { font-family: monospace; background: #f4f4f4; padding: 5px 10px; border-radius: 4px; font-size: 12px; }
+.dates-info { background: #e8f4f8; padding: 15px; border-radius: 8px; margin: 20px 0; }
+.date-badge { display: inline-block; padding: 5px 10px; border-radius: 20px; font-size: 12px; font-weight: bold; }
+.date-start { background: #d4edda; color: #155724; }
+.date-end { background: #fff3cd; color: #856404; }
+.button { display: inline-block; padding: 12px 30px; background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); color: white; text-decoration: none; border-radius: 5px; margin-top: 20px; text-align: center; }
+.button:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(79,172,254,0.4); }
+.footer { background: #f8f9fa; padding: 20px 30px; text-align: center; font-size: 12px; color: #777; border-top: 1px solid #e0e0e0; }
+.footer a { color: #4facfe; text-decoration: none; }
+@media (max-width: 600px) {
+    .container { margin: 10px; }
+    .content { padding: 20px; }
+    .details-grid { grid-template-columns: 1fr; gap: 5px; }
+}
+</style>
+</head>
+<body>
+<div class='container'>
+    <div class='header'>
+        <h1>Plan Successfully Renewed! 🔄</h1>
+        <p>Your subscription has been renewed successfully</p>
+    </div>
+
+    <div class='content'>
+        <div class='thank-you'>
+            Hello " . ($customer->name ?? 'Customer') . "!
+        </div>
+
+        <p>Thank you for renewing your subscription with " . config('app.name') . ". We appreciate your continued trust in our services!</p>
+
+        <div class='plan-details'>
+            <div class='plan-name'>" . ($plan->name ?? '') . "</div>
+            <div class='plan-price'>₹" . number_format($planPurchase->price ?? $plan->price, 2) . "</div>
+            <div style='margin-top: 10px; color: #666;'>
+                <strong>Duration:</strong> " . ($plan->duration_days ?? '30') . " days
+            </div>
+        </div>
+
+        <div class='dates-info'>
+            <strong>📅 Subscription Period</strong><br><br>
+            <span class='date-badge date-start'>Start: " . ($planPurchase->start_date ? date('d-m-Y', strtotime($planPurchase->start_date)) : 'N/A') . "</span>
+            <span style='margin: 0 10px'>→</span>
+            <span class='date-badge date-end'>End: " . ($planPurchase->end_date ? date('d-m-Y', strtotime($planPurchase->end_date)) : 'N/A') . "</span>
+        </div>
+
+        <div class='details-grid'>
+            <div class='details-label'>Transaction ID:</div>
+            <div class='details-value transaction-id'>" . ($planPurchase->payment_id ?? '') . "</div>
+
+            <div class='details-label'>Payment Method:</div>
+            <div class='details-value'>" . ucfirst($planPurchase->payment_method ?? 'Cashfree') . "</div>
+
+            <div class='details-label'>Renewal Date:</div>
+            <div class='details-value'>" . ($planPurchase->created_at ? date('d-m-Y h:i A', strtotime($planPurchase->created_at)) : 'N/A') . "</div>
+
+            <div class='details-label'>Invoice Number:</div>
+            <div class='details-value'>INV-" . str_pad($planPurchase->id ?? 0, 6, '0', STR_PAD_LEFT) . "</div>
+        </div>
+
+        <div style='margin-top: 30px; padding: 20px; background: #f0f9ff; border-radius: 8px;'>
+            <strong>📋 What's Next?</strong>
+            <ul style='margin-top: 10px; padding-left: 20px;'>
+                <li>Continue accessing all premium features of your " . ($plan->name ?? '') . " plan</li>
+                <li>Check your dashboard for updated subscription details</li>
+                <li>Set up auto-renewal to avoid service interruption</li>
+                <li>Contact our support team for any assistance</li>
+            </ul>
+        </div>
+
+        <div style='text-align: center;'>
+            <a href='" . rtrim(env('REACT_APP_URL', 'https://app.thefastbill.com'), '/') . "/dashboard' class='button'>
+                Go to Dashboard
+            </a>
+        </div>
+        
+        <div style='margin-top: 30px; padding: 15px; background: #fff3e0; border-radius: 8px; text-align: center;'>
+            <strong>💡 Need Help?</strong><br>
+            <small>If you have any questions about your renewed plan, our support team is here to help 24/7.</small>
+        </div>
+    </div>
+
+    <div class='footer'>
+        <p>Need assistance? Contact us at <a href='mailto:" . ($admin_mail_id) . "'>" . ($admin_mail_id) . "</a></p>
+        <p>&copy; " . date('Y') . " " . config('app.name') . ". All rights reserved.</p>
+        <p>
+            <a href='#'>Terms of Service</a> | 
+            <a href='#'>Privacy Policy</a> | 
+            <a href='#'>Support Center</a>
+        </p>
+    </div>
+</div>
+</body>
+</html>";
+
+    return $html;
+}
 }

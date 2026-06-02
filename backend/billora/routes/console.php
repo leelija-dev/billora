@@ -4,7 +4,7 @@ use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use App\Jobs\SendPlanExpiryReminderJob;
 use Illuminate\Support\Facades\Schedule;
-
+use App\Jobs\ActivatePendingRenewals;
 Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
@@ -16,3 +16,5 @@ Schedule::job(new SendPlanExpiryReminderJob(false))
 
 //plan expire daily check
 Schedule::command('app:expire-plans')->daily();  
+Schedule::job(new ActivatePendingRenewals)
+    ->everyFiveMinutes();

@@ -195,6 +195,7 @@ Route::prefix('dashboard')->group(function (){
 //reports 
 Route::middleware('auth:sanctum')->prefix('reports')->group(function () {
    Route::get('/', [ReportController::class, 'index']);
+   Route::get('/single-invoice/{id}', [ReportController::class, 'singleReport']);
 });
 // plan purchase history
 Route::middleware('auth:sanctum')->prefix('plans-purchase-history')->group(function () {
@@ -206,6 +207,7 @@ Route::prefix('cashfree')->group(function () {
     Route::post('/create-order', [PaymentController::class, 'createOrder']);
     Route::post('/upgrade-plan', [PaymentController::class, 'upgradePlan']);
     Route::get('/verify/{order_id}', [PaymentController::class, 'verifyPayment']);
+    Route::post('/renew-plan',[PaymentController::class, 'renewPlan']);
 });
 
 //plan expire reminder
