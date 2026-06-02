@@ -24,6 +24,7 @@ import {
   FiCpu,
   FiShoppingCart,
   FiPackage,
+  FiRotateCcw,
 } from "react-icons/fi";
 import { motion, AnimatePresence } from "framer-motion";
 import { plansAPI, invoiceAPI, billingAPI } from "../../services";
@@ -51,6 +52,8 @@ const Plans = () => {
   const [selectedInvoice, setSelectedInvoice] = useState(null);
   const [error, setError] = useState(null);
   const [successMessage, setSuccessMessage] = useState(null);
+  const [showRenewConfirm, setShowRenewConfirm] = useState(false);
+const [renewPlanData, setRenewPlanData] = useState(null);
 
   const [subscription, setSubscription] = useState(null);
   const [plans, setPlans] = useState([]);
@@ -380,6 +383,111 @@ const Plans = () => {
       console.error("Failed to fetch plans:", error);
     }
   }, []);
+
+  // Add this function to handle plan renewal
+const handleRenew = useCallback(async (plan) => {
+  // Get the plan details from subscription
+  const planToRenew = subscription?.planDetails || currentPlan;
+  
+  if (!planToRenew) {
+    setError("No plan found to renew");
+    return;
+  }
+  
+  // Calculate renewal amount with GST
+  const planPrice = parseFloat(planToRenew.price || planToRenew.amount || 0);
+  const gstPercentage = parseFloat(planToRenew.gst) || 18;
+  const gst = (planPrice * gstPercentage) / 100;
+  const totalAmount = planPrice + gst;
+  
+  setRenewPlanData({
+    plan_id: planToRenew.id,
+    plan_name: planToRenew.name,
+    original_amount: planPrice,
+    gst_percentage: gstPercentage,
+    gst_amount: gst,
+    total_amount: totalAmount,
+    customer_id: getUserId(),
+  });
+  
+  setShowRenewConfirm(true);
+}, [subscription, currentPlan, getUserId]);
+
+// Add this function to process the renewal payment
+const handleRenewPayment = async () => {
+  if (!renewPlanData) return;
+  
+  setActionLoading(true);
+  setError(null);
+  const loadingToast = toast.loading("Processing renewal...");
+  
+  try {
+    const renewPayload = {
+      plan_id: renewPlanData.plan_id,
+      customer_id: renewPlanData.customer_id,
+      amount: renewPlanData.total_amount,
+    };
+    
+    console.log("Sending renew payload:", renewPayload);
+    
+    const renewResponse = await billingAPI.renewPlan(renewPayload);
+    const responseData = renewResponse?.data;
+    
+    if (responseData?.session_id) {
+      toast.success("Renewal initiated! Redirecting to payment...", {
+        id: loadingToast,
+      });
+      
+      const Cashfree = await loadCashfreeSDK();
+      const cashfree = new Cashfree({
+        mode: import.meta.env.VITE_CASHFREE_MODE === "production" ? "production" : "sandbox",
+      });
+      
+      const orderInfo = {
+        paymentSessionId: responseData.session_id,
+        planName: renewPlanData.plan_name,
+        amount: renewPlanData.total_amount,
+        customerId: renewPlanData.customer_id,
+        timestamp: Date.now(),
+        isRenewal: true,
+        renewalDetails: {
+          planId: renewPlanData.plan_id,
+          originalAmount: renewPlanData.original_amount,
+        }
+      };
+      localStorage.setItem("pendingPayment", JSON.stringify(orderInfo));
+      
+      await cashfree.checkout({
+        paymentSessionId: responseData.session_id,
+        redirectTarget: "_self",
+      });
+    } else {
+      toast.dismiss(loadingToast);
+      setError(responseData?.message || "Failed to initiate plan renewal");
+    }
+  } catch (error) {
+    toast.dismiss(loadingToast);
+    console.error("Failed to renew plan:", error);
+    
+    let errorMessage = "Renewal failed. Please try again.";
+    if (error.message?.includes("customer_id")) {
+      errorMessage = "Invalid customer ID format. Please try again.";
+    } else if (error.message?.includes("plan_id")) {
+      errorMessage = "Invalid plan selected. Please try again.";
+    } else if (error.message?.includes("amount")) {
+      errorMessage = "Invalid renewal amount. Please try again.";
+    } else if (error.message) {
+      errorMessage = error.message;
+    }
+    
+    setError(errorMessage);
+    toast.error(errorMessage);
+  } finally {
+    setActionLoading(false);
+    setShowRenewConfirm(false);
+    setRenewPlanData(null);
+  }
+};
 
   // Function to fetch invoices
   const fetchInvoices = useCallback(async () => {
@@ -1517,13 +1625,14 @@ const Plans = () => {
                     <>
                       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                         <SubscriptionCard
-                          subscription={subscription}
-                          onUpgrade={() => setShowChangePlanForm(true)}
-                          onCancel={() => setShowCancelConfirm(true)}
-                          onReactivate={handleReactivate}
-                          onUpdatePaymentMethod={handleUpdatePaymentMethod}
-                          loading={actionLoading}
-                        />
+  subscription={subscription}
+  onUpgrade={() => setShowChangePlanForm(true)}
+  onCancel={() => setShowCancelConfirm(true)}
+  onReactivate={handleReactivate}
+  onUpdatePaymentMethod={handleUpdatePaymentMethod}
+  onRenew={() => handleRenew()} // Add this line
+  loading={actionLoading}
+/>
 
                         <motion.div
                           initial={{ opacity: 0, x: 20 }}
@@ -1976,6 +2085,136 @@ const Plans = () => {
           )}
         </AnimatePresence>
       </motion.div>
+      {/* Renew Subscription Modal */}
+<AnimatePresence>
+  {showRenewConfirm && renewPlanData && (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+      onClick={() => {
+        setShowRenewConfirm(false);
+        setRenewPlanData(null);
+      }}
+    >
+      <motion.div
+        initial={{ scale: 0.9, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        exit={{ scale: 0.9, opacity: 0 }}
+        className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full p-6"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="text-center">
+          <motion.div
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ delay: 0.1, type: "spring", stiffness: 200 }}
+            className="w-16 h-16 bg-blue-100 dark:bg-blue-900/20 rounded-full flex items-center justify-center mx-auto mb-4"
+          >
+            <FiRotateCcw className="w-8 h-8 text-blue-600 dark:text-blue-400" />
+          </motion.div>
+
+          <motion.h3
+            initial={{ y: 10, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.2 }}
+            className="text-xl font-bold text-gray-900 dark:text-white mb-2"
+          >
+            Renew Subscription
+          </motion.h3>
+
+          <motion.p
+            initial={{ y: 10, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.3 }}
+            className="text-gray-600 dark:text-gray-400 mb-6"
+          >
+            You are about to renew your plan:
+          </motion.p>
+
+          <motion.div
+            initial={{ y: 10, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.35 }}
+            className="mb-6 p-4 bg-gray-50 dark:bg-gray-700 rounded-xl"
+          >
+            <h4 className="font-semibold text-gray-900 dark:text-white mb-3">
+              {renewPlanData.plan_name}
+            </h4>
+            
+            <div className="space-y-2 text-left">
+              <div className="flex justify-between">
+                <span className="text-gray-600 dark:text-gray-400">Plan Price:</span>
+                <span className="font-medium text-gray-900 dark:text-white">
+                  ₹{renewPlanData.original_amount.toFixed(2)}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600 dark:text-gray-400">
+                  GST ({renewPlanData.gst_percentage}%):
+                </span>
+                <span className="font-medium text-gray-900 dark:text-white">
+                  +₹{renewPlanData.gst_amount.toFixed(2)}
+                </span>
+              </div>
+              <div className="flex justify-between pt-2 border-t border-gray-200 dark:border-gray-600">
+                <span className="font-semibold text-gray-900 dark:text-white">
+                  Total Amount:
+                </span>
+                <span className="font-bold text-xl text-primary-600 dark:text-primary-400">
+                  ₹{renewPlanData.total_amount.toFixed(2)}
+                </span>
+              </div>
+            </div>
+          </motion.div>
+
+          {error && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 rounded-lg"
+            >
+              <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+            </motion.div>
+          )}
+
+          <motion.div
+            initial={{ y: 10, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.4 }}
+            className="flex space-x-3"
+          >
+            <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="flex-1">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowRenewConfirm(false);
+                  setRenewPlanData(null);
+                }}
+                className="w-full"
+                disabled={actionLoading}
+              >
+                Cancel
+              </Button>
+            </motion.div>
+            <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="flex-1">
+              <Button
+                variant="primary"
+                onClick={handleRenewPayment}
+                loading={actionLoading}
+                disabled={actionLoading}
+                className="w-full"
+              >
+                {actionLoading ? "Processing..." : "Proceed to Payment"}
+              </Button>
+            </motion.div>
+          </motion.div>
+        </div>
+      </motion.div>
+    </motion.div>
+  )}
+</AnimatePresence>
     </ProtectedRoute>
   );
 };

@@ -182,6 +182,19 @@ export const billingAPI = {
     }
   },
 
+   // Renew plan using Cashfree
+  renewPlan: async (renewData) => {
+    try {
+      console.log("🔄 Renewing plan:", renewData);
+      const response = await apiClient.post("/cashfree/renew-plan", renewData);
+      console.log("🔄 Plan renewal initiated:", response.data);
+      return response;
+    } catch (error) {
+      console.error("❌ Failed to renew plan:", error);
+      throw error.response?.data || error.message;
+    }
+  },
+
   // Create Cashfree order for plan purchase
   createCashfreeOrder: async (orderData) => {
     try {
