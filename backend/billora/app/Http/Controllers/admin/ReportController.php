@@ -21,8 +21,8 @@ class ReportController extends Controller
     public function index(Request $request)
     {
         $userId = Auth::user()->id;
-        $page = $request->query('page', 1);
-       $cacheKey = "report_{$userId}_" .
+        $page = $request->get('page', 1);
+        $cacheKey = "report_{$userId}_" .
             ($request->start_date ?? 'today') . "_" .
             ($request->end_date ?? 'today') . "page{$page}";
 

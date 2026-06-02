@@ -53,7 +53,7 @@ const Plans = () => {
   const [error, setError] = useState(null);
   const [successMessage, setSuccessMessage] = useState(null);
   const [showRenewConfirm, setShowRenewConfirm] = useState(false);
-const [renewPlanData, setRenewPlanData] = useState(null);
+  const [renewPlanData, setRenewPlanData] = useState(null);
 
   const [subscription, setSubscription] = useState(null);
   const [plans, setPlans] = useState([]);
@@ -61,7 +61,7 @@ const [renewPlanData, setRenewPlanData] = useState(null);
   const [paymentsCount, setPaymentsCount] = useState(0);
   const [invoices, setInvoices] = useState([]);
   const [invoicesCount, setInvoicesCount] = useState(0);
-  
+
   // New state for recent plan data
   const [recentPlanData, setRecentPlanData] = useState(null);
 
@@ -108,18 +108,20 @@ const [renewPlanData, setRenewPlanData] = useState(null);
 
   const upgradablePlans = useMemo(() => {
     if (!plans.length) return [];
-    
+
     // If no current plan, show all plans (for first-time purchase)
     if (!currentPlan) return plans;
-    
-    const currentPrice = parseFloat(currentPlan.price || currentPlan.amount || 0);
-    
+
+    const currentPrice = parseFloat(
+      currentPlan.price || currentPlan.amount || 0,
+    );
+
     // Filter plans with price greater than current plan
-    const filtered = plans.filter(plan => {
+    const filtered = plans.filter((plan) => {
       const planPrice = parseFloat(plan.price || plan.amount || 0);
       return planPrice > currentPrice;
     });
-    
+
     // Sort by price ascending (cheapest upgrade first)
     return filtered.sort((a, b) => {
       const priceA = parseFloat(a.price || a.amount || 0);
@@ -179,15 +181,19 @@ const [renewPlanData, setRenewPlanData] = useState(null);
       const userId = getUserId();
       console.log("📅 Fetching recent plan for user:", userId);
       const response = await billingAPI.getRecentPlan(userId);
-      
+
       const responseData = response?.data;
       const recentData = responseData?.data || responseData;
-      
-      if (recentData && (recentData.remainingAmount !== undefined || recentData.remainingDays !== undefined)) {
+
+      if (
+        recentData &&
+        (recentData.remainingAmount !== undefined ||
+          recentData.remainingDays !== undefined)
+      ) {
         console.log("📅 Recent plan data received:", recentData);
         console.log("📅 Remaining Amount:", recentData.remainingAmount);
         console.log("📅 Remaining Days:", recentData.remainingDays);
-        
+
         setRecentPlanData({
           remainingAmount: parseFloat(recentData.remainingAmount) || 0,
           remainingDays: parseInt(recentData.remainingDays) || 0,
@@ -195,14 +201,14 @@ const [renewPlanData, setRenewPlanData] = useState(null);
           totalDuration: recentData.total_duration || 0,
           startDay: recentData.start_day,
           endDay: recentData.end_day,
-          plan: responseData?.plan || null
+          plan: responseData?.plan || null,
         });
-        
+
         return {
           remainingAmount: parseFloat(recentData.remainingAmount) || 0,
           remainingDays: parseInt(recentData.remainingDays) || 0,
           perDayPrice: parseFloat(recentData.perDayPrice) || 0,
-          totalDuration: recentData.total_duration || 0
+          totalDuration: recentData.total_duration || 0,
         };
       }
       return null;
@@ -257,7 +263,8 @@ const [renewPlanData, setRenewPlanData] = useState(null);
           if (latestPurchase.plan) {
             setSubscription({
               id: latestPurchase.id,
-              plan: latestPurchase.plan.name || `Plan ${latestPurchase.plan_id}`,
+              plan:
+                latestPurchase.plan.name || `Plan ${latestPurchase.plan_id}`,
               planId: latestPurchase.plan_id,
               status: latestPurchase.status || "active",
               currentPeriodStart: latestPurchase.start_date,
@@ -269,7 +276,8 @@ const [renewPlanData, setRenewPlanData] = useState(null);
             });
           } else {
             const planRes = await plansAPI.getById(latestPurchase.plan_id);
-            const planData = planRes?.data?.["Single Plan"] || planRes?.data?.data;
+            const planData =
+              planRes?.data?.["Single Plan"] || planRes?.data?.data;
             if (planData) {
               setSubscription({
                 id: latestPurchase.id,
@@ -385,109 +393,129 @@ const [renewPlanData, setRenewPlanData] = useState(null);
   }, []);
 
   // Add this function to handle plan renewal
-const handleRenew = useCallback(async (plan) => {
-  // Get the plan details from subscription
-  const planToRenew = subscription?.planDetails || currentPlan;
-  
-  if (!planToRenew) {
-    setError("No plan found to renew");
-    return;
-  }
-  
-  // Calculate renewal amount with GST
-  const planPrice = parseFloat(planToRenew.price || planToRenew.amount || 0);
-  const gstPercentage = parseFloat(planToRenew.gst) || 18;
-  const gst = (planPrice * gstPercentage) / 100;
-  const totalAmount = planPrice + gst;
-  
-  setRenewPlanData({
-    plan_id: planToRenew.id,
-    plan_name: planToRenew.name,
-    original_amount: planPrice,
-    gst_percentage: gstPercentage,
-    gst_amount: gst,
-    total_amount: totalAmount,
-    customer_id: getUserId(),
-  });
-  
-  setShowRenewConfirm(true);
-}, [subscription, currentPlan, getUserId]);
+  const handleRenew = useCallback(
+    async (plan) => {
+      // Get the plan details from subscription
+      const planToRenew = subscription?.planDetails || currentPlan;
 
-// Add this function to process the renewal payment
-const handleRenewPayment = async () => {
-  if (!renewPlanData) return;
-  
-  setActionLoading(true);
-  setError(null);
-  const loadingToast = toast.loading("Processing renewal...");
-  
-  try {
-    const renewPayload = {
-      plan_id: renewPlanData.plan_id,
-      customer_id: renewPlanData.customer_id,
-      amount: renewPlanData.total_amount,
-    };
-    
-    console.log("Sending renew payload:", renewPayload);
-    
-    const renewResponse = await billingAPI.renewPlan(renewPayload);
-    const responseData = renewResponse?.data;
-    
-    if (responseData?.session_id) {
-      toast.success("Renewal initiated! Redirecting to payment...", {
-        id: loadingToast,
-      });
+      if (!planToRenew) {
+        setError("No plan found to renew");
+        return;
+      }
+
+      // Calculate renewal amount: first apply discount, then GST on discounted price
+      const planPrice = parseFloat(
+        planToRenew.price || planToRenew.amount || 0,
+      );
+      const discountPercentage = parseFloat(planToRenew.discount) || 0;
+      const gstPercentage = parseFloat(planToRenew.gst) || 18;
       
-      const Cashfree = await loadCashfreeSDK();
-      const cashfree = new Cashfree({
-        mode: import.meta.env.VITE_CASHFREE_MODE === "production" ? "production" : "sandbox",
-      });
+      // Step 1: Calculate discounted price
+      const discountAmount = (planPrice * discountPercentage) / 100;
+      const discountedPrice = planPrice - discountAmount;
       
-      const orderInfo = {
-        paymentSessionId: responseData.session_id,
-        planName: renewPlanData.plan_name,
+      // Step 2: Calculate GST on the discounted price
+      const gst = (discountedPrice * gstPercentage) / 100;
+      const totalAmount = discountedPrice + gst;
+
+      setRenewPlanData({
+        plan_id: planToRenew.id,
+        plan_name: planToRenew.name,
+        original_amount: planPrice,
+        discount_percentage: discountPercentage,
+        discount_amount: discountAmount,
+        discounted_amount: discountedPrice,
+        gst_percentage: gstPercentage,
+        gst_amount: gst,
+        total_amount: totalAmount,
+        customer_id: getUserId(),
+      });
+
+      setShowRenewConfirm(true);
+    },
+    [subscription, currentPlan, getUserId],
+  );
+
+  // Add this function to process the renewal payment
+  const handleRenewPayment = async () => {
+    if (!renewPlanData) return;
+
+    console.log("Processing renewal for plan:", renewPlanData);
+    setActionLoading(true);
+    setError(null);
+    const loadingToast = toast.loading("Processing renewal...");
+
+    try {
+      
+      const renewPayload = {
+        plan_id: renewPlanData.plan_id,
+        customer_id: renewPlanData.customer_id,
         amount: renewPlanData.total_amount,
-        customerId: renewPlanData.customer_id,
-        timestamp: Date.now(),
-        isRenewal: true,
-        renewalDetails: {
-          planId: renewPlanData.plan_id,
-          originalAmount: renewPlanData.original_amount,
-        }
       };
-      localStorage.setItem("pendingPayment", JSON.stringify(orderInfo));
-      
-      await cashfree.checkout({
-        paymentSessionId: responseData.session_id,
-        redirectTarget: "_self",
-      });
-    } else {
+
+      console.log("Sending renew payload:", renewPayload);
+
+      const renewResponse = await billingAPI.renewPlan(renewPayload);
+      const responseData = renewResponse?.data;
+
+      if (responseData?.session_id) {
+        toast.success("Renewal initiated! Redirecting to payment...", {
+          id: loadingToast,
+        });
+
+        const Cashfree = await loadCashfreeSDK();
+        const cashfree = new Cashfree({
+          mode:
+            import.meta.env.VITE_CASHFREE_MODE === "production"
+              ? "production"
+              : "sandbox",
+        });
+
+        const orderInfo = {
+          paymentSessionId: responseData.session_id,
+          planName: renewPlanData.plan_name,
+          amount: renewPlanData.total_amount,
+          customerId: renewPlanData.customer_id,
+          timestamp: Date.now(),
+          isRenewal: true,
+          renewalDetails: {
+            planId: renewPlanData.plan_id,
+            originalAmount: renewPlanData.original_amount,
+          },
+        };
+        localStorage.setItem("pendingPayment", JSON.stringify(orderInfo));
+
+        await cashfree.checkout({
+          paymentSessionId: responseData.session_id,
+          redirectTarget: "_self",
+        });
+      } else {
+        toast.dismiss(loadingToast);
+        setError(responseData?.message || "Failed to initiate plan renewal");
+      }
+    } catch (error) {
       toast.dismiss(loadingToast);
-      setError(responseData?.message || "Failed to initiate plan renewal");
+      console.error("Failed to renew plan:", error);
+
+      let errorMessage = "Renewal failed. Please try again.";
+      if (error.message?.includes("customer_id")) {
+        errorMessage = "Invalid customer ID format. Please try again.";
+      } else if (error.message?.includes("plan_id")) {
+        errorMessage = "Invalid plan selected. Please try again.";
+      } else if (error.message?.includes("amount")) {
+        errorMessage = "Invalid renewal amount. Please try again.";
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+
+      setError(errorMessage);
+      toast.error(errorMessage);
+    } finally {
+      setActionLoading(false);
+      setShowRenewConfirm(false);
+      setRenewPlanData(null);
     }
-  } catch (error) {
-    toast.dismiss(loadingToast);
-    console.error("Failed to renew plan:", error);
-    
-    let errorMessage = "Renewal failed. Please try again.";
-    if (error.message?.includes("customer_id")) {
-      errorMessage = "Invalid customer ID format. Please try again.";
-    } else if (error.message?.includes("plan_id")) {
-      errorMessage = "Invalid plan selected. Please try again.";
-    } else if (error.message?.includes("amount")) {
-      errorMessage = "Invalid renewal amount. Please try again.";
-    } else if (error.message) {
-      errorMessage = error.message;
-    }
-    
-    setError(errorMessage);
-    toast.error(errorMessage);
-  } finally {
-    setActionLoading(false);
-    setShowRenewConfirm(false);
-    setRenewPlanData(null);
-  }
-};
+  };
 
   // Function to fetch invoices
   const fetchInvoices = useCallback(async () => {
@@ -544,7 +572,13 @@ const handleRenewPayment = async () => {
       setInitialLoading(false);
       fetchInProgressRef.current = false;
     }
-  }, [fetchPlans, fetchInvoices, fetchSubscription, fetchRecentPlan, fetchPaymentHistory]);
+  }, [
+    fetchPlans,
+    fetchInvoices,
+    fetchSubscription,
+    fetchRecentPlan,
+    fetchPaymentHistory,
+  ]);
 
   // Initial fetch - only runs once
   useEffect(() => {
@@ -592,7 +626,13 @@ const handleRenewPayment = async () => {
       setLoading(false);
       fetchInProgressRef.current = false;
     }
-  }, [fetchPlans, fetchInvoices, fetchSubscription, fetchRecentPlan, fetchPaymentHistory]);
+  }, [
+    fetchPlans,
+    fetchInvoices,
+    fetchSubscription,
+    fetchRecentPlan,
+    fetchPaymentHistory,
+  ]);
 
   // Reset subscription ref when needed (e.g., after upgrade)
   const resetAndRefetchSubscription = useCallback(async () => {
@@ -604,30 +644,36 @@ const handleRenewPayment = async () => {
   // Updated calculateProratedUpgrade function using recent plan API data
   const calculateProratedUpgrade = useCallback(
     async (newPlan, currentPlan, subscriptionData) => {
-      const newPlanPrice = parseFloat(newPlan?.price) || 
-                          parseFloat(newPlan?.amount) || 
-                          parseFloat(newPlan?.base_price) || 0;
+      const newPlanPrice =
+        parseFloat(newPlan?.price) ||
+        parseFloat(newPlan?.amount) ||
+        parseFloat(newPlan?.base_price) ||
+        0;
       const gstPercentage = parseFloat(newPlan?.gst) || 18;
-      
+
       let recentPlan = recentPlanData;
       if (!recentPlan) {
         recentPlan = await fetchRecentPlan();
       }
-      
-      if (recentPlan && recentPlan.remainingAmount !== undefined && recentPlan.remainingAmount > 0) {
+
+      if (
+        recentPlan &&
+        recentPlan.remainingAmount !== undefined &&
+        recentPlan.remainingAmount > 0
+      ) {
         const remainingAmount = parseFloat(recentPlan.remainingAmount) || 0;
         const remainingDays = parseInt(recentPlan.remainingDays) || 0;
-        
+
         const discountPercentage = parseFloat(newPlan?.discount) || 0;
         const discountAmount = (newPlanPrice * discountPercentage) / 100;
         const discountedPrice = newPlanPrice - discountAmount;
-        
+
         let upgradeAmount = discountedPrice - remainingAmount;
         upgradeAmount = Math.max(0, upgradeAmount);
-        
+
         const gst = (upgradeAmount * gstPercentage) / 100;
         const totalAmount = upgradeAmount + gst;
-        
+
         return {
           baseAmount: newPlanPrice,
           discountPercentage: discountPercentage,
@@ -641,17 +687,17 @@ const handleRenewPayment = async () => {
           monthsRemaining: Math.ceil(remainingDays / 30),
           gstPercentage: gstPercentage,
           remainingAmount: remainingAmount,
-          usingRecentPlanData: true
+          usingRecentPlanData: true,
         };
       }
-      
+
       if (recentPlan && recentPlan.remainingAmount === 0) {
         const discountPercentage = parseFloat(newPlan?.discount) || 0;
         const discountAmount = (newPlanPrice * discountPercentage) / 100;
         const discountedPrice = newPlanPrice - discountAmount;
         const gst = (discountedPrice * gstPercentage) / 100;
         const totalAmount = discountedPrice + gst;
-        
+
         return {
           baseAmount: newPlanPrice,
           discountPercentage: discountPercentage,
@@ -665,19 +711,21 @@ const handleRenewPayment = async () => {
           monthsRemaining: 0,
           gstPercentage: gstPercentage,
           remainingAmount: 0,
-          usingRecentPlanData: true
+          usingRecentPlanData: true,
         };
       }
-      
-      console.warn("Recent plan data not available, using fallback calculation");
-      
+
+      console.warn(
+        "Recent plan data not available, using fallback calculation",
+      );
+
       if (!currentPlan || !subscriptionData) {
         const discountPercentage = parseFloat(newPlan?.discount) || 0;
         const discountAmount = (newPlanPrice * discountPercentage) / 100;
         const discountedPrice = newPlanPrice - discountAmount;
         const gst = (discountedPrice * gstPercentage) / 100;
         const totalAmount = discountedPrice + gst;
-        
+
         return {
           baseAmount: newPlanPrice,
           currentPlanRemaining: 0,
@@ -690,16 +738,16 @@ const handleRenewPayment = async () => {
           discountPercentage: discountPercentage,
           discountAmount: discountAmount,
           discountedAmount: discountedPrice,
-          usingRecentPlanData: false
+          usingRecentPlanData: false,
         };
       }
-      
+
       const discountPercentage = parseFloat(newPlan?.discount) || 0;
       const discountAmount = (newPlanPrice * discountPercentage) / 100;
       const discountedPrice = newPlanPrice - discountAmount;
       const gst = (discountedPrice * gstPercentage) / 100;
       const totalAmount = discountedPrice + gst;
-      
+
       return {
         baseAmount: newPlanPrice,
         discountPercentage: discountPercentage,
@@ -712,7 +760,7 @@ const handleRenewPayment = async () => {
         daysRemaining: 0,
         monthsRemaining: 0,
         gstPercentage: gstPercentage,
-        usingRecentPlanData: false
+        usingRecentPlanData: false,
       };
     },
     [getUserId, fetchRecentPlan, recentPlanData],
@@ -722,21 +770,21 @@ const handleRenewPayment = async () => {
   const handleUpgrade = useCallback(
     async (plan) => {
       setSelectedPlan(plan);
-      
+
       try {
         // Hide the subscription form and show upgrade form
         setShowChangePlanForm(false);
-        
+
         // Fetch the latest recent plan data
         const recentPlan = await fetchRecentPlan();
-        
+
         // Calculate pricing with the latest data
         const pricing = await calculateProratedUpgrade(
           plan,
           currentPlan,
           subscription,
         );
-        
+
         setUpgradeData({
           plan_id: plan.id,
           business_type_id: user?.business_type_id || "",
@@ -754,10 +802,12 @@ const handleRenewPayment = async () => {
           months_remaining: pricing.monthsRemaining,
           actual_paid_amount: pricing.actualPaidAmount || 0,
           gstPercentage: pricing.gstPercentage,
-          recent_plan_remaining_amount: recentPlan?.remainingAmount || pricing.currentPlanRemaining,
-          recent_plan_remaining_days: recentPlan?.remainingDays || pricing.daysRemaining,
+          recent_plan_remaining_amount:
+            recentPlan?.remainingAmount || pricing.currentPlanRemaining,
+          recent_plan_remaining_days:
+            recentPlan?.remainingDays || pricing.daysRemaining,
         });
-        
+
         // Show the upgrade form
         setShowUpgradeForm(true);
       } catch (error) {
@@ -767,30 +817,41 @@ const handleRenewPayment = async () => {
         setShowChangePlanForm(true);
       }
     },
-    [calculateProratedUpgrade, currentPlan, subscription, user, getUserId, fetchRecentPlan],
+    [
+      calculateProratedUpgrade,
+      currentPlan,
+      subscription,
+      user,
+      getUserId,
+      fetchRecentPlan,
+    ],
   );
 
   // Updated handlePlanUpgrade function
   const handlePlanUpgrade = async (e) => {
     e.preventDefault();
-    
-    if (!upgradeData.plan_id || !upgradeData.customer_id || !upgradeData.customer_phone) {
+
+    if (
+      !upgradeData.plan_id ||
+      !upgradeData.customer_id ||
+      !upgradeData.customer_phone
+    ) {
       setError("Please fill all required fields");
       return;
     }
-    
+
     if (upgradeData.upgrade_amount < 0) {
       setError("Invalid upgrade amount calculation");
       return;
     }
-    
+
     setActionLoading(true);
     setError(null);
     const loadingToast = toast.loading("Processing upgrade...");
-    
+
     try {
       const amountToSend = parseFloat(upgradeData.total_amount || 0);
-      
+
       const upgradePayload = {
         amount: amountToSend,
         plan_id: upgradeData.plan_id,
@@ -799,24 +860,27 @@ const handleRenewPayment = async () => {
         customer_phone: upgradeData.customer_phone,
         upgrade_amount: upgradeData.upgrade_amount,
         remaining_amount: upgradeData.current_plan_remaining,
-        days_remaining: upgradeData.days_remaining
+        days_remaining: upgradeData.days_remaining,
       };
-      
+
       console.log("Sending upgrade payload:", upgradePayload);
-      
+
       const upgradeResponse = await billingAPI.upgradePlan(upgradePayload);
       const responseData = upgradeResponse?.data;
-      
+
       if (responseData?.session_id) {
         toast.success("Upgrade initiated! Redirecting to payment...", {
           id: loadingToast,
         });
-        
+
         const Cashfree = await loadCashfreeSDK();
         const cashfree = new Cashfree({
-          mode: import.meta.env.VITE_CASHFREE_MODE === "production" ? "production" : "sandbox",
+          mode:
+            import.meta.env.VITE_CASHFREE_MODE === "production"
+              ? "production"
+              : "sandbox",
         });
-        
+
         const orderInfo = {
           paymentSessionId: responseData.session_id,
           planName: selectedPlan?.name || "Plan Upgrade",
@@ -828,18 +892,20 @@ const handleRenewPayment = async () => {
             fromPlan: currentPlan?.name,
             toPlan: selectedPlan?.name,
             remainingAmount: upgradeData.current_plan_remaining,
-            upgradeAmount: upgradeData.upgrade_amount
-          }
+            upgradeAmount: upgradeData.upgrade_amount,
+          },
         };
         localStorage.setItem("pendingPayment", JSON.stringify(orderInfo));
-        
+
         if (amountToSend > 0) {
           await cashfree.checkout({
             paymentSessionId: responseData.session_id,
             redirectTarget: "_self",
           });
         } else {
-          toast.success("Plan upgraded successfully! Your new plan is now active.");
+          toast.success(
+            "Plan upgraded successfully! Your new plan is now active.",
+          );
           setShowUpgradeForm(false);
           setSelectedPlan(null);
           setUpgradeData({
@@ -865,7 +931,7 @@ const handleRenewPayment = async () => {
     } catch (error) {
       toast.dismiss(loadingToast);
       console.error("Failed to upgrade plan:", error);
-      
+
       let errorMessage = "Upgrade failed. Please try again.";
       if (error.message?.includes("customer_id")) {
         errorMessage = "Invalid customer ID format. Please try again.";
@@ -876,7 +942,7 @@ const handleRenewPayment = async () => {
       } else if (error.message) {
         errorMessage = error.message;
       }
-      
+
       setError(errorMessage);
       toast.error(errorMessage);
     } finally {
@@ -896,7 +962,11 @@ const handleRenewPayment = async () => {
 
   const handlePlanPurchase = async (e) => {
     e.preventDefault();
-    if (!purchaseData.plan_id || !purchaseData.customer_id || !purchaseData.amount) {
+    if (
+      !purchaseData.plan_id ||
+      !purchaseData.customer_id ||
+      !purchaseData.amount
+    ) {
       setError("Please fill all required fields");
       return;
     }
@@ -921,7 +991,10 @@ const handleRenewPayment = async () => {
 
         const Cashfree = await loadCashfreeSDK();
         const cashfree = new Cashfree({
-          mode: import.meta.env.VITE_CASHFREE_MODE === "production" ? "production" : "sandbox",
+          mode:
+            import.meta.env.VITE_CASHFREE_MODE === "production"
+              ? "production"
+              : "sandbox",
         });
 
         const orderInfo = {
@@ -1014,12 +1087,18 @@ const handleRenewPayment = async () => {
 
   const stats = {
     totalSpent: payments?.reduce((sum, p) => sum + (p.amount || 0), 0) || 0,
-    successfulPayments: payments?.filter((p) => p.status === "succeeded" || p.status === "paid").length || 0,
+    successfulPayments:
+      payments?.filter((p) => p.status === "succeeded" || p.status === "paid")
+        .length || 0,
     failedPayments: payments?.filter((p) => p.status === "failed").length || 0,
-    pendingPayments: payments?.filter((p) => p.status === "pending").length || 0,
+    pendingPayments:
+      payments?.filter((p) => p.status === "pending").length || 0,
     nextBilling: subscription?.currentPeriodEnd || null,
     daysUntilBilling: subscription?.currentPeriodEnd
-      ? Math.ceil((new Date(subscription.currentPeriodEnd) - new Date()) / (1000 * 60 * 60 * 24))
+      ? Math.ceil(
+          (new Date(subscription.currentPeriodEnd) - new Date()) /
+            (1000 * 60 * 60 * 24),
+        )
       : 0,
   };
 
@@ -1047,7 +1126,9 @@ const handleRenewPayment = async () => {
               </p>
             )}
           </div>
-          <div className={`p-3 rounded-xl bg-gradient-to-br ${color} shadow-lg`}>
+          <div
+            className={`p-3 rounded-xl bg-gradient-to-br ${color} shadow-lg`}
+          >
             <Icon className="w-5 h-5 text-white" />
           </div>
         </div>
@@ -1102,17 +1183,21 @@ const handleRenewPayment = async () => {
                   }`}
                 >
                   {error ? (
-                    <FiAlertCircle className={`w-5 h-5 ${error ? "text-red-600 dark:text-red-400" : "text-green-600 dark:text-green-400"}`} />
+                    <FiAlertCircle
+                      className={`w-5 h-5 ${error ? "text-red-600 dark:text-red-400" : "text-green-600 dark:text-green-400"}`}
+                    />
                   ) : (
                     <FiCheckCircle className="w-5 h-5 text-green-600 dark:text-green-400" />
                   )}
                 </div>
                 <div className="flex-1">
-                  <p className={`text-sm font-medium ${
-                    error
-                      ? "text-red-800 dark:text-red-200"
-                      : "text-green-800 dark:text-green-200"
-                  }`}>
+                  <p
+                    className={`text-sm font-medium ${
+                      error
+                        ? "text-red-800 dark:text-red-200"
+                        : "text-green-800 dark:text-green-200"
+                    }`}
+                  >
                     {error || successMessage}
                   </p>
                 </div>
@@ -1150,13 +1235,13 @@ const handleRenewPayment = async () => {
               {showChangePlanForm
                 ? "Change Your Plan"
                 : showUpgradeForm
-                ? "Upgrade Plan"
-                : "Manage your subscription and billing information"}
+                  ? "Upgrade Plan"
+                  : "Manage your subscription and billing information"}
             </p>
           </div>
 
           <div className="flex items-center space-x-3">
-            {(showChangePlanForm || showUpgradeForm) ? (
+            {showChangePlanForm || showUpgradeForm ? (
               <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }}>
                 <Button
                   variant="outline"
@@ -1178,7 +1263,9 @@ const handleRenewPayment = async () => {
                   onClick={() => refreshData()}
                   className="p-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shadow-sm"
                 >
-                  <FiRefreshCw className={`w-5 h-5 text-gray-600 dark:text-gray-300 ${loading ? "animate-spin" : ""}`} />
+                  <FiRefreshCw
+                    className={`w-5 h-5 text-gray-600 dark:text-gray-300 ${loading ? "animate-spin" : ""}`}
+                  />
                 </motion.button>
               </>
             )}
@@ -1240,7 +1327,7 @@ const handleRenewPayment = async () => {
                         subtitle={`${((stats.successfulPayments / (payments.length || 1)) * 100).toFixed(1)}% success rate`}
                         delay={0.2}
                       />
-                      
+
                       <StatCard
                         title="Pending"
                         value={stats.pendingPayments}
@@ -1250,10 +1337,18 @@ const handleRenewPayment = async () => {
                       />
                       <StatCard
                         title="Next Billing"
-                        value={stats.daysUntilBilling > 0 ? `${stats.daysUntilBilling} days` : "Today"}
+                        value={
+                          stats.daysUntilBilling > 0
+                            ? `${stats.daysUntilBilling} days`
+                            : "Today"
+                        }
                         icon={FiCalendar}
                         color="from-purple-500 to-indigo-500"
-                        subtitle={stats.nextBilling ? new Date(stats.nextBilling).toLocaleDateString() : "N/A"}
+                        subtitle={
+                          stats.nextBilling
+                            ? new Date(stats.nextBilling).toLocaleDateString()
+                            : "N/A"
+                        }
                         delay={0.5}
                       />
                     </>
@@ -1278,9 +1373,13 @@ const handleRenewPayment = async () => {
                         No Upgrades Available
                       </h3>
                       <p className="text-gray-600 dark:text-gray-400 mb-4">
-                        You are currently on our highest tier plan. No upgrades are available at this time.
+                        You are currently on our highest tier plan. No upgrades
+                        are available at this time.
                       </p>
-                      <Button variant="outline" onClick={() => setShowChangePlanForm(false)}>
+                      <Button
+                        variant="outline"
+                        onClick={() => setShowChangePlanForm(false)}
+                      >
                         Back to Overview
                       </Button>
                     </div>
@@ -1313,7 +1412,8 @@ const handleRenewPayment = async () => {
                           Upgrade Plan
                         </h2>
                         <p className="text-gray-600 dark:text-gray-400 mt-1">
-                          Review and confirm your upgrade to {selectedPlan?.name || "Selected Plan"}
+                          Review and confirm your upgrade to{" "}
+                          {selectedPlan?.name || "Selected Plan"}
                         </p>
                       </div>
                       <Button
@@ -1389,7 +1489,7 @@ const handleRenewPayment = async () => {
                         <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
                           Upgrade Calculation
                         </h3>
-                        
+
                         {/* Show remaining amount from recent plan */}
                         {upgradeData.current_plan_remaining > 0 && (
                           <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3 mb-3">
@@ -1398,15 +1498,19 @@ const handleRenewPayment = async () => {
                             </p>
                             <div className="flex justify-between items-center">
                               <span className="text-blue-700 dark:text-blue-300">
-                                Remaining Days: {upgradeData.days_remaining || 0} days
+                                Remaining Days:{" "}
+                                {upgradeData.days_remaining || 0} days
                               </span>
                               <span className="font-medium text-blue-800 dark:text-blue-200">
-                                -₹{parseFloat(upgradeData.current_plan_remaining || 0).toFixed(2)}
+                                -₹
+                                {parseFloat(
+                                  upgradeData.current_plan_remaining || 0,
+                                ).toFixed(2)}
                               </span>
                             </div>
                           </div>
                         )}
-                        
+
                         <div className="space-y-3">
                           <div className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-3">
                             <p className="text-sm text-purple-800 dark:text-purple-200 font-medium mb-2">
@@ -1417,18 +1521,23 @@ const handleRenewPayment = async () => {
                                 New Plan Price:
                               </span>
                               <span className="font-medium text-purple-800 dark:text-purple-200">
-                                ₹{parseFloat(upgradeData.amount || 0).toFixed(2)}
+                                ₹
+                                {parseFloat(upgradeData.amount || 0).toFixed(2)}
                               </span>
                             </div>
-                            
+
                             {upgradeData.discount_percentage > 0 && (
                               <>
                                 <div className="flex justify-between items-center mt-1">
                                   <span className="text-purple-700 dark:text-purple-300">
-                                    Discount ({upgradeData.discount_percentage}%):
+                                    Discount ({upgradeData.discount_percentage}
+                                    %):
                                   </span>
                                   <span className="font-medium text-green-600 dark:text-green-400">
-                                    -₹{parseFloat(upgradeData.discount_amount || 0).toFixed(2)}
+                                    -₹
+                                    {parseFloat(
+                                      upgradeData.discount_amount || 0,
+                                    ).toFixed(2)}
                                   </span>
                                 </div>
                                 <div className="flex justify-between items-center mt-1 border-t border-purple-200 dark:border-purple-700 pt-2">
@@ -1436,7 +1545,10 @@ const handleRenewPayment = async () => {
                                     After Discount:
                                   </span>
                                   <span className="font-semibold text-purple-800 dark:text-purple-200">
-                                    ₹{parseFloat(upgradeData.discounted_amount || 0).toFixed(2)}
+                                    ₹
+                                    {parseFloat(
+                                      upgradeData.discounted_amount || 0,
+                                    ).toFixed(2)}
                                   </span>
                                 </div>
                               </>
@@ -1450,10 +1562,14 @@ const handleRenewPayment = async () => {
                               </p>
                               <div className="flex justify-between items-center">
                                 <span className="text-green-700 dark:text-green-300">
-                                  Remaining Credit ({upgradeData.days_remaining || 0} days left):
+                                  Remaining Credit (
+                                  {upgradeData.days_remaining || 0} days left):
                                 </span>
                                 <span className="font-medium text-green-800 dark:text-green-200">
-                                  -₹{parseFloat(upgradeData.current_plan_remaining || 0).toFixed(2)}
+                                  -₹
+                                  {parseFloat(
+                                    upgradeData.current_plan_remaining || 0,
+                                  ).toFixed(2)}
                                 </span>
                               </div>
                               <div className="flex justify-between items-center mt-2 pt-2 border-t border-green-200 dark:border-green-700">
@@ -1461,7 +1577,10 @@ const handleRenewPayment = async () => {
                                   Upgrade Base Amount:
                                 </span>
                                 <span className="font-semibold text-green-800 dark:text-green-200">
-                                  ₹{parseFloat(upgradeData.upgrade_amount || 0).toFixed(2)}
+                                  ₹
+                                  {parseFloat(
+                                    upgradeData.upgrade_amount || 0,
+                                  ).toFixed(2)}
                                 </span>
                               </div>
                             </div>
@@ -1481,7 +1600,10 @@ const handleRenewPayment = async () => {
                                 Total Amount to Pay
                               </span>
                               <span className="text-2xl font-bold text-primary-600 dark:text-primary-400">
-                                ₹{parseFloat(upgradeData.total_amount || 0).toFixed(2)}
+                                ₹
+                                {parseFloat(
+                                  upgradeData.total_amount || 0,
+                                ).toFixed(2)}
                               </span>
                             </div>
                           </div>
@@ -1490,16 +1612,19 @@ const handleRenewPayment = async () => {
                             <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-3 mt-4">
                               <p className="text-sm text-green-800 dark:text-green-200">
                                 <strong>💰 You're saving:</strong> ₹
-                                {parseFloat(upgradeData.current_plan_remaining || 0).toFixed(2)}{" "}
+                                {parseFloat(
+                                  upgradeData.current_plan_remaining || 0,
+                                ).toFixed(2)}{" "}
                                 from your current plan!
                               </p>
                             </div>
                           )}
-                          
+
                           {upgradeData.total_amount === 0 && (
                             <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3 mt-4">
                               <p className="text-sm text-blue-800 dark:text-blue-200">
-                                <strong>🎉 Free Upgrade!</strong> Your remaining plan value covers the full cost of the new plan.
+                                <strong>🎉 Free Upgrade!</strong> Your remaining
+                                plan value covers the full cost of the new plan.
                               </p>
                             </div>
                           )}
@@ -1524,7 +1649,9 @@ const handleRenewPayment = async () => {
                           loading={actionLoading}
                           disabled={actionLoading}
                         >
-                          {actionLoading ? "Processing..." : "Proceed to Payment"}
+                          {actionLoading
+                            ? "Processing..."
+                            : "Proceed to Payment"}
                         </Button>
                       </div>
                     </form>
@@ -1607,7 +1734,10 @@ const handleRenewPayment = async () => {
                           </div>
                           <div className="space-y-3">
                             {Array.from({ length: 3 }).map((_, index) => (
-                              <div key={index} className="border-b border-gray-200 dark:border-gray-700 pb-3">
+                              <div
+                                key={index}
+                                className="border-b border-gray-200 dark:border-gray-700 pb-3"
+                              >
                                 <div className="flex items-center justify-between">
                                   <div className="flex-1">
                                     <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/3 mb-2"></div>
@@ -1625,14 +1755,14 @@ const handleRenewPayment = async () => {
                     <>
                       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                         <SubscriptionCard
-  subscription={subscription}
-  onUpgrade={() => setShowChangePlanForm(true)}
-  onCancel={() => setShowCancelConfirm(true)}
-  onReactivate={handleReactivate}
-  onUpdatePaymentMethod={handleUpdatePaymentMethod}
-  onRenew={() => handleRenew()} // Add this line
-  loading={actionLoading}
-/>
+                          subscription={subscription}
+                          onUpgrade={() => setShowChangePlanForm(true)}
+                          onCancel={() => setShowCancelConfirm(true)}
+                          onReactivate={handleReactivate}
+                          onUpdatePaymentMethod={handleUpdatePaymentMethod}
+                          onRenew={() => handleRenew()} // Add this line
+                          loading={actionLoading}
+                        />
 
                         <motion.div
                           initial={{ opacity: 0, x: 20 }}
@@ -1651,7 +1781,9 @@ const handleRenewPayment = async () => {
                                   Plan Name
                                 </span>
                                 <span className="font-medium text-gray-900 dark:text-white">
-                                  {subscription.plan || subscription.planDetails?.name || "N/A"}
+                                  {subscription.plan ||
+                                    subscription.planDetails?.name ||
+                                    "N/A"}
                                 </span>
                               </div>
 
@@ -1660,7 +1792,17 @@ const handleRenewPayment = async () => {
                                   Price
                                 </span>
                                 <span className="font-medium text-gray-900 dark:text-white">
-                                  <span className="text-lg font-bold">₹{parseFloat(subscription.amount || 0).toFixed(2)}</span>/{subscription.planDetails?.duration_days || "month"} Days
+                                  <span className="text-lg font-bold">
+                                    ₹
+                                   {(
+  parseFloat(subscription.planDetails?.price || 0) *
+  (1 - parseFloat(subscription.planDetails?.discount || 0) / 100)
+).toFixed(2)}
+                                  </span>
+                                  /
+                                  {subscription.planDetails?.duration_days ||
+                                    "month"}{" "}
+                                  Days
                                 </span>
                               </div>
 
@@ -1670,7 +1812,11 @@ const handleRenewPayment = async () => {
                                 </span>
                                 <StatusBadge
                                   status={subscription.status || "active"}
-                                  variant={subscription.status === "active" ? "success" : "warning"}
+                                  variant={
+                                    subscription.status === "active"
+                                      ? "success"
+                                      : "warning"
+                                  }
                                 />
                               </div>
 
@@ -1680,7 +1826,9 @@ const handleRenewPayment = async () => {
                                     Start Date
                                   </span>
                                   <span className="text-sm text-gray-900 dark:text-white">
-                                    {new Date(subscription.currentPeriodStart).toLocaleDateString()}
+                                    {new Date(
+                                      subscription.currentPeriodStart,
+                                    ).toLocaleDateString()}
                                   </span>
                                 </div>
                               )}
@@ -1691,32 +1839,39 @@ const handleRenewPayment = async () => {
                                     End Date
                                   </span>
                                   <span className="text-sm text-gray-900 dark:text-white">
-                                    {new Date(subscription.currentPeriodEnd).toLocaleDateString()}
+                                    {new Date(
+                                      subscription.currentPeriodEnd,
+                                    ).toLocaleDateString()}
                                   </span>
                                 </div>
                               )}
 
-                              {recentPlanData && recentPlanData.remainingDays > 0 && (
-                                <div className="flex items-center justify-between">
-                                  <span className="text-gray-600 dark:text-gray-400">
-                                    Remaining Days
-                                  </span>
-                                  <span className="text-sm font-medium text-blue-600 dark:text-blue-400">
-                                    {recentPlanData.remainingDays} days
-                                  </span>
-                                </div>
-                              )}
+                              {recentPlanData &&
+                                recentPlanData.remainingDays > 0 && (
+                                  <div className="flex items-center justify-between">
+                                    <span className="text-gray-600 dark:text-gray-400">
+                                      Remaining Days
+                                    </span>
+                                    <span className="text-sm font-medium text-blue-600 dark:text-blue-400">
+                                      {recentPlanData.remainingDays} days
+                                    </span>
+                                  </div>
+                                )}
 
-                              {recentPlanData && recentPlanData.remainingAmount > 0 && (
-                                <div className="flex items-center justify-between">
-                                  <span className="text-gray-600 dark:text-gray-400">
-                                    Remaining Value
-                                  </span>
-                                  <span className="text-sm font-medium text-green-600 dark:text-green-400">
-                                    ₹{parseFloat(recentPlanData.remainingAmount).toFixed(2)}
-                                  </span>
-                                </div>
-                              )}
+                              {recentPlanData &&
+                                recentPlanData.remainingAmount > 0 && (
+                                  <div className="flex items-center justify-between">
+                                    <span className="text-gray-600 dark:text-gray-400">
+                                      Remaining Value
+                                    </span>
+                                    <span className="text-sm font-medium text-green-600 dark:text-green-400">
+                                      ₹
+                                      {parseFloat(
+                                        recentPlanData.remainingAmount,
+                                      ).toFixed(2)}
+                                    </span>
+                                  </div>
+                                )}
 
                               {subscription.paymentId && (
                                 <div className="flex items-center justify-between">
@@ -1767,7 +1922,9 @@ const handleRenewPayment = async () => {
                               onClick={() => refreshData()}
                               className="p-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shadow-sm"
                             >
-                              <FiRefreshCw className={`w-4 h-4 text-gray-600 dark:text-gray-300 ${loading ? "animate-spin" : ""}`} />
+                              <FiRefreshCw
+                                className={`w-4 h-4 text-gray-600 dark:text-gray-300 ${loading ? "animate-spin" : ""}`}
+                              />
                             </motion.button>
                           </div>
                         </div>
@@ -1838,7 +1995,8 @@ const handleRenewPayment = async () => {
                     transition={{ delay: 0.3 }}
                     className="text-gray-600 dark:text-gray-400 mb-6"
                   >
-                    Are you sure you want to cancel your subscription? This action cannot be undone.
+                    Are you sure you want to cancel your subscription? This
+                    action cannot be undone.
                   </motion.p>
 
                   <motion.div
@@ -1847,7 +2005,11 @@ const handleRenewPayment = async () => {
                     transition={{ delay: 0.4 }}
                     className="flex space-x-3"
                   >
-                    <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="flex-1">
+                    <motion.div
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      className="flex-1"
+                    >
                       <Button
                         variant="outline"
                         onClick={() => setShowCancelConfirm(false)}
@@ -1856,7 +2018,11 @@ const handleRenewPayment = async () => {
                         Keep Subscription
                       </Button>
                     </motion.div>
-                    <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="flex-1">
+                    <motion.div
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      className="flex-1"
+                    >
                       <Button
                         variant="danger"
                         onClick={handleCancel}
@@ -1920,7 +2086,8 @@ const handleRenewPayment = async () => {
                       {selectedPlan.name}
                     </h4>
                     <p className="text-2xl font-bold text-primary-600 dark:text-primary-400">
-                      ₹{selectedPlan.price || selectedPlan.amount || 0}/{selectedPlan.interval || "month"}
+                      ₹{selectedPlan.price || selectedPlan.amount || 0}/
+                      {selectedPlan.interval || "month"}
                     </p>
                     <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
                       {selectedPlan.description || "No description available"}
@@ -1979,7 +2146,11 @@ const handleRenewPayment = async () => {
                     )}
 
                     <div className="flex space-x-3">
-                      <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="flex-1">
+                      <motion.div
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        className="flex-1"
+                      >
                         <Button
                           type="button"
                           variant="outline"
@@ -1989,13 +2160,19 @@ const handleRenewPayment = async () => {
                           Cancel
                         </Button>
                       </motion.div>
-                      <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="flex-1">
+                      <motion.div
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        className="flex-1"
+                      >
                         <Button
                           type="submit"
                           disabled={actionLoading}
                           className="w-full"
                         >
-                          {actionLoading ? "Processing..." : "Complete Purchase"}
+                          {actionLoading
+                            ? "Processing..."
+                            : "Complete Purchase"}
                         </Button>
                       </motion.div>
                     </div>
@@ -2042,7 +2219,9 @@ const handleRenewPayment = async () => {
                         Date
                       </p>
                       <p className="font-medium text-gray-900 dark:text-white">
-                        {new Date(selectedInvoice.date || selectedInvoice.createdAt).toLocaleDateString()}
+                        {new Date(
+                          selectedInvoice.date || selectedInvoice.createdAt,
+                        ).toLocaleDateString()}
                       </p>
                     </div>
                     <div>
@@ -2050,7 +2229,12 @@ const handleRenewPayment = async () => {
                         Amount
                       </p>
                       <p className="font-medium text-gray-900 dark:text-white">
-                        ₹{(selectedInvoice.amount || selectedInvoice.total || 0).toFixed(2)}
+                        ₹
+                        {(
+                          selectedInvoice.amount ||
+                          selectedInvoice.total ||
+                          0
+                        ).toFixed(2)}
                       </p>
                     </div>
                     <div>
@@ -2059,7 +2243,11 @@ const handleRenewPayment = async () => {
                       </p>
                       <StatusBadge
                         status={selectedInvoice.status || "paid"}
-                        variant={selectedInvoice.status === "paid" ? "success" : "warning"}
+                        variant={
+                          selectedInvoice.status === "paid"
+                            ? "success"
+                            : "warning"
+                        }
                       />
                     </div>
                   </div>
@@ -2086,7 +2274,7 @@ const handleRenewPayment = async () => {
         </AnimatePresence>
       </motion.div>
       {/* Renew Subscription Modal */}
-<AnimatePresence>
+      <AnimatePresence>
   {showRenewConfirm && renewPlanData && (
     <motion.div
       initial={{ opacity: 0 }}
@@ -2142,14 +2330,35 @@ const handleRenewPayment = async () => {
             <h4 className="font-semibold text-gray-900 dark:text-white mb-3">
               {renewPlanData.plan_name}
             </h4>
-            
+
             <div className="space-y-2 text-left">
               <div className="flex justify-between">
-                <span className="text-gray-600 dark:text-gray-400">Plan Price:</span>
+                <span className="text-gray-600 dark:text-gray-400">
+                  Original Price:
+                </span>
                 <span className="font-medium text-gray-900 dark:text-white">
                   ₹{renewPlanData.original_amount.toFixed(2)}
                 </span>
               </div>
+              
+              {/* Show discount if applicable */}
+              {renewPlanData.discount_percentage > 0 && (
+                <>
+                  <div className="flex justify-between text-green-600 dark:text-green-400">
+                    <span>Discount ({renewPlanData.discount_percentage}%):</span>
+                    <span>-₹{renewPlanData.discount_amount?.toFixed(2) || (renewPlanData.original_amount * renewPlanData.discount_percentage / 100).toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600 dark:text-gray-400">
+                      Subtotal (after discount):
+                    </span>
+                    <span className="font-medium text-gray-900 dark:text-white">
+                      ₹{renewPlanData.discounted_amount?.toFixed(2) || (renewPlanData.original_amount - (renewPlanData.original_amount * renewPlanData.discount_percentage / 100)).toFixed(2)}
+                    </span>
+                  </div>
+                </>
+              )}
+              
               <div className="flex justify-between">
                 <span className="text-gray-600 dark:text-gray-400">
                   GST ({renewPlanData.gst_percentage}%):
@@ -2158,6 +2367,7 @@ const handleRenewPayment = async () => {
                   +₹{renewPlanData.gst_amount.toFixed(2)}
                 </span>
               </div>
+              
               <div className="flex justify-between pt-2 border-t border-gray-200 dark:border-gray-600">
                 <span className="font-semibold text-gray-900 dark:text-white">
                   Total Amount:
@@ -2175,7 +2385,9 @@ const handleRenewPayment = async () => {
               animate={{ opacity: 1, y: 0 }}
               className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 rounded-lg"
             >
-              <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+              <p className="text-sm text-red-600 dark:text-red-400">
+                {error}
+              </p>
             </motion.div>
           )}
 
@@ -2185,7 +2397,11 @@ const handleRenewPayment = async () => {
             transition={{ delay: 0.4 }}
             className="flex space-x-3"
           >
-            <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="flex-1">
+            <motion.div
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              className="flex-1"
+            >
               <Button
                 variant="outline"
                 onClick={() => {
@@ -2198,7 +2414,11 @@ const handleRenewPayment = async () => {
                 Cancel
               </Button>
             </motion.div>
-            <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="flex-1">
+            <motion.div
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              className="flex-1"
+            >
               <Button
                 variant="primary"
                 onClick={handleRenewPayment}

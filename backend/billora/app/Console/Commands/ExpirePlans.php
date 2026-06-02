@@ -59,7 +59,7 @@ class ExpirePlans extends Command
                 ->first();
 
             // Only deactivate if latest plan is expired
-            if ($latestPlan && $latestPlan->end_date < $today) {
+            if ($latestPlan && \Carbon\Carbon::parse($latestPlan->end_date)->addDays(7)->lt($today)) { 
                 Customers::where('id', $userId)
                     ->where('is_active', true)
                     ->update(['is_active' => false]);

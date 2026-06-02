@@ -31,10 +31,10 @@ const SubscriptionCard = ({
     return discountedPrice;
   };
   
-  console.log("checking SubscriptonCard - subscription data:", subscription);
+  console.log("checking SubscriptonCard", subscription);
 
   const getOriginalPrice = () => {
-    return parseFloat(subscription?.amount || subscription?.planDetails?.price || 0);
+    return parseFloat( subscription?.planDetails?.price || 0);
   };
 
   const getDiscountPercentage = () => {
