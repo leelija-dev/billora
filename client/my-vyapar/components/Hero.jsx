@@ -189,13 +189,13 @@ const Hero = () => {
 
                       {screenState === 2 && (
                         <div className="absolute inset-0 fade-in">
-                          <img
+                          <Image
                             src="/image/dashboard.webp"
                             alt="PC Dashboard"
-                    
-                            className="object-fill object-top w-full h-full"
-                          
-                          
+                            fill
+                            className="object-fill object-top"
+                            priority
+                            unoptimized={true}
                           />
                           <div className="absolute inset-0 bg-gradient-to-t from-black/10 to-transparent pointer-events-none" />
                         </div>
@@ -238,12 +238,12 @@ const Hero = () => {
 
                       {screenState === 2 && (
                         <div className="relative w-full h-full">
-                         <img
+                          <Image
                             src="/image/mobile-image.webp"
                             alt="Mobile App"
-                          
+                            fill
                             className="object-fill object-top"
-                           
+                            unoptimized={true}
                           />
                         </div>
                       )}
@@ -374,12 +374,12 @@ const Hero = () => {
                   </div>
                   <div className="flex-1 w-full max-w-[280px] sm:max-w-sm">
                     <div className="relative aspect-video bg-white/10 rounded-lg sm:rounded-xl overflow-hidden border border-white/20 shadow-xl">
-                     <img
+                      <Image
                         src="/image/dashboard.webp"
                         alt="Dashboard"
                         fill
                         className="object-fill opacity-90 hover:opacity-100 transition-opacity"
-                       
+                        unoptimized={true}
                       />
                     </div>
                   </div>
