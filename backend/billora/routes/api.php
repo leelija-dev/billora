@@ -208,6 +208,8 @@ Route::prefix('cashfree')->group(function () {
     Route::post('/upgrade-plan', [PaymentController::class, 'upgradePlan']);
     Route::get('/verify/{order_id}', [PaymentController::class, 'verifyPayment']);
     Route::post('/renew-plan',[PaymentController::class, 'renewPlan']);
+    Route::post('/free-trial', [PaymentController::class, 'freeTrial']);
+
 });
 
 //plan expire reminder
