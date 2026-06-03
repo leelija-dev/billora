@@ -940,7 +940,7 @@ body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height
                 "customer_details" => [
                     "customer_id" => (string)$customer->id,
                     "customer_email" => $customer->email,
-                    "customer_phone" => $request->customer_phone
+                    "customer_phone" => $customer->  phone
                 ],
                 "order_meta" => [
                     "return_url" => url('/api/cashfree/verify/' . $orderId)
