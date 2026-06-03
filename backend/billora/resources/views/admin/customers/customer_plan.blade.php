@@ -1,5 +1,5 @@
 @extends('admin.main-layout')
-@section('title','Customer Plan Details')
+@section('title', 'Customer Plan Details')
 @section('content')
     <style>
         * {
@@ -481,20 +481,34 @@
                 opacity: 0;
                 transform: translateY(10px);
             }
+
             to {
                 opacity: 1;
                 transform: translateY(0);
             }
         }
 
-        .customer-header, .stat-item, .table-wrapper {
+        .customer-header,
+        .stat-item,
+        .table-wrapper {
             animation: fadeIn 0.4s ease forwards;
         }
 
-        .stat-item:nth-child(1) { animation-delay: 0.05s; }
-        .stat-item:nth-child(2) { animation-delay: 0.1s; }
-        .stat-item:nth-child(3) { animation-delay: 0.15s; }
-        .table-wrapper { animation-delay: 0.2s; }
+        .stat-item:nth-child(1) {
+            animation-delay: 0.05s;
+        }
+
+        .stat-item:nth-child(2) {
+            animation-delay: 0.1s;
+        }
+
+        .stat-item:nth-child(3) {
+            animation-delay: 0.15s;
+        }
+
+        .table-wrapper {
+            animation-delay: 0.2s;
+        }
     </style>
 
     <div class="main-content">
@@ -512,7 +526,8 @@
             <div class="customer-info-left">
                 <div class="customer-avatar-large">
                     <svg viewBox="0 0 24 24">
-                        <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                        <path
+                            d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
                     </svg>
                 </div>
                 <div class="customer-details">
@@ -520,13 +535,15 @@
                     <div class="customer-meta">
                         <div class="customer-meta-item">
                             <svg viewBox="0 0 24 24">
-                                <path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/>
+                                <path
+                                    d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z" />
                             </svg>
                             {{ $customer->email ?? '' }}
                         </div>
                         <div class="customer-meta-item">
                             <svg viewBox="0 0 24 24">
-                                <path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/>
+                                <path
+                                    d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z" />
                             </svg>
                             {{ $customer->phone ?? '' }}
                         </div>
@@ -535,7 +552,7 @@
             </div>
             <a href="{{ url()->previous() }}" class="back-button">
                 <svg viewBox="0 0 24 24">
-                    <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/>
+                    <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z" />
                 </svg>
                 Back to Customers
             </a>
@@ -546,14 +563,15 @@
             <div class="stat-item">
                 <div class="stat-icon">
                     <svg viewBox="0 0 24 24">
-                        <path d="M19 3h-4.18C14.4 1.84 13.3 1 12 1c-1.3 0-2.4.84-2.82 2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 0c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm0 15c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5z"/>
+                        <path
+                            d="M19 3h-4.18C14.4 1.84 13.3 1 12 1c-1.3 0-2.4.84-2.82 2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 0c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm0 15c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5z" />
                     </svg>
                 </div>
                 <div class="stat-value">{{ count($plans) }}</div>
                 <div class="stat-label">Total Plans</div>
                 <div class="stat-trend">
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M16 6l2.29 2.29-4.88 4.88-4-4L2 16.59 3.41 18l6-6 4 4 6.3-6.29L22 12V6z"/>
+                        <path d="M16 6l2.29 2.29-4.88 4.88-4-4L2 16.59 3.41 18l6-6 4 4 6.3-6.29L22 12V6z" />
                     </svg>
                     All subscriptions
                 </div>
@@ -562,14 +580,15 @@
             <div class="stat-item">
                 <div class="stat-icon">
                     <svg viewBox="0 0 24 24">
-                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
+                        <path
+                            d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15h-2v-2h2v2zm0-4h-2V7h2v6z" />
                     </svg>
                 </div>
                 <div class="stat-value">{{ $plans->where('status', 'active')->count() }}</div>
                 <div class="stat-label">Active Plans</div>
                 <div class="stat-trend">
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+                        <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
                     </svg>
                     Currently active
                 </div>
@@ -578,14 +597,16 @@
             <div class="stat-item">
                 <div class="stat-icon">
                     <svg viewBox="0 0 24 24">
-                        <path d="M11.5 2C6.81 2 3 5.81 3 10.5S6.81 19 11.5 19h.5v3l4-4-4-4v3h-.5C7.56 17 5 14.44 5 11.5S7.56 6 11.5 6 18 8.56 18 11.5c0 1.58-.66 3-1.73 4.05l1.42 1.42A6.96 6.96 0 0 0 20 11.5 8.5 8.5 0 0 0 11.5 2z"/>
+                        <path
+                            d="M11.5 2C6.81 2 3 5.81 3 10.5S6.81 19 11.5 19h.5v3l4-4-4-4v3h-.5C7.56 17 5 14.44 5 11.5S7.56 6 11.5 6 18 8.56 18 11.5c0 1.58-.66 3-1.73 4.05l1.42 1.42A6.96 6.96 0 0 0 20 11.5 8.5 8.5 0 0 0 11.5 2z" />
                     </svg>
                 </div>
                 <div class="stat-value">{{ $plans->where('payment_status', 'pending')->count() }}</div>
                 <div class="stat-label">Pending Payments</div>
                 <div class="stat-trend">
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
+                        <path
+                            d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" />
                     </svg>
                     Awaiting payment
                 </div>
@@ -595,7 +616,8 @@
         <!-- Plans Table Section -->
         <div class="section-title">
             <svg viewBox="0 0 24 24">
-                <path d="M19 3h-4.18C14.4 1.84 13.3 1 12 1c-1.3 0-2.4.84-2.82 2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 0c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm0 15c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5z"/>
+                <path
+                    d="M19 3h-4.18C14.4 1.84 13.3 1 12 1c-1.3 0-2.4.84-2.82 2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 0c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm0 15c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5z" />
             </svg>
             <h3>Plan History</h3>
             <span>{{ count($plans) }} Records</span>
@@ -614,6 +636,7 @@
                             <th>Payment Status</th>
                             <th>Start Date</th>
                             <th>End Date</th>
+                            <th>Update Expiry</th>
                             <th>Created</th>
                         </tr>
                     </thead>
@@ -621,26 +644,33 @@
                         @if (isset($plans) && count($plans) > 0)
                             @foreach ($plans as $plan)
                                 <tr>
-                                    <td style="font-weight: 600; color: #64748b;">{{ $plan->plan_id ?? ''}}</td>
+                                    <td style="font-weight: 600; color: #64748b;">{{ $plan->plan_id ?? '' }}</td>
                                     <td>
                                         <div class="plan-cell">
-                                            
-                                            <span class="plan-name-text">{{ ucfirst($plan->plan?->name ?? '') }}</span>
+                                            @if ($plan->plan_id == 0 && $plan->end_date == true)
+                                                <span class="plan-name-text">Free Trial</span>
+                                            @else
+                                                <span class="plan-name-text">{{ ucfirst($plan->plan?->name ?? '') }}</span>
+                                            @endif
                                         </div>
                                     </td>
                                     <td>
                                         @php
                                             $planStatus = strtolower(trim($plan->status ?? ''));
                                         @endphp
-                                        <span class="status-badge 
-                                            @if($planStatus == 'expired') status-expired
+                                        <span
+                                            class="status-badge 
+                                            @if ($planStatus == 'expired') status-expired
                                             @elseif($planStatus == 'active') status-active
-                                            @elseif($planStatus == 'cancelled') status-cancelled
-                                            @endif">
-                                            @if($planStatus == 'expired') Expired
-                                            @elseif($planStatus == 'active') Active
-                                            @elseif($planStatus == 'cancelled') Cancelled
-                                            @else {{ ucfirst($planStatus) }}
+                                            @elseif($planStatus == 'cancelled') status-cancelled @endif">
+                                            @if ($planStatus == 'expired')
+                                                Expired
+                                            @elseif($planStatus == 'active')
+                                                Active
+                                            @elseif($planStatus == 'cancelled')
+                                                Cancelled
+                                            @else
+                                                {{ ucfirst($planStatus) }}
                                             @endif
                                         </span>
                                     </td>
@@ -649,7 +679,7 @@
                                     </td>
                                     <td>
                                         <div class="payment-method-badge">
-                                            
+
                                             {{ $plan->payment_method ?? 'N/A' }}
                                         </div>
                                     </td>
@@ -657,23 +687,73 @@
                                         @php
                                             $status = strtolower(trim($plan->payment_status ?? ''));
                                         @endphp
-                                        <span class="status-badge 
-                                            @if($status == 'pending') payment-pending
+                                        <span
+                                            class="status-badge 
+                                            @if ($status == 'pending') payment-pending
                                             @elseif($status == 'success') payment-success
-                                            @elseif($status == 'failed') payment-failed
-                                            @endif">
-                                            @if($status == 'pending')Pending
-                                            @elseif($status == 'success')Success
-                                            @elseif($status == 'failed') Failed
-                                            @else {{ ucfirst($status) }}
+                                            @elseif($status == 'failed') payment-failed @endif">
+                                            @if ($status == 'pending')
+                                                Pending
+                                            @elseif($status == 'success')
+                                                Success
+                                            @elseif($status == 'failed')
+                                                Failed
+                                            @else
+                                                {{ ucfirst($status) }}
                                             @endif
                                         </span>
                                     </td>
                                     <td class="date-cell">
                                         {{ $plan->start_date ? $plan->start_date->format('d M Y') : 'N/A' }}
                                     </td>
-                                    <td class="date-cell">
-                                        {{ $plan->end_date ? $plan->end_date->format('d M Y') : 'N/A' }}
+                                    <td class="px-4 py-3">
+                                        <div class="flex items-center gap-2">
+                                            <span class="text-sm font-medium text-gray-700">
+                                                {{ $plan->end_date ? $plan->end_date->format('d M Y') : 'N/A' }}
+                                            </span>
+                                    </td>
+                                     <td class="px-4 py-3">
+                                            <div x-data="{ open: false }" class="relative">
+
+                                                <button @click="open = !open" type="button"
+                                                    class="inline-flex items-center rounded-lg bg-blue-50 px-3 py-1.5 text-xs font-medium text-blue-600 hover:bg-blue-100 transition">
+                                                    Edit
+
+                                                    <svg class="ml-1 h-4 w-4" :class="{ 'rotate-180': open }" fill="none"
+                                                        stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                                            stroke-width="2" d="M19 9l-7 7-7-7" />
+                                                    </svg>
+                                                </button>
+
+                                                <div x-show="open" @click.outside="open = false" x-transition
+                                                    class="absolute right-0 z-50 mt-2 w-72 rounded-xl border border-gray-200 bg-white p-4 shadow-xl">
+
+                                                    <form action="{{ route('admin.plans.update-end-date', $plan->id) }}"
+                                                        method="POST">
+                                                        @csrf
+
+                                                        <label class="mb-2 block text-xs font-medium text-gray-600">
+                                                            Select New Expiry Date
+                                                        </label>
+
+                                                        <input type="hidden" name="user_id" value="{{ $plan->user_id }}">
+
+                                                        <input type="date" name="new_end_date"
+                                                            value="{{ $plan->end_date ? $plan->end_date->format('Y-m-d') : '' }}"
+                                                            class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none"
+                                                            required>
+
+                                                        <button type="submit"
+                                                            class="mt-3 w-full rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 transition">
+                                                            Update Expiry Date
+                                                        </button>
+                                                    </form>
+
+                                                </div>
+
+                                            </div>
+                                        </div>
                                     </td>
                                     <td class="date-cell">
                                         {{ $plan->created_at ? $plan->created_at->format('d M Y') : 'N/A' }}
@@ -684,7 +764,7 @@
                         @else
                             <tr>
                                 <td colspan="9">
-                                    <div class="empty-state"> 
+                                    <div class="empty-state">
                                         {{-- <svg viewBox="0 0 24 24">
                                             <path d="M19 3h-4.18C14.4 1.84 13.3 1 12 1c-1.3 0-2.4.84-2.82 2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 0c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm0 15c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5z"/>
                                         </svg> --}}
@@ -698,11 +778,12 @@
                 </table>
             </div>
 
-            @if(isset($plans) && count($plans) > 0)
+            @if (isset($plans) && count($plans) > 0)
                 <div class="pagination-wrapper">
                     {{ $plans->links('pagination::tailwind') }}
                 </div>
             @endif
         </div>
     </div>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 @endsection
