@@ -52,20 +52,45 @@ class ExpirePlans extends Command
         $deactivatedCount = 0;
 
         foreach ($userIds as $userId) {
-
+            $customer = Customers::find($userId);
             // Get latest plan of this user
             $latestPlan = PlanPurchaseHistory::where('user_id', $userId)
                 ->orderByDesc('end_date')
                 ->first();
 
             // Only deactivate if latest plan is expired
-            if ($latestPlan && \Carbon\Carbon::parse($latestPlan->end_date)->addDays(7)->lt($today)) { 
-                Customers::where('id', $userId)
-                    ->where('is_active', true)
-                    ->update(['is_active' => false]);
+            // if ($latestPlan && \Carbon\Carbon::parse($latestPlan->end_date)->addDays(7)->lt($today)) { 
+            //     Customers::where('id', $userId)
+            //         ->where('is_active', true)
+            //         ->update(['is_active' => false]);
 
-                $deactivatedCount++;
+            //     $deactivatedCount++;
+            // }
+            if (!$latestPlan || !$customer) {
+                continue;
             }
+            if ($latestPlan) {
+                $expiryDate = Carbon::parse($latestPlan->end_date);
+                
+                if ((int)$latestPlan->plan_id === 0) {
+                    $shouldDeactivate = $expiryDate->lt($today);
+                } else {
+                    // Paid plan => 7 days grace period
+                    $shouldDeactivate = $expiryDate->addDays(7)->lt($today);
+                }
+                if ($shouldDeactivate) {
+                    Customers::where('id', $userId)
+                        ->where('is_active', true)
+                        ->update([
+                            'is_active' => false
+                        ]);
+
+                    $deactivatedCount++;
+                }
+
+            }
+
+             
         }
 
         $this->info("Expired {$expiredPlans->count()} plans, deactivated {$deactivatedCount} customers.");

@@ -14,7 +14,8 @@ use Carbon\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
-
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 class PaymentController extends Controller
 {
     public function createOrder(Request $request)
@@ -944,6 +945,7 @@ body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height
                 "customer_details" => [
                     "customer_id" => (string)$customer->id,
                     "customer_email" => $customer->email,
+                    "customer_phone" => $customer->  phone
                     "customer_phone" => $customer->phone
                 ],
                 "order_meta" => [
@@ -1118,6 +1120,197 @@ body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height
 </div>
 </body>
 </html>";
+
+    return $html;
+}
+
+    public function freeTrial(Request $request){
+        $data = $request->validate([
+                'business_type_id' => 'required',
+                'customer_id' => 'required|exists:customers,id',
+                'customer_phone' => 'required',
+            ]);
+            
+        // $user = Auth::user()->id;
+        try{
+        // if($data['customer_id'] != $user){
+        //     return response()->json([
+        //         'success' => false,
+        //         'message' => 'Unauthorized user'
+        //     ], 401);
+        // }
+        
+        $customer = Customers::findOrFail($request->customer_id);
+        if(!$customer){
+            return response()->json([
+                'success' => false,
+                'message' => 'Customer not found'
+            ], 404);
+        }
+        if($customer->is_trial == true){
+            return response()->json([
+                'success' => false,
+                'message' => 'Your free trial has already been used.'
+            ], 422);
+        }
+        $startDate = now();
+        $freeTrialDays = (int)config('app.free_trial_days'); // You can set this to any number of days you want for the free trial
+        $endDate = now()->addDays($freeTrialDays);
+        DB::transaction(function () use ($data,$customer, $request, $startDate, $endDate) {
+
+            $planPurchase = PlanPurchaseHistory::create([
+                'user_id' => $data['customer_id'],
+                'plan_id' => 0,
+                'price' => 0,
+                'currency' => 'INR',
+                'start_date' => $startDate,
+                'end_date' => $endDate,
+                'status' => 'active', // placeholder
+                'payment_id' => null,
+                'payment_status' => 'success',
+                'payment_method' => null,
+                'remarks' => 'Free Trial'
+            ]);
+
+            $customer->update([
+                'is_trial' => true,
+                'business_type_id' => $data['business_type_id'],
+                'is_active' => true
+            ]);
+           
+            });
+            $customerMail = $this->customerFreeTrialMail($customer->id,$startDate,$endDate);
+            // Send admin mail
+            Mail::html($customerMail, function ($message) use ($customer) {
+                $message->to($customer->email)
+                    ->subject("Free Trial Activated");
+            });
+            return response()->json([
+                'success' => true,
+                'message' => 'Free trial activated successfully',
+                'data' => [
+                    'start_date' => $startDate,
+                    'end_date' => $endDate
+                ]
+            ]);
+        
+        }catch(\Exception $e){
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage()
+            ]);
+        }
+    }
+
+    public function customerFreeTrialMail($customer_id,$startDate,$endDate)
+{
+    $customer = Customers::findOrFail($customer_id);
+    $admin_mail_id = config('app.admin_mail');
+    $trail_days = config('app.free_trial_days'); 
+    $html = "
+    <!DOCTYPE html>
+    <html lang='en'>
+    <head>
+    <meta charset='UTF-8'>
+    <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+    <title>Free Trial Activated - " . config('app.name') . "</title>
+    <style>
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; background-color: #f4f4f4; }
+    .container { max-width: 600px; margin: 20px auto; padding: 0; background-color: #ffffff; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+    .header { background: linear-gradient(135deg, #28a745 0%, #20c997 100%); color: white; padding: 30px; text-align: center; }
+    .header h1 { margin: 0; font-size: 28px; }
+    .header p { margin: 10px 0 0; opacity: 0.9; }
+    .content { padding: 40px 30px; }
+    .thank-you { font-size: 24px; margin-bottom: 20px; color: #28a745; }
+    .trial-details { background: #f8f9fa; border-radius: 8px; padding: 20px; margin: 20px 0; border-left: 4px solid #28a745; }
+    .plan-name { font-size: 20px; font-weight: bold; color: #333; margin-bottom: 10px; }
+    .trial-badge { display: inline-block; background: #28a745; color: white; padding: 5px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; margin-bottom: 10px; }
+    .countdown { font-size: 28px; font-weight: bold; color: #28a745; margin: 10px 0; text-align: center; }
+    .details-grid { display: grid; grid-template-columns: 1fr 2fr; gap: 10px; margin: 20px 0; }
+    .details-label { font-weight: bold; color: #555; }
+    .details-value { color: #333; }
+    .transaction-id { font-family: monospace; background: #f4f4f4; padding: 5px 10px; border-radius: 4px; font-size: 12px; }
+    .button { display: inline-block; padding: 12px 30px; background: linear-gradient(135deg, #28a745 0%, #20c997 100%); color: white; text-decoration: none; border-radius: 5px; margin-top: 20px; text-align: center; font-weight: bold; }
+    .button:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(40,167,69,0.4); }
+    .warning-box { background: #fff3cd; border: 1px solid #ffc107; border-radius: 8px; padding: 15px; margin: 20px 0; color: #856404; }
+    .warning-box strong { color: #856404; }
+    .footer { background: #f8f9fa; padding: 20px 30px; text-align: center; font-size: 12px; color: #777; border-top: 1px solid #e0e0e0; }
+    .footer a { color: #28a745; text-decoration: none; }
+    @media (max-width: 600px) {
+        .container { margin: 10px; }
+        .content { padding: 20px; }
+        .details-grid { grid-template-columns: 1fr; gap: 5px; }
+    }
+    </style>
+    </head>
+    <body>
+    <div class='container'>
+        <div class='header'>
+            <h1>Free Trial Activated! 🎉</h1>
+            <p>Your free trial has started</p>
+        </div>
+
+        <div class='content'>
+            <div class='thank-you'>
+                Hello " . ($customer->name ?? 'Valued Customer') . "!
+            </div>
+
+            <p>Thank you for choosing " . config('app.name') . ". We're excited to help you get started! Your free trial has been successfully activated.</p>
+
+            <div class='trial-details'>
+                <div class='trial-badge'>✨ FREE TRIAL ✨</div>
+                <div class='countdown'>
+                    " . ($trail_days ?? 7) . " Days Free Access
+                </div>
+                <div style='margin-top: 10px; color: #666; text-align: center;'>
+                    Trial ends on: <strong>" . ($endDate ? $endDate->format('d-m-Y h:i A') : date('d-m-Y h:i A')) . "</strong>
+                </div>
+            </div>
+
+            <div class='details-grid'>
+                
+                <div class='details-label'>Trial Start Date:</div>
+                <div class='details-value'>" . ($startDate ? $startDate->format('d-m-Y h:i A') : date('d-m-Y h:i A')) . "</div>
+
+                <div class='details-label'>Trial End Date:</div>
+                <div class='details-value'>" . ($endDate ? $endDate->format('d-m-Y h:i A') : date('d-m-Y h:i A')) . " 11:59 PM</div>
+            </div>
+
+            <div class='warning-box'>
+                <strong>⚠️ Important Trial Information</strong><br>
+                • No charges applied during trial period<br>
+            </div>
+
+
+            <div style='margin-top: 30px; padding: 20px; background: #f0f9ff; border-radius: 8px;'>
+                <strong>📋 What's Next?</strong>
+                <ul style='margin-top: 10px; padding-left: 20px;'>
+                    <li>Explore all premium features during your trial period</li>
+                    <li>Complete your profile to get personalized recommendations</li>
+                    <li>Check your dashboard for usage statistics and insights</li>
+                    <li>Contact our support team if you need any assistance</li>
+                </ul>
+            </div>
+
+            <div style='margin-top: 20px; padding: 15px; background: #e8f5e9; border-radius: 8px; text-align: center;'>
+                <strong>💡 Pro Tip:</strong> Upgrade anytime during your trial to get additional features and extended support!
+            </div>
+        </div>
+
+        <div class='footer'>
+            <p>Need help? Contact us at <a href='mailto:" . ($admin_mail_id) . "'>" . ($admin_mail_id) . "</a></p>
+            <p>Questions about your trial? We're here 24/7 to help you!</p>
+            <p>&copy; " . date('Y') . " " . config('app.name') . ". All rights reserved.</p>
+            <p>
+                <a href='#'>Terms of Service</a> | 
+                <a href='#'>Privacy Policy</a> |
+
+            </p>
+        </div>
+    </div>
+    </body>
+    </html>
+    ";
 
     return $html;
 }
