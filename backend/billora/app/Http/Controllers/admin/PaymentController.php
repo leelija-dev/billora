@@ -1131,14 +1131,14 @@ body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height
                 'customer_phone' => 'required',
             ]);
             
-        // $user = Auth::user()->id;
+        $user = Auth::user()->id;
         try{
-        // if($data['customer_id'] != $user){
-        //     return response()->json([
-        //         'success' => false,
-        //         'message' => 'Unauthorized user'
-        //     ], 401);
-        // }
+        if($data['customer_id'] != $user){
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized user'
+            ], 401);
+        }
         
         $customer = Customers::findOrFail($request->customer_id);
         if(!$customer){

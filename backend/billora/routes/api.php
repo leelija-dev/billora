@@ -203,15 +203,17 @@ Route::middleware('auth:sanctum')->prefix('plans-purchase-history')->group(funct
 });
 
 //payment 
-Route::middleware('auth:sanctum')->prefix('cashfree')->group(function () {
+Route::prefix('cashfree')->group(function () {
    Route::post('/create-order', [PaymentController::class, 'createOrder']);
    Route::post('/upgrade-plan', [PaymentController::class, 'upgradePlan']);
    Route::get('/verify/{order_id}', [PaymentController::class, 'verifyPayment']);
    Route::post('/renew-plan',[PaymentController::class, 'renewPlan']);
-   Route::post('/free-trials', [PaymentController::class, 'freeTrial']);
+   
 
 });
-
+Route::middleware('auth:sanctum')->prefix('free-trials')->group(function () {
+  Route::post('/', [PaymentController::class, 'freeTrial']);
+});
 //plan expire reminder
 Route::middleware('auth:sanctum')->prefix('plan-expire-reminder')->group(function () {
    Route::get('/{id}', [PlanExpiryController::class, 'getExpiringPlans']);

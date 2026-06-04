@@ -52,7 +52,7 @@ const StartFreeTrial = () => {
     const fetchBusinessTypes = async () => {
       setLoadingBusinessTypes(true);
       try {
-        const token = localStorage.getItem('token');
+        const token = localStorage.getItem('auth_token');
         const types = await businessService.getBusinessTypes(token);
         setBusinessTypes(types);
       } catch (error) {
