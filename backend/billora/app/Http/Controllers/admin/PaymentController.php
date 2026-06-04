@@ -77,6 +77,7 @@ class PaymentController extends Controller
         $planPurchase = PlanPurchaseHistory::create([
             'user_id' => $request->customer_id,
             'plan_id' => $request->plan_id,
+            'plan_mode'=> 'paid',   
             'price' => $request->amount,
             'currency' => 'INR',
             'start_date' => null,
@@ -206,7 +207,8 @@ class PaymentController extends Controller
                             'status' => 'active',
                             'payment_status' => 'success',
                             'start_date' => $startDate,
-                            'end_date' => $endDate
+                            'end_date' => $endDate,
+                            'plan_mode' => 'paid'
                         ]);
 
                         $customer->update([
@@ -232,7 +234,8 @@ class PaymentController extends Controller
                         $customer->update([
                             'plan_id' => $plan->id,
                             'business_type_id' => $bussiness_type->business_type_id,
-                            'is_active' => true
+                            'is_active' => true,
+                            'plan_mode' => 'paid'
                         ]);
                     }
             Cache::tags(['plan_purchase_history_' . $customer->id])->flush();
@@ -882,6 +885,7 @@ body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height
         $planPurchase = PlanPurchaseHistory::create([
             'user_id' => $request->customer_id,
             'plan_id' => $request->plan_id,
+            'plan_mode' => 'paid',
             'price' => $totalPriceWithGst, //$request->amount,
             'currency' => 'INR',
             'start_date' => null,
@@ -972,6 +976,7 @@ body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height
         PlanPurchaseHistory::create([
         'user_id' => $customer->id,
         'plan_id' => $plan->id,
+        'plan_mode' => 'paid',
         'price' => $amt,
         'currency' => 'INR',
 
@@ -1167,6 +1172,7 @@ body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height
             $planPurchase = PlanPurchaseHistory::create([
                 'user_id' => $data['customer_id'],
                 'plan_id' => $data['plan_id'],
+                'plan_mode' => 'trial',
                 'price' => 0,
                 'currency' => 'INR',
                 'start_date' => $startDate,
@@ -1182,16 +1188,19 @@ body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height
                 'is_trial' => true,
                 'business_type_id' => $data['business_type_id'],
                 'is_active' => true,
-                'plan_id' => $data['plan_id']
+                'plan_id' => $data['plan_id'],
+                'plan_mode' => 'trial'     // this mode use for check customer recent plan status
             ]);
            
             });
+            Cache::forget("report_{$data['customer_id']}_today_today_page_1");
             $customerMail = $this->customerFreeTrialMail($customer->id,$startDate,$endDate);
             // Send admin mail
             Mail::html($customerMail, function ($message) use ($customer) {
                 $message->to($customer->email)
                     ->subject("Free Trial Activated");
             });
+
             return response()->json([
                 'success' => true,
                 'message' => 'Free trial activated successfully',

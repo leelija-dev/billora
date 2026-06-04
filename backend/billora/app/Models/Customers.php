@@ -34,6 +34,7 @@ protected $fillable=[
         'is_active',
         'business_type_id',
         'is_trial',
+        'plan_mode',
         'products_qr',
         'products_qr_public_id',
         'reset_password_token',
