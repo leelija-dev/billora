@@ -4,7 +4,12 @@ import React, { useState, useEffect, useLayoutEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { FiLogIn, FiLogOut, FiUser, FiSettings, FiChevronDown, FiMenu, FiX, FiGrid } from "react-icons/fi";
+import { 
+  FiLogIn, FiLogOut, FiUser, FiSettings, FiChevronDown, 
+  FiMenu, FiX, FiGrid, FiHome, FiCreditCard, FiUsers, 
+  FiBriefcase, FiFileText, FiMail, FiTool, FiHelpCircle,
+  FiLayers, FiStar, FiArrowRight
+} from "react-icons/fi";
 import { useAuthStore } from "../store/authStoreZustand";
 import toast from 'react-hot-toast';
 
@@ -120,12 +125,13 @@ const Navbar = () => {
     });
   }, [isLoggedIn, hasActivePlan, user, pathname]);
 
+  // FIXED: Correct routeMap with proper indices matching navItems order
   const routeMap = {
     "/pricing": 0,
     "/partner": 1,
     "/solution": 2,
-    "/about": 3,
-    "/blog": 4,
+    "/about": 3,    // About should be index 3 (matches navItems)
+    "/blog": 4,     // Blog should be index 4 (matches navItems)
     "/contact": 5,
   };
 
@@ -192,7 +198,7 @@ const Navbar = () => {
     };
   }, []);
 
-  // Close mobile menu when clicking outside
+  // Close mobile menu when clicking outside - MODIFIED for left sidebar
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (mobileMenuRef.current && !mobileMenuRef.current.contains(event.target)) {
@@ -446,12 +452,12 @@ const Navbar = () => {
   }, [isNavAction, activeTab]);
 
   const navItems = [
-    { name: "Pricing", href: "/pricing" },
-    { name: "Partner", href: "/partner" },
-    { name: "Solution", href: "/solution" },
-    { name: "Blog", href: "/blog" },
-    { name: "About", href: "/about" },
-    { name: "Contact", href: "/contact" },
+    { name: "Pricing", href: "/pricing", icon: FiCreditCard },
+    { name: "Partner", href: "/partner", icon: FiUsers },
+    { name: "Solution", href: "/solution", icon: FiBriefcase },
+    { name: "About", href: "/about", icon: FiHelpCircle },
+    { name: "Blog", href: "/blog", icon: FiFileText },
+    { name: "Contact", href: "/contact", icon: FiMail },
   ];
 
   // Get user info
@@ -501,10 +507,10 @@ const Navbar = () => {
             className="flex items-center gap-1.5 sm:gap-2 group shrink-0"
             onClick={() => handleNavClick(0)}
           >
-            <span className="bg-blue-600 text-white px-1.5 py-1 rounded text-lg sm:text-xl md:text-2xl font-bold transition-all duration-200 group-hover:scale-105">
+            <div className="bg-gradient-to-br from-blue-600 to-indigo-600 text-white px-2 py-1 rounded-lg text-lg sm:text-xl md:text-2xl font-bold transition-all duration-200 group-hover:scale-105 group-hover:shadow-md">
               B
-            </span>
-            <span className="text-lg sm:text-xl md:text-2xl font-bold text-slate-800 group-hover:text-blue-600 transition-all duration-200">
+            </div>
+            <span className="text-lg sm:text-xl md:text-2xl font-bold bg-gradient-to-r from-slate-800 to-slate-600 bg-clip-text text-transparent group-hover:from-blue-600 group-hover:to-indigo-600 transition-all duration-200">
               {process.env.NEXT_PUBLIC_APP_NAME || 'Billora'}
             </span>
           </Link>
@@ -723,7 +729,7 @@ const Navbar = () => {
             )}
           </div>
 
-          {/* Mobile Menu Button */}
+          {/* Mobile Menu Button - Updated for left sidebar */}
           <button 
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
             className="lg:hidden p-2 rounded-md hover:bg-gray-100 transition-all duration-200 z-20"
@@ -737,7 +743,7 @@ const Navbar = () => {
       {/* Add spacer div to prevent content jump when navbar is fixed */}
       <div className="h-16 md:h-20"></div>
 
-      {/* Backdrop Overlay */}
+      {/* Backdrop Overlay - Updated for left sidebar */}
       <div 
         className={`fixed inset-0 bg-black/50 z-[999] lg:hidden transition-all duration-300 ${
           isMobileMenuOpen ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'
@@ -745,75 +751,138 @@ const Navbar = () => {
         onClick={() => setIsMobileMenuOpen(false)}
       />
 
-      {/* Mobile Menu Panel */}
+      {/* Mobile Sidebar Menu - NOW FROM LEFT SIDE with enhanced design */}
       <div 
         ref={mobileMenuRef}
-        className={`fixed top-0 right-0 h-full w-full max-w-[320px] bg-white shadow-2xl z-[1000] lg:hidden transition-all duration-300 ease-out ${
-          isMobileMenuOpen ? 'translate-x-0' : 'translate-x-full'
+        className={`fixed top-0 left-0 h-full w-full max-w-[320px] bg-gradient-to-b from-white to-gray-50 shadow-2xl z-[1000] lg:hidden transition-all duration-300 ease-out ${
+          isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
         <div className="flex flex-col h-full">
-          {/* Mobile Menu Header */}
-          <div className="flex items-center justify-between p-4 border-b border-gray-100">
+          {/* Mobile Menu Header - Gradient background */}
+          <div className="relative px-5 py-6 bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-600">
+            <div className="absolute top-4 right-4">
+              <button 
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="p-2 rounded-full bg-white/10 text-white hover:bg-white/20 transition-colors"
+              >
+                <FiX size={20} />
+              </button>
+            </div>
             <Link 
               href="/" 
               className="flex items-center gap-2"
               onClick={() => setIsMobileMenuOpen(false)}
             >
-              <span className="bg-blue-600 text-white px-2 py-1 rounded text-xl font-bold">B</span>
-              <span className="text-xl font-bold text-slate-800">{process.env.NEXT_PUBLIC_APP_NAME || 'Billora'}</span>
+              <div className="bg-white/20 backdrop-blur-sm text-white px-2.5 py-1.5 rounded-xl text-xl font-bold">
+                B
+              </div>
+              <span className="text-xl font-bold text-white">
+                {process.env.NEXT_PUBLIC_APP_NAME || 'Billora'}
+              </span>
             </Link>
-            <button 
-              onClick={() => setIsMobileMenuOpen(false)}
-              className="p-2 rounded-full hover:bg-gray-100 transition-colors"
-            >
-              <FiX size={20} />
-            </button>
+            <p className="text-white/80 text-xs mt-3 ml-1">
+              Streamline your business finances
+            </p>
           </div>
 
-          {/* Mobile User Info (if logged in) */}
+          {/* Mobile User Info (if logged in) - Enhanced */}
           {isLoggedIn && (
-            <div className="p-4 border-b border-gray-100 bg-gradient-to-r from-blue-50 to-indigo-50">
+            <div className="mx-4 mt-4 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl border border-blue-100 shadow-sm">
               <div className="flex items-center gap-3">
                 <div className="relative">
-                  <div className="w-12 h-12 rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold text-lg">
+                  <div className="w-12 h-12 rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold text-lg shadow-md">
                     {userInitial}
                   </div>
                   {hasActivePlan && (
-                    <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-yellow-400 rounded-full border-2 border-white"></span>
+                    <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-yellow-400 rounded-full border-2 border-white shadow-sm"></span>
                   )}
+                  <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white shadow-sm"></span>
                 </div>
                 <div className="flex-1">
-                  <p className="text-sm font-semibold text-gray-900">{userName}</p>
+                  <p className="text-sm font-bold text-gray-900">{userName}</p>
                   <p className="text-xs text-gray-500 break-all">{userEmail}</p>
-                  {hasActivePlan && (
-                    <p className="text-xs text-green-600 font-medium mt-0.5">✓ Premium Plan Active</p>
+                  {hasActivePlan ? (
+                    <div className="mt-1 inline-flex items-center gap-1 px-2 py-0.5 bg-green-100 rounded-full">
+                      <div className="w-1.5 h-1.5 bg-green-500 rounded-full"></div>
+                      <p className="text-xs font-medium text-green-700">Premium Plan Active</p>
+                    </div>
+                  ) : (
+                    <div className="mt-1 inline-flex items-center gap-1 px-2 py-0.5 bg-gray-100 rounded-full">
+                      <div className="w-1.5 h-1.5 bg-gray-400 rounded-full"></div>
+                      <p className="text-xs font-medium text-gray-600">Free Plan</p>
+                    </div>
                   )}
                 </div>
               </div>
             </div>
           )}
 
-          {/* Mobile Navigation Links */}
-          <div className="flex-1 overflow-y-auto py-2">
-            {navItems.map((item, index) => (
+          {/* Mobile Navigation Links - Enhanced with icons and animations */}
+          <div className="flex-1 overflow-y-auto py-4 px-4 space-y-1">
+            {/* Home link for mobile */}
+            <Link
+              href="/"
+              onClick={() => setIsMobileMenuOpen(false)}
+              className={`flex items-center gap-3 px-4 py-3 rounded-xl text-base font-medium transition-all duration-200 ${
+                pathname === "/"
+                  ? "text-blue-600 bg-blue-50 border border-blue-100"
+                  : "text-gray-700 hover:text-blue-600 hover:bg-gray-50"
+              }`}
+            >
+              <FiHome size={20} className={pathname === "/" ? "text-blue-600" : "text-gray-400"} />
+              <span>Home</span>
+            </Link>
+            
+            {navItems.map((item, index) => {
+              const Icon = item.icon;
+              const isActive = pathname === item.href;
+              return (
+                <Link
+                  key={index}
+                  href={item.href}
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className={`flex items-center gap-3 px-4 py-3 rounded-xl text-base font-medium transition-all duration-200 ${
+                    isActive
+                      ? "text-blue-600 bg-blue-50 border border-blue-100"
+                      : "text-gray-700 hover:text-blue-600 hover:bg-gray-50"
+                  }`}
+                >
+                  <Icon size={20} className={isActive ? "text-blue-600" : "text-gray-400"} />
+                  <span>{item.name}</span>
+                  {isActive && (
+                    <FiArrowRight size={16} className="ml-auto text-blue-600" />
+                  )}
+                </Link>
+              );
+            })}
+            
+            {/* Additional helpful links */}
+            <div className="pt-4 mt-2 border-t border-gray-200">
+              <p className="px-4 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
+                Resources
+              </p>
               <Link
-                key={index}
-                href={item.href}
+                href="/faq"
                 onClick={() => setIsMobileMenuOpen(false)}
-                className={`block px-5 py-3 text-base font-medium transition-all duration-200 ${
-                  pathname === item.href
-                    ? "text-blue-600 bg-blue-50 border-l-4 border-blue-600"
-                    : "text-gray-700 hover:text-blue-500 hover:bg-gray-50"
-                }`}
+                className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm text-gray-600 hover:text-blue-600 hover:bg-gray-50 transition-colors"
               >
-                {item.name}
+                <FiHelpCircle size={18} />
+                <span>Help & FAQ</span>
               </Link>
-            ))}
+              <Link
+                href="/support"
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm text-gray-600 hover:text-blue-600 hover:bg-gray-50 transition-colors"
+              >
+                <FiTool size={18} />
+                <span>Support</span>
+              </Link>
+            </div>
           </div>
 
-          {/* Mobile Action Buttons */}
-          <div className="p-4 border-t border-gray-100 space-y-2">
+          {/* Mobile Action Buttons - Enhanced with better styling */}
+          <div className="p-4 border-t border-gray-200 bg-gray-50/50 space-y-2">
             {/* Dashboard button for mobile */}
             {isLoggedIn && hasActivePlan && (
               <a
@@ -823,7 +892,7 @@ const Navbar = () => {
                   setIsMobileMenuOpen(false);
                   window.open(`${DASHBOARD_URL}dashboard`, '_blank');
                 }}
-                className="flex items-center justify-center gap-2 w-full px-4 py-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-xl text-sm font-semibold transition-all duration-200 cursor-pointer"
+                className="flex items-center justify-center gap-2 w-full px-4 py-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-xl text-sm font-semibold transition-all duration-200 hover:shadow-md active:scale-[0.98] cursor-pointer"
                 target="_blank"
                 rel="noopener noreferrer"
               >
@@ -832,12 +901,14 @@ const Navbar = () => {
               </a>
             )}
             
+            {/* Free Trial / Book Demo - Enhanced */}
             <Link
-              href="/bookdemo"
+              href="/start-free-trial"
               onClick={() => setIsMobileMenuOpen(false)}
-              className="block w-full text-center px-4 py-3 bg-gradient-to-r from-indigo-500 to-purple-500 text-white rounded-xl text-sm font-semibold transition-all duration-200"
+              className="flex items-center justify-center gap-2 w-full px-4 py-3 bg-gradient-to-r from-indigo-500 to-purple-500 text-white rounded-xl text-sm font-semibold transition-all duration-200 hover:shadow-md active:scale-[0.98]"
             >
-              Book Free Demo
+              <FiStar size={18} />
+              <span>Start Free Trial</span>
             </Link>
             
             {isLoggedIn ? (
@@ -845,7 +916,7 @@ const Navbar = () => {
                 <Link
                   href="/profile"
                   onClick={() => setIsMobileMenuOpen(false)}
-                  className="flex items-center gap-3 w-full px-4 py-3 border border-gray-200 text-gray-700 rounded-xl text-sm font-medium hover:bg-gray-50 transition-all"
+                  className="flex items-center gap-3 w-full px-4 py-3 border border-gray-200 bg-white text-gray-700 rounded-xl text-sm font-medium hover:bg-gray-50 transition-all"
                 >
                   <FiUser size={18} />
                   <span>My Profile</span>
@@ -853,7 +924,7 @@ const Navbar = () => {
                 <Link
                   href="/settings"
                   onClick={() => setIsMobileMenuOpen(false)}
-                  className="flex items-center gap-3 w-full px-4 py-3 border border-gray-200 text-gray-700 rounded-xl text-sm font-medium hover:bg-gray-50 transition-all"
+                  className="flex items-center gap-3 w-full px-4 py-3 border border-gray-200 bg-white text-gray-700 rounded-xl text-sm font-medium hover:bg-gray-50 transition-all"
                 >
                   <FiSettings size={18} />
                   <span>Settings</span>
@@ -864,7 +935,7 @@ const Navbar = () => {
                     setIsMobileMenuOpen(false);
                   }}
                   disabled={isLoggingOut}
-                  className="flex items-center justify-center gap-2 w-full px-4 py-3 bg-red-500 text-white rounded-xl text-sm font-semibold hover:bg-red-600 transition-all disabled:opacity-50"
+                  className="flex items-center justify-center gap-2 w-full px-4 py-3 bg-gradient-to-r from-red-500 to-rose-500 text-white rounded-xl text-sm font-semibold hover:shadow-md active:scale-[0.98] transition-all disabled:opacity-50"
                 >
                   {isLoggingOut ? (
                     <>
@@ -887,13 +958,19 @@ const Navbar = () => {
                 <Link
                   href="/login"
                   onClick={() => setIsMobileMenuOpen(false)}
-                  className="flex items-center justify-center gap-2 w-full px-4 py-3 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700 transition-all"
+                  className="flex items-center justify-center gap-2 w-full px-4 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl text-sm font-semibold hover:shadow-md active:scale-[0.98] transition-all"
                 >
                   <FiLogIn size={18} />
                   <span>Login</span>
                 </Link>
               </>
             )}
+          </div>
+          
+          {/* Version info */}
+          <div className="px-4 py-3 text-center border-t border-gray-200 bg-white">
+            <p className="text-xs text-gray-400">© 2024 {process.env.NEXT_PUBLIC_APP_NAME || 'Billora'}</p>
+            <p className="text-xs text-gray-400 mt-0.5">v2.0.0</p>
           </div>
         </div>
       </div>

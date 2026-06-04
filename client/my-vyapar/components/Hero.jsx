@@ -21,8 +21,24 @@ const Hero = () => {
   const hasActivePlan = user?.is_active === 1 || false;
 
   const [screenState, setScreenState] = useState(0);
-  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+  const [mousePosition, setMousePosition] = useState({ x: 50, y: 50 });
+  const [isDesktop, setIsDesktop] = useState(true);
   const heroRef = useRef(null);
+
+  // Check screen size for mouse tracking
+  useEffect(() => {
+    const checkScreenSize = () => {
+      setIsDesktop(window.innerWidth >= 1024);
+    };
+    
+    // Initial check
+    checkScreenSize();
+    
+    // Add resize listener
+    window.addEventListener("resize", checkScreenSize);
+    
+    return () => window.removeEventListener("resize", checkScreenSize);
+  }, []);
 
   useEffect(() => {
     const timer1 = setTimeout(() => {
@@ -40,6 +56,9 @@ const Hero = () => {
   }, []);
 
   useEffect(() => {
+    // Only add mouse move listener on desktop screens
+    if (!isDesktop) return;
+    
     const handleMouseMove = (e) => {
       if (heroRef.current) {
         const rect = heroRef.current.getBoundingClientRect();
@@ -51,7 +70,7 @@ const Hero = () => {
 
     window.addEventListener("mousemove", handleMouseMove);
     return () => window.removeEventListener("mousemove", handleMouseMove);
-  }, []);
+  }, [isDesktop]);
 
   return (
     <div className="overflow-x-hidden font-sans">
@@ -60,19 +79,32 @@ const Hero = () => {
         ref={heroRef}
         className="relative min-h-[100vh] flex items-center pt-24 pb-[10rem] lg:pb-[8rem] overflow-hidden bg-hero-gradient"
       >
-        {/* Animated gradient orbs - slightly darker */}
-        <div
-          className="absolute w-[300px] sm:w-[400px] md:w-[500px] h-[300px] sm:h-[400px] md:h-[500px] rounded-full blur-80px sm:blur-100px md:blur-120px opacity-30 transition-all duration-300 ease-out pointer-events-none"
-          style={{
-            background:
-              "radial-gradient(circle, var(--gradient-indigo-600), #38bdf8)",
-            top: `${mousePosition.y * 0.5}%`,
-            left: `${mousePosition.x * 0.5}%`,
-            transform: "translate(-50%, -50%)",
-          }}
-        />
-        <div className="absolute top-20 right-5 sm:right-10 w-60 h-60 sm:w-80 sm:h-80 rounded-full blur-80px sm:blur-100px opacity-25 bg-gradient-to-r from-cyan-500 to-purple-500 animate-pulse" />
-        <div className="absolute bottom-0 left-0 w-72 h-72 sm:w-96 sm:h-96 rounded-full blur-100px sm:blur-120px opacity-15 bg-gradient-to-r from-sky-400 to-indigo-400" />
+        {/* Animated gradient orbs - only show on desktop */}
+        {isDesktop && (
+          <>
+            <div
+              className="absolute w-[300px] sm:w-[400px] md:w-[500px] h-[300px] sm:h-[400px] md:h-[500px] rounded-full blur-80px sm:blur-100px md:blur-120px opacity-30 transition-all duration-300 ease-out pointer-events-none"
+              style={{
+                background:
+                  "radial-gradient(circle, var(--gradient-indigo-600), #38bdf8)",
+                top: `${mousePosition.y * 0.5}%`,
+                left: `${mousePosition.x * 0.5}%`,
+                transform: "translate(-50%, -50%)",
+              }}
+            />
+            <div className="absolute top-20 right-5 sm:right-10 w-60 h-60 sm:w-80 sm:h-80 rounded-full blur-80px sm:blur-100px opacity-25 bg-gradient-to-r from-cyan-500 to-purple-500 animate-pulse" />
+            <div className="absolute bottom-0 left-0 w-72 h-72 sm:w-96 sm:h-96 rounded-full blur-100px sm:blur-120px opacity-15 bg-gradient-to-r from-sky-400 to-indigo-400" />
+          </>
+        )}
+
+        {/* Static gradient orbs for mobile (no mouse tracking) */}
+        {!isDesktop && (
+          <>
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] rounded-full blur-100px opacity-20 bg-gradient-to-r from-indigo-500 to-cyan-500" />
+            <div className="absolute top-20 right-5 w-60 h-60 rounded-full blur-80px opacity-25 bg-gradient-to-r from-cyan-500 to-purple-500" />
+            <div className="absolute bottom-0 left-0 w-72 h-72 rounded-full blur-100px opacity-15 bg-gradient-to-r from-sky-400 to-indigo-400" />
+          </>
+        )}
 
         {/* Grid pattern overlay */}
         <div
@@ -127,7 +159,7 @@ const Hero = () => {
                     </Link>
                     <Link
                       href="/bookdemo"
-                      className="px-6 sm:px-8 py-3 sm:py-4 bg-white/80 backdrop-blur-sm border border-border-gray-300 rounded-full text-text-slate-700 font-semibold text-text-sm sm:text-text-md hover:bg-white transition-all duration-300 hover:scale-105 active:scale-95"
+                      className="px-6 sm:px-8 py-3 sm:py-4 bg-white/80 lg:backdrop-blur-sm border border-border-gray-300 rounded-full text-text-slate-700 font-semibold text-text-sm sm:text-text-md hover:bg-white transition-all duration-300 hover:scale-105 active:scale-95"
                     >
                       Book Free Demo →
                     </Link>
@@ -162,7 +194,7 @@ const Hero = () => {
             <div className="flex-1 relative w-full xl:max-w-[550px] max-w-[390px] mt-8 lg:mt-0">
               {/* Desktop Monitor Container - Grayish border */}
               <div className="relative z-10 transform transition-all duration-500 hover:scale-[1.02]">
-                <div className="relative bg-gradient-to-br from-gray-800/90 to-gray-900/90 backdrop-blur-sm md:rounded-3xl p-[3px] rounded-[14px] md:rounded-[20px] shadow-xl border border-border-gray-500/40">
+                <div className="relative bg-gradient-to-br from-gray-800/90 to-gray-900/90 lg:backdrop-blur-sm md:rounded-3xl p-[3px] rounded-[14px] md:rounded-[20px] shadow-xl border border-border-gray-500/40">
                   {/* Monitor bezel */}
                   <div className="relative bg-device-darker rounded-lg sm:rounded-xl md:rounded-2xl overflow-hidden shadow-inner border border-gray-600/30">
                     {/* Screen Content */}
@@ -216,7 +248,7 @@ const Hero = () => {
                   filter: "drop-shadow(0 20px 20px rgb(0 0 0 / 0.15))",
                 }}
               >
-                <div className="relative w-[65px]  xxs:w-[70px] md:w-[100px] xl:w-[140px] bg-gradient-to-br from-gray-800/90 to-gray-900/90 backdrop-blur-sm p-[2px] rounded-[10px] sm:rounded-[18px] lg:p-[2px] xl:p-[3px] border border-border-gray-500/40">
+                <div className="relative w-[65px]  xxs:w-[70px] md:w-[100px] xl:w-[140px] bg-gradient-to-br from-gray-800/90 to-gray-900/90 lg:backdrop-blur-sm p-[2px] rounded-[10px] sm:rounded-[18px] lg:p-[2px] xl:p-[3px] border border-border-gray-500/40">
                   <div className="relative bg-device-darker rounded-lg sm:rounded-xl md:rounded-2xl overflow-hidden aspect-[9/16] border border-gray-600/30">
                     {/* Notch */}
                     <div className="absolute top-0 left-1/2 -translate-x-1/2 w-8 xl:w-20 h-2 xl:h-3 bg-device-darker rounded-b-lg z-10 border-x border-b border-gray-600/30"></div>
@@ -254,7 +286,7 @@ const Hero = () => {
 
               {/* Feature Badges - Responsive positioning */}
               <div className="absolute top-[5%] sm:top-[8%] md:top-[10%] -right-1 sm:-right-2 md:-right-3 lg:-right-6 z-30 animate-float-1">
-                <div className="bg-white/90 backdrop-blur-md rounded-full p-[5px_6px] border border-border-gray-300 shadow-md">
+                <div className="bg-white/90 lg:backdrop-blur-md rounded-full p-[5px_6px] border border-border-gray-300 shadow-md">
                   <div className="flex items-center gap-1.5 sm:gap-2">
                     <div className="w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7 rounded-full bg-gradient-to-r from-feature-amber to-orange-600 flex items-center justify-center">
                       <FaStar className="w-2.5 h-2.5 sm:w-3 sm:h-3 md:w-3.5 md:h-3.5 text-white" />
@@ -270,7 +302,7 @@ const Hero = () => {
                 className="absolute bottom-[25%] sm:bottom-[28%] md:bottom-[30%] -right-2 sm:-right-3 md:-right-4 lg:-right-8 z-30 animate-float-2"
                 style={{ animationDelay: "0.5s" }}
               >
-                <div className="bg-white/90 backdrop-blur-md rounded-full p-[5px_6px] border border-border-gray-300 shadow-md">
+                <div className="bg-white/90 lg:backdrop-blur-md rounded-full p-[5px_6px] border border-border-gray-300 shadow-md">
                   <div className="flex items-center gap-1.5 sm:gap-2">
                     <div className="w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7 rounded-full bg-gradient-to-r from-feature-purple to-pink-600 flex items-center justify-center">
                       <FaUsers className="w-2.5 h-2.5 sm:w-3 sm:h-3 md:w-3.5 md:h-3.5 text-white" />
@@ -286,7 +318,7 @@ const Hero = () => {
                 className="absolute top-[20%] sm:top-[35%] md:top-[29%] -left-3 sm:-left-4 md:-left-6 lg:-left-10 z-30 animate-float-3"
                 style={{ animationDelay: "1s" }}
               >
-                <div className="bg-white/90 backdrop-blur-md rounded-full p-[5px_6px] border border-border-gray-300 shadow-md">
+                <div className="bg-white/90 lg:backdrop-blur-md rounded-full p-[5px_6px] border border-border-gray-300 shadow-md">
                   <div className="flex items-center gap-1.5 sm:gap-2">
                     <div className="w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7 rounded-full bg-gradient-to-r from-feature-emerald to-teal-600 flex items-center justify-center">
                       <FaChartBar className="w-2.5 h-2.5 sm:w-3 sm:h-3 md:w-3.5 md:h-3.5 text-white" />
@@ -306,7 +338,7 @@ const Hero = () => {
       <section className="relative -mt-12 sm:-mt-16 md:-mt-20 lg:-mt-24 z-40 px-4 pb-16">
         <div className="relative max-w-6xl mx-auto">
           {/* Main Features Card */}
-          <div className="relative bg-gradient-to-br from-white to-gray-100/80 backdrop-blur-md rounded-2xl sm:rounded-3xl md:rounded-4xl shadow-xl overflow-hidden border border-border-gray-300/50">
+          <div className="relative bg-gradient-to-br from-white to-gray-100/80 lg:backdrop-blur-md rounded-2xl sm:rounded-3xl md:rounded-4xl shadow-xl overflow-hidden border border-border-gray-300/50">
             {/* Decorative top gradient bar */}
             <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-tertiary"></div>
 
