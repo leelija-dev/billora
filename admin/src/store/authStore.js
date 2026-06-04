@@ -140,7 +140,13 @@ export const useAuthStore = create(
           setTimeout(() => channel.close(), 100);
 
           sessionStorage.removeItem('manual_logout');
-          toast.success('Login successful!');
+
+          if(user?.is_active===1){
+
+            toast.success('Login successful!');
+          }else{
+            toast.error('Your account is inactive. Please contact support.');
+          }
           return { success: true };
 
         } catch (error) {
@@ -259,7 +265,7 @@ export const useAuthStore = create(
             isActive: user?.is_active === 1
           });
 
-          const hasActivePlan = user && user.plan_id && user.is_active === 1;
+          const hasActivePlan = user &&  user.is_active === 1;
           console.log('🔍 hasActivePlanFromStorage result:', hasActivePlan);
           return hasActivePlan || false; // Ensure always returns boolean
         } catch (error) {

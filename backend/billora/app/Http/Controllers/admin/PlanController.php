@@ -100,7 +100,7 @@ class PlanController extends Controller
                 return $perm->sidebarPermissions;
             })
             ->unique('id') // remove duplicates
-            ->values();
+            ->values();  
         return [
             'status' => true,
             'message' => 'Plan Details',
