@@ -945,7 +945,7 @@ body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height
                 "customer_details" => [
                     "customer_id" => (string)$customer->id,
                     "customer_email" => $customer->email,
-                    "customer_phone" => $customer->  phone
+                    // "customer_phone" => $customer->  phone
                     "customer_phone" => $customer->phone
                 ],
                 "order_meta" => [

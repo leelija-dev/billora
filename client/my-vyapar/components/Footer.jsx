@@ -59,7 +59,8 @@ const Footer = () => {
         { label: 'About Us', href: '/about' },
         { label: 'Careers', href: '/careers' },
         { label: 'Press', href: '/press' },
-        { label: 'Blog', href: '/blog' }
+        { label: 'Blog', href: '/blog' },
+        { label: 'Start Free Trial', href: '/start-free-trial' },
       ]
     },
     {

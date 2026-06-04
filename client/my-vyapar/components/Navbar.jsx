@@ -584,11 +584,11 @@ const Navbar = () => {
               </a>
             ) : (
               <Link
-                href="/bookdemo"
+                href="/start-free-trial"
                 onClick={handleExternalClick}
                 className="px-3 sm:px-4 py-1.5 sm:py-2 bg-gradient-to-r from-indigo-500 to-purple-500 text-white rounded-full text-xs sm:text-sm font-semibold transition-all duration-200 hover:shadow-md hover:scale-105 whitespace-nowrap"
               >
-                Book Free Demo
+                Start Free Trial
               </Link>
             )}
 
