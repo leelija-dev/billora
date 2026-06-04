@@ -1127,6 +1127,7 @@ body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height
     public function freeTrial(Request $request){
         $data = $request->validate([
                 'business_type_id' => 'required',
+                'plan_id' => 'required|exists:plans,id',
                 'customer_id' => 'required|exists:customers,id',
                 'customer_phone' => 'required',
             ]);
@@ -1139,7 +1140,7 @@ body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height
                 'message' => 'Unauthorized user'
             ], 401);
         }
-        
+          
         $customer = Customers::findOrFail($request->customer_id);
         if(!$customer){
             return response()->json([
@@ -1165,7 +1166,7 @@ body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height
 
             $planPurchase = PlanPurchaseHistory::create([
                 'user_id' => $data['customer_id'],
-                'plan_id' => 0,
+                'plan_id' => $data['plan_id'],
                 'price' => 0,
                 'currency' => 'INR',
                 'start_date' => $startDate,
@@ -1174,13 +1175,14 @@ body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height
                 'payment_id' => null,
                 'payment_status' => 'success',
                 'payment_method' => null,
-                'remarks' => 'Free Trial'
+                'remarks' => 'Free Trial'    // If you change remarks, also update condition in ExpirePlans.php
             ]);
 
             $customer->update([
                 'is_trial' => true,
                 'business_type_id' => $data['business_type_id'],
-                'is_active' => true
+                'is_active' => true,
+                'plan_id' => $data['plan_id']
             ]);
            
             });
