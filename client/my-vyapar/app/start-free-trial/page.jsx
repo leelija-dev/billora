@@ -1,11 +1,11 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Container from "@/components/Container";
 import { useAuthStore } from "@/store/authStoreZustand";
-import { businessService } from "@/services/businessService";
 import { freeTrialService } from "@/services/freeTrialService";
+import { getPlans } from "@/services/pricingService";
 import { toast } from "react-hot-toast";
 import {
   FaUser,
@@ -26,44 +26,58 @@ import {
   FaExclamationTriangle,
   FaCrown,
   FaChevronDown,
-  FaBriefcase,
   FaLock,
+  FaCreditCard,
+  FaCheck,
 } from "react-icons/fa";
 
 const StartFreeTrial = () => {
   const router = useRouter();
   const { user, isLoggedIn, isLoading } = useAuthStore();
   
-  const [businessTypes, setBusinessTypes] = useState([]);
-  const [loadingBusinessTypes, setLoadingBusinessTypes] = useState(false);
+  const [plans, setPlans] = useState([]);
+  const [loadingPlans, setLoadingPlans] = useState(false);
+  const [isPlanDropdownOpen, setIsPlanDropdownOpen] = useState(false);
+  const planDropdownRef = useRef(null);
   const [formData, setFormData] = useState({
     customerName: "",
     customerEmail: "",
     customerPhone: "",
-    businessTypeId: "",
+    planId: "",
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [errors, setErrors] = useState({});
 
-  // Fetch business types on component mount
+  // Close dropdown when clicking outside
   useEffect(() => {
-    const fetchBusinessTypes = async () => {
-      setLoadingBusinessTypes(true);
+    const handleClickOutside = (event) => {
+      if (planDropdownRef.current && !planDropdownRef.current.contains(event.target)) {
+        setIsPlanDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  // Fetch plans on component mount
+  useEffect(() => {
+    const fetchPlans = async () => {
+      setLoadingPlans(true);
       try {
-        const token = localStorage.getItem('auth_token');
-        const types = await businessService.getBusinessTypes(token);
-        setBusinessTypes(types);
+        const response = await getPlans();
+        console.log('Plans response:', response);
+        setPlans(response.data || response);
       } catch (error) {
-        console.error('Error fetching business types:', error);
-        toast.error('Failed to load business types');
+        console.error('Error fetching plans:', error);
+        toast.error('Failed to load plans');
       } finally {
-        setLoadingBusinessTypes(false);
+        setLoadingPlans(false);
       }
     };
 
-    fetchBusinessTypes();
+    fetchPlans();
   }, []);
 
   useEffect(() => {
@@ -83,20 +97,17 @@ const StartFreeTrial = () => {
         customerName: user.name || user.full_name || "",
         customerEmail: user.email || "",
         customerPhone: user.phone || user.mobile || "",
-        businessTypeId: user.business_type_id || "",
+        planId: "",
       });
     }
   }, [isLoggedIn, user]);
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    // Only allow changes to businessTypeId
-    if (name === "businessTypeId") {
-      setFormData((prev) => ({ ...prev, [name]: value }));
-      if (errors[name]) {
-        setErrors((prev) => ({ ...prev, [name]: "" }));
-      }
+  const handlePlanSelect = (planId) => {
+    setFormData((prev) => ({ ...prev, planId: planId.toString() }));
+    if (errors.planId) {
+      setErrors((prev) => ({ ...prev, planId: "" }));
     }
+    setIsPlanDropdownOpen(false);
   };
 
   const validateForm = () => {
@@ -112,7 +123,7 @@ const StartFreeTrial = () => {
     } else if (!freeTrialService.validatePhoneNumber(formData.customerPhone)) {
       newErrors.customerPhone = "Please enter a valid 10-digit phone number";
     }
-    if (!formData.businessTypeId) newErrors.businessTypeId = "Please select a business type";
+    if (!formData.planId) newErrors.planId = "Please select a plan";
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -124,25 +135,39 @@ const StartFreeTrial = () => {
     setIsSubmitting(true);
     
     try {
-      // Use existing user ID as customer ID
       const customerId = user?.id;
       
       if (!customerId) {
         throw new Error('User ID not found');
       }
 
-      // Format phone number (remove any non-digit characters)
+      // Get the selected plan to extract business_type_id
+      const selectedPlan = plans.find(plan => plan.id.toString() === formData.planId);
+      if (!selectedPlan) {
+        throw new Error('Selected plan not found');
+      }
+
+      // Extract business_type_id from the selected plan
+      let businessTypeId = null;
+      if (selectedPlan.business_types && selectedPlan.business_types.length > 0) {
+        // Get the first business_type_id from the plan's business_types array
+        businessTypeId = selectedPlan.business_types[0].business_type_id;
+      }
+
+      if (!businessTypeId) {
+        throw new Error('Business type not found for selected plan');
+      }
+
       const formattedPhone = freeTrialService.formatPhoneNumber(formData.customerPhone);
 
-      // Validate phone number format again
       if (!freeTrialService.validatePhoneNumber(formattedPhone)) {
         throw new Error('Please enter a valid 10-digit phone number');
       }
 
-      // Submit free trial using the service
       const response = await freeTrialService.submitFreeTrial({
         customer_id: customerId,
-        business_type_id: parseInt(formData.businessTypeId),
+        business_type_id: businessTypeId,
+        plan_id: parseInt(formData.planId),
         customer_phone: formattedPhone,
       });
 
@@ -205,12 +230,8 @@ const StartFreeTrial = () => {
 
   const contentState = getContentState();
 
-  const getSelectedBusinessIcon = () => {
-    const selected = businessTypes.find(type => type.id.toString() === formData.businessTypeId);
-    if (selected && selected.icon) {
-      return <FaBriefcase className="w-5 h-5" />;
-    }
-    return <FaBriefcase className="w-5 h-5" />;
+  const getSelectedPlan = () => {
+    return plans.find(plan => plan.id.toString() === formData.planId);
   };
 
   // Loading state
@@ -332,7 +353,7 @@ const StartFreeTrial = () => {
                       : contentState === "trial_used"
                       ? "Choose a plan to continue using our services"
                       : isLoggedIn 
-                      ? "Confirm your details and select business type to begin your 7-day trial"
+                      ? "Confirm your details and select a plan to begin your 7-day trial"
                       : "Please login to your account to start the free trial"}
                   </p>
                 </div>
@@ -445,7 +466,7 @@ const StartFreeTrial = () => {
                     );
                   }
                   
-                  // Form for logged in users - Only business type is editable
+                  // Form for logged in users
                   return (
                     <form onSubmit={handleSubmit} className="p-6 sm:p-8">
                       {errors.submit && (
@@ -515,46 +536,117 @@ const StartFreeTrial = () => {
                           <p className="mt-1 text-xs text-slate-500">This information is from your account</p>
                         </div>
 
-                        {/* Business Type Dropdown - Editable */}
+                        {/* Plan Custom Dropdown - Editable */}
                         <div>
                           <label className="block text-sm font-semibold text-slate-800 mb-2">
-                            Business Type <span className="text-red-500">*</span>
+                            Select Plan <span className="text-red-500">*</span>
                           </label>
-                          <div className="relative">
-                            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
-                              {getSelectedBusinessIcon()}
+                          <div className="relative" ref={planDropdownRef}>
+                            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 z-10">
+                              <FaCreditCard className="w-5 h-5" />
                             </div>
-                            <select
-                              name="businessTypeId"
-                              value={formData.businessTypeId}
-                              onChange={handleChange}
-                              disabled={loadingBusinessTypes}
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (plans.length === 0) {
+                                  toast.error("Loading plans...");
+                                  return;
+                                }
+                                setIsPlanDropdownOpen(!isPlanDropdownOpen);
+                              }}
+                              disabled={loadingPlans}
                               className={`w-full pl-10 pr-10 py-3 border ${
-                                errors.businessTypeId 
+                                errors.planId 
                                   ? 'border-red-500 focus:ring-red-500' 
                                   : 'border-gray-300 focus:ring-sky-500'
-                              } rounded-xl focus:outline-none focus:ring-2 transition-all appearance-none bg-white cursor-pointer ${
-                                loadingBusinessTypes ? 'opacity-50 cursor-not-allowed' : ''
+                              } rounded-xl focus:outline-none focus:ring-2 transition-all bg-white text-left ${
+                                loadingPlans ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
                               }`}
                             >
-                              <option value="">
-                                {loadingBusinessTypes ? "Loading business types..." : "Select Business Type"}
-                              </option>
-                              {businessTypes.map((type) => (
-                                <option key={type.id} value={type.id}>
-                                  {type.name}
-                                </option>
-                              ))}
-                            </select>
+                              <span className={!formData.planId ? "text-gray-400" : "text-slate-800"}>
+                                {loadingPlans 
+                                  ? "Loading plans..." 
+                                  : getSelectedPlan()?.name || "Select a plan"}
+                              </span>
+                            </button>
                             <div className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
-                              <FaChevronDown className="w-4 h-4" />
+                              <FaChevronDown className={`w-4 h-4 transition-transform duration-200 ${isPlanDropdownOpen ? 'rotate-180' : ''}`} />
+                            </div>
+
+                            {/* Custom Dropdown Menu */}
+                            {isPlanDropdownOpen && (
+                              <div className="absolute z-50 mt-2 w-full bg-white border border-gray-200 rounded-xl shadow-2xl max-h-80 overflow-y-auto">
+                                {plans.map((plan) => (
+                                  <button
+                                    key={plan.id}
+                                    type="button"
+                                    onClick={() => handlePlanSelect(plan.id)}
+                                    className="w-full text-left p-4 hover:bg-gradient-to-r hover:from-sky-50 hover:to-indigo-50 transition-all duration-150 border-b border-gray-100 last:border-b-0"
+                                  >
+                                    <div className="flex items-start justify-between">
+                                      <div className="flex-1">
+                                        <div className="flex items-center gap-2 mb-2">
+                                          <h4 className="font-semibold text-slate-800">{plan.name}</h4>
+                                          {plan.is_trial_eligible && (
+                                            <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">
+                                              Trial Available
+                                            </span>
+                                          )}
+                                        </div>
+                                        
+                                        {/* Plan Features */}
+                                        {plan.features && plan.features.length > 0 && (
+                                          <div className="space-y-1.5">
+                                            {plan.features.slice(0, 4).map((feature, idx) => (
+                                              <div key={idx} className="flex items-center gap-2 text-xs text-slate-600">
+                                                <FaCheck className="w-3 h-3 text-emerald-500 flex-shrink-0" />
+                                                <span>{feature}</span>
+                                              </div>
+                                            ))}
+                                            {plan.features.length > 4 && (
+                                              <p className="text-xs text-sky-600 mt-1">
+                                                +{plan.features.length - 4} more features
+                                              </p>
+                                            )}
+                                          </div>
+                                        )}
+                                      </div>
+                                      
+                                      {formData.planId === plan.id.toString() && (
+                                        <div className="ml-3">
+                                          <FaCheckCircle className="w-5 h-5 text-sky-600" />
+                                        </div>
+                                      )}
+                                    </div>
+                                  </button>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                          {errors.planId && (
+                            <p className="mt-1 text-red-500 text-xs">{errors.planId}</p>
+                          )}
+                          <p className="mt-1 text-xs text-slate-500">
+                            Choose a plan that best fits your business needs. 7-day free trial available on eligible plans.
+                          </p>
+                        </div>
+
+                        {/* Selected Plan Summary */}
+                        {formData.planId && getSelectedPlan() && getSelectedPlan().features && getSelectedPlan().features.length > 0 && (
+                          <div className="mt-2 p-4 bg-gradient-to-r from-sky-50 to-indigo-50 rounded-xl border border-sky-200">
+                            <h4 className="text-sm font-semibold text-slate-800 mb-2">
+                              {getSelectedPlan().name} Plan Features:
+                            </h4>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                              {getSelectedPlan().features.map((feature, idx) => (
+                                <div key={idx} className="flex items-center gap-2 text-xs text-slate-700">
+                                  <FaCheck className="w-3 h-3 text-emerald-500 flex-shrink-0" />
+                                  <span>{feature}</span>
+                                </div>
+                              ))}
                             </div>
                           </div>
-                          {errors.businessTypeId && (
-                            <p className="mt-1 text-red-500 text-xs">{errors.businessTypeId}</p>
-                          )}
-                          <p className="mt-1 text-xs text-slate-500">Select your business type to customize your experience</p>
-                        </div>
+                        )}
 
                         {/* Info Alert */}
                         <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
@@ -567,7 +659,7 @@ const StartFreeTrial = () => {
                         {/* Submit Button */}
                         <button
                           type="submit"
-                          disabled={isSubmitting || loadingBusinessTypes || !formData.businessTypeId}
+                          disabled={isSubmitting || loadingPlans || !formData.planId}
                           className="w-full mt-6 py-3.5 bg-gradient-to-r from-sky-600 to-indigo-600 rounded-xl text-white font-bold text-base hover:shadow-lg hover:scale-[1.02] transition-all duration-300 disabled:opacity-70 disabled:cursor-not-allowed disabled:hover:scale-100 flex items-center justify-center gap-2"
                         >
                           {isSubmitting ? (
@@ -659,10 +751,7 @@ const StartFreeTrial = () => {
 
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
               {featureCards.map((feature, index) => (
-                <div
-                  key={index}
-                  className="group bg-white rounded-2xl p-6 border border-gray-200 shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-1"
-                >
+                <div key={index} className="group bg-white rounded-2xl p-6 border border-gray-200 shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
                   <div className={`w-14 h-14 bg-gradient-to-r ${feature.color} rounded-xl flex items-center justify-center mb-5 shadow-lg group-hover:scale-110 transition-transform duration-300`}>
                     <feature.icon className="w-7 h-7 text-white" />
                   </div>

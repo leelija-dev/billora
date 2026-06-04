@@ -18,11 +18,13 @@ class FreeTrialService {
       }
 
       await api.get('/sanctum/csrf-cookie');
+      
 
       const response = await api.post('/free-trials', {
         customer_id: parseInt(data.customer_id, 10),
         business_type_id: parseInt(data.business_type_id, 10),
         customer_phone: data.customer_phone,
+        plan_id: parseInt(data.plan_id)|| null,
       });
 
       const result = response.data ?? response;

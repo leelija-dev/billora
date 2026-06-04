@@ -72,7 +72,7 @@ class ExpirePlans extends Command
             if ($latestPlan) {
                 $expiryDate = Carbon::parse($latestPlan->end_date);
                 
-                if ((int)$latestPlan->plan_id === 0) {
+                if ((int)$latestPlan->price === 0 && $latestPlan->payment_status === 'success' && $latestPlan->remarks === 'Free Trial') {
                     $shouldDeactivate = $expiryDate->lt($today);
                 } else {
                     // Paid plan => 7 days grace period
