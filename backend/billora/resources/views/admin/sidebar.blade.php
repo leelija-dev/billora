@@ -29,9 +29,56 @@
         <aside id="sidebar"
             class="w-64 bg-white  text-black h-screen fixed md:relative transform -translate-x-full md:translate-x-0 transition duration-300 z-50">
 
-            <div class="p-4 text-2xl font-bold border-b border-white text-center" style="color:rgb(61, 64, 219);">
-                {{ config('app.name') }}
+            @php
+    $appName = config('app.name');
+    $firstChar = substr($appName, 0, 1);
+    $remainingText = substr($appName, 1);
+@endphp
+
+<style>
+    @keyframes dash {
+        to {
+            stroke-dashoffset: -20;
+        }
+    }
+    
+    @keyframes slowBlink {
+        0%, 100% { 
+            opacity: 1;
+            transform: scale(1);
+        }
+        50% { 
+            opacity: 0;
+            transform: scale(0.8);
+        }
+    }
+    
+    .speed-dash {
+        animation: dash 0.6s linear infinite;
+    }
+    
+    .slow-blink {
+        animation: slowBlink 3s ease-in-out infinite;
+        display: inline-block;
+    }
+</style>
+
+<div class="p-4 border-b border-gray-200 bg-white">
+    <div class="flex items-center justify-center">
+        <div class="flex items-center group">
+      
+            <!-- Text with T hiding and visible slowly -->
+            <div class="flex items-baseline">
+                <span class="text-3xl font-black text-indigo-600 slow-blink">
+                    {{ $firstChar }}
+                </span>
+                <span class="text-2xl font-bold text-gray-700">
+                    {{ $remainingText }}
+                </span>
             </div>
+        </div>
+    </div>
+</div>
 
             <nav class="mt-4 space-y-2">
                 @if ($admin && $admin->can('view dashboard'))
