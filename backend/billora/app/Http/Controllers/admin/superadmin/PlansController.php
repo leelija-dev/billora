@@ -286,4 +286,24 @@ class PlansController extends Controller
         });
         return view('admin.plans.plan-purchase-history', $data);
     }
+
+    public function updateEndDate(Request $request, $id)
+    {
+        $data = $request->validate([
+            'new_end_date' => 'required',
+            'user_id' =>'required|exists:customers,id'
+        ]);
+
+        try {
+            $planPurchase = PlanPurchaseHistory::where('id',$id)->where('user_id',$data['user_id'])->firstOrFail();
+            $planPurchase->update([
+                'end_date' => $data['new_end_date']
+            ]);
+            Cache::tags(['plan_purchase_history'])->flush();
+
+            return redirect()->back()->with('success', 'Plan end date updated successfully.');
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'An error occurred while updating the end date: ' . $e->getMessage());
+        }
+    }
 }

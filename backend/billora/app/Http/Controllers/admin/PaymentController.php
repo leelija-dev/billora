@@ -1152,6 +1152,11 @@ body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height
                 'success' => false,
                 'message' => 'Your free trial has already been used.'
             ], 422);
+        }else if($customer->plan_id != null){
+            return response()->json([
+                'success' => false,
+                'message' => 'You already have an active plan.'
+            ], 422);
         }
         $startDate = now();
         $freeTrialDays = (int)config('app.free_trial_days'); // You can set this to any number of days you want for the free trial

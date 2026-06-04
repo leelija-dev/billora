@@ -387,6 +387,7 @@
                         <tr>
                             <th>Invoice No.</th>
                             <th>Plan Name</th>
+                            <th>User</th>
                             <th>Status</th>
                             <th>Price</th>
                             <th>Payment Method</th>
@@ -407,9 +408,17 @@
                                 </td>
                                 <td data-label="Plan Name">
                                     <div>
+                                         @if ($plans->plan_id == 0 && $plans->end_date == true)
+                                                <span class="font-semibold text-gray-900">Free Trial</span>
+                                        @else
                                         <div class="font-semibold text-gray-900">{{ $plans->plan->name ?? 'N/A' }}</div>
                                         <div class="text-xs text-gray-500 mt-0.5">{{ Str::limit($plans->plan->description ?? '', 40) }}</div>
+                                        @endif
                                     </div>
+                                </td>
+                                <td data-label="User">
+                                    <div class="font-semibold text-gray-900">{{ $plans?->user?->name ?? 'N/A' }}</div>
+                                    <div class="text-sm text-gray-500">{{ $plans->user->email ?? 'N/A' }}</div>
                                 </td>
                                 <td data-label="Status">
                                     @if($plans->status == 'active')
