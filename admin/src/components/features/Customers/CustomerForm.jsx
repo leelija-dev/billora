@@ -16,7 +16,7 @@ import {
   validationRules,
 } from '../../../utils/validators'
 
-const CustomerForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting }) => {
+const CustomerForm = ({ isEditForm, initialData, mode, onSubmit, onCancel, isSubmitting }) => {
   const { user } = useAuthStore()
   
   // Get current user ID
@@ -337,8 +337,9 @@ const CustomerForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting }) =
     >
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-          {mode === 'add' ? 'Add New Customer' : 'Edit Customer'}
+          {isEditForm ? 'Edit Customer' : 'Add New Customer'}
         </h2>
+       
         <div className="flex items-center space-x-2">
           <Button
             type="button"
@@ -355,7 +356,7 @@ const CustomerForm = ({ initialData, mode, onSubmit, onCancel, isSubmitting }) =
             icon={FiSave}
             loading={isSubmitting}
           >
-            {mode === 'add' ? 'Create Customer' : 'Save Changes'}
+            {isEditForm ? 'Save Changes' : 'Create Customer'}
           </Button>
         </div>
       </div>

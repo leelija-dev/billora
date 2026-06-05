@@ -31,7 +31,7 @@ export default function AboutPage() {
   const milestones = [
     { year: "2020", title: "The problem was personal", description: "We saw it firsthand. Small businesses, big billing pain, and we built the fix ourself.", icon: <FaSeedling className="text-3xl" />, stat: "Founded, 2020" },
     { year: "10,000+", title: "India said yes — fast", description: "Word spread without ads. Businesses switched because it worked. 10,000+ users. Year one done.", icon: <FaChartLine className="text-3xl" />, stat: "10,000+ active businesses" },
-    { year: "$1M", title: "Capital to match the ambition", description: "Proof secured the funding. $1M raised to scale fast. Product deepened. Team grew.", icon: <FaMoneyBillWave className="text-3xl" />, stat: "$1M raised" },
+    { year: "₹1M", title: "Capital to match the ambition", description: "Proof secured the funding. ₹1M raised to scale fast. Product deepened. Team grew.", icon: <FaMoneyBillWave className="text-3xl" />, stat: "₹1M raised" },
     { year: "28 states", title: "Pan-India. No state left behind", description: "From Ludhiana to Chennai. 28 states. Every market. Bharat wasn't a tagline — it was the plan.", icon: <FaMapMarkerAlt className="text-3xl" />, stat: "28 states covered" },
     { year: "1M+", title: "A number that speaks for itself", description: "1M+ transactions. Every month. 70,000+ businesses. ₹15,000 Cr moved. The mission became the milestone.", icon: <FaBullseye className="text-3xl" />, stat: "1M+ transactions / month" },
   ];
@@ -82,7 +82,7 @@ export default function AboutPage() {
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
                   <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
                 </span>
-                <span className="text-sm font-medium">Est. 2020</span>
+                <span className="text-sm font-medium">Est. 2026</span>
               </div>
               <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold mb-6 leading-tight">
                Digitalizing Small 

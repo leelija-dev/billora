@@ -68,36 +68,36 @@ const Features = () => {
   return (
     <section className="py-4 sm:py-12 md:py-20 lg:py-24 bg-gradient-to-br from-slate-50 to-white font-sans overflow-hidden relative">
       
-      {/* Floating Blob Bubbles - Animated Background */}
+      {/* Floating Blob Bubbles - Animated Background (disabled on mobile/tablet) */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         {/* Blob 1 - Top Left - Purple/Blue */}
-        <div className="absolute top-0 -left-20 w-96 h-96 bg-gradient-to-br from-purple-200/50 to-blue-200/50 rounded-full mix-blend-multiply blur-3xl animate-blob"></div>
+        <div className="absolute top-0 -left-20 w-96 h-96 bg-gradient-to-br from-purple-200/50 to-blue-200/50 rounded-full mix-blend-multiply blur-3xl lg:animate-blob"></div>
         
         {/* Blob 2 - Top Right - Yellow/Pink */}
-        <div className="absolute top-0 -right-20 w-96 h-96 bg-gradient-to-br from-yellow-200/40 to-pink-200/40 rounded-full mix-blend-multiply blur-3xl animate-blob animation-delay-2000"></div>
+        <div className="absolute top-0 -right-20 w-96 h-96 bg-gradient-to-br from-yellow-200/40 to-pink-200/40 rounded-full mix-blend-multiply blur-3xl lg:animate-blob lg:animation-delay-2000"></div>
         
         {/* Blob 3 - Center - Blue/Indigo */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-gradient-to-br from-blue-200/30 to-indigo-200/30 rounded-full mix-blend-multiply blur-3xl animate-blob animation-delay-4000"></div>
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-gradient-to-br from-blue-200/30 to-indigo-200/30 rounded-full mix-blend-multiply blur-3xl lg:animate-blob lg:animation-delay-4000"></div>
         
         {/* Blob 4 - Bottom Left - Green/Teal */}
-        <div className="absolute bottom-0 -left-20 w-80 h-80 bg-gradient-to-br from-green-200/40 to-teal-200/40 rounded-full mix-blend-multiply blur-3xl animate-blob animation-delay-3000"></div>
+        <div className="absolute bottom-0 -left-20 w-80 h-80 bg-gradient-to-br from-green-200/40 to-teal-200/40 rounded-full mix-blend-multiply blur-3xl lg:animate-blob lg:animation-delay-3000"></div>
         
         {/* Blob 5 - Bottom Right - Orange/Red */}
-        <div className="absolute bottom-0 -right-20 w-96 h-96 bg-gradient-to-br from-orange-200/40 to-red-200/40 rounded-full mix-blend-multiply blur-3xl animate-blob animation-delay-5000"></div>
+        <div className="absolute bottom-0 -right-20 w-96 h-96 bg-gradient-to-br from-orange-200/40 to-red-200/40 rounded-full mix-blend-multiply blur-3xl lg:animate-blob lg:animation-delay-5000"></div>
         
         {/* Blob 6 - Left Center - Indigo/Purple */}
-        <div className="absolute top-1/3 -left-32 w-80 h-80 bg-gradient-to-br from-indigo-200/40 to-purple-200/40 rounded-full mix-blend-multiply blur-3xl animate-blob animation-delay-1000"></div>
+        <div className="absolute top-1/3 -left-32 w-80 h-80 bg-gradient-to-br from-indigo-200/40 to-purple-200/40 rounded-full mix-blend-multiply blur-3xl lg:animate-blob lg:animation-delay-1000"></div>
         
         {/* Blob 7 - Right Center - Pink/Rose */}
-        <div className="absolute top-2/3 -right-32 w-80 h-80 bg-gradient-to-br from-pink-200/40 to-rose-200/40 rounded-full mix-blend-multiply blur-3xl animate-blob animation-delay-6000"></div>
+        <div className="absolute top-2/3 -right-32 w-80 h-80 bg-gradient-to-br from-pink-200/40 to-rose-200/40 rounded-full mix-blend-multiply blur-3xl lg:animate-blob lg:animation-delay-6000"></div>
         
         {/* Small Floating Bubbles */}
-        <div className="absolute top-20 left-[10%] w-16 h-16 bg-blue-300/30 rounded-full blur-xl animate-float"></div>
-        <div className="absolute top-40 right-[15%] w-24 h-24 bg-purple-300/30 rounded-full blur-xl animate-float animation-delay-1000"></div>
-        <div className="absolute bottom-32 left-[20%] w-20 h-20 bg-pink-300/30 rounded-full blur-xl animate-float animation-delay-2000"></div>
-        <div className="absolute bottom-48 right-[25%] w-28 h-28 bg-indigo-300/30 rounded-full blur-xl animate-float animation-delay-3000"></div>
-        <div className="absolute top-1/2 left-[5%] w-12 h-12 bg-teal-300/30 rounded-full blur-lg animate-float animation-delay-4000"></div>
-        <div className="absolute top-3/4 right-[10%] w-32 h-32 bg-amber-300/30 rounded-full blur-xl animate-float animation-delay-1500"></div>
+        <div className="absolute top-20 left-[10%] w-16 h-16 bg-blue-300/30 rounded-full blur-xl lg:animate-float"></div>
+        <div className="absolute top-40 right-[15%] w-24 h-24 bg-purple-300/30 rounded-full blur-xl lg:animate-float lg:animation-delay-1000"></div>
+        <div className="absolute bottom-32 left-[20%] w-20 h-20 bg-pink-300/30 rounded-full blur-xl lg:animate-float lg:animation-delay-2000"></div>
+        <div className="absolute bottom-48 right-[25%] w-28 h-28 bg-indigo-300/30 rounded-full blur-xl lg:animate-float lg:animation-delay-3000"></div>
+        <div className="absolute top-1/2 left-[5%] w-12 h-12 bg-teal-300/30 rounded-full blur-lg lg:animate-float lg:animation-delay-4000"></div>
+        <div className="absolute top-3/4 right-[10%] w-32 h-32 bg-amber-300/30 rounded-full blur-xl lg:animate-float lg:animation-delay-1500"></div>
       </div>
 
       <Container>
@@ -106,9 +106,6 @@ const Features = () => {
           {/* Header Section */}
           <div className="text-center mb-6 sm:mb-16 max-w-[800px] mx-auto">
             <SectionTitle title="Streamline Your Invoicing Maximize Cash Flow" />
-            {/* <p className="hidden xs:block text-xs sm:text-base lg:text-lg text-[#666] px-4 mt-1">
-              Everything you need to manage your business professionally
-            </p> */}
           </div>
 
           <div className="w-full">
@@ -123,12 +120,12 @@ const Features = () => {
                     feature.reverse ? 'lg:flex-row-reverse' : ''
                   }`}
                 >
-                  {/* Image Container */}
+                  {/* Image Container - disabled slide animations on mobile */}
                   <div
                     className={`w-full lg:flex-1 flex justify-center items-center transition-all duration-1000 px-4 ${
                       visibleItems[index]
-                        ? 'opacity-100 translate-x-0'
-                        : isEven ? 'opacity-0 -translate-x-10' : 'opacity-0 translate-x-10'
+                        ? 'lg:opacity-100 lg:translate-x-0'
+                        : isEven ? 'lg:opacity-0 lg:-translate-x-10' : 'lg:opacity-0 lg:translate-x-10'
                     }`}
                   >
                     <div className="w-full max-w-[380px] lg:max-w-[500px] overflow-hidden rounded-xl shadow-lg border border-gray-100 bg-white/80 backdrop-blur-sm">
@@ -137,17 +134,17 @@ const Features = () => {
                         alt={feature.title}
                         width={500}
                         height={300}
-                        className="w-full transition-transform duration-500 hover:scale-105"
+                        className="w-full transition-transform duration-500 lg:hover:scale-105"
                         style={{ width: '100%', height: 'auto' }}
                         priority={index === 0}
                       />
                     </div>
                   </div>
 
-                  {/* Text Content */}
+                  {/* Text Content - disabled slide animations on mobile */}
                   <div
-                    className={`w-full lg:flex-1 text-center lg:text-left px-6 ${
-                      visibleItems[index] ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
+                    className={`w-full lg:flex-1 text-center lg:text-left px-6 transition-all duration-1000 ${
+                      visibleItems[index] ? 'lg:opacity-100 lg:translate-y-0' : 'lg:opacity-0 lg:translate-y-10'
                     }`}
                   >
                     <h3 className="text-lg sm:text-2xl lg:text-3xl text-slate-900 mb-2 font-bold leading-tight">
@@ -166,7 +163,7 @@ const Features = () => {
 
                     <button
                       onClick={() => toggleReadMore(index)}
-                      className="inline-flex items-center gap-1 mt-3 text-[#2f5fa5] font-bold text-xs sm:text-base hover:underline transition-all duration-300 hover:scale-105"
+                      className="inline-flex items-center gap-1 mt-3 text-[#2f5fa5] font-bold text-xs sm:text-base hover:underline transition-all duration-300 lg:hover:scale-105"
                     >
                       {expandedItems[index] ? 'Show less' : 'Read more'}
                       <svg 
@@ -212,40 +209,42 @@ const Features = () => {
           }
         }
         
-        .animate-blob {
-          animation: blob 15s infinite ease-in-out;
-        }
-        
-        .animate-float {
-          animation: float 8s infinite ease-in-out;
-        }
-        
-        .animation-delay-1000 {
-          animation-delay: 1s;
-        }
-        
-        .animation-delay-1500 {
-          animation-delay: 1.5s;
-        }
-        
-        .animation-delay-2000 {
-          animation-delay: 2s;
-        }
-        
-        .animation-delay-3000 {
-          animation-delay: 3s;
-        }
-        
-        .animation-delay-4000 {
-          animation-delay: 4s;
-        }
-        
-        .animation-delay-5000 {
-          animation-delay: 5s;
-        }
-        
-        .animation-delay-6000 {
-          animation-delay: 6s;
+        @media (min-width: 1024px) {
+          .animate-blob {
+            animation: blob 15s infinite ease-in-out;
+          }
+          
+          .animate-float {
+            animation: float 8s infinite ease-in-out;
+          }
+          
+          .animation-delay-1000 {
+            animation-delay: 1s;
+          }
+          
+          .animation-delay-1500 {
+            animation-delay: 1.5s;
+          }
+          
+          .animation-delay-2000 {
+            animation-delay: 2s;
+          }
+          
+          .animation-delay-3000 {
+            animation-delay: 3s;
+          }
+          
+          .animation-delay-4000 {
+            animation-delay: 4s;
+          }
+          
+          .animation-delay-5000 {
+            animation-delay: 5s;
+          }
+          
+          .animation-delay-6000 {
+            animation-delay: 6s;
+          }
         }
       `}</style>
     </section>

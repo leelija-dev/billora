@@ -654,10 +654,9 @@ const Customers = () => {
             exit={{ opacity: 0, y: 20 }}
             className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6"
           >
-            <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">
-              {showEditForm ? "Edit Customer" : "Add New Customer"}
-            </h2>
+            
             <CustomerForm
+          isEditForm={showEditForm}
               initialData={selectedCustomer}
               onSubmit={handleSubmitCustomer}
               onCancel={handleCancelForm}
