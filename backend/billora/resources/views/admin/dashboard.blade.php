@@ -1929,7 +1929,7 @@
             dataLabels.forEach((label, i) => {
                 const val = chartData[i];
                 legendContainer.innerHTML +=
-                    `<div class="legend-item"><div class="legend-color" style="background: ${donutColors[i]}"></div><span>${label}: ${val} (${((val / chartData.reduce((a, b) => a + b, 0)) * 100).toFixed(1)}%)</span></div>`;
+                    `<div class="legend-item"><div class="legend-color" style="background: ${donutColors[i]}"></div><span>${label}: ${val} (${((val / chartData.reduce((a, b) => a + b, 0)) * 100).toFixed(1) || 0}%)</span></div>`;
             });
         }
         updateDonutLegend();

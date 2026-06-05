@@ -32,7 +32,8 @@
             @php
     $appName = config('app.name');
     $firstChar = substr($appName, 0, 1);
-    $remainingText = substr($appName, 1);
+    $lastChar = substr($appName, -1);
+    $remainingText = substr($appName, 1,);
 @endphp
 
 <style>
@@ -73,8 +74,11 @@
                     {{ $firstChar }}
                 </span>
                 <span class="text-2xl font-bold text-gray-700">
-                    {{ $remainingText }}
+                    {{ $remainingText }} 
                 </span>
+                {{-- <span class="text-3xl font-black text-indigo-600 slow-blink">
+                    {{ $lastChar }}
+                </span> --}}
             </div>
         </div>
     </div>
