@@ -69,6 +69,7 @@ export const useAuthStore = create(
         try {
           console.log('🔍 Checking auth status...');
           const response = await authService.checkSession();
+          
 
           if (response.status && response.user) {
             console.log('✅ User is authenticated:', response.user.email);

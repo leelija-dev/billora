@@ -10,6 +10,7 @@ class PlanPurchaseHistory extends Model
     protected $fillable = [
         'user_id',
         'plan_id',
+        'plan_mode',
         'price',
         'currency',
         'start_date',
