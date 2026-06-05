@@ -1653,7 +1653,7 @@
                         @foreach ($totalPlanPurchase as $order)
                             <div class="list-item">
                                 <div>
-                                    <div class="item-name">#{{ $order->id }} - {{ $order?->plan?->name ? $order?->plan?->name :'' }} - ( {{(($order->plan_mode == 'paid') ? 'Paid' : 'Free Trial')}} )</div>
+                                    <div class="item-name">#{{ $order->id }} - {{ $order?->plan?->name ? $order?->plan?->name :'' }} - ( {{($order->plan_mode ? ucfirst($order->plan_mode) : '')}} )</div>
                                     <div class="item-detail">{{ $order->user->email ? $order->user->email : '' }}</div>
                                 </div>
                                 <span
