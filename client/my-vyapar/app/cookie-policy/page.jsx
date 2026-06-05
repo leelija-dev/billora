@@ -8,7 +8,7 @@ const CookiePolicy = () => {
   const lastUpdated = "January 15, 2026";
 
   return (
-    <div className="min-h-screen bg-white pt-24 pb-16">
+    <div className="min-h-screen bg-white py-12">
       <Container size="default">
         <div className="max-w-7xl mx-auto">
           {/* Header */}
@@ -25,198 +25,233 @@ const CookiePolicy = () => {
           {/* Content */}
           <div className="space-y-8">
             
-            {/* Introduction */}
+            {/* LEGAL and intro */}
             <div>
-              <p className="text-gray-600 leading-relaxed">
-                This Cookie Policy explains how we use cookies and similar technologies on our website and 
-                billing software platform. By using our services, you consent to the use of cookies as 
-                described in this policy.
+              <p className="text-gray-600 leading-relaxed font-medium">LEGAL</p>
+              <p className="text-gray-600 leading-relaxed text-2xl font-bold mt-1">Cookie Policy</p>
+              <p className="text-gray-600 leading-relaxed italic mt-2">
+                How The Fast Bill uses cookies and similar technologies.
+              </p>
+              <p className="text-gray-600 leading-relaxed mt-1">
+                <strong>Applies to:</strong> thefastbill.com and the Fast Bill mobile application.
               </p>
             </div>
 
+            {/* Contents */}
+            <div>
+              <p className="text-gray-700 font-medium mb-2">Contents</p>
+              <div className="text-gray-600 text-sm space-y-0.5">
+                <p>1. About this policy 1</p>
+                <p>2. What are cookies? 1</p>
+                <p>3. Why we use cookies 1</p>
+                <p>4. Your consent 1</p>
+                <p>5. Cookies we use 1</p>
+                <p>6. Third-party cookies 1</p>
+                <p>7. Managing your cookies 1</p>
+                <p>8. "Do Not Track" signals 1</p>
+                <p>9. Cookies in our mobile app 1</p>
+                <p>10. Changes to this policy 1</p>
+                <p>11. Contact us 1</p>
+              </div>
+            </div>
+
             {/* Section 1 */}
-            <section>
-              <h2 className="text-xl font-semibold text-gray-900 mb-3">1. What Are Cookies?</h2>
+            <section id="about-this-policy">
+              <h2 className="text-xl font-semibold text-gray-900 mb-3">1. About this policy</h2>
               <p className="text-gray-600 leading-relaxed">
-                Cookies are small text files that are stored on your device (computer, tablet, or mobile) 
-                when you visit a website. They help websites recognize your device, remember your preferences, 
-                and improve your browsing experience. Cookies do not contain viruses or malicious code.
+                This Cookie Policy explains how Leelija Web Solutions Private Limited ("Fast Bill", "we", "us", or "our"),
+                the operator of The Fast Bill, uses cookies and similar technologies on our website at thefastbill.com and
+                in our mobile application (together, the "Service").
+              </p>
+              <p className="text-gray-600 leading-relaxed mt-2">
+                It describes what these technologies are, why we use them, and how you can control them. It should be
+                read together with our Privacy Policy, which explains how we handle personal data more generally.
               </p>
             </section>
 
             {/* Section 2 */}
-            <section>
-              <h2 className="text-xl font-semibold text-gray-900 mb-3">2. Types of Cookies We Use</h2>
-              <p className="text-gray-600 leading-relaxed mb-3">
-                We use the following types of cookies on our platform:
+            <section id="what-are-cookies">
+              <h2 className="text-xl font-semibold text-gray-900 mb-3">2. What are cookies?</h2>
+              <p className="text-gray-600 leading-relaxed">
+                Cookies are small text files that a website places on your device when you visit it. They let the site
+                recognise your device, remember your actions and preferences, and keep you signed in across pages.
+                "Similar technologies" include things like local storage, pixels, and software development kits (SDKs) in
+                mobile apps, which serve comparable purposes.
               </p>
-              
-              <div className="space-y-4 mt-4">
-                <div>
-                  <h3 className="font-semibold text-gray-800 mb-2">2.1 Essential Cookies</h3>
-                  <p className="text-gray-600 leading-relaxed">
-                    These cookies are necessary for our platform to function properly. They enable core 
-                    features such as:
-                  </p>
-                  <ul className="list-disc pl-6 mt-2 space-y-1 text-gray-600">
-                    <li>User authentication and login sessions</li>
-                    <li>Secure access to your account and billing data</li>
-                    <li>Navigation and basic platform functionality</li>
-                    <li>Remembering items in your shopping cart or invoice drafts</li>
-                  </ul>
-                  <p className="text-gray-600 leading-relaxed mt-2 text-sm text-gray-500">
-                    These cookies cannot be disabled as the platform would not work properly without them.
-                  </p>
-                </div>
-
-                <div>
-                  <h3 className="font-semibold text-gray-800 mb-2">2.2 Preference Cookies</h3>
-                  <p className="text-gray-600 leading-relaxed">
-                    These cookies remember your choices and preferences to provide a personalized experience:
-                  </p>
-                  <ul className="list-disc pl-6 mt-2 space-y-1 text-gray-600">
-                    <li>Language and region preferences</li>
-                    <li>Interface layout and theme settings</li>
-                    <li>Saved filters and view preferences in reports</li>
-                    <li>Notification settings</li>
-                  </ul>
-                </div>
-
-                <div>
-                  <h3 className="font-semibold text-gray-800 mb-2">2.3 Analytics Cookies</h3>
-                  <p className="text-gray-600 leading-relaxed">
-                    These cookies help us understand how users interact with our platform to improve performance:
-                  </p>
-                  <ul className="list-disc pl-6 mt-2 space-y-1 text-gray-600">
-                    <li>Pages visited and time spent on each page</li>
-                    <li>Features most commonly used</li>
-                    <li>Error messages and platform performance issues</li>
-                    <li>User journey and navigation patterns</li>
-                  </ul>
-                  <p className="text-gray-600 leading-relaxed mt-2">
-                    We use this anonymous data to enhance user experience and optimize our platform.
-                  </p>
-                </div>
-
-                <div>
-                  <h3 className="font-semibold text-gray-800 mb-2">2.4 Session Cookies</h3>
-                  <p className="text-gray-600 leading-relaxed">
-                    These cookies are temporary and expire when you close your browser. They are used to:
-                  </p>
-                  <ul className="list-disc pl-6 mt-2 space-y-1 text-gray-600">
-                    <li>Maintain your login status during a browsing session</li>
-                    <li>Process transactions securely</li>
-                    <li>Store temporary data while generating invoices</li>
-                  </ul>
-                </div>
-
-                <div>
-                  <h3 className="font-semibold text-gray-800 mb-2">2.5 Persistent Cookies</h3>
-                  <p className="text-gray-600 leading-relaxed">
-                    These cookies remain on your device for a set period or until you delete them. They help:
-                  </p>
-                  <ul className="list-disc pl-6 mt-2 space-y-1 text-gray-600">
-                    <li>Remember your login information for future visits</li>
-                    <li>Store long-term preferences and settings</li>
-                    <li>Track returning users for analytics purposes</li>
-                  </ul>
-                </div>
-              </div>
+              <p className="font-medium text-gray-800 mt-3">Session vs. persistent cookies</p>
+              <ul className="list-disc pl-6 space-y-1 text-gray-600">
+                <li><strong>Session cookies</strong> are temporary and are deleted when you close your browser.</li>
+                <li><strong>Persistent cookies</strong> remain on your device for a set period or until you delete them.</li>
+              </ul>
+              <p className="font-medium text-gray-800 mt-3">First-party vs. third-party cookies</p>
+              <ul className="list-disc pl-6 space-y-1 text-gray-600">
+                <li><strong>First-party cookies</strong> are set by Fast Bill directly.</li>
+                <li><strong>Third-party cookies</strong> are set by service providers we use, such as our analytics provider.</li>
+              </ul>
             </section>
 
             {/* Section 3 */}
-            <section>
-              <h2 className="text-xl font-semibold text-gray-900 mb-3">3. Third-Party Cookies</h2>
-              <p className="text-gray-600 leading-relaxed mb-3">
-                Some cookies are placed by third-party services that we use to enhance our platform:
-              </p>
-              <ul className="list-disc pl-6 space-y-2 text-gray-600 leading-relaxed">
-                <li><strong className="text-gray-800">Payment Gateways:</strong> To process transactions securely</li>
-                <li><strong className="text-gray-800">Analytics Services:</strong> To understand platform usage patterns</li>
-                <li><strong className="text-gray-800">Support Widgets:</strong> To provide customer support features</li>
+            <section id="why-we-use-cookies">
+              <h2 className="text-xl font-semibold text-gray-900 mb-3">3. Why we use cookies</h2>
+              <p className="text-gray-600 leading-relaxed mb-3">We use cookies to:</p>
+              <ul className="list-disc pl-6 space-y-2 text-gray-600">
+                <li>Keep you signed in and keep your account and session secure.</li>
+                <li>Remember your settings and preferences, so the Service works the way you expect.</li>
+                <li>Understand how the Service is used, so we can fix problems and improve it.</li>
               </ul>
-              <p className="text-gray-600 leading-relaxed mt-3">
-                These third parties have their own cookie policies, and we encourage you to review them. 
-                We do not control these third-party cookies.
-              </p>
-            </section>
-
-            {/* Section 4 */}
-            <section>
-              <h2 className="text-xl font-semibold text-gray-900 mb-3">4. How Long Do Cookies Last?</h2>
-              <p className="text-gray-600 leading-relaxed">
-                Cookies remain on your device for different durations:
-              </p>
-              <ul className="list-disc pl-6 mt-3 space-y-2 text-gray-600 leading-relaxed">
-                <li><strong className="text-gray-800">Session Cookies:</strong> Deleted when you close your browser</li>
-                <li><strong className="text-gray-800">Persistent Cookies:</strong> Remain for up to 12 months or until manually deleted</li>
-                <li><strong className="text-gray-800">Authentication Cookies:</strong> Last for the duration of your login session</li>
-              </ul>
-            </section>
-
-            {/* Section 5 */}
-            <section>
-              <h2 className="text-xl font-semibold text-gray-900 mb-3">5. Managing Cookie Preferences</h2>
-              <p className="text-gray-600 leading-relaxed mb-3">
-                You can control and manage cookies in several ways:
-              </p>
-              <ul className="list-disc pl-6 space-y-2 text-gray-600 leading-relaxed">
-                <li>Adjust your browser settings to block or delete cookies</li>
-                <li>Use your browser's incognito or private browsing mode</li>
-                <li>Install browser extensions that block tracking cookies</li>
-                <li>Access our cookie consent settings on first visit</li>
-              </ul>
-              <p className="text-gray-600 leading-relaxed mt-3">
-                Please note that blocking essential cookies may prevent our platform from functioning 
-                correctly. You may not be able to log in, generate invoices, or access your billing data.
-              </p>
-              
-              <div className="mt-4 p-4 bg-gray-50 border-l-4 border-gray-400">
-                <p className="text-sm text-gray-700">
-                  <strong>Browser Instructions:</strong> Most browsers allow you to manage cookies through their 
-                  settings. Look for "Privacy" or "Cookies" in your browser's menu. For specific instructions, 
-                  visit your browser's help documentation.
+              <div className="mt-3 p-4 bg-gray-50 border-l-4 border-gray-400">
+                <p className="text-gray-700">
+                  <strong>We do not currently use cookies for advertising or cross-site tracking, and we do not sell your data.</strong> If this changes, we will update this policy and ask for your consent where the law requires it.
                 </p>
               </div>
             </section>
 
-            {/* Section 6 */}
-            <section>
-              <h2 className="text-xl font-semibold text-gray-900 mb-3">6. Cookie Consent</h2>
+            {/* Section 4 */}
+            <section id="your-consent">
+              <h2 className="text-xl font-semibold text-gray-900 mb-3">4. Your consent</h2>
               <p className="text-gray-600 leading-relaxed">
-                When you first visit our website, you will see a cookie consent banner explaining our use of 
-                cookies. By continuing to use our platform, you consent to our use of cookies as described 
-                in this policy. You can withdraw your consent at any time by:
+                When you first visit our website, we show a cookie banner. Strictly necessary cookies are always active
+                because the Service cannot work without them. For optional cookies — such as analytics — we set them
+                only if you agree, in line with India's Digital Personal Data Protection Act, 2023. You can change or
+                withdraw your choices at any time using the "Cookie settings" option on our website.
               </p>
-              <ul className="list-disc pl-6 mt-3 space-y-2 text-gray-600 leading-relaxed">
-                <li>Clearing cookies from your browser</li>
-                <li>Adjusting your browser settings to block cookies</li>
-                <li>Clicking the "Revoke Consent" option in our cookie settings</li>
-              </ul>
+            </section>
+
+            {/* Section 5 */}
+            <section id="cookies-we-use">
+              <h2 className="text-xl font-semibold text-gray-900 mb-3">5. Cookies we use</h2>
+              <p className="text-gray-600 leading-relaxed mb-3">
+                The table below describes the cookies we typically use, grouped by category. Exact names and durations
+                can change as we improve the Service, but the categories and purposes remain as described.
+              </p>
+              <div className="overflow-x-auto">
+                <table className="min-w-full border border-gray-200 text-sm">
+                  <thead>
+                    <tr className="bg-gray-100">
+                      <th className="border border-gray-200 px-3 py-2 text-left text-gray-800 font-medium">Category</th>
+                      <th className="border border-gray-200 px-3 py-2 text-left text-gray-800 font-medium">Example</th>
+                      <th className="border border-gray-200 px-3 py-2 text-left text-gray-800 font-medium">Purpose</th>
+                      <th className="border border-gray-200 px-3 py-2 text-left text-gray-800 font-medium">Duration</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td className="border border-gray-200 px-3 py-2 text-gray-600 font-medium">Strictly necessary</td>
+                      <td className="border border-gray-200 px-3 py-2 text-gray-600 italic">session / auth</td>
+                      <td className="border border-gray-200 px-3 py-2 text-gray-600">Keeps you signed in and secures your session.</td>
+                      <td className="border border-gray-200 px-3 py-2 text-gray-600">Session (up to 30 days if "remember me" is on)</td>
+                    </tr>
+                    <tr>
+                      <td className="border border-gray-200 px-3 py-2 text-gray-600 font-medium">Strictly necessary</td>
+                      <td className="border border-gray-200 px-3 py-2 text-gray-600 italic">csrf_token</td>
+                      <td className="border border-gray-200 px-3 py-2 text-gray-600">Protects forms and requests against cross-site request forgery.</td>
+                      <td className="border border-gray-200 px-3 py-2 text-gray-600">Session</td>
+                    </tr>
+                    <tr>
+                      <td className="border border-gray-200 px-3 py-2 text-gray-600 font-medium">Strictly necessary</td>
+                      <td className="border border-gray-200 px-3 py-2 text-gray-600 italic">cookie_consent</td>
+                      <td className="border border-gray-200 px-3 py-2 text-gray-600">Remembers your cookie choices.</td>
+                      <td className="border border-gray-200 px-3 py-2 text-gray-600">6–12 months</td>
+                    </tr>
+                    <tr>
+                      <td className="border border-gray-200 px-3 py-2 text-gray-600 font-medium">Preferences</td>
+                      <td className="border border-gray-200 px-3 py-2 text-gray-600 italic">preferences</td>
+                      <td className="border border-gray-200 px-3 py-2 text-gray-600">Remembers settings such as language and layout.</td>
+                      <td className="border border-gray-200 px-3 py-2 text-gray-600">Up to 12 months</td>
+                    </tr>
+                    <tr>
+                      <td className="border border-gray-200 px-3 py-2 text-gray-600 font-medium">Analytics</td>
+                      <td className="border border-gray-200 px-3 py-2 text-gray-600 italic">usage analytics</td>
+                      <td className="border border-gray-200 px-3 py-2 text-gray-600">Measures how the Service is used so we can improve it.</td>
+                      <td className="border border-gray-200 px-3 py-2 text-gray-600">Up to 13 months</td>
+                    </tr>
+                    <tr>
+                      <td className="border border-gray-200 px-3 py-2 text-gray-600 font-medium">Analytics</td>
+                      <td className="border border-gray-200 px-3 py-2 text-gray-600 italic">session analytics</td>
+                      <td className="border border-gray-200 px-3 py-2 text-gray-600">Distinguishes visitors for short-term usage measurement.</td>
+                      <td className="border border-gray-200 px-3 py-2 text-gray-600">24 hours</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              <p className="text-gray-600 leading-relaxed mt-3 italic text-sm">
+                Analytics cookies are only set after you accept them in the cookie banner.
+              </p>
+            </section>
+
+            {/* Section 6 */}
+            <section id="third-party-cookies">
+              <h2 className="text-xl font-semibold text-gray-900 mb-3">6. Third-party cookies</h2>
+              <p className="text-gray-600 leading-relaxed">
+                To understand usage, we may rely on a third-party analytics provider, <em>Google Analytics</em> Such providers
+                may set their own cookies and process data under their own privacy policies. We encourage you to
+                review the policy of any provider we name here. We do not control third-party cookies, but you can
+                manage them using the controls described in Section 7.
+              </p>
             </section>
 
             {/* Section 7 */}
-            <section>
-              <h2 className="text-xl font-semibold text-gray-900 mb-3">7. Updates to This Cookie Policy</h2>
-              <p className="text-gray-600 leading-relaxed">
-                We may update this Cookie Policy periodically to reflect changes in technology, legal 
-                requirements, or our business practices. When we make changes, we will revise the 
-                "Last Updated" date at the top of this page. For significant changes, we will notify 
-                you via email or through a notice on our platform.
-              </p>
+            <section id="managing-your-cookies">
+              <h2 className="text-xl font-semibold text-gray-900 mb-3">7. Managing your cookies</h2>
+              <p className="text-gray-600 leading-relaxed mb-3">You have several ways to control cookies:</p>
+              <ul className="list-disc pl-6 space-y-2 text-gray-600">
+                <li><strong>Our cookie banner</strong> — accept, reject, or change optional cookies at any time through "Cookie settings" on our website.</li>
+                <li><strong>Your browser</strong> — Chrome, Firefox, Safari, and Edge all let you block or delete cookies in their settings. Check your browser's help pages for instructions.</li>
+                <li><strong>Your device</strong> — mobile operating systems let you reset or limit advertising identifiers used by apps.</li>
+              </ul>
+              <div className="mt-3 p-4 bg-gray-50 border-l-4 border-gray-400">
+                <p className="text-gray-700">
+                  <strong>Please note:</strong> blocking strictly necessary cookies will stop parts of the Service from working, including signing in.
+                </p>
+              </div>
             </section>
 
             {/* Section 8 */}
-            <section>
-              <h2 className="text-xl font-semibold text-gray-900 mb-3">8. Contact Us</h2>
-              <p className="text-gray-600 leading-relaxed mb-3">
-                If you have questions about our use of cookies or this Cookie Policy, please contact us:
+            <section id="do-not-track-signals">
+              <h2 className="text-xl font-semibold text-gray-900 mb-3">8. "Do Not Track" signals</h2>
+              <p className="text-gray-600 leading-relaxed">
+                Some browsers can send a "Do Not Track" signal. There is no common industry standard for how to
+                respond to it, so we currently rely on the choices you make in our cookie banner as the controlling
+                preference.
               </p>
-              <div className="space-y-1 text-gray-600">
-                <p><strong className="text-gray-800">Email:</strong> privacy@billora.com</p>
-                <p><strong className="text-gray-800">Phone:</strong> +91 7003150015</p>
-                <p><strong className="text-gray-800">Address:</strong> Leelija Web Solution Pvt Ltd, Taki Road, Bamunmura, Barasat, Kolkata - 700125, West Bengal, India</p>
+            </section>
+
+            {/* Section 9 */}
+            <section id="cookies-in-our-mobile-app">
+              <h2 className="text-xl font-semibold text-gray-900 mb-3">9. Cookies in our mobile app</h2>
+              <p className="text-gray-600 leading-relaxed">
+                Our mobile application may use similar technologies — such as local storage, device identifiers, and
+                SDKs — for the same purposes described above: keeping you signed in, remembering your preferences,
+                and understanding usage. You can manage these through your device settings.
+              </p>
+            </section>
+
+            {/* Section 10 */}
+            <section id="changes-to-this-policy">
+              <h2 className="text-xl font-semibold text-gray-900 mb-3">10. Changes to this policy</h2>
+              <p className="text-gray-600 leading-relaxed">
+                We may update this Cookie Policy from time to time to reflect changes in the technologies we use or in
+                the law. When we make material changes, we will update the "Last updated" date above and, where
+                appropriate, notify you through the Service. Your continued use of the Service after an update means
+                you accept the revised policy.
+              </p>
+            </section>
+
+            {/* Section 11 */}
+            <section id="contact-us">
+              <h2 className="text-xl font-semibold text-gray-900 mb-3">11. Contact us</h2>
+              <p className="text-gray-600 leading-relaxed mb-3">
+                If you have any questions about this Cookie Policy or how we use cookies, please contact us:
+              </p>
+              <div className="space-y-1 text-gray-600 bg-gray-50 p-4 rounded-lg">
+                <p><strong className="text-gray-800">Entity</strong> Leelija Web Solutions Private Limited</p>
+                <p><strong className="text-gray-800">Email</strong> info@leelija.com</p>
+                <p><strong className="text-gray-800">Phone</strong> +91 33 2584 9017</p>
+                <p><strong className="text-gray-800">Address</strong> Taki Road, Bamunmura, Barasat, Kolkata - 700125, West Bengal, India</p>
               </div>
+              <p className="text-gray-600 leading-relaxed mt-3">
+                For more on how we handle personal data, please see our Privacy Policy at thefastbill.com/privacy.
+              </p>
             </section>
           </div>
 
