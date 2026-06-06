@@ -1,8 +1,13 @@
-"use client";
+
 
 import React from 'react';
 import Container from '@/components/Container'; 
 import Link from 'next/link';
+
+export const metadata = {
+  title: "GDPR Compliance | The Fast Bill",
+  description: "Understand how The Fast Bill handles data protection and your rights under GDPR, including access, correction, erasure, and how to contact us about your data.",
+}
 
 const GDPRNotice = () => {
   const lastUpdated = "January 15, 2026";

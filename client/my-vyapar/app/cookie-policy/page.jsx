@@ -1,8 +1,13 @@
-"use client";
+
 
 import React from 'react';
 import Container from '@/components/Container'; 
 import Link from 'next/link';
+
+export const metadata = {
+  title: "Cookie Policy | The Fast Bill",
+  description: " Learn how The Fast Bill uses cookies and similar technologies, which are essential vs. optional, and how you can control or manage your cookie preferences.",
+}
 
 const CookiePolicy = () => {
   const lastUpdated = "January 15, 2026";

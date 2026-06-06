@@ -1,8 +1,13 @@
-"use client";
+
 
 import React from 'react';
 import Container from '@/components/Container'; 
 import Link from 'next/link';
+
+export const metadata = {
+  title: "Terms of Service | The Fast Bill",
+  description: "Review the Terms of Service governing your use of The Fast Bill's GST billing and inventory software, including accounts, plans, and acceptable use.",
+}
 
 const TermsOfService = () => {
   const lastUpdated = "January 15, 2026";

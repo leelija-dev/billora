@@ -4,8 +4,8 @@ import Contact from "./ContactClient";
 
 
 export const metadata = {
-  title: "Contact | The Fast Bill",
-  description: "Connect with us anytime, anywhere. Reach out to our team for support, inquiries, or feedback, and get a response within 24 hours. Start your free trial today and let’s build something great together.",
+  title: "Contact Us – Support & Inquiries | The Fast Bill",
+  description: "Get in touch with The Fast Bill team for support, sales, or feedback. Call, email, or fill our form for a response within 24 hours. Start your free trial today.",
 };
 
 export default function ContactPage() {

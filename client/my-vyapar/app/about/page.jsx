@@ -2,8 +2,8 @@
 import AboutClient from './AboutClient';
 
 export const metadata = {
-  title: "About The Fast Bill | Best Billing Software",
-  description: "Discover The Fast Bill’s journey in transforming Indian SMBs with smart billing, GST filing, and real-time inventory management software. Trusted by 70,000+ businesses across India.",
+  title: "About The Fast Bill – Empowering India's Small Businesses",
+  description: " Learn how The Fast Bill helps 70,000+ Indian businesses digitize billing and GST compliance with affordable, easy-to-use software. Discover our mission & story.",
 };
 
 export default function AboutPage() {

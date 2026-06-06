@@ -1,5 +1,5 @@
 // solution/page.jsx
-"use client";
+
 
 import Link from "next/link";
 import { 
@@ -11,6 +11,13 @@ import {
 } from 'react-icons/fa';
 import { HiOutlineLocationMarker } from 'react-icons/hi';
 import { MdPhone, MdEmail } from 'react-icons/md';
+
+export const metadata = {
+  title: "Billing & Inventory Solutions for Every Business | The Fast Bill",
+
+  description:
+    "Tailored GST billing, inventory, and accounting solutions for retail, enterprises, and professionals. POS, multi-branch, analytics & more. Book a free demo.",
+}
 
 export default function SolutionPage() {
   const solutions = [

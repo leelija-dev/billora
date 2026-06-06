@@ -1,8 +1,13 @@
-"use client";
+
 
 import React from 'react';
 import Container from '@/components/Container'; 
 import Link from 'next/link';
+
+export const metadata = {
+  title: "Privacy Policy | The Fast Bill",
+  description: "Read The Fast Bill's privacy policy to understand how we collect, use, store, and protect your personal and business data in line with India's DPDP Act",
+}
 
 const PrivacyPolicy = () => {
   const lastUpdated = "January 15, 2026";
