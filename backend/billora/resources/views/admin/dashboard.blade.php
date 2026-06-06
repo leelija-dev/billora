@@ -1671,8 +1671,8 @@
                         @endif
 
                     </div>
-                    <a href="{{ route('admin.plans.purchase-history') }}"><button class="see-all-btn">See All
-                            Orders</button></a>
+                    <a href="{{ route('admin.plans.purchase-history') }}"><button class="see-all-btn">See all
+                            plan purchases history</button></a>
                 </div>
                 <div class="info-card">
                     <div class="card-header-custom">
