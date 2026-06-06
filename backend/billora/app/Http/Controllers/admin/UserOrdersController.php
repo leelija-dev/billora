@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Customers;
 use App\Models\Products;
 use App\Models\UserOrderItems;
 use App\Models\UserOrders;
@@ -392,6 +393,13 @@ class UserOrdersController extends Controller
     public function userOrderDetails(Request $request,$mobile){
         try{
             $user_id = $request->user_id;
+            $user = Customers::find($user_id);
+            if(!$user){
+                return response()->json([
+                    'status' => false,
+                    'message' => 'User not found'
+                ]);
+            }
             $orders = UserOrders::where('user_id', $user_id)->where('customer_phone',$mobile)->with('items.product','store')->orderBy('id','desc')->get();
             
             return response()->json([
