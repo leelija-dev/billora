@@ -392,7 +392,7 @@ class UserOrdersController extends Controller
     }
     public function userOrderDetails(Request $request,$mobile){
         try{
-            $user_id = $request->user_id;
+            $user_id = Crypt::appearsEncrypted($request->user_id);
             $user = Customers::find($user_id);
             if(!$user){
                 return response()->json([
