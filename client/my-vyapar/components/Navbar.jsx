@@ -128,11 +128,11 @@ const Navbar = () => {
   // FIXED: Correct routeMap with proper indices matching navItems order
   const routeMap = {
     "/pricing": 0,
-    "/partner": 1,
-    "/solution": 2,
-    "/about": 3,    // About should be index 3 (matches navItems)
-    "/blog": 4,     // Blog should be index 4 (matches navItems)
-    "/contact": 5,
+   
+    "/solution": 1,
+    "/about": 2,    // About should be index 3 (matches navItems)
+    "/blog": 3,     // Blog should be index 4 (matches navItems)
+    "/contact": 4,
   };
 
   const isNavPage = (path) => {
@@ -453,7 +453,7 @@ const Navbar = () => {
 
   const navItems = [
     { name: "Pricing", href: "/pricing", icon: FiCreditCard },
-    { name: "Partner", href: "/partner", icon: FiUsers },
+   
     { name: "Solution", href: "/solution", icon: FiBriefcase },
     { name: "About", href: "/about", icon: FiHelpCircle },
     { name: "Blog", href: "/blog", icon: FiFileText },

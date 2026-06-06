@@ -185,19 +185,19 @@ export default function Contact() {
     <div className="w-full bg-gradient-to-b from-gray-50 to-white min-h-screen">
       {/* Hero Banner - Modern Design */}
       <div className="relative bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white py-12 sm:py-14 md:py-16 lg:py-16 xl:py-20 2xl:py-24 overflow-hidden">
-        {/* Animated Background Elements */}
-        <div className="absolute top-0 left-0 w-48 sm:w-56 md:w-64 lg:w-64 xl:w-72 2xl:w-96 h-48 sm:h-56 md:h-64 lg:h-64 xl:h-72 2xl:h-96 bg-white opacity-5 rounded-full -translate-x-1/2 -translate-y-1/2 animate-pulse"></div>
-        <div className="absolute bottom-0 right-0 w-72 sm:w-80 md:w-96 lg:w-96 xl:w-[450px] 2xl:w-[600px] h-72 sm:h-80 md:h-96 lg:h-96 xl:h-[450px] 2xl:h-[600px] bg-white opacity-5 rounded-full translate-x-1/2 translate-y-1/2 animate-pulse delay-1000"></div>
-        <div className="absolute top-1/2 left-1/2 w-36 sm:w-40 md:w-48 lg:w-48 xl:w-56 2xl:w-72 h-36 sm:h-40 md:h-48 lg:h-48 xl:h-56 2xl:h-72 bg-white opacity-5 rounded-full animate-ping"></div>
+        {/* Animated Background Elements - disabled on mobile/tablet */}
+        <div className="absolute top-0 left-0 w-48 sm:w-56 md:w-64 lg:w-64 xl:w-72 2xl:w-96 h-48 sm:h-56 md:h-64 lg:h-64 xl:h-72 2xl:h-96 bg-white opacity-5 rounded-full -translate-x-1/2 -translate-y-1/2 lg:animate-pulse"></div>
+        <div className="absolute bottom-0 right-0 w-72 sm:w-80 md:w-96 lg:w-96 xl:w-[450px] 2xl:w-[600px] h-72 sm:h-80 md:h-96 lg:h-96 xl:h-[450px] 2xl:h-[600px] bg-white opacity-5 rounded-full translate-x-1/2 translate-y-1/2 lg:animate-pulse lg:delay-1000"></div>
+        <div className="absolute top-1/2 left-1/2 w-36 sm:w-40 md:w-48 lg:w-48 xl:w-56 2xl:w-72 h-36 sm:h-40 md:h-48 lg:h-48 xl:h-56 2xl:h-72 bg-white opacity-5 rounded-full lg:animate-ping"></div>
 
         <div className="container mx-auto px-4 sm:px-6 md:px-8 lg:px-6 xl:px-8 2xl:px-12 relative z-10">
           <div className="flex flex-col md:flex-row items-center justify-between gap-6 sm:gap-8 md:gap-8 lg:gap-10 xl:gap-12 2xl:gap-16">
             <div className="text-center md:text-left">
-              <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-4xl xl:text-5xl 2xl:text-6xl font-bold mb-3 sm:mb-4 animate-fade-in">
+              <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-4xl xl:text-5xl 2xl:text-6xl font-bold mb-3 sm:mb-4 lg:animate-fade-in">
                 Let’s<span className="text-yellow-300"> Talk</span>
               </h1>
               <p className="text-base sm:text-lg md:text-xl lg:text-xl xl:text-2xl 2xl:text-2xl text-blue-100 max-w-2xl">
-               We’d love to hear your thoughts. Connect with us anytime, anywhere!
+                We’d love to hear your thoughts. Connect with us anytime, anywhere!
               </p>
 
               {/* Breadcrumb */}
@@ -213,12 +213,12 @@ export default function Contact() {
             {/* Conditional Free Trial Button - Only show if user doesn't have active plan */}
             {!isLoggedIn || !hasActivePlan ? (
               <Link href="/start-free-trial">
-                <button className="group relative bg-white text-blue-600 hover:text-blue-700 px-6 sm:px-7 md:px-8 lg:px-8 xl:px-9 2xl:px-10 py-3 sm:py-3.5 md:py-4 lg:py-4 xl:py-4.5 2xl:py-5 rounded-xl sm:rounded-2xl font-semibold transition-all hover:scale-105 shadow-xl hover:shadow-2xl text-sm sm:text-base md:text-base lg:text-base xl:text-lg 2xl:text-xl">
+                <button className="group relative bg-white text-blue-600 hover:text-blue-700 px-6 sm:px-7 md:px-8 lg:px-8 xl:px-9 2xl:px-10 py-3 sm:py-3.5 md:py-4 lg:py-4 xl:py-4.5 2xl:py-5 rounded-xl sm:rounded-2xl font-semibold transition-all lg:hover:scale-105 shadow-xl hover:shadow-2xl text-sm sm:text-base md:text-base lg:text-base xl:text-lg 2xl:text-xl">
                   <span className="relative z-10 flex items-center gap-1 sm:gap-2">
                     <FaRocket /> Start Free Trial
-                    <FaArrowRight className="group-hover:translate-x-1 transition-transform" />
+                    <FaArrowRight className="lg:group-hover:translate-x-1 transition-transform" />
                   </span>
-                  <div className="absolute inset-0 bg-gradient-to-r from-yellow-300 to-yellow-400 rounded-xl sm:rounded-2xl opacity-0 group-hover:opacity-20 transition-opacity"></div>
+                  <div className="absolute inset-0 bg-gradient-to-r from-yellow-300 to-yellow-400 rounded-xl sm:rounded-2xl opacity-0 lg:group-hover:opacity-20 transition-opacity"></div>
                 </button>
               </Link>
             ) : null}
@@ -241,7 +241,7 @@ export default function Contact() {
                   Drop us a Line
                 </h2>
                 <p className="text-gray-600 text-sm sm:text-base mt-2">
-                 Fill up your details & get a response from us within 24 hours.
+                  Fill up your details & get a response from us within 24 hours.
                 </p>
                 <div className="flex gap-2 mt-3 sm:mt-4">
                   <div className="w-10 sm:w-12 h-1 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full"></div>
@@ -257,7 +257,7 @@ export default function Contact() {
                 {/* Name Field */}
                 <div className="group">
                   <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2 ml-1">
-                    <span className="group-focus-within:text-blue-600 transition-colors">
+                    <span className="lg:group-focus-within:text-blue-600 transition-colors">
                       Full Name *
                     </span>
                   </label>
@@ -384,7 +384,7 @@ export default function Contact() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full bg-gradient-to-r from-[#2d236b] to-[#5b5bd6] text-white py-4 rounded-xl font-semibold hover:shadow-xl transform hover:scale-105 transition-all duration-300 relative overflow-hidden group disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                  className="w-full bg-gradient-to-r from-[#2d236b] to-[#5b5bd6] text-white py-4 rounded-xl font-semibold hover:shadow-xl lg:transform lg:hover:scale-105 transition-all duration-300 relative overflow-hidden group disabled:opacity-50 disabled:cursor-not-allowed lg:disabled:hover:scale-100"
                 >
                   <span className="relative z-10 flex items-center justify-center gap-2">
                     {loading ? (
@@ -395,11 +395,11 @@ export default function Contact() {
                     ) : (
                       <>
                         <span>Send Message</span>
-                        <BiSend className="group-hover:translate-x-1 transition-transform" />
+                        <BiSend className="lg:group-hover:translate-x-1 transition-transform" />
                       </>
                     )}
                   </span>
-                  <div className="absolute inset-0 bg-gradient-to-r from-blue-700 to-purple-700 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                  <div className="absolute inset-0 bg-gradient-to-r from-blue-700 to-purple-700 opacity-0 lg:group-hover:opacity-100 transition-opacity"></div>
                 </button>
 
                 {/* Trust Badge */}
@@ -424,12 +424,12 @@ export default function Contact() {
               </p>
             </div>
 
-            {/* Contact Cards Grid */}
+            {/* Contact Cards Grid - disabled hover animations on mobile */}
             <div className="grid gap-4 sm:gap-5 md:gap-6">
               {/* Phone Card */}
-              <div className="group bg-white rounded-xl sm:rounded-2xl p-4 sm:p-5 md:p-6 shadow-lg hover:shadow-2xl transition-all duration-300 border border-gray-100 hover:border-blue-200 hover:-translate-y-1">
+              <div className="group bg-white rounded-xl sm:rounded-2xl p-4 sm:p-5 md:p-6 shadow-lg hover:shadow-2xl transition-all duration-300 border border-gray-100 hover:border-blue-200 lg:hover:-translate-y-1">
                 <div className="flex items-start gap-3 sm:gap-4 md:gap-5">
-                  <div className="w-12 h-12 sm:w-13 sm:h-13 md:w-14 md:h-14 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl sm:rounded-2xl flex items-center justify-center text-white text-xl sm:text-2xl shadow-lg group-hover:scale-110 transition-transform flex-shrink-0">
+                  <div className="w-12 h-12 sm:w-13 sm:h-13 md:w-14 md:h-14 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl sm:rounded-2xl flex items-center justify-center text-white text-xl sm:text-2xl shadow-lg lg:group-hover:scale-110 transition-transform flex-shrink-0">
                     <MdPhone className="text-2xl" />
                   </div>
                   <div>
@@ -438,19 +438,19 @@ export default function Contact() {
                     </p>
                     <a
                       href="tel:+917003150015"
-                      className="text-lg sm:text-xl  font-bold text-gray-900 mb-1 hover:text-blue-600 transition-colors"
+                      className="text-lg sm:text-xl font-bold text-gray-900 mb-1 hover:text-blue-600 transition-colors"
                     >
                       +91 7003150015
                     </a>{" "}
                     <br />
                     <a
                       href="tel:+913325849017"
-                      className="text-lg sm:text-xl  font-bold text-gray-900 mb-1 hover:text-blue-600 transition-colors"
+                      className="text-lg sm:text-xl font-bold text-gray-900 mb-1 hover:text-blue-600 transition-colors"
                     >
                       +91 332 584 9017
                     </a>
                     <p className="text-xs sm:text-sm text-gray-500 flex items-center gap-2">
-                      <span className="w-1.5 sm:w-2 h-1.5 sm:h-2 bg-green-500 rounded-full animate-pulse"></span>
+                      <span className="w-1.5 sm:w-2 h-1.5 sm:h-2 bg-green-500 rounded-full lg:animate-pulse"></span>
                       9 AM To 7 PM (Everyday)
                     </p>
                   </div>
@@ -458,9 +458,9 @@ export default function Contact() {
               </div>
 
               {/* Email Card */}
-              <div className="group bg-white rounded-xl sm:rounded-2xl p-4 sm:p-5 md:p-6 shadow-lg hover:shadow-2xl transition-all duration-300 border border-gray-100 hover:border-purple-200 hover:-translate-y-1">
+              <div className="group bg-white rounded-xl sm:rounded-2xl p-4 sm:p-5 md:p-6 shadow-lg hover:shadow-2xl transition-all duration-300 border border-gray-100 hover:border-purple-200 lg:hover:-translate-y-1">
                 <div className="flex items-start gap-3 sm:gap-4 md:gap-5">
-                  <div className="w-12 h-12 sm:w-13 sm:h-13 md:w-14 md:h-14 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl sm:rounded-2xl flex items-center justify-center text-white text-xl sm:text-2xl shadow-lg group-hover:scale-110 transition-transform flex-shrink-0">
+                  <div className="w-12 h-12 sm:w-13 sm:h-13 md:w-14 md:h-14 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl sm:rounded-2xl flex items-center justify-center text-white text-xl sm:text-2xl shadow-lg lg:group-hover:scale-110 transition-transform flex-shrink-0">
                     <MdEmail className="text-2xl" />
                   </div>
                   <div>
@@ -469,7 +469,7 @@ export default function Contact() {
                     </p>
                     <a
                       href="mailto:info@leelija.com"
-                      className="text-lg sm:text-xl  font-bold text-gray-900 mb-1 hover:text-purple-600 transition-colors"
+                      className="text-lg sm:text-xl font-bold text-gray-900 mb-1 hover:text-purple-600 transition-colors"
                     >
                       info@leelija.com
                     </a>
@@ -483,7 +483,7 @@ export default function Contact() {
               {/* Address Card */}
               <div className="group bg-white rounded-xl sm:rounded-2xl p-4 sm:p-5 md:p-6 shadow-lg hover:shadow-2xl transition-all duration-300 border border-gray-100 hover:border-indigo-200">
                 <div className="flex gap-3 sm:gap-4 md:gap-5">
-                  <div className="w-12 h-12 sm:w-13 sm:h-13 md:w-14 md:h-14 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-xl sm:rounded-2xl flex items-center justify-center text-white text-xl sm:text-2xl shadow-lg group-hover:scale-110 transition-transform flex-shrink-0">
+                  <div className="w-12 h-12 sm:w-13 sm:h-13 md:w-14 md:h-14 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-xl sm:rounded-2xl flex items-center justify-center text-white text-xl sm:text-2xl shadow-lg lg:group-hover:scale-110 transition-transform flex-shrink-0">
                     <MdLocationOn className="text-2xl" />
                   </div>
                   <div>
@@ -577,7 +577,7 @@ export default function Contact() {
               </div>
             </div>
 
-            {/* Social Media Section */}
+            {/* Social Media Section - disabled hover animations on mobile */}
             <div className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-5 md:p-6 shadow-lg border border-gray-100">
               <h3 className="font-semibold text-gray-900 mb-3 sm:mb-4 flex items-center gap-2 text-sm sm:text-base">
                 <span className="w-0.5 sm:w-1 h-4 sm:h-5 bg-gradient-to-b from-blue-600 to-purple-600 rounded-full"></span>
@@ -585,27 +585,27 @@ export default function Contact() {
               </h3>
               <div className="flex flex-wrap gap-2 sm:gap-3">
                 <Link href="#" className="group relative">
-                  <div className="w-10 h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 bg-gradient-to-br from-blue-600 to-blue-700 text-white flex items-center justify-center rounded-xl hover:rounded-2xl hover:scale-110 transition-all duration-300 shadow-lg hover:shadow-xl">
+                  <div className="w-10 h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 bg-gradient-to-br from-blue-600 to-blue-700 text-white flex items-center justify-center rounded-xl lg:hover:rounded-2xl lg:hover:scale-110 transition-all duration-300 shadow-lg hover:shadow-xl">
                     <FaFacebookF className="text-base sm:text-lg" />
                   </div>
                 </Link>
                 <Link href="#" className="group relative">
-                  <div className="w-10 h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 bg-gradient-to-br from-pink-500 to-pink-600 text-white flex items-center justify-center rounded-xl hover:rounded-2xl hover:scale-110 transition-all duration-300 shadow-lg hover:shadow-xl">
+                  <div className="w-10 h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 bg-gradient-to-br from-pink-500 to-pink-600 text-white flex items-center justify-center rounded-xl lg:hover:rounded-2xl lg:hover:scale-110 transition-all duration-300 shadow-lg hover:shadow-xl">
                     <FaInstagram className="text-base sm:text-lg" />
                   </div>
                 </Link>
                 <Link href="#" className="group relative">
-                  <div className="w-10 h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 bg-gradient-to-br from-blue-700 to-blue-800 text-white flex items-center justify-center rounded-xl hover:rounded-2xl hover:scale-110 transition-all duration-300 shadow-lg hover:shadow-xl">
+                  <div className="w-10 h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 bg-gradient-to-br from-blue-700 to-blue-800 text-white flex items-center justify-center rounded-xl lg:hover:rounded-2xl lg:hover:scale-110 transition-all duration-300 shadow-lg hover:shadow-xl">
                     <FaLinkedinIn className="text-base sm:text-lg" />
                   </div>
                 </Link>
                 <Link href="#" className="group relative">
-                  <div className="w-10 h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 bg-gradient-to-br from-gray-800 to-gray-900 text-white flex items-center justify-center rounded-xl hover:rounded-2xl hover:scale-110 transition-all duration-300 shadow-lg hover:shadow-xl">
+                  <div className="w-10 h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 bg-gradient-to-br from-gray-800 to-gray-900 text-white flex items-center justify-center rounded-xl lg:hover:rounded-2xl lg:hover:scale-110 transition-all duration-300 shadow-lg hover:shadow-xl">
                     <FaTwitter className="text-base sm:text-lg" />
                   </div>
                 </Link>
                 <Link href="#" className="group relative">
-                  <div className="w-10 h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 bg-gradient-to-br from-red-600 to-red-700 text-white flex items-center justify-center rounded-xl hover:rounded-2xl hover:scale-110 transition-all duration-300 shadow-lg hover:shadow-xl">
+                  <div className="w-10 h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 bg-gradient-to-br from-red-600 to-red-700 text-white flex items-center justify-center rounded-xl lg:hover:rounded-2xl lg:hover:scale-110 transition-all duration-300 shadow-lg hover:shadow-xl">
                     <FaYoutube className="text-base sm:text-lg" />
                   </div>
                 </Link>
@@ -646,7 +646,7 @@ export default function Contact() {
         </div>
       </div>
 
-      {/* Add custom animations */}
+      {/* Add custom animations - only for desktop */}
       <style jsx>{`
         @keyframes fade-in {
           from {
@@ -659,8 +659,10 @@ export default function Contact() {
           }
         }
 
-        .animate-fade-in {
-          animation: fade-in 0.6s ease-out;
+        @media (min-width: 1024px) {
+          .animate-fade-in {
+            animation: fade-in 0.6s ease-out;
+          }
         }
       `}</style>
     </div>

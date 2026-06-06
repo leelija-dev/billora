@@ -39,6 +39,380 @@
   --feature-rose: #f43f5e;
 }
 
+
+
+
+/* ============================================
+   PROFESSIONAL SCROLLBAR STYLES
+   Gray & Blue Theme - Matching Hero Component
+   Cross-browser compatible (Chrome, Firefox, Edge, Safari)
+   ============================================ */
+
+/* Firefox (Modern) */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #c7d2fe #e2e8f0;
+}
+
+/* Firefox (Fallback for older versions) */
+@supports (scrollbar-width: auto) {
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: #a5b4fc #e0e7ff;
+  }
+}
+
+/* WebKit Browsers (Chrome, Edge, Safari) */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: linear-gradient(135deg, #e2e8f0, #f1f5f9);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, #a5b4fc, #818cf8);
+  border-radius: 10px;
+  transition: all 0.3s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, #818cf8, #6366f1);
+}
+
+::-webkit-scrollbar-thumb:active {
+  background: linear-gradient(135deg, #6366f1, #4f46e5);
+}
+
+/* Corner (when both scrollbars are visible) */
+::-webkit-scrollbar-corner {
+  background: #e2e8f0;
+}
+
+/* ============================================
+   SPECIFIC SCROLLBAR TARGETS
+   ============================================ */
+
+/* Sidebar / Drawer scrollbar */
+.sidebar-scroll,
+.cart-sidebar-scroll,
+[class*="sidebar"] ::-webkit-scrollbar,
+[class*="drawer"] ::-webkit-scrollbar {
+  width: 6px;
+}
+
+.sidebar-scroll::-webkit-scrollbar-track,
+.cart-sidebar-scroll::-webkit-scrollbar-track,
+[class*="sidebar"] ::-webkit-scrollbar-track,
+[class*="drawer"] ::-webkit-scrollbar-track {
+  background: #f8fafc;
+  border-radius: 6px;
+}
+
+.sidebar-scroll::-webkit-scrollbar-thumb,
+.cart-sidebar-scroll::-webkit-scrollbar-thumb,
+[class*="sidebar"] ::-webkit-scrollbar-thumb,
+[class*="drawer"] ::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, #a5b4fc, #818cf8);
+  border-radius: 6px;
+}
+
+.sidebar-scroll::-webkit-scrollbar-thumb:hover,
+.cart-sidebar-scroll::-webkit-scrollbar-thumb:hover,
+[class*="sidebar"] ::-webkit-scrollbar-thumb:hover,
+[class*="drawer"] ::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, #818cf8, #6366f1);
+}
+
+/* Modal / Popup scrollbar */
+.modal-scroll::-webkit-scrollbar,
+[class*="modal"] ::-webkit-scrollbar,
+[class*="popup"] ::-webkit-scrollbar {
+  width: 6px;
+}
+
+.modal-scroll::-webkit-scrollbar-track,
+[class*="modal"] ::-webkit-scrollbar-track,
+[class*="popup"] ::-webkit-scrollbar-track {
+  background: linear-gradient(135deg, #e2e8f0, #f1f5f9);
+  border-radius: 6px;
+}
+
+.modal-scroll::-webkit-scrollbar-thumb,
+[class*="modal"] ::-webkit-scrollbar-thumb,
+[class*="popup"] ::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, #a5b4fc, #818cf8);
+  border-radius: 6px;
+}
+
+.modal-scroll::-webkit-scrollbar-thumb:hover,
+[class*="modal"] ::-webkit-scrollbar-thumb:hover,
+[class*="popup"] ::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, #818cf8, #6366f1);
+}
+
+/* Product Grid scrollbar (horizontal) */
+.product-grid-scroll::-webkit-scrollbar,
+.grid-scroll::-webkit-scrollbar {
+  height: 6px;
+}
+
+.product-grid-scroll::-webkit-scrollbar-track,
+.grid-scroll::-webkit-scrollbar-track {
+  background: #e2e8f0;
+  border-radius: 6px;
+}
+
+.product-grid-scroll::-webkit-scrollbar-thumb,
+.grid-scroll::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, #a5b4fc, #818cf8);
+  border-radius: 6px;
+}
+
+.product-grid-scroll::-webkit-scrollbar-thumb:hover,
+.grid-scroll::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, #818cf8, #6366f1);
+}
+
+/* Category tabs scrollbar */
+.category-tabs-scroll::-webkit-scrollbar,
+[class*="category"] ::-webkit-scrollbar {
+  height: 3px;
+}
+
+.category-tabs-scroll::-webkit-scrollbar-track,
+[class*="category"] ::-webkit-scrollbar-track {
+  background: #e2e8f0;
+  border-radius: 3px;
+}
+
+.category-tabs-scroll::-webkit-scrollbar-thumb,
+[class*="category"] ::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, #c7d2fe, #a5b4fc);
+  border-radius: 3px;
+}
+
+.category-tabs-scroll::-webkit-scrollbar-thumb:hover,
+[class*="category"] ::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, #a5b4fc, #818cf8);
+}
+
+/* Table scrollbar */
+.table-scroll::-webkit-scrollbar,
+[class*="table"] ::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.table-scroll::-webkit-scrollbar-track,
+[class*="table"] ::-webkit-scrollbar-track {
+  background: linear-gradient(135deg, #e2e8f0, #f1f5f9);
+  border-radius: 8px;
+}
+
+.table-scroll::-webkit-scrollbar-thumb,
+[class*="table"] ::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, #a5b4fc, #818cf8);
+  border-radius: 8px;
+}
+
+/* ============================================
+   CUSTOM SCROLLBAR CLASSES FOR DIRECT USE
+   ============================================ */
+
+/* Thin scrollbar */
+.scrollbar-thin::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+
+/* Hidden scrollbar (but functional) */
+.scrollbar-hidden::-webkit-scrollbar {
+  width: 0px;
+  height: 0px;
+  background: transparent;
+}
+
+.scrollbar-hidden {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.scrollbar-hidden::-webkit-scrollbar {
+  display: none;
+}
+
+/* Rounded scrollbar */
+.scrollbar-rounded::-webkit-scrollbar-thumb {
+  border-radius: 20px;
+}
+
+/* Gradient scrollbar with hero colors */
+.scrollbar-hero-gradient::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, #c7d2fe, #a5b4fc);
+}
+
+.scrollbar-hero-gradient::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, #a5b4fc, #818cf8);
+}
+
+/* Custom blue scrollbar */
+.scrollbar-primary::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+}
+
+.scrollbar-primary::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+}
+
+/* Custom indigo scrollbar (matches hero) */
+.scrollbar-indigo::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, #6366f1, #4f46e5);
+}
+
+.scrollbar-indigo::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, #4f46e5, #4338ca);
+}
+
+/* Success scrollbar */
+.scrollbar-success::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, #10b981, #059669);
+}
+
+.scrollbar-success::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, #059669, #047857);
+}
+
+/* Warning scrollbar */
+.scrollbar-warning::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+}
+
+.scrollbar-warning::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, #d97706, #b45309);
+}
+
+/* ============================================
+   UTILITY CLASSES FOR SPECIFIC ELEMENTS
+   ============================================ */
+
+/* Chat/message area scrollbar */
+.message-area::-webkit-scrollbar {
+  width: 5px;
+}
+
+.message-area::-webkit-scrollbar-track {
+  background: #e2e8f0;
+  border-radius: 5px;
+}
+
+.message-area::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, #a5b4fc, #818cf8);
+  border-radius: 5px;
+}
+
+/* Code editor scrollbar */
+.code-editor::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.code-editor::-webkit-scrollbar-track {
+  background: #1e1e1e;
+}
+
+.code-editor::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, #a5b4fc, #818cf8);
+  border-radius: 5px;
+}
+
+.code-editor::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, #818cf8, #6366f1);
+}
+
+/* Dropdown scrollbar */
+.dropdown-scroll::-webkit-scrollbar {
+  width: 5px;
+}
+
+.dropdown-scroll::-webkit-scrollbar-track {
+  background: #f8fafc;
+  border-radius: 5px;
+}
+
+.dropdown-scroll::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, #a5b4fc, #818cf8);
+  border-radius: 5px;
+}
+
+/* Cart sidebar specific scrollbar */
+.cart-sidebar-scroll::-webkit-scrollbar-track {
+  background: linear-gradient(135deg, #f1f5f9, #f8fafc);
+}
+
+.cart-sidebar-scroll::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, #c7d2fe, #a5b4fc);
+}
+
+/* ============================================
+   ANIMATED SCROLLBAR
+   ============================================ */
+
+.animated-scrollbar::-webkit-scrollbar-thumb {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.animated-scrollbar::-webkit-scrollbar-thumb:hover {
+  transform: scale(1.05);
+}
+
+/* ============================================
+   SMOOTH SCROLLING
+   ============================================ */
+
+html {
+  scroll-behavior: smooth;
+}
+
+/* Disable smooth scrolling for users who prefer reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  
+  * {
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ============================================
+   CUSTOM SCROLLBAR FOR HERO SECTION
+   ============================================ */
+
+/* If you have a specific hero section container */
+.hero-container::-webkit-scrollbar-track {
+  background: linear-gradient(135deg, #e0e7ff, #c7d2fe);
+}
+
+.hero-container::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, #818cf8, #6366f1);
+}
+
+/* ============================================
+   OPTIONAL: GLOW EFFECT ON SCROLLBAR
+   ============================================ */
+
+.glow-scrollbar::-webkit-scrollbar-thumb {
+  box-shadow: 0 0 5px rgba(99, 102, 241, 0.3);
+}
+
+.glow-scrollbar::-webkit-scrollbar-thumb:hover {
+  box-shadow: 0 0 10px rgba(99, 102, 241, 0.5);
+}
+
 body {
   background: white !important;
   color: black;

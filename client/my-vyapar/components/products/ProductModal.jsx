@@ -1,4 +1,4 @@
-import { FiX, FiTag, FiPackage, FiMinus, FiPlus } from 'react-icons/fi';
+import { FiX, FiTag, FiPackage, FiMinus, FiPlus, FiPercent } from 'react-icons/fi';
 import { MdOutlineCategory, MdOutlineCheckCircle, MdOutlineCancel, MdOutlineRemoveShoppingCart } from 'react-icons/md';
 import { FaRupeeSign, FaPercentage } from 'react-icons/fa';
 import { BsCartPlus, BsLightningCharge } from 'react-icons/bs';
@@ -17,10 +17,17 @@ const ProductModal = ({
   const basePrice = product.selling_price || product.price;
   const discountPercent = product.discount_percentage || 0;
   const gstPercent = product.gst_percentage || 0;
+  
+  // Floating point calculations (no rounding)
   const discountAmount = (basePrice * discountPercent) / 100;
-  const priceAfterDiscount = basePrice - discountAmount;
-  const gstAmount = (priceAfterDiscount * gstPercent) / 100;
-  const finalPrice = priceAfterDiscount + gstAmount;
+  const discountedPrice = basePrice - discountAmount;
+  const gstAmount = (discountedPrice * gstPercent) / 100;
+  const finalPrice = discountedPrice + gstAmount;
+
+  // Helper function to format price with 2 decimal places
+  const formatPrice = (price) => {
+    return price.toFixed(2);
+  };
 
   return (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
@@ -62,28 +69,44 @@ const ProductModal = ({
               {product.category} • {product.brand}
             </p>
 
+            {/* Price Section - Showing discounted price */}
             <div className="mb-4">
-              {discountPercent > 0 && (
-                <div className="flex items-baseline gap-2 mb-1 flex-wrap">
-                  <span className="text-xl font-bold text-gray-900 flex items-center gap-1">
-                    <FaRupeeSign className="w-4 h-4" />
-                    {Math.round(finalPrice).toLocaleString()}
-                  </span>
-                  <span className="text-sm text-gray-400 line-through flex items-center gap-1">
-                    <FaRupeeSign className="w-3 h-3" />
-                    {Math.round(basePrice + gstAmount).toLocaleString()}
-                  </span>
-                  <span className="text-xs text-green-600 font-medium flex items-center gap-1">
-                    <FiTag className="w-3 h-3" />
-                    Save {Math.round(discountAmount)}₹
-                  </span>
+              {discountPercent > 0 ? (
+                <div className="space-y-2">
+                  <div className="flex items-baseline gap-2 flex-wrap">
+                    <span className="text-2xl font-bold text-gray-900 flex items-center gap-1">
+                      <FaRupeeSign className="w-4 h-4" />
+                      {formatPrice(discountedPrice)}
+                    </span>
+                    <span className="text-sm text-gray-400 line-through flex items-center gap-1">
+                      <FaRupeeSign className="w-3 h-3" />
+                      {formatPrice(basePrice)}
+                    </span>
+                    <span className="text-xs text-green-600 font-medium flex items-center gap-1">
+                      <FiTag className="w-3 h-3" />
+                      Save {formatPrice(discountAmount)}₹
+                    </span>
+                  </div>
+                  {gstPercent > 0 && (
+                    <p className="text-xs text-gray-500 flex items-center gap-1">
+                      <FiPercent className="w-3 h-3" />
+                      +{gstPercent}% GST will be applied at checkout
+                    </p>
+                  )}
                 </div>
-              )}
-              {discountPercent === 0 && (
-                <span className="text-2xl font-bold text-gray-900 flex items-center gap-1">
-                  <FaRupeeSign className="w-5 h-5" />
-                  {Math.round(finalPrice).toLocaleString()}
-                </span>
+              ) : (
+                <div className="space-y-1">
+                  <span className="text-2xl font-bold text-gray-900 flex items-center gap-1">
+                    <FaRupeeSign className="w-5 h-5" />
+                    {formatPrice(basePrice)}
+                  </span>
+                  {gstPercent > 0 && (
+                    <p className="text-xs text-gray-500 flex items-center gap-1">
+                      <FiPercent className="w-3 h-3" />
+                      +{gstPercent}% GST will be applied at checkout
+                    </p>
+                  )}
+                </div>
               )}
             </div>
 
@@ -110,6 +133,8 @@ const ProductModal = ({
                 </p>
               )}
             </div>
+
+            
 
             <div className="flex gap-3">
               {product.inStock ? (

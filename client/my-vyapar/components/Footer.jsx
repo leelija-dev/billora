@@ -59,7 +59,7 @@ const Footer = () => {
       links: [
         { label: 'About Us', href: '/about' },
         { label: 'Careers', href: '/careers' },
-        { label: 'Partner Program', href: '/partner' },
+       
        
         { label: 'Blog', href: '/blog' },
       ]
@@ -76,8 +76,10 @@ const Footer = () => {
       title: 'Legal',
       links: [
         { label: 'Privacy Policy', href: '/privacy-policy' },
-        { label: 'Terms of Service', href: '/terms-condition' },
+        { label: 'Terms of Service', href: '/terms-service' },
         { label: 'Cookie Policy', href: '/cookie-policy' },
+        { label: 'GDPR', href: '/gdpr' },
+
      
        
       ]

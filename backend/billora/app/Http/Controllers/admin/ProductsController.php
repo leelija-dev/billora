@@ -29,6 +29,7 @@ use Milon\Barcode\Facades\DNS1DFacade as DNS1D;
 use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Crypt;
+
 class ProductsController extends Controller
 {
     public function index(Request $request)
@@ -44,74 +45,71 @@ class ProductsController extends Controller
             $page = $request->get('page', 1);
             $search = $request->search ?? 'all';
 
-            
-        // Unique cache key
-        $cacheKey = "products_{$user}_{$search}_page_{$page}";
-        $fromCache = Cache::tags(['products_user_'.$user])->has($cacheKey);
-        $customer = Customers::findOrFail($user);
-        $startTime = microtime(true);
-           $permissions = DB::table('plan_permission_details as ppd')
-            ->join('plan_permission as pp', 'pp.id', '=', 'ppd.permission_id')
-            ->where('ppd.plan_id', $customer->plan_id)
-            ->select('pp.slug')
-            ->get();
 
-        $hasStockPermission = $permissions
-            ->contains('slug', 'stock-management');
-        //    $product = Cache::remember($cacheKey, 600, function () use ($user, $request) {
-        $product = Cache::tags(['products_user_'.$user])
-                      ->remember($cacheKey, 600, function () use ($user, $request,$hasStockPermission) {
-            
-            // $query = Products::with([
-            //  'variants',
-            //         'images',
-            //         'medicine_type'
-            // ])
-            // ->where('user_id', $user)
-            // ->where('is_active', true);
-                $relations = [
-                    'brand:id,name',
-                    'category:id,name',
-                    'unit:id,name',
-                    'variants',
-                    'images',
-                    'medicine_type',
-                   
-                ];
-            // has stock permission
-            if ($hasStockPermission) {
+            // Unique cache key
+            $cacheKey = "products_{$user}_{$search}_page_{$page}";
+            $fromCache = Cache::tags(['products_user_' . $user])->has($cacheKey);
+            $customer = Customers::findOrFail($user);
+            $startTime = microtime(true);
+            $permissions = DB::table('plan_permission_details as ppd')
+                ->join('plan_permission as pp', 'pp.id', '=', 'ppd.permission_id')
+                ->where('ppd.plan_id', $customer->plan_id)
+                ->select('pp.slug')
+                ->get();
 
-                    $relations['stocks'] = function ($query) {
+            $hasStockPermission = $permissions
+                ->contains('slug', 'stock-management');
+            //    $product = Cache::remember($cacheKey, 600, function () use ($user, $request) {
+            $product = Cache::tags(['products_user_' . $user])
+                ->remember($cacheKey, 600, function () use ($user, $request, $hasStockPermission) {
 
-                        // $query->select('id', 'product_id');
+                    // $query = Products::with([
+                    //  'variants',
+                    //         'images',
+                    //         'medicine_type'
+                    // ])
+                    // ->where('user_id', $user)
+                    // ->where('is_active', true);
+                    $relations = [
+                        'brand:id,name',
+                        'category:id,name',
+                        'unit:id,name',
+                        'variants',
+                        'images',
+                        'medicine_type',
 
-                    };
+                    ];
+                    // has stock permission
+                    if ($hasStockPermission) {
 
-                }
-                $query = Products::with($relations)
-                    ->where('user_id', $user)
-                    ->where('is_active', true);
-            // Search filter
-            if ($request->has('search') && !empty($request->search)) {
+                        $relations['stocks'] = function ($query) {
 
-                $query->where(function ($q) use ($request) {
+                            // $query->select('id', 'product_id');
 
-                    $q->where('name', 'like', '%' . $request->search . '%')
-                      ->orWhere('sku', 'like', '%' . $request->search . '%')
-                      ->orWhere('category_id', 'like', '%' . $request->search . '%')
-                      ->orWhere('brand_id', 'like', '%' . $request->search . '%')
-                      ->orWhere('unit_id', 'like', '%' . $request->search . '%')
-                      ->orWhere('unit_amount', 'like', '%' . $request->search . '%');
+                        };
+                    }
+                    $query = Products::with($relations)
+                        ->where('user_id', $user)
+                        ->where('is_active', true);
+                    // Search filter
+                    if ($request->has('search') && !empty($request->search)) {
 
+                        $query->where(function ($q) use ($request) {
+
+                            $q->where('name', 'like', '%' . $request->search . '%')
+                                ->orWhere('sku', 'like', '%' . $request->search . '%')
+                                ->orWhere('category_id', 'like', '%' . $request->search . '%')
+                                ->orWhere('brand_id', 'like', '%' . $request->search . '%')
+                                ->orWhere('unit_id', 'like', '%' . $request->search . '%')
+                                ->orWhere('unit_amount', 'like', '%' . $request->search . '%');
+                        });
+                    }
+
+                    return $query
+                        ->orderBy('id', 'desc')
+                        ->paginate(15);
                 });
-            }
-
-            return $query
-                ->orderBy('id', 'desc')
-                ->paginate(15);
-
-        });
-        $executionTime = microtime(true) - $startTime;
+            $executionTime = microtime(true) - $startTime;
             return response()->json([
                 'status' => true,
                 'message' => 'Product List',
@@ -184,7 +182,7 @@ class ProductsController extends Controller
         }
     }
 
-    
+
     private function uploadToCloudinary($file, $folder = 'Thefastbill')
     {
         try {
@@ -207,7 +205,7 @@ class ProductsController extends Controller
             return null;
         }
     }
-   
+
     private function generateQrAndUpload($product)
     {
         try {
@@ -252,35 +250,34 @@ class ProductsController extends Controller
             ];
         }
     }
-    public function show($id){
-         if (!Auth::check()) {
-        return response()->json([
-            'status' => false,
-            'message' => 'Authentication required'
-        ], 401);
-    }
-        $user = Auth::user()->id;
-        try{
-        $product = Products::where('user_id', $user)->where('id', $id)->with(['images','category','brand','unit','user','stocks','variants'])->firstOrFail();
-        if(!$product){
+    public function show($id)
+    {
+        if (!Auth::check()) {
             return response()->json([
                 'status' => false,
-                'message' => 'Product not found'
-            ]);
+                'message' => 'Authentication required'
+            ], 401);
         }
-        return response()->json([
-            'status' => true,
-            'message' => 'Product Details',
-            'data' => $product
-        ]);
-        }catch(\Exception $e){
+        $user = Auth::user()->id;
+        try {
+            $product = Products::where('user_id', $user)->where('id', $id)->with(['images', 'category', 'brand', 'unit', 'user', 'stocks', 'variants'])->firstOrFail();
+            if (!$product) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Product not found'
+                ]);
+            }
+            return response()->json([
+                'status' => true,
+                'message' => 'Product Details',
+                'data' => $product
+            ]);
+        } catch (\Exception $e) {
             return response()->json([
                 'status' => false,
                 'message' => $e->getMessage()
             ]);
         }
-        
-
     }
     private function generateBarcodeAndUpload($product)
     {
@@ -348,7 +345,7 @@ class ProductsController extends Controller
                 'selling_price'         => 'nullable',
                 'purchase_price'        => 'nullable',
                 'gst_percentage'        => 'nullable',
-                'purchase_gst_percentage'=> 'nullable',
+                'purchase_gst_percentage' => 'nullable',
                 'discount_percentage'   => 'nullable',
                 'description'           => 'nullable',
                 'is_active'             => 'required',
@@ -505,7 +502,7 @@ class ProductsController extends Controller
                     ]);
                 }
             }
-          
+
             //  CLEAN INVALID VARIANTS INPUT
             if ($request->has('variants')) {
 
@@ -546,7 +543,7 @@ class ProductsController extends Controller
             }
 
             DB::commit();
-            Cache::tags(['products_user_'.$user])->flush();
+            Cache::tags(['products_user_' . $user, 'stock_user_' . $user])->flush();
             return response()->json([
                 'status' => true,
                 'message' => 'Product Created Successfully',
@@ -569,8 +566,8 @@ class ProductsController extends Controller
             Cloudinary::uploadApi()->destroy($publicId);
         }
     }
-    
-   
+
+
     public function update($id, Request $request)
     {   // update product
         DB::beginTransaction();
@@ -600,7 +597,7 @@ class ProductsController extends Controller
                 'selling_price'         => 'nullable',
                 'purchase_price'        => 'nullable',
                 'gst_percentage'        => 'nullable',
-                'purchase_gst_percentage'=> 'nullable',
+                'purchase_gst_percentage' => 'nullable',
                 'discount_percentage'   => 'nullable',
                 'description'           => 'nullable',
                 'is_active'             => 'required',
@@ -673,7 +670,7 @@ class ProductsController extends Controller
 
                     $data['image'] = $upload['url'];
                     $data['image_public_id'] = $upload['public_id'];
-                }elseif ($request->has('image') && empty($request->image)) {
+                } elseif ($request->has('image') && empty($request->image)) {
 
                     // delete old image
                     if ($product->image_public_id) {
@@ -747,7 +744,7 @@ class ProductsController extends Controller
             }
             if ($request->hasFile('images') || $request->has('old_images')) {
                 $keepImages = $request->old_images ?? [];
-                 // Get old DB images
+                // Get old DB images
                 $oldDbImages = ProductImages::where('product_id', $product->id)->get();
                 foreach ($oldDbImages as $img) {
 
@@ -763,27 +760,27 @@ class ProductsController extends Controller
                         $img->delete();
                     }
                 }
-            
-            //update new images
-            if ($request->hasFile('images')) {
 
-                //  Insert new images
-                foreach ($request->file('images') as $image) {
+                //update new images
+                if ($request->hasFile('images')) {
 
-                    $upload = $this->uploadToCloudinary(
-                        $image,
-                        'Thefastbill/product-images'
-                    );
+                    //  Insert new images
+                    foreach ($request->file('images') as $image) {
 
-                    ProductImages::create([
-                        'user_id' => $user,
-                        'product_id' => $product->id,
-                        'image' => $upload['url'],
-                        'image_public_id' => $upload['public_id'],
-                        'created_by' => $user,
-                    ]);
+                        $upload = $this->uploadToCloudinary(
+                            $image,
+                            'Thefastbill/product-images'
+                        );
+
+                        ProductImages::create([
+                            'user_id' => $user,
+                            'product_id' => $product->id,
+                            'image' => $upload['url'],
+                            'image_public_id' => $upload['public_id'],
+                            'created_by' => $user,
+                        ]);
+                    }
                 }
-            }
             }
             //update variants
             if ($request->has('variants')) {
@@ -815,7 +812,7 @@ class ProductsController extends Controller
                 }
             }
             DB::commit();
-            Cache::tags(['products_user_'.$user])->flush();
+            Cache::tags(['products_user_' . $user, 'stock_user_' . $user])->flush();
             return response()->json([
                 'status' => true,
                 'message' => 'Product Updated Successfully',
@@ -852,7 +849,7 @@ class ProductsController extends Controller
             if ($stocksProduct) {
                 $stocksProduct->delete();
             }
-            Cache::tags(['products_user_' . $user])->flush();
+            Cache::tags(['products_user_' . $user, 'stock_user_' . $user])->flush();
             return response()->json([
                 'status' => true,
                 'message' => 'Product Deleted Successfully',
@@ -865,10 +862,11 @@ class ProductsController extends Controller
             ]);
         }
     }
-    public function bulkDelete(Request $request){     //bulk soft delete products
-            $ids=$request->validate([
-                'ids'=>'required'
-            ]);
+    public function bulkDelete(Request $request)
+    {     //bulk soft delete products
+        $ids = $request->validate([
+            'ids' => 'required'
+        ]);
         try {
             if (!Auth::check()) {
                 return response()->json([
@@ -884,15 +882,15 @@ class ProductsController extends Controller
                     'message' => 'You do not have any active plan. Please upgrade your plan.'
                 ]);
             }
-            foreach($ids['ids'] as $id){
-            $product = Products::where('user_id', $user)->where('id', $id)->first();
-            $product->delete();
-            $stocksProduct = Stocks::where('user_id',$user)->where('product_id', $product->id)->first();
-            if($stocksProduct){
-                $stocksProduct->delete();
+            foreach ($ids['ids'] as $id) {
+                $product = Products::where('user_id', $user)->where('id', $id)->first();
+                $product->delete();
+                $stocksProduct = Stocks::where('user_id', $user)->where('product_id', $product->id)->first();
+                if ($stocksProduct) {
+                    $stocksProduct->delete();
+                }
             }
-            }
-            Cache::tags(['products_user_' . $user])->flush();
+            Cache::tags(['products_user_' . $user, 'stock_user_' . $user])->flush();
             return response()->json([
                 'status' => true,
                 'message' => 'Product Deleted Successfully',
@@ -951,7 +949,7 @@ class ProductsController extends Controller
                 $stocks['created_by'] = $user;
                 $stock = Stocks::create($stocks);
             }
-            Cache::tags(['products_user_' . $user])->flush();
+            Cache::tags(['products_user_' . $user, 'stock_user_' . $user])->flush();
             return response()->json([
                 'status' => true,
                 'message' => 'Product Restored Successfully',
@@ -1011,7 +1009,7 @@ class ProductsController extends Controller
                 }
             }
             $product->forceDelete();
-            Cache::tags(['products_user_' . $user])->flush();
+            Cache::tags(['products_user_' . $user, 'stock_user_' . $user])->flush();
             return response()->json([
                 'status' => true,
                 'message' => 'Product Deleted Permanently',
@@ -1026,8 +1024,8 @@ class ProductsController extends Controller
     }
     public function bulkForceDelete(Request $request)  //bulk permanently delete products
     {
-        $ids=$request->validate([
-            'ids'=>'required'
+        $ids = $request->validate([
+            'ids' => 'required'
         ]);
         try {
             if (!Auth::check()) {
@@ -1045,43 +1043,42 @@ class ProductsController extends Controller
                     'message' => 'You do not have any active plan. Please upgrade your plan.'
                 ]);
             }
-            foreach($ids['ids'] as $id){
-            $product = Products::withTrashed()->where('user_id', $user)->where('id', $id)->first();
-            if ($product) {
-                if ($product->image) {
-                    // $fileId = $this->getFileIdFromUrl($product->image);
-                    // if ($fileId) {
-                    //     $this->deleteFromDrive($fileId);
-                    // }
-                    $this->deleteFromCloudinary(
-                        $product->image_public_id
-                    );
+            foreach ($ids['ids'] as $id) {
+                $product = Products::withTrashed()->where('user_id', $user)->where('id', $id)->first();
+                if ($product) {
+                    if ($product->image) {
+                        // $fileId = $this->getFileIdFromUrl($product->image);
+                        // if ($fileId) {
+                        //     $this->deleteFromDrive($fileId);
+                        // }
+                        $this->deleteFromCloudinary(
+                            $product->image_public_id
+                        );
+                    }
+                    if ($product->qr_code) {
+                        // $fileId = $this->getFileIdFromUrl($product->qr_code);
+
+                        // $this->deleteFromDrive($fileId);
+                        $this->deleteFromCloudinary(
+                            $product->image_public_id
+                        );
+
+                        $this->deleteFromCloudinary(
+                            $product->qr_public_id
+                        );
+
+                        $this->deleteFromCloudinary(
+                            $product->barcode_public_id
+                        );
+                    }
                 }
-                if ($product->qr_code) {
-                    // $fileId = $this->getFileIdFromUrl($product->qr_code);
-
-                    // $this->deleteFromDrive($fileId);
-                    $this->deleteFromCloudinary(
-                        $product->image_public_id
-                    );
-
-                    $this->deleteFromCloudinary(
-                        $product->qr_public_id
-                    );
-
-                    $this->deleteFromCloudinary(
-                        $product->barcode_public_id
-                    );
-                }
-            }
-            $product->forceDelete();
+                $product->forceDelete();
             }
             return response()->json([
                 'status' => true,
                 'message' => 'Product Deleted Permanently',
                 'data' => []
             ]);
-            
         } catch (\Exception $e) {
             return response()->json([
                 'status' => false,
@@ -1104,43 +1101,43 @@ class ProductsController extends Controller
                     'page' => $request->page
                 ])
             );
-            $fromCache = Cache::tags(['products_user_'.$id])->has($cacheKey);
-            $data = Cache::tags(['products_user_'.$id])->remember($cacheKey,600, function () use ($id, $request) {
-            // $products = Products::with('brand','category','unit')->where('user_id', $id)->where('is_active',true)->paginate(15);
-            $categoies = Categories::where('user_id', $id)->where('is_active', true)->get();
-            $brands = Brand::where('user_id', $id)->where('is_active', true)->get();
-            $store = Store::where('user_id', $id)->get();
-            $products = Products::with('brand', 'category', 'unit')
-                ->where('user_id', $id)
-                ->where('is_active', true)
-                ->when($request->search, function ($query) use ($request) {
+            $fromCache = Cache::tags(['products_user_' . $id])->has($cacheKey);
+            $data = Cache::tags(['products_user_' . $id])->remember($cacheKey, 600, function () use ($id, $request) {
+                // $products = Products::with('brand','category','unit')->where('user_id', $id)->where('is_active',true)->paginate(15);
+                $categoies = Categories::where('user_id', $id)->where('is_active', true)->get();
+                $brands = Brand::where('user_id', $id)->where('is_active', true)->get();
+                $store = Store::where('user_id', $id)->get();
+                $products = Products::with('brand', 'category', 'unit')
+                    ->where('user_id', $id)
+                    ->where('is_active', true)
+                    ->when($request->search, function ($query) use ($request) {
 
-                    $search = $request->search;
+                        $search = $request->search;
 
-                    $query->where(function ($q) use ($search) {
+                        $query->where(function ($q) use ($search) {
 
-                        // Product name
-                        $q->where('name', 'like', "%{$search}%")
+                            // Product name
+                            $q->where('name', 'like', "%{$search}%")
 
-                            // SKU
-                            ->orWhere('sku', 'like', "%{$search}%")
+                                // SKU
+                                ->orWhere('sku', 'like', "%{$search}%")
 
-                            // Price
-                            ->orWhere('selling_price', 'like', "%{$search}%")
-                            ->orWhere('description', 'like', "%{$search}%")
-                            // Category name
-                            ->orWhereHas('category', function ($q) use ($search) {
-                                $q->where('name', 'like', "%{$search}%");
-                            })
+                                // Price
+                                ->orWhere('selling_price', 'like', "%{$search}%")
+                                ->orWhere('description', 'like', "%{$search}%")
+                                // Category name
+                                ->orWhereHas('category', function ($q) use ($search) {
+                                    $q->where('name', 'like', "%{$search}%");
+                                })
 
-                            // Brand name
-                            ->orWhereHas('brand', function ($q) use ($search) {
-                                $q->where('name', 'like', "%{$search}%");
-                            });
-                    });
-                })
-                ->orderBy('id', 'desc')
-                ->paginate(12);
+                                // Brand name
+                                ->orWhereHas('brand', function ($q) use ($search) {
+                                    $q->where('name', 'like', "%{$search}%");
+                                });
+                        });
+                    })
+                    ->orderBy('id', 'desc')
+                    ->paginate(12);
                 return [
                     'status' => true,
                     'categories' => $categoies,
@@ -1156,8 +1153,8 @@ class ProductsController extends Controller
                 ]);
             }
             $executionTime = microtime(true) - $startTime;
-             $data['response_time'] = round($executionTime, 4) . ' sec';
-             $data['source'] = $fromCache ? 'Cache' : 'Database';
+            $data['response_time'] = round($executionTime, 4) . ' sec';
+            $data['source'] = $fromCache ? 'Cache' : 'Database';
             return response()->json($data);
         } catch (\Exception $e) {
             return response()->json([
@@ -1170,18 +1167,23 @@ class ProductsController extends Controller
     public function categoryProducts(Request $request, $id)
     {
         try {
+            $data = $request->validate([
+                'user_id' => 'required'
+            ]);
             $startTime = microtime(true);
-            $cacheKey = 'category_products'.$id;
-            $fromCache = Cache::tags(['category_products_user_'.$id])->get($cacheKey);
-            $user_id = Crypt::decryptString($request->user_id);
+            $page = $request->page ?? 1;
+            $cacheKey = 'category_products' . $id . '_page_' . $page;
+            $fromCache = Cache::tags(['category_products_user_' . $id])->get($cacheKey);
+            $user_id = Crypt::decryptString($data['user_id']);
 
-            $data = Cache::tags(['category_products_user_'.$id])->remember($cacheKey,600, function () use ($id, $user_id) {
+            $data = Cache::tags(['category_products_user_' . $id])->remember($cacheKey, 600, function () use ($id, $user_id) {
                 $products = Products::with('brand', 'category', 'unit')->where('category_id', $id)->where('user_id', $user_id)->paginate(12);
                 $categories = Categories::where('user_id', $user_id)
                     ->where('is_active', 1)
                     ->get();
                 return [
                     'status' => true,
+                    'user_id' => $user_id,
                     'products' => $products,
                     'categories' => $categories
                 ];
