@@ -121,7 +121,7 @@ export default function BlogPage() {
       {/* Search and Filter Section */}
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Filter Bar - Fully Rounded with Custom Dropdown */}
-        <div className="flex flex-col md:flex-row gap-3 bg-white/80 backdrop-blur-sm shadow-lg border border-slate-100 p-4 mb-3 sticky top-22 z-30 rounded-full">
+        <div className="flex flex-col md:flex-row gap-3 bg-white/80 backdrop-blur-sm shadow-lg border border-slate-100 p-4 mb-3 sticky top-22 z-30 md:rounded-full rounded-[20px]">
           {/* Search Bar */}
           <div className="flex-1">
             <div className="relative">

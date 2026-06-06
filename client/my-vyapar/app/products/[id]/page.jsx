@@ -1,15 +1,16 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { useParams, useRouter } from 'next/navigation'; // Add useParams
+import { useParams, useRouter } from 'next/navigation';
 import { useAuthStore } from '../../../store/authStoreZustand';
 import { useProductsStore } from '../../../store/productsStore';
 import { createProductOrder } from '../../../services/productPaymentService';
+import { productsService } from '../../../services/productsService';
 import toast, { Toaster } from 'react-hot-toast';
 import { FiFilter, FiShoppingCart, FiClock, FiGrid } from 'react-icons/fi';
 import { FaSearch } from 'react-icons/fa';
 
-// Import components (your existing imports remain the same)
+// Import components
 import ProductGrid from '../../../components/products/ProductGrid';
 import SearchBar from '../../../components/products/SearchBar';
 import CategoryTabs from '../../../components/products/CategoryTabs';
@@ -24,29 +25,17 @@ import SkeletonLoader from '../../../components/products/SkeletonLoader';
 
 const ProductsPage = () => {
     const router = useRouter();
-    const params = useParams(); // Get URL parameters
+    const params = useParams();
     const { user, token } = useAuthStore();
     const [isLoading, setIsLoading] = useState(true);
 
-    // Extract user ID from URL - supports both /products/16 and /products?id=16
-    const urlUserId = params?.id || params?.userId; // For dynamic route [id]
-
-    // If using query parameter instead: const urlUserId = searchParams.get('id');
-
+    // Extract user ID from URL - supports /products/16
+    const urlUserId = params?.id;
+    
     // Use URL user ID if available, otherwise fall back to auth user
     const effectiveUserId = urlUserId || user?.id;
 
-    // Subscribe to store changes
-    const productsStore = useProductsStore();
-
-    // Force re-render when store changes
-    useEffect(() => {
-        console.log("🔄 Store state changed:", {
-            loading: productsStore.loading,
-            productsLength: productsStore.products?.length || 0
-        });
-    }, [productsStore.loading, productsStore.products]);
-
+    // Get store actions and state
     const {
         products,
         pagination,
@@ -55,8 +44,16 @@ const ProductsPage = () => {
         storeId,
         fetchProducts,
         categories,
-        clearError
-    } = productsStore;
+        clearError,
+        setUserContext,
+        selectedCategory: storeSelectedCategory,
+        search: storeSearchTerm,
+        currentPage: storeCurrentPage,
+        updateCategory,
+        updateSearch,
+        changePage,
+        refresh
+    } = useProductsStore();
 
     const [isAuthReady, setIsAuthReady] = useState(false);
     const [selectedCategory, setSelectedCategory] = useState("All");
@@ -82,6 +79,7 @@ const ProductsPage = () => {
     const [isMobile, setIsMobile] = useState(false);
     const [retryCount, setRetryCount] = useState(0);
     const [isInitialLoading, setIsInitialLoading] = useState(true);
+    const [allProducts, setAllProducts] = useState([]); // Store all products for category counts
 
     // Log the extracted user ID for debugging
     useEffect(() => {
@@ -89,6 +87,37 @@ const ProductsPage = () => {
         console.log("📌 Auth User ID:", user?.id);
         console.log("📌 Effective User ID:", effectiveUserId);
     }, [urlUserId, user, effectiveUserId]);
+
+    // Set user context in store
+    useEffect(() => {
+        if (effectiveUserId && token) {
+            const userObject = { id: effectiveUserId };
+            setUserContext(userObject, token);
+            console.log("✅ User context set in store:", { userId: effectiveUserId });
+        } else if (effectiveUserId) {
+            // If only user ID is available (from URL), set user context without token
+            const userObject = { id: effectiveUserId };
+            setUserContext(userObject, null);
+            console.log("✅ User context set in store (no token):", { userId: effectiveUserId });
+        }
+    }, [effectiveUserId, token, setUserContext]);
+
+    // Fetch all products for category counts
+    const fetchAllProductsForCategories = useCallback(async () => {
+        if (!effectiveUserId) return;
+        
+        try {
+            console.log("📡 Fetching all products for category counts...");
+            const result = await productsService.fetchAllProducts(effectiveUserId, { 
+                page: 1, 
+                per_page: 999 // Fetch a large number to get all products
+            });
+            setAllProducts(result.products);
+            console.log(`✅ Loaded ${result.products.length} products for category counts`);
+        } catch (error) {
+            console.error("Error fetching all products:", error);
+        }
+    }, [effectiveUserId]);
 
     // Mobile detection
     useEffect(() => {
@@ -173,21 +202,138 @@ const ProductsPage = () => {
         }
     }, [selectedItems]);
 
-    // Cart helper functions (your existing functions remain the same)
+    // Initialize products fetch
+    const initializeProducts = useCallback(async () => {
+        if (!effectiveUserId) {
+            console.error("❌ No user ID available");
+            setIsInitialLoading(false);
+            return;
+        }
+
+        setIsInitialLoading(true);
+        try {
+            console.log("📡 Initializing products for user ID:", effectiveUserId);
+            
+            // Fetch all products for category counts first
+            await fetchAllProductsForCategories();
+            
+            // Then fetch paginated products for display
+            await fetchProducts(
+                storeCurrentPage || 1,
+                storeSelectedCategory || "All",
+                storeSearchTerm || ""
+            );
+        } catch (error) {
+            console.error("Error initializing products:", error);
+        } finally {
+            setIsInitialLoading(false);
+        }
+    }, [effectiveUserId, fetchProducts, storeCurrentPage, storeSelectedCategory, storeSearchTerm, fetchAllProductsForCategories]);
+
+    // Initial load
+    useEffect(() => {
+        if (effectiveUserId) {
+            initializeProducts();
+        }
+    }, [effectiveUserId, initializeProducts]);
+
+    // Handle category change using store's updateCategory
+    const handleCategoryChange = async (categoryId) => {
+        console.log("🔄 Changing category to:", categoryId);
+        setSelectedCategory(categoryId);
+        setIsInitialLoading(true);
+        
+        try {
+            await updateCategory(categoryId);
+        } catch (error) {
+            console.error("Error changing category:", error);
+        } finally {
+            setIsInitialLoading(false);
+        }
+    };
+
+    // Handle search submit using store's updateSearch
+    const handleSearchSubmit = async () => {
+        const term = searchInput.trim();
+        setSearchTerm(term);
+        console.log("🔍 Searching for:", term);
+        setIsInitialLoading(true);
+        
+        try {
+            await updateSearch(term);
+        } catch (error) {
+            console.error("Error searching:", error);
+        } finally {
+            setIsInitialLoading(false);
+        }
+    };
+
+    const clearSearch = async () => {
+        setSearchInput("");
+        setSearchTerm("");
+        setIsInitialLoading(true);
+        
+        try {
+            await updateSearch("");
+        } catch (error) {
+            console.error("Error clearing search:", error);
+        } finally {
+            setIsInitialLoading(false);
+        }
+    };
+
+    const handlePageChange = async (page) => {
+        setIsInitialLoading(true);
+        try {
+            await changePage(page);
+        } catch (error) {
+            console.error("Error changing page:", error);
+        } finally {
+            setIsInitialLoading(false);
+        }
+    };
+
+    const handleRetry = () => {
+        setRetryCount(prev => prev + 1);
+        clearError();
+        initializeProducts();
+    };
+
+    const openProduct = (product) => {
+        setSelectedProduct(product);
+        setShowModal(true);
+    };
+
+    const closeModal = () => setShowModal(false);
+
+    const toggleDescription = (productId) => {
+        setExpandedDescriptions(prev => ({ ...prev, [productId]: !prev[productId] }));
+    };
+
+    // Cart helper functions with FLOATING calculations (no rounding)
+    const formatPrice = (price) => {
+        return price.toFixed(2);
+    };
+
     const getCartTotal = () => {
         return cart.reduce((total, item) => {
             const sellingPrice = item.selling_price || item.price;
             const discountPercent = item.discount_percentage || 0;
             const gstPercent = item.gst_percentage || 0;
+            // Floating calculations without rounding
             const discountAmount = (sellingPrice * discountPercent) / 100;
-            const gstAmount = ((sellingPrice - discountAmount) * gstPercent) / 100;
-            const finalPrice = ((sellingPrice - discountAmount) + gstAmount);
+            const priceAfterDiscount = sellingPrice - discountAmount;
+            const gstAmount = (priceAfterDiscount * gstPercent) / 100;
+            const finalPrice = priceAfterDiscount + gstAmount;
             return total + (finalPrice * item.quantity);
         }, 0);
     };
 
     const getCartSubtotal = () => {
-        return cart.reduce((total, item) => total + ((item.selling_price || item.price) * item.quantity), 0);
+        return cart.reduce((total, item) => {
+            const sellingPrice = item.selling_price || item.price;
+            return total + (sellingPrice * item.quantity);
+        }, 0);
     };
 
     const getCartItemCount = () => {
@@ -199,8 +345,10 @@ const ProductsPage = () => {
             const sellingPrice = item.selling_price || item.price;
             const discountPercent = item.discount_percentage || 0;
             const gstPercent = item.gst_percentage || 0;
+            // Floating calculations without rounding
             const discountAmount = (sellingPrice * discountPercent) / 100;
-            const gstAmount = ((sellingPrice - discountAmount) * gstPercent) / 100;
+            const priceAfterDiscount = sellingPrice - discountAmount;
+            const gstAmount = (priceAfterDiscount * gstPercent) / 100;
             return total + (gstAmount * item.quantity);
         }, 0);
     };
@@ -209,6 +357,7 @@ const ProductsPage = () => {
         return cart.reduce((total, item) => {
             const sellingPrice = item.selling_price || item.price;
             const discountPercent = item.discount_percentage || 0;
+            // Floating calculation without rounding
             const discountAmount = (sellingPrice * discountPercent) / 100;
             return total + (discountAmount * item.quantity);
         }, 0);
@@ -358,7 +507,6 @@ const ProductsPage = () => {
             return;
         }
 
-        // Use effectiveUserId for order placement
         if (!effectiveUserId) {
             setPopupMessage("Please login or provide a valid user ID to place order");
             setPopup(true);
@@ -371,7 +519,7 @@ const ProductsPage = () => {
 
         try {
             const orderData = {
-                user_id: effectiveUserId, // Use the URL user ID or auth user ID
+                user_id: effectiveUserId,
                 store_id: storeId,
                 customer_name: formData.fullName.trim(),
                 customer_phone: cleanPhone,
@@ -387,7 +535,6 @@ const ProductsPage = () => {
             if (response.status === true || response.data?.order_id || response.order_id) {
                 toast.success('Order placed successfully!');
 
-                // STORE USER ID FOR REDIRECT IN ORDER SUCCESS PAGE
                 localStorage.setItem("productUserId", JSON.stringify(effectiveUserId));
 
                 const orderInfo = {
@@ -419,105 +566,7 @@ const ProductsPage = () => {
         }
     };
 
-    const fetchProductsData = useCallback(async (page = 1, categoryId = "All", term = "") => {
-        try {
-            clearError();
-
-            // Check if we have a valid user ID from URL or auth
-            if (!effectiveUserId) {
-                console.error("❌ No user ID available from URL or auth");
-                setPopupMessage("Invalid user ID. Please check the URL.");
-                setPopup(true);
-                setIsInitialLoading(false);
-                return;
-            }
-
-            console.log("📡 Fetching products for user ID:", effectiveUserId);
-
-            // Pass the effective user ID to fetchProducts
-            // We need to create a user object that matches what fetchProducts expects
-            const userObject = { id: effectiveUserId };
-
-            await fetchProducts(page, categoryId, term, userObject, token);
-        } catch (error) {
-            console.error("Fetch error:", error);
-        } finally {
-            setIsInitialLoading(false);
-        }
-    }, [effectiveUserId, token, fetchProducts, clearError]);
-
-    const handleRetry = () => {
-        setRetryCount(prev => prev + 1);
-        clearError();
-        setIsInitialLoading(true);
-        fetchProductsData(1, selectedCategory, searchTerm);
-    };
-
-    useEffect(() => {
-        // Set auth ready to true if we have a valid user ID from URL or auth
-        if (effectiveUserId) {
-            setIsAuthReady(true);
-            fetchProductsData(1, selectedCategory, searchTerm);
-        } else if (user?.id) {
-            setIsAuthReady(true);
-            fetchProductsData(1, selectedCategory, searchTerm);
-        }
-    }, [effectiveUserId, selectedCategory, searchTerm, retryCount, fetchProductsData, user]);
-
-    const handleCategoryChange = (categoryId) => {
-        console.log("🔄 handleCategoryChange called:", {
-            categoryId,
-            previousCategory: selectedCategory,
-            searchTerm,
-            willFetch: true
-        });
-        setSelectedCategory(categoryId);
-        fetchProductsData(1, categoryId, searchTerm);
-    };
-
-    const handleSearchSubmit = () => {
-        const term = searchInput.trim();
-        setSearchTerm(term);
-        console.log("🔍 handleSearchSubmit called:", {
-            term,
-            previousTerm: searchTerm,
-            willFetch: true
-        });
-        fetchProductsData(1, selectedCategory, term);
-    };
-
-    const clearSearch = () => {
-        setSearchInput("");
-        setSearchTerm("");
-        fetchProductsData(1, selectedCategory, "");
-    };
-
-    const openProduct = (product) => {
-        setSelectedProduct(product);
-        setShowModal(true);
-    };
-
-    const closeModal = () => setShowModal(false);
-
-    const toggleDescription = (productId) => {
-        setExpandedDescriptions(prev => ({ ...prev, [productId]: !prev[productId] }));
-    };
-
-    const cartQuantities = cart.reduce((acc, item) => ({ ...acc, [item.id]: item.quantity }), {});
-
-    // Debug logging
-    console.log("🔍 Page render state:", {
-        loading,
-        productsLength: products?.length || 0,
-        storeError,
-        isProductsArray: Array.isArray(products),
-        isInitialLoading,
-        effectiveUserId,
-        urlUserId,
-        authUserId: user?.id
-    });
-
-    // Sort products only (no price filtering)
+    // Sort products
     const sortedProducts = [...products].sort((a, b) => {
         if (sort === "low") {
             return (a.selling_price || a.price) - (b.selling_price || b.price);
@@ -527,7 +576,20 @@ const ProductsPage = () => {
         return 0;
     });
 
-    // Rest of your JSX remains the same...
+    const cartQuantities = cart.reduce((acc, item) => ({ ...acc, [item.id]: item.quantity }), {});
+
+    // Debug logging
+    console.log("🔍 Page render state:", {
+        loading,
+        productsLength: products?.length || 0,
+        allProductsLength: allProducts.length,
+        storeError,
+        isInitialLoading,
+        effectiveUserId,
+        storeSelectedCategory,
+        storeSearchTerm
+    });
+
     return (
         <div className="min-h-screen bg-gray-50">
             <Toaster position="top-right" />
@@ -605,11 +667,13 @@ const ProductsPage = () => {
                                 </div>
                             </div>
 
-                            {/* Category Tabs */}
+                            {/* Category Tabs - Pass both products and allProducts */}
                             <CategoryTabs
                                 categories={categories}
-                                selectedCategory={selectedCategory}
+                                selectedCategory={storeSelectedCategory || selectedCategory}
                                 onCategoryChange={handleCategoryChange}
+                                products={products}
+                                allProducts={allProducts}
                             />
 
                             {/* Filters Bar */}
@@ -623,6 +687,16 @@ const ProductsPage = () => {
                             {/* Skeleton Loading or Product Grid */}
                             {isInitialLoading || (loading && products.length === 0) ? (
                                 <SkeletonLoader />
+                            ) : storeError ? (
+                                <div className="text-center py-12">
+                                    <p className="text-red-500 mb-4">{storeError}</p>
+                                    <button
+                                        onClick={handleRetry}
+                                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                                    >
+                                        Retry
+                                    </button>
+                                </div>
                             ) : (
                                 <>
                                     {/* Product Grid */}
@@ -647,7 +721,7 @@ const ProductsPage = () => {
                                     {!loading && !storeError && sortedProducts.length > 0 && pagination?.last_page > 1 && (
                                         <Pagination
                                             pagination={pagination}
-                                            onPageChange={(page) => fetchProductsData(page, selectedCategory, searchTerm)}
+                                            onPageChange={handlePageChange}
                                             loading={loading}
                                         />
                                     )}
@@ -662,7 +736,7 @@ const ProductsPage = () => {
                     isOpen={showFilterOverlay}
                     onClose={() => setShowFilterOverlay(false)}
                     categories={categories}
-                    selectedCategory={selectedCategory}
+                    selectedCategory={storeSelectedCategory || selectedCategory}
                     onCategoryChange={(catId) => {
                         handleCategoryChange(catId);
                         setShowFilterOverlay(false);
@@ -674,7 +748,7 @@ const ProductsPage = () => {
                         setSort("");
                         setSearchInput("");
                         setSearchTerm("");
-                        fetchProductsData(1, "All", "");
+                        handleCategoryChange("All");
                         setShowFilterOverlay(false);
                     }}
                 />

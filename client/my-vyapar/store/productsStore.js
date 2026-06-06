@@ -1,7 +1,8 @@
-// store/productsStore.js - Zustand store for products management
+// store/productsStore.js - Zustand store for products management using secure API
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { logger } from '../utils/logger';
+import { productsService } from '../services/productsService';
 
 // Create Zustand store for products
 export const useProductsStore = create(
@@ -17,6 +18,9 @@ export const useProductsStore = create(
       search: '',
       selectedCategory: 'All',
       currentPage: 1,
+      lastFetchParams: null,
+      user: null,
+      token: null,
 
       // Actions
       setProducts: (products) => set({ products }),
@@ -28,163 +32,107 @@ export const useProductsStore = create(
       setSearch: (search) => set({ search }),
       setSelectedCategory: (category) => set({ selectedCategory: category }),
       setCurrentPage: (page) => set({ currentPage: page }),
+      setUserContext: (user, token) => set({ user, token }),
 
-      // Fetch products from API
-      fetchProducts: async (page = 1, categoryId = "All", term = "", user, token) => {
-        set({ loading: true, error: null });
+      // Reset to first page when filters change
+      resetPagination: () => set({ currentPage: 1 }),
+
+      // Update search with category reset
+      updateSearch: async (searchTerm) => {
+        set({ 
+          search: searchTerm, 
+          currentPage: 1
+        });
+        
+        const state = get();
+        if (state.user?.id) {
+          await state.fetchProducts(
+            state.currentPage, 
+            state.selectedCategory, 
+            searchTerm
+          );
+        }
+      },
+
+      // Update category with proper API call
+      updateCategory: async (categoryId) => {
+        const state = get();
+        
+        set({ 
+          selectedCategory: categoryId, 
+          currentPage: 1,
+          loading: true,
+          error: null
+        });
         
         try {
-          // Note: restaurant-all-products is a public endpoint, no auth required
-          // But we still need user ID for the API call
-          if (!user || !user.id) {
-            logger.log('User ID required for products API:', { user });
+          if (state.user?.id) {
+            await get().fetchProducts(
+              1,
+              categoryId,
+              state.search
+            );
+          }
+        } catch (error) {
+          logger.error('Error updating category:', error);
+          set({ error: error.message, loading: false });
+        }
+      },
+
+      // Fetch products from API using service
+      fetchProducts: async (page = 1, categoryId = "All", term = "") => {
+        const state = get();
+        
+        // Prevent duplicate calls with same parameters
+        const currentParams = { page, categoryId, term, userId: state.user?.id };
+        const { lastFetchParams } = get();
+        
+        if (lastFetchParams && 
+            JSON.stringify(lastFetchParams) === JSON.stringify(currentParams) &&
+            get().products.length > 0) {
+          logger.log('Skipping duplicate fetch with same parameters');
+          return;
+        }
+        
+        set({ loading: true, error: null, lastFetchParams: currentParams });
+        
+        try {
+          // Validate user
+          if (!state.user?.id) {
             throw new Error('User ID is required to fetch products');
           }
-
-          const params = new URLSearchParams({
-            page: String(page),
-            per_page: 15,
-          });
           
-          if (term) params.set("search", term);
+          let result;
           
-          let url = "";
+          // Use service to fetch products based on category
           if (categoryId && categoryId !== "All") {
-            params.set("user_id", String(user.id));
-            url = `${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000/api'}/restaurant-all-products/category/${categoryId}?${params.toString()}`;
+            result = await productsService.fetchProductsByCategory(
+              categoryId,
+              state.user.id,
+              { page, per_page: 12, search: term }
+            );
           } else {
-            url = `${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000/api'}/restaurant-all-products/${user.id}?${params.toString()}`;
+            result = await productsService.fetchAllProducts(
+              state.user.id,
+              { page, per_page: 12, search: term }
+            );
           }
-
-          logger.log("Fetching products from:", url);
-
-          const response = await fetch(url, {
-            headers: {
-              'Content-Type': 'application/json',
-              'Accept': 'application/json'
-            },
-            credentials: 'include' // Include cookies for authentication
-          });
-
-          if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-          }
-
-          const productsData = await response.json();
-          console.log("🔍 Products API response:", productsData);
-          console.log("🔍 Products data structure:", {
-            hasProducts: !!productsData?.products,
-            hasProductsData: !!productsData?.products?.data,
-            productsDataArray: Array.isArray(productsData?.products?.data),
-            productsLength: productsData?.products?.data?.length,
-            status: productsData?.status
-          });
-
-          // Set storeId only if stores data exists (for regular API, not category API)
-          if (Array.isArray(productsData?.stores) && productsData.stores.length > 0) {
-            set({ storeId: productsData.stores[0].id });
-            logger.log("Store ID set:", productsData.stores[0].id);
-          }
-
-          // Process products data
-          let productsArray = [];
-          if (productsData?.products?.data && Array.isArray(productsData.products.data)) {
-            productsArray = productsData.products.data;
-            console.log("✅ Using products.data array:", productsArray.length, "products");
-          } else if (productsData?.data && Array.isArray(productsData.data)) {
-            productsArray = productsData.data;
-            console.log("✅ Using data array:", productsArray.length, "products");
-          } else if (Array.isArray(productsData)) {
-            productsArray = productsData;
-            console.log("✅ Using direct array:", productsArray.length, "products");
-          } else {
-            console.log("❌ No products found in response structure");
-            console.log("Available keys:", Object.keys(productsData));
-            console.log("Products structure:", productsData?.products);
-            console.log("Data structure:", productsData?.data);
-          }
-
-          // Transform products
-          const transformedProducts = productsArray.map(product => {
-            let imageUrl = product.image;
-            
-            if (imageUrl && (imageUrl.startsWith('http://') || imageUrl.startsWith('https://'))) {
-              if (imageUrl.includes('drive.google.com')) {
-                let fileId = null;
-                
-                if (imageUrl.includes('/file/d/')) {
-                  const match = imageUrl.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
-                  fileId = match ? match[1] : null;
-                } else if (imageUrl.includes('uc?export=view')) {
-                  const match = imageUrl.match(/id=([a-zA-Z0-9_-]+)/);
-                  fileId = match ? match[1] : null;
-                }
-                
-                if (fileId) {
-                  imageUrl = `https://drive.google.com/thumbnail?id=${fileId}&sz=w400-h400`;
-                } else {
-                  imageUrl = null;
-                }
-              }
-            } else if (imageUrl && imageUrl.startsWith('/')) {
-              imageUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000/api'}${imageUrl}`;
-            } else if (imageUrl && imageUrl !== "") {
-              const cleanImageUrl = imageUrl.replace(/^"|"$/g, '');
-              imageUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000/api'}/storage/${cleanImageUrl}`;
-            } else {
-              imageUrl = "https://placehold.co/400x400/f0f0f0/999?text=No+Image";
-            }
-
-            return {
-              id: product.id,
-              name: product.name || "Unnamed Product",
-              selling_price: parseFloat(product.selling_price) || 0,
-              price: parseFloat(product.selling_price) || 0,
-              category: product.category?.name || "General",
-              brand: product.brand?.name || "Unknown",
-              unit: product.unit?.name || "Piece",
-              unit_id: product.unit_id || 1,
-              inStock: product.is_active === 1 || product.is_active === true,
-              discount_percentage: parseFloat(product.discount_percentage) || 0,
-              gst_percentage: parseFloat(product.gst_percentage) || 0,
-              description: product.description || "",
-              img: imageUrl,
-            };
-          });
-
-          // Update state
-          // Force immediate state update
-          const newState = {
-            products: transformedProducts,
-            pagination: {
-              current_page: productsData.current_page || productsData.products?.current_page || 1,
-              last_page: productsData.last_page || productsData.products?.last_page || 1,
-              per_page: productsData.per_page || productsData.products?.per_page || 15,
-              total: productsData.total || productsData.products?.total || 0,
-              next_page_url: productsData.next_page_url || productsData.products?.next_page_url,
-              prev_page_url: productsData.prev_page_url || productsData.products?.prev_page_url,
-              first_page_url: productsData.first_page_url || productsData.products?.first_page_url,
-              last_page_url: productsData.last_page_url || productsData.products?.last_page_url,
-              links: productsData.links || productsData.products?.links || []
-            },
-            categories: productsData.categories && Array.isArray(productsData.categories) 
-              ? [{ id: "All", name: "All" }, ...productsData.categories] 
-              : [{ id: "All", name: "All" }],
+          
+          // Update store with transformed data
+          set({
+            products: result.products,
+            pagination: result.pagination,
+            categories: result.categories,
+            storeId: result.storeId || get().storeId,
             loading: false,
             error: null
-          };
+          });
           
-          set(newState);
-          console.log("✅ Loading set to false, products count:", transformedProducts.length);
+          logger.log("Successfully loaded", result.products.length, "products");
           
-          // Force a re-render in development
-          if (process.env.NODE_ENV === 'development') {
-            setTimeout(() => {
-              console.log("🔄 Forced re-render check");
-            }, 100);
+          if (categoryId && categoryId !== "All") {
+            logger.log(`Filtered by category: ${categoryId}`);
           }
-
-          logger.log("Successfully loaded", transformedProducts.length, "products");
           
         } catch (error) {
           logger.error("Error fetching products:", error);
@@ -194,6 +142,88 @@ export const useProductsStore = create(
             products: []
           });
           throw error;
+        }
+      },
+
+      // Fetch categories only
+      fetchCategories: async () => {
+        const state = get();
+        if (!state.user?.id) return [];
+        
+        try {
+          const categories = await productsService.getCategories(state.user.id);
+          set({ categories });
+          return categories;
+        } catch (error) {
+          logger.error("Error fetching categories:", error);
+          set({ error: error.message });
+          throw error;
+        }
+      },
+
+      // Change page with current filters
+      changePage: async (newPage) => {
+        const state = get();
+        if (newPage === state.currentPage) return;
+        
+        set({ currentPage: newPage, loading: true });
+        
+        try {
+          await state.fetchProducts(
+            newPage,
+            state.selectedCategory,
+            state.search
+          );
+        } catch (error) {
+          logger.error("Error changing page:", error);
+          set({ loading: false });
+        }
+      },
+
+      // Refresh current view
+      refresh: async () => {
+        const state = get();
+        await state.fetchProducts(
+          state.currentPage,
+          state.selectedCategory,
+          state.search
+        );
+      },
+
+      // Apply advanced filters
+      applyFilters: async (filters) => {
+        const state = get();
+        if (!state.user?.id) return;
+        
+        set({ loading: true, error: null, currentPage: 1 });
+        
+        try {
+          const result = await productsService.fetchProductsWithFilters(
+            state.user.id,
+            {
+              ...filters,
+              page: 1,
+              per_page: 12,
+              search: filters.search || state.search,
+              categoryId: filters.categoryId || state.selectedCategory
+            }
+          );
+          
+          set({
+            products: result.products,
+            pagination: result.pagination,
+            categories: result.categories,
+            loading: false,
+            error: null
+          });
+          
+          // Update filter states if provided
+          if (filters.categoryId) set({ selectedCategory: filters.categoryId });
+          if (filters.search !== undefined) set({ search: filters.search });
+          
+        } catch (error) {
+          logger.error("Error applying filters:", error);
+          set({ error: error.message, loading: false });
         }
       },
 
@@ -207,7 +237,8 @@ export const useProductsStore = create(
         storeId: null,
         search: '',
         selectedCategory: 'All',
-        currentPage: 1
+        currentPage: 1,
+        lastFetchParams: null
       }),
 
       // Reset error
@@ -215,9 +246,8 @@ export const useProductsStore = create(
     }),
     {
       name: 'products-storage',
-      storage: createJSONStorage(() => sessionStorage), // Use sessionStorage for products
+      storage: createJSONStorage(() => sessionStorage),
       partialize: (state) => ({
-        // Only persist these fields
         storeId: state.storeId,
         search: state.search,
         selectedCategory: state.selectedCategory,
@@ -234,3 +264,6 @@ export const useProductsError = () => useProductsStore((state) => state.error);
 export const useProductsPagination = () => useProductsStore((state) => state.pagination);
 export const useProductsCategories = () => useProductsStore((state) => state.categories);
 export const useProductsStoreId = () => useProductsStore((state) => state.storeId);
+export const useSelectedCategory = () => useProductsStore((state) => state.selectedCategory);
+export const useSearchTerm = () => useProductsStore((state) => state.search);
+export const useCurrentPage = () => useProductsStore((state) => state.currentPage);
