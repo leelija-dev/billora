@@ -1653,7 +1653,7 @@
                         @foreach ($totalPlanPurchase as $order)
                             <div class="list-item">
                                 <div>
-                                    <div class="item-name">#{{ $order->id }} - {{ $order?->plan?->name ? $order?->plan?->name :'' }} - ( {{(($order->plan_mode == 'paid') ? 'Paid' : 'Free Trial')}} )</div>
+                                    <div class="item-name">#{{ $order->id }} - {{ $order?->plan?->name ? $order?->plan?->name :'' }} - ( {{($order->plan_mode ? ucfirst($order->plan_mode) : '')}} )</div>
                                     <div class="item-detail">{{ $order->user->email ? $order->user->email : '' }}</div>
                                 </div>
                                 <span
@@ -1929,7 +1929,7 @@
             dataLabels.forEach((label, i) => {
                 const val = chartData[i];
                 legendContainer.innerHTML +=
-                    `<div class="legend-item"><div class="legend-color" style="background: ${donutColors[i]}"></div><span>${label}: ${val} (${((val / chartData.reduce((a, b) => a + b, 0)) * 100).toFixed(1)}%)</span></div>`;
+                    `<div class="legend-item"><div class="legend-color" style="background: ${donutColors[i]}"></div><span>${label}: ${val} (${((val / chartData.reduce((a, b) => a + b, 0)) * 100).toFixed(1) || 0}%)</span></div>`;
             });
         }
         updateDonutLegend();

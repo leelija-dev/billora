@@ -1173,7 +1173,7 @@ class ProductsController extends Controller
             $startTime = microtime(true);
             $cacheKey = 'category_products'.$id;
             $fromCache = Cache::tags(['category_products_user_'.$id])->get($cacheKey);
-            $user_id = $request->user_id;
+            $user_id = Crypt::decryptString($request->user_id);
 
             $data = Cache::tags(['category_products_user_'.$id])->remember($cacheKey,600, function () use ($id, $user_id) {
                 $products = Products::with('brand', 'category', 'unit')->where('category_id', $id)->where('user_id', $user_id)->paginate(12);

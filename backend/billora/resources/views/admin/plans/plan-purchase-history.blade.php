@@ -385,7 +385,7 @@
                 <table class="purchase-table">
                     <thead>
                         <tr>
-                            <th>Invoice No.</th>
+                            <th>Purchase No.</th>
                             <th>Plan Name</th>
                             <th>Plan Mode</th>
                             <th>User</th>
@@ -411,7 +411,7 @@
                                     <div>
                                          
                                         <div class="font-semibold text-gray-900">{{ $plans->plan->name ?? 'N/A' }}</div>
-                                        <div class="text-xs text-gray-500 mt-0.5">{{ Str::limit($plans->plan->description ?? '', 40) }}</div>
+                                        <div class="text-xs text-gray-500 mt-0.5">{!! Str::limit($plans->plan->description ?? '', 40) !!}</div>
                                         
                                     </div>
                                 </td>

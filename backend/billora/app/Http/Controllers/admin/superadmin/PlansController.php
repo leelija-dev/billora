@@ -4,6 +4,7 @@ namespace App\Http\Controllers\admin\superadmin;
 
 use App\Http\Controllers\Controller;
 use App\Models\BusinessType;
+use App\Models\Customers;
 use App\Models\PlanBusinessType;
 use Illuminate\Http\Request;
 use App\Models\Plans;
@@ -296,8 +297,17 @@ class PlansController extends Controller
 
         try {
             $planPurchase = PlanPurchaseHistory::where('id',$id)->where('user_id',$data['user_id'])->firstOrFail();
-            $planPurchase->update([
-                'end_date' => $data['new_end_date']
+            $endDate = \Carbon\Carbon::parse($data['new_end_date']);
+            $customer = Customers::findOrFail($data['user_id']);
+            if($planPurchase->payment_status != 'success'){
+                return redirect()->back()->with('error', 'Your plan payment has not been completed.');
+            }
+             $planPurchase->update([
+                'end_date' => $endDate,
+                'status' => $endDate->gte(now()) ? 'active' : 'expired'
+             ]);
+             $customer->update([
+                    'is_active' => $endDate->gte(now())
             ]);
             Cache::tags(['plan_purchase_history'])->flush();
 

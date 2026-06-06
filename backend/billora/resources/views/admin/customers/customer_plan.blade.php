@@ -630,6 +630,7 @@
                         <tr>
                             <th>Plan ID</th>
                             <th>Plan Name</th>
+                            <th>Plan Type</th>
                             <th>Status</th>
                             <th>Price</th>
                             <th>Payment Method</th>
@@ -647,12 +648,11 @@
                                     <td style="font-weight: 600; color: #64748b;">{{ $plan->plan_id ?? '' }}</td>
                                     <td>
                                         <div class="plan-cell">
-                                            @if ($plan->plan_id == 0 && $plan->end_date == true)
-                                                <span class="plan-name-text">Free Trial</span>
-                                            @else
                                                 <span class="plan-name-text">{{ ucfirst($plan->plan?->name ?? '') }}</span>
-                                            @endif
                                         </div>
+                                    </td>
+                                    <td class="plan-status">
+                                        {{$plan->plan_mode ? ucfirst($plan->plan_mode) : ''}}
                                     </td>
                                     <td>
                                         @php
@@ -674,6 +674,7 @@
                                             @endif
                                         </span>
                                     </td>
+                                    
                                     <td class="price-cell">
                                         {{ config('app.app_currency') }}{{ number_format($plan->price ?? 0, 2) }}
                                     </td>
@@ -786,4 +787,50 @@
         </div>
     </div>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<script>
+    const Toast = Swal.mixin({
+        toast: true,
+        position: 'top-end',
+        showConfirmButton: false,
+        timer: 3000,
+        timerProgressBar: true,
+        didOpen: (toast) => {
+            toast.onmouseenter = Swal.stopTimer;
+            toast.onmouseleave = Swal.resumeTimer;
+        }
+    });
+</script>
+
+{{-- SUCCESS --}}
+@if(session('success'))
+<script>
+    Toast.fire({
+        icon: 'success',
+        title: "{{ session('success') }}"
+    });
+</script>
+@endif
+
+{{-- ERROR --}}
+@if(session('error'))
+<script>
+    Toast.fire({
+        icon: 'error',
+        title: "{{ session('error') }}"
+    });
+</script>
+@endif
+
+{{-- VALIDATION ERROR --}}
+@if ($errors->any())
+<script>
+    Toast.fire({
+        icon: 'error',
+        title: `{!! implode('<br>', $errors->all()) !!}`
+    });
+</script>
+@endif
+
 @endsection
