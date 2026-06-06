@@ -224,12 +224,12 @@ Route::prefix('restaurant-all-products')->group(function () {
    Route::get('/{id}', [ProductsController::class, 'userProducts']);  // for user products by id
    Route::get('/category/{id}', [ProductsController::class, 'categoryProducts']);  // for user products by category({slug}')  
    Route::get('/decrypt/{encryptedId}', [ProductsController::class, 'decript']);
-
 });
 
 //user product order 
 Route::prefix('orders')->group(function () { 
    Route::post('/store', [UserOrdersController::class, 'store']);
+   Route::get('/history/{mobile}',[UserOrdersController::class, 'userOrderDetails']);
 
 });
 

@@ -389,4 +389,22 @@ class UserOrdersController extends Controller
             ]);
         }
     }
+    public function userOrderDetails(Request $request,$mobile){
+        try{
+            $user_id = $request->user_id;
+            $orders = UserOrders::where('user_id', $user_id)->where('customer_phone',$mobile)->with('items.product','store')->orderBy('id','desc')->get();
+            
+            return response()->json([
+                'status' => true,
+                'message' => 'User Order details',  // single user order details
+                'data' => $orders
+            ]);
+
+        }catch(\Exception $e){
+            return response()->json([
+                'status' => false,
+                'message' => $e->getMessage()
+            ]);
+        }
+    }
 }
