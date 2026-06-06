@@ -597,7 +597,7 @@ const ProductsPage = () => {
             {/* Floating Buttons */}
             <button
                 onClick={() => setShowFilterOverlay(!showFilterOverlay)}
-                className="fixed left-4 top-6 z-35 bg-blue-600 text-white p-3 rounded-full shadow-lg hover:bg-blue-700 transition flex items-center gap-2"
+                className="fixed z-[1] left-4 top-6 z-35 bg-blue-600 text-white p-3 rounded-full shadow-lg hover:bg-blue-700 transition flex items-center gap-2"
             >
                 <FiFilter className="w-5 h-5" />
                 <span className="hidden sm:inline">Filters</span>
@@ -628,7 +628,7 @@ const ProductsPage = () => {
 
             <div className="flex min-h-screen">
                 {/* Main Content */}
-                <div className={`flex-1 transition-all duration-300 ${showCart ? 'lg:mr-[40%]' : 'mr-0'}`}>
+                <div className={`flex-1 transition-all duration-300 `}>
                     <div className="px-4 sm:px-6 md:px-8 lg:px-12 py-8">
                         <div className="container mx-auto">
                             {/* Header */}
@@ -641,7 +641,7 @@ const ProductsPage = () => {
                             </div>
 
                             {/* Search Bar */}
-                            <div className="flex flex-col md:flex-row gap-4 mb-8">
+                            <div className="flex flex-col md:flex-row gap-4 mb-8 relative">
                                 <SearchBar
                                     searchInput={searchInput}
                                     onSearchChange={setSearchInput}

@@ -43,7 +43,7 @@ const CartSidebar = ({
 
   return (
     <div
-      className={`fixed top-0 right-0 h-full bg-white shadow-2xl z-50 transform transition-transform duration-500 ease-out overflow-y-auto translate-x-0 w-[85%] sm:w-[70%] md:w-[50%] lg:w-[40%] xl:w-[35%]`}
+      className={`fixed top-0 right-0 h-full bg-white shadow-2xl z-50 transform transition-transform duration-500 ease-out overflow-y-auto translate-x-0 w-full sm:w-[70%] md:w-[50%] lg:w-[40%] xl:w-[35%]`}
     >
       <div className="sticky top-0 bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-5 z-10">
         <div className="flex justify-between items-center">
@@ -171,7 +171,7 @@ const CartSidebar = ({
                     className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-3 rounded-xl hover:from-blue-700 hover:to-indigo-700 transition font-semibold mt-2 flex items-center justify-center gap-2 shadow-lg"
                   >
                     <BsCartCheck className="w-5 h-5" />
-                    Proceed to Checkout • ₹{formatPrice(getCartTotal())}
+                    Proceed to Checkout 
                   </button>
                 </div>
               </>

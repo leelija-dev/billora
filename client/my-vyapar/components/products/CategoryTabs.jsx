@@ -54,9 +54,9 @@ const CategoryTabs = ({ categories, selectedCategory, onCategoryChange, products
   }
 
   return (
-    <div className="mb-8">
+    <div className="mb-[10px]">
       {/* Desktop View */}
-      <div className="hidden md:flex gap-3 overflow-x-auto pb-3 scrollbar-thin scrollbar-thumb-gray-300">
+      <div className="hidden md:flex gap-3 overflow-x-auto p-[0px_14px_20px_14px] scrollbar-thin scrollbar-thumb-gray-300">
         {/* All Products Tab - Always visible */}
         <button
           onClick={() => handleCategoryClick("All")}
@@ -73,17 +73,7 @@ const CategoryTabs = ({ categories, selectedCategory, onCategoryChange, products
         >
           <FiGrid className={`w-4 h-4 ${selectedCategory === "All" ? "text-white" : "text-gray-500"}`} />
           <span>All Products</span>
-          {productsForCount.length > 0 && (
-            <span className={`
-              ml-1 text-xs px-2 py-0.5 rounded-full
-              ${selectedCategory === "All" 
-                ? "bg-white/20 text-white" 
-                : "bg-gray-100 text-gray-600"
-              }
-            `}>
-              {productsForCount.length}
-            </span>
-          )}
+          
           {hoveredCategory === "All" && selectedCategory !== "All" && (
             <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-8 h-0.5 bg-blue-500 rounded-full"></div>
           )}
@@ -111,15 +101,7 @@ const CategoryTabs = ({ categories, selectedCategory, onCategoryChange, products
             >
               <MdOutlineCategory className={`w-4 h-4 ${isSelected ? "text-white" : "text-gray-500"}`} />
               <span>{category.name}</span>
-              <span className={`
-                ml-1 text-xs px-2 py-0.5 rounded-full
-                ${isSelected 
-                  ? "bg-white/20 text-white" 
-                  : "bg-gray-100 text-gray-600"
-                }
-              `}>
-                {productCount}
-              </span>
+             
               {hoveredCategory === category.id && !isSelected && (
                 <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-8 h-0.5 bg-blue-500 rounded-full"></div>
               )}
@@ -129,9 +111,9 @@ const CategoryTabs = ({ categories, selectedCategory, onCategoryChange, products
       </div>
 
       {/* Mobile View - Scrollable horizontal tabs */}
-      <div className="md:hidden overflow-x-auto pb-3 -mx-4 px-4 scrollbar-thin scrollbar-thumb-gray-300">
-        <div className="flex gap-2 min-w-max">
-          {/* All Products Tab - Mobile */}
+      {/* <div className="md:hidden overflow-x-auto pb-3 -mx-4 px-4 scrollbar-thin scrollbar-thumb-gray-300">
+  
+        
           <button
             onClick={() => handleCategoryClick("All")}
             className={`
@@ -145,14 +127,10 @@ const CategoryTabs = ({ categories, selectedCategory, onCategoryChange, products
           >
             <FiGrid className="w-3.5 h-3.5" />
             <span>All</span>
-            {productsForCount.length > 0 && (
-              <span className={`ml-0.5 text-xs ${selectedCategory === "All" ? "text-white/80" : "text-gray-500"}`}>
-                ({productsForCount.length})
-              </span>
-            )}
+            
           </button>
 
-          {/* All Categories - Mobile */}
+        
           {availableCategories.map((category) => {
             const productCount = getCategoryProductCount(category.id);
             const isSelected = selectedCategory === category.id;
@@ -172,14 +150,12 @@ const CategoryTabs = ({ categories, selectedCategory, onCategoryChange, products
               >
                 <MdOutlineCategory className="w-3.5 h-3.5" />
                 <span>{category.name}</span>
-                <span className={`ml-0.5 text-xs ${isSelected ? "text-white/80" : "text-gray-500"}`}>
-                  ({productCount})
-                </span>
+                
               </button>
             );
           })}
-        </div>
-      </div>
+      
+      </div> */}
     </div>
   );
 };
