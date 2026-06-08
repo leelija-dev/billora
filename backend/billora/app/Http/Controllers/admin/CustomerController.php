@@ -517,6 +517,7 @@ class CustomerController extends Controller
                 env('FRONTEND_URL') .
                 "/reset-password?token=" . $token;
             $app_name = config('app.name');
+            
             $app_url = env('FRONTEND_LOGIN_URL');
             // Mail HTML
             $html = "

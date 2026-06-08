@@ -373,6 +373,22 @@ class UserOrdersController extends Controller
             if($order->total_amount == ((float)$order->paid_amount + (float)$data['paid_amount'])){
                 $status = "completed";
             }
+            if($order->paid_amount >= $order->total_amount){
+                return response()->json([
+                    'status'=> true,
+                    'message' => 'Payment already completed'
+                ]);
+            }elseif($data['paid_amount'] > $order->total_amount){
+                return response()->json([
+                    'status'=> true,
+                    'message' => 'paid amount can not be greater than total amount'
+                ]);
+            }elseif($data['paid_amount'] < 0){
+                return response()->json([
+                    'status'=> true,
+                    'message' => 'paid amount can not be negative'
+                ]);
+            }
             $order->update([
                 'paid_amount'=> (float)$order->paid_amount + $data['paid_amount'],
                 'payment_status' => $status
@@ -392,7 +408,7 @@ class UserOrdersController extends Controller
     }
     public function userOrderDetails(Request $request,$mobile){
         try{
-            $user_id = Crypt::appearsEncrypted($request->user_id);
+            $user_id = Crypt::decryptString($request->user_id);
             $user = Customers::find($user_id);
             if(!$user){
                 return response()->json([
