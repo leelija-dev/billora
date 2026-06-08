@@ -9,10 +9,10 @@ import { useAuthStore } from '../../../store/authStore'
 import {
   validatePhone,
   validateEmail,
-  validatePincode,
+  validateGSTNumber,
   handlePhoneInput,
   handleAlphanumericInput,
-  handlePincodeInput,
+  handleGSTInput,
   validationRules,
 } from '../../../utils/validators'
 
@@ -41,7 +41,7 @@ const CustomerForm = ({ isEditForm, initialData, mode, onSubmit, onCancel, isSub
     phone: '',
     address: '',
     city: '',
-    pincode: '',
+    gst_number: '',
     user_id: currentUserId, // Use user_id to match backend expectation
     admin_id: currentUserId, // Keep for backward compatibility
     created_by: currentUserId,
@@ -72,7 +72,7 @@ const CustomerForm = ({ isEditForm, initialData, mode, onSubmit, onCancel, isSub
         phone: initialData.phone || '',
         address: initialData.address || '',
         city: initialData.city || '',
-        pincode: initialData.pincode || '',
+        gst_number: initialData.gst_number || '',
         status: initialData.status || 'active',
         user_id: initialData.user_id || initialData.admin_id || currentUserId,
         admin_id: initialData.admin_id || currentUserId,
@@ -129,9 +129,9 @@ const CustomerForm = ({ isEditForm, initialData, mode, onSubmit, onCancel, isSub
         }
         return ''
 
-      case 'pincode':
-        if (value && !validatePincode(value)) {
-          return validationRules.pincode.message
+      case 'gst_number':
+        if (value && !validateGSTNumber(value)) {
+          return validationRules.gstNumber.message
         }
         return ''
 
@@ -158,18 +158,18 @@ const CustomerForm = ({ isEditForm, initialData, mode, onSubmit, onCancel, isSub
     }
   }
 
-  const handlePincodeChange = (e) => {
-    handlePincodeInput(e)
+  const handleGSTChange = (e) => {
+    handleGSTInput(e)
     const value = e.target.value
-    setFormData(prev => ({ ...prev, pincode: value }))
+    setFormData(prev => ({ ...prev, gst_number: value }))
     
-    const error = validateField('pincode', value)
+    const error = validateField('gst_number', value)
     if (error) {
-      setErrors(prev => ({ ...prev, pincode: error }))
+      setErrors(prev => ({ ...prev, gst_number: error }))
     } else {
       setErrors(prev => {
         const newErrors = { ...prev }
-        delete newErrors.pincode
+        delete newErrors.gst_number
         return newErrors
       })
     }
@@ -265,34 +265,29 @@ const CustomerForm = ({ isEditForm, initialData, mode, onSubmit, onCancel, isSub
     const newErrors = {}
     
     // Required fields based on backend rules
-    // 'name' => 'required'
     const nameError = validateField('name', formData.name)
     if (nameError) newErrors.name = nameError
     
-    // 'phone' => 'required'
     const phoneError = validateField('phone', formData.phone)
     if (phoneError) newErrors.phone = phoneError
     
-    // 'address' => 'required'
     const addressError = validateField('address', formData.address)
     if (addressError) newErrors.address = addressError
     
-    // 'email' => 'nullable' (optional but validate if provided)
+    // Optional fields validation
     if (formData.email && formData.email.trim() !== '') {
       const emailError = validateField('email', formData.email)
       if (emailError) newErrors.email = emailError
     }
     
-    // 'city' => 'nullable' (optional but validate if provided)
     if (formData.city && formData.city.trim() !== '') {
       const cityError = validateField('city', formData.city)
       if (cityError) newErrors.city = cityError
     }
     
-    // Validate pincode if provided
-    if (formData.pincode && formData.pincode.trim() !== '') {
-      const pincodeError = validateField('pincode', formData.pincode)
-      if (pincodeError) newErrors.pincode = pincodeError
+    if (formData.gst_number && formData.gst_number.trim() !== '') {
+      const gstError = validateField('gst_number', formData.gst_number)
+      if (gstError) newErrors.gst_number = gstError
     }
     
     setErrors(newErrors)
@@ -303,7 +298,7 @@ const CustomerForm = ({ isEditForm, initialData, mode, onSubmit, onCancel, isSub
     e.preventDefault()
     
     // Mark all fields as touched
-    const allFields = ['name', 'phone', 'address', 'email', 'city', 'pincode']
+    const allFields = ['name', 'phone', 'address', 'email', 'city', 'gst_number']
     const touchedObj = {}
     allFields.forEach(field => {
       touchedObj[field] = true
@@ -318,7 +313,7 @@ const CustomerForm = ({ isEditForm, initialData, mode, onSubmit, onCancel, isSub
         address: formData.address.trim(),
         email: formData.email?.trim() || null,
         city: formData.city?.trim() || null,
-        pincode: formData.pincode || null,
+        gst_number: formData.gst_number?.trim() || null,
         status: formData.status,
         user_id: formData.admin_id, // Backend expects user_id, not admin_id
         created_by: formData.created_by,
@@ -395,6 +390,9 @@ const CustomerForm = ({ isEditForm, initialData, mode, onSubmit, onCancel, isSub
             {!errors.name && touched.name && formData.name && (
               <p className="text-xs text-green-500 mt-1">✓ Valid name</p>
             )}
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              Letters, spaces, dots, and hyphens only (2-100 characters)
+            </p>
           </div>
 
           {/* Phone - Required */}
@@ -465,7 +463,7 @@ const CustomerForm = ({ isEditForm, initialData, mode, onSubmit, onCancel, isSub
 
         <div className="space-y-4">
           <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">
-            Address Information
+            Address & Tax Information
           </h3>
 
           {/* Address - Required */}
@@ -528,36 +526,45 @@ const CustomerForm = ({ isEditForm, initialData, mode, onSubmit, onCancel, isSub
                 <p className="text-red-500 text-sm">{errors.city}</p>
               </div>
             )}
+            {!errors.city && formData.city && (
+              <p className="text-xs text-green-500 mt-1">✓ Valid city name</p>
+            )}
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              Only letters, spaces, and hyphens allowed
+            </p>
           </div>
 
-          {/* Pincode - Optional */}
+          {/* GST Number - Optional with validation */}
           <div className="space-y-1">
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Pincode / ZIP Code <span className="text-gray-400 text-xs">(Optional)</span>
+              GST Number <span className="text-gray-400 text-xs">(Optional)</span>
             </label>
             <input
               type="text"
-              name="pincode"
-              value={formData.pincode}
-              onChange={handlePincodeChange}
-              onBlur={() => handleBlur('pincode')}
-              placeholder="Enter 6-digit pincode"
+              name="gst_number"
+              value={formData.gst_number}
+              onChange={handleGSTChange}
+              onBlur={() => handleBlur('gst_number')}
+              placeholder="Enter GST number (e.g., 27ABCDE1234F2Z5)"
               className={`w-full px-3 py-2 h-[42px] border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white transition-colors ${
-                errors.pincode && touched.pincode
+                errors.gst_number && touched.gst_number
                   ? 'border-red-500 focus:ring-red-500'
                   : 'border-gray-300 dark:border-gray-600'
               }`}
               disabled={isSubmitting}
             />
-            {errors.pincode && touched.pincode && (
+            {errors.gst_number && touched.gst_number && (
               <div className="flex items-center space-x-1 mt-1">
                 <FiAlertCircle className="w-4 h-4 text-red-500" />
-                <p className="text-red-500 text-sm">{errors.pincode}</p>
+                <p className="text-red-500 text-sm">{errors.gst_number}</p>
               </div>
             )}
-            {!errors.pincode && formData.pincode && formData.pincode.length === 6 && (
-              <p className="text-xs text-green-500 mt-1">✓ Valid pincode</p>
+            {!errors.gst_number && formData.gst_number && validateGSTNumber(formData.gst_number) && (
+              <p className="text-xs text-green-500 mt-1">✓ Valid GST number</p>
             )}
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              Format: 15 characters (e.g., 27ABCDE1234F2Z5)
+            </p>
           </div>
 
           {/* Status */}
@@ -597,6 +604,7 @@ const CustomerForm = ({ isEditForm, initialData, mode, onSubmit, onCancel, isSub
                     {field === 'name' ? 'Name' : 
                      field === 'phone' ? 'Mobile Number' :
                      field === 'address' ? 'Address' :
+                     field === 'gst_number' ? 'GST Number' :
                      field.charAt(0).toUpperCase() + field.slice(1)}: {message}
                   </li>
                 ))}

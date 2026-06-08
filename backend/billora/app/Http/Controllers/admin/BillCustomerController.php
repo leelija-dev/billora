@@ -113,6 +113,7 @@ class BillCustomerController extends Controller
                     'phone'         => $data['phone'],
                     'address'       => $data['address'],
                     'city'          => $data['city'],
+                    'gst_number'    => $data['gst_number'],
                     'created_by'    => $data['created_by']
                 ]
             );
