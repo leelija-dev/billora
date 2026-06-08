@@ -436,7 +436,7 @@ const Invoices = () => {
     
     // If still empty, set default
     if (!storeAddress) {
-      storeAddress = "Store Address Not Available";
+      storeAddress = "N/A";
     }
 
     // Extract customer address properly
@@ -549,11 +549,11 @@ const Invoices = () => {
       customer_email: customerData.email || invoice.customer_email || "N/A",
       customer_address: customerAddress,
       customer_gst: customerData.gst || invoice.customer_gst || "N/A",
-      store_name: storeData.name || storeData.store_name || invoice.store_name || "Your Store Name",
+      store_name: storeData.name || storeData.store_name || invoice.store_name || "Store Deleted",
       store_address: storeAddress,
-      store_gst: storeData.gst || storeData.gst_number || invoice.store_gst || "GSTIN123456",
-      store_email: storeData.email || storeData.store_email || invoice.store_email || "store@business.com",
-      store_phone: storeData.mobile || storeData.phone || storeData.store_phone || invoice.store_phone || "123-456-7890",
+      store_gst: storeData.gst || storeData.gst_number || invoice.store_gst || "N/A",
+      store_email: storeData.email || storeData.store_email || invoice.store_email || "N/A",
+      store_phone: storeData.mobile || storeData.phone || storeData.store_phone || invoice.store_phone || "N/A",
       items: enhancedItems,
     };
     
@@ -644,7 +644,7 @@ const handlePrintThermal = async (invoice) => {
     
     // If still empty, set default
     if (!storeAddress) {
-      storeAddress = "Store Address Not Available";
+      storeAddress = "N/A";
     }
 
     // Extract customer address properly
@@ -757,11 +757,11 @@ const handlePrintThermal = async (invoice) => {
       customer_email: customerData.email || invoice.customer_email || "N/A",
       customer_address: customerAddress,
       customer_gst: customerData.gst || invoice.customer_gst || "N/A",
-      store_name: storeData.name || storeData.store_name || invoice.store_name || "Your Store Name",
+      store_name: storeData.name || storeData.store_name || invoice.store_name || "Store Deleted",
       store_address: storeAddress,
-      store_gst: storeData.gst || storeData.gst_number || invoice.store_gst || "GSTIN123456",
-      store_email: storeData.email || storeData.store_email || invoice.store_email || "store@business.com",
-      store_phone: storeData.mobile || storeData.phone || storeData.store_phone || invoice.store_phone || "123-456-7890",
+      store_gst: storeData.gst || storeData.gst_number || invoice.store_gst || "N/A",
+      store_email: storeData.email || storeData.store_email || invoice.store_email || "N/A",
+      store_phone: storeData.mobile || storeData.phone || storeData.store_phone || invoice.store_phone || "N/A",
       items: enhancedItems,
     };
     

@@ -86,9 +86,9 @@ export const generateA4InvoiceHTML = (invoice, isOrderDetails = false) => {
     return `
     <div class="header-row">
       <div class="brand-section">
-        <div class="brand-name">${escapeHtml(invoice.store_name) || 'VELOCITY RETAIL'}</div>
+        <div class="brand-name">${escapeHtml(invoice.store_name) || 'Deleted'}</div>
         <div class="store-meta">
-          ${escapeHtml(invoice.store_address) || '12 Corporate Park, MG Road, Bangalore - 560001'}<br>
+          ${escapeHtml(invoice.store_address) || 'Deleted'}<br>
           ${invoice.store_gst ? `GST: ${escapeHtml(invoice.store_gst)} &nbsp;|&nbsp;` : ''}
           ${invoice.store_phone ? `Tel: ${escapeHtml(invoice.store_phone)}` : ''}
           ${invoice.store_email ? `<br>${escapeHtml(invoice.store_email)}` : ''}

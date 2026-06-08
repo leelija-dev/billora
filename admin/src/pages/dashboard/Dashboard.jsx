@@ -516,20 +516,20 @@ const Dashboard = () => {
             <div className="flex justify-between items-center">
               <div>
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                  Recent Orders
+                  Recent Orders (Invoice)
                 </h3>
                 <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
                   You have {recentOrders.length} orders this period
                 </p>
               </div>
-              <Link to="/orders" className="flex items-center space-x-2">
+              <Link to="/invoices" className="flex items-center space-x-2">
               <motion.button
                 whileHover={{ x: 5 }}
                 className="flex items-center space-x-2 text-sm font-medium text-primary-600 hover:text-primary-700 dark:text-primary-400"
               >
                    
                 
-                <span>View all orders</span>
+                <span>View all invoices</span>
                 <FiArrowRight className="w-4 h-4" />
               </motion.button>
               </Link>

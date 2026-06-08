@@ -292,7 +292,7 @@ const InvoiceDetail = () => {
           ) {
             finalStoreData = {
               id: foundInvoice.store_id,
-              name: "Store Deleted/Not Found",
+              name: "Store Deleted",
               address: "N/A",
               gst: "N/A",
               email: "N/A",
@@ -1122,7 +1122,7 @@ const InvoiceDetail = () => {
                             </p>
                             {invoice.store_name &&
                               invoice.store_name !==
-                                "Store Deleted/Not Found" && (
+                                "Store Deleted" && (
                                 <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
                                   Last known name: {invoice.store_name}
                                 </p>
