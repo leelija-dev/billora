@@ -1211,7 +1211,7 @@ const Pricing = ({
                               )
                             ) : (
                               <>
-                                🎉 Start Free Trial
+                                🎉 Subscribe Now
                                 <FaArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                               </>
                             )}

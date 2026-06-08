@@ -108,6 +108,9 @@ const Navbar = () => {
     if (pathname === '/reset-password') {
       return true;
     }
+    if (pathname === '/order-history') {
+      return true;
+    }
     
     return false;
   };
