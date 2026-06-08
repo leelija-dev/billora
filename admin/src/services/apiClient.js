@@ -65,6 +65,14 @@ apiClient.interceptors.request.use(async (config) => {
     cookieCount: document.cookie.split(';').length
   });
 
+  // Sanctum Bearer token (persists after browser close; same as Next.js secureApi)
+  if (typeof window !== 'undefined') {
+    const token = localStorage.getItem('auth_token');
+    if (token && !config.headers.Authorization) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+  }
+
   const skipCsrf = config.method === 'get' ||
     config.url.includes('csrf-cookie') ||
     config.url.includes('check-session');
