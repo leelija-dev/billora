@@ -256,17 +256,25 @@ const Orders = () => {
     }
   }
 
-  const handlePrintInvoice = (order, printType) => {
-    if (printType === 'a4') {
-      const invoiceContent = generateA4InvoiceHTML(order)
-      printInvoice(invoiceContent, 'a4')
-    } else if (printType === 'thermal') {
-      const receiptContent = generateThermalInvoiceHTML(order)
-      printInvoice(receiptContent, 'thermal')
-    } else {
-      console.error('Invalid print type:', printType)
-    }
+ const handlePrintInvoice = (order, printType) => {
+  console.log('checking order in printe handler', order);
+
+  const modifiedOrder = {
+    ...order,
+    id: order.order_id
+  };
+  let isOrderDetails=true
+
+  if (printType === 'a4') {
+    const invoiceContent = generateA4InvoiceHTML(modifiedOrder,isOrderDetails);
+    printInvoice(invoiceContent, 'a4');
+  } else if (printType === 'thermal') {
+    const receiptContent = generateThermalInvoiceHTML(modifiedOrder,isOrderDetails);
+    printInvoice(receiptContent, 'thermal');
+  } else {
+    console.error('Invalid print type:', printType);
   }
+};
 
   const printInvoice = (content, type) => {
     const printWindow = window.open('', '_blank')
@@ -996,7 +1004,7 @@ const Orders = () => {
           setShowDetailsModal(false)
           setSelectedOrder(null)
         }}
-        title={`Order #${selectedOrder?.orderNumber || selectedOrder?.id}`}
+        title={`Order #${selectedOrder?.order_id }`}
         size="lg"
       >
         {selectedOrder && (
@@ -1124,14 +1132,14 @@ const Orders = () => {
           setShowPrintModal(false)
           setSelectedOrder(null)
         }}
-        title={`Print Options - Order #${selectedOrder?.orderNumber || selectedOrder?.id}`}
+        title={`Print Options - Order #${selectedOrder?.order_id}`}
         size="sm"
       >
         {selectedOrder && (
           <div className="space-y-4">
             <div className="text-center">
               <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                Choose print format for Order #{selectedOrder?.orderNumber || selectedOrder?.id}
+                Choose print format for Order #{selectedOrder?.order_id}
               </p>
             </div>
             

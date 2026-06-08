@@ -2,7 +2,7 @@
  * A4 Invoice Template - Reusable component for generating A4 invoice HTML
  * Professional, compact layout optimized for printing
  */
-export const generateA4InvoiceHTML = (invoice) => {
+export const generateA4InvoiceHTML = (invoice, isOrderDetails = false) => {
   if (!invoice) return ''
 
   // Helper function to safely parse numeric values
@@ -79,11 +79,34 @@ export const generateA4InvoiceHTML = (invoice) => {
     return new Date(date).toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
   }
 
+  // Render header conditionally
+  const renderHeader = () => {
+    if (isOrderDetails) return ''
+    
+    return `
+    <div class="header-row">
+      <div class="brand-section">
+        <div class="brand-name">${escapeHtml(invoice.store_name) || 'VELOCITY RETAIL'}</div>
+        <div class="store-meta">
+          ${escapeHtml(invoice.store_address) || '12 Corporate Park, MG Road, Bangalore - 560001'}<br>
+          ${invoice.store_gst ? `GST: ${escapeHtml(invoice.store_gst)} &nbsp;|&nbsp;` : ''}
+          ${invoice.store_phone ? `Tel: ${escapeHtml(invoice.store_phone)}` : ''}
+          ${invoice.store_email ? `<br>${escapeHtml(invoice.store_email)}` : ''}
+        </div>
+      </div>
+      <div class="invoice-badge">
+        <h2>TAX INVOICE</h2>
+        <p>Original for Recipient</p>
+      </div>
+    </div>
+    `
+  }
+
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Invoice #${invoice.invoice_number || invoice.id}</title>
+  <title>${isOrderDetails ? 'Order Details' : 'Invoice #'}${invoice.invoice_number || invoice.id}</title>
   <style>
     * {
       margin: 0;
@@ -431,31 +454,16 @@ export const generateA4InvoiceHTML = (invoice) => {
 <body>
 <div class="invoice-wrapper">
   <div class="invoice-container">
-    <!-- Header -->
-    <div class="header-row">
-      <div class="brand-section">
-        <div class="brand-name">${escapeHtml(invoice.store_name) || 'VELOCITY RETAIL'}</div>
-        <div class="store-meta">
-          ${escapeHtml(invoice.store_address) || '12 Corporate Park, MG Road, Bangalore - 560001'}<br>
-          ${invoice.store_gst ? `GST: ${escapeHtml(invoice.store_gst)} &nbsp;|&nbsp;` : ''}
-          ${invoice.store_phone ? `Tel: ${escapeHtml(invoice.store_phone)}` : ''}
-          ${invoice.store_email ? `<br>${escapeHtml(invoice.store_email)}` : ''}
-        </div>
-      </div>
-      <div class="invoice-badge">
-        <h2>TAX INVOICE</h2>
-        <p>Original for Recipient</p>
-      </div>
-    </div>
+    ${renderHeader()}
 
     <!-- Meta Info -->
     <div class="meta-grid">
       <div class="meta-block">
-        <div class="meta-label">Invoice Number</div>
+        <div class="meta-label">${isOrderDetails ? 'Order Number' : 'Invoice Number'}</div>
         <div class="meta-value">${escapeHtml(invoice.invoice_number || invoice.id || 'INV-001')}</div>
       </div>
       <div class="meta-block">
-        <div class="meta-label">Invoice Date</div>
+        <div class="meta-label">${isOrderDetails ? 'Order Date' : 'Invoice Date'}</div>
         <div class="meta-value">${formatDate(invoice.created_at)}</div>
       </div>
       <div class="meta-block">
@@ -493,7 +501,7 @@ export const generateA4InvoiceHTML = (invoice) => {
         <tbody>
           ${renderItemsSection(invoice)}
         </tbody>
-       </table>
+      </table>
     </div>
 
     <!-- Summary & Payment Row -->
@@ -547,7 +555,7 @@ export const generateA4InvoiceHTML = (invoice) => {
 
     <!-- Footer -->
     <div class="footer-note">
-      <div>This is a computer generated invoice</div>
+      <div>This is a computer generated ${isOrderDetails ? 'order summary' : 'invoice'}</div>
       <div style="margin-top: 4px;">Thank you for your business!</div>
     </div>
   </div>

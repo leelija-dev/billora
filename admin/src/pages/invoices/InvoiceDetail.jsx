@@ -752,6 +752,7 @@ const InvoiceDetail = () => {
   };
 
   const handlePrint = () => {
+    console.log("checking invoice ..........",invoice);
     printA4Invoice(invoice);
   };
 

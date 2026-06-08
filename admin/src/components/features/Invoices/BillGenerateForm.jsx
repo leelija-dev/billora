@@ -71,14 +71,11 @@ const BillGenerateForm = ({
   } = usePackageStore();
   const { createCustomer, fetchCustomers } = useCustomerStore();
 
-  
   // Use refs to track mounted state and prevent duplicate calls
   const isMounted = useRef(true);
   const hasFetchedInitialData = useRef(false);
   const fetchInProgress = useRef(false);
   const productDropdownRef = useRef(null);
-
- 
 
   // Get current user ID
   const getUserId = useCallback(() => {
@@ -903,116 +900,116 @@ const BillGenerateForm = ({
   );
   // console.log("Filtered Products:", filteredProducts);
 
- const handleAddItem = useCallback(
-  async (product) => {
-    try {
-      const existingItemIndex = formData.items.findIndex(
-        (item) =>
-          item.product_id === product.id &&
-          (hasStockPermission ? item.stock_id === product.stock_id : true),
-      );
+  const handleAddItem = useCallback(
+    async (product) => {
+      try {
+        const existingItemIndex = formData.items.findIndex(
+          (item) =>
+            item.product_id === product.id &&
+            (hasStockPermission ? item.stock_id === product.stock_id : true),
+        );
 
-      if (existingItemIndex !== -1) {
-        const updatedItems = [...formData.items];
-        const newQuantity = updatedItems[existingItemIndex].quantity + 1;
-        const item = updatedItems[existingItemIndex];
+        if (existingItemIndex !== -1) {
+          const updatedItems = [...formData.items];
+          const newQuantity = updatedItems[existingItemIndex].quantity + 1;
+          const item = updatedItems[existingItemIndex];
 
-        if (
-          hasStockPermission &&
-          product.stock_quantity > 0 &&
-          newQuantity > product.stock_quantity
-        ) {
-          toast.error(
-            `Cannot add more than available stock. Available: ${product.stock_quantity}`,
+          if (
+            hasStockPermission &&
+            product.stock_quantity > 0 &&
+            newQuantity > product.stock_quantity
+          ) {
+            toast.error(
+              `Cannot add more than available stock. Available: ${product.stock_quantity}`,
+            );
+            return;
+          }
+
+          updatedItems[existingItemIndex] = {
+            ...item,
+            quantity: newQuantity,
+            item_count: newQuantity,
+            total_price: calculateItemTotal(
+              item.price,
+              newQuantity,
+              item.gst,
+              item.discount,
+            ),
+          };
+
+          setFormData((prev) => ({
+            ...prev,
+            items: updatedItems,
+          }));
+        } else {
+          const unit = product.unit;
+          const sellingPrice = product.price;
+          const purchasePrice = product.purchase_price;
+          const gst = product.gst_percentage;
+          const discount = product.discount_percentage;
+          const stockQuantity = hasStockPermission
+            ? product.stock_quantity
+            : null;
+          const stockId = hasStockPermission ? product.stock_id : null;
+
+          const quantity = 1;
+          const totalPrice = calculateItemTotal(
+            sellingPrice,
+            quantity,
+            gst,
+            discount,
           );
-          return;
+
+          let unitName = "pcs";
+          if (unit) {
+            unitName = unit.short_name || unit.name || "pcs";
+          }
+
+          const newItem = {
+            product_id: product.id,
+            stock_id: stockId,
+            product_name: product.name,
+            product_code: product.sku,
+            quantity: quantity,
+            item_count: quantity,
+            unit_id: unit?.id || null,
+            unit_name: unitName,
+            price: sellingPrice,
+            purchase_price: purchasePrice,
+            gst: gst,
+            discount: discount,
+            total_price: totalPrice,
+            status: "completed",
+            stock_quantity: stockQuantity,
+            variant_info: hasStockPermission ? product.variant_info : null,
+            // Add attributes and variants to the item
+            attributes: product.attributes || [],
+            variants: product.variants || [],
+          };
+
+          setFormData((prev) => ({
+            ...prev,
+            items: [...prev.items, newItem],
+          }));
+
+          setShowProductList(false);
+          setProductSearch("");
+
+          const variantText =
+            hasStockPermission && product.variant_info
+              ? ` (${product.variant_info})`
+              : "";
+          toast.success(
+            `${newItem.product_name}${variantText} added to invoice`,
+          );
         }
-
-        updatedItems[existingItemIndex] = {
-          ...item,
-          quantity: newQuantity,
-          item_count: newQuantity,
-          total_price: calculateItemTotal(
-            item.price,
-            newQuantity,
-            item.gst,
-            item.discount,
-          ),
-        };
-
-        setFormData((prev) => ({
-          ...prev,
-          items: updatedItems,
-        }));
-      } else {
-        const unit = product.unit;
-        const sellingPrice = product.price;
-        const purchasePrice = product.purchase_price;
-        const gst = product.gst_percentage;
-        const discount = product.discount_percentage;
-        const stockQuantity = hasStockPermission
-          ? product.stock_quantity
-          : null;
-        const stockId = hasStockPermission ? product.stock_id : null;
-
-        const quantity = 1;
-        const totalPrice = calculateItemTotal(
-          sellingPrice,
-          quantity,
-          gst,
-          discount,
-        );
-
-        let unitName = "pcs";
-        if (unit) {
-          unitName = unit.short_name || unit.name || "pcs";
-        }
-
-        const newItem = {
-          product_id: product.id,
-          stock_id: stockId,
-          product_name: product.name,
-          product_code: product.sku,
-          quantity: quantity,
-          item_count: quantity,
-          unit_id: unit?.id || null,
-          unit_name: unitName,
-          price: sellingPrice,
-          purchase_price: purchasePrice,
-          gst: gst,
-          discount: discount,
-          total_price: totalPrice,
-          status: "completed",
-          stock_quantity: stockQuantity,
-          variant_info: hasStockPermission ? product.variant_info : null,
-          // Add attributes and variants to the item
-          attributes: product.attributes || [],
-          variants: product.variants || [],
-        };
-
-        setFormData((prev) => ({
-          ...prev,
-          items: [...prev.items, newItem],
-        }));
-
-        setShowProductList(false);
-        setProductSearch("");
-
-        const variantText =
-          hasStockPermission && product.variant_info
-            ? ` (${product.variant_info})`
-            : "";
-        toast.success(
-          `${newItem.product_name}${variantText} added to invoice`,
-        );
+      } catch (error) {
+        console.error("Failed to add item:", error);
+        toast.error("Failed to add product. Please try again.");
       }
-    } catch (error) {
-      console.error("Failed to add item:", error);
-      toast.error("Failed to add product. Please try again.");
-    }
-  },
-  [formData.items, hasStockPermission, calculateItemTotal],
-);
+    },
+    [formData.items, hasStockPermission, calculateItemTotal],
+  );
 
   const handleUpdateItem = useCallback(
     (index, field, value) => {
