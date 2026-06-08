@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { 
   FaCheckCircle, 
   FaRupeeSign, 
@@ -38,7 +38,7 @@ import { logger } from '../../utils/logger';
 const OrderSummary = () => {
   const router = useRouter();
   const { createOrderAction, loading: storeLoading, error: storeError } = usePaymentStore();
-  const { user, token, isLoggedIn } = useAuthStore();
+  const { user, isLoggedIn, isLoading: authLoading, checkAuthStatus } = useAuthStore();
   const { 
     businessTypes, 
     loading: loadingBusinessTypes, 
@@ -55,19 +55,149 @@ const OrderSummary = () => {
   const [customerEmail, setCustomerEmail] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");  
   const [businessTypeId, setBusinessTypeId] = useState("");
-  const [showOptional, setShowOptional] = useState(false);
+  const [showOptional, setShowOptional] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
   const [loggedInUser, setLoggedInUser] = useState(null);
   const [customerId, setCustomerId] = useState(null);
+  const [localBusinessTypes, setLocalBusinessTypes] = useState([]);
+  const [fetchAttempted, setFetchAttempted] = useState(false);
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+  const [forceShowDropdown, setForceShowDropdown] = useState(false);
+  const redirectAttempted = useRef(false);
+  const authCheckAttempted = useRef(false);
 
-  // Fetch business types using business store
-  useEffect(() => {
-    if (token) {
-      fetchBusinessTypes(token).catch(error => {
-        logger.error('Failed to fetch business types:', error);
-      });
+  // Get token from localStorage directly as fallback
+  const getToken = () => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('auth_token') || localStorage.getItem('token');
     }
-  }, [token, fetchBusinessTypes]);
+    return null;
+  };
+
+  // Check authentication properly
+  useEffect(() => {
+    const checkAuth = async () => {
+      // If already checking, skip
+      if (authCheckAttempted.current) {
+        return;
+      }
+      
+      authCheckAttempted.current = true;
+      
+      // First, check if we have user from store
+      if (user && isLoggedIn) {
+        console.log('✅ User already logged in:', user.email);
+        setIsCheckingAuth(false);
+        return;
+      }
+      
+      // Check localStorage for token and user
+      const token = getToken();
+      const storedUser = localStorage.getItem('user');
+      
+      if (token && storedUser) {
+        console.log('📦 Found stored auth data, validating...');
+        try {
+          // Try to validate session
+          await checkAuthStatus();
+          
+          // Small delay to let store update
+          setTimeout(() => {
+            setIsCheckingAuth(false);
+          }, 500);
+          return;
+        } catch (error) {
+          console.error('Auth validation failed:', error);
+        }
+      }
+      
+      // If we reach here and no redirect attempted, redirect to login
+      if (!redirectAttempted.current) {
+        redirectAttempted.current = true;
+        console.log('🔒 No valid session, redirecting to login');
+        toast.error('Please login to continue');
+        localStorage.setItem('redirectAfterLogin', '/order-summary');
+        router.push('/login');
+      }
+    };
+    
+    checkAuth();
+  }, [user, isLoggedIn, checkAuthStatus, router]);
+
+  // Update isCheckingAuth when auth loading completes
+  useEffect(() => {
+    if (!authLoading && isCheckingAuth && (user || !authCheckAttempted.current)) {
+      setIsCheckingAuth(false);
+    }
+  }, [authLoading, user, isCheckingAuth]);
+
+  // Fetch business types using business store - only once
+  useEffect(() => {
+    const loadBusinessTypes = async () => {
+      const token = getToken();
+      
+      if (token && !fetchAttempted && !isCheckingAuth && isLoggedIn) {
+        setFetchAttempted(true);
+        try {
+          logger.log('🔄 Fetching business types...');
+          console.log('Calling fetchBusinessTypes with token:', token.substring(0, 20) + '...');
+          
+          const result = await fetchBusinessTypes(token);
+          
+          console.log('Business types fetch result:', result);
+          logger.log('Business types fetch result:', result?.length || 0, 'items');
+          
+          if (result && result.length > 0) {
+            console.log('First business type:', result[0]);
+            setLocalBusinessTypes(result);
+            setForceShowDropdown(true);
+          } else {
+            console.warn('No business types returned from API');
+            // Set fallback business types for testing
+            const fallbackTypes = [
+              { id: 1, name: "Individual/Sole Proprietorship" },
+              { id: 2, name: "Partnership" },
+              { id: 3, name: "Private Limited Company" },
+              { id: 4, name: "Public Limited Company" },
+              { id: 5, name: "LLP (Limited Liability Partnership)" },
+              { id: 6, name: "Trust/Society/NGO" }
+            ];
+            console.log('Using fallback business types:', fallbackTypes);
+            setLocalBusinessTypes(fallbackTypes);
+            setForceShowDropdown(true);
+          }
+        } catch (error) {
+          console.error('Failed to fetch business types:', error);
+          logger.error('Failed to fetch business types:', error);
+          
+          // Set fallback business types on error
+          const fallbackTypes = [
+            { id: 1, name: "Individual/Sole Proprietorship" },
+            { id: 2, name: "Partnership" },
+            { id: 3, name: "Private Limited Company" },
+            { id: 4, name: "Public Limited Company" },
+            { id: 5, name: "LLP (Limited Liability Partnership)" },
+            { id: 6, name: "Trust/Society/NGO" }
+          ];
+          console.log('Using fallback business types due to error:', fallbackTypes);
+          setLocalBusinessTypes(fallbackTypes);
+          setForceShowDropdown(true);
+        }
+      }
+    };
+    
+    loadBusinessTypes();
+  }, [fetchBusinessTypes, fetchAttempted, isCheckingAuth, isLoggedIn]);
+
+  // Update local business types when store updates
+  useEffect(() => {
+    if (businessTypes && businessTypes.length > 0) {
+      console.log('Business types loaded in store:', businessTypes.length, 'items');
+      logger.log('Business types loaded in store:', businessTypes.length, 'items');
+      setLocalBusinessTypes(businessTypes);
+      setForceShowDropdown(true);
+    }
+  }, [businessTypes]);
 
   // Load user data from Zustand store
   useEffect(() => {
@@ -86,7 +216,9 @@ const OrderSummary = () => {
         if (user.address) setBillingAddress(user.address);
         if (user.business_type_id) setBusinessTypeId(String(user.business_type_id));
           
-        logger.log("Logged-in user loaded:", user);
+        logger.log("Logged-in user loaded:", user.name || user.email);
+        console.log("User business_type_id:", user.business_type_id);
+        console.log("User customer_id:", user.customer_id || user.id);
       }
     };
     
@@ -97,21 +229,21 @@ const OrderSummary = () => {
   useEffect(() => {
     const loadPlanData = () => {
       const planData = localStorage.getItem('selectedPlan');
-      console.log(" Raw plan data from localStorage:", planData);
+      console.log("Raw plan data from localStorage:", planData);
       
       if (planData) {
         try {
           const parsedPlan = JSON.parse(planData);
-          console.log(" Parsed plan data:", parsedPlan);
+          console.log("Parsed plan data:", parsedPlan);
           setSelectedPlan(parsedPlan);
-          logger.log(" Loaded plan:", parsedPlan);
+          logger.log("Loaded plan:", parsedPlan.name);
         } catch (e) {
           logger.error("Error parsing plan:", e);
           toast.error('Invalid plan data');
           router.push('/pricing');
         }
       } else {
-        console.log(" No plan data found in localStorage");
+        console.log("No plan data found in localStorage");
         toast.error('No plan selected');
         router.push('/pricing');
       }
@@ -122,16 +254,18 @@ const OrderSummary = () => {
   
   // Auto set businessTypeId from selected plan (only if present)
   useEffect(() => {
-    if (selectedPlan?.businessType?.id && businessTypes.length > 0) {
-      const match = businessTypes.find(
+    if (selectedPlan?.businessType?.id && localBusinessTypes.length > 0 && !businessTypeId) {
+      const match = localBusinessTypes.find(
         (bt) => String(bt.id) === String(selectedPlan.businessType.id)
       );
 
       if (match) {
         setBusinessTypeId(String(match.id));
+        logger.log('Auto-set business type from plan:', match.name);
+        console.log('Auto-set business type ID:', match.id);
       }
     }
-  }, [selectedPlan, businessTypes]);
+  }, [selectedPlan, localBusinessTypes, businessTypeId]);
 
   const calculateGST = () => {
     if (!selectedPlan) return 0;
@@ -218,36 +352,28 @@ const OrderSummary = () => {
 
     try {
       const totalAmount = calculateTotal();
-      const basePrice = Number(selectedPlan.price);
-      
-      // Generate order ID
-      const timestamp = Date.now();
-      const randomStr = Math.random().toString(36).substring(2, 10).toUpperCase();
-      const orderId = `ORD${timestamp}${randomStr}`;
       
       // Get selected business type name (if selected)
-      const selectedBusinessType = businessTypeId ? businessTypes.find(bt => String(bt.id) === String(businessTypeId)) : null;
+      const selectedBusinessType = businessTypeId ? localBusinessTypes.find(bt => String(bt.id) === String(businessTypeId)) : null;
       
       // Clean phone number
       const cleanCustomerPhone = customerPhone.replace(/\D/g, '');
       
       // Get the first business type from API as default, or fallback to 1
-      const DEFAULT_BUSINESS_TYPE_ID = businessTypes.length > 0 ? businessTypes[0].id : 1;
+      const DEFAULT_BUSINESS_TYPE_ID = localBusinessTypes.length > 0 ? localBusinessTypes[0].id : 1;
       
       // Use selected business type ID if provided, otherwise use default from API
       const finalBusinessTypeId = businessTypeId ? parseInt(businessTypeId) : DEFAULT_BUSINESS_TYPE_ID;
       
       logger.log("Business Type - Selected:", businessTypeId, "Final:", finalBusinessTypeId);
+      logger.log("Available business types:", localBusinessTypes.length);
       
       // Prepare payload
       const payload = {
-        // Required fields
         amount: Number(totalAmount.toFixed(2)),
         plan_id: selectedPlan.id,
         business_type_id: finalBusinessTypeId,
         customer_id: String(customerIdValue),
-        
-        // Optional fields
         customer_phone: cleanCustomerPhone,
       };
 
@@ -257,15 +383,14 @@ const OrderSummary = () => {
       if (billingAddress) payload.billing_address = billingAddress;
       if (selectedBusinessType) payload.business_type_name = selectedBusinessType.name;
 
-      logger.log("📤 Sending payload to backend:", JSON.stringify(payload, null, 2));
-      logger.log("📞 Customer ID being sent (as string):", String(customerIdValue));
-      logger.log("📞 Customer phone being sent:", cleanCustomerPhone);
-      logger.log("🏢 Business type ID being sent:", finalBusinessTypeId);
+      logger.log("📤 Sending payload to backend");
+      console.log("Payload:", payload);
       
       // Call the store action
       const response = await createOrderAction(payload);
       
-      logger.log("📥 Full response from createOrderAction:", response);
+      logger.log("📥 Response received");
+      console.log("Response:", response);
       
       toast.dismiss(loadingToast);
 
@@ -291,17 +416,15 @@ const OrderSummary = () => {
         paymentSessionId = response;
       }
       
-      logger.log("🔑 Extracted paymentSessionId:", paymentSessionId);
+      logger.log("🔑 Extracted paymentSessionId:", paymentSessionId ? 'Yes' : 'No');
       
       if (!paymentSessionId) {
-        logger.error("Response structure:", JSON.stringify(response, null, 2));
-        throw new Error(response?.message || response?.error || 'Payment session ID not found in response');
+        throw new Error('Payment session ID not found in response');
       }
       
       toast.success('Order created! Redirecting to payment...');
       
-      // After successful order creation and before payment redirect,
-      // dispatch event to notify that plan purchase is initiated
+      // Dispatch event
       window.dispatchEvent(new CustomEvent('planPurchaseCompleted', { 
         detail: { 
           status: 'initiated', 
@@ -330,16 +453,15 @@ const OrderSummary = () => {
       localStorage.setItem('pendingPayment', JSON.stringify(orderInfo));
       
       // Open checkout
-      const paymentResult = await cashfree.checkout({
+      await cashfree.checkout({
         paymentSessionId: paymentSessionId,
         redirectTarget: "_self"
       });
       
-      logger.log("Payment checkout result:", paymentResult);
-      
     } catch (error) {
       toast.dismiss(loadingToast);
       logger.error('❌ Payment error:', error);
+      console.error('Payment error details:', error);
       
       let errorMessage = 'Payment failed. Please try again.';
       if (error.message?.includes('customer_id')) {
@@ -360,17 +482,23 @@ const OrderSummary = () => {
     }
   };
 
-  if (!selectedPlan) {
+  // Show loading state while checking auth or loading plan
+  if (isCheckingAuth || authLoading || !selectedPlan) {
     return (
-      <>
-        <div className="min-h-screen flex items-center justify-center">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500 mx-auto mb-4"></div>
-            <p className="text-gray-600 text-lg font-medium">Loading plan details...</p>
-          </div>
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500 mx-auto mb-4"></div>
+          <p className="text-gray-600 text-lg font-medium">
+            {isCheckingAuth || authLoading ? 'Checking authentication...' : 'Loading plan details...'}
+          </p>
         </div>
-      </>
+      </div>
     );
+  }
+
+  // If not logged in after check, show nothing (redirect will happen)
+  if (!isLoggedIn && !user) {
+    return null;
   }
 
   return (
@@ -470,7 +598,7 @@ const OrderSummary = () => {
                   </div>
                 </div>
 
-                {/* Business Details Section - Optional but backend requires it */}
+                {/* Business Details Section */}
                 <div className="mt-6">
                   <button
                     onClick={() => setShowOptional(!showOptional)}
@@ -498,25 +626,48 @@ const OrderSummary = () => {
                         />
                       </div>
                       
-                      {/* Business Type Dropdown - Now recommended but will use default if not selected */}
+                      {/* Business Type Dropdown */}
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
                           Business Type <span className="text-gray-400 text-xs font-normal">(Recommended)</span>
                         </label>
-                        <select
-                          value={businessTypeId}
-                          onChange={(e) => setBusinessTypeId(e.target.value)}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#5b5bd6] focus:border-transparent outline-none transition-all bg-white"
-                          disabled={loadingBusinessTypes}
-                        >
-                          <option value="">Select Business Type (Default will be used if not selected)</option>
-                          {businessTypes.map((type) => (
-                            <option key={type.id} value={type.id}>
-                              {type.name}
-                            </option>
-                          ))}
-                        </select>
-                        <p className="text-xs text-gray-500 mt-1">If not selected, "Individual/Sole Proprietorship" will be used</p>
+                        
+                        {/* Always show dropdown if we have business types or force show */}
+                        {(localBusinessTypes.length > 0 || forceShowDropdown) && (
+                          <>
+                            <select
+                              value={businessTypeId}
+                              onChange={(e) => {
+                                console.log('Business type selected:', e.target.value);
+                                setBusinessTypeId(e.target.value);
+                              }}
+                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#5b5bd6] focus:border-transparent outline-none transition-all bg-white"
+                            >
+                              <option value="">Select Business Type (Default will be used if not selected)</option>
+                              {localBusinessTypes.map((type) => (
+                                <option key={type.id} value={type.id}>
+                                  {type.name}
+                                </option>
+                              ))}
+                            </select>
+                            
+                            <p className="text-xs text-green-600 mt-1">
+                              ✓ {localBusinessTypes.length} business type(s) loaded
+                            </p>
+                          </>
+                        )}
+                        
+                        {/* Loading State */}
+                        {loadingBusinessTypes && localBusinessTypes.length === 0 && (
+                          <div className="w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-lg flex items-center gap-2">
+                            <FaSpinner className="animate-spin text-[#5b5bd6] w-4 h-4" />
+                            <span className="text-gray-600 text-sm">Loading business types...</span>
+                          </div>
+                        )}
+                        
+                        <p className="text-xs text-gray-500 mt-2">
+                          If not selected, "{localBusinessTypes.length > 0 ? localBusinessTypes[0].name : 'Individual/Sole Proprietorship'}" will be used
+                        </p>
                       </div>
                       
                       <div>

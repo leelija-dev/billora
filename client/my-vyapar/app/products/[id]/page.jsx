@@ -605,7 +605,7 @@ const ProductsPage = () => {
 
             <div className="fixed top-5 right-5 z-40 flex gap-2">
                 <button
-                    onClick={() => setShowRecentOrder(!showRecentOrder)}
+                    onClick={() => router.push(`/order-history?user_id=${urlUserId}`)}
                     className="bg-green-600 text-white p-3 rounded-full shadow-lg hover:bg-green-700 transition"
                 >
                     <FiClock className="w-5 h-5" />
