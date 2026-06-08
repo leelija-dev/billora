@@ -212,7 +212,7 @@ export const useInvoiceStore = create((set, get) => ({
                 console.warn(`⚠️ Store ${storeId} not found, using fallback`);
                 const fallbackStore = {
                   id: storeId,
-                  name: `Deleted`,
+                  name: `Store Deleted`,
                   is_fallback: true
                 };
                 setCachedData(storeCache, storeId, fallbackStore);
@@ -223,7 +223,7 @@ export const useInvoiceStore = create((set, get) => ({
               // Create fallback store object
               const fallbackStore = {
                 id: storeId,
-                name: `Deleted`,
+                name: `Store Deleted`,
                 is_fallback: true
               };
               setCachedData(storeCache, storeId, fallbackStore);
@@ -251,7 +251,7 @@ export const useInvoiceStore = create((set, get) => ({
             // Fallback for any missing stores
             storeMap[id] = {
               id: id,
-              name: `Deleted`,
+              name: `Store Deleted`,
               is_fallback: true
             };
           }
@@ -263,7 +263,7 @@ export const useInvoiceStore = create((set, get) => ({
         const customer = customerMap[invoice.customer_id] || {};
         const store = storeMap[invoice.store_id] || {
           id: invoice.store_id,
-          name: `Deleted`,
+          name: `Store Deleted`,
           is_fallback: true
         };
 
@@ -272,7 +272,7 @@ export const useInvoiceStore = create((set, get) => ({
           customer: customer,
           store: store,
           customer_name: customer.name || customer.customer_name || `Customer #${invoice.customer_id}`,
-          store_name: store.name || store.store_name || `Deleted`,
+          store_name: store.name || store.store_name || `Store Deleted`,
         };
       });
 

@@ -82,7 +82,47 @@ export const generateA4InvoiceHTML = (invoice, isOrderDetails = false) => {
   // Render header conditionally
   const renderHeader = () => {
     if (isOrderDetails) return ''
-    
+
+
+    if(invoice.store_name==='Store Deleted'){
+      return `
+       <div class="header-row">
+  <div class="brand-section">
+    <div style="
+      display: inline-block;
+      padding: 12px 18px;
+      border: 2px dashed #999;
+      border-radius: 8px;
+      background: #f8f8f8;
+      text-align: center;
+      min-width: 220px;
+    ">
+      <div style="
+        font-size: 18px;
+        font-weight: 700;
+        color: #444;
+        margin-bottom: 4px;
+        letter-spacing: 0.5px;
+      ">
+        STORE DELETED
+      </div>
+      <div style="
+        font-size: 11px;
+        color: #777;
+        line-height: 1.4;
+      ">
+        Store information is no longer available
+      </div>
+    </div>
+  </div>
+
+  <div class="invoice-badge">
+    <h2>TAX INVOICE</h2>
+    <p>Original for Recipient</p>
+  </div>
+</div>`
+    }
+
     return `
     <div class="header-row">
       <div class="brand-section">
@@ -100,6 +140,8 @@ export const generateA4InvoiceHTML = (invoice, isOrderDetails = false) => {
       </div>
     </div>
     `
+    
+    
   }
 
   return `<!DOCTYPE html>

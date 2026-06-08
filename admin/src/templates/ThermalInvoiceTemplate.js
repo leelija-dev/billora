@@ -5,134 +5,179 @@
 
 // Helper function to safely parse numbers
 const parseNumber = (value) => {
-  if (value === null || value === undefined) return 0
-  if (typeof value === 'number') return value
-  if (typeof value === 'string') return parseFloat(value) || 0
-  return 0
-}
+  if (value === null || value === undefined) return 0;
+  if (typeof value === "number") return value;
+  if (typeof value === "string") return parseFloat(value) || 0;
+  return 0;
+};
 
 // Helper function to safely format currency
 const formatCurrency = (value) => {
-  const num = parseNumber(value)
-  return `₹${num.toFixed(2)}`
-}
+  const num = parseNumber(value);
+  return `₹${num.toFixed(2)}`;
+};
 
 // Helper function to truncate long product names for thermal paper
 const truncateText = (text, maxLength = 20) => {
-  if (!text) return ''
-  if (text.length <= maxLength) return text
-  return text.substring(0, maxLength - 3) + '...'
-}
+  if (!text) return "";
+  if (text.length <= maxLength) return text;
+  return text.substring(0, maxLength - 3) + "...";
+};
 
 // Calculate totals from invoice items
 const calculateSubtotal = (items, packages) => {
-  let subtotal = 0
-  
+  let subtotal = 0;
+
   if (items && Array.isArray(items)) {
     subtotal += items.reduce((sum, item) => {
-      const price = parseNumber(item.price)
-      const quantity = parseNumber(item.quantity)
-      return sum + (price * quantity)
-    }, 0)
+      const price = parseNumber(item.price);
+      const quantity = parseNumber(item.quantity);
+      return sum + price * quantity;
+    }, 0);
   }
-  
+
   if (packages && Array.isArray(packages)) {
     subtotal += packages.reduce((sum, pkg) => {
-      const price = parseNumber(pkg.price)
-      const quantity = parseNumber(pkg.quantity)
-      return sum + (price * quantity)
-    }, 0)
+      const price = parseNumber(pkg.price);
+      const quantity = parseNumber(pkg.quantity);
+      return sum + price * quantity;
+    }, 0);
   }
-  
-  return subtotal
-}
+
+  return subtotal;
+};
 
 const calculateTotalGST = (items) => {
-  if (!items || !Array.isArray(items)) return 0
+  if (!items || !Array.isArray(items)) return 0;
   return items.reduce((sum, item) => {
-    const price = parseNumber(item.price)
-    const gstPercent = parseNumber(item.gst)
-    const quantity = parseNumber(item.quantity)
-    const subtotal = price * quantity
-    const discount = parseNumber(item.discount)
-    const afterDiscount = subtotal - (subtotal * discount / 100)
-    return sum + (afterDiscount * gstPercent / 100)
-  }, 0)
-}
+    const price = parseNumber(item.price);
+    const gstPercent = parseNumber(item.gst);
+    const quantity = parseNumber(item.quantity);
+    const subtotal = price * quantity;
+    const discount = parseNumber(item.discount);
+    const afterDiscount = subtotal - (subtotal * discount) / 100;
+    return sum + (afterDiscount * gstPercent) / 100;
+  }, 0);
+};
 
 const calculateTotalDiscount = (items) => {
-  if (!items || !Array.isArray(items)) return 0
+  if (!items || !Array.isArray(items)) return 0;
   return items.reduce((sum, item) => {
-    const price = parseNumber(item.price)
-    const discountPercent = parseNumber(item.discount)
-    const quantity = parseNumber(item.quantity)
-    const subtotal = price * quantity
-    return sum + (subtotal * discountPercent / 100)
-  }, 0)
-}
+    const price = parseNumber(item.price);
+    const discountPercent = parseNumber(item.discount);
+    const quantity = parseNumber(item.quantity);
+    const subtotal = price * quantity;
+    return sum + (subtotal * discountPercent) / 100;
+  }, 0);
+};
 
 const calculateGrandTotal = (invoice, subtotal, totalGST, totalDiscount) => {
   // Use invoice total if available, otherwise calculate
-  if (invoice.total_amount) return parseNumber(invoice.total_amount)
-  if (invoice.totalAmount) return parseNumber(invoice.totalAmount)
-  return subtotal - totalDiscount + totalGST
-}
+  if (invoice.total_amount) return parseNumber(invoice.total_amount);
+  if (invoice.totalAmount) return parseNumber(invoice.totalAmount);
+  return subtotal - totalDiscount + totalGST;
+};
 
 export const generateThermalInvoiceHTML = (invoice, isOrderDetails = false) => {
-  if (!invoice) return ''
+  if (!invoice) return "";
 
-  const subtotal = calculateSubtotal(invoice.items, invoice.packages)
-  const totalGST = calculateTotalGST(invoice.items)
-  const totalDiscount = calculateTotalDiscount(invoice.items)
-  const totalAmount = calculateGrandTotal(invoice, subtotal, totalGST, totalDiscount)
-  const paidAmount = parseNumber(invoice.paid_amount || invoice.paidAmount)
-  const changeAmount = paidAmount > totalAmount ? paidAmount - totalAmount : 0
-  const dueAmount = paidAmount < totalAmount ? totalAmount - paidAmount : 0
+  const subtotal = calculateSubtotal(invoice.items, invoice.packages);
+  const totalGST = calculateTotalGST(invoice.items);
+  const totalDiscount = calculateTotalDiscount(invoice.items);
+  const totalAmount = calculateGrandTotal(
+    invoice,
+    subtotal,
+    totalGST,
+    totalDiscount,
+  );
+  const paidAmount = parseNumber(invoice.paid_amount || invoice.paidAmount);
+  const changeAmount = paidAmount > totalAmount ? paidAmount - totalAmount : 0;
+  const dueAmount = paidAmount < totalAmount ? totalAmount - paidAmount : 0;
 
   // Format date for thermal invoice
   const formatDate = (date) => {
-    if (!date) return new Date().toLocaleString('en-GB')
-    return new Date(date).toLocaleString('en-GB', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    })
-  }
+    if (!date) return new Date().toLocaleString("en-GB");
+    return new Date(date).toLocaleString("en-GB", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
 
   // Render store header conditionally
   const renderStoreHeader = () => {
-     if (isOrderDetails) {
+    if (isOrderDetails) {
       return `
-        <div style="text-align: center; margin-bottom: 12px; margin-top:5px; padding-bottom: 8px; border-bottom: 2px solid #000;">
-          <div style="font-size: 18px; font-weight: bold; letter-spacing: 2px; margin-bottom: 6px; text-transform: uppercase;  ">
-            🧾 ORDER RECEIPT
-          </div>
-          <div style="font-size: 10px; color: #2c5f8a; margin-top: 4px;">
-            ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-          </div>
-          
+      <div style="text-align: center; margin-bottom: 12px; margin-top:5px; padding-bottom: 8px; border-bottom: 2px solid #000;">
+        <div style="font-size: 18px; font-weight: bold; letter-spacing: 2px; margin-bottom: 6px; text-transform: uppercase;">
+          🧾 ORDER RECEIPT
         </div>
-      `
+        <div style="font-size: 10px; color: #2c5f8a; margin-top: 4px;">
+          ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        </div>
+      </div>
+    `;
     }
-    
+
+    // Store deleted
+    if (invoice.store_name === "Store Deleted") {
+      return `
+      <div style="
+        text-align:center;
+        margin-bottom:12px;
+        padding:10px 8px;
+        border:1px dashed #666;
+        border-radius:6px;
+        background:#f8f8f8;
+      ">
+        <div style="
+          font-size:18px;
+          font-weight:700;
+          letter-spacing:1px;
+          text-transform:uppercase;
+          color:#444;
+        ">
+          STORE DELETED
+        </div>
+
+        <div style="
+          font-size:11px;
+          color:#777;
+          margin-top:4px;
+          line-height:1.4;
+        ">
+          Original store information is no longer available
+        </div>
+
+        <div style="
+          font-size:10px;
+          color:#999;
+          margin-top:6px;
+        ">
+          Historical Invoice Record
+        </div>
+      </div>
+    `;
+    }
+
     return `
     <div class="store-header">
-      <div class="store-name">${truncateText(invoice.store_name || 'YOUR STORE', 30)}</div>
+      <div class="store-name">${truncateText(invoice.store_name, 30)}</div>
       <div class="store-details">
-        ${invoice.store_address ? truncateText(invoice.store_address, 35) + '<br>' : ''}
-        ${invoice.store_phone ? `Tel: ${invoice.store_phone}` : ''}
-        ${invoice.store_gst ? `<br>GST: ${invoice.store_gst}` : ''}
+        ${invoice.store_address ? truncateText(invoice.store_address, 35) + "<br>" : ""}
+        ${invoice.store_phone ? `Tel: ${invoice.store_phone}` : ""}
+        ${invoice.store_gst ? `<br>GST: ${invoice.store_gst}` : ""}
       </div>
     </div>
-    `
-  }
+  `;
+  };
 
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
-  <title>${isOrderDetails ? 'Order Details' : 'Thermal Invoice'} #${invoice.invoice_number || invoice.id}</title>
+  <title>${isOrderDetails ? "Order Details" : "Thermal Invoice"} #${invoice.invoice_number || invoice.id}</title>
   <meta charset="utf-8">
   <style>
     @page {
@@ -384,19 +429,23 @@ export const generateThermalInvoiceHTML = (invoice, isOrderDetails = false) => {
   <!-- Invoice/Order Info -->
   <div class="info-grid">
     <div class="info-row">
-      <span class="info-label">${isOrderDetails ? 'ORDER #:' : 'INVOICE #:'}</span>
-      <span class="info-value">${invoice.invoice_number || invoice.id || 'N/A'}</span>
+      <span class="info-label">${isOrderDetails ? "ORDER #:" : "INVOICE #:"}</span>
+      <span class="info-value">${invoice.invoice_number || invoice.id || "N/A"}</span>
     </div>
     <div class="info-row">
-      <span class="info-label">${isOrderDetails ? 'ORDER DATE:' : 'DATE & TIME:'}</span>
+      <span class="info-label">${isOrderDetails ? "ORDER DATE:" : "DATE & TIME:"}</span>
       <span class="info-value">${formatDate(invoice.created_at)}</span>
     </div>
-    ${invoice.order_id ? `
+    ${
+      invoice.order_id
+        ? `
     <div class="info-row">
       <span class="info-label">ORDER #:</span>
       <span class="info-value">${invoice.order_id}</span>
     </div>
-    ` : ''}
+    `
+        : ""
+    }
   </div>
 
   <div class="divider"></div>
@@ -404,10 +453,10 @@ export const generateThermalInvoiceHTML = (invoice, isOrderDetails = false) => {
   <!-- Customer Info -->
   <div class="customer-section">
     <div class="customer-label">CUSTOMER</div>
-    <div><strong>${invoice.customer_name ? truncateText(invoice.customer_name, 30) : 'Walk-in Customer'}</strong></div>
-    ${invoice.customer_phone ? `<div>${invoice.customer_phone}</div>` : ''}
-    ${invoice.customer_email ? `<div style="font-size: 8px;">${truncateText(invoice.customer_email, 30)}</div>` : ''}
-    ${invoice.customer_gst ? `<div>GST: ${invoice.customer_gst}</div>` : ''}
+    <div><strong>${invoice.customer_name ? truncateText(invoice.customer_name, 30) : "Walk-in Customer"}</strong></div>
+    ${invoice.customer_phone ? `<div>${invoice.customer_phone}</div>` : ""}
+    ${invoice.customer_email ? `<div style="font-size: 8px;">${truncateText(invoice.customer_email, 30)}</div>` : ""}
+    ${invoice.customer_gst ? `<div>GST: ${invoice.customer_gst}</div>` : ""}
   </div>
 
   <div class="divider"></div>
@@ -421,48 +470,67 @@ export const generateThermalInvoiceHTML = (invoice, isOrderDetails = false) => {
   </div>
 
   <!-- Products List -->
-  ${invoice.items && invoice.items.length > 0 ? invoice.items.map((item, index) => {
-    const itemPrice = parseNumber(item.price)
-    const itemTotal = parseNumber(item.total_price)
-    const quantity = parseNumber(item.quantity)
-    const productName = item.product?.name || item.product_name || item.name || `Product`
-    const discount = parseNumber(item.discount)
-    const gst = parseNumber(item.gst)
-    
-    return `
+  ${
+    invoice.items && invoice.items.length > 0
+      ? invoice.items
+          .map((item, index) => {
+            const itemPrice = parseNumber(item.price);
+            const itemTotal = parseNumber(item.total_price);
+            const quantity = parseNumber(item.quantity);
+            const productName =
+              item.product?.name || item.product_name || item.name || `Product`;
+            const discount = parseNumber(item.discount);
+            const gst = parseNumber(item.gst);
+
+            return `
       <div class="item-row">
-        <div class="item-name">${truncateText(productName, 25)}${discount > 0 ? ` (-${discount}%)` : ''}${gst > 0 ? ` [+${gst}%]` : ''}</div>
+        <div class="item-name">${truncateText(productName, 25)}${discount > 0 ? ` (-${discount}%)` : ""}${gst > 0 ? ` [+${gst}%]` : ""}</div>
         <div class="item-qty">${quantity}</div>
         <div class="item-price">${formatCurrency(itemPrice)}</div>
         <div class="item-total">${formatCurrency(itemTotal)}</div>
       </div>
-    `
-  }).join('') : ''}
+    `;
+          })
+          .join("")
+      : ""
+  }
 
   <!-- Packages List -->
-  ${invoice.packages && invoice.packages.length > 0 ? `
+  ${
+    invoice.packages && invoice.packages.length > 0
+      ? `
     <div style="margin: 5px 0 2px; font-weight: bold; font-size: 9px;">--- PACKAGES ---</div>
-    ${invoice.packages.map((pkg, index) => {
-      const pkgPrice = parseNumber(pkg.price)
-      const pkgTotal = parseNumber(pkg.total_price)
-      const quantity = parseNumber(pkg.quantity)
-      const packageName = pkg.package_name || pkg.name || pkg.product_name || `Package`
-      
-      return `
+    ${invoice.packages
+      .map((pkg, index) => {
+        const pkgPrice = parseNumber(pkg.price);
+        const pkgTotal = parseNumber(pkg.total_price);
+        const quantity = parseNumber(pkg.quantity);
+        const packageName =
+          pkg.package_name || pkg.name || pkg.product_name || `Package`;
+
+        return `
         <div class="item-row package-item">
           <div class="item-name">📦 ${truncateText(packageName, 23)}</div>
           <div class="item-qty">${quantity}</div>
           <div class="item-price">${formatCurrency(pkgPrice)}</div>
           <div class="item-total">${formatCurrency(pkgTotal)}</div>
         </div>
-      `
-    }).join('')}
-  ` : ''}
+      `;
+      })
+      .join("")}
+  `
+      : ""
+  }
 
   <!-- No items message -->
-  ${(!invoice.items || invoice.items.length === 0) && (!invoice.packages || invoice.packages.length === 0) ? `
-    <div style="text-align: center; padding: 10px; font-style: italic;">No items in ${isOrderDetails ? 'order' : 'invoice'}</div>
-  ` : ''}
+  ${
+    (!invoice.items || invoice.items.length === 0) &&
+    (!invoice.packages || invoice.packages.length === 0)
+      ? `
+    <div style="text-align: center; padding: 10px; font-style: italic;">No items in ${isOrderDetails ? "order" : "invoice"}</div>
+  `
+      : ""
+  }
 
   <div class="divider-double"></div>
 
@@ -472,18 +540,26 @@ export const generateThermalInvoiceHTML = (invoice, isOrderDetails = false) => {
       <span>Subtotal:</span>
       <span>${formatCurrency(subtotal)}</span>
     </div>
-    ${totalDiscount > 0 ? `
+    ${
+      totalDiscount > 0
+        ? `
     <div class="summary-row">
       <span>Discount:</span>
       <span>-${formatCurrency(totalDiscount)}</span>
     </div>
-    ` : ''}
-    ${totalGST > 0 ? `
+    `
+        : ""
+    }
+    ${
+      totalGST > 0
+        ? `
     <div class="summary-row">
       <span>GST:</span>
       <span>${formatCurrency(totalGST)}</span>
     </div>
-    ` : ''}
+    `
+        : ""
+    }
     <div class="summary-row summary-total">
       <span><strong>TOTAL AMOUNT</strong></span>
       <span class="grand-total"><strong>${formatCurrency(totalAmount)}</strong></span>
@@ -498,28 +574,40 @@ export const generateThermalInvoiceHTML = (invoice, isOrderDetails = false) => {
       <span>PAID:</span>
       <span class="paid-status">${formatCurrency(paidAmount)}</span>
     </div>
-    ${changeAmount > 0 ? `
+    ${
+      changeAmount > 0
+        ? `
     <div class="payment-row">
       <span>CHANGE:</span>
       <span>${formatCurrency(changeAmount)}</span>
     </div>
-    ` : ''}
-    ${dueAmount > 0 ? `
+    `
+        : ""
+    }
+    ${
+      dueAmount > 0
+        ? `
     <div class="payment-row">
       <span>DUE:</span>
       <span class="due-status">${formatCurrency(dueAmount)}</span>
     </div>
-    ` : ''}
+    `
+        : ""
+    }
     <div class="payment-row">
       <span>MODE:</span>
-      <span>${invoice.payment_mode || invoice.payment_method || 'CASH'}</span>
+      <span>${invoice.payment_mode || invoice.payment_method || "CASH"}</span>
     </div>
-    ${invoice.transaction_id ? `
+    ${
+      invoice.transaction_id
+        ? `
     <div class="payment-row" style="font-size: 8px;">
       <span>TXN ID:</span>
       <span>${truncateText(invoice.transaction_id, 20)}</span>
     </div>
-    ` : ''}
+    `
+        : ""
+    }
   </div>
 
   <div class="divider"></div>
@@ -529,15 +617,15 @@ export const generateThermalInvoiceHTML = (invoice, isOrderDetails = false) => {
     <div class="thankyou">Thank You!</div>
     <div>Visit Again</div>
     <div style="font-size: 7px; margin-top: 5px;">
-      ${invoice.store_email ? truncateText(invoice.store_email, 30) + '<br>' : ''}
-      ${new Date().toLocaleString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric' })}
+      ${invoice.store_email ? truncateText(invoice.store_email, 30) + "<br>" : ""}
+      ${new Date().toLocaleString("en-GB", { hour: "2-digit", minute: "2-digit", second: "2-digit", day: "2-digit", month: "2-digit", year: "numeric" })}
     </div>
     ${paidAmount >= totalAmount ? '<div style="margin-top: 4px;">✅ PAID</div>' : '<div style="margin-top: 4px;">⚠️ PENDING</div>'}
   </div>
   
 </div>
 </body>
-</html>`
-}
+</html>`;
+};
 
-export default generateThermalInvoiceHTML
+export default generateThermalInvoiceHTML;
