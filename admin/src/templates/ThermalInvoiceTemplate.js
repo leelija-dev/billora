@@ -78,7 +78,7 @@ const calculateGrandTotal = (invoice, subtotal, totalGST, totalDiscount) => {
   return subtotal - totalDiscount + totalGST
 }
 
-export const generateThermalInvoiceHTML = (invoice) => {
+export const generateThermalInvoiceHTML = (invoice, isOrderDetails = false) => {
   if (!invoice) return ''
 
   const subtotal = calculateSubtotal(invoice.items, invoice.packages)
@@ -101,10 +101,38 @@ export const generateThermalInvoiceHTML = (invoice) => {
     })
   }
 
+  // Render store header conditionally
+  const renderStoreHeader = () => {
+     if (isOrderDetails) {
+      return `
+        <div style="text-align: center; margin-bottom: 12px; margin-top:5px; padding-bottom: 8px; border-bottom: 2px solid #000;">
+          <div style="font-size: 18px; font-weight: bold; letter-spacing: 2px; margin-bottom: 6px; text-transform: uppercase;  ">
+            🧾 ORDER RECEIPT
+          </div>
+          <div style="font-size: 10px; color: #2c5f8a; margin-top: 4px;">
+            ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+          </div>
+          
+        </div>
+      `
+    }
+    
+    return `
+    <div class="store-header">
+      <div class="store-name">${truncateText(invoice.store_name || 'YOUR STORE', 30)}</div>
+      <div class="store-details">
+        ${invoice.store_address ? truncateText(invoice.store_address, 35) + '<br>' : ''}
+        ${invoice.store_phone ? `Tel: ${invoice.store_phone}` : ''}
+        ${invoice.store_gst ? `<br>GST: ${invoice.store_gst}` : ''}
+      </div>
+    </div>
+    `
+  }
+
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
-  <title>Thermal Invoice #${invoice.invoice_number || invoice.id}</title>
+  <title>${isOrderDetails ? 'Order Details' : 'Thermal Invoice'} #${invoice.invoice_number || invoice.id}</title>
   <meta charset="utf-8">
   <style>
     @page {
@@ -351,24 +379,16 @@ export const generateThermalInvoiceHTML = (invoice) => {
 <body>
 <div class="thermal-container">
   
-  <!-- Store Header -->
-  <div class="store-header">
-    <div class="store-name">${truncateText(invoice.store_name || 'YOUR STORE', 30)}</div>
-    <div class="store-details">
-      ${invoice.store_address ? truncateText(invoice.store_address, 35) + '<br>' : ''}
-      ${invoice.store_phone ? `Tel: ${invoice.store_phone}` : ''}
-      ${invoice.store_gst ? `<br>GST: ${invoice.store_gst}` : ''}
-    </div>
-  </div>
+  ${renderStoreHeader()}
 
-  <!-- Invoice Info -->
+  <!-- Invoice/Order Info -->
   <div class="info-grid">
     <div class="info-row">
-      <span class="info-label">INVOICE #:</span>
+      <span class="info-label">${isOrderDetails ? 'ORDER #:' : 'INVOICE #:'}</span>
       <span class="info-value">${invoice.invoice_number || invoice.id || 'N/A'}</span>
     </div>
     <div class="info-row">
-      <span class="info-label">DATE & TIME:</span>
+      <span class="info-label">${isOrderDetails ? 'ORDER DATE:' : 'DATE & TIME:'}</span>
       <span class="info-value">${formatDate(invoice.created_at)}</span>
     </div>
     ${invoice.order_id ? `
@@ -441,7 +461,7 @@ export const generateThermalInvoiceHTML = (invoice) => {
 
   <!-- No items message -->
   ${(!invoice.items || invoice.items.length === 0) && (!invoice.packages || invoice.packages.length === 0) ? `
-    <div style="text-align: center; padding: 10px; font-style: italic;">No items in invoice</div>
+    <div style="text-align: center; padding: 10px; font-style: italic;">No items in ${isOrderDetails ? 'order' : 'invoice'}</div>
   ` : ''}
 
   <div class="divider-double"></div>

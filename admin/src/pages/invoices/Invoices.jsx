@@ -365,248 +365,420 @@ const Invoices = () => {
   };
 
   const handlePrintA4 = async (invoice) => {
-    try {
-      let customerData = invoice.customer || {};
-      let storeData = invoice.store || {};
+  try {
+    let customerData = invoice.customer || {};
+    let storeData = invoice.store || {};
 
-      if (!customerData.name && invoice.customer_id) {
-        const customerResponse = await customerAPI.getById(invoice.customer_id);
-        customerData = customerResponse.data?.data || {};
-      }
-
-      if (!storeData.name && invoice.store_id) {
-        const storeResponse = await storeAPI.getByUserId(invoice.user_id);
-        const storesArray =
-          storeResponse.data?.data?.data || storeResponse.data?.data || [];
-        storeData =
-          storesArray.find((store) => store.id === invoice.store_id) ||
-          storesArray[0] ||
-          {};
-      }
-
-      const invoiceItems = invoice.invoice_items || invoice.items || [];
-      let enhancedItems = [];
-
-      if (invoiceItems.length > 0) {
-        const uniqueProductIds = [
-          ...new Set(
-            invoiceItems.map((item) => item.product_id).filter(Boolean),
-          ),
-        ];
-
-        const productPromises = uniqueProductIds.map(async (productId) => {
-          const cached = productCache.get(productId);
-          if (cached && Date.now() - cached.timestamp < CACHE_EXPIRY) {
-            return { id: productId, data: cached.data };
-          }
-
-          try {
-            const productResponse = await productsAPI.getById(productId);
-            const productData =
-              productResponse.data?.data || productResponse.data || {};
-            productCache.set(productId, {
-              data: productData,
-              timestamp: Date.now(),
-            });
-            return { id: productId, data: productData };
-          } catch (error) {
-            console.error(`Failed to fetch product ${productId}:`, error);
-            return { id: productId, data: null };
-          }
-        });
-
-        const productResults = await Promise.all(productPromises);
-        const productMap = productResults.reduce((acc, { id, data }) => {
-          acc[id] = data;
-          return acc;
-        }, {});
-
-        enhancedItems = invoiceItems.map((item) => {
-          const productData = productMap[item.product_id] || {};
-          return {
-            ...item,
-            product_name:
-              productData.name ||
-              item.product_name ||
-              item.name ||
-              `Product #${item.product_id || item.id || "Unknown"}`,
-            price: parseFloat(item.price || productData.selling_price || 0),
-            quantity: parseFloat(item.quantity || item.item_count || 1),
-            total_price: parseFloat(item.total_price || item.total || 0),
-            gst: parseFloat(item.gst || productData.gst_percentage || 0),
-            discount: parseFloat(
-              item.discount || productData.discount_percentage || 0,
-            ),
-          };
-        });
-      } else {
-        enhancedItems = [
-          {
-            id: 1,
-            product_id: 1,
-            product_name: "Product Item",
-            price: parseFloat(invoice.total_amount || 1000),
-            quantity: 1,
-            total_price: parseFloat(invoice.total_amount || 1000),
-            gst: 18,
-            discount: 0,
-          },
-        ];
-      }
-
-      const enhancedInvoice = {
-        ...invoice,
-        invoice_number: invoice.invoice_number || `INV-${invoice.id}`,
-        customer_name:
-          customerData.name || invoice.customer_name || "Walk-in Customer",
-        customer_phone: customerData.phone || invoice.customer_phone || "N/A",
-        customer_email: customerData.email || invoice.customer_email || "N/A",
-        customer_address: customerData.address
-          ? `${customerData.address}, ${customerData.city}`
-          : invoice.customer_address || "N/A",
-        customer_gst: customerData.gst || invoice.customer_gst || "N/A",
-        store_name: storeData.name || invoice.store_name || "Your Store Name",
-        store_address: storeData.address
-          ? `${storeData.address}, ${storeData.city}`
-          : invoice.store_address || "123 Business Street, City",
-        store_gst: storeData.gst || invoice.store_gst || "GSTIN123456",
-        store_email:
-          storeData.email || invoice.store_email || "store@business.com",
-        store_phone:
-          storeData.mobile ||
-          storeData.phone ||
-          invoice.store_phone ||
-          "123-456-7890",
-        items: enhancedItems,
-      };
-      printA4Invoice(enhancedInvoice);
-    } catch (error) {
-      console.error("Failed to fetch data for A4 printing:", error);
-      printA4Invoice(invoice);
+    // Fetch customer data if not already present
+    if (!customerData.name && invoice.customer_id) {
+      const customerResponse = await customerAPI.getById(invoice.customer_id);
+      customerData = customerResponse.data?.data || {};
     }
-  };
 
-  const handlePrintThermal = async (invoice) => {
-    try {
-      let customerData = invoice.customer || {};
-      let storeData = invoice.store || {};
-
-      if (!customerData.name && invoice.customer_id) {
-        const customerResponse = await customerAPI.getById(invoice.customer_id);
-        customerData = customerResponse.data?.data || {};
+    // Fetch store data properly - IMPROVED VERSION
+    if ((!storeData.name || !storeData.address) && invoice.store_id) {
+      // Try multiple methods to get store data
+      let storeResponse = null;
+      
+      // Try different API methods
+      if (storeAPI.getStoreById) {
+        storeResponse = await storeAPI.getStoreById(invoice.store_id);
+      } else if (storeAPI.getById) {
+        storeResponse = await storeAPI.getById(invoice.store_id);
+      } else if (storeAPI.getStore) {
+        storeResponse = await storeAPI.getStore(invoice.store_id);
+      } else if (storeAPI.getByUserId) {
+        // Fallback to get by user ID and filter
+        const userStoresResponse = await storeAPI.getByUserId(invoice.user_id);
+        const storesArray = userStoresResponse.data?.data?.data || userStoresResponse.data?.data || [];
+        storeData = storesArray.find(store => store.id === invoice.store_id) || {};
       }
-
-      if (!storeData.name && invoice.store_id) {
-        const storeResponse = await storeAPI.getByUserId(invoice.user_id);
-        const storesArray =
-          storeResponse.data?.data?.data || storeResponse.data?.data || [];
-        storeData =
-          storesArray.find((store) => store.id === invoice.store_id) ||
-          storesArray[0] ||
-          {};
+      
+      if (storeResponse && storeResponse.data) {
+        if (storeResponse.data?.status === true && storeResponse.data?.data) {
+          storeData = storeResponse.data.data;
+        } else if (storeResponse.data?.data && typeof storeResponse.data.data === "object") {
+          storeData = storeResponse.data.data;
+        } else if (storeResponse.data && typeof storeResponse.data === "object") {
+          storeData = storeResponse.data;
+        }
       }
-
-      const invoiceItems = invoice.invoice_items || invoice.items || [];
-      let enhancedItems = [];
-
-      if (invoiceItems.length > 0) {
-        const uniqueProductIds = [
-          ...new Set(
-            invoiceItems.map((item) => item.product_id).filter(Boolean),
-          ),
-        ];
-
-        const productPromises = uniqueProductIds.map(async (productId) => {
-          const cached = productCache.get(productId);
-          if (cached && Date.now() - cached.timestamp < CACHE_EXPIRY) {
-            return { id: productId, data: cached.data };
-          }
-
-          try {
-            const productResponse = await productsAPI.getById(productId);
-            const productData =
-              productResponse.data?.data || productResponse.data || {};
-            productCache.set(productId, {
-              data: productData,
-              timestamp: Date.now(),
-            });
-            return { id: productId, data: productData };
-          } catch (error) {
-            console.error(`Failed to fetch product ${productId}:`, error);
-            return { id: productId, data: null };
-          }
-        });
-
-        const productResults = await Promise.all(productPromises);
-        const productMap = productResults.reduce((acc, { id, data }) => {
-          acc[id] = data;
-          return acc;
-        }, {});
-
-        enhancedItems = invoiceItems.map((item) => {
-          const productData = productMap[item.product_id] || {};
-          return {
-            ...item,
-            product_name:
-              productData.name ||
-              item.product_name ||
-              item.name ||
-              `Product #${item.product_id || item.id || "Unknown"}`,
-            price: parseFloat(item.price || productData.selling_price || 0),
-            quantity: parseFloat(item.quantity || item.item_count || 1),
-            total_price: parseFloat(item.total_price || item.total || 0),
-            gst: parseFloat(item.gst || productData.gst_percentage || 0),
-            discount: parseFloat(
-              item.discount || productData.discount_percentage || 0,
-            ),
-          };
-        });
-      } else {
-        enhancedItems = [
-          {
-            id: 1,
-            product_id: 1,
-            product_name: "Product Item",
-            price: parseFloat(invoice.total_amount || 1000),
-            quantity: 1,
-            total_price: parseFloat(invoice.total_amount || 1000),
-            gst: 18,
-            discount: 0,
-          },
-        ];
-      }
-
-      const enhancedInvoice = {
-        ...invoice,
-        invoice_number: invoice.invoice_number || `INV-${invoice.id}`,
-        customer_name:
-          customerData.name || invoice.customer_name || "Walk-in Customer",
-        customer_phone: customerData.phone || invoice.customer_phone || "N/A",
-        customer_email: customerData.email || invoice.customer_email || "N/A",
-        customer_address: customerData.address
-          ? `${customerData.address}, ${customerData.city}`
-          : invoice.customer_address || "N/A",
-        customer_gst: customerData.gst || invoice.customer_gst || "N/A",
-        store_name: storeData.name || invoice.store_name || "Your Store Name",
-        store_address: storeData.address
-          ? `${storeData.address}, ${storeData.city}`
-          : invoice.store_address || "Store Address",
-        store_gst: storeData.gst || invoice.store_gst || "GSTIN123456",
-        store_email:
-          storeData.email || invoice.store_email || "store@business.com",
-        store_phone:
-          storeData.mobile ||
-          storeData.phone ||
-          invoice.store_phone ||
-          "Store Phone",
-        items: enhancedItems,
-      };
-      printThermalInvoice(enhancedInvoice);
-    } catch (error) {
-      console.error("Failed to fetch data for thermal printing:", error);
-      printThermalInvoice(invoice);
     }
-  };
+
+    // Extract store address properly
+    let storeAddress = "";
+    if (storeData.address) {
+      if (typeof storeData.address === "string") {
+        storeAddress = storeData.address;
+      } else if (typeof storeData.address === "object") {
+        const addressParts = [];
+        if (storeData.address.line1) addressParts.push(storeData.address.line1);
+        if (storeData.address.line2) addressParts.push(storeData.address.line2);
+        if (storeData.address.city) addressParts.push(storeData.address.city);
+        if (storeData.address.state) addressParts.push(storeData.address.state);
+        if (storeData.address.pincode) addressParts.push(storeData.address.pincode);
+        storeAddress = addressParts.join(", ");
+      }
+    } else if (storeData.city || storeData.state) {
+      const addressParts = [];
+      if (storeData.address_line1) addressParts.push(storeData.address_line1);
+      if (storeData.address_line2) addressParts.push(storeData.address_line2);
+      if (storeData.city) addressParts.push(storeData.city);
+      if (storeData.state) addressParts.push(storeData.state);
+      if (storeData.pincode) addressParts.push(storeData.pincode);
+      storeAddress = addressParts.join(", ");
+    }
+    
+    // If still no address, try invoice fields
+    if (!storeAddress && invoice.store_address) {
+      storeAddress = invoice.store_address;
+    }
+    
+    // If still empty, set default
+    if (!storeAddress) {
+      storeAddress = "Store Address Not Available";
+    }
+
+    // Extract customer address properly
+    let customerAddress = "";
+    if (customerData.address) {
+      if (typeof customerData.address === "string") {
+        customerAddress = customerData.address;
+      } else if (typeof customerData.address === "object") {
+        const addressParts = [];
+        if (customerData.address.line1) addressParts.push(customerData.address.line1);
+        if (customerData.address.line2) addressParts.push(customerData.address.line2);
+        if (customerData.address.city) addressParts.push(customerData.address.city);
+        if (customerData.address.state) addressParts.push(customerData.address.state);
+        if (customerData.address.pincode) addressParts.push(customerData.address.pincode);
+        customerAddress = addressParts.join(", ");
+      }
+    } else if (customerData.city || customerData.state) {
+      const addressParts = [];
+      if (customerData.address_line1) addressParts.push(customerData.address_line1);
+      if (customerData.address_line2) addressParts.push(customerData.address_line2);
+      if (customerData.city) addressParts.push(customerData.city);
+      if (customerData.state) addressParts.push(customerData.state);
+      if (customerData.pincode) addressParts.push(customerData.pincode);
+      customerAddress = addressParts.join(", ");
+    }
+    
+    if (!customerAddress && invoice.customer_address) {
+      customerAddress = invoice.customer_address;
+    }
+    
+    if (!customerAddress) {
+      customerAddress = "N/A";
+    }
+
+    const invoiceItems = invoice.invoice_items || invoice.items || [];
+    let enhancedItems = [];
+
+    if (invoiceItems.length > 0) {
+      const uniqueProductIds = [
+        ...new Set(
+          invoiceItems.map((item) => item.product_id).filter(Boolean),
+        ),
+      ];
+
+      const productPromises = uniqueProductIds.map(async (productId) => {
+        const cached = productCache.get(productId);
+        if (cached && Date.now() - cached.timestamp < CACHE_EXPIRY) {
+          return { id: productId, data: cached.data };
+        }
+
+        try {
+          const productResponse = await productsAPI.getById(productId);
+          const productData =
+            productResponse.data?.data || productResponse.data || {};
+          productCache.set(productId, {
+            data: productData,
+            timestamp: Date.now(),
+          });
+          return { id: productId, data: productData };
+        } catch (error) {
+          console.error(`Failed to fetch product ${productId}:`, error);
+          return { id: productId, data: null };
+        }
+      });
+
+      const productResults = await Promise.all(productPromises);
+      const productMap = productResults.reduce((acc, { id, data }) => {
+        acc[id] = data;
+        return acc;
+      }, {});
+
+      enhancedItems = invoiceItems.map((item) => {
+        const productData = productMap[item.product_id] || {};
+        return {
+          ...item,
+          product_name:
+            productData.name ||
+            item.product_name ||
+            item.name ||
+            `Product #${item.product_id || item.id || "Unknown"}`,
+          price: parseFloat(item.price || productData.selling_price || 0),
+          quantity: parseFloat(item.quantity || item.item_count || 1),
+          total_price: parseFloat(item.total_price || item.total || 0),
+          gst: parseFloat(item.gst || productData.gst_percentage || 0),
+          discount: parseFloat(
+            item.discount || productData.discount_percentage || 0,
+          ),
+        };
+      });
+    } else {
+      enhancedItems = [
+        {
+          id: 1,
+          product_id: 1,
+          product_name: "Product Item",
+          price: parseFloat(invoice.total_amount || 1000),
+          quantity: 1,
+          total_price: parseFloat(invoice.total_amount || 1000),
+          gst: 18,
+          discount: 0,
+        },
+      ];
+    }
+
+    const enhancedInvoice = {
+      ...invoice,
+      invoice_number: invoice.invoice_number || `INV-${invoice.id}`,
+      customer_name: customerData.name || invoice.customer_name || "Walk-in Customer",
+      customer_phone: customerData.phone || customerData.mobile || invoice.customer_phone || "N/A",
+      customer_email: customerData.email || invoice.customer_email || "N/A",
+      customer_address: customerAddress,
+      customer_gst: customerData.gst || invoice.customer_gst || "N/A",
+      store_name: storeData.name || storeData.store_name || invoice.store_name || "Your Store Name",
+      store_address: storeAddress,
+      store_gst: storeData.gst || storeData.gst_number || invoice.store_gst || "GSTIN123456",
+      store_email: storeData.email || storeData.store_email || invoice.store_email || "store@business.com",
+      store_phone: storeData.mobile || storeData.phone || storeData.store_phone || invoice.store_phone || "123-456-7890",
+      items: enhancedItems,
+    };
+    
+    console.log("Enhanced invoice for printing:", {
+      store_name: enhancedInvoice.store_name,
+      store_address: enhancedInvoice.store_address,
+      store_phone: enhancedInvoice.store_phone,
+      store_email: enhancedInvoice.store_email,
+      store_gst: enhancedInvoice.store_gst
+    });
+    
+    printA4Invoice(enhancedInvoice);
+  } catch (error) {
+    console.error("Failed to fetch data for A4 printing:", error);
+    printA4Invoice(invoice);
+  }
+};
+
+const handlePrintThermal = async (invoice) => {
+  try {
+    let customerData = invoice.customer || {};
+    let storeData = invoice.store || {};
+
+    // Fetch customer data if not already present
+    if (!customerData.name && invoice.customer_id) {
+      const customerResponse = await customerAPI.getById(invoice.customer_id);
+      customerData = customerResponse.data?.data || {};
+    }
+
+    // Fetch store data properly - IMPROVED VERSION
+    if ((!storeData.name || !storeData.address) && invoice.store_id) {
+      // Try multiple methods to get store data
+      let storeResponse = null;
+      
+      // Try different API methods
+      if (storeAPI.getStoreById) {
+        storeResponse = await storeAPI.getStoreById(invoice.store_id);
+      } else if (storeAPI.getById) {
+        storeResponse = await storeAPI.getById(invoice.store_id);
+      } else if (storeAPI.getStore) {
+        storeResponse = await storeAPI.getStore(invoice.store_id);
+      } else if (storeAPI.getByUserId) {
+        // Fallback to get by user ID and filter
+        const userStoresResponse = await storeAPI.getByUserId(invoice.user_id);
+        const storesArray = userStoresResponse.data?.data?.data || userStoresResponse.data?.data || [];
+        storeData = storesArray.find(store => store.id === invoice.store_id) || {};
+      }
+      
+      if (storeResponse && storeResponse.data) {
+        if (storeResponse.data?.status === true && storeResponse.data?.data) {
+          storeData = storeResponse.data.data;
+        } else if (storeResponse.data?.data && typeof storeResponse.data.data === "object") {
+          storeData = storeResponse.data.data;
+        } else if (storeResponse.data && typeof storeResponse.data === "object") {
+          storeData = storeResponse.data;
+        }
+      }
+    }
+
+    // Extract store address properly
+    let storeAddress = "";
+    if (storeData.address) {
+      if (typeof storeData.address === "string") {
+        storeAddress = storeData.address;
+      } else if (typeof storeData.address === "object") {
+        const addressParts = [];
+        if (storeData.address.line1) addressParts.push(storeData.address.line1);
+        if (storeData.address.line2) addressParts.push(storeData.address.line2);
+        if (storeData.address.city) addressParts.push(storeData.address.city);
+        if (storeData.address.state) addressParts.push(storeData.address.state);
+        if (storeData.address.pincode) addressParts.push(storeData.address.pincode);
+        storeAddress = addressParts.join(", ");
+      }
+    } else if (storeData.city || storeData.state) {
+      const addressParts = [];
+      if (storeData.address_line1) addressParts.push(storeData.address_line1);
+      if (storeData.address_line2) addressParts.push(storeData.address_line2);
+      if (storeData.city) addressParts.push(storeData.city);
+      if (storeData.state) addressParts.push(storeData.state);
+      if (storeData.pincode) addressParts.push(storeData.pincode);
+      storeAddress = addressParts.join(", ");
+    }
+    
+    // If still no address, try invoice fields
+    if (!storeAddress && invoice.store_address) {
+      storeAddress = invoice.store_address;
+    }
+    
+    // If still empty, set default
+    if (!storeAddress) {
+      storeAddress = "Store Address Not Available";
+    }
+
+    // Extract customer address properly
+    let customerAddress = "";
+    if (customerData.address) {
+      if (typeof customerData.address === "string") {
+        customerAddress = customerData.address;
+      } else if (typeof customerData.address === "object") {
+        const addressParts = [];
+        if (customerData.address.line1) addressParts.push(customerData.address.line1);
+        if (customerData.address.line2) addressParts.push(customerData.address.line2);
+        if (customerData.address.city) addressParts.push(customerData.address.city);
+        if (customerData.address.state) addressParts.push(customerData.address.state);
+        if (customerData.address.pincode) addressParts.push(customerData.address.pincode);
+        customerAddress = addressParts.join(", ");
+      }
+    } else if (customerData.city || customerData.state) {
+      const addressParts = [];
+      if (customerData.address_line1) addressParts.push(customerData.address_line1);
+      if (customerData.address_line2) addressParts.push(customerData.address_line2);
+      if (customerData.city) addressParts.push(customerData.city);
+      if (customerData.state) addressParts.push(customerData.state);
+      if (customerData.pincode) addressParts.push(customerData.pincode);
+      customerAddress = addressParts.join(", ");
+    }
+    
+    if (!customerAddress && invoice.customer_address) {
+      customerAddress = invoice.customer_address;
+    }
+    
+    if (!customerAddress) {
+      customerAddress = "N/A";
+    }
+
+    const invoiceItems = invoice.invoice_items || invoice.items || [];
+    let enhancedItems = [];
+
+    if (invoiceItems.length > 0) {
+      const uniqueProductIds = [
+        ...new Set(
+          invoiceItems.map((item) => item.product_id).filter(Boolean),
+        ),
+      ];
+
+      const productPromises = uniqueProductIds.map(async (productId) => {
+        const cached = productCache.get(productId);
+        if (cached && Date.now() - cached.timestamp < CACHE_EXPIRY) {
+          return { id: productId, data: cached.data };
+        }
+
+        try {
+          const productResponse = await productsAPI.getById(productId);
+          const productData =
+            productResponse.data?.data || productResponse.data || {};
+          productCache.set(productId, {
+            data: productData,
+            timestamp: Date.now(),
+          });
+          return { id: productId, data: productData };
+        } catch (error) {
+          console.error(`Failed to fetch product ${productId}:`, error);
+          return { id: productId, data: null };
+        }
+      });
+
+      const productResults = await Promise.all(productPromises);
+      const productMap = productResults.reduce((acc, { id, data }) => {
+        acc[id] = data;
+        return acc;
+      }, {});
+
+      enhancedItems = invoiceItems.map((item) => {
+        const productData = productMap[item.product_id] || {};
+        return {
+          ...item,
+          product_name:
+            productData.name ||
+            item.product_name ||
+            item.name ||
+            `Product #${item.product_id || item.id || "Unknown"}`,
+          price: parseFloat(item.price || productData.selling_price || 0),
+          quantity: parseFloat(item.quantity || item.item_count || 1),
+          total_price: parseFloat(item.total_price || item.total || 0),
+          gst: parseFloat(item.gst || productData.gst_percentage || 0),
+          discount: parseFloat(
+            item.discount || productData.discount_percentage || 0,
+          ),
+        };
+      });
+    } else {
+      enhancedItems = [
+        {
+          id: 1,
+          product_id: 1,
+          product_name: "Product Item",
+          price: parseFloat(invoice.total_amount || 1000),
+          quantity: 1,
+          total_price: parseFloat(invoice.total_amount || 1000),
+          gst: 18,
+          discount: 0,
+        },
+      ];
+    }
+
+    const enhancedInvoice = {
+      ...invoice,
+      invoice_number: invoice.invoice_number || `INV-${invoice.id}`,
+      customer_name: customerData.name || invoice.customer_name || "Walk-in Customer",
+      customer_phone: customerData.phone || customerData.mobile || invoice.customer_phone || "N/A",
+      customer_email: customerData.email || invoice.customer_email || "N/A",
+      customer_address: customerAddress,
+      customer_gst: customerData.gst || invoice.customer_gst || "N/A",
+      store_name: storeData.name || storeData.store_name || invoice.store_name || "Your Store Name",
+      store_address: storeAddress,
+      store_gst: storeData.gst || storeData.gst_number || invoice.store_gst || "GSTIN123456",
+      store_email: storeData.email || storeData.store_email || invoice.store_email || "store@business.com",
+      store_phone: storeData.mobile || storeData.phone || storeData.store_phone || invoice.store_phone || "123-456-7890",
+      items: enhancedItems,
+    };
+    
+    console.log("Enhanced invoice for thermal printing:", {
+      store_name: enhancedInvoice.store_name,
+      store_address: enhancedInvoice.store_address,
+      store_phone: enhancedInvoice.store_phone,
+      store_email: enhancedInvoice.store_email,
+      store_gst: enhancedInvoice.store_gst
+    });
+    
+    printThermalInvoice(enhancedInvoice);
+  } catch (error) {
+    console.error("Failed to fetch data for thermal printing:", error);
+    printThermalInvoice(invoice);
+  }
+};
 
   // Calculate stats with safe invoices array
   const safeInvoices = Array.isArray(invoices) ? invoices : [];
