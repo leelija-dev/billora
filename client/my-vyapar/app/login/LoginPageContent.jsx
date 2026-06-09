@@ -162,7 +162,7 @@ const Login = () => {
               <div className="h-2 w-2 bg-gradient-primary rounded-full animate-ping"></div>
             </div>
           </div>
-          <p className="mt-6 text-slate-700 font-medium">Redirecting you to dashboard...</p>
+          <p className="mt-6 text-slate-700 font-medium">Redirecting you to Home...</p>
         </div>
       </div>
     );

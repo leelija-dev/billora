@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { ToastContainer, toast, Bounce } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { forgotPassword } from "../../services/authService";
-import { FaArrowLeft, FaEnvelope } from "react-icons/fa";
+import { FaArrowLeft, FaEnvelope, FaArrowRight, FaShieldAlt } from "react-icons/fa";
 import Link from "next/link";
 
 const ForgotPassword = () => {
@@ -15,9 +15,7 @@ const ForgotPassword = () => {
   const [emailError, setEmailError] = useState("");
   const [submitted, setSubmitted] = useState(false);
 
-  // Clear any existing messages when component mounts
   useEffect(() => {
-    // Clear any stored reset messages
     sessionStorage.removeItem('reset_success');
   }, []);
 
@@ -28,7 +26,7 @@ const ForgotPassword = () => {
     }
     const emailRegex = /^[^\s@]+@([^\s@]+\.)+[^\s@]+$/;
     if (!emailRegex.test(value.trim())) {
-      setEmailError("Please enter a valid email address (e.g., name@example.com)");
+      setEmailError("Please enter a valid email address");
       return false;
     }
     setEmailError("");
@@ -46,51 +44,21 @@ const ForgotPassword = () => {
     e.preventDefault();
     
     if (!validateEmail(email)) {
-      toast.error("Please enter a valid email address", {
-        position: "top-right",
-        autoClose: 3000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        progress: undefined,
-        theme: "light",
-        transition: Bounce,
-      });
+      toast.error("Please enter a valid email address");
       return;
     }
     
     setLoading(true);
     
-    const loadingToastId = toast.loading("Sending reset link...", {
-      position: "top-right",
-      hideProgressBar: false,
-      closeOnClick: false,
-      pauseOnHover: true,
-      draggable: true,
-      progress: undefined,
-      theme: "light",
-      transition: Bounce,
-    });
+    const loadingToastId = toast.loading("Sending reset link...");
     
     try {
       const response = await forgotPassword(email);
-      
       toast.dismiss(loadingToastId);
       
       if (response.status === true) {
         setSubmitted(true);
-        toast.success(response.message || "Password reset link sent! Please check your email.", {
-          position: "top-right",
-          autoClose: 5000,
-          hideProgressBar: false,
-          closeOnClick: true,
-          pauseOnHover: true,
-          draggable: true,
-          progress: undefined,
-          theme: "light",
-          transition: Bounce,
-        });
+        toast.success(response.message || "Password reset link sent! Please check your email.");
       } else {
         throw new Error(response.message || "Failed to send reset link");
       }
@@ -98,7 +66,6 @@ const ForgotPassword = () => {
       toast.dismiss(loadingToastId);
       
       let errorMessage = "";
-      
       if (error.response?.data?.message) {
         errorMessage = error.response.data.message;
       } else if (error.response?.data?.errors?.email) {
@@ -109,61 +76,36 @@ const ForgotPassword = () => {
         errorMessage = "Failed to send reset link. Please try again.";
       }
       
-      toast.error(errorMessage, {
-        position: "top-right",
-        autoClose: 5000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        progress: undefined,
-        theme: "dark",
-        transition: Bounce,
-      });
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
   };
 
-  // If submitted, show success screen
+  // Success Screen
   if (submitted) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[#ece9f1] to-[#dfe3f8] flex flex-col">
-        <ToastContainer
-          position="top-right"
-          autoClose={3000}
-          hideProgressBar={false}
-          newestOnTop={false}
-          closeOnClick
-          rtl={false}
-          pauseOnFocusLoss
-          draggable
-          pauseOnHover
-          theme="light"
-          transition={Bounce}
-        />
-        
-        <div className="flex-1 flex justify-center items-center font-sans relative py-8">
-          <div className="w-[550px] bg-white py-10 px-[50px] rounded-[25px] shadow-[0_10px_25px_rgba(0,0,0,0.08)] max-md:w-[450px] max-md:px-8 max-sm:w-[90%] max-sm:px-5 max-sm:py-8 text-center">
-            <div className="mb-6">
-              <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg className="w-10 h-10 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                </svg>
-              </div>
-              <h2 className="text-2xl font-bold text-[#2d236b] mb-2">Check Your Email</h2>
-              <p className="text-gray-600 mb-4">
-                We've sent a password reset link to <strong className="text-[#5b5bd6]">{email}</strong>
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-slate-100 to-slate-200 flex items-center justify-center p-4">
+        <ToastContainer position="top-right" autoClose={3000} theme="light" transition={Bounce} />
+        <div className="w-full max-w-[450px]">
+          <div className="bg-white rounded-3xl shadow-2xl p-8 md:p-10 text-center">
+            <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+              <svg className="w-10 h-10 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+              </svg>
+            </div>
+            <h2 className="text-2xl font-bold text-slate-800 mb-2">Check Your Email</h2>
+            <p className="text-slate-600 mb-4">
+              We've sent a password reset link to <strong className="text-gradient-primary">{email}</strong>
+            </p>
+            <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6">
+              <p className="text-sm text-blue-800">
+                📧 Please check your inbox and spam folder. The link will expire in 60 minutes.
               </p>
-              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6">
-                <p className="text-sm text-blue-800">
-                  📧 Please check your inbox and spam folder. The link will expire in 60 minutes.
-                </p>
-              </div>
             </div>
             
             <Link href="/login">
-              <button className="w-full py-3.5 rounded-xl border-none bg-gradient-to-r from-[#5b5bd6] to-[#3b82f6] text-white text-base font-bold cursor-pointer hover:shadow-lg hover:scale-105 transition-all duration-300">
+              <button className="w-full py-3 bg-gradient-tertiary hover:shadow-lg transition-all duration-200 rounded-xl text-white font-semibold">
                 Back to Login
               </button>
             </Link>
@@ -173,7 +115,7 @@ const ForgotPassword = () => {
                 setSubmitted(false);
                 setEmail("");
               }}
-              className="w-full mt-3 py-3 rounded-xl border border-gray-300 bg-white text-gray-700 text-base font-medium cursor-pointer hover:bg-gray-50 transition-all duration-300"
+              className="w-full mt-3 py-3 border border-border-gray-300 rounded-xl text-slate-700 font-medium hover:bg-slate-50 transition-all duration-200"
             >
               Try Different Email
             </button>
@@ -184,76 +126,94 @@ const ForgotPassword = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#ece9f1] to-[#dfe3f8] flex flex-col">
-      <ToastContainer
-        position="top-right"
-        autoClose={3000}
-        hideProgressBar={false}
-        newestOnTop={false}
-        closeOnClick
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-        theme="light"
-        transition={Bounce}
-      />
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-slate-100 to-slate-200 flex items-center justify-center p-4">
+      <ToastContainer position="top-right" autoClose={3000} theme="light" transition={Bounce} />
       
-      <div className="flex-1 flex justify-center items-center font-sans relative py-8">
-        <form onSubmit={handleSubmit} className="w-[550px] bg-white py-10 px-[50px] rounded-[25px] shadow-[0_10px_25px_rgba(0,0,0,0.08)] max-md:w-[450px] max-md:px-8 max-sm:w-[90%] max-sm:px-5 max-sm:py-8">
-          
-          <Link href="/login" className="inline-flex items-center text-[#5b5bd6] hover:text-[#3b82f6] mb-6 transition-colors">
-            <FaArrowLeft className="mr-2" size={14} />
-            Back to Login
-          </Link>
-          
-          <h1 className="text-center text-[#2d236b] mb-4 text-3xl font-bold max-sm:text-2xl">
-            Forgot Password?
-          </h1>
-          
-          <p className="text-center text-gray-600 mb-8">
-            Enter your email address and we'll send you a link to reset your password.
-          </p>
-          
-          <div className="flex flex-col mb-6">
-            <label className="mb-1.5 text-sm text-gray-700 font-medium">Email Address *</label>
-            <div className="relative">
-              <FaEnvelope className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" />
-              <input 
-                type="email" 
-                value={email}
-                onChange={handleEmailChange}
-                onBlur={() => validateEmail(email)}
-                placeholder="name@company.com" 
-                className={`w-full p-3 pl-12 rounded-[30px] border outline-none focus:border-[#5b5bd6] transition-colors ${
-                  emailError ? "border-red-500 bg-red-50" : "border-[#ccc]"
-                }`}
-                required
-                disabled={loading}
-              />
+      <div className="w-full max-w-[450px]">
+        <div className="bg-white rounded-3xl shadow-2xl p-8 md:p-10">
+          {/* Header */}
+          <div className="text-center mb-8">
+            <div className="w-16 h-16 bg-gradient-tertiary rounded-2xl flex items-center justify-center mx-auto mb-5 shadow-lg">
+              <FaShieldAlt className="w-8 h-8 text-white" />
             </div>
-            {emailError && (
-              <p className="text-red-500 text-xs mt-1 ml-3">{emailError}</p>
-            )}
-          </div>
-          
-          <button 
-            type="submit"
-            disabled={loading}
-            className="w-full py-3.5 rounded-xl border-none bg-gradient-to-r from-[#5b5bd6] to-[#3b82f6] text-white text-base font-bold cursor-pointer hover:shadow-lg hover:scale-105 transition-all duration-300 disabled:opacity-50 disabled:hover:scale-100"
-          >
-            {loading ? "SENDING..." : "SEND RESET LINK"}
-          </button>
-          
-          <div className="text-center mt-6">
-            <p className="text-sm text-gray-600">
-              Remember your password?{" "}
-              <Link href="/login" className="text-[#3b82f6] font-bold hover:underline">
-                Sign In
-              </Link>
+            <h1 className="text-3xl font-bold text-slate-800 mb-2">
+              Forgot Password?
+            </h1>
+            <p className="text-slate-600 text-sm">
+              Enter your email to reset your password
             </p>
           </div>
-        </form>
+
+          <form onSubmit={handleSubmit}>
+            {/* Email Field */}
+            <div className="mb-6">
+              <label className="block text-sm font-semibold text-slate-700 mb-2">
+                Email Address
+              </label>
+              <div className="relative group">
+                <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-gradient-primary transition-colors">
+                  <FaEnvelope className="w-4 h-4" />
+                </div>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={handleEmailChange}
+                  onBlur={() => validateEmail(email)}
+                  placeholder="name@example.com"
+                  className={`w-full pl-10 pr-3 py-2.5 border rounded-xl outline-none transition-all duration-200 ${
+                    emailError 
+                      ? "border-red-500 bg-red-50 focus:border-red-500" 
+                      : "border-border-gray-300 focus:border-gradient-primary focus:ring-2 focus:ring-gradient-primary/20"
+                  }`}
+                  disabled={loading}
+                />
+              </div>
+              {emailError && (
+                <p className="text-red-500 text-xs mt-1 ml-1">{emailError}</p>
+              )}
+            </div>
+
+            {/* Submit Button */}
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full py-3 bg-gradient-tertiary hover:shadow-lg transition-all duration-200 transform hover:scale-[1.02] disabled:opacity-50 disabled:hover:scale-100 shadow-lg shadow-gradient-primary/20 flex items-center justify-center gap-2 rounded-xl text-white font-semibold"
+            >
+              {loading ? (
+                <>
+                  <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  <span>Sending...</span>
+                </>
+              ) : (
+                <>
+                  <span>Send Reset Link</span>
+                  <FaArrowRight className="w-4 h-4" />
+                </>
+              )}
+            </button>
+
+            {/* Back to Login Link */}
+            <div className="mt-6 text-center">
+              <p className="text-sm text-slate-600">
+                Remember your password?{" "}
+                <Link href="/login" className="text-gradient-primary font-semibold hover:text-gradient-secondary transition-colors">
+                  Sign In
+                </Link>
+              </p>
+            </div>
+          </form>
+        </div>
+
+        {/* Security Note */}
+        <div className="text-center mt-6">
+          <p className="text-xs text-slate-500 flex items-center justify-center gap-1">
+            <FaShieldAlt className="w-3 h-3" />
+            We'll send a secure link to reset your password
+          </p>
+        </div>
       </div>
     </div>
   );
