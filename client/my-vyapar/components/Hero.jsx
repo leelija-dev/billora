@@ -178,7 +178,7 @@ const Hero = () => {
                 <div className="flex items-center gap-2">
                   <FaCheckCircle className="text-text-emerald-600 w-4 h-4 sm:w-5 sm:h-5" />
                   <span className="text-text-slate-700 text-text-xs sm:text-text-sm">
-                    14 Days Free Trial
+                    7 Days Free Trial
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
