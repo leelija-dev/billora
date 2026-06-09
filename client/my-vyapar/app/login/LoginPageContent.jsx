@@ -1,3 +1,4 @@
+// app/login/page.js
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
@@ -5,18 +6,14 @@ import { FcGoogle } from "react-icons/fc";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 import { useAuthStore } from "../../store/authStoreZustand";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ToastContainer, toast, Bounce } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
 import { logger } from "../../utils/logger";
-import { loginUser } from "../../services/authService";
 import Link from "next/link";
 
 const Login = () => {
-  const { login, isLoggedIn, user } = useAuthStore();
+  const { login, isLoggedIn, user, isLoading } = useAuthStore();
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
   const [emailError, setEmailError] = useState("");
@@ -27,7 +24,6 @@ const Login = () => {
   // Add ref to prevent double login
   const loginAttempted = useRef(false);
   const redirectHandled = useRef(false);
-  const toastShown = useRef(false);
 
   // Check for pending plan on mount
   useEffect(() => {
@@ -38,30 +34,6 @@ const Login = () => {
     logger.log("🔍 from param:", from);
     logger.log("🔍 pendingPlan exists:", !!pendingPlan);
 
-    if (pendingPlan && !toastShown.current) {
-      try {
-        const planData = JSON.parse(pendingPlan);
-        logger.log("📋 Found pending plan:", planData.name);
-        toastShown.current = true;
-        setTimeout(() => {
-          toast.success(`Complete your ${planData.name} plan purchase!`, {
-            position: "top-right",
-            autoClose: 4000,
-            hideProgressBar: false,
-            closeOnClick: true,
-            pauseOnHover: true,
-            draggable: true,
-            progress: undefined,
-            theme: "light",
-            transition: Bounce,
-          });
-        }, 100);
-      } catch (e) {
-        logger.error("Error parsing pending plan:", e);
-        localStorage.removeItem("pendingPlan");
-      }
-    }
-
     if (from !== "pricing" && !pendingPlan) {
       logger.log("🗑️ Normal login - clearing any old pending plan");
       localStorage.removeItem("pendingPlan");
@@ -70,7 +42,6 @@ const Login = () => {
     // Reset login attempt flag when component mounts
     loginAttempted.current = false;
     redirectHandled.current = false;
-    toastShown.current = false;
   }, [searchParams]);
 
   // Handle redirect after login with delay
@@ -78,7 +49,7 @@ const Login = () => {
     if (isLoggedIn && user && !redirectHandled.current) {
       redirectHandled.current = true;
 
-      // Add a small delay to ensure toast is visible
+      // Add delay to ensure toast is visible
       const redirectTimer = setTimeout(() => {
         const pendingPlan = localStorage.getItem("pendingPlan");
 
@@ -96,18 +67,10 @@ const Login = () => {
         if (redirectUrl) {
           router.push(redirectUrl);
         } else {
-          // Check if user has active plan
           const hasActivePlan = user?.plan_id && user?.is_active === 1;
-
-          if (hasActivePlan) {
-            // User has active plan - redirect to home page
-            router.push("/");
-          } else {
-            // User doesn't have active plan - redirect to pricing page
-            router.push("/pricing");
-          }
+          router.push(hasActivePlan ? "/" : "/pricing");
         }
-      }, 1500); // Increased delay to ensure toast is visible
+      }, 2000); // Increased delay to ensure toast is visible
 
       return () => clearTimeout(redirectTimer);
     }
@@ -120,9 +83,7 @@ const Login = () => {
     }
     const emailRegex = /^[^\s@]+@([^\s@]+\.)+[^\s@]+$/;
     if (!emailRegex.test(value.trim())) {
-      setEmailError(
-        "Please enter a valid email address (e.g., name@example.com)",
-      );
+      setEmailError("Please enter a valid email address (e.g., name@example.com)");
       return false;
     }
     setEmailError("");
@@ -152,7 +113,7 @@ const Login = () => {
     e.preventDefault();
 
     // Prevent double login attempts
-    if (loginAttempted.current || loading) {
+    if (loginAttempted.current || isLoading) {
       logger.log("⚠️ Login already in progress, skipping...");
       return;
     }
@@ -160,143 +121,26 @@ const Login = () => {
     setError("");
 
     if (!validateForm()) {
-      toast.error("Please fix the validation errors", {
-        position: "top-right",
-        autoClose: 3000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        progress: undefined,
-        theme: "light",
-        transition: Bounce,
-      });
+      setError("Please fix the validation errors");
       return;
     }
 
     loginAttempted.current = true;
-    setLoading(true);
-
-    // Show loading toast
-    const loadingToastId = toast.loading("Logging in...", {
-      position: "top-right",
-      hideProgressBar: false,
-      closeOnClick: false,
-      pauseOnHover: true,
-      draggable: true,
-      progress: undefined,
-      theme: "light",
-      transition: Bounce,
-    });
 
     try {
-      // Call loginUser API directly
-      const response = await loginUser({ email, password });
-      const responseData = response.data;
-
-      // Check if login failed
-      if (!responseData?.status) {
-        toast.dismiss(loadingToastId);
-
-        const errorMessage =
-          responseData?.message || "Login failed. Please try again.";
-
-        toast.error(errorMessage, {
-          position: "top-right",
-          autoClose: 4000,
-          hideProgressBar: false,
-          closeOnClick: true,
-          pauseOnHover: true,
-          draggable: true,
-          progress: undefined,
-          theme: "dark",
-          transition: Bounce,
-        });
-
-        setError(errorMessage);
+      // Call login from store - handles all toasts internally
+      const result = await login(email, password);
+      
+      if (!result.success) {
+        setError(result.error);
         loginAttempted.current = false;
-        setLoading(false);
-        return;
       }
-
-      const userData = responseData.user;
-      const token = responseData.token;
-
-      if (!userData || !token) {
-        toast.dismiss(loadingToastId);
-        const errorMessage = "Invalid response from server";
-        toast.error(errorMessage, {
-          position: "top-right",
-          autoClose: 4000,
-          hideProgressBar: false,
-          closeOnClick: true,
-          pauseOnHover: true,
-          draggable: true,
-          progress: undefined,
-          theme: "dark",
-          transition: Bounce,
-        });
-        setError(errorMessage);
-        loginAttempted.current = false;
-        setLoading(false);
-        return;
-      }
-
-      logger.log("✅ User data:", userData);
-      logger.log("✅ Token received:", token.substring(0, 20) + "...");
-
-      toast.dismiss(loadingToastId);
-
-      // Call store login with user data and token
-      const result = login(userData, token);
-
-      if (result.success) {
-        toast.success("Login Successful! Redirecting...", {
-          position: "top-right",
-          autoClose: 2000,
-          hideProgressBar: false,
-          closeOnClick: true,
-          pauseOnHover: true,
-          draggable: true,
-          progress: undefined,
-          theme: "light",
-          transition: Bounce,
-        });
-      } else {
-        throw new Error(result.error || "Login failed");
-      }
+      // On success, toast is shown and redirect happens in useEffect
+      
     } catch (error) {
-      toast.dismiss(loadingToastId);
-      loginAttempted.current = false;
-
       logger.error("❌ Login error:", error);
-
-      let errorMessage = "";
-
-      if (error.response?.data?.message) {
-        errorMessage = error.response.data.message;
-      } else if (error.message) {
-        errorMessage = error.message;
-      } else {
-        errorMessage = "Login failed. Please try again.";
-      }
-
-      console.log("📢 Extracted error message:", errorMessage);
-      setError(errorMessage);
-
-      toast.error(errorMessage, {
-        position: "top-right",
-        autoClose: 5000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        progress: undefined,
-        theme: "dark",
-        transition: Bounce,
-      });
-    } finally {
-      setLoading(false);
+      setError(error.message || "Login failed. Please try again.");
+      loginAttempted.current = false;
     }
   };
 
@@ -328,21 +172,6 @@ const Login = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#ece9f1] to-[#dfe3f8] flex flex-col">
-      {/* ToastContainer for react-toastify */}
-      <ToastContainer
-        position="top-right"
-        autoClose={3000}
-        hideProgressBar={false}
-        newestOnTop={false}
-        closeOnClick
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-        theme="light"
-        transition={Bounce}
-      />
-
       <div className="flex-1 flex justify-center items-center font-sans relative py-8">
         <form
           onSubmit={handleLogin}
@@ -354,18 +183,14 @@ const Login = () => {
 
           {/* Show pending plan info if exists */}
           {(() => {
-            const pendingPlan =
-              typeof window !== "undefined"
-                ? localStorage.getItem("pendingPlan")
-                : null;
+            const pendingPlan = typeof window !== "undefined" ? localStorage.getItem("pendingPlan") : null;
             if (pendingPlan) {
               try {
                 const planData = JSON.parse(pendingPlan);
                 return (
                   <div className="mb-4 p-3 bg-purple-50 border border-purple-200 rounded-xl">
                     <p className="text-sm text-purple-800 text-center">
-                      🎯 Complete your <strong>{planData.name}</strong> plan
-                      purchase after login
+                      🎯 Complete your <strong>{planData.name}</strong> plan purchase after login
                     </p>
                   </div>
                 );
@@ -386,7 +211,7 @@ const Login = () => {
             <button
               type="button"
               className="flex-1 py-3 rounded-[30px] border border-[#ddd] bg-white cursor-pointer hover:shadow-md transition-shadow"
-              disabled={loading}
+              disabled={isLoading}
             >
               <FcGoogle size={25} className="mx-auto" />
             </button>
@@ -406,7 +231,7 @@ const Login = () => {
                 emailError ? "border-red-500 bg-red-50" : "border-[#ccc]"
               }`}
               required
-              disabled={loading}
+              disabled={isLoading}
             />
             {emailError && (
               <p className="text-red-500 text-xs mt-1 ml-3">{emailError}</p>
@@ -427,7 +252,7 @@ const Login = () => {
                 passwordError ? "border-red-500 bg-red-50" : "border-[#ccc]"
               }`}
               required
-              disabled={loading}
+              disabled={isLoading}
             />
             <span
               className="absolute right-[18px] top-[38px] cursor-pointer text-[#555]"
@@ -451,10 +276,10 @@ const Login = () => {
 
           <button
             type="submit"
-            disabled={loading}
+            disabled={isLoading}
             className="w-full py-3.5 rounded-xl border-none bg-gradient-to-r from-[#5b5bd6] to-[#3b82f6] text-white text-base font-bold cursor-pointer hover:shadow-lg hover:scale-105 transition-all duration-300 disabled:opacity-50 disabled:hover:scale-100"
           >
-            {loading ? "LOGGING IN..." : "LOG IN"}
+            {isLoading ? "LOGGING IN..." : "LOG IN"}
           </button>
 
           <div className="text-center mt-6 text-sm">
@@ -469,9 +294,7 @@ const Login = () => {
                   if (pendingPlan) {
                     router.push("/register?redirect=/order-summary");
                   } else if (redirect) {
-                    router.push(
-                      `/register?redirect=${encodeURIComponent(redirect)}`,
-                    );
+                    router.push(`/register?redirect=${encodeURIComponent(redirect)}`);
                   } else {
                     router.push("/register");
                   }

@@ -11,10 +11,11 @@ import {
   FiLayers, FiStar, FiArrowRight
 } from "react-icons/fi";
 import { useAuthStore } from "../store/authStoreZustand";
-import toast from 'react-hot-toast';
+import toastService from "@/services/toastService";
 
 const Navbar = () => {
-  const { user, isLoggedIn, logout } = useAuthStore();
+  const { user, isLoggedIn, logout, isLoading: authLoading } = useAuthStore();
+
   
   // Calculate hasActivePlan directly from user data
   const hasActivePlan = user?.is_active === 1 || false;
@@ -81,24 +82,20 @@ const Navbar = () => {
     };
   }, [logout, router]);
 
-  // ✅ Updated: Hide navbar on specific pages (including products/[id] and order-success)
+  // ✅ Updated: Hide navbar on specific pages
   const shouldHideNavbar = () => {
-    // Check for exact matches
     if (pathname === '/login' || pathname === '/register') {
       return true;
     }
     
-    // Check for order-success page
     if (pathname === '/order-success') {
       return true;
     }
     
-    // Check for products page with dynamic ID (e.g., /products/16)
     if (pathname.startsWith('/products/')) {
       return true;
     }
     
-    // Also hide on the base products page if needed
     if (pathname === '/products') {
       return true;
     }
@@ -124,17 +121,17 @@ const Navbar = () => {
       userPlanId: user?.plan_id,
       user,
       pathname,
-      shouldHide: shouldHideNavbar()
+      shouldHide: shouldHideNavbar(),
+      authLoading
     });
-  }, [isLoggedIn, hasActivePlan, user, pathname]);
+  }, [isLoggedIn, hasActivePlan, user, pathname, authLoading]);
 
   // FIXED: Correct routeMap with proper indices matching navItems order
   const routeMap = {
     "/pricing": 0,
-   
     "/solution": 1,
-    "/about": 2,    // About should be index 3 (matches navItems)
-    "/blog": 3,     // Blog should be index 4 (matches navItems)
+    "/about": 2,
+    "/blog": 3,
     "/contact": 4,
   };
 
@@ -142,50 +139,28 @@ const Navbar = () => {
     return routeMap.hasOwnProperty(path?.replace(/\/$/, ""));
   };
 
-  // Handle logout directly without confirmation
+  // Handle logout - toast is now handled in the auth store
   const handleLogout = async () => {
-    await performLogout();
-  };
-
-  const performLogout = async () => {
-      if (isLoggingOut) return;
+    if (isLoggingOut) return;
+    
+    setIsLoggingOut(true);
+    setShowUserMenu(false);
+    
+    try {
+      await logout(); // Toast is handled inside the store
       
-      setIsLoggingOut(true);
-      setShowUserMenu(false);
-      toast.dismiss();
-      
-      const loadingToastId = toast.loading('Logging out...', {
-        position: 'top-center',
-      });
-      
-      try {
-        await logout();
-        // Broadcast logout to all apps/tabs
-        localStorage.setItem("logout-event", Date.now().toString());
-        toast.dismiss(loadingToastId);
-        toast.success(`Successfully logged out. See you soon!`, {
-          duration: 3000,
-          position: 'top-right',
-          icon: '',
-        });
-        
+      // Small delay for toast to show before navigation
+      setTimeout(() => {
         router.push("/");
         router.refresh();
-        
-      } catch (error) {
-        console.error("Logout failed:", error);
-        toast.dismiss(loadingToastId);
-        toast.error(error?.message || 'Failed to logout. Please try again.', {
-          duration: 4000,
-          position: 'top-right',
-        });
-        
-        await logout();
-        router.push("/");
-      } finally {
-        setIsLoggingOut(false);
-      }
-    };
+      }, 1500);
+      
+    } catch (error) {
+      console.error('Logout error:', error);
+    } finally {
+      setIsLoggingOut(false);
+    }
+  };
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -201,7 +176,7 @@ const Navbar = () => {
     };
   }, []);
 
-  // Close mobile menu when clicking outside - MODIFIED for left sidebar
+  // Close mobile menu when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (mobileMenuRef.current && !mobileMenuRef.current.contains(event.target)) {
@@ -456,7 +431,6 @@ const Navbar = () => {
 
   const navItems = [
     { name: "Pricing", href: "/pricing", icon: FiCreditCard },
-   
     { name: "Solution", href: "/solution", icon: FiBriefcase },
     { name: "About", href: "/about", icon: FiHelpCircle },
     { name: "Blog", href: "/blog", icon: FiFileText },
@@ -483,6 +457,22 @@ const Navbar = () => {
     e.preventDefault();
     window.open(`${DASHBOARD_URL}dashboard`, '_blank');
   };
+
+  // Skeleton Loader Component
+  const SkeletonButton = ({ width = "w-24", height = "h-9" }) => (
+    <div className={`${width} ${height} bg-gray-200 rounded-full animate-pulse`}></div>
+  );
+
+  const SkeletonUserMenu = () => (
+    <div className="flex items-center gap-2 px-2 py-1.5">
+      <div className="w-8 h-8 sm:w-9 sm:h-9 bg-gray-200 rounded-full animate-pulse"></div>
+      <div className="hidden xl:block">
+        <div className="w-20 h-4 bg-gray-200 rounded animate-pulse"></div>
+        <div className="w-16 h-3 bg-gray-200 rounded animate-pulse mt-1"></div>
+      </div>
+      <div className="w-4 h-4 bg-gray-200 rounded animate-pulse"></div>
+    </div>
+  );
 
   // ✅ Return null to hide navbar completely on specified pages
   if (shouldHideNavbar()) {
@@ -579,156 +569,172 @@ const Navbar = () => {
               </ul>
             </div>
 
-            {/* Dashboard Button Logic */}
-            {isLoggedIn && hasActivePlan ? (
-              <a
-                href={`${DASHBOARD_URL}dashboard`}
-                onClick={handleDashboardClick}
-                className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-full text-sm font-semibold transition-all duration-200 hover:shadow-md hover:scale-105 whitespace-nowrap cursor-pointer"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <FiGrid size={16} />
-                <span>Dashboard</span>
-              </a>
+            {/* Dashboard Button Logic with Skeleton Loading */}
+            {authLoading ? (
+              <SkeletonButton width="w-32" height="h-9" />
             ) : (
-              <Link
-                href="/start-free-trial"
-                onClick={handleExternalClick}
-                className="px-3 sm:px-4 py-1.5 sm:py-2 bg-gradient-to-r from-indigo-500 to-purple-500 text-white rounded-full text-xs sm:text-sm font-semibold transition-all duration-200 hover:shadow-md hover:scale-105 whitespace-nowrap"
-              >
-                Start Free Trial
-              </Link>
+              isLoggedIn && hasActivePlan ? (
+                <a
+                  href={`${DASHBOARD_URL}dashboard`}
+                  onClick={handleDashboardClick}
+                  className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-full text-sm font-semibold transition-all duration-200 hover:shadow-md hover:scale-105 whitespace-nowrap cursor-pointer"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <FiGrid size={16} />
+                  <span>Dashboard</span>
+                </a>
+              ) : (
+                <Link
+                  href="/start-free-trial"
+                  onClick={handleExternalClick}
+                  className="px-3 sm:px-4 py-1.5 sm:py-2 bg-gradient-to-r from-indigo-500 to-purple-500 text-white rounded-full text-xs sm:text-sm font-semibold transition-all duration-200 hover:shadow-md hover:scale-105 whitespace-nowrap"
+                >
+                  Start Free Trial
+                </Link>
+              )
             )}
 
-            {/* Desktop Auth Section */}
-            {isLoggedIn ? (
-              <div className="relative" ref={userMenuRef}>
-                <button
-                  onClick={() => setShowUserMenu(!showUserMenu)}
-                  className="flex items-center gap-2 px-2 py-1.5 rounded-full hover:bg-gray-100 transition-all duration-200"
-                >
-                  <div className="relative">
-                    <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 flex items-center justify-center text-white font-semibold text-sm shadow-md">
-                      {userInitial}
+            {/* Desktop Auth Section with Skeleton Loading */}
+            {authLoading ? (
+              <SkeletonUserMenu />
+            ) : (
+              isLoggedIn ? (
+                <div className="relative" ref={userMenuRef}>
+                  <button
+                    onClick={() => setShowUserMenu(!showUserMenu)}
+                    className="flex items-center gap-2 px-2 py-1.5 rounded-full hover:bg-gray-100 transition-all duration-200"
+                  >
+                    <div className="relative">
+                      <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 flex items-center justify-center text-white font-semibold text-sm shadow-md">
+                        {userInitial}
+                      </div>
+                      {hasActivePlan && (
+                        <span className="absolute -top-1 -right-1 w-3 h-3 bg-yellow-400 rounded-full border-2 border-white shadow-sm"></span>
+                      )}
+                      <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-white shadow-sm"></span>
                     </div>
-                    {hasActivePlan && (
-                      <span className="absolute -top-1 -right-1 w-3 h-3 bg-yellow-400 rounded-full border-2 border-white shadow-sm"></span>
-                    )}
-                    <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-white shadow-sm"></span>
-                  </div>
-                  <div className="hidden xl:block text-left">
-                    <div className="text-sm font-medium text-gray-700 max-w-[120px] truncate">
-                      {userName}
+                    <div className="hidden xl:block text-left">
+                      <div className="text-sm font-medium text-gray-700 max-w-[120px] truncate">
+                        {userName}
+                      </div>
+                      {hasActivePlan && (
+                        <div className="text-xs text-green-600 font-medium">Premium Plan</div>
+                      )}
                     </div>
-                    {hasActivePlan && (
-                      <div className="text-xs text-green-600 font-medium">Premium Plan</div>
-                    )}
-                  </div>
-                  <FiChevronDown className={`text-gray-400 transition-transform duration-200 hidden sm:block ${showUserMenu ? 'rotate-180' : ''}`} size={14} />
-                </button>
+                    <FiChevronDown className={`text-gray-400 transition-transform duration-200 hidden sm:block ${showUserMenu ? 'rotate-180' : ''}`} size={14} />
+                  </button>
 
-                {/* Desktop Dropdown Menu */}
-                {showUserMenu && (
-                  <div className="absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden z-50">
-                    <div className="px-4 py-3 border-b border-gray-100 bg-gray-50">
-                      <div className="flex items-center gap-3">
-                        <div className="relative">
-                          <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 flex items-center justify-center text-white font-semibold">
-                            {userInitial}
+                  {/* Desktop Dropdown Menu */}
+                  {showUserMenu && (
+                    <div className="absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden z-50">
+                      <div className="px-4 py-3 border-b border-gray-100 bg-gray-50">
+                        <div className="flex items-center gap-3">
+                          <div className="relative">
+                            <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 flex items-center justify-center text-white font-semibold">
+                              {userInitial}
+                            </div>
+                            {hasActivePlan && (
+                              <span className="absolute -top-1 -right-1 w-3 h-3 bg-yellow-400 rounded-full border-2 border-white"></span>
+                            )}
                           </div>
-                          {hasActivePlan && (
-                            <span className="absolute -top-1 -right-1 w-3 h-3 bg-yellow-400 rounded-full border-2 border-white"></span>
-                          )}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-gray-900 truncate">
-                            {userName}
-                          </p>
-                          <p className="text-xs text-gray-500 truncate">
-                            {userEmail}
-                          </p>
-                          {hasActivePlan && (
-                            <p className="text-xs text-green-600 font-medium mt-0.5">
-                              ✓ Premium Active
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-gray-900 truncate">
+                              {userName}
                             </p>
-                          )}
+                            <p className="text-xs text-gray-500 truncate">
+                              {userEmail}
+                            </p>
+                            {hasActivePlan && (
+                              <p className="text-xs text-green-600 font-medium mt-0.5">
+                                ✓ Premium Active
+                              </p>
+                            )}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                    <div className="py-2">
-                      {/* Dashboard link in dropdown menu */}
-                      {hasActivePlan && (
-                        <a
-                          href={`${DASHBOARD_URL}dashboard`}
-                          onClick={(e) => {
-                            e.preventDefault();
-                            setShowUserMenu(false);
-                            window.open(`${DASHBOARD_URL}dashboard`, '_blank');
-                          }}
-                          className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                        >
-                          <FiGrid size={18} />
-                          <span>Dashboard</span>
-                          <span className="ml-auto text-xs bg-green-100 text-green-600 px-2 py-0.5 rounded-full">Active</span>
-                        </a>
-                      )}
-                      <Link
-                        href="/profile"
-                        onClick={() => setShowUserMenu(false)}
-                        className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-                      >
-                        <FiUser size={18} />
-                        <span>My Profile</span>
-                      </Link>
-                      <Link
-                        href="/settings"
-                        onClick={() => setShowUserMenu(false)}
-                        className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-                      >
-                        <FiSettings size={18} />
-                        <span>Settings</span>
-                      </Link>
-                    </div>
-                    <div className="border-t border-gray-100"></div>
-                    <div className="py-2">
-                      <button
-                        onClick={handleLogout}
-                        disabled={isLoggingOut}
-                        className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
-                      >
-                        {isLoggingOut ? (
-                          <>
-                            <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
-                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                            </svg>
-                            <span>Logging out...</span>
-                          </>
-                        ) : (
-                          <>
-                            <FiLogOut size={18} />
-                            <span>Logout</span>
-                          </>
+                      <div className="py-2">
+                        {/* Dashboard link in dropdown menu */}
+                        {hasActivePlan && (
+                          <a
+                            href={`${DASHBOARD_URL}dashboard`}
+                            onClick={(e) => {
+                              e.preventDefault();
+                              setShowUserMenu(false);
+                              window.open(`${DASHBOARD_URL}dashboard`, '_blank');
+                            }}
+                            className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            <FiGrid size={18} />
+                            <span>Dashboard</span>
+                            <span className="ml-auto text-xs bg-green-100 text-green-600 px-2 py-0.5 rounded-full">Active</span>
+                          </a>
                         )}
-                      </button>
+                        <a
+                          href={`${DASHBOARD_URL}settings`}
+                          onClick={(e) => {
+                              e.preventDefault();
+                              setShowUserMenu(false);
+                              window.open(`${DASHBOARD_URL}settings`, '_blank');
+                            }}
+                          className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                        >
+                          <FiUser size={18} />
+                          <span>My Profile</span>
+                        </a>
+                        <a
+                          href={`${DASHBOARD_URL}settings`}
+                          onClick={(e) => {
+                              e.preventDefault();
+                              setShowUserMenu(false);
+                              window.open(`${DASHBOARD_URL}settings`, '_blank');
+                            }}
+                          className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                        >
+                          <FiSettings size={18} />
+                          <span>Settings</span>
+                        </a>
+                      </div>
+                      <div className="border-t border-gray-100"></div>
+                      <div className="py-2">
+                        <button
+                          onClick={handleLogout}
+                          disabled={isLoggingOut}
+                          className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                        >
+                          {isLoggingOut ? (
+                            <>
+                              <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                              </svg>
+                              <span>Logging out...</span>
+                            </>
+                          ) : (
+                            <>
+                              <FiLogOut size={18} />
+                              <span>Logout</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div className="flex items-center gap-2">
-                <Link
-                  href="/login"
-                  onClick={handleExternalClick}
-                  className="flex items-center gap-1.5 px-3 sm:px-4 py-1.5 sm:py-2 bg-blue-600 text-white rounded-full text-xs sm:text-sm font-semibold hover:bg-blue-700 transition-all duration-200 whitespace-nowrap"
-                >
-                  <FiLogIn size={14} />
-                  <span>Login</span>
-                </Link>
-              </div>
+                  )}
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <Link
+                    href="/login"
+                    onClick={handleExternalClick}
+                    className="flex items-center gap-1.5 px-3 sm:px-4 py-1.5 sm:py-2 bg-blue-600 text-white rounded-full text-xs sm:text-sm font-semibold hover:bg-blue-700 transition-all duration-200 whitespace-nowrap"
+                  >
+                    <FiLogIn size={14} />
+                    <span>Login</span>
+                  </Link>
+                </div>
+              )
             )}
           </div>
 
@@ -789,36 +795,49 @@ const Navbar = () => {
             </p>
           </div>
 
-          {/* Mobile User Info (if logged in) - Enhanced */}
-          {isLoggedIn && (
+          {/* Mobile User Info (if logged in) - Enhanced with skeleton */}
+          {authLoading ? (
             <div className="mx-4 mt-4 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl border border-blue-100 shadow-sm">
               <div className="flex items-center gap-3">
-                <div className="relative">
-                  <div className="w-12 h-12 rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold text-lg shadow-md">
-                    {userInitial}
-                  </div>
-                  {hasActivePlan && (
-                    <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-yellow-400 rounded-full border-2 border-white shadow-sm"></span>
-                  )}
-                  <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white shadow-sm"></span>
-                </div>
+                <div className="w-12 h-12 bg-gray-200 rounded-full animate-pulse"></div>
                 <div className="flex-1">
-                  <p className="text-sm font-bold text-gray-900">{userName}</p>
-                  <p className="text-xs text-gray-500 break-all">{userEmail}</p>
-                  {hasActivePlan ? (
-                    <div className="mt-1 inline-flex items-center gap-1 px-2 py-0.5 bg-green-100 rounded-full">
-                      <div className="w-1.5 h-1.5 bg-green-500 rounded-full"></div>
-                      <p className="text-xs font-medium text-green-700">Premium Plan Active</p>
-                    </div>
-                  ) : (
-                    <div className="mt-1 inline-flex items-center gap-1 px-2 py-0.5 bg-gray-100 rounded-full">
-                      <div className="w-1.5 h-1.5 bg-gray-400 rounded-full"></div>
-                      <p className="text-xs font-medium text-gray-600">Free Plan</p>
-                    </div>
-                  )}
+                  <div className="w-24 h-4 bg-gray-200 rounded animate-pulse"></div>
+                  <div className="w-32 h-3 bg-gray-200 rounded animate-pulse mt-2"></div>
+                  <div className="w-20 h-4 bg-gray-200 rounded animate-pulse mt-2"></div>
                 </div>
               </div>
             </div>
+          ) : (
+            isLoggedIn && (
+              <div className="mx-4 mt-4 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl border border-blue-100 shadow-sm">
+                <div className="flex items-center gap-3">
+                  <div className="relative">
+                    <div className="w-12 h-12 rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold text-lg shadow-md">
+                      {userInitial}
+                    </div>
+                    {hasActivePlan && (
+                      <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-yellow-400 rounded-full border-2 border-white shadow-sm"></span>
+                    )}
+                    <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white shadow-sm"></span>
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm font-bold text-gray-900">{userName}</p>
+                    <p className="text-xs text-gray-500 break-all">{userEmail}</p>
+                    {hasActivePlan ? (
+                      <div className="mt-1 inline-flex items-center gap-1 px-2 py-0.5 bg-green-100 rounded-full">
+                        <div className="w-1.5 h-1.5 bg-green-500 rounded-full"></div>
+                        <p className="text-xs font-medium text-green-700">Premium Plan Active</p>
+                      </div>
+                    ) : (
+                      <div className="mt-1 inline-flex items-center gap-1 px-2 py-0.5 bg-gray-100 rounded-full">
+                        <div className="w-1.5 h-1.5 bg-gray-400 rounded-full"></div>
+                        <p className="text-xs font-medium text-gray-600">Free Plan</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )
           )}
 
           {/* Mobile Navigation Links - Enhanced with icons and animations */}
@@ -884,88 +903,98 @@ const Navbar = () => {
             </div>
           </div>
 
-          {/* Mobile Action Buttons - Enhanced with better styling */}
+          {/* Mobile Action Buttons - Enhanced with better styling and skeleton loading */}
           <div className="p-4 border-t border-gray-200 bg-gray-50/50 space-y-2">
-            {/* Dashboard button for mobile */}
-            {isLoggedIn && hasActivePlan && (
-              <a
-                href={`${DASHBOARD_URL}dashboard`}
-                onClick={(e) => {
-                  e.preventDefault();
-                  setIsMobileMenuOpen(false);
-                  window.open(`${DASHBOARD_URL}dashboard`, '_blank');
-                }}
-                className="flex items-center justify-center gap-2 w-full px-4 py-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-xl text-sm font-semibold transition-all duration-200 hover:shadow-md active:scale-[0.98] cursor-pointer"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <FiGrid size={18} />
-                <span>Go to Dashboard</span>
-              </a>
-            )}
-            
-            {/* Free Trial / Book Demo - Enhanced */}
-            <Link
-              href="/start-free-trial"
-              onClick={() => setIsMobileMenuOpen(false)}
-              className="flex items-center justify-center gap-2 w-full px-4 py-3 bg-gradient-to-r from-indigo-500 to-purple-500 text-white rounded-xl text-sm font-semibold transition-all duration-200 hover:shadow-md active:scale-[0.98]"
-            >
-              <FiStar size={18} />
-              <span>Start Free Trial</span>
-            </Link>
-            
-            {isLoggedIn ? (
+            {authLoading ? (
               <>
-                <Link
-                  href="/profile"
-                  onClick={() => setIsMobileMenuOpen(false)}
-                  className="flex items-center gap-3 w-full px-4 py-3 border border-gray-200 bg-white text-gray-700 rounded-xl text-sm font-medium hover:bg-gray-50 transition-all"
-                >
-                  <FiUser size={18} />
-                  <span>My Profile</span>
-                </Link>
-                <Link
-                  href="/settings"
-                  onClick={() => setIsMobileMenuOpen(false)}
-                  className="flex items-center gap-3 w-full px-4 py-3 border border-gray-200 bg-white text-gray-700 rounded-xl text-sm font-medium hover:bg-gray-50 transition-all"
-                >
-                  <FiSettings size={18} />
-                  <span>Settings</span>
-                </Link>
-                <button
-                  onClick={() => {
-                    handleLogout();
-                    setIsMobileMenuOpen(false);
-                  }}
-                  disabled={isLoggingOut}
-                  className="flex items-center justify-center gap-2 w-full px-4 py-3 bg-gradient-to-r from-red-500 to-rose-500 text-white rounded-xl text-sm font-semibold hover:shadow-md active:scale-[0.98] transition-all disabled:opacity-50"
-                >
-                  {isLoggingOut ? (
-                    <>
-                      <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                      </svg>
-                      <span>Logging out...</span>
-                    </>
-                  ) : (
-                    <>
-                      <FiLogOut size={18} />
-                      <span>Logout</span>
-                    </>
-                  )}
-                </button>
+                <div className="w-full h-11 bg-gray-200 rounded-xl animate-pulse"></div>
+                <div className="w-full h-11 bg-gray-200 rounded-xl animate-pulse"></div>
+                <div className="w-full h-11 bg-gray-200 rounded-xl animate-pulse"></div>
               </>
             ) : (
               <>
+                {/* Dashboard button for mobile */}
+                {isLoggedIn && hasActivePlan && (
+                  <a
+                    href={`${DASHBOARD_URL}dashboard`}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      setIsMobileMenuOpen(false);
+                      window.open(`${DASHBOARD_URL}dashboard`, '_blank');
+                    }}
+                    className="flex items-center justify-center gap-2 w-full px-4 py-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-xl text-sm font-semibold transition-all duration-200 hover:shadow-md active:scale-[0.98] cursor-pointer"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <FiGrid size={18} />
+                    <span>Go to Dashboard</span>
+                  </a>
+                )}
+                
+                {/* Free Trial / Book Demo - Enhanced */}
                 <Link
-                  href="/login"
+                  href="/start-free-trial"
                   onClick={() => setIsMobileMenuOpen(false)}
-                  className="flex items-center justify-center gap-2 w-full px-4 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl text-sm font-semibold hover:shadow-md active:scale-[0.98] transition-all"
+                  className="flex items-center justify-center gap-2 w-full px-4 py-3 bg-gradient-to-r from-indigo-500 to-purple-500 text-white rounded-xl text-sm font-semibold transition-all duration-200 hover:shadow-md active:scale-[0.98]"
                 >
-                  <FiLogIn size={18} />
-                  <span>Login</span>
+                  <FiStar size={18} />
+                  <span>Start Free Trial</span>
                 </Link>
+                
+                {isLoggedIn ? (
+                  <>
+                    <Link
+                      href="/profile"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      className="flex items-center gap-3 w-full px-4 py-3 border border-gray-200 bg-white text-gray-700 rounded-xl text-sm font-medium hover:bg-gray-50 transition-all"
+                    >
+                      <FiUser size={18} />
+                      <span>My Profile</span>
+                    </Link>
+                    <Link
+                      href="/settings"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      className="flex items-center gap-3 w-full px-4 py-3 border border-gray-200 bg-white text-gray-700 rounded-xl text-sm font-medium hover:bg-gray-50 transition-all"
+                    >
+                      <FiSettings size={18} />
+                      <span>Settings</span>
+                    </Link>
+                    <button
+                      onClick={() => {
+                        handleLogout();
+                        setIsMobileMenuOpen(false);
+                      }}
+                      disabled={isLoggingOut}
+                      className="flex items-center justify-center gap-2 w-full px-4 py-3 bg-gradient-to-r from-red-500 to-rose-500 text-white rounded-xl text-sm font-semibold hover:shadow-md active:scale-[0.98] transition-all disabled:opacity-50"
+                    >
+                      {isLoggingOut ? (
+                        <>
+                          <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                          </svg>
+                          <span>Logging out...</span>
+                        </>
+                      ) : (
+                        <>
+                          <FiLogOut size={18} />
+                          <span>Logout</span>
+                        </>
+                      )}
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <Link
+                      href="/login"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      className="flex items-center justify-center gap-2 w-full px-4 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl text-sm font-semibold hover:shadow-md active:scale-[0.98] transition-all"
+                    >
+                      <FiLogIn size={18} />
+                      <span>Login</span>
+                    </Link>
+                  </>
+                )}
               </>
             )}
           </div>
@@ -977,6 +1006,7 @@ const Navbar = () => {
           </div>
         </div>
       </div>
+     
     </>
   );
 };

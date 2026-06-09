@@ -1,4 +1,4 @@
-import { toast } from 'react-hot-toast';
+import { toast } from 'react-toastify';
 import { logger } from '../utils/logger';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000/api';

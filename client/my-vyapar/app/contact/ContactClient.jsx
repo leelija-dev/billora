@@ -3,7 +3,8 @@ import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { useContactStore } from "../../store/contactStore";
 import { useAuthStore } from "../../store/authStoreZustand";
-import toast from "react-hot-toast";
+import { toast, Bounce } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import { logger } from "../../utils/logger";
 import {
   FaUser,
@@ -158,19 +159,39 @@ export default function Contact() {
           element.focus();
         }
       }
-      toast.error("Please fix the errors in the form");
+      toast.error("Please fix the errors in the form", {
+        position: "top-right",
+        autoClose: 3000,
+        transition: Bounce,
+      });
       return;
     }
 
+    // Show loading toast
+    const loadingToastId = toast.loading("Sending your message...", {
+      position: "top-center",
+      autoClose: false,
+      closeOnClick: false,
+      draggable: false,
+    });
+
     try {
       await submitForm();
-      toast.success("Message sent successfully!");
+      toast.dismiss(loadingToastId);
+      toast.success("Message sent successfully!", {
+        position: "top-right",
+        autoClose: 3000,
+        transition: Bounce,
+      });
       // Clear validation errors on success
       setValidationErrors({});
     } catch (error) {
-      toast.error(
-        error.message || "Failed to submit message. Please try again.",
-      );
+      toast.dismiss(loadingToastId);
+      toast.error(error.message || "Failed to submit message. Please try again.", {
+        position: "top-right",
+        autoClose: 4000,
+        transition: Bounce,
+      });
     }
   };
 

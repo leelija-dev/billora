@@ -6,7 +6,8 @@ import Container from "@/components/Container";
 import { useAuthStore } from "@/store/authStoreZustand";
 import { freeTrialService } from "@/services/freeTrialService";
 import { getPlans } from "@/services/pricingService";
-import { toast } from "react-hot-toast";
+import { toast, Bounce } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import {
   FaUser,
   FaEnvelope,
@@ -71,7 +72,11 @@ const TrialClient = () => {
         setPlans(response.data || response);
       } catch (error) {
         console.error('Error fetching plans:', error);
-        toast.error('Failed to load plans');
+        toast.error('Failed to load plans', {
+          position: "top-right",
+          autoClose: 3000,
+          transition: Bounce,
+        });
       } finally {
         setLoadingPlans(false);
       }
@@ -134,6 +139,13 @@ const TrialClient = () => {
 
     setIsSubmitting(true);
     
+    const loadingToastId = toast.loading('Starting your free trial...', {
+      position: "top-center",
+      autoClose: false,
+      closeOnClick: false,
+      draggable: false,
+    });
+    
     try {
       const customerId = user?.id;
       
@@ -173,7 +185,12 @@ const TrialClient = () => {
 
       if (response.success) {
         console.log('Free trial response:', response);
-        toast.success(response.message || 'Free trial started successfully!');
+        toast.dismiss(loadingToastId);
+        toast.success(response.message || 'Free trial started successfully!', {
+          position: "top-right",
+          autoClose: 3000,
+          transition: Bounce,
+        });
         setIsSubmitted(true);
       } else {
         throw new Error(response.message);
@@ -181,8 +198,13 @@ const TrialClient = () => {
       
     } catch (error) {
       console.error("Error submitting form:", error);
+      toast.dismiss(loadingToastId);
+      toast.error(error.message || "Failed to start free trial", {
+        position: "top-right",
+        autoClose: 4000,
+        transition: Bounce,
+      });
       setErrors({ submit: error.message || "Something went wrong. Please try again." });
-      toast.error(error.message || "Failed to start free trial");
     } finally {
       setIsSubmitting(false);
     }
@@ -549,7 +571,11 @@ const TrialClient = () => {
                               type="button"
                               onClick={() => {
                                 if (plans.length === 0) {
-                                  toast.error("Loading plans...");
+                                  toast.error("Loading plans...", {
+                                    position: "top-right",
+                                    autoClose: 2000,
+                                    transition: Bounce,
+                                  });
                                   return;
                                 }
                                 setIsPlanDropdownOpen(!isPlanDropdownOpen);

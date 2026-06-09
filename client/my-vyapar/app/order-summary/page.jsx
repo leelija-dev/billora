@@ -29,7 +29,8 @@ import {
 } from "react-icons/fa";
 import { FiCheckCircle as FiCheckCircleIcon } from "react-icons/fi";
 import { useRouter } from "next/navigation";
-import toast, { Toaster } from 'react-hot-toast';
+import { toast, Bounce } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import { usePaymentStore } from "@/store/paymentStore";
 import { useAuthStore } from "../../store/authStoreZustand";
 import useBusinessStore from "../../store/businessStore";
@@ -115,7 +116,11 @@ const OrderSummary = () => {
       if (!redirectAttempted.current) {
         redirectAttempted.current = true;
         console.log('🔒 No valid session, redirecting to login');
-        toast.error('Please login to continue');
+        toast.error('Please login to continue', {
+          position: "top-right",
+          autoClose: 3000,
+          transition: Bounce,
+        });
         localStorage.setItem('redirectAfterLogin', '/order-summary');
         router.push('/login');
       }
@@ -239,12 +244,20 @@ const OrderSummary = () => {
           logger.log("Loaded plan:", parsedPlan.name);
         } catch (e) {
           logger.error("Error parsing plan:", e);
-          toast.error('Invalid plan data');
+          toast.error('Invalid plan data', {
+            position: "top-right",
+            autoClose: 3000,
+            transition: Bounce,
+          });
           router.push('/pricing');
         }
       } else {
         console.log("No plan data found in localStorage");
-        toast.error('No plan selected');
+        toast.error('No plan selected', {
+          position: "top-right",
+          autoClose: 3000,
+          transition: Bounce,
+        });
         router.push('/pricing');
       }
     };
@@ -304,36 +317,60 @@ const OrderSummary = () => {
 
   const handlePayment = async () => {
     if (!selectedPlan) {
-      toast.error('No plan selected!');
+      toast.error('No plan selected!', {
+        position: "top-right",
+        autoClose: 3000,
+        transition: Bounce,
+      });
       return;
     }
 
     // Validate required fields
     if (!customerName?.trim()) {
-      toast.error('Please enter your full name');
+      toast.error('Please enter your full name', {
+        position: "top-right",
+        autoClose: 3000,
+        transition: Bounce,
+      });
       return;
     }
 
     if (!customerEmail?.trim()) {
-      toast.error('Please enter your email address');
+      toast.error('Please enter your email address', {
+        position: "top-right",
+        autoClose: 3000,
+        transition: Bounce,
+      });
       return;
     }
 
     if (!customerPhone?.trim()) {
-      toast.error('Please enter your phone number');
+      toast.error('Please enter your phone number', {
+        position: "top-right",
+        autoClose: 3000,
+        transition: Bounce,
+      });
       return;
     }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(customerEmail)) {
-      toast.error('Please enter a valid email address');
+      toast.error('Please enter a valid email address', {
+        position: "top-right",
+        autoClose: 3000,
+        transition: Bounce,
+      });
       return;
     }
 
     const phoneRegex = /^\d{10}$/;
     const cleanPhone = customerPhone.replace(/\D/g, '');
     if (!phoneRegex.test(cleanPhone)) {
-      toast.error('Please enter a valid 10-digit phone number');
+      toast.error('Please enter a valid 10-digit phone number', {
+        position: "top-right",
+        autoClose: 3000,
+        transition: Bounce,
+      });
       return;
     }
 
@@ -341,14 +378,23 @@ const OrderSummary = () => {
     let customerIdValue = customerId || loggedInUser?.customer_id || loggedInUser?.id;
     
     if (!customerIdValue) {
-      toast.error("Customer not found. Please login again.");
+      toast.error("Customer not found. Please login again.", {
+        position: "top-right",
+        autoClose: 3000,
+        transition: Bounce,
+      });
       localStorage.setItem('redirectAfterLogin', '/order-summary');
       setTimeout(() => router.push('/login'), 2000);
       return;
     }
 
     setIsProcessing(true);
-    const loadingToast = toast.loading('Creating order...');
+    const loadingToastId = toast.loading('Creating order...', {
+      position: "top-center",
+      autoClose: false,
+      closeOnClick: false,
+      draggable: false,
+    });
 
     try {
       const totalAmount = calculateTotal();
@@ -392,7 +438,7 @@ const OrderSummary = () => {
       logger.log("📥 Response received");
       console.log("Response:", response);
       
-      toast.dismiss(loadingToast);
+      toast.dismiss(loadingToastId);
 
       // Extract payment session ID from response
       let paymentSessionId = null;
@@ -422,7 +468,11 @@ const OrderSummary = () => {
         throw new Error('Payment session ID not found in response');
       }
       
-      toast.success('Order created! Redirecting to payment...');
+      toast.success('Order created! Redirecting to payment...', {
+        position: "top-right",
+        autoClose: 2000,
+        transition: Bounce,
+      });
       
       // Dispatch event
       window.dispatchEvent(new CustomEvent('planPurchaseCompleted', { 
@@ -459,7 +509,7 @@ const OrderSummary = () => {
       });
       
     } catch (error) {
-      toast.dismiss(loadingToast);
+      toast.dismiss(loadingToastId);
       logger.error('❌ Payment error:', error);
       console.error('Payment error details:', error);
       
@@ -476,7 +526,11 @@ const OrderSummary = () => {
         errorMessage = error.message;
       }
       
-      toast.error(errorMessage);
+      toast.error(errorMessage, {
+        position: "top-right",
+        autoClose: 4000,
+        transition: Bounce,
+      });
     } finally {
       setIsProcessing(false);
     }
@@ -503,7 +557,7 @@ const OrderSummary = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#f0f4ff] to-[#e8eef9]">
-      <Toaster position="top-right" />
+      {/* ToastContainer removed - using global one from layout */}
 
       <div className="container mx-auto px-4 py-8 max-w-7xl">
         <div className="grid lg:grid-cols-3 gap-8">

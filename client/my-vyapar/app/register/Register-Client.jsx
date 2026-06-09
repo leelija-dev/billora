@@ -2,10 +2,9 @@
 
 import React, { useState } from "react";
 import { FcGoogle } from "react-icons/fc";
-import { FaEye, FaEyeSlash, FaHome } from "react-icons/fa";
+import { FaEye, FaEyeSlash } from "react-icons/fa";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "../../store/authStoreZustand";
-import toast, { Toaster } from 'react-hot-toast';
 
 const RegisterClient = () => {
   const { register } = useAuthStore();
@@ -181,23 +180,15 @@ const RegisterClient = () => {
     
     // Validate form before submitting
     if (!validateForm()) {
-      toast.error("Please fix the validation errors", {
-        duration: 3000,
-        position: 'top-right',
-      });
+      // Just set error state without toast (toast will be shown by store if needed)
+      setError("Please fix the validation errors");
       return;
     }
     
     setLoading(true);
     
-    // Show loading toast
-    const loadingToastId = toast.loading("Creating your account...", {
-      position: 'top-right',
-      duration: Infinity,
-    });
-    
     try {
-      // Use authStore's register method directly
+      // Use authStore's register method - it handles all toasts internally
       const result = await register({ 
         name: name.trim(), 
         email: email.trim().toLowerCase(), 
@@ -212,16 +203,6 @@ const RegisterClient = () => {
       console.log('Registration result:', result);
       
       if (result.success) {
-        // Dismiss loading toast
-        toast.dismiss(loadingToastId);
-        
-        // Show success toast
-        toast.success(result.message || "Registration successful! Please check your email to verify your account.", {
-          duration: 5000,
-          position: 'top-right',
-          icon: '✅',
-        });
-        
         // Set success message for UI
         setSuccess(result.message || "Registration successful! Please check your email to verify your account.");
         
@@ -247,39 +228,20 @@ const RegisterClient = () => {
         
         // Redirect to login after 3 seconds
         setTimeout(() => {
-          toast.success("Redirecting to login page...", {
-            duration: 2000,
-            position: 'top-right',
-          });
           router.push("/login");
         }, 3000);
       } else {
-        // Dismiss loading toast
-        toast.dismiss(loadingToastId);
-        
-        // Show error toast
-        const errorMessage = result.error || "Registration failed. Please try again.";
-        toast.error(errorMessage, {
-          duration: 5000,
-          position: 'top-right',
-          icon: '❌',
-        });
-        
         // Set error message for UI
+        const errorMessage = result.error || "Registration failed. Please try again.";
         setError(errorMessage);
         
         // Set specific field errors based on error message
         if (errorMessage.toLowerCase().includes("email") || errorMessage.toLowerCase().includes("taken")) {
           setEmailError("This email is already registered. Please use a different email or login.");
-        } else if (errorMessage.toLowerCase().includes("server") || errorMessage.toLowerCase().includes("connect")) {
-          setError("Cannot connect to server. Please make sure backend is running.");
         }
       }
       
     } catch (error) {
-      // Dismiss loading toast
-      toast.dismiss(loadingToastId);
-      
       console.error('Registration error:', error);
       
       let errorMessage = "";
@@ -293,18 +255,6 @@ const RegisterClient = () => {
       }
       
       setError(errorMessage);
-      
-      toast.error(errorMessage, {
-        duration: 5000,
-        position: 'top-right',
-        icon: '❌',
-        style: {
-          background: '#f44336',
-          color: '#fff',
-          padding: '16px',
-          borderRadius: '12px',
-        },
-      });
     } finally {
       setLoading(false);
     }
@@ -334,42 +284,6 @@ const RegisterClient = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#ece9f1] to-[#dfe3f8] flex flex-col font-sans">
-      {/* Toaster Component */}
-      <Toaster 
-        position="top-right"
-        reverseOrder={false}
-        gutter={8}
-        containerStyle={{
-          top: 20,
-          right: 20,
-        }}
-        toastOptions={{
-          duration: 3000,
-          style: {
-            background: '#363636',
-            color: '#fff',
-            padding: '16px',
-            borderRadius: '12px',
-            fontSize: '14px',
-            maxWidth: '350px',
-          },
-          success: {
-            duration: 5000,
-            iconTheme: {
-              primary: '#4caf50',
-              secondary: '#fff',
-            },
-          },
-          error: {
-            duration: 5000,
-            iconTheme: {
-              primary: '#f44336',
-              secondary: '#fff',
-            },
-          },
-        }}
-      />
-
       <div className="flex-1 flex justify-center items-center py-20 px-4 relative">
         <form onSubmit={handleRegister} className="bg-white py-10 px-[50px] rounded-[25px] shadow-[0_8px_25px_rgba(0,0,0,0.08)] max-md:px-8 max-sm:px-5 max-sm:py-8">
 

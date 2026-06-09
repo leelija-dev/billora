@@ -1,7 +1,8 @@
 // store/authStoreZustand.js
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import { logoutUser, checkSession, registerUser } from '../services/authService';
+import { logoutUser, checkSession, registerUser, loginUser } from '../services/authService';
+import toastService from '../services/toastService';
 
 // ✅ Generate unique tab ID to prevent self-broadcast
 const TAB_ID = Math.random().toString(36).substring(7);
@@ -13,11 +14,11 @@ export const useAuthStore = create(
     (set, get) => ({
       user: null,
       isLoggedIn: false,
-      isLoading: false,
+      isLoading: true, // ✅ CHANGE THIS: Start with true to show skeletons
       error: null,
 
       checkAuthStatus: async () => {
-        set({ isLoading: true });
+        // Don't set loading here since it's already true
         try {
           const response = await checkSession();
 
@@ -25,132 +26,147 @@ export const useAuthStore = create(
             set({
               user: response.user,
               isLoggedIn: true,
-              isLoading: false,
+              isLoading: false, // ✅ Set to false after check completes
             });
 
             localStorage.setItem('user', JSON.stringify(response.user));
             return true;
           } else {
-            set({ user: null, isLoggedIn: false, isLoading: false });
+            set({ user: null, isLoggedIn: false, isLoading: false }); // ✅ Set to false
             localStorage.removeItem('user');
             return false;
           }
         } catch (error) {
           console.error('Auth check failed:', error);
-          set({ isLoading: false, isLoggedIn: false });
+          set({ isLoading: false, isLoggedIn: false }); // ✅ Set to false on error
           return false;
         }
       },
 
-      login: (userData, token) => {
-        console.log('📝 Store login called with user:', userData?.email);
-        console.log('📝 Token received:', token?.substring(0, 20) + '...');
-
-        if (!userData || !token) {
-          console.error('❌ Store login: Missing userData or token');
-          return { success: false, error: 'Missing user data or token' };
-        }
-
-        set({
-          user: userData,
-          isLoggedIn: true,
-          isLoading: false,
-          error: null,
-        });
-
-        localStorage.setItem('user', JSON.stringify(userData));
-        if (token) localStorage.setItem('auth_token', token);
-
-        // ✅ Broadcast to other tabs when Next.js logs in
-        console.log('📢🔵 NEXT.js: Preparing to broadcast LOGIN...');
-        console.log('📢🔵 NEXT.js: TAB_ID:', TAB_ID);
-        console.log('📢🔵 NEXT.js: User data:', userData);
-        console.log('📢🔵 NEXT.js: Token length:', token?.length || 0);
-
+      // ... rest of your store methods remain the same
+      
+      login: async (email, password) => {
+        console.log('📝 Store login called for email:', email);
+        
+        set({ isLoading: true, error: null });
+        
+        const loadingToastId = toastService.showLoading('Logging in...');
+        
         try {
-          const channel = new BroadcastChannel('auth_channel');
-          const broadcastMessage = {
-            type: 'LOGIN',
-            user: userData,
-            token: token,
-            sourceTabId: TAB_ID,
-            timestamp: Date.now()
-          };
-
-          console.log('📢🔵 NEXT.js: Broadcasting message:', {
-            type: broadcastMessage.type,
-            userEmail: userData?.email,
-            tokenPreview: token?.substring(0, 30) + '...',
-            sourceTabId: TAB_ID,
-            timestamp: broadcastMessage.timestamp
-          });
-
-          if (channel.postMessage) {
-            channel.postMessage(broadcastMessage);
-            console.log('📢🔵 NEXT.js: Broadcast sent successfully!');
-          } else {
-            console.error('📢🔵 NEXT.js: BroadcastChannel not supported!');
+          const response = await loginUser({ email, password });
+          const responseData = response.data;
+          
+          console.log('📦 Login response:', responseData);
+          
+          if (!responseData?.status) {
+            const errorMessage = responseData?.message || 'Login failed. Please try again.';
+            
+            toastService.updateToError(loadingToastId, errorMessage);
+            
+            set({
+              isLoading: false,
+              error: errorMessage,
+              user: null,
+              isLoggedIn: false
+            });
+            
+            return { success: false, error: errorMessage };
           }
-
-          setTimeout(() => {
-            channel.close();
-            console.log('📢🔵 NEXT.js: Broadcast channel closed');
-          }, 100);
-
-        } catch (error) {
-          console.error('📢🔵 NEXT.js: Broadcast error:', error);
-        }
-
-        // ✅ Also emit localStorage event for cross-origin sync
-        try {
-          console.log('📢🔵 NEXT.js: Emitting localStorage event...');
-          const syncEvent = {
-            type: 'LOGIN',
+          
+          const userData = responseData.user;
+          const token = responseData.token;
+          
+          if (!userData || !token) {
+            const errorMessage = 'Invalid response from server';
+            
+            toastService.updateToError(loadingToastId, errorMessage);
+            
+            set({
+              isLoading: false,
+              error: errorMessage,
+              user: null,
+              isLoggedIn: false
+            });
+            
+            return { success: false, error: errorMessage };
+          }
+          
+          set({
             user: userData,
-            token: token,
-            sourceTabId: TAB_ID,
-            timestamp: Date.now(),
-            origin: 'nextjs'
-          };
-
-          console.log('📢🔵 NEXT.js: Sync event data:', syncEvent);
-          console.log('📢🔵 NEXT.js: Current domain:', window.location.hostname);
-          console.log('📢🔵 NEXT.js: Setting auth_sync_event...');
-
-          localStorage.setItem('auth_sync_event', JSON.stringify(syncEvent));
-          console.log('📢🔵 NEXT.js: auth_sync_event set in localStorage');
-
-          setTimeout(() => {
-            console.log('📢🔵 NEXT.js: Triggering storage event...');
-            localStorage.removeItem('auth_sync_event');
-            console.log('📢🔵 NEXT.js: auth_sync_event removed - should trigger event');
-          }, 100);
-
-          console.log('📢🔵 NEXT.js: localStorage event emitted!');
+            isLoggedIn: true,
+            isLoading: false,
+            error: null,
+          });
+          
+          localStorage.setItem('user', JSON.stringify(userData));
+          localStorage.setItem('auth_token', token);
+          
+          toastService.updateToSuccess(
+            loadingToastId,
+            `Welcome back, ${userData?.name || userData?.email?.split('@')[0] || 'User'}!`
+          );
+          
+          try {
+            const channel = new BroadcastChannel('auth_channel');
+            channel.postMessage({
+              type: 'LOGIN',
+              user: userData,
+              token: token,
+              sourceTabId: TAB_ID,
+              timestamp: Date.now()
+            });
+            setTimeout(() => channel.close(), 100);
+          } catch (error) {
+            console.error('Broadcast error:', error);
+          }
+          
+          window.dispatchEvent(new Event("userLoggedIn"));
+          console.log('✅ Store login successful');
+          
+          await new Promise(resolve => setTimeout(resolve, 1500));
+          
+          return { success: true, user: userData };
+          
         } catch (error) {
-          console.error('📢🔵 NEXT.js: localStorage event error:', error);
+          console.error('❌ Login error:', error);
+          
+          let errorMessage = '';
+          
+          if (error.response?.data?.message) {
+            errorMessage = error.response.data.message;
+          } else if (error.message) {
+            errorMessage = error.message;
+          } else {
+            errorMessage = 'Login failed. Please try again.';
+          }
+          
+          toastService.updateToError(loadingToastId, errorMessage);
+          
+          set({
+            isLoading: false,
+            error: errorMessage,
+            user: null,
+            isLoggedIn: false
+          });
+          
+          return { success: false, error: errorMessage };
         }
-
-        window.dispatchEvent(new Event("userLoggedIn"));
-
-        console.log('✅ Store login successful');
-        return { success: true };
       },
 
       register: async (userData) => {
         console.log('📝 Store register called with user:', userData?.email);
         set({ isLoading: true, error: null });
 
+        const loadingToastId = toastService.showLoading('Creating your account...');
+
         try {
           const response = await registerUser(userData);
-          console.log('📦 Store register response:', response);
 
           if (response && response.data) {
             if (response.data.status === true) {
               const userDataResponse = response.data.data;
               
               console.log('✅ Registration successful!');
-              console.log('User data:', userDataResponse);
               
               set({ 
                 isLoading: false,
@@ -158,6 +174,11 @@ export const useAuthStore = create(
               });
               
               localStorage.setItem('pending_verification_email', userDataResponse.email);
+              
+              toastService.updateToSuccess(
+                loadingToastId,
+                'Registration successful! Please check your email to verify your account.'
+              );
               
               const channel = new BroadcastChannel('auth_channel');
               channel.postMessage({
@@ -167,15 +188,16 @@ export const useAuthStore = create(
               });
               setTimeout(() => channel.close(), 100);
 
-              console.log('✅ Store register successful - awaiting email verification');
+              await new Promise(resolve => setTimeout(resolve, 1500));
+
               return { 
                 success: true, 
                 user: userDataResponse,
-                message: response.data.message || 'Registration successful! Please check your email to verify your account.'
+                message: 'Registration successful! Please check your email to verify your account.'
               };
             } else {
               const errorMessage = response.data.message || 'Registration failed';
-              console.log('❌ Store register error:', errorMessage);
+              toastService.updateToError(loadingToastId, errorMessage);
               set({
                 user: null,
                 isLoggedIn: false,
@@ -190,6 +212,7 @@ export const useAuthStore = create(
         } catch (error) {
           console.error('❌ Store register error:', error);
           const errorMessage = error.response?.data?.message || error.message || 'Registration failed';
+          toastService.updateToError(loadingToastId, errorMessage);
           set({
             isLoading: false,
             error: errorMessage,
@@ -199,7 +222,6 @@ export const useAuthStore = create(
       },
 
       logout: async () => {
-        // ✅ Prevent multiple concurrent logouts
         if (isLoggingOut) {
           console.log('⚠️ Logout already in progress, skipping...');
           return;
@@ -212,6 +234,8 @@ export const useAuthStore = create(
         
         isLoggingOut = true;
         
+        const loadingToastId = toastService.showLoading('Logging out...');
+        
         logoutPromise = (async () => {
           set({ isLoading: true });
           
@@ -221,21 +245,19 @@ export const useAuthStore = create(
             console.error("Logout API error:", error);
           }
 
-          // Broadcast logout to other tabs
           try {
             const channel = new BroadcastChannel('auth_channel');
             channel.postMessage({
               type: 'LOGOUT',
               sourceTabId: TAB_ID,
               timestamp: Date.now(),
-              skipToast: true // Add flag to prevent toast on self
+              skipToast: true
             });
             setTimeout(() => channel.close(), 100);
           } catch (error) {
             console.error("Broadcast logout error:", error);
           }
 
-          // Clear local storage
           localStorage.removeItem("token");
           localStorage.removeItem("auth_token");
           localStorage.removeItem("auth-storage");
@@ -243,7 +265,6 @@ export const useAuthStore = create(
 
           sessionStorage.clear();
 
-          // Reset state
           set({
             user: null,
             token: null,
@@ -254,7 +275,13 @@ export const useAuthStore = create(
 
           window.dispatchEvent(new Event("userLoggedOut"));
           
-          // Reset locks
+          toastService.updateToSuccess(
+            loadingToastId,
+            'Successfully logged out! See you soon!'
+          );
+          
+          await new Promise(resolve => setTimeout(resolve, 1500));
+          
           setTimeout(() => {
             isLoggingOut = false;
             logoutPromise = null;
@@ -267,10 +294,12 @@ export const useAuthStore = create(
       updateUser: (userData) => {
         set({ user: { ...get().user, ...userData } });
         localStorage.setItem('user', JSON.stringify({ ...get().user, ...userData }));
+        toastService.showSuccess('Profile updated successfully!');
       },
 
       initializeAuth: async () => {
         console.log('Initializing auth...');
+        // isLoading is already true, so we don't set it again
         await get().checkAuthStatus();
       },
 
@@ -321,7 +350,8 @@ export const useAuthStore = create(
       }),
       onRehydrateStorage: () => (state) => {
         console.log('Auth store rehydrating...', state);
-        if (state && !state.isLoggedIn) {
+        if (state) {
+          // Rehydrate is happening, keep loading true
           setTimeout(() => {
             state?.checkAuthStatus();
           }, 100);
@@ -331,14 +361,13 @@ export const useAuthStore = create(
   )
 );
 
-// ✅ FIX: Cross-tab synchronization - PREVENT INFINITE LOOPS
+// ✅ Cross-tab synchronization
 if (typeof window !== 'undefined') {
   let isProcessingLogout = false;
   
   const channel = new BroadcastChannel('auth_channel');
 
   channel.onmessage = async (event) => {
-    // Ignore messages from same tab
     if (event.data.sourceTabId === TAB_ID) {
       console.log('📢 Ignoring self-broadcast message');
       return;
@@ -349,10 +378,6 @@ if (typeof window !== 'undefined') {
     if (event.data.type === 'LOGIN') {
       const { user, token } = event.data;
 
-      console.log('✅ Login detected from another tab/app');
-      console.log('👤 User:', user?.email);
-      console.log('🔑 Token received:', token?.substring(0, 20) + '...');
-
       if (token && user) {
         localStorage.setItem('auth_token', token);
         localStorage.setItem('user', JSON.stringify(user));
@@ -362,12 +387,12 @@ if (typeof window !== 'undefined') {
           isLoggedIn: true,
           isLoading: false,
         });
+        
+        // toastService.showSuccess(`Welcome back, ${user?.name || user?.email?.split('@')[0] || 'User'}!`);
       } else {
-        console.log('⚠️ No token in broadcast, falling back to API check');
         useAuthStore.getState().checkAuthStatus();
       }
     } else if (event.data.type === 'LOGOUT') {
-      // Prevent processing multiple logout messages
       if (isProcessingLogout) {
         console.log('⚠️ Already processing logout, skipping...');
         return;
@@ -377,7 +402,6 @@ if (typeof window !== 'undefined') {
       
       isProcessingLogout = true;
       
-      // Clear local state without making API call
       localStorage.removeItem("token");
       localStorage.removeItem("auth_token");
       localStorage.removeItem("auth-storage");
@@ -391,7 +415,10 @@ if (typeof window !== 'undefined') {
         isLoading: false,
       });
       
-      // Reset flag after delay
+      if (!event.data.skipToast) {
+        toastService.showInfo('You have been logged out from another tab');
+      }
+      
       setTimeout(() => {
         isProcessingLogout = false;
       }, 500);
@@ -403,13 +430,12 @@ if (typeof window !== 'undefined') {
   });
 }
 
-// ✅ Add hasActivePlan as a selector (computed property)
+// Export hooks
 export const useHasActivePlan = () => {
   const user = useAuthStore((state) => state.user);
   return user?.is_active === 1 || false;
 };
 
-// Export other hooks
 export const useAuth = () => useAuthStore();
 export const useUser = () => useAuthStore((state) => state.user);
 export const useIsLoggedIn = () => useAuthStore((state) => state.isLoggedIn);

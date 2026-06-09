@@ -6,7 +6,8 @@ import { useAuthStore } from '../../../store/authStoreZustand';
 import { useProductsStore } from '../../../store/productsStore';
 import { createProductOrder } from '../../../services/productPaymentService';
 import { productsService } from '../../../services/productsService';
-import toast, { Toaster } from 'react-hot-toast';
+import { toast, Bounce } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import { FiFilter, FiShoppingCart, FiClock, FiGrid } from 'react-icons/fi';
 import { FaSearch } from 'react-icons/fa';
 
@@ -515,7 +516,12 @@ const ProductsPage = () => {
         }
 
         setIsPlacingOrder(true);
-        const loadingToast = toast.loading('Processing...');
+        const loadingToastId = toast.loading('Processing order...', {
+            position: "top-center",
+            autoClose: false,
+            closeOnClick: false,
+            draggable: false,
+        });
 
         try {
             const orderData = {
@@ -530,10 +536,14 @@ const ProductsPage = () => {
             };
 
             const response = await createProductOrder(orderData);
-            toast.dismiss(loadingToast);
+            toast.dismiss(loadingToastId);
 
             if (response.status === true || response.data?.order_id || response.order_id) {
-                toast.success('Order placed successfully!');
+                toast.success('Order placed successfully!', {
+                    position: "top-right",
+                    autoClose: 3000,
+                    transition: Bounce,
+                });
 
                 localStorage.setItem("productUserId", JSON.stringify(effectiveUserId));
 
@@ -558,7 +568,12 @@ const ProductsPage = () => {
             throw new Error(response.message || 'Failed to create order');
 
         } catch (error) {
-            toast.dismiss(loadingToast);
+            toast.dismiss(loadingToastId);
+            toast.error(error.message || 'Failed to place order. Please try again.', {
+                position: "top-right",
+                autoClose: 4000,
+                transition: Bounce,
+            });
             setPopupMessage(error.message || 'Failed to place order. Please try again.');
             setPopup(true);
             setTimeout(() => setPopup(false), 3000);
@@ -592,7 +607,7 @@ const ProductsPage = () => {
 
     return (
         <div className="min-h-screen bg-gray-50">
-            <Toaster position="top-right" />
+            {/* ToastContainer removed - using global one from layout */}
 
             {/* Floating Buttons */}
             <button
