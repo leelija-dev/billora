@@ -6,8 +6,8 @@ import Container from "@/components/Container";
 import { useAuthStore } from "@/store/authStoreZustand";
 import { freeTrialService } from "@/services/freeTrialService";
 import { getPlans } from "@/services/pricingService";
-import { toast, Bounce } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
+import { toast, Bounce } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 import {
   FaUser,
   FaEnvelope,
@@ -35,7 +35,7 @@ import {
 const TrialClient = () => {
   const router = useRouter();
   const { user, isLoggedIn, isLoading } = useAuthStore();
-  
+
   const [plans, setPlans] = useState([]);
   const [loadingPlans, setLoadingPlans] = useState(false);
   const [isPlanDropdownOpen, setIsPlanDropdownOpen] = useState(false);
@@ -54,7 +54,10 @@ const TrialClient = () => {
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (planDropdownRef.current && !planDropdownRef.current.contains(event.target)) {
+      if (
+        planDropdownRef.current &&
+        !planDropdownRef.current.contains(event.target)
+      ) {
         setIsPlanDropdownOpen(false);
       }
     };
@@ -68,11 +71,11 @@ const TrialClient = () => {
       setLoadingPlans(true);
       try {
         const response = await getPlans();
-        console.log('Plans response:', response);
+        console.log("Plans response:", response);
         setPlans(response.data || response);
       } catch (error) {
-        console.error('Error fetching plans:', error);
-        toast.error('Failed to load plans', {
+        console.error("Error fetching plans:", error);
+        toast.error("Failed to load plans", {
           position: "top-right",
           autoClose: 3000,
           transition: Bounce,
@@ -117,7 +120,8 @@ const TrialClient = () => {
 
   const validateForm = () => {
     const newErrors = {};
-    if (!formData.customerName.trim()) newErrors.customerName = "Customer name is required";
+    if (!formData.customerName.trim())
+      newErrors.customerName = "Customer name is required";
     if (!formData.customerEmail.trim()) {
       newErrors.customerEmail = "Email is required";
     } else if (!/\S+@\S+\.\S+/.test(formData.customerEmail)) {
@@ -133,82 +137,105 @@ const TrialClient = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!validateForm()) return;
+ // In TrialClient component, update the handleSubmit function:
 
-    setIsSubmitting(true);
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  if (!validateForm()) return;
+
+  setIsSubmitting(true);
+  
+  const loadingToastId = toast.loading('Starting your free trial...', {
+    position: "top-center",
+    autoClose: false,
+    closeOnClick: false,
+    draggable: false,
+  });
+  
+  try {
+    const customerId = user?.id;
     
-    const loadingToastId = toast.loading('Starting your free trial...', {
-      position: "top-center",
-      autoClose: false,
-      closeOnClick: false,
-      draggable: false,
+    if (!customerId) {
+      throw new Error('User ID not found');
+    }
+
+    // Get the selected plan to extract business_type_id
+    const selectedPlan = plans.find(plan => plan.id.toString() === formData.planId);
+    if (!selectedPlan) {
+      throw new Error('Selected plan not found');
+    }
+
+    // Extract business_type_id from the selected plan
+    let businessTypeId = null;
+    if (selectedPlan.business_types && selectedPlan.business_types.length > 0) {
+      businessTypeId = selectedPlan.business_types[0].business_type_id;
+    }
+
+    if (!businessTypeId) {
+      throw new Error('Business type not found for selected plan');
+    }
+
+    const formattedPhone = freeTrialService.formatPhoneNumber(formData.customerPhone);
+
+    if (!freeTrialService.validatePhoneNumber(formattedPhone)) {
+      throw new Error('Please enter a valid 10-digit phone number');
+    }
+
+    const response = await freeTrialService.submitFreeTrial({
+      customer_id: customerId,
+      business_type_id: businessTypeId,
+      plan_id: parseInt(formData.planId),
+      customer_phone: formattedPhone,
     });
-    
-    try {
-      const customerId = user?.id;
+
+    if (response.success) {
+      console.log('Free trial response:', response);
       
-      if (!customerId) {
-        throw new Error('User ID not found');
-      }
-
-      // Get the selected plan to extract business_type_id
-      const selectedPlan = plans.find(plan => plan.id.toString() === formData.planId);
-      if (!selectedPlan) {
-        throw new Error('Selected plan not found');
-      }
-
-      // Extract business_type_id from the selected plan
-      let businessTypeId = null;
-      if (selectedPlan.business_types && selectedPlan.business_types.length > 0) {
-        // Get the first business_type_id from the plan's business_types array
-        businessTypeId = selectedPlan.business_types[0].business_type_id;
-      }
-
-      if (!businessTypeId) {
-        throw new Error('Business type not found for selected plan');
-      }
-
-      const formattedPhone = freeTrialService.formatPhoneNumber(formData.customerPhone);
-
-      if (!freeTrialService.validatePhoneNumber(formattedPhone)) {
-        throw new Error('Please enter a valid 10-digit phone number');
-      }
-
-      const response = await freeTrialService.submitFreeTrial({
-        customer_id: customerId,
-        business_type_id: businessTypeId,
-        plan_id: parseInt(formData.planId),
-        customer_phone: formattedPhone,
-      });
-
-      if (response.success) {
-        console.log('Free trial response:', response);
-        toast.dismiss(loadingToastId);
-        toast.success(response.message || 'Free trial started successfully!', {
-          position: "top-right",
-          autoClose: 3000,
-          transition: Bounce,
+      // ✅ UPDATE AUTH STORE WITH NEW USER DATA
+      // The response should contain the updated user data with trial activated
+      if (response.user) {
+        // Update the auth store with the new user data
+        useAuthStore.setState({
+          user: response.user,
+          isLoggedIn: true,
         });
-        setIsSubmitted(true);
+        
+        // Also update localStorage
+        localStorage.setItem('user', JSON.stringify(response.user));
+        
+        // If there's a token in response, update it too
+        if (response.token) {
+          localStorage.setItem('auth_token', response.token);
+        }
       } else {
-        throw new Error(response.message);
+        // If no user data in response, refresh auth status
+        await useAuthStore.getState().checkAuthStatus();
       }
       
-    } catch (error) {
-      console.error("Error submitting form:", error);
       toast.dismiss(loadingToastId);
-      toast.error(error.message || "Failed to start free trial", {
+      toast.success(response.message || 'Free trial started successfully!', {
         position: "top-right",
-        autoClose: 4000,
+        autoClose: 3000,
         transition: Bounce,
       });
-      setErrors({ submit: error.message || "Something went wrong. Please try again." });
-    } finally {
-      setIsSubmitting(false);
+      setIsSubmitted(true);
+    } else {
+      throw new Error(response.message);
     }
-  };
+    
+  } catch (error) {
+    console.error("Error submitting form:", error);
+    toast.dismiss(loadingToastId);
+    toast.error(error.message || "Failed to start free trial", {
+      position: "top-right",
+      autoClose: 4000,
+      transition: Bounce,
+    });
+    setErrors({ submit: error.message || "Something went wrong. Please try again." });
+  } finally {
+    setIsSubmitting(false);
+  }
+};
 
   // Benefits list
   const benefits = [
@@ -253,7 +280,7 @@ const TrialClient = () => {
   const contentState = getContentState();
 
   const getSelectedPlan = () => {
-    return plans.find(plan => plan.id.toString() === formData.planId);
+    return plans.find((plan) => plan.id.toString() === formData.planId);
   };
 
   // Loading state
@@ -281,7 +308,9 @@ const TrialClient = () => {
               Trial Started Successfully! 🎉
             </h1>
             <p className="text-base sm:text-lg text-slate-700 mb-6 max-w-lg mx-auto">
-              Thank you for choosing {process.env.NEXT_PUBLIC_APP_NAME || "The Fast Bill"}. We've sent setup instructions to your email.
+              Thank you for choosing{" "}
+              {process.env.NEXT_PUBLIC_APP_NAME || "The Fast Bill"}. We've sent
+              setup instructions to your email.
             </p>
             <p className="text-sm text-slate-600 mb-8">
               Our team will contact you shortly to help you get started.
@@ -294,10 +323,10 @@ const TrialClient = () => {
                 Back to Home
               </Link>
               <Link
-                href="/bookdemo"
+                href={`${process.env.NEXT_PUBLIC_DASHBOARD_URL || "http://localhost:3000"}dashboard`}
                 className="px-6 sm:px-8 py-3 bg-white border border-gray-300 rounded-full text-slate-700 font-semibold hover:bg-gray-50 transition-all duration-300"
               >
-                Schedule a Demo
+                Go To Dashboard
               </Link>
             </div>
           </div>
@@ -313,7 +342,7 @@ const TrialClient = () => {
         <div className="absolute top-0 -left-40 w-80 h-80 bg-sky-400 rounded-full blur-[100px] opacity-20 animate-pulse" />
         <div className="absolute bottom-0 -right-40 w-96 h-96 bg-indigo-500 rounded-full blur-[120px] opacity-20 animate-pulse delay-1000" />
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-purple-400 rounded-full blur-[150px] opacity-10" />
-        
+
         <div
           className="absolute inset-0 opacity-[0.03]"
           style={{
@@ -331,16 +360,18 @@ const TrialClient = () => {
               </span>
             </div>
             <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-slate-800 mb-4 sm:mb-6 tracking-tight">
-              {contentState === "has_plan" ? "You're Already Subscribed!" : 
-               contentState === "trial_used" ? "Trial Already Used" : 
-               "Start Your 7-Day Free Trial"}
+              {contentState === "has_plan"
+                ? "You're Already Subscribed!"
+                : contentState === "trial_used"
+                  ? "Trial Already Used"
+                  : "Start Your 7-Day Free Trial"}
             </h1>
             <p className="text-sm sm:text-base md:text-lg text-slate-700 max-w-2xl mx-auto">
-              {contentState === "has_plan" 
+              {contentState === "has_plan"
                 ? "You already have an active subscription plan. Manage your account from the dashboard."
                 : contentState === "trial_used"
-                ? "You've already used your free trial. Explore our affordable plans to continue using our services."
-                : "Experience the power of complete inventory management and GST billing software. No credit card required. Cancel anytime."}
+                  ? "You've already used your free trial. Explore our affordable plans to continue using our services."
+                  : "Experience the power of complete inventory management and GST billing software. No credit card required. Cancel anytime."}
             </p>
           </div>
         </Container>
@@ -353,30 +384,32 @@ const TrialClient = () => {
             {/* Form Card */}
             <div className="lg:col-span-3">
               <div className="bg-white rounded-2xl sm:rounded-3xl shadow-xl border border-gray-200 overflow-hidden">
-                <div className={`px-6 sm:px-8 py-5 sm:py-6 ${
-                  contentState === "has_plan" 
-                    ? "bg-gradient-to-r from-amber-500 to-orange-600" 
-                    : contentState === "trial_used"
-                    ? "bg-gradient-to-r from-red-500 to-rose-600"
-                    : "bg-gradient-to-r from-sky-600 to-indigo-600"
-                }`}>
-                  <h2 className="text-xl sm:text-2xl text-white font-bold">
-                    {contentState === "has_plan" 
-                      ? "Active Subscription" 
+                <div
+                  className={`px-6 sm:px-8 py-5 sm:py-6 ${
+                    contentState === "has_plan"
+                      ? "bg-gradient-to-r from-amber-500 to-orange-600"
                       : contentState === "trial_used"
-                      ? "Trial Expired"
-                      : isLoggedIn 
-                      ? "Start Your Trial" 
-                      : "Login to Continue"}
+                        ? "bg-gradient-to-r from-red-500 to-rose-600"
+                        : "bg-gradient-to-r from-sky-600 to-indigo-600"
+                  }`}
+                >
+                  <h2 className="text-xl sm:text-2xl text-white font-bold">
+                    {contentState === "has_plan"
+                      ? "Active Subscription"
+                      : contentState === "trial_used"
+                        ? "Trial Expired"
+                        : isLoggedIn
+                          ? "Start Your Trial"
+                          : "Login to Continue"}
                   </h2>
                   <p className="text-white/90 text-sm mt-1">
                     {contentState === "has_plan"
                       ? "Manage your existing plan and account settings"
                       : contentState === "trial_used"
-                      ? "Choose a plan to continue using our services"
-                      : isLoggedIn 
-                      ? "Confirm your details and select a plan to begin your 7-day trial"
-                      : "Please login to your account to start the free trial"}
+                        ? "Choose a plan to continue using our services"
+                        : isLoggedIn
+                          ? "Confirm your details and select a plan to begin your 7-day trial"
+                          : "Please login to your account to start the free trial"}
                   </p>
                 </div>
 
@@ -392,11 +425,13 @@ const TrialClient = () => {
                           You Already Have an Active Plan
                         </h3>
                         <p className="text-base text-slate-700 mb-6">
-                          Your account is already subscribed to a plan. You can manage your subscription, view invoices, and access all features from your dashboard.
+                          Your account is already subscribed to a plan. You can
+                          manage your subscription, view invoices, and access
+                          all features from your dashboard.
                         </p>
                         <div className="flex flex-col sm:flex-row gap-4 justify-center">
                           <Link
-                            href={`${process.env.NEXT_PUBLIC_DASHBOARD_URL || "http://localhost:3000"}/dashboard`}
+                            href={`${process.env.NEXT_PUBLIC_DASHBOARD_URL || "http://localhost:3000"}dashboard`}
                             className="px-6 py-3 bg-gradient-to-r from-sky-600 to-indigo-600 rounded-full text-white font-semibold hover:shadow-lg hover:scale-105 transition-all duration-300"
                           >
                             Go to Dashboard
@@ -411,7 +446,7 @@ const TrialClient = () => {
                       </div>
                     );
                   }
-                  
+
                   if (contentState === "trial_used") {
                     return (
                       <div className="p-6 sm:p-8 text-center">
@@ -422,7 +457,9 @@ const TrialClient = () => {
                           Free Trial Already Used
                         </h3>
                         <p className="text-base text-slate-700 mb-6">
-                          You've already used your 7-day free trial. Choose one of our affordable plans to continue enjoying all features and benefits.
+                          You've already used your 7-day free trial. Choose one
+                          of our affordable plans to continue enjoying all
+                          features and benefits.
                         </p>
                         <div className="flex flex-col sm:flex-row gap-4 justify-center">
                           <Link
@@ -441,7 +478,10 @@ const TrialClient = () => {
                         <div className="mt-6 pt-4 border-t border-gray-200">
                           <p className="text-xs text-slate-500">
                             Need help?{" "}
-                            <Link href="/contact" className="text-sky-600 hover:underline">
+                            <Link
+                              href="/contact"
+                              className="text-sky-600 hover:underline"
+                            >
                               Contact Support
                             </Link>
                           </p>
@@ -449,7 +489,7 @@ const TrialClient = () => {
                       </div>
                     );
                   }
-                  
+
                   if (!isLoggedIn) {
                     return (
                       <div className="p-6 sm:p-8 text-center">
@@ -460,7 +500,8 @@ const TrialClient = () => {
                           Login Required
                         </h3>
                         <p className="text-base text-slate-700 mb-6">
-                          Please login to your existing account to start your 7-day free trial.
+                          Please login to your existing account to start your
+                          7-day free trial.
                         </p>
                         <div className="flex flex-col sm:flex-row gap-4 justify-center">
                           <Link
@@ -479,7 +520,10 @@ const TrialClient = () => {
                         <div className="mt-6 pt-4 border-t border-gray-200">
                           <p className="text-xs text-slate-500">
                             Don't have an account?{" "}
-                            <Link href="/register" className="text-sky-600 hover:underline font-medium">
+                            <Link
+                              href="/register"
+                              className="text-sky-600 hover:underline font-medium"
+                            >
                               Register here
                             </Link>
                           </p>
@@ -487,7 +531,7 @@ const TrialClient = () => {
                       </div>
                     );
                   }
-                  
+
                   // Form for logged in users
                   return (
                     <form onSubmit={handleSubmit} className="p-6 sm:p-8">
@@ -501,7 +545,8 @@ const TrialClient = () => {
                         {/* Customer Name - Read Only */}
                         <div>
                           <label className="block text-sm font-semibold text-slate-800 mb-2">
-                            Customer Name <span className="text-red-500">*</span>
+                            Customer Name{" "}
+                            <span className="text-red-500">*</span>
                           </label>
                           <div className="relative">
                             <FaUser className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
@@ -515,13 +560,16 @@ const TrialClient = () => {
                             />
                             <FaLock className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
                           </div>
-                          <p className="mt-1 text-xs text-slate-500">This information is from your account</p>
+                          <p className="mt-1 text-xs text-slate-500">
+                            This information is from your account
+                          </p>
                         </div>
 
                         {/* Customer Email - Read Only */}
                         <div>
                           <label className="block text-sm font-semibold text-slate-800 mb-2">
-                            Email Address <span className="text-red-500">*</span>
+                            Email Address{" "}
+                            <span className="text-red-500">*</span>
                           </label>
                           <div className="relative">
                             <FaEnvelope className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
@@ -535,7 +583,9 @@ const TrialClient = () => {
                             />
                             <FaLock className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
                           </div>
-                          <p className="mt-1 text-xs text-slate-500">This information is from your account</p>
+                          <p className="mt-1 text-xs text-slate-500">
+                            This information is from your account
+                          </p>
                         </div>
 
                         {/* Customer Phone - Read Only */}
@@ -555,7 +605,9 @@ const TrialClient = () => {
                             />
                             <FaLock className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
                           </div>
-                          <p className="mt-1 text-xs text-slate-500">This information is from your account</p>
+                          <p className="mt-1 text-xs text-slate-500">
+                            This information is from your account
+                          </p>
                         </div>
 
                         {/* Plan Custom Dropdown - Editable */}
@@ -582,21 +634,31 @@ const TrialClient = () => {
                               }}
                               disabled={loadingPlans}
                               className={`w-full pl-10 pr-10 py-3 border ${
-                                errors.planId 
-                                  ? 'border-red-500 focus:ring-red-500' 
-                                  : 'border-gray-300 focus:ring-sky-500'
+                                errors.planId
+                                  ? "border-red-500 focus:ring-red-500"
+                                  : "border-gray-300 focus:ring-sky-500"
                               } rounded-xl focus:outline-none focus:ring-2 transition-all bg-white text-left ${
-                                loadingPlans ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
+                                loadingPlans
+                                  ? "opacity-50 cursor-not-allowed"
+                                  : "cursor-pointer"
                               }`}
                             >
-                              <span className={!formData.planId ? "text-gray-400" : "text-slate-800"}>
-                                {loadingPlans 
-                                  ? "Loading plans..." 
+                              <span
+                                className={
+                                  !formData.planId
+                                    ? "text-gray-400"
+                                    : "text-slate-800"
+                                }
+                              >
+                                {loadingPlans
+                                  ? "Loading plans..."
                                   : getSelectedPlan()?.name || "Select a plan"}
                               </span>
                             </button>
                             <div className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
-                              <FaChevronDown className={`w-4 h-4 transition-transform duration-200 ${isPlanDropdownOpen ? 'rotate-180' : ''}`} />
+                              <FaChevronDown
+                                className={`w-4 h-4 transition-transform duration-200 ${isPlanDropdownOpen ? "rotate-180" : ""}`}
+                              />
                             </div>
 
                             {/* Custom Dropdown Menu */}
@@ -612,33 +674,43 @@ const TrialClient = () => {
                                     <div className="flex items-start justify-between">
                                       <div className="flex-1">
                                         <div className="flex items-center gap-2 mb-2">
-                                          <h4 className="font-semibold text-slate-800">{plan.name}</h4>
+                                          <h4 className="font-semibold text-slate-800">
+                                            {plan.name}
+                                          </h4>
                                           {plan.is_trial_eligible && (
                                             <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">
                                               Trial Available
                                             </span>
                                           )}
                                         </div>
-                                        
+
                                         {/* Plan Features */}
-                                        {plan.features && plan.features.length > 0 && (
-                                          <div className="space-y-1.5">
-                                            {plan.features.slice(0, 4).map((feature, idx) => (
-                                              <div key={idx} className="flex items-center gap-2 text-xs text-slate-600">
-                                                <FaCheck className="w-3 h-3 text-emerald-500 flex-shrink-0" />
-                                                <span>{feature}</span>
-                                              </div>
-                                            ))}
-                                            {plan.features.length > 4 && (
-                                              <p className="text-xs text-sky-600 mt-1">
-                                                +{plan.features.length - 4} more features
-                                              </p>
-                                            )}
-                                          </div>
-                                        )}
+                                        {plan.features &&
+                                          plan.features.length > 0 && (
+                                            <div className="space-y-1.5">
+                                              {plan.features
+                                                .slice(0, 4)
+                                                .map((feature, idx) => (
+                                                  <div
+                                                    key={idx}
+                                                    className="flex items-center gap-2 text-xs text-slate-600"
+                                                  >
+                                                    <FaCheck className="w-3 h-3 text-emerald-500 flex-shrink-0" />
+                                                    <span>{feature}</span>
+                                                  </div>
+                                                ))}
+                                              {plan.features.length > 4 && (
+                                                <p className="text-xs text-sky-600 mt-1">
+                                                  +{plan.features.length - 4}{" "}
+                                                  more features
+                                                </p>
+                                              )}
+                                            </div>
+                                          )}
                                       </div>
-                                      
-                                      {formData.planId === plan.id.toString() && (
+
+                                      {formData.planId ===
+                                        plan.id.toString() && (
                                         <div className="ml-3">
                                           <FaCheckCircle className="w-5 h-5 text-sky-600" />
                                         </div>
@@ -650,42 +722,57 @@ const TrialClient = () => {
                             )}
                           </div>
                           {errors.planId && (
-                            <p className="mt-1 text-red-500 text-xs">{errors.planId}</p>
+                            <p className="mt-1 text-red-500 text-xs">
+                              {errors.planId}
+                            </p>
                           )}
                           <p className="mt-1 text-xs text-slate-500">
-                            Choose a plan that best fits your business needs. 7-day free trial available on eligible plans.
+                            Choose a plan that best fits your business needs.
+                            7-day free trial available on eligible plans.
                           </p>
                         </div>
 
                         {/* Selected Plan Summary */}
-                        {formData.planId && getSelectedPlan() && getSelectedPlan().features && getSelectedPlan().features.length > 0 && (
-                          <div className="mt-2 p-4 bg-gradient-to-r from-sky-50 to-indigo-50 rounded-xl border border-sky-200">
-                            <h4 className="text-sm font-semibold text-slate-800 mb-2">
-                              {getSelectedPlan().name} Plan Features:
-                            </h4>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                              {getSelectedPlan().features.map((feature, idx) => (
-                                <div key={idx} className="flex items-center gap-2 text-xs text-slate-700">
-                                  <FaCheck className="w-3 h-3 text-emerald-500 flex-shrink-0" />
-                                  <span>{feature}</span>
-                                </div>
-                              ))}
+                        {formData.planId &&
+                          getSelectedPlan() &&
+                          getSelectedPlan().features &&
+                          getSelectedPlan().features.length > 0 && (
+                            <div className="mt-2 p-4 bg-gradient-to-r from-sky-50 to-indigo-50 rounded-xl border border-sky-200">
+                              <h4 className="text-sm font-semibold text-slate-800 mb-2">
+                                {getSelectedPlan().name} Plan Features:
+                              </h4>
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                {getSelectedPlan().features.map(
+                                  (feature, idx) => (
+                                    <div
+                                      key={idx}
+                                      className="flex items-center gap-2 text-xs text-slate-700"
+                                    >
+                                      <FaCheck className="w-3 h-3 text-emerald-500 flex-shrink-0" />
+                                      <span>{feature}</span>
+                                    </div>
+                                  ),
+                                )}
+                              </div>
                             </div>
-                          </div>
-                        )}
+                          )}
 
                         {/* Info Alert */}
                         <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
                           <p className="text-xs text-blue-700">
-                            <strong>Note:</strong> Your name, email, and phone number are pre-filled from your account and cannot be edited. 
-                            If any information is incorrect, please update your profile settings.
+                            <strong>Note:</strong> Your name, email, and phone
+                            number are pre-filled from your account and cannot
+                            be edited. If any information is incorrect, please
+                            update your profile settings.
                           </p>
                         </div>
 
                         {/* Submit Button */}
                         <button
                           type="submit"
-                          disabled={isSubmitting || loadingPlans || !formData.planId}
+                          disabled={
+                            isSubmitting || loadingPlans || !formData.planId
+                          }
                           className="w-full mt-6 py-3.5 bg-gradient-to-r from-sky-600 to-indigo-600 rounded-xl text-white font-bold text-base hover:shadow-lg hover:scale-[1.02] transition-all duration-300 disabled:opacity-70 disabled:cursor-not-allowed disabled:hover:scale-100 flex items-center justify-center gap-2"
                         >
                           {isSubmitting ? (
@@ -703,11 +790,17 @@ const TrialClient = () => {
 
                         <p className="text-center text-xs text-slate-500 mt-4">
                           By signing up, you agree to our{" "}
-                          <Link href="/terms" className="text-sky-600 hover:underline">
+                          <Link
+                            href="/terms"
+                            className="text-sky-600 hover:underline"
+                          >
                             Terms of Service
                           </Link>{" "}
                           and{" "}
-                          <Link href="/privacy" className="text-sky-600 hover:underline">
+                          <Link
+                            href="/privacy"
+                            className="text-sky-600 hover:underline"
+                          >
                             Privacy Policy
                           </Link>
                         </p>
@@ -727,12 +820,14 @@ const TrialClient = () => {
                 <p className="text-slate-600 text-sm mb-6">
                   Get full access to all features during your 7-day trial:
                 </p>
-                
+
                 <div className="space-y-3 mb-8">
                   {benefits.map((benefit, index) => (
                     <div key={index} className="flex items-center gap-3">
                       <benefit.icon className="w-5 h-5 text-sky-600 flex-shrink-0" />
-                      <span className="text-sm text-slate-700">{benefit.text}</span>
+                      <span className="text-sm text-slate-700">
+                        {benefit.text}
+                      </span>
                     </div>
                   ))}
                 </div>
@@ -740,11 +835,15 @@ const TrialClient = () => {
                 <div className="border-t border-gray-200 pt-6 mt-2">
                   <div className="flex items-center gap-3 mb-4">
                     <FaShieldAlt className="w-5 h-5 text-emerald-600" />
-                    <span className="text-sm font-medium text-slate-800">No credit card required</span>
+                    <span className="text-sm font-medium text-slate-800">
+                      No credit card required
+                    </span>
                   </div>
                   <div className="flex items-center gap-3">
                     <FaHeadset className="w-5 h-5 text-indigo-600" />
-                    <span className="text-sm font-medium text-slate-800">24/7 customer support</span>
+                    <span className="text-sm font-medium text-slate-800">
+                      24/7 customer support
+                    </span>
                   </div>
                 </div>
 
@@ -777,8 +876,13 @@ const TrialClient = () => {
 
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
               {featureCards.map((feature, index) => (
-                <div key={index} className="group bg-white rounded-2xl p-6 border border-gray-200 shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
-                  <div className={`w-14 h-14 bg-gradient-to-r ${feature.color} rounded-xl flex items-center justify-center mb-5 shadow-lg group-hover:scale-110 transition-transform duration-300`}>
+                <div
+                  key={index}
+                  className="group bg-white rounded-2xl p-6 border border-gray-200 shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-1"
+                >
+                  <div
+                    className={`w-14 h-14 bg-gradient-to-r ${feature.color} rounded-xl flex items-center justify-center mb-5 shadow-lg group-hover:scale-110 transition-transform duration-300`}
+                  >
                     <feature.icon className="w-7 h-7 text-white" />
                   </div>
                   <h3 className="text-xl font-bold text-slate-800 mb-2">
@@ -799,18 +903,18 @@ const TrialClient = () => {
         <Container size="default">
           <div className="text-center max-w-3xl mx-auto">
             <h2 className="text-3xl sm:text-4xl font-bold text-slate-800 mb-4">
-              {contentState === "has_plan" 
-                ? "Manage Your Subscription" 
+              {contentState === "has_plan"
+                ? "Manage Your Subscription"
                 : contentState === "trial_used"
-                ? "Choose a Plan That Fits Your Business"
-                : "Ready to Transform Your Business?"}
+                  ? "Choose a Plan That Fits Your Business"
+                  : "Ready to Transform Your Business?"}
             </h2>
             <p className="text-base text-slate-700 mb-8">
-              {contentState === "has_plan" 
+              {contentState === "has_plan"
                 ? "Access your dashboard to manage billing, view invoices, and explore all features."
                 : contentState === "trial_used"
-                ? "Select from our flexible pricing plans designed for businesses of all sizes."
-                : "Join thousands of satisfied customers who have streamlined their billing and inventory management."}
+                  ? "Select from our flexible pricing plans designed for businesses of all sizes."
+                  : "Join thousands of satisfied customers who have streamlined their billing and inventory management."}
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               {contentState === "has_plan" ? (

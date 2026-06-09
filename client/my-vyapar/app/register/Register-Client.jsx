@@ -2,9 +2,10 @@
 
 import React, { useState } from "react";
 import { FcGoogle } from "react-icons/fc";
-import { FaEye, FaEyeSlash } from "react-icons/fa";
+import { FaEye, FaEyeSlash, FaEnvelope, FaLock, FaUser, FaPhone, FaCity, FaMapMarkerAlt, FaGlobe, FaMailBulk, FaArrowRight, FaShieldAlt } from "react-icons/fa";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "../../store/authStoreZustand";
+import Link from "next/link";
 
 const RegisterClient = () => {
   const { register } = useAuthStore();
@@ -174,13 +175,10 @@ const RegisterClient = () => {
   const handleRegister = async (e) => {
     e.preventDefault();
     
-    // Clear previous errors
     setError("");
     setSuccess("");
     
-    // Validate form before submitting
     if (!validateForm()) {
-      // Just set error state without toast (toast will be shown by store if needed)
       setError("Please fix the validation errors");
       return;
     }
@@ -188,7 +186,6 @@ const RegisterClient = () => {
     setLoading(true);
     
     try {
-      // Use authStore's register method - it handles all toasts internally
       const result = await register({ 
         name: name.trim(), 
         email: email.trim().toLowerCase(), 
@@ -203,10 +200,8 @@ const RegisterClient = () => {
       console.log('Registration result:', result);
       
       if (result.success) {
-        // Set success message for UI
         setSuccess(result.message || "Registration successful! Please check your email to verify your account.");
         
-        // Clear form
         setName("");
         setEmail("");
         setPassword("");
@@ -216,7 +211,6 @@ const RegisterClient = () => {
         setCountry("");
         setPincode("");
         
-        // Clear validation errors
         setNameError("");
         setEmailError("");
         setPasswordError("");
@@ -226,16 +220,13 @@ const RegisterClient = () => {
         setCountryError("");
         setPincodeError("");
         
-        // Redirect to login after 3 seconds
         setTimeout(() => {
           router.push("/login");
         }, 3000);
       } else {
-        // Set error message for UI
         const errorMessage = result.error || "Registration failed. Please try again.";
         setError(errorMessage);
         
-        // Set specific field errors based on error message
         if (errorMessage.toLowerCase().includes("email") || errorMessage.toLowerCase().includes("taken")) {
           setEmailError("This email is already registered. Please use a different email or login.");
         }
@@ -260,7 +251,6 @@ const RegisterClient = () => {
     }
   };
 
-  // Real-time validation handlers
   const handleNameChange = (e) => {
     const value = e.target.value;
     setName(value);
@@ -283,242 +273,370 @@ const RegisterClient = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#ece9f1] to-[#dfe3f8] flex flex-col font-sans">
-      <div className="flex-1 flex justify-center items-center py-20 px-4 relative">
-        <form onSubmit={handleRegister} className="bg-white py-10 px-[50px] rounded-[25px] shadow-[0_8px_25px_rgba(0,0,0,0.08)] max-md:px-8 max-sm:px-5 max-sm:py-8">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-slate-100 to-slate-200 flex items-center justify-center p-4">
+      <div className="w-full max-w-[700px]">
+        {/* Main Card */}
+        <div className="bg-white rounded-3xl shadow-2xl p-8 md:p-10">
+          {/* Header */}
+          <div className="text-center mb-8">
+            <div className="w-16 h-16 bg-gradient-tertiary rounded-2xl flex items-center justify-center mx-auto mb-5 shadow-lg">
+              <FaShieldAlt className="w-8 h-8 text-white" />
+            </div>
+            <h1 className="text-3xl font-bold text-slate-800 mb-2">
+              Create Account
+            </h1>
+            <p className="text-slate-600 text-sm">
+              Join us and start your journey
+            </p>
+          </div>
 
-          <h1 className="text-center text-[#2d236b] text-4xl font-bold mb-6 max-sm:text-3xl">
-            Register
-          </h1>
-
-          {/* Server Error Message */}
+          {/* Error Alert */}
           {error && (
-            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-xl mb-4 text-sm">
-              {error}
+            <div className="mb-6 p-3 bg-red-50 border-l-4 border-red-500 rounded-lg animate-shake">
+              <p className="text-red-700 text-sm font-medium">{error}</p>
             </div>
           )}
 
           {/* Success Message */}
           {success && (
-            <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded-xl mb-4 text-sm">
-              {success}
+            <div className="mb-6 p-3 bg-green-50 border-l-4 border-green-500 rounded-lg">
+              <p className="text-green-700 text-sm font-medium">{success}</p>
             </div>
           )}
 
-          {/* Name Field */}
-          <div className="flex flex-col mb-5">
-            <label className="mb-1.5 text-sm text-gray-700 font-medium">Full Name *</label>
-            <input
-              type="text"
-              value={name}
-              onChange={handleNameChange}
-              onBlur={() => validateName(name)}
-              className={`p-3 rounded-xl border-2 outline-none text-sm focus:border-[#5b5bd6] transition-colors ${nameError ? "border-red-500 bg-red-50" : "border-[#ddd]"
-                }`}
-              placeholder="Enter your full name"
-              required
-              disabled={loading}
-            />
-            {nameError && (
-              <p className="text-red-500 text-xs mt-1 ml-2">{nameError}</p>
-            )}
-            <p className="text-gray-400 text-xs mt-1 ml-2">Only letters and spaces allowed</p>
-          </div>
+          {/* Form */}
+          <form onSubmit={handleRegister}>
+            {/* Name Field */}
+            <div className="mb-5">
+              <label className="block text-sm font-semibold text-slate-700 mb-2">
+                Full Name *
+              </label>
+              <div className="relative group">
+                <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-gradient-primary transition-colors">
+                  <FaUser className="w-4 h-4" />
+                </div>
+                <input
+                  type="text"
+                  value={name}
+                  onChange={handleNameChange}
+                  onBlur={() => validateName(name)}
+                  placeholder="Enter your full name"
+                  className={`w-full pl-10 pr-3 py-2.5 border rounded-xl outline-none transition-all duration-200 ${
+                    nameError 
+                      ? "border-red-500 bg-red-50 focus:border-red-500" 
+                      : "border-border-gray-300 focus:border-gradient-primary focus:ring-2 focus:ring-gradient-primary/20"
+                  }`}
+                  disabled={loading}
+                />
+              </div>
+              {nameError && (
+                <p className="text-red-500 text-xs mt-1 ml-1">{nameError}</p>
+              )}
+              <p className="text-slate-400 text-xs mt-1 ml-1">Only letters and spaces allowed</p>
+            </div>
 
-          {/* Email Field */}
-          <div className="flex flex-col mb-5">
-            <label className="mb-1.5 text-sm text-gray-700 font-medium">Email address *</label>
-            <input
-              type="email"
-              value={email}
-              onChange={handleEmailChange}
-              onBlur={() => validateEmail(email)}
-              className={`p-3 rounded-xl border-2 outline-none text-sm focus:border-[#5b5bd6] transition-colors ${emailError ? "border-red-500 bg-red-50" : "border-[#ddd]"
-                }`}
-              placeholder="Example: name@company.com"
-              required
-              disabled={loading}
-            />
-            {emailError && (
-              <p className="text-red-500 text-xs mt-1 ml-2">{emailError}</p>
-            )}
-          </div>
+            {/* Email Field */}
+            <div className="mb-5">
+              <label className="block text-sm font-semibold text-slate-700 mb-2">
+                Email Address *
+              </label>
+              <div className="relative group">
+                <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-gradient-primary transition-colors">
+                  <FaEnvelope className="w-4 h-4" />
+                </div>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={handleEmailChange}
+                  onBlur={() => validateEmail(email)}
+                  placeholder="name@example.com"
+                  className={`w-full pl-10 pr-3 py-2.5 border rounded-xl outline-none transition-all duration-200 ${
+                    emailError 
+                      ? "border-red-500 bg-red-50 focus:border-red-500" 
+                      : "border-border-gray-300 focus:border-gradient-primary focus:ring-2 focus:ring-gradient-primary/20"
+                  }`}
+                  disabled={loading}
+                />
+              </div>
+              {emailError && (
+                <p className="text-red-500 text-xs mt-1 ml-1">{emailError}</p>
+              )}
+            </div>
 
-          {/* Password Field */}
-          <div className="flex flex-col mb-5 relative">
-            <label className="mb-1.5 text-sm text-gray-700 font-medium">Password *</label>
-            <input
-              type={showPassword ? "text" : "password"}
-              value={password}
-              onChange={handlePasswordChange}
-              onBlur={() => validatePassword(password)}
-              className={`p-3 rounded-xl border-2 outline-none text-sm focus:border-[#5b5bd6] transition-colors pr-12 ${passwordError ? "border-red-500 bg-red-50" : "border-[#ddd]"
-                }`}
-              placeholder="Enter your password"
-              required
+            {/* Password Field */}
+            <div className="mb-5">
+              <label className="block text-sm font-semibold text-slate-700 mb-2">
+                Password *
+              </label>
+              <div className="relative group">
+                <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-gradient-primary transition-colors">
+                  <FaLock className="w-4 h-4" />
+                </div>
+                <input
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={handlePasswordChange}
+                  onBlur={() => validatePassword(password)}
+                  placeholder="Create a strong password"
+                  className={`w-full pl-10 pr-10 py-2.5 border rounded-xl outline-none transition-all duration-200 ${
+                    passwordError 
+                      ? "border-red-500 bg-red-50 focus:border-red-500" 
+                      : "border-border-gray-300 focus:border-gradient-primary focus:ring-2 focus:ring-gradient-primary/20"
+                  }`}
+                  disabled={loading}
+                />
+                <button
+                  type="button"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? <FaEyeSlash className="w-4 h-4" /> : <FaEye className="w-4 h-4" />}
+                </button>
+              </div>
+              {passwordError && (
+                <p className="text-red-500 text-xs mt-1 ml-1">{passwordError}</p>
+              )}
+              <p className="text-slate-400 text-xs mt-1 ml-1">
+                8+ chars, uppercase, lowercase, number & special character
+              </p>
+            </div>
+
+            {/* Phone Field */}
+            <div className="mb-5">
+              <label className="block text-sm font-semibold text-slate-700 mb-2">
+                Phone Number *
+              </label>
+              <div className="relative group">
+                <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-gradient-primary transition-colors">
+                  <FaPhone className="w-4 h-4" />
+                </div>
+                <input
+                  type="tel"
+                  value={phone}
+                  onChange={(e) => {
+                    setPhone(e.target.value);
+                    if (e.target.value !== "") validatePhone(e.target.value);
+                    else setPhoneError("");
+                  }}
+                  onBlur={() => validatePhone(phone)}
+                  placeholder="Enter 10-digit mobile number"
+                  maxLength="10"
+                  className={`w-full pl-10 pr-3 py-2.5 border rounded-xl outline-none transition-all duration-200 ${
+                    phoneError 
+                      ? "border-red-500 bg-red-50 focus:border-red-500" 
+                      : "border-border-gray-300 focus:border-gradient-primary focus:ring-2 focus:ring-gradient-primary/20"
+                  }`}
+                  disabled={loading}
+                />
+              </div>
+              {phoneError && (
+                <p className="text-red-500 text-xs mt-1 ml-1">{phoneError}</p>
+              )}
+            </div>
+
+            {/* Location Fields Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-5">
+              {/* City */}
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-2">
+                  City *
+                </label>
+                <div className="relative group">
+                  <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-gradient-primary transition-colors">
+                    <FaCity className="w-4 h-4" />
+                  </div>
+                  <input
+                    type="text"
+                    value={city}
+                    onChange={(e) => {
+                      setCity(e.target.value);
+                      if (e.target.value !== "") validateCity(e.target.value);
+                      else setCityError("");
+                    }}
+                    onBlur={() => validateCity(city)}
+                    placeholder="City"
+                    className={`w-full pl-10 pr-3 py-2.5 border rounded-xl outline-none transition-all duration-200 ${
+                      cityError 
+                        ? "border-red-500 bg-red-50 focus:border-red-500" 
+                        : "border-border-gray-300 focus:border-gradient-primary focus:ring-2 focus:ring-gradient-primary/20"
+                    }`}
+                    disabled={loading}
+                  />
+                </div>
+                {cityError && (
+                  <p className="text-red-500 text-xs mt-1 ml-1">{cityError}</p>
+                )}
+              </div>
+
+              {/* State */}
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-2">
+                  State *
+                </label>
+                <div className="relative group">
+                  <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-gradient-primary transition-colors">
+                    <FaMapMarkerAlt className="w-4 h-4" />
+                  </div>
+                  <input
+                    type="text"
+                    value={state}
+                    onChange={(e) => {
+                      setState(e.target.value);
+                      if (e.target.value !== "") validateState(e.target.value);
+                      else setStateError("");
+                    }}
+                    onBlur={() => validateState(state)}
+                    placeholder="State"
+                    className={`w-full pl-10 pr-3 py-2.5 border rounded-xl outline-none transition-all duration-200 ${
+                      stateError 
+                        ? "border-red-500 bg-red-50 focus:border-red-500" 
+                        : "border-border-gray-300 focus:border-gradient-primary focus:ring-2 focus:ring-gradient-primary/20"
+                    }`}
+                    disabled={loading}
+                  />
+                </div>
+                {stateError && (
+                  <p className="text-red-500 text-xs mt-1 ml-1">{stateError}</p>
+                )}
+              </div>
+
+              {/* Country */}
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-2">
+                  Country *
+                </label>
+                <div className="relative group">
+                  <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-gradient-primary transition-colors">
+                    <FaGlobe className="w-4 h-4" />
+                  </div>
+                  <input
+                    type="text"
+                    value={country}
+                    onChange={(e) => {
+                      setCountry(e.target.value);
+                      if (e.target.value !== "") validateCountry(e.target.value);
+                      else setCountryError("");
+                    }}
+                    onBlur={() => validateCountry(country)}
+                    placeholder="Country"
+                    className={`w-full pl-10 pr-3 py-2.5 border rounded-xl outline-none transition-all duration-200 ${
+                      countryError 
+                        ? "border-red-500 bg-red-50 focus:border-red-500" 
+                        : "border-border-gray-300 focus:border-gradient-primary focus:ring-2 focus:ring-gradient-primary/20"
+                    }`}
+                    disabled={loading}
+                  />
+                </div>
+                {countryError && (
+                  <p className="text-red-500 text-xs mt-1 ml-1">{countryError}</p>
+                )}
+              </div>
+            </div>
+
+            {/* Pincode Field */}
+            <div className="mb-6">
+              <label className="block text-sm font-semibold text-slate-700 mb-2">
+                Pincode *
+              </label>
+              <div className="relative group">
+                <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-gradient-primary transition-colors">
+                  <FaMailBulk className="w-4 h-4" />
+                </div>
+                <input
+                  type="text"
+                  value={pincode}
+                  onChange={(e) => {
+                    const value = e.target.value.replace(/\D/g, '').slice(0, 6);
+                    setPincode(value);
+                    if (value !== "") validatePincode(value);
+                    else setPincodeError("");
+                  }}
+                  onBlur={() => validatePincode(pincode)}
+                  placeholder="Enter 6-digit pincode"
+                  maxLength="6"
+                  className={`w-full pl-10 pr-3 py-2.5 border rounded-xl outline-none transition-all duration-200 ${
+                    pincodeError 
+                      ? "border-red-500 bg-red-50 focus:border-red-500" 
+                      : "border-border-gray-300 focus:border-gradient-primary focus:ring-2 focus:ring-gradient-primary/20"
+                  }`}
+                  disabled={loading}
+                />
+              </div>
+              {pincodeError && (
+                <p className="text-red-500 text-xs mt-1 ml-1">{pincodeError}</p>
+              )}
+            </div>
+
+            {/* Register Button */}
+            <button
+              type="submit"
               disabled={loading}
-            />
-            <span
-              className="absolute right-4 top-[38px] cursor-pointer text-[#666]"
-              onClick={() => setShowPassword(!showPassword)}
+              className="w-full py-3 bg-gradient-tertiary hover:shadow-lg transition-all duration-200 transform hover:scale-[1.02] disabled:opacity-50 disabled:hover:scale-100 shadow-lg shadow-gradient-primary/20 flex items-center justify-center gap-2 rounded-xl text-white font-semibold"
             >
-              {showPassword ? <FaEyeSlash /> : <FaEye />}
-            </span>
-            {passwordError && (
-              <p className="text-red-500 text-xs mt-1 ml-2">{passwordError}</p>
-            )}
-            <p className="text-gray-400 text-xs mt-1 ml-2">
-              Password requirements: 8+ chars, uppercase, lowercase, number, special char (!@#$%^&*)
+              {loading ? (
+                <>
+                  <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  <span>Creating Account...</span>
+                </>
+              ) : (
+                <>
+                  <span>Create Account</span>
+                  <FaArrowRight className="w-4 h-4" />
+                </>
+              )}
+            </button>
+
+            {/* Login Link */}
+            <div className="mt-6 text-center">
+              <p className="text-sm text-slate-600">
+                Already have an account?{" "}
+                <button
+                  type="button"
+                  onClick={() => router.push("/login")}
+                  className="text-gradient-primary font-semibold hover:text-gradient-secondary transition-colors ml-1"
+                >
+                  Sign in here
+                </button>
+              </p>
+            </div>
+
+            {/* Terms */}
+            <p className="text-xs text-slate-500 mt-6 text-center">
+              By continuing, you agree to our{" "}
+              <span className="text-gradient-primary cursor-pointer hover:underline">
+                Terms of Service
+              </span>{" "}
+              and confirm that you have read our{" "}
+              <span className="text-gradient-primary cursor-pointer hover:underline">
+                Privacy Policy
+              </span>
             </p>
-          </div>
+          </form>
+        </div>
 
-          {/* Phone Field */}
-          <div className="flex flex-col mb-5">
-            <label className="mb-1.5 text-sm text-gray-700 font-medium">Phone Number *</label>
-            <input
-              type="tel"
-              value={phone}
-              onChange={(e) => {
-                setPhone(e.target.value);
-                if (e.target.value !== "") validatePhone(e.target.value);
-                else setPhoneError("");
-              }}
-              onBlur={() => validatePhone(phone)}
-              className={`p-3 rounded-xl border-2 outline-none text-sm focus:border-[#5b5bd6] transition-colors ${phoneError ? "border-red-500 bg-red-50" : "border-[#ddd]"
-                }`}
-              placeholder="Enter 10-digit mobile number"
-              maxLength="10"
-              required
-              disabled={loading}
-            />
-            {phoneError && (
-              <p className="text-red-500 text-xs mt-1 ml-2">{phoneError}</p>
-            )}
-            <p className="text-gray-400 text-xs mt-1 ml-2">Enter 10-digit mobile number (e.g., 9876543210)</p>
-          </div>
-
-          {/* City, State, Country Fields */}
-          <div className="grid grid-cols-3 gap-3 mb-5">
-            <div className="flex flex-col">
-              <label className="mb-1.5 text-sm text-gray-700 font-medium">City *</label>
-              <input
-                type="text"
-                value={city}
-                onChange={(e) => {
-                  setCity(e.target.value);
-                  if (e.target.value !== "") validateCity(e.target.value);
-                  else setCityError("");
-                }}
-                onBlur={() => validateCity(city)}
-                className={`p-3 rounded-xl border-2 outline-none text-sm focus:border-[#5b5bd6] transition-colors ${cityError ? "border-red-500 bg-red-50" : "border-[#ddd]"
-                  }`}
-                placeholder="City"
-                required
-                disabled={loading}
-              />
-              {cityError && (
-                <p className="text-red-500 text-xs mt-1">{cityError}</p>
-              )}
-            </div>
-
-            <div className="flex flex-col">
-              <label className="mb-1.5 text-sm text-gray-700 font-medium">State *</label>
-              <input
-                type="text"
-                value={state}
-                onChange={(e) => {
-                  setState(e.target.value);
-                  if (e.target.value !== "") validateState(e.target.value);
-                  else setStateError("");
-                }}
-                onBlur={() => validateState(state)}
-                className={`p-3 rounded-xl border-2 outline-none text-sm focus:border-[#5b5bd6] transition-colors ${stateError ? "border-red-500 bg-red-50" : "border-[#ddd]"
-                  }`}
-                placeholder="State"
-                required
-                disabled={loading}
-              />
-              {stateError && (
-                <p className="text-red-500 text-xs mt-1">{stateError}</p>
-              )}
-            </div>
-
-            <div className="flex flex-col">
-              <label className="mb-1.5 text-sm text-gray-700 font-medium">Country *</label>
-              <input
-                type="text"
-                value={country}
-                onChange={(e) => {
-                  setCountry(e.target.value);
-                  if (e.target.value !== "") validateCountry(e.target.value);
-                  else setCountryError("");
-                }}
-                onBlur={() => validateCountry(country)}
-                className={`p-3 rounded-xl border-2 outline-none text-sm focus:border-[#5b5bd6] transition-colors ${countryError ? "border-red-500 bg-red-50" : "border-[#ddd]"
-                  }`}
-                placeholder="Country"
-                required
-                disabled={loading}
-              />
-              {countryError && (
-                <p className="text-red-500 text-xs mt-1">{countryError}</p>
-              )}
-            </div>
-          </div>
-
-          {/* Pincode Field */}
-          <div className="flex flex-col mb-5">
-            <label className="mb-1.5 text-sm text-gray-700 font-medium">Pincode *</label>
-            <input
-              type="text"
-              value={pincode}
-              onChange={(e) => {
-                const value = e.target.value.replace(/\D/g, '').slice(0, 6);
-                setPincode(value);
-                if (value !== "") validatePincode(value);
-                else setPincodeError("");
-              }}
-              onBlur={() => validatePincode(pincode)}
-              className={`p-3 rounded-xl border-2 outline-none text-sm focus:border-[#5b5bd6] transition-colors ${pincodeError ? "border-red-500 bg-red-50" : "border-[#ddd]"
-                }`}
-              placeholder="Enter 6-digit pincode"
-              maxLength="6"
-              required
-              disabled={loading}
-            />
-            {pincodeError && (
-              <p className="text-red-500 text-xs mt-1 ml-2">{pincodeError}</p>
-            )}
-            <p className="text-gray-400 text-xs mt-1 ml-2">Enter 6-digit pincode (e.g., 110001)</p>
-          </div>
-
-          {/* Register Button */}
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full py-3.5 rounded-xl border-none bg-gradient-to-r from-[#5b5bd6] to-[#3b82f6] text-white text-base font-bold cursor-pointer mt-2.5 hover:shadow-lg hover:scale-105 transition-all duration-300 disabled:opacity-50 disabled:hover:scale-100"
-          >
-            {loading ? "Registering..." : "Register"}
-          </button>
-
-          {/* Already Account */}
-          <p className="text-center mt-5 text-sm">
-            Already have an account?{" "}
-            <span
-              onClick={() => router.push("/login")}
-              className="text-[#3b82f6] font-bold cursor-pointer hover:underline"
-            >
-              Log in
-            </span>
+        {/* Security Note */}
+        <div className="text-center mt-6">
+          <p className="text-xs text-slate-500 flex items-center justify-center gap-1">
+            <FaShieldAlt className="w-3 h-3" />
+            Your information is protected with industry-standard encryption
           </p>
-
-          {/* Terms */}
-          <p className="text-xs text-[#666] mt-5 text-center">
-            By continuing you agree with our <span className="underline cursor-pointer hover:text-[#3b82f6]">Terms of Service</span> and confirm
-            that you have read our <span className="underline cursor-pointer hover:text-[#3b82f6]">Privacy Policy</span>
-          </p>
-        </form>
+        </div>
       </div>
+
+      <style jsx>{`
+        @keyframes shake {
+          0%, 100% { transform: translateX(0); }
+          25% { transform: translateX(-5px); }
+          75% { transform: translateX(5px); }
+        }
+        
+        .animate-shake {
+          animation: shake 0.3s ease-in-out;
+        }
+      `}</style>
     </div>
   );
 };

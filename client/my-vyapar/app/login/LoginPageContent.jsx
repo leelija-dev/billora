@@ -3,7 +3,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { FcGoogle } from "react-icons/fc";
-import { FaEye, FaEyeSlash } from "react-icons/fa";
+import { FaEye, FaEyeSlash, FaEnvelope, FaLock, FaArrowRight, FaShieldAlt } from "react-icons/fa";
 import { useAuthStore } from "../../store/authStoreZustand";
 import { useRouter, useSearchParams } from "next/navigation";
 import { logger } from "../../utils/logger";
@@ -15,7 +15,6 @@ const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
-
   const [emailError, setEmailError] = useState("");
   const [passwordError, setPasswordError] = useState("");
   const router = useRouter();
@@ -39,7 +38,6 @@ const Login = () => {
       localStorage.removeItem("pendingPlan");
     }
 
-    // Reset login attempt flag when component mounts
     loginAttempted.current = false;
     redirectHandled.current = false;
   }, [searchParams]);
@@ -49,7 +47,6 @@ const Login = () => {
     if (isLoggedIn && user && !redirectHandled.current) {
       redirectHandled.current = true;
 
-      // Add delay to ensure toast is visible
       const redirectTimer = setTimeout(() => {
         const pendingPlan = localStorage.getItem("pendingPlan");
 
@@ -70,7 +67,7 @@ const Login = () => {
           const hasActivePlan = user?.plan_id && user?.is_active === 1;
           router.push(hasActivePlan ? "/" : "/pricing");
         }
-      }, 2000); // Increased delay to ensure toast is visible
+      }, 2000);
 
       return () => clearTimeout(redirectTimer);
     }
@@ -83,7 +80,7 @@ const Login = () => {
     }
     const emailRegex = /^[^\s@]+@([^\s@]+\.)+[^\s@]+$/;
     if (!emailRegex.test(value.trim())) {
-      setEmailError("Please enter a valid email address (e.g., name@example.com)");
+      setEmailError("Please enter a valid email address");
       return false;
     }
     setEmailError("");
@@ -112,7 +109,6 @@ const Login = () => {
   const handleLogin = async (e) => {
     e.preventDefault();
 
-    // Prevent double login attempts
     if (loginAttempted.current || isLoading) {
       logger.log("⚠️ Login already in progress, skipping...");
       return;
@@ -128,15 +124,12 @@ const Login = () => {
     loginAttempted.current = true;
 
     try {
-      // Call login from store - handles all toasts internally
       const result = await login(email, password);
       
       if (!result.success) {
         setError(result.error);
         loginAttempted.current = false;
       }
-      // On success, toast is shown and redirect happens in useEffect
-      
     } catch (error) {
       logger.error("❌ Login error:", error);
       setError(error.message || "Login failed. Please try again.");
@@ -161,152 +154,239 @@ const Login = () => {
   // If already logged in, show loading or redirect
   if (isLoggedIn && user && !redirectHandled.current) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Redirecting...</p>
+          <div className="relative">
+            <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-gradient-primary mx-auto"></div>
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="h-2 w-2 bg-gradient-primary rounded-full animate-ping"></div>
+            </div>
+          </div>
+          <p className="mt-6 text-slate-700 font-medium">Redirecting you to dashboard...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#ece9f1] to-[#dfe3f8] flex flex-col">
-      <div className="flex-1 flex justify-center items-center font-sans relative py-8">
-        <form
-          onSubmit={handleLogin}
-          className="w-[550px] bg-white py-10 px-[50px] rounded-[25px] shadow-[0_10px_25px_rgba(0,0,0,0.08)] max-md:w-[450px] max-md:px-8 max-sm:w-[90%] max-sm:px-5 max-sm:py-8"
-        >
-          <h1 className="text-center text-[#2d236b] my-6 text-3xl font-bold max-sm:text-2xl">
-            LOG IN
-          </h1>
-
-          {/* Show pending plan info if exists */}
-          {(() => {
-            const pendingPlan = typeof window !== "undefined" ? localStorage.getItem("pendingPlan") : null;
-            if (pendingPlan) {
-              try {
-                const planData = JSON.parse(pendingPlan);
-                return (
-                  <div className="mb-4 p-3 bg-purple-50 border border-purple-200 rounded-xl">
-                    <p className="text-sm text-purple-800 text-center">
-                      🎯 Complete your <strong>{planData.name}</strong> plan purchase after login
-                    </p>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-slate-100 to-slate-200 flex items-center justify-center p-4">
+      <div className="w-full max-w-[450px]">
+        {/* Pending Plan Banner */}
+        {(() => {
+          const pendingPlan = typeof window !== "undefined" ? localStorage.getItem("pendingPlan") : null;
+          if (pendingPlan) {
+            try {
+              const planData = JSON.parse(pendingPlan);
+              return (
+                <div className="mb-6 p-4 bg-gradient-to-r from-feature-amber/10 to-feature-amber/5 border border-feature-amber/30 rounded-2xl animate-slideDown">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-feature-amber/20 rounded-full flex items-center justify-center">
+                      <span className="text-xl">🎯</span>
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm font-semibold text-feature-amber">
+                        Complete your <strong>{planData.name}</strong> plan purchase
+                      </p>
+                      <p className="text-xs text-feature-amber/80 mt-0.5">
+                        Sign in to proceed with checkout
+                      </p>
+                    </div>
                   </div>
-                );
-              } catch (e) {
-                return null;
-              }
+                </div>
+              );
+            } catch (e) {
+              return null;
             }
-            return null;
-          })()}
+          }
+          return null;
+        })()}
 
+        {/* Main Card */}
+        <div className="bg-white rounded-3xl shadow-2xl p-8 md:p-10">
+          {/* Header */}
+          <div className="text-center mb-8">
+            <div className="w-16 h-16 bg-gradient-tertiary rounded-2xl flex items-center justify-center mx-auto mb-5 shadow-lg">
+              <FaShieldAlt className="w-8 h-8 text-white" />
+            </div>
+            <h1 className="text-3xl font-bold text-slate-800 mb-2">
+              Welcome Back
+            </h1>
+            <p className="text-slate-600 text-sm">
+              Sign in to access your account
+            </p>
+          </div>
+
+          {/* Error Alert */}
           {error && (
-            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-xl mb-4 text-sm">
-              {error}
+            <div className="mb-6 p-3 bg-red-50 border-l-4 border-red-500 rounded-lg animate-shake">
+              <p className="text-red-700 text-sm font-medium">{error}</p>
             </div>
           )}
 
-          <div className="flex gap-5 mb-6">
-            <button
-              type="button"
-              className="flex-1 py-3 rounded-[30px] border border-[#ddd] bg-white cursor-pointer hover:shadow-md transition-shadow"
-              disabled={isLoading}
-            >
-              <FcGoogle size={25} className="mx-auto" />
-            </button>
-          </div>
+          {/* Form */}
+          <form onSubmit={handleLogin}>
+            {/* Email Field */}
+            <div className="mb-5">
+              <label className="block text-sm font-semibold text-slate-700 mb-2">
+                Email Address
+              </label>
+              <div className="relative group">
+                <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-gradient-primary transition-colors">
+                  <FaEnvelope className="w-4 h-4" />
+                </div>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={handleEmailChange}
+                  onBlur={() => validateEmail(email)}
+                  placeholder="name@example.com"
+                  className={`w-full pl-10 pr-3 py-2.5 border rounded-xl outline-none transition-all duration-200 ${
+                    emailError 
+                      ? "border-red-500 bg-red-50 focus:border-red-500" 
+                      : "border-border-gray-300 focus:border-gradient-primary focus:ring-2 focus:ring-gradient-primary/20"
+                  }`}
+                  disabled={isLoading}
+                />
+              </div>
+              {emailError && (
+                <p className="text-red-500 text-xs mt-1 ml-1">{emailError}</p>
+              )}
+            </div>
 
-          <div className="flex flex-col mb-5">
-            <label className="mb-1.5 text-sm text-gray-700 font-medium">
-              Email Address *
-            </label>
-            <input
-              type="email"
-              value={email}
-              onChange={handleEmailChange}
-              onBlur={() => validateEmail(email)}
-              placeholder="name@company.com"
-              className={`p-3 rounded-[30px] border outline-none focus:border-[#5b5bd6] transition-colors ${
-                emailError ? "border-red-500 bg-red-50" : "border-[#ccc]"
-              }`}
-              required
-              disabled={isLoading}
-            />
-            {emailError && (
-              <p className="text-red-500 text-xs mt-1 ml-3">{emailError}</p>
-            )}
-          </div>
+            {/* Password Field */}
+            <div className="mb-4">
+              <label className="block text-sm font-semibold text-slate-700 mb-2">
+                Password
+              </label>
+              <div className="relative group">
+                <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-gradient-primary transition-colors">
+                  <FaLock className="w-4 h-4" />
+                </div>
+                <input
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={handlePasswordChange}
+                  onBlur={() => validatePassword(password)}
+                  placeholder="Enter your password"
+                  className={`w-full pl-10 pr-10 py-2.5 border rounded-xl outline-none transition-all duration-200 ${
+                    passwordError 
+                      ? "border-red-500 bg-red-50 focus:border-red-500" 
+                      : "border-border-gray-300 focus:border-gradient-primary focus:ring-2 focus:ring-gradient-primary/20"
+                  }`}
+                  disabled={isLoading}
+                />
+                <button
+                  type="button"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? <FaEyeSlash className="w-4 h-4" /> : <FaEye className="w-4 h-4" />}
+                </button>
+              </div>
+              {passwordError && (
+                <p className="text-red-500 text-xs mt-1 ml-1">{passwordError}</p>
+              )}
+            </div>
 
-          <div className="flex flex-col mb-3 relative">
-            <label className="mb-1.5 text-sm text-gray-700 font-medium">
-              Password *
-            </label>
-            <input
-              type={showPassword ? "text" : "password"}
-              value={password}
-              onChange={handlePasswordChange}
-              onBlur={() => validatePassword(password)}
-              placeholder="Enter your password"
-              className={`p-3 rounded-[30px] border outline-none focus:border-[#5b5bd6] transition-colors pr-12 ${
-                passwordError ? "border-red-500 bg-red-50" : "border-[#ccc]"
-              }`}
-              required
-              disabled={isLoading}
-            />
-            <span
-              className="absolute right-[18px] top-[38px] cursor-pointer text-[#555]"
-              onClick={() => setShowPassword(!showPassword)}
-            >
-              {showPassword ? <FaEyeSlash /> : <FaEye />}
-            </span>
-            {passwordError && (
-              <p className="text-red-500 text-xs mt-1 ml-3">{passwordError}</p>
-            )}
-          </div>
-
-          <p className="text-sm mb-5 text-right">
-            <Link
-              href="/forgot-password"
-              className="text-[#5b5bd6] hover:text-[#3b82f6] hover:underline transition-colors"
-            >
-              Forgot password?
-            </Link>
-          </p>
-
-          <button
-            type="submit"
-            disabled={isLoading}
-            className="w-full py-3.5 rounded-xl border-none bg-gradient-to-r from-[#5b5bd6] to-[#3b82f6] text-white text-base font-bold cursor-pointer hover:shadow-lg hover:scale-105 transition-all duration-300 disabled:opacity-50 disabled:hover:scale-100"
-          >
-            {isLoading ? "LOGGING IN..." : "LOG IN"}
-          </button>
-
-          <div className="text-center mt-6 text-sm">
-            <p className="mb-2">Can't Access Your Account?</p>
-            <p>
-              Don't have an account?{" "}
-              <span
-                onClick={() => {
-                  const redirect = searchParams.get("redirect");
-                  const pendingPlan = localStorage.getItem("pendingPlan");
-
-                  if (pendingPlan) {
-                    router.push("/register?redirect=/order-summary");
-                  } else if (redirect) {
-                    router.push(`/register?redirect=${encodeURIComponent(redirect)}`);
-                  } else {
-                    router.push("/register");
-                  }
-                }}
-                className="text-[#3b82f6] font-bold cursor-pointer hover:underline"
+            {/* Forgot Password */}
+            <div className="flex justify-end mb-6">
+              <Link
+                href="/forgot-password"
+                className="text-sm text-gradient-primary hover:text-gradient-secondary font-medium transition-colors"
               >
-                SIGN UP
-              </span>
-            </p>
-          </div>
-        </form>
+                Forgot password?
+              </Link>
+            </div>
+
+            {/* Login Button */}
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="w-full py-3 bg-gradient-tertiary hover:shadow-lg transition-all duration-200 transform hover:scale-[1.02] disabled:opacity-50 disabled:hover:scale-100 shadow-lg shadow-gradient-primary/20 flex items-center justify-center gap-2 rounded-xl text-white font-semibold"
+            >
+              {isLoading ? (
+                <>
+                  <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  <span>Signing in...</span>
+                </>
+              ) : (
+                <>
+                  <span>Sign In</span>
+                  <FaArrowRight className="w-4 h-4" />
+                </>
+              )}
+            </button>
+
+            {/* Divider */}
+            
+
+           
+
+            {/* Sign Up Link */}
+            <div className="mt-6 text-center">
+              <p className="text-sm text-slate-600">
+                New to our platform?{" "}
+                <button
+                  type="button"
+                  onClick={() => {
+                    const redirect = searchParams.get("redirect");
+                    const pendingPlan = localStorage.getItem("pendingPlan");
+
+                    if (pendingPlan) {
+                      router.push("/register?redirect=/order-summary");
+                    } else if (redirect) {
+                      router.push(`/register?redirect=${encodeURIComponent(redirect)}`);
+                    } else {
+                      router.push("/register");
+                    }
+                  }}
+                  className="text-gradient-primary font-semibold hover:text-gradient-secondary transition-colors ml-1"
+                >
+                  Create an account
+                </button>
+              </p>
+            </div>
+          </form>
+        </div>
+
+        {/* Security Note */}
+        <div className="text-center mt-6">
+          <p className="text-xs text-slate-500 flex items-center justify-center gap-1">
+            <FaShieldAlt className="w-3 h-3" />
+            Secured with industry-standard encryption
+          </p>
+        </div>
       </div>
+
+      <style jsx>{`
+        @keyframes slideDown {
+          from {
+            opacity: 0;
+            transform: translateY(-20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        
+        @keyframes shake {
+          0%, 100% { transform: translateX(0); }
+          25% { transform: translateX(-5px); }
+          75% { transform: translateX(5px); }
+        }
+        
+        .animate-slideDown {
+          animation: slideDown 0.3s ease-out;
+        }
+        
+        .animate-shake {
+          animation: shake 0.3s ease-in-out;
+        }
+      `}</style>
     </div>
   );
 };
