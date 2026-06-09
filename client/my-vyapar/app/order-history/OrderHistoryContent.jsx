@@ -4,7 +4,8 @@
 import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useOrderStore } from "../../store/orderStore";
-import toast, { Toaster } from "react-hot-toast";
+import { toast, Bounce } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import {
   FiArrowLeft,
   FiSearch,
@@ -70,25 +71,55 @@ const OrderHistoryPage = () => {
     clearError();
 
     if (!mobileNumber.trim()) {
-      toast.error("Please enter a mobile number");
+      toast.error("Please enter a mobile number", {
+        position: "top-right",
+        autoClose: 3000,
+        transition: Bounce,
+      });
       return;
     }
 
     if (!restaurantId) {
-      toast.error("Restaurant ID is required in URL");
+      toast.error("Restaurant ID is required in URL", {
+        position: "top-right",
+        autoClose: 3000,
+        transition: Bounce,
+      });
       return;
     }
 
+    // Show loading toast
+    const loadingToastId = toast.loading("Searching for orders...", {
+      position: "top-center",
+      autoClose: false,
+      closeOnClick: false,
+      draggable: false,
+    });
+
     try {
       const result = await fetchOrderHistory(mobileNumber, restaurantId);
+      toast.dismiss(loadingToastId);
 
       if (result.orders.length === 0) {
-        toast.error(`No orders found for mobile: ${mobileNumber}`);
+        toast.error(`No orders found for mobile: ${mobileNumber}`, {
+          position: "top-right",
+          autoClose: 3000,
+          transition: Bounce,
+        });
       } else {
-        toast.success(`Found ${result.orders.length} order(s)`);
+        toast.success(`Found ${result.orders.length} order(s)`, {
+          position: "top-right",
+          autoClose: 3000,
+          transition: Bounce,
+        });
       }
     } catch (error) {
-      toast.error(error.message);
+      toast.dismiss(loadingToastId);
+      toast.error(error.message, {
+        position: "top-right",
+        autoClose: 4000,
+        transition: Bounce,
+      });
     }
   };
 
@@ -176,30 +207,7 @@ const OrderHistoryPage = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/30">
-      <Toaster
-        position="top-right"
-        toastOptions={{
-          duration: 4000,
-          style: {
-            background: "#363636",
-            color: "#fff",
-          },
-          success: {
-            duration: 3000,
-            iconTheme: {
-              primary: "#10b981",
-              secondary: "#fff",
-            },
-          },
-          error: {
-            duration: 4000,
-            iconTheme: {
-              primary: "#ef4444",
-              secondary: "#fff",
-            },
-          },
-        }}
-      />
+      {/* ToastContainer removed - using global one from layout */}
 
       {/* Header */}
       <header className="bg-white/80 backdrop-blur-md shadow-sm border-b border-slate-200 sticky top-0 z-50">
