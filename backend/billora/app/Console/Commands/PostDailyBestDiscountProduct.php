@@ -40,13 +40,13 @@ class PostDailyBestDiscountProduct extends Command
                 ->orderByDesc('discount_percentage')
                 ->first();
             $newProducts = Products::where('user_id', $connection->user_id)->where('is_active', 1)->where('is_social_posted', false)->get();
-            Log::info('this is social connection id:' . $connection->id);
+            // Log::info('this is social connection id:' . $connection->id);
             if (!$product) {
-                Log::info('No product found for user ID: ' . $connection->user_id);
+                // Log::info('No product found for user ID: ' . $connection->user_id);
                 $this->info("No product found for user ID: {$connection->user_id}");
                 continue;
             }
-            Log::info('facebook posted product: ' . $product);
+            // Log::info('facebook posted product: ' . $product);
             // 2. Cloudinary FULL IMAGE URL (already stored in DB)
             $allImages = [];
             // $imageUrl = $product->image;
@@ -183,7 +183,7 @@ class PostDailyBestDiscountProduct extends Command
             // }
             if (!empty($connection->page_id)) {
 
-                Log::info('facebook page id: ' . $connection->page_id);
+                // Log::info('facebook page id: ' . $connection->page_id);
 
                 // if (!empty($product->image)) {
 
@@ -218,7 +218,7 @@ class PostDailyBestDiscountProduct extends Command
                         ]
                     );
 
-                    Log::info('FB image upload', $upload->json());
+                    // Log::info('FB image upload', $upload->json());
 
                     if (
                         $upload->successful() &&
@@ -255,13 +255,13 @@ class PostDailyBestDiscountProduct extends Command
                     );
                 }
                 if ($newProducts->count() > 0) {
-                    foreach ($newProducts as $product) {
-                        Log::info('new product found', [
-                            'id' => $product->id,
-                            'name' => $product->name,
-                            'is_social_posted' => $product->is_social_posted,
-                        ]);
-                    }
+                    // foreach ($newProducts as $product) {
+                    //     Log::info('new product found', [
+                    //         'id' => $product->id,
+                    //         'name' => $product->name,
+                    //         'is_social_posted' => $product->is_social_posted,
+                    //     ]);
+                    // }
                     $albumImages = [];
                     foreach ($newProducts as $newProduct) {
                         // Main image
@@ -311,7 +311,7 @@ class PostDailyBestDiscountProduct extends Command
                             ]
                         );
 
-                        Log::info('FB image upload', $upload->json());
+                        // Log::info('FB image upload', $upload->json());
 
                         if (
                             $upload->successful() &&
@@ -353,13 +353,13 @@ class PostDailyBestDiscountProduct extends Command
                         ]);
                     }
                 }
-                Log::info('facebook post response', $post->json());
+                // Log::info('facebook post response', $post->json());
 
-                if ($post->failed()) {
-                    Log::info('facebook post failed', [
-                        'error' => $post->body()
-                    ]);
-                }
+                // if ($post->failed()) {
+                //     Log::info('facebook post failed', [
+                //         'error' => $post->body()
+                //     ]);
+                // }
 
                 $this->info("Facebook text posted for user {$connection->user_id}");
             }

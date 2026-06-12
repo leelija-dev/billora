@@ -460,20 +460,20 @@ class ProductsController extends Controller
 
                 $hasStockPermission = in_array('stock-management', $permissions);
 
-                Log::info('hasStockPermission' . $hasStockPermission);
+                // Log::info('hasStockPermission' . $hasStockPermission);
                 if ($hasStockPermission) {
                     $stocks['user_id'] = $user;
                     $stocks['created_by'] = $user;
                     $stock = Stocks::create($stocks);
                     $stocks = Stocks::where('user_id', $user)->get();
-                    Log::info('stocks created' . $stocks);
+                    // Log::info('stocks created' . $stocks);
                 }
             }
 
             $qr = $this->generateQrAndUpload($product);
             $barcode = $this->generateBarcodeAndUpload($product);
-            Log::info($qr);
-            Log::info($barcode);
+            // Log::info($qr);
+            // Log::info($barcode);
             $product->update([
                 'qr_code'         => $qr['url'] ?? null,
                 'qr_public_id'    => $qr['public_id'] ?? null,
@@ -588,6 +588,10 @@ class ProductsController extends Controller
             }
 
             $product = Products::where('user_id', $user)->where('id', $id)->first();
+//             Log::info('images', [
+//     'images' => $request->images,
+//     'files' => $request->file('images')
+// ]);
             $data = $request->validate([
                 'name'                  => 'required',
                 'brand_id'              => 'nullable',
@@ -632,7 +636,7 @@ class ProductsController extends Controller
                 'warehouse_location' => 'nullable',
                 'supplier_id' => 'nullable',
                 'updated_by' => 'nullable',
-                'images.*'              => 'nullable|image',
+                'images.*'              => 'nullable',
                 // Variants
                 'variants'              => 'nullable|array',
                 'variants.*.size'       => 'nullable|string',
@@ -644,6 +648,7 @@ class ProductsController extends Controller
                 'old_images.*' => 'nullable|string',
 
             ]);
+            
             if ($product) {
                 if ($request->hasFile('image')) {
 
@@ -724,7 +729,7 @@ class ProductsController extends Controller
 
                 $hasStockPermission = in_array('stock-management', $permissions);
 
-                Log::info('hasStockPermission' . $hasStockPermission);
+                // Log::info('hasStockPermission' . $hasStockPermission);
                 if ($hasStockPermission) {
                     $stocks['user_id'] = $user;
                     $stocks['created_by'] = $user;
@@ -744,6 +749,9 @@ class ProductsController extends Controller
             }
             if ($request->hasFile('images') || $request->has('old_images')) {
                 $keepImages = $request->old_images ?? [];
+                if (!is_array($keepImages)) {
+                    $keepImages = [];
+                }
                 // Get old DB images
                 $oldDbImages = ProductImages::where('product_id', $product->id)->get();
                 foreach ($oldDbImages as $img) {
@@ -760,7 +768,7 @@ class ProductsController extends Controller
                         $img->delete();
                     }
                 }
-
+                // Log::info("images",$request->images);
                 //update new images
                 if ($request->hasFile('images')) {
 
@@ -781,7 +789,19 @@ class ProductsController extends Controller
                         ]);
                     }
                 }
-            }
+            }elseif($request->images == null && !$request->hasFile('images')){
+                        $oldDbImag = ProductImages::where('product_id', $product->id)->get();
+                        foreach ($oldDbImag as $img) {
+                            $img->delete();
+                        
+                        if ($img->image_public_id) {
+
+                        $this->deleteFromCloudinary(
+                            $img->image_public_id
+                        );
+                    }
+                        }
+                }
             //update variants
             if ($request->has('variants')) {
 
@@ -812,7 +832,7 @@ class ProductsController extends Controller
                 }
             }
             DB::commit();
-            Cache::tags(['products_user_' . $user, 'stock_user_' . $user])->flush();
+            Cache::tags(['products_user_' . $user, 'stock_user_' . $user])->flush(); 
             return response()->json([
                 'status' => true,
                 'message' => 'Product Updated Successfully',
@@ -943,7 +963,7 @@ class ProductsController extends Controller
 
             $hasStockPermission = in_array('stock-management', $permissions);
 
-            Log::info('hasStockPermission' . $hasStockPermission);
+            // Log::info('hasStockPermission' . $hasStockPermission);
             if ($hasStockPermission) {
                 $stocks['user_id'] = $user;
                 $stocks['created_by'] = $user;
