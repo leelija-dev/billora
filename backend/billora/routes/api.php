@@ -26,6 +26,7 @@ use App\Http\Controllers\admin\PackageCostController;
 use App\Http\Controllers\admin\UserOrdersController;
 use App\Http\Controllers\PlanExpiryController;
 use App\Http\Controllers\admin\TestimonialsController;
+use App\Http\Controllers\SocialConnectController;
 use App\Models\User;
 use App\Models\UserOrders;
 
@@ -279,4 +280,8 @@ Route::prefix('public-invoice')->group(function (){
 Route::middleware('auth:sanctum')->prefix('recent-plan')->group(function (){
    Route::get('/{id}',[PlanController::class,'recentPlan']);
 
+});
+Route::prefix('social')->group(function () {
+    Route::get('/facebook/redirect', [SocialConnectController::class, 'redirect']);
+    Route::get('/facebook/callback', [SocialConnectController::class, 'callback']);
 });
