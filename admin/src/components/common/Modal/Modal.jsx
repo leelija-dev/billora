@@ -66,8 +66,9 @@ const Modal = ({
         />
 
         {/* Modal panel */}
-        <div
-          className={`inline-block align-bottom bg-white dark:bg-gray-800 rounded-2xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle ${sizes[size]} w-full`}
+        <div className='px-4'>
+          <div
+          className={`inline-block align-bottom bg-white dark:bg-gray-800 rounded-2xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle  ${sizes[size]} w-full`}
         >
           {/* Header */}
           <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
@@ -93,6 +94,8 @@ const Modal = ({
               {footer}
             </div>
           )}
+        </div>
+
         </div>
       </div>
     </div>

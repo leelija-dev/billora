@@ -143,84 +143,86 @@ export const useCustomerStore = create((set, get) => ({
   },
 
   createCustomer: async (customerData) => {
-    set({ loading: true })
-    try {
-      const { user } = useAuthStore.getState()
-      const dataWithAdmin = {
-        user_id: user.id,
-        name: customerData.name,
-        email: customerData.email || null,
-        phone: customerData.phone,
-        address: customerData.address,
-        city: customerData.city || null,
-        created_by: user.id,
-      }
-      
-      const response = await customerAPI.create(dataWithAdmin)
-      
-      // Extract the created customer from response
-      const newCustomer = response?.data?.data || response?.data || response
-      
-      set((state) => ({
-        customers: Array.isArray(state.customers) ? [newCustomer, ...state.customers] : [newCustomer],
-        totalCustomers: (state.totalCustomers || 0) + 1,
-        loading: false,
-      }))
-      
-      // Clear cache to ensure fresh data on next fetch
-      get().clearCache()
-      
-      toast.success('Customer created successfully')
-      return { success: true, data: response.data }
-    } catch (error) {
-      console.error('Failed to create customer:', error)
-      toast.error('Failed to create customer')
-      set({ loading: false })
-      return { success: false, error: error.response?.data }
+  set({ loading: true })
+  try {
+    const { user } = useAuthStore.getState()
+    const dataWithAdmin = {
+      user_id: user.id,
+      name: customerData.name,
+      email: customerData.email || null,
+      phone: customerData.phone,
+      address: customerData.address,
+      city: customerData.city || null,
+      gst_number: customerData.gst_number || null, // Added GST field
+      created_by: user.id,
     }
-  },
+    
+    const response = await customerAPI.create(dataWithAdmin)
+    
+    // Extract the created customer from response
+    const newCustomer = response?.data?.data || response?.data || response
+    
+    set((state) => ({
+      customers: Array.isArray(state.customers) ? [newCustomer, ...state.customers] : [newCustomer],
+      totalCustomers: (state.totalCustomers || 0) + 1,
+      loading: false,
+    }))
+    
+    // Clear cache to ensure fresh data on next fetch
+    get().clearCache()
+    
+    toast.success('Customer created successfully')
+    return { success: true, data: response.data }
+  } catch (error) {
+    console.error('Failed to create customer:', error)
+    toast.error('Failed to create customer')
+    set({ loading: false })
+    return { success: false, error: error.response?.data }
+  }
+},
 
-  updateCustomer: async (id, customerData) => {
-    set({ loading: true })
-    try {
-      const { user } = useAuthStore.getState()
-      const dataWithUser = {
-        user_id: user.id,
-        name: customerData.name,
-        email: customerData.email || null,
-        phone: customerData.phone,
-        address: customerData.address,
-        city: customerData.city || null,
-      }
-      
-      const response = await customerAPI.update(id, dataWithUser)
-      
-      // Extract the updated customer from response
-      const updatedCustomer = response?.data?.data || response?.data || response
-      
-      set((state) => ({
-        customers: Array.isArray(state.customers) 
-          ? state.customers.map((c) => c?.id === id ? updatedCustomer : c)
-          : [],
-        loading: false,
-      }))
-      
-      // Clear cache to ensure fresh data on next fetch
-      get().clearCache()
-      
-      // Invalidate cache for the updated customer
-      const cacheKey = JSON.stringify({ page: 1, search: '' })
-      customerCache.delete(cacheKey)
-      
-      toast.success('Customer updated successfully')
-      return { success: true }
-    } catch (error) {
-      console.error('Failed to update customer:', error)
-      toast.error('Failed to update customer')
-      set({ loading: false })
-      return { success: false, error: error.response?.data }
+updateCustomer: async (id, customerData) => {
+  set({ loading: true })
+  try {
+    const { user } = useAuthStore.getState()
+    const dataWithUser = {
+      user_id: user.id,
+      name: customerData.name,
+      email: customerData.email || null,
+      phone: customerData.phone,
+      address: customerData.address,
+      city: customerData.city || null,
+      gst_number: customerData.gst_number || null, // Added GST field
     }
-  },
+    
+    const response = await customerAPI.update(id, dataWithUser)
+    
+    // Extract the updated customer from response
+    const updatedCustomer = response?.data?.data || response?.data || response
+    
+    set((state) => ({
+      customers: Array.isArray(state.customers) 
+        ? state.customers.map((c) => c?.id === id ? updatedCustomer : c)
+        : [],
+      loading: false,
+    }))
+    
+    // Clear cache to ensure fresh data on next fetch
+    get().clearCache()
+    
+    // Invalidate cache for the updated customer
+    const cacheKey = JSON.stringify({ page: 1, search: '' })
+    customerCache.delete(cacheKey)
+    
+    toast.success('Customer updated successfully')
+    return { success: true }
+  } catch (error) {
+    console.error('Failed to update customer:', error)
+    toast.error('Failed to update customer')
+    set({ loading: false })
+    return { success: false, error: error.response?.data }
+  }
+},
   deleteCustomer: async (id) => {
     set({ loading: true })
     try {

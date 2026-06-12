@@ -131,6 +131,40 @@ const StoreForm = ({
     }
   }
 
+  const handleStateInput = (e) => {
+    handleAlphanumericInput(e) // Use utility to prevent invalid characters
+    const value = e.target.value
+    setValue('state', value, { shouldValidate: true })
+    
+    if (value && !validationRules.state?.pattern?.test(value)) {
+      setError('state', {
+        type: 'manual',
+        message: validationRules.state?.message || 'State name must contain only letters, spaces, and hyphens'
+      })
+    } else {
+      clearErrors('state')
+    }
+  }
+
+  const handlePincodeInput = (e) => {
+    let value = e.target.value
+    // Allow only numbers and limit to 6 digits
+    value = value.replace(/\D/g, '').slice(0, 6)
+    e.target.value = value
+    setValue('pincode', value, { shouldValidate: true })
+    
+    if (value.length === 0) {
+      clearErrors('pincode')
+    } else if (value.length !== 6) {
+      setError('pincode', {
+        type: 'manual',
+        message: 'Pincode must be exactly 6 digits'
+      })
+    } else {
+      clearErrors('pincode')
+    }
+  }
+
   // Pre-fill form if editing
   useEffect(() => {
     if (store && isEdit) {
@@ -142,6 +176,8 @@ const StoreForm = ({
         mobile: store.mobile || '',
         address: store.address || '',
         city: store.city || '',
+        state: store.state || '',
+        pincode: store.pincode || '',
         status: store.status === true || store.status === 'active' ? 'active' : 'inactive',
       })
     } else {
@@ -153,6 +189,8 @@ const StoreForm = ({
         mobile: '',
         address: '',
         city: '',
+        state: '',
+        pincode: '',
         status: 'active',
         user_id: currentUserId,
         created_by: currentUserId,
@@ -189,6 +227,16 @@ const StoreForm = ({
         required: true,
         pattern: validationRules.city.pattern,
         message: validationRules.city.message
+      },
+      state: {
+        required: true,
+        pattern: /^[A-Za-z\s\-]{2,50}$/,
+        message: 'State name must contain only letters, spaces, and hyphens (2-50 characters)'
+      },
+      pincode: {
+        required: true,
+        pattern: /^\d{6}$/,
+        message: 'Pincode must be exactly 6 digits'
       },
       gst: {
         pattern: validationRules.gstNumber.pattern,
@@ -308,10 +356,44 @@ const StoreForm = ({
       }
     },
     {
+      name: 'state',
+      label: 'State',
+      type: 'text',
+      placeholder: 'Enter state',
+      required: true,
+      icon: FiMapPin,
+      gridCols: 'col-span-1',
+      onInput: handleStateInput,
+      validation: {
+        required: 'State is required',
+        pattern: {
+          value: /^[A-Za-z\s\-]{2,50}$/,
+          message: 'State name must contain only letters, spaces, and hyphens (2-50 characters)'
+        }
+      }
+    },
+    {
+      name: 'pincode',
+      label: 'Pincode',
+      type: 'text',
+      placeholder: 'Enter 6-digit pincode',
+      required: true,
+      icon: FiMapPin,
+      gridCols: 'col-span-1',
+      onInput: handlePincodeInput,
+      validation: {
+        required: 'Pincode is required',
+        pattern: {
+          value: /^\d{6}$/,
+          message: 'Pincode must be exactly 6 digits'
+        }
+      }
+    },
+    {
       name: 'gst',
       label: 'GST Number',
       type: 'text',
-      placeholder: 'Enter GST number (e.g., 22AAAAA0000A1Z)',
+      placeholder: 'Enter GST number (e.g., 27ABCDE1234F2Z5)',
       required: false,
       icon: FiPackage,
       gridCols: 'col-span-1',
@@ -397,12 +479,22 @@ const StoreForm = ({
                 )}
                 {field.name === 'gst' && !errors[field.name] && (
                   <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                    Format: 15 characters (e.g., 22AAAAA0000A1Z)
+                    Format: 15 characters (e.g., 27ABCDE1234F2Z5)
                   </p>
                 )}
                 {field.name === 'city' && !errors[field.name] && (
                   <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                     Only letters, spaces, and hyphens allowed
+                  </p>
+                )}
+                {field.name === 'state' && !errors[field.name] && (
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    Only letters, spaces, and hyphens allowed (2-50 characters)
+                  </p>
+                )}
+                {field.name === 'pincode' && !errors[field.name] && (
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    Enter a valid 6-digit pincode
                   </p>
                 )}
               </div>

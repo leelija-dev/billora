@@ -1,13 +1,22 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { FiX, FiSave, FiUser, FiMapPin, FiPhone, FiMail, FiGlobe, FiChevronDown, FiChevronUp } from 'react-icons/fi'
+import { FiX, FiSave, FiUser, FiMapPin, FiPhone, FiMail, FiGlobe, FiChevronDown, FiChevronUp, FiAlertCircle, FiCheckCircle } from 'react-icons/fi'
 import Input from '../../common/Input/Input'
 import Button from '../../common/Button/Button'
 import Modal from '../../common/Modal/Modal'
 import { useCustomerStore } from '../../../store/customerStore'
 import { useAuthStore } from '../../../store/authStore'
 import toast from 'react-hot-toast'
-import { handlePhoneInput, handleMaxLength, validationRules } from '../../../utils/validators'
+import { 
+  handlePhoneInput, 
+  handleMaxLength, 
+  validationRules,
+  validatePhone,
+  validateEmail,
+  validateGSTNumber,
+  handleGSTInput,
+  handleAlphanumericInput
+} from '../../../utils/validators'
 
 const CustomerModal = ({ isOpen, onClose, onCustomerCreated, initialData = {} }) => {
   const { createCustomer, updateCustomer } = useCustomerStore()
@@ -24,7 +33,7 @@ const CustomerModal = ({ isOpen, onClose, onCustomerCreated, initialData = {} })
     phone: '',
     address: '',
     city: '',
-    gst: '',
+    gst_number: '',
     status: 'active'
   })
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -48,7 +57,7 @@ const CustomerModal = ({ isOpen, onClose, onCustomerCreated, initialData = {} })
           phone: initialData.phone || '',
           address: initialData.address || '',
           city: initialData.city || '',
-          gst: initialData.gst || '',
+          gst_number: initialData.gst_number || initialData.gst || '',
           status: initialData.status || 'active'
         })
         setFieldErrors({})
@@ -69,7 +78,7 @@ const CustomerModal = ({ isOpen, onClose, onCustomerCreated, initialData = {} })
           phone: '',
           address: '',
           city: '',
-          gst: '',
+          gst_number: '',
           status: 'active'
         })
         setFieldErrors({})
@@ -87,168 +96,285 @@ const CustomerModal = ({ isOpen, onClose, onCustomerCreated, initialData = {} })
     }
   }, [isOpen, initialData, isEditMode])
 
+  // Helper function to get detailed error messages with examples
+  const getDetailedErrorMessage = (name, value) => {
+    switch (name) {
+      case 'name':
+        if (!value || !value.trim()) {
+          return 'Full name is required. Example: "John Doe" or "Rajesh Kumar"'
+        }
+        if (value.trim().length < 2) {
+          return `Name must be at least 2 characters long. "${value}" is too short. Example: "John" (4 characters)`
+        }
+        if (value.trim().length > 100) {
+          return `Name cannot exceed 100 characters. Current length: ${value.length} characters. Please shorten the name.`
+        }
+        if (!/^[a-zA-Z\s.-]+$/.test(value)) {
+          return 'Name can only contain letters (A-Z, a-z), spaces, dots (.), and hyphens (-). Example: "John D. Smith" or "Raj-Kumar"'
+        }
+        return ''
+
+      case 'phone':
+        if (!value || !value.trim()) {
+          return 'Phone number is required. Please enter a 10-digit mobile number. Example: "9876543210"'
+        }
+        const cleanPhone = value.replace(/\D/g, '')
+        if (cleanPhone.length !== 10) {
+          return `Phone number must be exactly 10 digits. Current length: ${cleanPhone.length} digits. Example: "9876543210" (10 digits)`
+        }
+        if (!/^[6-9]\d{9}$/.test(cleanPhone)) {
+          return 'Phone number must start with 6, 7, 8, or 9. Example: "9876543210" starts with 9'
+        }
+        return ''
+
+      case 'address':
+        if (showMoreDetails || isEditMode) {
+          if (!value || !value.trim()) {
+            return 'Address is required. Please enter a complete address. Example: "123 Main Street, Near Central Park"'
+          }
+          if (value.length < 5) {
+            return `Address must be at least 5 characters. "${value}" is too short. Example: "123 Main St" (12 characters)`
+          }
+          if (value.length > 500) {
+            return `Address cannot exceed 500 characters. Current length: ${value.length} characters. Please shorten the address.`
+          }
+        }
+        return ''
+
+      case 'email':
+        if (value && !validateEmail(value)) {
+          return 'Please enter a valid email address. Example: "customer@example.com" or "john.doe@gmail.com"'
+        }
+        return ''
+
+      case 'city':
+        if (value && !/^[a-zA-Z\s-]+$/.test(value)) {
+          return 'City name can only contain letters (A-Z, a-z), spaces, and hyphens. Example: "New York", "Los-Angeles", or "Mumbai"'
+        }
+        if (value && value.length > 100) {
+          return `City name cannot exceed 100 characters. Current length: ${value.length}. Please shorten the city name.`
+        }
+        return ''
+
+      case 'gst_number':
+        if (value && !validateGSTNumber(value)) {
+          return 'Invalid GST number format. GST number must be 15 characters: 2 digits + 10 alphanumeric + 1 digit + 1 alphanumeric + 1 digit. Example: "22AAAAA0000A1Z"'
+        }
+        return ''
+
+      default:
+        return ''
+    }
+  }
+
+  // Field validation function with detailed messages
+  const validateField = (name, value) => {
+    return getDetailedErrorMessage(name, value)
+  }
+
   const handleInputChange = (e) => {
     const { name, value } = e.target
-    
+    let processedValue = value
     let validationError = ''
     
-    if (name === 'phone') {
-      const phoneValue = value.replace(/\D/g, '')
-      if (phoneValue.length > 0 && phoneValue.length < 10) {
-        validationError = 'Phone number must be exactly 10 digits'
-      } else if (phoneValue.length === 10) {
-        validationError = ''
-      }
-    } else if (name === 'name') {
-      if (value.trim().length > 0 && value.trim().length < validationRules.productName.minLength) {
-        validationError = `Name must be at least ${validationRules.productName.minLength} characters`
-      }
-    } else if (name === 'email') {
-      if (value.trim().length > 0 && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
-        validationError = 'Please enter a valid email address'
-      }
+    // Apply field-specific processing
+    switch (name) {
+      case 'phone':
+        // Allow only numbers and limit to 10 digits
+        processedValue = value.replace(/\D/g, '').slice(0, 10)
+        validationError = validateField(name, processedValue)
+        break
+        
+      case 'name':
+        // Allow letters, spaces, dots, and hyphens only
+        processedValue = value.replace(/[^a-zA-Z\s.-]/g, '')
+        if (processedValue.length > 100) processedValue = processedValue.slice(0, 100)
+        validationError = validateField(name, processedValue)
+        break
+        
+      case 'city':
+        // Allow only letters, spaces, and hyphens
+        processedValue = value.replace(/[^a-zA-Z\s-]/g, '')
+        if (processedValue.length > 100) processedValue = processedValue.slice(0, 100)
+        validationError = validateField(name, processedValue)
+        break
+        
+      case 'address':
+        if (processedValue.length > 500) processedValue = processedValue.slice(0, 500)
+        validationError = validateField(name, processedValue)
+        break
+        
+      case 'email':
+        if (processedValue.length > 255) processedValue = processedValue.slice(0, 255)
+        validationError = validateField(name, processedValue)
+        break
+        
+      case 'gst_number':
+        // Convert to uppercase for GST
+        processedValue = value.toUpperCase()
+        if (processedValue.length > 50) processedValue = processedValue.slice(0, 50)
+        validationError = validateField(name, processedValue)
+        break
+        
+      default:
+        break
     }
     
     setFormData(prev => ({
       ...prev,
-      [name]: value
+      [name]: processedValue
     }))
     
-    setFieldErrors(prev => ({
-      ...prev,
-      [name]: validationError
-    }))
+    // Clear error for this field if validation passes
+    if (!validationError) {
+      setFieldErrors(prev => {
+        const newErrors = { ...prev }
+        delete newErrors[name]
+        return newErrors
+      })
+    } else {
+      setFieldErrors(prev => ({
+        ...prev,
+        [name]: validationError
+      }))
+    }
     
-    if (validationError) setError('')
+    // Clear general error when user starts typing
+    if (validationError) {
+      setError('')
+    }
   }
 
   const validateForm = () => {
     const newErrors = {}
     
-    // Phone validation (required)
-    if (!formData.phone?.trim()) {
-      newErrors.phone = 'Phone number is required'
-    } else {
-      const cleanPhone = formData.phone.replace(/\D/g, '')
-      if (cleanPhone.length !== 10) {
-        newErrors.phone = 'Phone number must be exactly 10 digits'
-      }
-    }
-
+    // Phone validation (always required)
+    const phoneError = validateField('phone', formData.phone)
+    if (phoneError) newErrors.phone = phoneError
+    
     // If more details are shown or in edit mode, validate these fields
     if (showMoreDetails || isEditMode) {
-      if (!formData.name?.trim()) {
-        newErrors.name = 'Name is required'
+      const nameError = validateField('name', formData.name)
+      if (nameError) newErrors.name = nameError
+      
+      const addressError = validateField('address', formData.address)
+      if (addressError) newErrors.address = addressError
+      
+      // Optional fields validation (only if provided)
+      if (formData.email) {
+        const emailError = validateField('email', formData.email)
+        if (emailError) newErrors.email = emailError
       }
-
-      if (!formData.address?.trim()) {
-        newErrors.address = 'Address is required'
+      
+      if (formData.city) {
+        const cityError = validateField('city', formData.city)
+        if (cityError) newErrors.city = cityError
+      }
+      
+      if (formData.gst_number) {
+        const gstError = validateField('gst_number', formData.gst_number)
+        if (gstError) newErrors.gst_number = gstError
       }
     }
-
+    
     setFieldErrors(newErrors)
     return Object.keys(newErrors).length === 0
   }
 
-  // In CustomerModal.jsx - Update the handleSubmit function
-const handleSubmit = async (e) => {
-  e.preventDefault()
-  
-  // Prevent duplicate submissions
-  if (isSubmittingRef.current || hasSubmittedRef.current) {
-    console.log('Preventing duplicate submission')
-    return
-  }
-  
-  if (!validateForm()) {
-    return
-  }
-
-  isSubmittingRef.current = true
-  setIsSubmitting(true)
-  setError('')
-
-  try {
-    const userId = user?.id || JSON.parse(localStorage.getItem('user'))?.id || 1
+  const handleSubmit = async (e) => {
+    e.preventDefault()
     
-    if (isEditMode) {
-      // Update existing customer
-      const updateData = {
-        user_id: userId,
-        name: formData.name,
-        email: formData.email || null,
-        phone: formData.phone,
-        address: formData.address,
-        city: formData.city || null,
-      }
-      
-      const result = await updateCustomer(initialData.id, updateData)
-      
-      if (result.success) {
-        hasSubmittedRef.current = true
-        toast.success('Customer updated successfully!')
-        // Pass the complete customer object with ID
-        const updatedCustomer = { ...updateData, id: initialData.id }
-        onCustomerCreated(updatedCustomer)
-        handleClose()
-      } else {
-        throw new Error(result.error?.message || 'Failed to update customer')
-      }
-    } else {
-      // Create new customer
-      const customerData = {
-        user_id: userId,
-        name: showMoreDetails ? formData.name : formData.phone,
-        email: formData.email || null,
-        phone: formData.phone,
-        address: showMoreDetails ? formData.address : 'N/A',
-        city: formData.city || null,
-        created_by: userId
-      }
-      
-      const result = await createCustomer(customerData)
-      
-      if (result.success) {
-        hasSubmittedRef.current = true
-        toast.success('Customer created successfully!')
-        
-        // IMPORTANT: Get the complete customer data from the API response
-        // The customer store now returns data field with the API response
-        let createdCustomer = result.data?.data || result.data
-        
-        // Ensure we have a complete customer object with ID
-        if (createdCustomer && !createdCustomer.id && createdCustomer.data?.id) {
-          createdCustomer = createdCustomer.data
-        }
-        
-        console.log('Full customer data from API:', createdCustomer)
-        
-        // Make sure we pass the complete object with ID
-        if (createdCustomer && createdCustomer.id) {
-          onCustomerCreated(createdCustomer)
-        } else {
-          // Log the issue for debugging
-          console.error('No valid customer ID found in response:', result)
-          console.error('Created customer object:', createdCustomer)
-          toast.error('Customer created but ID is missing. Please try again.')
-          return // Don't close modal, let user try again
-        }
-        
-        handleClose()
-      } else {
-        throw new Error(result.error?.message || 'Failed to create customer')
-      }
+    // Prevent duplicate submissions
+    if (isSubmittingRef.current || hasSubmittedRef.current) {
+      console.log('Preventing duplicate submission')
+      return
     }
-  } catch (err) {
-    console.error('Customer operation error:', err)
-    const errorMessage = err.response?.data?.message || err.message || (isEditMode ? 'Failed to update customer' : 'Failed to create customer')
-    setError(errorMessage)
-    toast.error(errorMessage)
-    isSubmittingRef.current = false
-  } finally {
-    setIsSubmitting(false)
+    
+    if (!validateForm()) {
+      toast.error('Please fix the validation errors before submitting')
+      return
+    }
+
+    isSubmittingRef.current = true
+    setIsSubmitting(true)
+    setError('')
+
+    try {
+      const userId = user?.id || JSON.parse(localStorage.getItem('user'))?.id || 1
+      
+      if (isEditMode) {
+        // Update existing customer
+        const updateData = {
+          user_id: userId,
+          name: formData.name,
+          email: formData.email || null,
+          phone: formData.phone,
+          address: formData.address,
+          city: formData.city || null,
+          gst_number: formData.gst_number || null,
+        }
+        
+        const result = await updateCustomer(initialData.id, updateData)
+        
+        if (result.success) {
+          hasSubmittedRef.current = true
+          toast.success('Customer updated successfully!')
+          const updatedCustomer = { ...updateData, id: initialData.id }
+          onCustomerCreated(updatedCustomer)
+          handleClose()
+        } else {
+          throw new Error(result.error?.message || 'Failed to update customer')
+        }
+      } else {
+        // Create new customer
+        const customerData = {
+          user_id: userId,
+          name: showMoreDetails ? formData.name : formData.phone,
+          email: formData.email || null,
+          phone: formData.phone,
+          address: showMoreDetails ? formData.address : 'N/A',
+          city: formData.city || null,
+          gst_number: formData.gst_number || null,
+          created_by: userId
+        }
+        
+        const result = await createCustomer(customerData)
+        
+        if (result.success) {
+          hasSubmittedRef.current = true
+          toast.success('Customer created successfully!')
+          
+          let createdCustomer = result.data?.data || result.data
+          
+          if (createdCustomer && !createdCustomer.id && createdCustomer.data?.id) {
+            createdCustomer = createdCustomer.data
+          }
+          
+          console.log('Full customer data from API:', createdCustomer)
+          
+          if (createdCustomer && createdCustomer.id) {
+            onCustomerCreated(createdCustomer)
+          } else {
+            console.error('No valid customer ID found in response:', result)
+            toast.error('Customer created but ID is missing. Please try again.')
+            return
+          }
+          
+          handleClose()
+        } else {
+          throw new Error(result.error?.message || 'Failed to create customer')
+        }
+      }
+    } catch (err) {
+      console.error('Customer operation error:', err)
+      const errorMessage = err.response?.data?.message || err.message || (isEditMode ? 'Failed to update customer' : 'Failed to create customer')
+      setError(errorMessage)
+      toast.error(errorMessage)
+      isSubmittingRef.current = false
+    } finally {
+      setIsSubmitting(false)
+    }
   }
-}
 
   const handleClose = () => {
     setFormData({
@@ -257,7 +383,7 @@ const handleSubmit = async (e) => {
       phone: '',
       address: '',
       city: '',
-      gst: '',
+      gst_number: '',
       status: 'active'
     })
     setError('')
@@ -269,21 +395,29 @@ const handleSubmit = async (e) => {
     onClose()
   }
 
+  // Check if there are any errors
+  const hasErrors = Object.keys(fieldErrors).length > 0
+
   return (
     <Modal
       isOpen={isOpen}
       onClose={handleClose}
       title={isEditMode ? "Edit Customer" : "Add New Customer"}
-      size="md"
+      size="xl"
     >
       <form onSubmit={handleSubmit} className="space-y-4">
+        {/* General Error Message */}
         {error && (
           <motion.div
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
             className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-4 text-red-700 dark:text-red-300 text-sm"
           >
-            {error}
+            <div className="flex items-start space-x-2">
+              <FiAlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 mt-0.5 flex-shrink-0" />
+              <span>{error}</span>
+            </div>
           </motion.div>
         )}
 
@@ -294,11 +428,12 @@ const handleSubmit = async (e) => {
             name="phone"
             value={formData.phone}
             onChange={handleInputChange}
-            placeholder="Enter 10-digit phone number"
+            placeholder="Enter 10-digit mobile number (e.g., 9876543210)"
             icon={FiPhone}
             type="tel"
             required
             error={fieldErrors.phone}
+            helperText="Enter a valid 10-digit mobile number starting with 6,7,8, or 9"
           />
         </div>
 
@@ -334,10 +469,11 @@ const handleSubmit = async (e) => {
                   name="name"
                   value={formData.name}
                   onChange={handleInputChange}
-                  placeholder="Enter customer's full name"
+                  placeholder="Enter full name (e.g., John Doe or Rajesh Kumar)"
                   icon={FiUser}
                   required={showMoreDetails || isEditMode}
                   error={fieldErrors.name}
+                  helperText="Letters, spaces, dots (.), and hyphens (-) only (2-100 characters)"
                 />
 
                 <Input
@@ -345,10 +481,11 @@ const handleSubmit = async (e) => {
                   name="address"
                   value={formData.address}
                   onChange={handleInputChange}
-                  placeholder="Enter street address"
+                  placeholder="Enter complete address (e.g., 123 Main Street, Near Central Park)"
                   icon={FiMapPin}
                   required={showMoreDetails || isEditMode}
                   error={fieldErrors.address}
+                  helperText="Full street address (minimum 5 characters)"
                 />
 
                 <Input
@@ -356,10 +493,11 @@ const handleSubmit = async (e) => {
                   name="email"
                   value={formData.email}
                   onChange={handleInputChange}
-                  placeholder="Enter email address"
+                  placeholder="Enter email address (e.g., customer@example.com)"
                   icon={FiMail}
                   type="email"
                   error={fieldErrors.email}
+                  helperText="Optional but recommended - Enter valid email like name@domain.com"
                 />
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -368,17 +506,21 @@ const handleSubmit = async (e) => {
                     name="city"
                     value={formData.city}
                     onChange={handleInputChange}
-                    placeholder="Enter city"
+                    placeholder="Enter city name (e.g., Mumbai, New York)"
                     icon={FiMapPin}
+                    error={fieldErrors.city}
+                    helperText="Optional - Letters, spaces, and hyphens only"
                   />
 
                   <Input
                     label="GST Number"
-                    name="gst"
-                    value={formData.gst}
+                    name="gst_number"
+                    value={formData.gst_number}
                     onChange={handleInputChange}
-                    placeholder="Enter GST number"
+                    placeholder="Enter GST number (e.g., 22AAAAA0000A1Z)"
                     icon={FiGlobe}
+                    error={fieldErrors.gst_number}
+                    helperText="Optional - Format: 15 characters (2 digits + 10 alphanumeric + 1 digit + 1 alphanumeric + 1 digit)"
                   />
                 </div>
 
@@ -398,12 +540,73 @@ const handleSubmit = async (e) => {
                       <option value="inactive">Inactive</option>
                       <option value="blocked">Blocked</option>
                     </select>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      Active: Customer can make purchases | Inactive: Temporarily disabled | Blocked: Permanently disabled
+                    </p>
                   </div>
                 )}
               </div>
             </motion.div>
           )}
         </AnimatePresence>
+
+        {/* Error Summary - Shows only when there are errors */}
+        <AnimatePresence>
+          {hasErrors && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.2 }}
+              className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4"
+            >
+              <div className="flex items-start space-x-2">
+                <FiAlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 mt-0.5 flex-shrink-0" />
+                <div className="flex-1">
+                  <h4 className="text-sm font-semibold text-red-800 dark:text-red-200 mb-2">
+                    Please fix the following errors:
+                  </h4>
+                  <ul className="space-y-1 text-sm text-red-700 dark:text-red-300">
+                    {Object.entries(fieldErrors).map(([field, message]) => (
+                      <motion.li 
+                        key={field} 
+                        className="flex items-start space-x-1"
+                        initial={{ opacity: 0, x: -10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ duration: 0.1 }}
+                      >
+                        <span className="inline-block mr-2">•</span>
+                        <span>
+                          <strong>{field === 'name' ? 'Name' : 
+                                   field === 'phone' ? 'Phone Number' :
+                                   field === 'address' ? 'Address' :
+                                   field === 'gst_number' ? 'GST Number' :
+                                   field.charAt(0).toUpperCase() + field.slice(1)}:</strong> {message}
+                        </span>
+                      </motion.li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Success indicator when no errors and fields are filled */}
+        {!hasErrors && (showMoreDetails || isEditMode) && formData.name && formData.address && formData.phone && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-3"
+          >
+            <div className="flex items-center space-x-2">
+              <FiCheckCircle className="w-5 h-5 text-green-600 dark:text-green-400" />
+              <p className="text-sm text-green-700 dark:text-green-300">
+                All required fields are valid! You can submit the form.
+              </p>
+            </div>
+          </motion.div>
+        )}
 
         <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200 dark:border-gray-700">
           <Button
@@ -419,7 +622,7 @@ const handleSubmit = async (e) => {
             type="submit"
             variant="primary"
             loading={isSubmitting}
-            disabled={isSubmitting}
+            disabled={isSubmitting || hasErrors}
             icon={FiSave}
           >
             {isSubmitting ? (isEditMode ? 'Updating...' : 'Creating...') : (isEditMode ? 'Update Customer' : 'Create Customer')}

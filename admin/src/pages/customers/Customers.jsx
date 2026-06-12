@@ -235,6 +235,8 @@ const Customers = () => {
 
   const handleSubmitCustomer = async (customerData) => {
     setFormSubmitting(true);
+
+    console.log("checking customer data ..........:",customerData)
     try {
       if (showEditForm && selectedCustomer) {
         await updateCustomer(selectedCustomer.id, customerData);
