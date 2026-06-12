@@ -12,7 +12,7 @@ class SocialConnectController extends Controller
 {
    public function redirect(Request $request)
 {
-    $userId = 2;
+    $userId = Auth::user()->id;
 
     $url = "https://www.facebook.com/dialog/oauth?" . http_build_query([
         'client_id' => env('META_APP_ID'),
