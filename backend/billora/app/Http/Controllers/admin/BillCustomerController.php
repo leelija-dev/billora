@@ -24,6 +24,8 @@ class BillCustomerController extends Controller
             ]);
         }
         $search = $request->search;
+        $dueCustomer = $request->dueCustomer;
+        $customerCity = $request->city;
         $startTime = microtime(true);
         // $cacheKey ="bill_customers_{$user}";
         $cacheKey = "bill_customers_{$user}_" . md5(
@@ -34,12 +36,12 @@ class BillCustomerController extends Controller
         );
         $fromCache = Cache::tags(['bill_customers_user_' . $user])->has($cacheKey);
         $billCustomer = Cache::tags(['bill_customers_user_' . $user])
-            ->remember($cacheKey, 600, function () use ($id, $search) {
+            ->remember($cacheKey, 600, function () use ($id, $search,$dueCustomer,$customerCity) {
 
                 return BillCustomer::where('admin_id', $id)
-                    ->when($search, function ($query) use ($search) {
+                    ->when($search, function ($query) use ($search,$dueCustomer,$customerCity) {
 
-                        $query->where(function ($q) use ($search) {
+                        $query->where(function ($q) use ($search,$dueCustomer,$customerCity) {
 
                             $q->where('name', 'like', "%{$search}%")
                                 ->orWhere('email', 'like', "%{$search}%")
@@ -51,6 +53,12 @@ class BillCustomerController extends Controller
                             // exact ID search
                             if (is_numeric($search)) {
                                 $q->orWhere('id', $search);
+                            }
+                            if($dueCustomer == true){
+                                $q->orWhere('due_amount', '>', 0);
+                            }
+                            if($customerCity == true){
+                                $q->orWhere('city', '!=', '');
                             }
                         });
                     })
