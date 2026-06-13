@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;   
 class BrandController extends Controller
 {
-  public function index(Request $request)
+ public function index(Request $request)
 {
     try {
         if (!Auth::check()) {
@@ -21,20 +21,48 @@ class BrandController extends Controller
         }
 
         $user = Auth::user()->id;
+        $search = $request->search;
+        $status = $request->status;
+
         $startTime = microtime(true);
-        $cacheKey ="brands_{$user}";
-        $fromCache = Cache::tags(['brands_user_'.$user])->has($cacheKey);
-        $brands = Cache::tags(['brands_user_'.$user])
-                      ->remember($cacheKey,600, function () use ($user) {
-        // SIMPLE TEST - No search, no complex queries
-        return Brand::where('user_id', $user)->get();
-                      
-        });
+
+        $query = Brand::where('user_id', $user);
+
+        // SEARCH by brand name
+        if (!empty($search)) {
+            $query->where('name', 'like', "%{$search}%");
+        }
+
+        // ACTIVE / INACTIVE filter
+        if ($status !== null && $status !== '') {
+            $query->where('is_active', $status);
+        }
+
+        //If filtering exists → skip cache
+        if (!empty($search) || $status !== null && $status !== '') {
+
+            $brands = $query->orderBy('id', 'desc')->paginate(10);
+
+            $source = 'Database (filtered)';
+        } else {
+
+            // cache only for default listing
+            $cacheKey = "brands_{$user}";
+
+            $brands = Cache::tags(['brands_user_' . $user])
+                ->remember($cacheKey, 600, function () use ($user) {
+                    return Brand::where('user_id', $user)->orderBy('id', 'desc')->paginate(10);;
+                });
+
+            $source = 'Cache/Database';
+        }
+
         $executionTime = microtime(true) - $startTime;
+
         return response()->json([
             'status' => 'success',
             'message' => 'Your Brand List',
-            'source' => $fromCache ? 'Cache' : 'Database',
+            'source' => $source,
             'response_time' => round($executionTime, 4) . ' sec',
             'user_id' => $user,
             'data' => $brands

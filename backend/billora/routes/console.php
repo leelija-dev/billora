@@ -18,3 +18,5 @@ Schedule::job(new SendPlanExpiryReminderJob(false))
 Schedule::command('app:expire-plans')->daily();  
 Schedule::job(new ActivatePendingRenewals)
     ->everyFiveMinutes();
+Schedule::command('app:post-daily-best-discount-product')#->everyMinute();
+    ->dailyAt('09:00');

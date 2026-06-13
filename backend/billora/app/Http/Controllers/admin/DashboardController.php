@@ -50,7 +50,7 @@ class DashboardController extends Controller
                 $data = $model::selectRaw("
             DATE(created_at) as date,
             SUM(total_amount) as revenue
-        ")
+            ")
                     ->where('user_id', $id)
                     ->where('created_at', '>=', $fromDate)
                     ->groupBy(DB::raw("DATE(created_at)"))

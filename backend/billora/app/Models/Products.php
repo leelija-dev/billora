@@ -64,7 +64,8 @@ class Products extends Model
         'updated_by',
         'image_public_id',
         'qr_public_id',
-        'barcode_public_id'
+        'barcode_public_id',
+        'is_social_posted'
 
     ];
     protected $casts = [
