@@ -36,6 +36,7 @@ class StoreController extends Controller
                         ->orWhere('address', 'like', "%$search%")
                         ->orWhere('city', 'like', "%$search%");
                 })
+                ->orderBy('id', 'desc')
                 ->paginate(15);
             });
             // if ($store->isEmpty()) {

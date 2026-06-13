@@ -25,6 +25,7 @@ class PlanController extends Controller
         $data =Cache::tags(['users_plans'])->remember($cacheKey, 600, function () {
             return Plans::with('permissions', 'business_types.businessType')
                 ->where('is_active', true)
+                ->orderBy('id', 'desc')
                 ->get();
         });
          Plans::with('permissions','business_types.businessType')->where('is_active', true)->get();

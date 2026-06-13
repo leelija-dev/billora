@@ -163,7 +163,8 @@ class PostDailyBestDiscountProduct extends Command
                 }
             }
 
-            // 5. FACEBOOK PAGE POST
+            /*........... 5. FACEBOOK PAGE POST .............. */
+
             // if (!empty($connection->page_id)) {
             //     Log::info('facebook page id:'.$connection->page_id);
 
@@ -218,7 +219,7 @@ class PostDailyBestDiscountProduct extends Command
                         ]
                     );
 
-                    // Log::info('FB image upload', $upload->json());
+                    Log::info('FB image upload', $upload->json());
 
                     if (
                         $upload->successful() &&
@@ -311,7 +312,7 @@ class PostDailyBestDiscountProduct extends Command
                             ]
                         );
 
-                        // Log::info('FB image upload', $upload->json());
+                        Log::info('FB image upload', $upload->json());
 
                         if (
                             $upload->successful() &&
@@ -353,13 +354,13 @@ class PostDailyBestDiscountProduct extends Command
                         ]);
                     }
                 }
-                // Log::info('facebook post response', $post->json());
+                Log::info('facebook post response', $post->json());
 
-                // if ($post->failed()) {
-                //     Log::info('facebook post failed', [
-                //         'error' => $post->body()
-                //     ]);
-                // }
+                if ($post->failed()) {
+                    Log::info('facebook post failed', [
+                        'error' => $post->body()
+                    ]);
+                }
 
                 $this->info("Facebook text posted for user {$connection->user_id}");
             }

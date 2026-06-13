@@ -36,6 +36,7 @@ class UnitController extends Controller
                       ->orWhere('slug', 'like', "%$search%");
                 });
             })
+            ->orderBy('id', 'desc')
             ->paginate(15);
 
         });
