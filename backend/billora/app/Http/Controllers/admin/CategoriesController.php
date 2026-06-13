@@ -15,21 +15,30 @@ class CategoriesController extends Controller
 {
     $user = Auth::user()->id;
     $search = $request->search;
+    $status = $request->status;
     $cacheKey ='categories_' . $user . '_' . md5($search . '_' . $request->page);
     $fromCache = Cache::tags(['categories_user_'.$user])->has($cacheKey);
 
     $startTime = microtime(true);
     $categories = Cache::tags(['categories_user_'.$user])
-                      ->remember($cacheKey,600, function () use ($user, $search) {
+                      ->remember($cacheKey,600, function () use ($user, $search,$status) {
         
-    
+    if($status != null){
+        return Categories::where('user_id', $user)
+        ->where('is_active', $status)
+        ->where(function ($query) use ($search) {
+            $query->where('id', 'like', "%$search%")
+                ->orWhere('name', 'like', "%$search%")   
+                ->orWhere('slug', 'like', "%$search%")->orderBy('id','Desc')->paginate(15); 
+        });
+    }
     return Categories::where('user_id', $user)
         ->where(function ($query) use ($search) {
             $query->where('id', 'like', "%$search%")
                 ->orWhere('name', 'like', "%$search%")
                 ->orWhere('description', 'like', "%$search%")
                 ->orWhere('slug', 'like', "%$search%");
-        })
+        })->orderBy('id','Desc')
         ->paginate(15);
 });
     $executionTime = microtime(true) - $startTime;
