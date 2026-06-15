@@ -75,9 +75,8 @@ class BillCustomerController extends Controller
                         $query->where('due_amount', '>', 0);
                     })
 
-                    ->when($customerCity, function ($query) {
-                        $query->whereNotNull('city')
-                            ->where('city', '!=', '');
+                    ->when($customerCity == 1, function ($query) {
+                        $query->where('city', '!=', '');
                     })
                      ->when($startDate && $endDate, function ($query) use ($startDate, $endDate) {
                         $query->whereBetween('created_at', [$startDate, $endDate]);
