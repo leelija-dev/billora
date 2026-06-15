@@ -27,6 +27,8 @@ class BillCustomerController extends Controller
         $dueCustomer = $request->dueCustomer;
         $customerCity = $request->city;
         $gst = $request->gst;
+        $startDate = $request->start_date;
+        $endDate = $request->end_date;
         $startTime = microtime(true);
         // $cacheKey ="bill_customers_{$user}";
         $cacheKey = "bill_customers_{$user}_" . md5(
@@ -35,7 +37,9 @@ class BillCustomerController extends Controller
                 'page' => $request->page,
                 'dueCustomer' => $dueCustomer,
                 'customerCity' => $customerCity,
-                'gst' => $gst
+                'gst' => $gst,
+                'start_date' => $startDate,
+                'end_date' => $endDate
             ])
         );
         $fromCache = Cache::tags(['bill_customers_user_' . $user])->has($cacheKey);
@@ -45,7 +49,9 @@ class BillCustomerController extends Controller
                 $search,
                 $dueCustomer,
                 $customerCity,
-                $gst
+                $gst,
+                $startDate,
+                $endDate,
             ) {
 
                 return BillCustomer::where('admin_id', $id)
@@ -73,12 +79,16 @@ class BillCustomerController extends Controller
                         $query->whereNotNull('city')
                             ->where('city', '!=', '');
                     })
+                     ->when($startDate && $endDate, function ($query) use ($startDate, $endDate) {
+                        $query->whereBetween('created_at', [$startDate, $endDate]);
+                           
+                    })
 
                     ->when($gst == 1, function ($query) {
                         $query->whereNotNull('gst_number')
                             ->where('gst_number', '!=', '');
                     })
-
+                    
                     ->when($gst === '0', function ($query) {
                         $query->where(function ($q) {
                             $q->whereNull('gst_number')
