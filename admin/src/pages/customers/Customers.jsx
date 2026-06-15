@@ -37,6 +37,7 @@ import CustomerForm from "../../components/features/Customers/CustomerForm";
 import Select from "../../components/common/Select/Select";
 import { FaRupeeSign, FaUser, FaUsers } from "react-icons/fa";
 import toast from "react-hot-toast";
+import { useAuthStore } from "../../store/authStore";
 
 const Customers = () => {
   const navigate = useNavigate();
@@ -72,6 +73,47 @@ const Customers = () => {
   const [pageLoading, setPageLoading] = useState(false);
   const [paymentAmount, setPaymentAmount] = useState("");
   const [paymentError, setPaymentError] = useState("");
+  
+  // New filter states
+  const [activeFilter, setActiveFilter] = useState('all'); // 'all', 'due', 'city'
+  const [showCityFilter, setShowCityFilter] = useState(false);
+  const [cities, setCities] = useState([]);
+  const [citiesLoading, setCitiesLoading] = useState(false);
+  const [selectedCity, setSelectedCity] = useState('');
+  const [filteredCustomers, setFilteredCustomers] = useState([]);
+  const [filteredTotal, setFilteredTotal] = useState(0);
+
+  // Fetch cities on component mount
+  useEffect(() => {
+    const fetchCities = async () => {
+      setCitiesLoading(true);
+      try {
+        const { user } = useAuthStore.getState();
+        if (user?.id) {
+          const response = await customerAPI.getUniqueCities(user.id);
+          let citiesArray = [];
+          if (response?.data?.data && Array.isArray(response.data.data)) {
+            citiesArray = response.data.data;
+          } else if (Array.isArray(response?.data)) {
+            citiesArray = response.data;
+          } else if (response?.data && typeof response.data === 'object') {
+            for (const key in response.data) {
+              if (Array.isArray(response.data[key])) {
+                citiesArray = response.data[key];
+                break;
+              }
+            }
+          }
+          setCities(citiesArray);
+        }
+      } catch (error) {
+        console.error('Failed to fetch cities:', error);
+      } finally {
+        setCitiesLoading(false);
+      }
+    };
+    fetchCities();
+  }, []);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -86,26 +128,129 @@ const Customers = () => {
 
   useEffect(() => {
     const debounceTimer = setTimeout(() => {
-      setFilters({ search: searchTerm });
+      if (activeFilter === 'all') {
+        setFilters({ search: searchTerm });
+      } else if (activeFilter === 'due') {
+        handleDueFilter();
+      } else if (activeFilter === 'city' && selectedCity) {
+        handleCityFilter(selectedCity);
+      }
     }, 500);
 
     return () => clearTimeout(debounceTimer);
   }, [searchTerm]);
 
-  // Calculate stats with safeCustomers
-  const stats = {
-    total: safeCustomers.length,
-    active: safeCustomers.filter((c) => c?.status === "active").length,
-    inactive: safeCustomers.filter((c) => c?.status === "inactive").length,
-    blocked: safeCustomers.filter((c) => c?.status === "blocked").length,
-    totalSpent: safeCustomers.reduce(
-      (sum, c) => sum + (parseFloat(c?.due_amount) || 0),
-      0,
-    ),
-    totalOrders: safeCustomers.reduce(
-      (sum, c) => sum + (c?.total_orders || 0),
-      0,
-    ),
+  // Handle due filter
+  const handleDueFilter = async () => {
+    setPageLoading(true);
+    setActiveFilter('due');
+    setSelectedCity('');
+    try {
+      const { user } = useAuthStore.getState();
+      if (user?.id) {
+        const response = await customerAPI.getDueCustomers(user.id, searchTerm, 1);
+        let customersArray = [];
+        let total = 0;
+        
+        // Handle nested response structure
+        if (response?.data?.data?.data && Array.isArray(response.data.data.data)) {
+          customersArray = response.data.data.data;
+          total = response.data.data.total || customersArray.length;
+        } else if (response?.data?.data && Array.isArray(response.data.data)) {
+          customersArray = response.data.data;
+          total = response.data.data.total || customersArray.length;
+        } else if (Array.isArray(response?.data)) {
+          customersArray = response.data;
+          total = customersArray.length;
+        } else if (response?.data && typeof response.data === 'object') {
+          for (const key in response.data) {
+            if (Array.isArray(response.data[key])) {
+              customersArray = response.data[key];
+              total = customersArray.length;
+              break;
+            }
+          }
+        }
+        
+        if (!Array.isArray(customersArray)) {
+          customersArray = [];
+          total = 0;
+        }
+        
+        setFilteredCustomers(customersArray);
+        setFilteredTotal(total);
+        toast.success(`Found ${total} customer(s) with due amount`);
+      }
+    } catch (error) {
+      console.error('Failed to fetch due customers:', error);
+      toast.error('Failed to fetch due customers');
+      setFilteredCustomers([]);
+      setFilteredTotal(0);
+    } finally {
+      setPageLoading(false);
+    }
+  };
+
+  // Handle city filter
+  const handleCityFilter = async (city) => {
+    setPageLoading(true);
+    setActiveFilter('city');
+    setSelectedCity(city);
+    setShowCityFilter(false);
+    try {
+      const { user } = useAuthStore.getState();
+      if (user?.id) {
+        const response = await customerAPI.getCustomersByCity(user.id, city, searchTerm, 1);
+        let customersArray = [];
+        let total = 0;
+        
+        // Handle nested response structure
+        if (response?.data?.data?.data && Array.isArray(response.data.data.data)) {
+          customersArray = response.data.data.data;
+          total = response.data.data.total || customersArray.length;
+        } else if (response?.data?.data && Array.isArray(response.data.data)) {
+          customersArray = response.data.data;
+          total = response.data.data.total || customersArray.length;
+        } else if (Array.isArray(response?.data)) {
+          customersArray = response.data;
+          total = customersArray.length;
+        } else if (response?.data && typeof response.data === 'object') {
+          for (const key in response.data) {
+            if (Array.isArray(response.data[key])) {
+              customersArray = response.data[key];
+              total = customersArray.length;
+              break;
+            }
+          }
+        }
+        
+        if (!Array.isArray(customersArray)) {
+          customersArray = [];
+          total = 0;
+        }
+        
+        setFilteredCustomers(customersArray);
+        setFilteredTotal(total);
+        toast.success(`Found ${total} customer(s) from ${city}`);
+      }
+    } catch (error) {
+      console.error('Failed to fetch city customers:', error);
+      toast.error('Failed to fetch city customers');
+      setFilteredCustomers([]);
+      setFilteredTotal(0);
+    } finally {
+      setPageLoading(false);
+    }
+  };
+
+  // Clear all filters
+  const handleClearFilter = () => {
+    setActiveFilter('all');
+    setSelectedCity('');
+    setSearchTerm('');
+    setFilters({ search: '', status: '' });
+    fetchCustomers(1, '');
+    toast.success('All filters cleared');
   };
 
   const handleViewDetails = (customer) => {
@@ -214,8 +359,14 @@ const Customers = () => {
       const { clearCache } = useCustomerStore.getState();
       clearCache();
       
-      // Fetch fresh data with current page and search
-      await fetchCustomers(currentPage, filters.search);
+      // Fetch fresh data based on current filter
+      if (activeFilter === 'all') {
+        await fetchCustomers(currentPage, filters.search);
+      } else if (activeFilter === 'due') {
+        await handleDueFilter();
+      } else if (activeFilter === 'city' && selectedCity) {
+        await handleCityFilter(selectedCity);
+      }
       
       // Show success message
       toast.success(`Payment of ₹${parseFloat(paymentAmount).toFixed(2)} processed successfully!`);
@@ -236,7 +387,7 @@ const Customers = () => {
   const handleSubmitCustomer = async (customerData) => {
     setFormSubmitting(true);
 
-    console.log("checking customer data ..........:",customerData)
+    console.log("checking customer data ..........:", customerData);
     try {
       if (showEditForm && selectedCustomer) {
         await updateCustomer(selectedCustomer.id, customerData);
@@ -245,8 +396,14 @@ const Customers = () => {
         await createCustomer(customerData);
         toast.success("Customer created successfully!");
       }
-      // Refresh the customer list
-      await fetchCustomers();
+      // Refresh the customer list based on current filter
+      if (activeFilter === 'all') {
+        await fetchCustomers();
+      } else if (activeFilter === 'due') {
+        await handleDueFilter();
+      } else if (activeFilter === 'city' && selectedCity) {
+        await handleCityFilter(selectedCity);
+      }
       // Hide the form
       handleCancelForm();
     } catch (error) {
@@ -263,7 +420,13 @@ const Customers = () => {
       toast.success("Customer deleted successfully!");
       setShowDeleteConfirm(false);
       setSelectedCustomer(null);
-      fetchCustomers(currentPage);
+      if (activeFilter === 'all') {
+        fetchCustomers(currentPage);
+      } else if (activeFilter === 'due') {
+        handleDueFilter();
+      } else if (activeFilter === 'city' && selectedCity) {
+        handleCityFilter(selectedCity);
+      }
     } catch (error) {
       console.error("Failed to delete customer:", error);
       toast.error(error.response?.data?.message || "Failed to delete customer. Please try again.");
@@ -278,7 +441,13 @@ const Customers = () => {
       toast.success(`${selectedCustomers.length} customers deleted successfully!`);
       setSelectedCustomers([]);
       setShowDeleteConfirm(false);
-      fetchCustomers(currentPage);
+      if (activeFilter === 'all') {
+        fetchCustomers(currentPage);
+      } else if (activeFilter === 'due') {
+        handleDueFilter();
+      } else if (activeFilter === 'city' && selectedCity) {
+        handleCityFilter(selectedCity);
+      }
     } catch (error) {
       console.error("Failed to delete customers:", error);
       toast.error("Failed to delete customers. Please try again.");
@@ -287,14 +456,28 @@ const Customers = () => {
 
   const handlePageChange = (page) => {
     setPageLoading(true);
-    fetchCustomers(page).finally(() => {
+    if (activeFilter === 'all') {
+      fetchCustomers(page).finally(() => {
+        setPageLoading(false);
+      });
+    } else if (activeFilter === 'due') {
+      // Implement pagination for due filter if needed
       setPageLoading(false);
-    });
+    } else if (activeFilter === 'city' && selectedCity) {
+      // Implement pagination for city filter if needed
+      setPageLoading(false);
+    }
   };
 
   const handleRefresh = async () => {
     setRefreshing(true);
-    await fetchCustomers();
+    if (activeFilter === 'all') {
+      await fetchCustomers();
+    } else if (activeFilter === 'due') {
+      await handleDueFilter();
+    } else if (activeFilter === 'city' && selectedCity) {
+      await handleCityFilter(selectedCity);
+    }
     setRefreshing(false);
     toast.success("Customer list refreshed!");
   };
@@ -302,6 +485,9 @@ const Customers = () => {
   const clearFilters = () => {
     setSearchTerm("");
     setFilters({ search: "", status: "" });
+    if (activeFilter !== 'all') {
+      handleClearFilter();
+    }
     toast.success("Filters cleared!");
   };
 
@@ -314,11 +500,32 @@ const Customers = () => {
   };
 
   const selectAllCustomers = () => {
-    if (selectedCustomers.length === safeCustomers.length) {
+    const currentCustomers = activeFilter === 'all' ? safeCustomers : filteredCustomers;
+    if (selectedCustomers.length === currentCustomers.length) {
       setSelectedCustomers([]);
     } else {
-      setSelectedCustomers(safeCustomers.map((c) => c?.id).filter(Boolean));
+      setSelectedCustomers(currentCustomers.map((c) => c?.id).filter(Boolean));
     }
+  };
+
+  // Get current display customers
+  const displayCustomers = activeFilter === 'all' ? safeCustomers : filteredCustomers;
+  const displayTotal = activeFilter === 'all' ? totalCustomers : filteredTotal;
+
+  // Calculate stats
+  const stats = {
+    total: displayCustomers.length,
+    active: displayCustomers.filter((c) => c?.status === "active").length,
+    inactive: displayCustomers.filter((c) => c?.status === "inactive").length,
+    blocked: displayCustomers.filter((c) => c?.status === "blocked").length,
+    totalSpent: displayCustomers.reduce(
+      (sum, c) => sum + (parseFloat(c?.due_amount) || 0),
+      0,
+    ),
+    totalOrders: displayCustomers.reduce(
+      (sum, c) => sum + (c?.total_orders || 0),
+      0,
+    ),
   };
 
   const StatCard = ({ title, value, icon: Icon, color, subtitle, delay }) => (
@@ -369,8 +576,8 @@ const Customers = () => {
           <input
             type="checkbox"
             checked={
-              selectedCustomers.length === safeCustomers.length &&
-              safeCustomers.length > 0
+              selectedCustomers.length === displayCustomers.length &&
+              displayCustomers.length > 0
             }
             onChange={selectAllCustomers}
             className="w-4 h-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
@@ -467,7 +674,6 @@ const Customers = () => {
       accessor: "due_amount",
       cell: (value) => (
         <motion.div whileHover={{ scale: 1.05 }} className="flex items-center">
-        
           <span className="text-sm font-semibold text-gray-900 dark:text-white">
             ₹{parseFloat(value || 0).toFixed(2)}
           </span>
@@ -656,9 +862,8 @@ const Customers = () => {
             exit={{ opacity: 0, y: 20 }}
             className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6"
           >
-            
             <CustomerForm
-          isEditForm={showEditForm}
+              isEditForm={showEditForm}
               initialData={selectedCustomer}
               onSubmit={handleSubmitCustomer}
               onCancel={handleCancelForm}
@@ -733,6 +938,180 @@ const Customers = () => {
                 </>
               )}
             </motion.div>
+
+            {/* Quick Filter Buttons */}
+            <motion.div
+              initial={{ y: 20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.55 }}
+              className="flex flex-wrap gap-3"
+            >
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => {
+                  setActiveFilter('all');
+                  setSelectedCity('');
+                  fetchCustomers(1, searchTerm);
+                }}
+                className={`px-4 py-2 rounded-xl transition-all duration-200 flex items-center space-x-2 ${
+                  activeFilter === 'all'
+                    ? 'bg-gradient-to-r from-primary-500 to-primary-600 text-white shadow-lg shadow-primary-500/30'
+                    : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700'
+                }`}
+              >
+                <FaUsers className="w-4 h-4" />
+                <span>All Customers</span>
+                {activeFilter === 'all' && (
+                  <motion.span
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    className="ml-1 text-xs bg-white/20 px-1.5 py-0.5 rounded-full"
+                  >
+                    {displayTotal}
+                  </motion.span>
+                )}
+              </motion.button>
+
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={handleDueFilter}
+                className={`px-4 py-2 rounded-xl transition-all duration-200 flex items-center space-x-2 ${
+                  activeFilter === 'due'
+                    ? 'bg-gradient-to-r from-orange-500 to-red-500 text-white shadow-lg shadow-orange-500/30'
+                    : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700'
+                }`}
+              >
+                <FiDollarSign className="w-4 h-4" />
+                <span>Due Customers</span>
+                {activeFilter === 'due' && (
+                  <motion.span
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    className="ml-1 text-xs bg-white/20 px-1.5 py-0.5 rounded-full"
+                  >
+                    {displayTotal}
+                  </motion.span>
+                )}
+              </motion.button>
+
+              <div className="relative">
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => setShowCityFilter(!showCityFilter)}
+                  className={`px-4 py-2 rounded-xl transition-all duration-200 flex items-center space-x-2 ${
+                    activeFilter === 'city'
+                      ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-lg shadow-blue-500/30'
+                      : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700'
+                  }`}
+                >
+                  <FiMapPin className="w-4 h-4" />
+                  <span>City Wise</span>
+                  {activeFilter === 'city' && selectedCity && (
+                    <motion.span
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      className="ml-1 text-xs bg-white/20 px-1.5 py-0.5 rounded-full"
+                    >
+                      {selectedCity}
+                    </motion.span>
+                  )}
+                </motion.button>
+
+                {/* City Dropdown */}
+                <AnimatePresence>
+                  {showCityFilter && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                      transition={{ duration: 0.2 }}
+                      className="absolute top-full left-0 mt-2 w-64 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden z-50"
+                    >
+                      <div className="p-2">
+                        <div className="px-3 py-2 text-xs font-medium text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-700">
+                          Select City
+                        </div>
+                        <div className="max-h-64 overflow-y-auto">
+                          {citiesLoading ? (
+                            <div className="p-4 text-center">
+                              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary-500 mx-auto"></div>
+                            </div>
+                          ) : cities.length === 0 ? (
+                            <div className="p-4 text-center text-gray-500 text-sm">
+                              No cities available
+                            </div>
+                          ) : (
+                            cities.map((city, index) => (
+                              <motion.button
+                                key={index}
+                                initial={{ opacity: 0, x: -10 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                transition={{ delay: index * 0.05 }}
+                                onClick={() => handleCityFilter(city)}
+                                className="w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors flex items-center justify-between"
+                              >
+                                <span className="flex items-center">
+                                  <FiMapPin className="w-3 h-3 mr-2 text-gray-400" />
+                                  {city}
+                                </span>
+                                <span className="text-xs text-gray-400">View</span>
+                              </motion.button>
+                            ))
+                          )}
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+
+              {activeFilter !== 'all' && (
+                <motion.button
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.9 }}
+                  onClick={handleClearFilter}
+                  className="px-4 py-2 rounded-xl bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition-all duration-200 flex items-center space-x-2"
+                >
+                  <FiX className="w-4 h-4" />
+                  <span>Clear Filter</span>
+                </motion.button>
+              )}
+            </motion.div>
+
+            {/* Active Filter Badge */}
+            {activeFilter !== 'all' && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="mt-3"
+              >
+                <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    {activeFilter === 'due' ? (
+                      <FiDollarSign className="w-5 h-5 text-orange-500" />
+                    ) : (
+                      <FiMapPin className="w-5 h-5 text-blue-500" />
+                    )}
+                    <span className="text-sm text-gray-700 dark:text-gray-300">
+                      {activeFilter === 'due' 
+                        ? `Showing ${displayTotal} customer(s) with pending due amount` 
+                        : `Showing ${displayTotal} customer(s) from ${selectedCity}`}
+                    </span>
+                  </div>
+                  <button
+                    onClick={handleClearFilter}
+                    className="text-xs text-blue-600 hover:text-blue-700 dark:text-blue-400 flex items-center space-x-1"
+                  >
+                    <FiX className="w-3 h-3" />
+                    <span>Clear</span>
+                  </button>
+                </div>
+              </motion.div>
+            )}
 
             {/* Filters Section */}
             <motion.div
@@ -912,20 +1291,37 @@ const Customers = () => {
                     </p>
                   </div>
                 </div>
-              ) : safeCustomers.length === 0 ? (
+              ) : displayCustomers.length === 0 ? (
                 <EmptyState
                   icon={FaUsers}
                   title="No customers found"
-                  description="Try adjusting your search or filters, or add your first customer."
+                  description={
+                    activeFilter !== 'all'
+                      ? activeFilter === 'due'
+                        ? "No customers with due amount found. Try adjusting your search or clear the filter."
+                        : `No customers found from ${selectedCity}. Try selecting a different city or clear the filter.`
+                      : "Try adjusting your search or filters, or add your first customer."
+                  }
                   action={
-                    <motion.div
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                    >
-                      <Button onClick={handleAddClick} icon={FiPlus}>
-                        Add Customer
-                      </Button>
-                    </motion.div>
+                    activeFilter === 'all' ? (
+                      <motion.div
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                      >
+                        <Button onClick={handleAddClick} icon={FiPlus}>
+                          Add Customer
+                        </Button>
+                      </motion.div>
+                    ) : (
+                      <motion.div
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                      >
+                        <Button onClick={handleClearFilter} icon={FiX}>
+                          Clear Filter
+                        </Button>
+                      </motion.div>
+                    )
                   }
                 />
               ) : (
@@ -933,26 +1329,25 @@ const Customers = () => {
                   <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg overflow-hidden">
                     <Table
                       columns={columns}
-                      data={safeCustomers}
+                      data={displayCustomers}
                       loading={loading}
                     />
-                    {totalCustomers > pageSize && (
-                    <motion.div
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      transition={{ delay: 0.8 }}
-                      className=""
-                    >
-                      <Pagination
-                        currentPage={currentPage}
-                        totalItems={totalCustomers}
-                        pageSize={pageSize}
-                        onPageChange={handlePageChange}
-                      />
-                    </motion.div>
-                  )}
+                    {displayTotal > pageSize && (
+                      <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: 0.8 }}
+                        className=""
+                      >
+                        <Pagination
+                          currentPage={currentPage}
+                          totalItems={displayTotal}
+                          pageSize={pageSize}
+                          onPageChange={handlePageChange}
+                        />
+                      </motion.div>
+                    )}
                   </div>
-                  
                 </>
               )}
             </motion.div>
