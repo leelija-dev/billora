@@ -399,7 +399,8 @@ class InvoiceController extends Controller
                 'customer_wise_user_' . $user,
                 'single_invoice_' . $user,
                 'with_out_stock_user_' . $user,
-                'gst_collection_user_' . $user
+                'gst_collection_user_' . $user,
+                'bill_customers_user_' . $user
 
             ])->flush();
             Cache::forget("report_{$invoice->user_id}_today_today_page_1");
@@ -781,7 +782,8 @@ class InvoiceController extends Controller
                 'customer_wise_user_' . $request->user_id,
                 'single_invoice_' . $request->user_id,
                 'with_out_stock_user_' . $request->user_id,
-                'gst_collection_user_' . $request->user_id
+                'gst_collection_user_' . $request->user_id,
+                'bill_customers_user_' . $request->user_id
             ])->flush();
             return response()->json([
                 'status'        => true,
@@ -1062,7 +1064,8 @@ class InvoiceController extends Controller
                 'billing_user_' . $request->user_id,
                 'customer_wise_user_' . $request->user_id,
                 'single_invoice_' . $request->user_id,
-                'with_out_stock_user_' . $request->user_id
+                'with_out_stock_user_' . $request->user_id,
+                'bill_customers_user_' . $request->user_id
             ])->flush();
             return response()->json([
                 'status' => true,
@@ -1136,7 +1139,8 @@ class InvoiceController extends Controller
                 'billing_user_' . $user,
                 'customer_wise_user_' . $user,
                 'single_invoice_' . $user,
-                'with_out_stock_user_' . $user
+                'with_out_stock_user_' . $user,
+                'bill_customers_user_' . $user
             ])->flush();
             return response()->json([
                 'status' => true,
@@ -1297,7 +1301,8 @@ class InvoiceController extends Controller
                 'billing_user_' . $user,
                 'customer_wise_user_' . $user,
                 'single_invoice_' . $user,
-                'with_out_stock_user_' . $user
+                'with_out_stock_user_' . $user,
+                'bill_customers_user_' . $user
             ])->flush();
             return response()->json([
                 'status' => true,
