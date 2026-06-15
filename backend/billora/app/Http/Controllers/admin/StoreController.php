@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Auth;
 use App\Models\Customers;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Cache;
+
 class StoreController extends Controller
 {
     public function index(Request $request, $id)
@@ -18,27 +19,54 @@ class StoreController extends Controller
             if ($user != $id) {
                 return response()->json([
                     'status' => false,
+                    'user' => $user,
+                    'id' => $id,
                     'message' => 'Unauthorized, You are not allowed to perform this action',
 
                 ]);
             }
             $startTime = microtime(true);
-            $cacheKey = "store_list_{$user}";
-            $formCache = Cache::tags(['store_user_' . $user])->has($cacheKey);
+            // $cacheKey = "store_list_{$user}_page_" . $request->page ?? 1;
+
             $search = $request->search;
-            $store = Cache::tags(['store_user_'.$user])->remember($cacheKey,600, function () use ($user, $search) {
-               return Store::where('user_id', $user)
-                ->where(function ($query) use ($search) {
-                    $query->where('name', 'like', "%$search%")
-                        ->orWhere('gst', 'like', "%$search%")
-                        ->orWhere('email', 'like', "%$search%")
-                        ->orWhere('mobile', 'like', "%$search%")
-                        ->orWhere('address', 'like', "%$search%")
-                        ->orWhere('city', 'like', "%$search%");
-                })
-                ->orderBy('id', 'desc')
-                ->paginate(15);
-            });
+            $startDate = $request->start_date;
+            $endDate = $request->end_date;
+            $status = $request->status;
+
+            $cacheKey = 'store_list_' . $user . '_' . md5(json_encode([
+                'page' => $request->page ?? 1,
+                'search' => $search,
+                'start_date' => $startDate,
+                'end_date' => $endDate,
+                'status' => $status,
+            ]));
+            $formCache = Cache::tags(['store_user_' . $user])->has($cacheKey);
+            $store = Cache::tags(['store_user_' . $user])->remember(
+                $cacheKey,
+                600,
+                function () use ($user, $search, $startDate, $endDate, $status) {
+
+                    return Store::where('user_id', $user)
+                        ->when($search, function ($q) use ($search) {
+                            $q->where(function ($sub) use ($search) {
+                                $sub->where('name', 'like', "%{$search}%")
+                                    ->orWhere('gst', 'like', "%{$search}%")
+                                    ->orWhere('email', 'like', "%{$search}%")
+                                    ->orWhere('mobile', 'like', "%{$search}%")
+                                    ->orWhere('address', 'like', "%{$search}%")
+                                    ->orWhere('city', 'like', "%{$search}%");
+                            });
+                        })
+                        ->when($startDate && $endDate, function ($q) use ($startDate, $endDate) {
+                            $q->whereBetween('created_at', [$startDate, $endDate]);
+                        })
+                        ->when($status !== null && $status !== '', function ($q) use ($status) {
+                            $q->where('status', $status);
+                        })
+                        ->orderByDesc('id')
+                        ->paginate(15);
+                }
+            );
             // if ($store->isEmpty()) {
             //     return response()->json([
             //         'status' => false,
@@ -118,7 +146,7 @@ class StoreController extends Controller
         }
         try {
             $store = Store::create($store);
-            Cache::tags(['store_user_'.$user,'billing_user_' . $user,'single_invoice_' . $user])->flush();
+            Cache::tags(['store_user_' . $user, 'billing_user_' . $user, 'single_invoice_' . $user])->flush();
             return response()->json([
                 'status' => true,
                 'message' => 'Store Created Successfully',
@@ -137,7 +165,7 @@ class StoreController extends Controller
 
             $userId = Auth::user()->id;
             $customer =  Customers::findOrFail($userId);
-            Cache::tags(['store_user_'.$userId,'billing_user_' . $userId,'single_invoice_' . $userId])->flush();
+            Cache::tags(['store_user_' . $userId, 'billing_user_' . $userId, 'single_invoice_' . $userId])->flush();
             if ($customer->plan_id == null || $customer->is_active == false) {
                 return response()->json([
                     'status' => false,
@@ -183,7 +211,7 @@ class StoreController extends Controller
             'pincode'     => 'nullable',
             'status'  => 'required',
         ]);
-       
+
         try {
             $customer =  Customers::findOrFail($user);
             if ($customer->plan_id == null || $customer->is_active == false) {
@@ -218,7 +246,7 @@ class StoreController extends Controller
                 $data['logo'] = 'logos/' . $fileName;
             }
             $store->update($data);
-            Cache::tags(['store_user_'.$user,'billing_user_'.$user,'single_invoice_' . $user])->flush();
+            Cache::tags(['store_user_' . $user, 'billing_user_' . $user, 'single_invoice_' . $user])->flush();
             return response()->json([
                 'status' => true,
                 'message' => 'Store Updated Successfully',
@@ -244,7 +272,7 @@ class StoreController extends Controller
             }
             $store = Store::where('user_id', $user)->where('id', $id)->firstOrFail();
             $store->delete();
-            Cache::tags(['store_user_'.$user,'billing_user_' . $user,'single_invoice_' . $user])->flush();
+            Cache::tags(['store_user_' . $user, 'billing_user_' . $user, 'single_invoice_' . $user])->flush();
             return response()->json([
                 'status' => true,
                 'message' => 'Store Deleted Successfully',
