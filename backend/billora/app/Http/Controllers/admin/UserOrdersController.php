@@ -215,6 +215,8 @@ class UserOrdersController extends Controller
         try{
         $startTime = microtime(true);
         $search = $request->search;
+        $startDate = $request->start_date;
+        $endDate = $request->end_date;
         $user = Auth::user()->id;
         $cacheKey = "user_orders_" . Auth::user()->id . "_" . md5($request->search . '_' . $request->page);
             
@@ -228,7 +230,7 @@ class UserOrdersController extends Controller
         }
          $formCache = Cache::tags(['order_user_' . Auth::user()->id])->has($cacheKey);
              $tag = "order_user_{$user}";
-        $orderHistory = Cache::tags([$tag])->remember($cacheKey, 600, function () use ($id, $search) {
+        $orderHistory = Cache::tags([$tag])->remember($cacheKey, 600, function () use ($id, $search,$startDate,$endDate) {
         return UserOrders::with(['items.product'])
             ->where('user_id', $id)->orderBy('id','desc')
             ->when($search, function ($query) use ($search) {
@@ -249,7 +251,7 @@ class UserOrdersController extends Controller
                             ->orWhere('payment_method', 'like', "%{$search}%")
                             ->orWhere('total_amount', 'like', "%{$search}%")
                             ->orwhere('paid_amount', 'like', "%{$search}%")
-
+                        
                             // Search by product name
                             ->orWhereHas('items.product', function ($q2) use ($search) {
 
@@ -257,6 +259,10 @@ class UserOrdersController extends Controller
                             });
                     });
                 })
+                 ->when($startDate && $endDate, function ($query) use ($startDate, $endDate) {
+                        $query->whereBetween('created_at', [$startDate, $endDate]);
+                           
+                    })
         
             ->get();
         });
