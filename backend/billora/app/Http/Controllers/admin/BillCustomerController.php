@@ -26,6 +26,7 @@ class BillCustomerController extends Controller
         $search = $request->search;
         $dueCustomer = $request->dueCustomer;
         $customerCity = $request->city;
+        $gst = $request->gst;
         $startTime = microtime(true);
         // $cacheKey ="bill_customers_{$user}";
         $cacheKey = "bill_customers_{$user}_" . md5(
@@ -36,12 +37,12 @@ class BillCustomerController extends Controller
         );
         $fromCache = Cache::tags(['bill_customers_user_' . $user])->has($cacheKey);
         $billCustomer = Cache::tags(['bill_customers_user_' . $user])
-            ->remember($cacheKey, 600, function () use ($id, $search,$dueCustomer,$customerCity) {
+            ->remember($cacheKey, 600, function () use ($id, $search,$dueCustomer,$customerCity,$gst) {
 
                 return BillCustomer::where('admin_id', $id)
-                    ->when($search, function ($query) use ($search,$dueCustomer,$customerCity) {
+                    ->when($search, function ($query) use ($search,$dueCustomer,$customerCity,$gst) {
 
-                        $query->where(function ($q) use ($search,$dueCustomer,$customerCity) {
+                        $query->where(function ($q) use ($search,$dueCustomer,$customerCity,$gst) {
 
                             $q->where('name', 'like', "%{$search}%")
                                 ->orWhere('email', 'like', "%{$search}%")
@@ -59,6 +60,11 @@ class BillCustomerController extends Controller
                             }
                             if($customerCity == true){
                                 $q->orWhere('city', '!=', '');
+                            }
+                            if($gst == true){
+                                $q->orWhere('gst_number', '!=', '');
+                            }elseif($gst == false){
+                                $q->orWhere('gst_number', '==', '');
                             }
                         });
                     })
