@@ -32,18 +32,26 @@ class BillCustomerController extends Controller
         $cacheKey = "bill_customers_{$user}_" . md5(
             json_encode([
                 'search' => $search,
-                'page' => $request->page
+                'page' => $request->page,
+                'dueCustomer' => $dueCustomer,
+                'customerCity' => $customerCity,
+                'gst' => $gst
             ])
         );
         $fromCache = Cache::tags(['bill_customers_user_' . $user])->has($cacheKey);
         $billCustomer = Cache::tags(['bill_customers_user_' . $user])
-            ->remember($cacheKey, 600, function () use ($id, $search,$dueCustomer,$customerCity,$gst) {
+            ->remember($cacheKey, 600, function () use (
+                $id,
+                $search,
+                $dueCustomer,
+                $customerCity,
+                $gst
+            ) {
 
                 return BillCustomer::where('admin_id', $id)
-                    ->when($search, function ($query) use ($search,$dueCustomer,$customerCity,$gst) {
 
-                        $query->where(function ($q) use ($search,$dueCustomer,$customerCity,$gst) {
-
+                    ->when($search, function ($query) use ($search) {
+                        $query->where(function ($q) use ($search) {
                             $q->where('name', 'like', "%{$search}%")
                                 ->orWhere('email', 'like', "%{$search}%")
                                 ->orWhere('phone', 'like', "%{$search}%")
@@ -51,26 +59,34 @@ class BillCustomerController extends Controller
                                 ->orWhere('city', 'like', "%{$search}%")
                                 ->orWhere('due_amount', 'like', "%{$search}%");
 
-                            // exact ID search
                             if (is_numeric($search)) {
                                 $q->orWhere('id', $search);
-                            }
-                            if($dueCustomer == true){
-                                $q->orWhere('due_amount', '>', 0);
-                            }
-                            if($customerCity == true){
-                                $q->orWhere('city', '!=', '');
-                            }
-                            if($gst == true){
-                                $q->orWhere('gst_number', '!=', '');
-                            }elseif($gst == false){
-                                $q->orWhere('gst_number', '==', '');
                             }
                         });
                     })
 
-                    ->latest()
+                    ->when($dueCustomer == 1, function ($query) {
+                        $query->where('due_amount', '>', 0);
+                    })
 
+                    ->when($customerCity, function ($query) {
+                        $query->whereNotNull('city')
+                            ->where('city', '!=', '');
+                    })
+
+                    ->when($gst == 1, function ($query) {
+                        $query->whereNotNull('gst_number')
+                            ->where('gst_number', '!=', '');
+                    })
+
+                    ->when($gst === '0', function ($query) {
+                        $query->where(function ($q) {
+                            $q->whereNull('gst_number')
+                                ->orWhere('gst_number', '');
+                        });
+                    })
+
+                    ->latest()
                     ->paginate(15);
             });
         if ($billCustomer->isEmpty()) {
@@ -131,7 +147,7 @@ class BillCustomerController extends Controller
                     'created_by'    => $data['created_by']
                 ]
             );
-                Cache::tags(['bill_customers_user_' . $user,'billing_user_' . $user,'single_invoice_' . $user])->flush();
+            Cache::tags(['bill_customers_user_' . $user, 'billing_user_' . $user, 'single_invoice_' . $user])->flush();
             return response()->json([
                 'status' => true,
                 'message' => 'Bill Customer Created Successfully',
@@ -144,18 +160,18 @@ class BillCustomerController extends Controller
             ]);
         }
     }
-    public function show($id , Request $request)
+    public function show($id, Request $request)
     {
         try {
             $user = Auth::user()->id;
             //check active plan
             $startTime = microtime(true);
             $cacheKey = "bill_customer_{$id}_" . md5(
-            json_encode([
-                'start_date' => $request->start_date,
-                'end_date' => $request->end_date
-            ])
-        );
+                json_encode([
+                    'start_date' => $request->start_date,
+                    'end_date' => $request->end_date
+                ])
+            );
             $tag = "bill_customer_show_{$user}";
             $fromCache = Cache::tags([$tag])->has($cacheKey);
             $customer =  Customers::findOrFail($user);
@@ -165,26 +181,26 @@ class BillCustomerController extends Controller
                     'message' => 'You do not have any active plan. Please upgrade your plan.'
                 ]);
             }
-             $result = Cache::tags([$tag])->remember($cacheKey, 600, function () use ($id, $user, $request) {
+            $result = Cache::tags([$tag])->remember($cacheKey, 600, function () use ($id, $user, $request) {
 
-            $billCustomer = BillCustomer::where('id', $id)->where('admin_id', $user)->first();
-            // $billCustomer = BillCustomer::with('paymentHistories')->findOrFail($id);
-            $query = BillPaymentHistory::where('admin_id', $user)->where('customer_id', $billCustomer->id);
-            if (request()->start_date) {
-                $query->whereDate('created_at', '>=', request()->start_date);
-            }
+                $billCustomer = BillCustomer::where('id', $id)->where('admin_id', $user)->first();
+                // $billCustomer = BillCustomer::with('paymentHistories')->findOrFail($id);
+                $query = BillPaymentHistory::where('admin_id', $user)->where('customer_id', $billCustomer->id);
+                if (request()->start_date) {
+                    $query->whereDate('created_at', '>=', request()->start_date);
+                }
 
-            if (request()->end_date) {
-                $query->whereDate('created_at', '<=', request()->end_date);
-            }
+                if (request()->end_date) {
+                    $query->whereDate('created_at', '<=', request()->end_date);
+                }
 
-            // $data = $query->latest()->get();
-            $data = $query->orderBy('id', 'desc')->get();
-            return [
-                'customer' => $billCustomer,
-                'payment_history' => $data
-            ];
-             });
+                // $data = $query->latest()->get();
+                $data = $query->orderBy('id', 'desc')->get();
+                return [
+                    'customer' => $billCustomer,
+                    'payment_history' => $data
+                ];
+            });
             if (!$result['customer']) {
                 return response()->json([
                     'status' => false,
@@ -284,7 +300,7 @@ class BillCustomerController extends Controller
         try {
             $billCustomer = BillCustomer::where('id', $id)->where('admin_id', $data['user_id'])->firstOrFail();
             $billCustomer->delete();
-              Cache::tags([
+            Cache::tags([
                 'bill_customers_user_' . $user,
                 'bill_customer_show_' . $user,
                 'billing_user_' . $user,
@@ -342,7 +358,7 @@ class BillCustomerController extends Controller
                 ]);
             }
             $billCustomer->restore();
-              Cache::tags([
+            Cache::tags([
                 'bill_customers_user_' . $user,
                 'bill_customer_show_' . $user,
                 'billing_user_' . $user,
@@ -380,7 +396,7 @@ class BillCustomerController extends Controller
                 ]);
             }
             $billCustomer->forceDelete();
-              Cache::tags([
+            Cache::tags([
                 'bill_customers_user_' . $user,
                 'bill_customer_show_' . $user,
                 'billing_user_' . $user,
