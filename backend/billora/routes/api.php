@@ -284,4 +284,5 @@ Route::middleware('auth:sanctum')->prefix('recent-plan')->group(function (){
 Route::middleware('auth:sanctum')->prefix('social')->group(function () {
     Route::get('/facebook/redirect', [SocialConnectController::class, 'redirect']);
     Route::get('/facebook/callback', [SocialConnectController::class, 'callback']);
+    Route::put('/facebook/status/{id}',[SocialConnectController::class,'updateSocialConnection']);
 });
