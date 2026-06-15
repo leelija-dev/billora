@@ -89,8 +89,8 @@ class ProductsController extends Controller
                         };
                     }
                     $query = Products::with($relations)
-                        ->where('user_id', $user)
-                        ->where('is_active', true);
+                        ->where('user_id', $user);
+                        // ->where('is_active', true);
                     // Search filter
                     if ($request->has('search') && !empty($request->search)) {
 
