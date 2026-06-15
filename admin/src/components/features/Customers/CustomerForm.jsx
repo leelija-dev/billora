@@ -45,7 +45,6 @@ const CustomerForm = ({ isEditForm, initialData, mode, onSubmit, onCancel, isSub
     user_id: currentUserId, // Use user_id to match backend expectation
     admin_id: currentUserId, // Keep for backward compatibility
     created_by: currentUserId,
-    status: 'active',
     ...initialData
   })
 
@@ -73,7 +72,7 @@ const CustomerForm = ({ isEditForm, initialData, mode, onSubmit, onCancel, isSub
         address: initialData.address || '',
         city: initialData.city || '',
         gst_number: initialData.gst_number || '',
-        status: initialData.status || 'active',
+       
         user_id: initialData.user_id || initialData.admin_id || currentUserId,
         admin_id: initialData.admin_id || currentUserId,
         created_by: initialData.created_by || currentUserId,
@@ -314,7 +313,7 @@ const CustomerForm = ({ isEditForm, initialData, mode, onSubmit, onCancel, isSub
         email: formData.email?.trim() || null,
         city: formData.city?.trim() || null,
         gst_number: formData.gst_number?.trim() || null,
-        status: formData.status,
+       
         user_id: formData.admin_id, // Backend expects user_id, not admin_id
         created_by: formData.created_by,
       }
@@ -567,19 +566,7 @@ const CustomerForm = ({ isEditForm, initialData, mode, onSubmit, onCancel, isSub
             </p>
           </div>
 
-          {/* Status */}
-          <Select
-            label="Status"
-            name="status"
-            value={formData.status}
-            onChange={handleSelectChange}
-            options={[
-              { value: 'active', label: 'Active' },
-              { value: 'inactive', label: 'Inactive' },
-              { value: 'blocked', label: 'Blocked' },
-            ]}
-            disabled={isSubmitting}
-          />
+          
         </div>
       </div>
 

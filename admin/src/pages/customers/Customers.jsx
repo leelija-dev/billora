@@ -5,21 +5,16 @@ import {
   FiSearch,
   FiEdit2,
   FiTrash2,
-  FiFilter,
   FiDownload,
   FiRefreshCw,
   FiMail,
   FiPhone,
   FiMapPin,
   FiCalendar,
-  FiDollarSign,
-  FiShoppingBag,
-  FiMoreVertical,
   FiUserCheck,
   FiUserX,
   FiUserMinus,
   FiX,
-  FiStar,
   FiArrowLeft,
   FiAlertCircle,
   FiCreditCard,
@@ -30,11 +25,9 @@ import { customerAPI } from "../../services/customerService";
 import Button from "../../components/common/Button/Button";
 import Input from "../../components/common/Input/Input";
 import Table from "../../components/common/Table/Table";
-import StatusBadge from "../../components/common/StatusBadge/StatusBadge";
 import Pagination from "../../components/common/Pagination/Pagination";
 import EmptyState from "../../components/common/EmptyState/EmptyState";
 import CustomerForm from "../../components/features/Customers/CustomerForm";
-import Select from "../../components/common/Select/Select";
 import { FaRupeeSign, FaUser, FaUsers } from "react-icons/fa";
 import toast from "react-hot-toast";
 import { useAuthStore } from "../../store/authStore";
@@ -64,56 +57,18 @@ const Customers = () => {
   const [selectedCustomer, setSelectedCustomer] = useState(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [searchTerm, setSearchTerm] = useState(filters.search || "");
-  const [showFilters, setShowFilters] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [selectedCustomers, setSelectedCustomers] = useState([]);
-  const [viewMode, setViewMode] = useState("table");
   const [formSubmitting, setFormSubmitting] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
   const [pageLoading, setPageLoading] = useState(false);
   const [paymentAmount, setPaymentAmount] = useState("");
   const [paymentError, setPaymentError] = useState("");
-  
-  // New filter states
-  const [activeFilter, setActiveFilter] = useState('all'); // 'all', 'due', 'city'
-  const [showCityFilter, setShowCityFilter] = useState(false);
-  const [cities, setCities] = useState([]);
-  const [citiesLoading, setCitiesLoading] = useState(false);
-  const [selectedCity, setSelectedCity] = useState('');
+
+  // Filter states
+  const [activeFilter, setActiveFilter] = useState("all"); // 'all', 'due', 'city'
   const [filteredCustomers, setFilteredCustomers] = useState([]);
   const [filteredTotal, setFilteredTotal] = useState(0);
-
-  // Fetch cities on component mount
-  useEffect(() => {
-    const fetchCities = async () => {
-      setCitiesLoading(true);
-      try {
-        const { user } = useAuthStore.getState();
-        if (user?.id) {
-          const response = await customerAPI.getUniqueCities(user.id);
-          let citiesArray = [];
-          if (response?.data?.data && Array.isArray(response.data.data)) {
-            citiesArray = response.data.data;
-          } else if (Array.isArray(response?.data)) {
-            citiesArray = response.data;
-          } else if (response?.data && typeof response.data === 'object') {
-            for (const key in response.data) {
-              if (Array.isArray(response.data[key])) {
-                citiesArray = response.data[key];
-                break;
-              }
-            }
-          }
-          setCities(citiesArray);
-        }
-      } catch (error) {
-        console.error('Failed to fetch cities:', error);
-      } finally {
-        setCitiesLoading(false);
-      }
-    };
-    fetchCities();
-  }, []);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -128,32 +83,38 @@ const Customers = () => {
 
   useEffect(() => {
     const debounceTimer = setTimeout(() => {
-      if (activeFilter === 'all') {
+      if (activeFilter === "all") {
         setFilters({ search: searchTerm });
-      } else if (activeFilter === 'due') {
+      } else if (activeFilter === "due") {
         handleDueFilter();
-      } else if (activeFilter === 'city' && selectedCity) {
-        handleCityFilter(selectedCity);
+      } else if (activeFilter === "city") {
+        handleCityFilter();
       }
     }, 500);
 
     return () => clearTimeout(debounceTimer);
   }, [searchTerm]);
 
-  // Handle due filter
+  // Handle due filter - customers with due amount > 0
   const handleDueFilter = async () => {
     setPageLoading(true);
-    setActiveFilter('due');
-    setSelectedCity('');
+    setActiveFilter("due");
     try {
       const { user } = useAuthStore.getState();
       if (user?.id) {
-        const response = await customerAPI.getDueCustomers(user.id, searchTerm, 1);
+        const response = await customerAPI.getDueCustomers(
+          user.id,
+          searchTerm,
+          1,
+        );
         let customersArray = [];
         let total = 0;
-        
+
         // Handle nested response structure
-        if (response?.data?.data?.data && Array.isArray(response.data.data.data)) {
+        if (
+          response?.data?.data?.data &&
+          Array.isArray(response.data.data.data)
+        ) {
           customersArray = response.data.data.data;
           total = response.data.data.total || customersArray.length;
         } else if (response?.data?.data && Array.isArray(response.data.data)) {
@@ -162,7 +123,7 @@ const Customers = () => {
         } else if (Array.isArray(response?.data)) {
           customersArray = response.data;
           total = customersArray.length;
-        } else if (response?.data && typeof response.data === 'object') {
+        } else if (response?.data && typeof response.data === "object") {
           for (const key in response.data) {
             if (Array.isArray(response.data[key])) {
               customersArray = response.data[key];
@@ -171,19 +132,19 @@ const Customers = () => {
             }
           }
         }
-        
+
         if (!Array.isArray(customersArray)) {
           customersArray = [];
           total = 0;
         }
-        
+
         setFilteredCustomers(customersArray);
         setFilteredTotal(total);
         toast.success(`Found ${total} customer(s) with due amount`);
       }
     } catch (error) {
-      console.error('Failed to fetch due customers:', error);
-      toast.error('Failed to fetch due customers');
+      console.error("Failed to fetch due customers:", error);
+      toast.error("Failed to fetch due customers");
       setFilteredCustomers([]);
       setFilteredTotal(0);
     } finally {
@@ -191,21 +152,27 @@ const Customers = () => {
     }
   };
 
-  // Handle city filter
-  const handleCityFilter = async (city) => {
+  // Handle city filter - customers who have a city (non-null/not empty)
+  const handleCityFilter = async () => {
     setPageLoading(true);
-    setActiveFilter('city');
-    setSelectedCity(city);
-    setShowCityFilter(false);
+    setActiveFilter("city");
     try {
       const { user } = useAuthStore.getState();
       if (user?.id) {
-        const response = await customerAPI.getCustomersByCity(user.id, city, searchTerm, 1);
+        const response = await customerAPI.getCustomersByCity(
+          user.id,
+          1,
+          searchTerm,
+          1,
+        );
         let customersArray = [];
         let total = 0;
-        
+
         // Handle nested response structure
-        if (response?.data?.data?.data && Array.isArray(response.data.data.data)) {
+        if (
+          response?.data?.data?.data &&
+          Array.isArray(response.data.data.data)
+        ) {
           customersArray = response.data.data.data;
           total = response.data.data.total || customersArray.length;
         } else if (response?.data?.data && Array.isArray(response.data.data)) {
@@ -214,7 +181,7 @@ const Customers = () => {
         } else if (Array.isArray(response?.data)) {
           customersArray = response.data;
           total = customersArray.length;
-        } else if (response?.data && typeof response.data === 'object') {
+        } else if (response?.data && typeof response.data === "object") {
           for (const key in response.data) {
             if (Array.isArray(response.data[key])) {
               customersArray = response.data[key];
@@ -223,19 +190,19 @@ const Customers = () => {
             }
           }
         }
-        
+
         if (!Array.isArray(customersArray)) {
           customersArray = [];
           total = 0;
         }
-        
+
         setFilteredCustomers(customersArray);
         setFilteredTotal(total);
-        toast.success(`Found ${total} customer(s) from ${city}`);
+        toast.success(`Found ${total} customer(s) with city information`);
       }
     } catch (error) {
-      console.error('Failed to fetch city customers:', error);
-      toast.error('Failed to fetch city customers');
+      console.error("Failed to fetch customers with city:", error);
+      toast.error("Failed to fetch customers with city");
       setFilteredCustomers([]);
       setFilteredTotal(0);
     } finally {
@@ -245,12 +212,11 @@ const Customers = () => {
 
   // Clear all filters
   const handleClearFilter = () => {
-    setActiveFilter('all');
-    setSelectedCity('');
-    setSearchTerm('');
-    setFilters({ search: '', status: '' });
-    fetchCustomers(1, '');
-    toast.success('All filters cleared');
+    setActiveFilter("all");
+    setSearchTerm("");
+    setFilters({ search: "" });
+    fetchCustomers(1, "");
+    toast.success("All filters cleared");
   };
 
   const handleViewDetails = (customer) => {
@@ -287,45 +253,45 @@ const Customers = () => {
     if (!amount || amount === "") {
       return "Payment amount is required";
     }
-    
+
     const numAmount = parseFloat(amount);
     const dueAmount = parseFloat(selectedCustomer?.due_amount || 0);
-    
+
     if (isNaN(numAmount)) {
       return "Please enter a valid number";
     }
-    
+
     if (numAmount <= 0) {
       return "Payment amount must be greater than zero";
     }
-    
+
     if (numAmount > dueAmount) {
       return `Payment amount cannot exceed due amount of ₹${dueAmount.toFixed(2)}`;
     }
-    
+
     return "";
   };
 
   // Handle payment amount change
   const handlePaymentAmountChange = (e) => {
     let value = e.target.value;
-    
+
     // Remove any non-numeric characters except decimal point
     value = value.replace(/[^0-9.]/g, "");
-    
+
     // Ensure only one decimal point
     const parts = value.split(".");
     if (parts.length > 2) {
       value = parts[0] + "." + parts.slice(1).join("");
     }
-    
+
     // Limit to 2 decimal places
     if (parts[1] && parts[1].length > 2) {
       value = parts[0] + "." + parts[1].substring(0, 2);
     }
-    
+
     setPaymentAmount(value);
-    
+
     // Validate on change
     const error = validatePaymentAmount(value);
     setPaymentError(error);
@@ -342,7 +308,7 @@ const Customers = () => {
 
     const amount = parseFloat(paymentAmount);
     const dueAmount = parseFloat(selectedCustomer?.due_amount || 0);
-    
+
     // Double-check validation
     if (amount > dueAmount) {
       const errorMsg = `Payment amount cannot exceed due amount of ₹${dueAmount.toFixed(2)}`;
@@ -353,24 +319,28 @@ const Customers = () => {
 
     try {
       setFormSubmitting(true);
-      await customerAPI.makeDuePayment(selectedCustomer.id, { due_payment: paymentAmount });
-      
+      await customerAPI.makeDuePayment(selectedCustomer.id, {
+        due_payment: paymentAmount,
+      });
+
       // Clear cache to force fresh data fetch
       const { clearCache } = useCustomerStore.getState();
       clearCache();
-      
+
       // Fetch fresh data based on current filter
-      if (activeFilter === 'all') {
+      if (activeFilter === "all") {
         await fetchCustomers(currentPage, filters.search);
-      } else if (activeFilter === 'due') {
+      } else if (activeFilter === "due") {
         await handleDueFilter();
-      } else if (activeFilter === 'city' && selectedCity) {
-        await handleCityFilter(selectedCity);
+      } else if (activeFilter === "city") {
+        await handleCityFilter();
       }
-      
+
       // Show success message
-      toast.success(`Payment of ₹${parseFloat(paymentAmount).toFixed(2)} processed successfully!`);
-      
+      toast.success(
+        `Payment of ₹${parseFloat(paymentAmount).toFixed(2)} processed successfully!`,
+      );
+
       // Close modal and reset state
       setShowPaymentModal(false);
       setSelectedCustomer(null);
@@ -378,7 +348,10 @@ const Customers = () => {
       setPaymentError("");
     } catch (error) {
       console.error("Failed to process payment:", error);
-      toast.error(error.response?.data?.message || "Failed to process payment. Please try again.");
+      toast.error(
+        error.response?.data?.message ||
+          "Failed to process payment. Please try again.",
+      );
     } finally {
       setFormSubmitting(false);
     }
@@ -397,18 +370,21 @@ const Customers = () => {
         toast.success("Customer created successfully!");
       }
       // Refresh the customer list based on current filter
-      if (activeFilter === 'all') {
+      if (activeFilter === "all") {
         await fetchCustomers();
-      } else if (activeFilter === 'due') {
+      } else if (activeFilter === "due") {
         await handleDueFilter();
-      } else if (activeFilter === 'city' && selectedCity) {
-        await handleCityFilter(selectedCity);
+      } else if (activeFilter === "city") {
+        await handleCityFilter();
       }
       // Hide the form
       handleCancelForm();
     } catch (error) {
       console.error("Error saving customer:", error);
-      toast.error(error.response?.data?.message || "Failed to save customer. Please try again.");
+      toast.error(
+        error.response?.data?.message ||
+          "Failed to save customer. Please try again.",
+      );
     } finally {
       setFormSubmitting(false);
     }
@@ -420,16 +396,19 @@ const Customers = () => {
       toast.success("Customer deleted successfully!");
       setShowDeleteConfirm(false);
       setSelectedCustomer(null);
-      if (activeFilter === 'all') {
+      if (activeFilter === "all") {
         fetchCustomers(currentPage);
-      } else if (activeFilter === 'due') {
+      } else if (activeFilter === "due") {
         handleDueFilter();
-      } else if (activeFilter === 'city' && selectedCity) {
-        handleCityFilter(selectedCity);
+      } else if (activeFilter === "city") {
+        handleCityFilter();
       }
     } catch (error) {
       console.error("Failed to delete customer:", error);
-      toast.error(error.response?.data?.message || "Failed to delete customer. Please try again.");
+      toast.error(
+        error.response?.data?.message ||
+          "Failed to delete customer. Please try again.",
+      );
     }
   };
 
@@ -438,15 +417,17 @@ const Customers = () => {
       for (const id of selectedCustomers) {
         await deleteCustomer(id);
       }
-      toast.success(`${selectedCustomers.length} customers deleted successfully!`);
+      toast.success(
+        `${selectedCustomers.length} customers deleted successfully!`,
+      );
       setSelectedCustomers([]);
       setShowDeleteConfirm(false);
-      if (activeFilter === 'all') {
+      if (activeFilter === "all") {
         fetchCustomers(currentPage);
-      } else if (activeFilter === 'due') {
+      } else if (activeFilter === "due") {
         handleDueFilter();
-      } else if (activeFilter === 'city' && selectedCity) {
-        handleCityFilter(selectedCity);
+      } else if (activeFilter === "city") {
+        handleCityFilter();
       }
     } catch (error) {
       console.error("Failed to delete customers:", error);
@@ -456,27 +437,23 @@ const Customers = () => {
 
   const handlePageChange = (page) => {
     setPageLoading(true);
-    if (activeFilter === 'all') {
+    if (activeFilter === "all") {
       fetchCustomers(page).finally(() => {
         setPageLoading(false);
       });
-    } else if (activeFilter === 'due') {
-      // Implement pagination for due filter if needed
-      setPageLoading(false);
-    } else if (activeFilter === 'city' && selectedCity) {
-      // Implement pagination for city filter if needed
+    } else {
       setPageLoading(false);
     }
   };
 
   const handleRefresh = async () => {
     setRefreshing(true);
-    if (activeFilter === 'all') {
+    if (activeFilter === "all") {
       await fetchCustomers();
-    } else if (activeFilter === 'due') {
+    } else if (activeFilter === "due") {
       await handleDueFilter();
-    } else if (activeFilter === 'city' && selectedCity) {
-      await handleCityFilter(selectedCity);
+    } else if (activeFilter === "city") {
+      await handleCityFilter();
     }
     setRefreshing(false);
     toast.success("Customer list refreshed!");
@@ -484,8 +461,8 @@ const Customers = () => {
 
   const clearFilters = () => {
     setSearchTerm("");
-    setFilters({ search: "", status: "" });
-    if (activeFilter !== 'all') {
+    setFilters({ search: "" });
+    if (activeFilter !== "all") {
       handleClearFilter();
     }
     toast.success("Filters cleared!");
@@ -500,7 +477,8 @@ const Customers = () => {
   };
 
   const selectAllCustomers = () => {
-    const currentCustomers = activeFilter === 'all' ? safeCustomers : filteredCustomers;
+    const currentCustomers =
+      activeFilter === "all" ? safeCustomers : filteredCustomers;
     if (selectedCustomers.length === currentCustomers.length) {
       setSelectedCustomers([]);
     } else {
@@ -509,21 +487,16 @@ const Customers = () => {
   };
 
   // Get current display customers
-  const displayCustomers = activeFilter === 'all' ? safeCustomers : filteredCustomers;
-  const displayTotal = activeFilter === 'all' ? totalCustomers : filteredTotal;
+  const displayCustomers =
+    activeFilter === "all" ? safeCustomers : filteredCustomers;
+  const displayTotal =
+    activeFilter === "all" ? totalCustomers : filteredTotal;
 
   // Calculate stats
   const stats = {
     total: displayCustomers.length,
-    active: displayCustomers.filter((c) => c?.status === "active").length,
-    inactive: displayCustomers.filter((c) => c?.status === "inactive").length,
-    blocked: displayCustomers.filter((c) => c?.status === "blocked").length,
     totalSpent: displayCustomers.reduce(
       (sum, c) => sum + (parseFloat(c?.due_amount) || 0),
-      0,
-    ),
-    totalOrders: displayCustomers.reduce(
-      (sum, c) => sum + (c?.total_orders || 0),
       0,
     ),
   };
@@ -549,7 +522,9 @@ const Customers = () => {
               transition={{ duration: 0.5, delay: delay + 0.3 }}
               className="text-2xl font-bold text-gray-900 dark:text-white mt-2"
             >
-              {value}
+              {typeof value === "string" && value.startsWith("₹")
+                ? value
+                : `₹${value}`}
             </motion.p>
             {subtitle && (
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
@@ -612,18 +587,6 @@ const Customers = () => {
             <div className="w-10 h-10 bg-gradient-to-br from-primary-500 to-secondary-500 rounded-full flex items-center justify-center text-white font-bold text-lg shadow-lg">
               {value?.charAt(0) || "U"}
             </div>
-            <motion.div
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              transition={{ delay: 0.2 }}
-              className={`absolute -bottom-1 -right-1 w-3 h-3 rounded-full border-2 border-white dark:border-gray-800 ${
-                row?.status === "active"
-                  ? "bg-green-500"
-                  : row?.status === "blocked"
-                    ? "bg-red-500"
-                    : "bg-yellow-500"
-              }`}
-            />
           </motion.div>
           <div>
             <p className="font-medium text-gray-900 dark:text-white">{value}</p>
@@ -674,8 +637,9 @@ const Customers = () => {
       accessor: "due_amount",
       cell: (value) => (
         <motion.div whileHover={{ scale: 1.05 }} className="flex items-center">
+          <FaRupeeSign className="w-3 h-3 mr-1 text-gray-500" />
           <span className="text-sm font-semibold text-gray-900 dark:text-white">
-            ₹{parseFloat(value || 0).toFixed(2)}
+            {parseFloat(value || 0).toFixed(2)}
           </span>
         </motion.div>
       ),
@@ -690,6 +654,7 @@ const Customers = () => {
             {value
               ? new Date(value).toLocaleDateString("en-US", {
                   month: "short",
+                  day: "numeric",
                   year: "numeric",
                 })
               : "N/A"}
@@ -780,10 +745,8 @@ const Customers = () => {
           </div>
 
           <div className="flex items-center space-x-3">
-            {/* Only show these buttons when not in form mode */}
             {!showAddForm && !showEditForm && (
               <>
-                {/* Refresh Button */}
                 <motion.button
                   whileHover={{ scale: 1.1, rotate: 90 }}
                   whileTap={{ scale: 0.9 }}
@@ -796,7 +759,6 @@ const Customers = () => {
                   />
                 </motion.button>
 
-                {/* Export Button */}
                 <motion.button
                   whileHover={{ scale: 1.1, y: -2 }}
                   whileTap={{ scale: 0.9 }}
@@ -806,7 +768,6 @@ const Customers = () => {
                   <FiDownload className="w-5 h-5 text-gray-600 dark:text-gray-300" />
                 </motion.button>
 
-                {/* Trashed Customers Button */}
                 <motion.button
                   whileHover={{ scale: 1.1, y: -2 }}
                   whileTap={{ scale: 0.9 }}
@@ -820,7 +781,6 @@ const Customers = () => {
               </>
             )}
 
-            {/* Add Customer Button or Back Button */}
             {!showAddForm && !showEditForm ? (
               <motion.div
                 whileHover={{ scale: 1.05 }}
@@ -854,7 +814,6 @@ const Customers = () => {
           </div>
         </motion.div>
 
-        {/* Conditional rendering: Show form or table/search */}
         {showAddForm || showEditForm ? (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -877,11 +836,10 @@ const Customers = () => {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6"
+              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
             >
               {initialLoading ? (
-                // Loading skeleton for stats cards
-                Array.from({ length: 5 }).map((_, index) => (
+                Array.from({ length: 3 }).map((_, index) => (
                   <motion.div
                     key={index}
                     initial={{ opacity: 0, y: 20 }}
@@ -906,316 +864,174 @@ const Customers = () => {
                     delay={0.1}
                   />
                   <StatCard
-                    title="Active"
-                    value={stats.active}
-                    icon={FiUserCheck}
-                    color="from-green-500 to-emerald-500"
-                    subtitle={`${((stats.active / stats.total) * 100 || 0).toFixed(1)}% of total`}
-                    delay={0.2}
-                  />
-                  <StatCard
-                    title="Inactive"
-                    value={stats.inactive}
-                    icon={FiUserMinus}
-                    color="from-yellow-500 to-orange-500"
-                    delay={0.3}
-                  />
-                  <StatCard
-                    title="Blocked"
-                    value={stats.blocked}
-                    icon={FiUserX}
-                    color="from-red-500 to-pink-500"
-                    delay={0.4}
-                  />
-                  <StatCard
-                    title="Total Due"
-                    value={`₹${stats.totalSpent.toFixed(2)}`}
-                    icon={FiDollarSign}
+                    title="Total Due Amount"
+                    value={`${stats.totalSpent.toFixed(2)}`}
+                    icon={FaRupeeSign}
                     color="from-indigo-500 to-purple-500"
                     subtitle={`Avg: ₹${(stats.totalSpent / (stats.total || 1)).toFixed(2)}/customer`}
-                    delay={0.5}
+                    delay={0.2}
                   />
                 </>
               )}
+            </motion.div>
+
+            {/* Search Section */}
+            <motion.div
+              initial={{ y: 20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.55, type: "spring", stiffness: 100 }}
+              className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6"
+            >
+              <div className="relative">
+                <FiSearch className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 text-lg" />
+                <Input
+                  type="text"
+                  placeholder="Search customers by name, email, phone, or address..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-12 py-3 text-base"
+                />
+              </div>
             </motion.div>
 
             {/* Quick Filter Buttons */}
             <motion.div
               initial={{ y: 20, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
-              transition={{ delay: 0.55 }}
-              className="flex flex-wrap gap-3"
+              transition={{ delay: 0.6 }}
+              className="flex flex-wrap gap-3 items-center justify-between"
             >
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => {
-                  setActiveFilter('all');
-                  setSelectedCity('');
-                  fetchCustomers(1, searchTerm);
-                }}
-                className={`px-4 py-2 rounded-xl transition-all duration-200 flex items-center space-x-2 ${
-                  activeFilter === 'all'
-                    ? 'bg-gradient-to-r from-primary-500 to-primary-600 text-white shadow-lg shadow-primary-500/30'
-                    : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700'
-                }`}
-              >
-                <FaUsers className="w-4 h-4" />
-                <span>All Customers</span>
-                {activeFilter === 'all' && (
-                  <motion.span
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    className="ml-1 text-xs bg-white/20 px-1.5 py-0.5 rounded-full"
-                  >
-                    {displayTotal}
-                  </motion.span>
-                )}
-              </motion.button>
+              <div className="flex flex-wrap gap-3 items-center">
+                <span className="text-sm font-medium text-gray-600 dark:text-gray-400 mr-2">
+                  Quick Filters:
+                </span>
 
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={handleDueFilter}
-                className={`px-4 py-2 rounded-xl transition-all duration-200 flex items-center space-x-2 ${
-                  activeFilter === 'due'
-                    ? 'bg-gradient-to-r from-orange-500 to-red-500 text-white shadow-lg shadow-orange-500/30'
-                    : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700'
-                }`}
-              >
-                <FiDollarSign className="w-4 h-4" />
-                <span>Due Customers</span>
-                {activeFilter === 'due' && (
-                  <motion.span
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    className="ml-1 text-xs bg-white/20 px-1.5 py-0.5 rounded-full"
-                  >
-                    {displayTotal}
-                  </motion.span>
-                )}
-              </motion.button>
-
-              <div className="relative">
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
-                  onClick={() => setShowCityFilter(!showCityFilter)}
+                  onClick={() => {
+                    setActiveFilter("all");
+                    fetchCustomers(1, searchTerm);
+                  }}
                   className={`px-4 py-2 rounded-xl transition-all duration-200 flex items-center space-x-2 ${
-                    activeFilter === 'city'
-                      ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-lg shadow-blue-500/30'
-                      : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700'
+                    activeFilter === "all"
+                      ? "bg-gradient-to-r from-primary-500 to-primary-600 text-white shadow-md"
+                      : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
                   }`}
                 >
-                  <FiMapPin className="w-4 h-4" />
-                  <span>City Wise</span>
-                  {activeFilter === 'city' && selectedCity && (
+                  <FaUsers className="w-4 h-4" />
+                  <span>All Customers</span>
+                  {activeFilter === "all" && (
                     <motion.span
                       initial={{ scale: 0 }}
                       animate={{ scale: 1 }}
                       className="ml-1 text-xs bg-white/20 px-1.5 py-0.5 rounded-full"
                     >
-                      {selectedCity}
+                      {displayTotal}
                     </motion.span>
                   )}
                 </motion.button>
 
-                {/* City Dropdown */}
-                <AnimatePresence>
-                  {showCityFilter && (
-                    <motion.div
-                      initial={{ opacity: 0, y: -10, scale: 0.95 }}
-                      animate={{ opacity: 1, y: 0, scale: 1 }}
-                      exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                      transition={{ duration: 0.2 }}
-                      className="absolute top-full left-0 mt-2 w-64 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden z-50"
-                    >
-                      <div className="p-2">
-                        <div className="px-3 py-2 text-xs font-medium text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-700">
-                          Select City
-                        </div>
-                        <div className="max-h-64 overflow-y-auto">
-                          {citiesLoading ? (
-                            <div className="p-4 text-center">
-                              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary-500 mx-auto"></div>
-                            </div>
-                          ) : cities.length === 0 ? (
-                            <div className="p-4 text-center text-gray-500 text-sm">
-                              No cities available
-                            </div>
-                          ) : (
-                            cities.map((city, index) => (
-                              <motion.button
-                                key={index}
-                                initial={{ opacity: 0, x: -10 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                transition={{ delay: index * 0.05 }}
-                                onClick={() => handleCityFilter(city)}
-                                className="w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors flex items-center justify-between"
-                              >
-                                <span className="flex items-center">
-                                  <FiMapPin className="w-3 h-3 mr-2 text-gray-400" />
-                                  {city}
-                                </span>
-                                <span className="text-xs text-gray-400">View</span>
-                              </motion.button>
-                            ))
-                          )}
-                        </div>
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-
-              {activeFilter !== 'all' && (
                 <motion.button
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.9 }}
-                  onClick={handleClearFilter}
-                  className="px-4 py-2 rounded-xl bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition-all duration-200 flex items-center space-x-2"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={handleDueFilter}
+                  className={`px-4 py-2 rounded-xl transition-all duration-200 flex items-center space-x-2 ${
+                    activeFilter === "due"
+                      ? "bg-gradient-to-r from-orange-500 to-red-500 text-white shadow-md"
+                      : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
+                  }`}
                 >
-                  <FiX className="w-4 h-4" />
-                  <span>Clear Filter</span>
+                  <FaRupeeSign className="w-4 h-4" />
+                  <span>Due Customers</span>
+                  {activeFilter === "due" && (
+                    <motion.span
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      className="ml-1 text-xs bg-white/20 px-1.5 py-0.5 rounded-full"
+                    >
+                      {displayTotal}
+                    </motion.span>
+                  )}
                 </motion.button>
-              )}
+
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={handleCityFilter}
+                  className={`px-4 py-2 rounded-xl transition-all duration-200 flex items-center space-x-2 ${
+                    activeFilter === "city"
+                      ? "bg-gradient-to-r from-green-500 to-teal-500 text-white shadow-md"
+                      : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
+                  }`}
+                >
+                  <FiMapPin className="w-4 h-4" />
+                  <span>Has City</span>
+                  {activeFilter === "city" && (
+                    <motion.span
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      className="ml-1 text-xs bg-white/20 px-1.5 py-0.5 rounded-full"
+                    >
+                      {displayTotal}
+                    </motion.span>
+                  )}
+                </motion.button>
+
+                {(activeFilter !== "all" || searchTerm) && (
+                  <motion.button
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.9 }}
+                    onClick={clearFilters}
+                    className="px-3 py-2 rounded-xl bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30 transition-all duration-200 flex items-center space-x-1 text-sm"
+                  >
+                    <FiX className="w-4 h-4" />
+                    <span>Clear All Filters</span>
+                  </motion.button>
+                )}
+              </div>
             </motion.div>
 
             {/* Active Filter Badge */}
-            {activeFilter !== 'all' && (
+            {activeFilter !== "all" && (
               <motion.div
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
                 className="mt-3"
               >
-                <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
-                    {activeFilter === 'due' ? (
-                      <FiDollarSign className="w-5 h-5 text-orange-500" />
-                    ) : (
-                      <FiMapPin className="w-5 h-5 text-blue-500" />
-                    )}
-                    <span className="text-sm text-gray-700 dark:text-gray-300">
-                      {activeFilter === 'due' 
-                        ? `Showing ${displayTotal} customer(s) with pending due amount` 
-                        : `Showing ${displayTotal} customer(s) from ${selectedCity}`}
-                    </span>
+                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border-l-4 border-blue-500 rounded-lg p-3 flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+                      {activeFilter === "due" ? (
+                        <FaRupeeSign className="w-4 h-4 text-orange-600 dark:text-orange-400" />
+                      ) : (
+                        <FiMapPin className="w-4 h-4 text-green-600 dark:text-green-400" />
+                      )}
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-gray-900 dark:text-white">
+                        {activeFilter === "due"
+                          ? "Due Customers Filter Active"
+                          : "Customers With City Filter Active"}
+                      </p>
+                      <p className="text-xs text-gray-600 dark:text-gray-400">
+                        {activeFilter === "due"
+                          ? `Showing ${displayTotal} customer(s) with pending due amount`
+                          : `Showing ${displayTotal} customer(s) who have city information`}
+                      </p>
+                    </div>
                   </div>
                   <button
                     onClick={handleClearFilter}
-                    className="text-xs text-blue-600 hover:text-blue-700 dark:text-blue-400 flex items-center space-x-1"
+                    className="px-3 py-1.5 text-xs bg-white dark:bg-gray-800 text-blue-600 dark:text-blue-400 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center space-x-1 transition-colors"
                   >
                     <FiX className="w-3 h-3" />
-                    <span>Clear</span>
+                    <span>Remove Filter</span>
                   </button>
                 </div>
               </motion.div>
             )}
-
-            {/* Filters Section */}
-            <motion.div
-              initial={{ y: 20, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ delay: 0.6, type: "spring", stiffness: 100 }}
-              className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6"
-            >
-              {initialLoading ? (
-                // Loading skeleton for filters
-                <div className="animate-pulse">
-                  <div className="flex flex-col sm:flex-row gap-4">
-                    <div className="flex-1">
-                      <div className="h-10 bg-gray-200 dark:bg-gray-700 rounded-xl"></div>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <div className="h-10 w-24 bg-gray-200 dark:bg-gray-700 rounded-xl"></div>
-                      <div className="h-10 w-10 bg-gray-200 dark:bg-gray-700 rounded-xl"></div>
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <>
-                  <div className="flex flex-col sm:flex-row gap-4">
-                    <div className="flex-1 relative">
-                      <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                      <Input
-                        type="text"
-                        placeholder="Search customers by name, email, phone, or address..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="pl-10"
-                      />
-                    </div>
-
-                    <div className="flex items-center space-x-2">
-                      <motion.button
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        onClick={() => setShowFilters(!showFilters)}
-                        className={`px-4 py-2 rounded-xl border transition-colors flex items-center space-x-2 ${
-                          showFilters
-                            ? "bg-primary-50 border-primary-200 text-primary-600 dark:bg-primary-900/20 dark:border-primary-800 dark:text-primary-400"
-                            : "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700"
-                        }`}
-                      >
-                        <FiFilter className="w-4 h-4" />
-                        <span>Filters</span>
-                        {filters.status && (
-                          <motion.span
-                            initial={{ scale: 0 }}
-                            animate={{ scale: 1 }}
-                            className="ml-1 w-2 h-2 bg-primary-500 rounded-full"
-                          />
-                        )}
-                      </motion.button>
-
-                      {(searchTerm || filters.status) && (
-                        <motion.button
-                          initial={{ scale: 0 }}
-                          animate={{ scale: 1 }}
-                          exit={{ scale: 0 }}
-                          onClick={clearFilters}
-                          className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
-                        >
-                          <FiX className="w-5 h-5" />
-                        </motion.button>
-                      )}
-                    </div>
-                  </div>
-
-                  <AnimatePresence>
-                    {showFilters && (
-                      <motion.div
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: "auto", opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        transition={{ duration: 0.3 }}
-                        className="overflow-hidden"
-                      >
-                        <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
-                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <Select
-                              label="Status"
-                              options={[
-                                { value: "", label: "All Statuses" },
-                                { value: "active", label: "Active" },
-                                { value: "inactive", label: "Inactive" },
-                                { value: "blocked", label: "Blocked" },
-                              ]}
-                              value={filters.status}
-                              onChange={(e) =>
-                                setFilters({ status: e.target.value })
-                              }
-                            />
-                          </div>
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </>
-              )}
-            </motion.div>
 
             {/* Bulk Actions Bar */}
             <AnimatePresence>
@@ -1227,14 +1043,14 @@ const Customers = () => {
                   transition={{ type: "spring", stiffness: 200 }}
                   className="bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-800 rounded-xl p-4"
                 >
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between flex-wrap gap-3">
                     <div className="flex items-center space-x-3">
                       <motion.span
                         initial={{ scale: 0 }}
                         animate={{ scale: 1 }}
                         className="text-sm font-medium text-primary-700 dark:text-primary-300"
                       >
-                        {selectedCustomers.length} customers selected
+                        {selectedCustomers.length} customer(s) selected
                       </motion.span>
                       <motion.button
                         whileHover={{ scale: 1.05 }}
@@ -1254,6 +1070,7 @@ const Customers = () => {
                           variant="outline"
                           size="sm"
                           onClick={() => setShowDeleteConfirm(true)}
+                          icon={FiTrash2}
                         >
                           Delete Selected
                         </Button>
@@ -1272,7 +1089,6 @@ const Customers = () => {
               transition={{ delay: 0.7, type: "spring", stiffness: 100 }}
             >
               {initialLoading || pageLoading ? (
-                // Loading skeleton for table
                 <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-12">
                   <div className="flex flex-col items-center justify-center">
                     <motion.div
@@ -1296,14 +1112,14 @@ const Customers = () => {
                   icon={FaUsers}
                   title="No customers found"
                   description={
-                    activeFilter !== 'all'
-                      ? activeFilter === 'due'
+                    activeFilter !== "all"
+                      ? activeFilter === "due"
                         ? "No customers with due amount found. Try adjusting your search or clear the filter."
-                        : `No customers found from ${selectedCity}. Try selecting a different city or clear the filter.`
-                      : "Try adjusting your search or filters, or add your first customer."
+                        : "No customers with city information found. Try adjusting your search or clear the filter."
+                      : "Try adjusting your search or add your first customer."
                   }
                   action={
-                    activeFilter === 'all' ? (
+                    activeFilter === "all" ? (
                       <motion.div
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
@@ -1325,36 +1141,29 @@ const Customers = () => {
                   }
                 />
               ) : (
-                <>
-                  <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg overflow-hidden">
-                    <Table
-                      columns={columns}
-                      data={displayCustomers}
-                      loading={loading}
-                    />
-                    {displayTotal > pageSize && (
-                      <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ delay: 0.8 }}
-                        className=""
-                      >
-                        <Pagination
-                          currentPage={currentPage}
-                          totalItems={displayTotal}
-                          pageSize={pageSize}
-                          onPageChange={handlePageChange}
-                        />
-                      </motion.div>
-                    )}
-                  </div>
-                </>
+                <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg overflow-hidden">
+                  <Table
+                    columns={columns}
+                    data={displayCustomers}
+                    loading={loading}
+                  />
+                  {displayTotal > pageSize && (
+                    <div className="border-t border-gray-200 dark:border-gray-700">
+                      <Pagination
+                        currentPage={currentPage}
+                        totalItems={displayTotal}
+                        pageSize={pageSize}
+                        onPageChange={handlePageChange}
+                      />
+                    </div>
+                  )}
+                </div>
               )}
             </motion.div>
           </>
         )}
       </motion.div>
-      
+
       {/* Payment Modal */}
       <AnimatePresence>
         {showPaymentModal && selectedCustomer && (
@@ -1390,7 +1199,7 @@ const Customers = () => {
                 >
                   <FiCreditCard className="w-8 h-8 text-purple-600 dark:text-purple-400" />
                 </motion.div>
-                
+
                 <motion.h3
                   initial={{ y: 10, opacity: 0 }}
                   animate={{ y: 0, opacity: 1 }}
@@ -1399,20 +1208,22 @@ const Customers = () => {
                 >
                   Make Payment
                 </motion.h3>
-                
+
                 <motion.p
                   initial={{ y: 10, opacity: 0 }}
                   animate={{ y: 0, opacity: 1 }}
                   transition={{ delay: 0.3 }}
                   className="text-gray-600 dark:text-gray-400 mb-6"
                 >
-                  Customer: <span className="font-semibold">{selectedCustomer.name}</span>
+                  Customer:{" "}
+                  <span className="font-semibold">{selectedCustomer.name}</span>
                   <br />
-                  Current due amount: <span className="font-semibold text-red-600">
+                  Current due amount:{" "}
+                  <span className="font-semibold text-red-600">
                     ₹{parseFloat(selectedCustomer.due_amount || 0).toFixed(2)}
                   </span>
                 </motion.p>
-                
+
                 <motion.div
                   initial={{ y: 10, opacity: 0 }}
                   animate={{ y: 0, opacity: 1 }}
@@ -1446,19 +1257,26 @@ const Customers = () => {
                         <p className="text-red-500 text-sm">{paymentError}</p>
                       </div>
                     )}
-                    {!paymentError && paymentAmount && parseFloat(paymentAmount) > 0 && (
-                      <p className="text-xs text-green-500 mt-1">
-                        ✓ Valid payment amount
-                      </p>
-                    )}
+                    {!paymentError &&
+                      paymentAmount &&
+                      parseFloat(paymentAmount) > 0 && (
+                        <p className="text-xs text-green-500 mt-1">
+                          ✓ Valid payment amount
+                        </p>
+                      )}
                     <div className="flex justify-between items-center mt-2">
                       <p className="text-xs text-gray-500 dark:text-gray-400">
-                        Max allowed: ₹{parseFloat(selectedCustomer.due_amount || 0).toFixed(2)}
+                        Max allowed: ₹
+                        {parseFloat(selectedCustomer.due_amount || 0).toFixed(
+                          2,
+                        )}
                       </p>
                       <button
                         type="button"
                         onClick={() => {
-                          const maxAmount = parseFloat(selectedCustomer.due_amount || 0);
+                          const maxAmount = parseFloat(
+                            selectedCustomer.due_amount || 0,
+                          );
                           setPaymentAmount(maxAmount.toString());
                           setPaymentError("");
                         }}
@@ -1468,9 +1286,13 @@ const Customers = () => {
                       </button>
                     </div>
                   </div>
-                  
+
                   <div className="flex space-x-3">
-                    <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="flex-1">
+                    <motion.div
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      className="flex-1"
+                    >
                       <Button
                         variant="outline"
                         onClick={() => {
@@ -1483,19 +1305,24 @@ const Customers = () => {
                         Cancel
                       </Button>
                     </motion.div>
-                    <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="flex-1">
+                    <motion.div
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      className="flex-1"
+                    >
                       <Button
                         onClick={handlePaymentSubmit}
                         disabled={
-                          !paymentAmount || 
-                          parseFloat(paymentAmount) <= 0 || 
-                          parseFloat(paymentAmount) > parseFloat(selectedCustomer.due_amount || 0) ||
+                          !paymentAmount ||
+                          parseFloat(paymentAmount) <= 0 ||
+                          parseFloat(paymentAmount) >
+                            parseFloat(selectedCustomer.due_amount || 0) ||
                           formSubmitting
                         }
                         loading={formSubmitting}
                         className="w-full"
                       >
-                        {formSubmitting ? 'Processing...' : 'Pay Now'}
+                        {formSubmitting ? "Processing..." : "Pay Now"}
                       </Button>
                     </motion.div>
                   </div>
@@ -1505,7 +1332,7 @@ const Customers = () => {
           </motion.div>
         )}
       </AnimatePresence>
-      
+
       {/* Delete Confirmation Modal */}
       <AnimatePresence>
         {showDeleteConfirm && (

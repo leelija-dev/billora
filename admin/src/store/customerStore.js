@@ -188,28 +188,30 @@ export const useCustomerStore = create((set, get) => ({
     }
   },
 
-   filterType: 'all', // 'all', 'due', 'city'
-  selectedCity: '',
+  filterType: "all", // 'all', 'due', 'city'
+  selectedCity: "",
   availableCities: [],
   citiesLoading: false,
 
   // Fetch due customers
-  fetchDueCustomers: async (page = 1, search = '') => {
-    const cacheKey = JSON.stringify({ type: 'due', page, search })
-    const currentState = get()
-    
+  fetchDueCustomers: async (page = 1, search = "") => {
+    const cacheKey = JSON.stringify({ type: "due", page, search });
+    const currentState = get();
+
     // Avoid duplicate requests
-    if (currentState.cacheKey === cacheKey && 
-        currentState.lastFetchTime && 
-        (Date.now() - currentState.lastFetchTime) < 2000) {
-      console.log('Using cached due customer data, skipping duplicate request')
-      return
+    if (
+      currentState.cacheKey === cacheKey &&
+      currentState.lastFetchTime &&
+      Date.now() - currentState.lastFetchTime < 2000
+    ) {
+      console.log("Using cached due customer data, skipping duplicate request");
+      return;
     }
 
     // Check cache first
-    const cached = getCachedData(cacheKey)
+    const cached = getCachedData(cacheKey);
     if (cached) {
-      console.log('Using cached due customer data')
+      console.log("Using cached due customer data");
       set({
         customers: cached.customers,
         totalCustomers: cached.total,
@@ -217,88 +219,95 @@ export const useCustomerStore = create((set, get) => ({
         loading: false,
         cacheKey,
         lastFetchTime: Date.now(),
-        filterType: 'due'
-      })
-      return
+        filterType: "due",
+      });
+      return;
     }
 
-    set({ loading: true, cacheKey, filterType: 'due' })
+    set({ loading: true, cacheKey, filterType: "due" });
     try {
-      const { user } = useAuthStore.getState()
+      const { user } = useAuthStore.getState();
       if (!user?.id) {
-        throw new Error('User not authenticated')
+        throw new Error("User not authenticated");
       }
-      
-      const response = await customerAPI.getDueCustomers(user.id, search, page)
-      
-      let customersArray = []
-      let total = 0
-      
+
+      const response = await customerAPI.getDueCustomers(user.id, search, page);
+
+      let customersArray = [];
+      let total = 0;
+
       // Handle nested response structure
-      if (response?.data?.data?.data && Array.isArray(response.data.data.data)) {
-        customersArray = response.data.data.data
-        total = response.data.data.total || customersArray.length
+      if (
+        response?.data?.data?.data &&
+        Array.isArray(response.data.data.data)
+      ) {
+        customersArray = response.data.data.data;
+        total = response.data.data.total || customersArray.length;
       } else if (response?.data?.data && Array.isArray(response.data.data)) {
-        customersArray = response.data.data
-        total = response.data.data.total || customersArray.length
+        customersArray = response.data.data;
+        total = response.data.data.total || customersArray.length;
       } else if (Array.isArray(response?.data)) {
-        customersArray = response.data
-        total = customersArray.length
-      } else if (response?.data && typeof response.data === 'object') {
+        customersArray = response.data;
+        total = customersArray.length;
+      } else if (response?.data && typeof response.data === "object") {
         for (const key in response.data) {
           if (Array.isArray(response.data[key])) {
-            customersArray = response.data[key]
-            total = customersArray.length
-            break
+            customersArray = response.data[key];
+            total = customersArray.length;
+            break;
           }
         }
       }
-      
+
       if (!Array.isArray(customersArray)) {
-        customersArray = []
-        total = 0
+        customersArray = [];
+        total = 0;
       }
-      
-      console.log('💰 Due customers extracted:', customersArray)
-      
+
+      console.log("💰 Due customers extracted:", customersArray);
+
       // Cache the results
       const cacheData = {
         customers: customersArray,
-        total: total
-      }
-      setCachedData(cacheKey, cacheData)
-      
+        total: total,
+      };
+      setCachedData(cacheKey, cacheData);
+
       set({
         customers: customersArray,
         totalCustomers: total,
         currentPage: page,
         loading: false,
-        lastFetchTime: Date.now()
-      })
+        lastFetchTime: Date.now(),
+      });
     } catch (error) {
-      console.error('Failed to fetch due customers:', error)
-      toast.error('Failed to fetch due customers')
-      set({ customers: [], totalCustomers: 0, loading: false })
+      console.error("Failed to fetch due customers:", error);
+      toast.error("Failed to fetch due customers");
+      set({ customers: [], totalCustomers: 0, loading: false });
     }
   },
 
   // Fetch city-wise customers
-  fetchCityWiseCustomers: async (city, page = 1, search = '') => {
-    const cacheKey = JSON.stringify({ type: 'city', city, page, search })
-    const currentState = get()
-    
+  fetchCityWiseCustomers: async (city, page = 1, search = "") => {
+    const cacheKey = JSON.stringify({ type: "city", city, page, search });
+    const currentState = get();
+
     // Avoid duplicate requests
-    if (currentState.cacheKey === cacheKey && 
-        currentState.lastFetchTime && 
-        (Date.now() - currentState.lastFetchTime) < 2000) {
-      console.log('Using cached city customer data, skipping duplicate request')
-      return
+    if (
+      currentState.cacheKey === cacheKey &&
+      currentState.lastFetchTime &&
+      Date.now() - currentState.lastFetchTime < 2000
+    ) {
+      console.log(
+        "Using cached city customer data, skipping duplicate request",
+      );
+      return;
     }
 
     // Check cache first
-    const cached = getCachedData(cacheKey)
+    const cached = getCachedData(cacheKey);
     if (cached) {
-      console.log('Using cached city customer data')
+      console.log("Using cached city customer data");
       set({
         customers: cached.customers,
         totalCustomers: cached.total,
@@ -306,122 +315,130 @@ export const useCustomerStore = create((set, get) => ({
         loading: false,
         cacheKey,
         lastFetchTime: Date.now(),
-        filterType: 'city',
-        selectedCity: city
-      })
-      return
+        filterType: "city",
+        selectedCity: city,
+      });
+      return;
     }
 
-    set({ loading: true, cacheKey, filterType: 'city', selectedCity: city })
+    set({ loading: true, cacheKey, filterType: "city", selectedCity: city });
     try {
-      const { user } = useAuthStore.getState()
+      const { user } = useAuthStore.getState();
       if (!user?.id) {
-        throw new Error('User not authenticated')
+        throw new Error("User not authenticated");
       }
-      
-      const response = await customerAPI.getCustomersByCity(user.id, city, search, page)
-      
-      let customersArray = []
-      let total = 0
-      
+
+      const response = await customerAPI.getCustomersByCity(
+        user.id,
+        city,
+        search,
+        page,
+      );
+
+      let customersArray = [];
+      let total = 0;
+
       // Handle nested response structure
-      if (response?.data?.data?.data && Array.isArray(response.data.data.data)) {
-        customersArray = response.data.data.data
-        total = response.data.data.total || customersArray.length
+      if (
+        response?.data?.data?.data &&
+        Array.isArray(response.data.data.data)
+      ) {
+        customersArray = response.data.data.data;
+        total = response.data.data.total || customersArray.length;
       } else if (response?.data?.data && Array.isArray(response.data.data)) {
-        customersArray = response.data.data
-        total = response.data.data.total || customersArray.length
+        customersArray = response.data.data;
+        total = response.data.data.total || customersArray.length;
       } else if (Array.isArray(response?.data)) {
-        customersArray = response.data
-        total = customersArray.length
-      } else if (response?.data && typeof response.data === 'object') {
+        customersArray = response.data;
+        total = customersArray.length;
+      } else if (response?.data && typeof response.data === "object") {
         for (const key in response.data) {
           if (Array.isArray(response.data[key])) {
-            customersArray = response.data[key]
-            total = customersArray.length
-            break
+            customersArray = response.data[key];
+            total = customersArray.length;
+            break;
           }
         }
       }
-      
+
       if (!Array.isArray(customersArray)) {
-        customersArray = []
-        total = 0
+        customersArray = [];
+        total = 0;
       }
-      
-      console.log('🏙️ City customers extracted:', customersArray)
-      
+
+      console.log("🏙️ City customers extracted:", customersArray);
+
       // Cache the results
       const cacheData = {
         customers: customersArray,
-        total: total
-      }
-      setCachedData(cacheKey, cacheData)
-      
+        total: total,
+      };
+      setCachedData(cacheKey, cacheData);
+
       set({
         customers: customersArray,
         totalCustomers: total,
         currentPage: page,
         loading: false,
-        lastFetchTime: Date.now()
-      })
+        lastFetchTime: Date.now(),
+      });
     } catch (error) {
-      console.error('Failed to fetch city-wise customers:', error)
-      toast.error('Failed to fetch city-wise customers')
-      set({ customers: [], totalCustomers: 0, loading: false })
+      console.error("Failed to fetch city-wise customers:", error);
+      toast.error("Failed to fetch city-wise customers");
+      set({ customers: [], totalCustomers: 0, loading: false });
     }
   },
 
   // Fetch unique cities
   fetchAvailableCities: async () => {
-    set({ citiesLoading: true })
+    set({ citiesLoading: true });
     try {
-      const { user } = useAuthStore.getState()
+      const { user } = useAuthStore.getState();
       if (!user?.id) {
-        throw new Error('User not authenticated')
+        throw new Error("User not authenticated");
       }
-      
-      const response = await customerAPI.getUniqueCities(user.id)
-      
-      let citiesArray = []
+
+      const response = await customerAPI.getUniqueCities(user.id);
+
+      let citiesArray = [];
       if (response?.data?.data && Array.isArray(response.data.data)) {
-        citiesArray = response.data.data
+        citiesArray = response.data.data;
       } else if (Array.isArray(response?.data)) {
-        citiesArray = response.data
-      } else if (response?.data && typeof response.data === 'object') {
+        citiesArray = response.data;
+      } else if (response?.data && typeof response.data === "object") {
         for (const key in response.data) {
           if (Array.isArray(response.data[key])) {
-            citiesArray = response.data[key]
-            break
+            citiesArray = response.data[key];
+            break;
           }
         }
       }
-      
-      set({ availableCities: citiesArray, citiesLoading: false })
-      return citiesArray
+
+      set({ availableCities: citiesArray, citiesLoading: false });
+      return citiesArray;
     } catch (error) {
-      console.error('Failed to fetch cities:', error)
-      set({ availableCities: [], citiesLoading: false })
-      return []
+      console.error("Failed to fetch cities:", error);
+      set({ availableCities: [], citiesLoading: false });
+      return [];
     }
   },
 
   // Reset to all customers
-  resetToAllCustomers: async (page = 1, search = '') => {
-    set({ filterType: 'all', selectedCity: '' })
-    await get().fetchCustomers(page, search)
+  resetToAllCustomers: async (page = 1, search = "") => {
+    set({ filterType: "all", selectedCity: "" });
+    await get().fetchCustomers(page, search);
   },
 
   // Clear cache and reset
   clearCacheAndReset: () => {
-    customerCache.clear()
-    paymentHistoryCache.clear()
-    set({ 
-      filterType: 'all', 
-      selectedCity: '',
-      availableCities: []
-    })
-    console.log('Customer cache cleared and filters reset')
+    customerCache.clear();
+    paymentHistoryCache.clear();
+    set({
+      filterType: "all",
+      selectedCity: "",
+      availableCities: [],
+    });
+    console.log("Customer cache cleared and filters reset");
   },
 
   updateCustomer: async (id, customerData) => {
