@@ -27,6 +27,11 @@ class SocialConnectController extends Controller
     }
     public function callback(Request $request)
     {
+         Log::info('Facebook callback hit', [
+        'code' => $request->code,
+        'state' => $request->state,
+        'url' => $request->fullUrl(),
+    ]);
         $userId = $request->state;
         Log::info("called");
         // 1. Exchange CODE → Short-lived token
@@ -36,7 +41,7 @@ class SocialConnectController extends Controller
             'redirect_uri' => env('META_CALLBACK_URL'),
             'code' => $request->code,
         ])->json();
-        Log::info("token response ".$tokenResponse);
+        Log::info("token response ",$tokenResponse);
         if (!isset($tokenResponse['access_token'])) {
             return response()->json($tokenResponse);
         }
