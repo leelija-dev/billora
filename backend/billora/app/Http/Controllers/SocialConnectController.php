@@ -22,16 +22,16 @@ class SocialConnectController extends Controller
             'response_type' => 'code',
             'state' => $userId
         ]);
-        Log::info("redirect url".$url);
+        // Log::info("redirect url".$url);
         return redirect($url);
     }
     public function callback(Request $request)
     {
-         Log::info('Facebook callback hit', [
-        'code' => $request->code,
-        'state' => $request->state,
-        'url' => $request->fullUrl(),
-    ]);
+    //      Log::info('Facebook callback hit', [
+    //     'code' => $request->code,
+    //     'state' => $request->state,
+    //     'url' => $request->fullUrl(),
+    // ]);
         $userId = $request->state;
         Log::info("called");
         // 1. Exchange CODE → Short-lived token
