@@ -90,7 +90,7 @@ class SocialConnectController extends Controller
             );
         }
 
-        return redirect('/dashboard');
+        return redirect(env('FRONTEND_ADMIN_URL').'/dashboard');
     }
     public function updateSocialConnection(Request $request, $id)  // boolean status 0/1
     {
