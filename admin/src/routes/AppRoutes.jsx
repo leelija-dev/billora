@@ -33,6 +33,7 @@ import Settings from '../pages/settings/Settings'
 
 // Test Page
 import APITest from '../components/test/APITest'
+import SocialLink from '../pages/social-link/SocialLink'
 
 const AppRoutes = () => {
   return (
@@ -67,6 +68,7 @@ const AppRoutes = () => {
         <Route path="reports/:id" element={<ReportDetails />} />
         <Route path="billing" element={<ProtectedRoute feature="billing"><Plans /></ProtectedRoute>} />
         <Route path="gst" element={<ProtectedRoute feature="gst"><GstManagement /></ProtectedRoute>} />
+        <Route path="social-link" element={<ProtectedRoute feature="social-link"><SocialLink /></ProtectedRoute>} />
 
         <Route path="settings" element={<ProtectedRoute feature="settings"><Settings /></ProtectedRoute>} />
       </Route>
