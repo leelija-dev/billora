@@ -22,13 +22,13 @@ class SocialConnectController extends Controller
             'response_type' => 'code',
             'state' => $userId
         ]);
-
+        Log::info("redirect url".$url);
         return redirect($url);
     }
     public function callback(Request $request)
     {
         $userId = $request->state;
-
+        Log::info("called");
         // 1. Exchange CODE → Short-lived token
         $tokenResponse = Http::get("https://graph.facebook.com/v19.0/oauth/access_token", [
             'client_id' => env('META_APP_ID'),
@@ -36,7 +36,7 @@ class SocialConnectController extends Controller
             'redirect_uri' => env('META_CALLBACK_URL'),
             'code' => $request->code,
         ])->json();
-
+        Log::info("token response ".$tokenResponse);
         if (!isset($tokenResponse['access_token'])) {
             return response()->json($tokenResponse);
         }

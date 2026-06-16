@@ -30,6 +30,7 @@ class CustomerSiderbarPermission extends Seeder
                'Customers',
                'Invoices',
                'Reports',
+               'Social Link',
                'Plans',
                'Settings'
 

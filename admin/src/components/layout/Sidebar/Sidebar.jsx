@@ -25,7 +25,7 @@ import {
 } from 'react-icons/fi';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FaFileMedical, FaRupeeSign, FaStore } from 'react-icons/fa';
-import { TbRuler2 } from "react-icons/tb";
+import { TbRuler2, TbSocial } from "react-icons/tb";
 
 const Sidebar = () => {
   const { sidebarOpen, toggleSidebar, isMobile, setIsMobile } = useUIStore();
@@ -78,6 +78,7 @@ const Sidebar = () => {
     'invoices': FiFileText,
     'reports': FiBarChart2,
     'plans': FiCreditCard,
+    'social-link':TbSocial,
     'gst': FaRupeeSign,
     'settings': FiSettings,
   };
@@ -98,6 +99,7 @@ const Sidebar = () => {
     'invoices': '/invoices',
     'reports': '/reports',
     'plans': '/billing',
+    'social-link':"/social-link",
     'gst': '/gst',
     'settings': '/settings',
   };
