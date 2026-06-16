@@ -2,55 +2,32 @@
 import { apiClient } from './apiClient';
 
 export const socialService = {
-  // Get connected accounts
-  getConnectedAccounts: async () => {
+  // Get social status with user ID
+  getSocialStatus: async (userId) => {
     try {
-      const response = await apiClient.get('/social/accounts');
+      const response = await apiClient.get(`/social/facebook/status/${userId}`);
       return response.data;
     } catch (error) {
-      console.error('Get connected accounts error:', error);
+      console.error('Get social status error:', error);
       throw error;
     }
   },
 
-  // ✅ SIMPLIFIED: Just return the redirect URL for frontend to redirect
-  getAuthRedirectUrl: async (platform) => {
+  // Update social status (Connect/Disconnect)
+  // status: 1 = connected (active), 0 = disconnected (inactive)
+  updateSocialStatus: async (userId, status) => {
     try {
-      // This returns the full Facebook/Instagram OAuth URL
-      const response = await apiClient.get(`/social/${platform.toLowerCase()}/redirect`);
-      return response.data.redirect_url || response.data.url;
-    } catch (error) {
-      console.error(`Get ${platform} redirect URL error:`, error);
-      throw error;
-    }
-  },
-
-  // Handle OAuth callback
-  handleOAuthCallback: async (platform, code, state) => {
-    try {
-      const response = await apiClient.post(`/social/${platform.toLowerCase()}/callback`, {
-        code,
-        state
+      const response = await apiClient.put(`/social/facebook/update-status/${userId}`, {
+        status: status // boolean 0 or 1
       });
       return response.data;
     } catch (error) {
-      console.error(`${platform} OAuth callback error:`, error);
+      console.error('Update social status error:', error);
       throw error;
     }
   },
 
-  // Disconnect account
-  disconnectAccount: async (platform) => {
-    try {
-      const response = await apiClient.post(`/social/${platform.toLowerCase()}/disconnect`);
-      return response.data;
-    } catch (error) {
-      console.error(`Disconnect ${platform} error:`, error);
-      throw error;
-    }
-  },
-
-  // Create post
+  // Create post (for manual posting)
   createPost: async (postData) => {
     try {
       const response = await apiClient.post('/social/posts', postData, {

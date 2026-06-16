@@ -180,32 +180,66 @@ const Brands = () => {
     }
   }
 
-  const handleDelete = async (id) => {
-    if (window.confirm('Are you sure you want to delete this brand?')) {
-      await deleteBrand(id)
-      
-      // Force a small re-render to ensure UI reflects changes
-      setTimeout(() => {
-        const { brands } = useBrandStore.getState()
-        console.log('📊 Brands after deletion:', brands)
-      }, 100)
-    }
+  // Updated: No window.confirm, using modal instead
+  const handleDelete = async () => {
+    if (!selectedBrand) return;
+    
+    await deleteBrand(selectedBrand.id)
+    setShowDeleteConfirm(false)
+    setSelectedBrand(null)
+    
+    // Force a small re-render to ensure UI reflects changes
+    setTimeout(() => {
+      const { brands } = useBrandStore.getState()
+      console.log('📊 Brands after deletion:', brands)
+    }, 100)
   }
 
-  const handleBulkDelete = async () => {
-    if (window.confirm(`Are you sure you want to delete ${selectedBrands.length} brands?`)) {
+  // Updated: No window.confirm, using modal instead
+  const handleConfirmDelete = async () => {
+    if (selectedBrands.length > 1) {
+      // Bulk delete
       for (const id of selectedBrands) {
         await deleteBrand(id)
       }
       setSelectedBrands([])
-      setShowDeleteConfirm(false)
-      
-      // Force a small re-render to ensure UI reflects changes
-      setTimeout(() => {
-        const { brands } = useBrandStore.getState()
-        console.log('📊 Brands after bulk deletion:', brands)
-      }, 100)
+    } else if (selectedBrand) {
+      // Single delete
+      await deleteBrand(selectedBrand.id)
+      setSelectedBrand(null)
     }
+    
+    setShowDeleteConfirm(false)
+    
+    // Force a small re-render to ensure UI reflects changes
+    setTimeout(() => {
+      const { brands } = useBrandStore.getState()
+      console.log('📊 Brands after deletion:', brands)
+    }, 100)
+  }
+
+  // Helper functions for dynamic modal content
+  const getDeleteMessage = () => {
+    if (selectedBrands.length > 1) {
+      return `Are you sure you want to delete ${selectedBrands.length} brands? This action cannot be undone.`
+    } else if (selectedBrand) {
+      return `Are you sure you want to delete "${selectedBrand?.name}"? This action cannot be undone.`
+    }
+    return 'Are you sure you want to delete this item?'
+  }
+
+  const getDeleteButtonText = () => {
+    if (selectedBrands.length > 1) {
+      return `Delete ${selectedBrands.length} Brands`
+    }
+    return 'Delete Brand'
+  }
+
+  const getDeleteTitle = () => {
+    if (selectedBrands.length > 1) {
+      return 'Delete Multiple Brands'
+    }
+    return 'Delete Brand'
   }
 
   const handleRefresh = async () => {
@@ -696,59 +730,74 @@ const Brands = () => {
 
      
     </motion.div>
-     {/* Delete Confirmation Modal */}
-      <AnimatePresence>
-        {showDeleteConfirm && (
+    {/* Delete Confirmation Modal */}
+    <AnimatePresence>
+      {showDeleteConfirm && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+          onClick={() => {
+            setShowDeleteConfirm(false)
+            setSelectedBrand(null)
+            setSelectedBrands([])
+          }}
+        >
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
-            onClick={() => setShowDeleteConfirm(false)}
+            initial={{ scale: 0.9, opacity: 0, y: 20 }}
+            animate={{ scale: 1, opacity: 1, y: 0 }}
+            exit={{ scale: 0.9, opacity: 0, y: 20 }}
+            transition={{ type: "spring", stiffness: 200 }}
+            className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full p-6"
+            onClick={(e) => e.stopPropagation()}
           >
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0, y: 20 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.9, opacity: 0, y: 20 }}
-              transition={{ type: "spring", stiffness: 200 }}
-              className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full p-6"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                  Delete Brand
-                </h3>
-                <button
-                  onClick={() => setShowDeleteConfirm(false)}
-                  className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-                >
-                  <FiX className="w-5 h-5" />
-                </button>
-              </div>
-              
-              <p className="text-gray-600 dark:text-gray-400 mb-6">
-                Are you sure you want to delete "{selectedBrand?.name}"? This action cannot be undone.
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                {getDeleteTitle()}
+              </h3>
+              <button
+                onClick={() => {
+                  setShowDeleteConfirm(false)
+                  setSelectedBrand(null)
+                  setSelectedBrands([])
+                }}
+                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+              >
+                <FiX className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="flex items-start mb-4 p-3 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">
+              <FiAlertCircle className="w-5 h-5 text-red-500 mr-3 flex-shrink-0 mt-0.5" />
+              <p className="text-sm text-red-700 dark:text-red-300">
+                {getDeleteMessage()}
               </p>
-              
-              <div className="flex justify-end space-x-3">
-                <Button
-                  variant="outline"
-                  onClick={() => setShowDeleteConfirm(false)}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  variant="primary"
-                  onClick={() => handleDelete(selectedBrand?.id)}
-                  className="bg-red-600 hover:bg-red-700"
-                >
-                  Delete Brand
-                </Button>
-              </div>
-            </motion.div>
+            </div>
+            
+            <div className="flex justify-end space-x-3">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowDeleteConfirm(false)
+                  setSelectedBrand(null)
+                  setSelectedBrands([])
+                }}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="primary"
+                onClick={handleConfirmDelete}
+                className="bg-red-600 hover:bg-red-700 focus:ring-red-500"
+              >
+                {getDeleteButtonText()}
+              </Button>
+            </div>
           </motion.div>
-        )}
-      </AnimatePresence>
+        </motion.div>
+      )}
+    </AnimatePresence>
     </>
   )
 }

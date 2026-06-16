@@ -4,10 +4,8 @@ import { socialService } from '../services/socialService';
 
 const useSocialStore = create((set, get) => ({
   // State
-  connectedAccounts: {
-    facebook: null,
-    instagram: null
-  },
+  socialData: null,
+  isConnected: false,
   posts: [],
   scheduledPosts: [],
   loading: false,
@@ -19,56 +17,48 @@ const useSocialStore = create((set, get) => ({
     perPage: 15
   },
 
-  // Fetch connected accounts
-  fetchConnectedAccounts: async () => {
+  // Fetch social status
+  fetchSocialStatus: async (userId) => {
     set({ loading: true, error: null });
     try {
-      const response = await socialService.getConnectedAccounts();
+      const response = await socialService.getSocialStatus(userId);
+      
+      if (response.status && response.data) {
+        set({
+          socialData: response.data,
+          isConnected: response.data.is_active === 1,
+          loading: false
+        });
+        return response.data;
+      }
+    } catch (error) {
       set({
-        connectedAccounts: response.data || { facebook: null, instagram: null },
+        error: error.response?.data?.message || 'Failed to fetch social status',
         loading: false
       });
+      throw error;
+    }
+  },
+
+  // Update social status (Connect/Disconnect)
+  updateSocialStatus: async (userId, status) => {
+    set({ loading: true, error: null });
+    try {
+      const response = await socialService.updateSocialStatus(userId, status);
+      
+      set(state => ({
+        socialData: {
+          ...state.socialData,
+          is_active: status
+        },
+        isConnected: status === 1,
+        loading: false
+      }));
+      
       return response.data;
     } catch (error) {
       set({
-        error: error.response?.data?.message || 'Failed to fetch connected accounts',
-        loading: false
-      });
-      throw error;
-    }
-  },
-
-  // Connect account
-  connectAccount: async (platform) => {
-    set({ loading: true, error: null });
-    try {
-      const response = await socialService.getAuthRedirectUrl(platform);
-      return response.redirect_url || response.url;
-    } catch (error) {
-      set({
-        error: error.response?.data?.message || `Failed to connect ${platform}`,
-        loading: false
-      });
-      throw error;
-    }
-  },
-
-  // Disconnect account
-  disconnectAccount: async (platform) => {
-    set({ loading: true, error: null });
-    try {
-      await socialService.disconnectAccount(platform);
-      set(state => ({
-        connectedAccounts: {
-          ...state.connectedAccounts,
-          [platform]: null
-        },
-        loading: false
-      }));
-      return true;
-    } catch (error) {
-      set({
-        error: error.response?.data?.message || `Failed to disconnect ${platform}`,
+        error: error.response?.data?.message || 'Failed to update status',
         loading: false
       });
       throw error;
@@ -162,7 +152,8 @@ const useSocialStore = create((set, get) => ({
 
   // Reset state
   reset: () => set({
-    connectedAccounts: { facebook: null, instagram: null },
+    socialData: null,
+    isConnected: false,
     posts: [],
     scheduledPosts: [],
     loading: false,
