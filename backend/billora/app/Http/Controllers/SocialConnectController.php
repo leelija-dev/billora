@@ -95,7 +95,30 @@ class SocialConnectController extends Controller
             );
         }
 
-        return redirect(env('FRONTEND_ADMIN_URL').'/dashboard');
+        return redirect(env('FRONTEND_ADMIN_URL').'/social-link');
+    }
+    public function showConnection($id){
+        $customer = Customers::findOrFail($id);
+        try{
+        if(!$customer){
+                return response()->json([
+                    'status'=>false,
+                    'message'=>'customer not found!'
+                    
+                ]);
+        }
+        $connection = SocialConnections::where('user_id',$id)->first();
+        return response()->json([
+            'status'=>true,
+            'message'=> "Social connection",
+            'data'=>$connection
+        ]);
+        }catch(\Exception $e){
+            return response()->json([
+                'status'=>false,
+                'message'=>$e->getMessage()
+            ]); 
+        }
     }
     public function updateSocialConnection(Request $request, $id)  // boolean status 0/1
     {

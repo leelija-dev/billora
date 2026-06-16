@@ -288,13 +288,9 @@ Route::middleware('auth:sanctum')->prefix('recent-plan')->group(function (){
 // });
 Route::prefix('social')->group(function () {
 
-    Route::middleware('auth:sanctum')->get(
-        '/facebook/redirect',
-        [SocialConnectController::class, 'redirect']
-    );
+    Route::middleware('auth:sanctum')->get('/facebook/redirect',[SocialConnectController::class, 'redirect']);
 
-    Route::get(
-        '/facebook/callback',
-        [SocialConnectController::class, 'callback']
-    );
+    Route::get('/facebook/callback',[SocialConnectController::class, 'callback']);
+    Route::get('/facebook/status/{id}',[SocialConnectController::class,'showConnection']);
+    Route::middleware('auth:sanctum')->put('/facebook/update-status/{id}',[SocialConnectController::class,'updateSocialConnection']);
 });
