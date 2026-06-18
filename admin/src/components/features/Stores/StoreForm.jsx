@@ -5,7 +5,10 @@ import { useAuthStore } from '../../../store/authStore'
 import Input from '../../common/Input/Input'
 import Button from '../../common/Button/Button'
 import toast from 'react-hot-toast'
-import { FiX, FiPackage, FiMail, FiPhone, FiMapPin, FiSave, FiArrowLeft, FiAlertCircle } from 'react-icons/fi'
+import { 
+  FiX, FiPackage, FiMail, FiPhone, FiMapPin, FiSave, 
+  FiArrowLeft, FiAlertCircle, FiImage
+} from 'react-icons/fi'
 import {
   validatePhone,
   validateEmail,
@@ -15,7 +18,8 @@ import {
   handleAlphanumericInput,
   validationRules,
   validateFormData
-} from '../../../utils/validators' // Adjust path as needed
+} from '../../../utils/validators'
+import { FaQrcode } from 'react-icons/fa'
 
 const StoreForm = ({ 
   store = null, 
@@ -25,6 +29,13 @@ const StoreForm = ({
   isEdit = false 
 }) => {
   const { user } = useAuthStore()
+  const [logoPreview, setLogoPreview] = useState(null)
+  const [bankQrPreview, setBankQrPreview] = useState(null)
+  const [selectedLogoFile, setSelectedLogoFile] = useState(null)
+  const [selectedBankQrFile, setSelectedBankQrFile] = useState(null)
+  // Track which images have been deleted
+  const [deletedLogo, setDeletedLogo] = useState(null)
+  const [deletedBankQr, setDeletedBankQr] = useState(null)
 
   const {
     register,
@@ -73,7 +84,7 @@ const StoreForm = ({
 
   // Input handlers for real-time validation using utilities
   const handleMobileInput = (e) => {
-    handlePhoneInput(e) // Use the utility function
+    handlePhoneInput(e)
     const value = e.target.value
     setValue('mobile', value, { shouldValidate: true })
     
@@ -88,7 +99,7 @@ const StoreForm = ({
   }
 
   const handleGSTInputWrapper = (e) => {
-    handleGSTInput(e) // Use the utility function
+    handleGSTInput(e)
     const value = e.target.value
     setValue('gst', value, { shouldValidate: true })
     
@@ -117,7 +128,7 @@ const StoreForm = ({
   }
 
   const handleCityInput = (e) => {
-    handleAlphanumericInput(e) // Use utility to prevent invalid characters
+    handleAlphanumericInput(e)
     const value = e.target.value
     setValue('city', value, { shouldValidate: true })
     
@@ -132,7 +143,7 @@ const StoreForm = ({
   }
 
   const handleStateInput = (e) => {
-    handleAlphanumericInput(e) // Use utility to prevent invalid characters
+    handleAlphanumericInput(e)
     const value = e.target.value
     setValue('state', value, { shouldValidate: true })
     
@@ -148,7 +159,6 @@ const StoreForm = ({
 
   const handlePincodeInput = (e) => {
     let value = e.target.value
-    // Allow only numbers and limit to 6 digits
     value = value.replace(/\D/g, '').slice(0, 6)
     e.target.value = value
     setValue('pincode', value, { shouldValidate: true })
@@ -165,14 +175,88 @@ const StoreForm = ({
     }
   }
 
+  // Handle file upload with validation
+  const handleFileUpload = (e, type) => {
+    const file = e.target.files[0]
+    if (!file) return
+
+    // Validate file size (2MB max)
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error(`${type === 'logo' ? 'Logo' : 'Bank QR'} file size must be less than 2MB`)
+      e.target.value = ''
+      return
+    }
+    
+    // Validate file type
+    const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
+    if (!validTypes.includes(file.type)) {
+      toast.error(`${type === 'logo' ? 'Logo' : 'Bank QR'} must be a valid image (JPG, PNG, GIF, WebP)`)
+      e.target.value = ''
+      return
+    }
+    
+    // Create preview
+    const reader = new FileReader()
+    reader.onloadend = () => {
+      if (type === 'logo') {
+        setLogoPreview(reader.result)
+        setSelectedLogoFile(file)
+        setValue('logo', file)
+        // Clear deleted logo if a new file is selected
+        setDeletedLogo(null)
+      } else {
+        setBankQrPreview(reader.result)
+        setSelectedBankQrFile(file)
+        setValue('bank_qr', file)
+        // Clear deleted bank QR if a new file is selected
+        setDeletedBankQr(null)
+      }
+    }
+    reader.readAsDataURL(file)
+  }
+
+  const handleRemoveFile = (type) => {
+    if (type === 'logo') {
+      // Store the current logo URL to be sent as deleted_logo
+      const currentLogoUrl = store?.logo_url || store?.logo || null
+      if (currentLogoUrl) {
+        setDeletedLogo(currentLogoUrl)
+        console.log('🗑️ Logo marked for deletion:', currentLogoUrl)
+      }
+      
+      setLogoPreview(null)
+      setSelectedLogoFile(null)
+      setValue('logo', null)
+      // Reset file input
+      const fileInput = document.querySelector('input[name="logo"]')
+      if (fileInput) fileInput.value = ''
+    } else {
+      // Store the current bank QR URL to be sent as deleted_bank_qr
+      const currentBankQrUrl = store?.bank_qr_url || store?.bank_qr || null
+      if (currentBankQrUrl) {
+        setDeletedBankQr(currentBankQrUrl)
+        console.log('🗑️ Bank QR marked for deletion:', currentBankQrUrl)
+      }
+      
+      setBankQrPreview(null)
+      setSelectedBankQrFile(null)
+      setValue('bank_qr', null)
+      const fileInput = document.querySelector('input[name="bank_qr"]')
+      if (fileInput) fileInput.value = ''
+    }
+  }
+
   // Pre-fill form if editing
   useEffect(() => {
     if (store && isEdit) {
+      console.log('📝 StoreForm - Editing store:', store);
+      
       reset({
         name: store.name || '',
         gst: store.gst || '',
         email: store.email || '',
         logo: store.logo || '',
+        bank_qr: store.bank_qr || '',
         mobile: store.mobile || '',
         address: store.address || '',
         city: store.city || '',
@@ -180,12 +264,31 @@ const StoreForm = ({
         pincode: store.pincode || '',
         status: store.status === true || store.status === 'active' ? 'active' : 'inactive',
       })
+      
+      // Set logo preview if exists - check both logo_url and logo
+      const logoUrl = store.logo_url || store.logo || null;
+      if (logoUrl) {
+        console.log('📸 Setting logo preview:', logoUrl);
+        setLogoPreview(logoUrl);
+      }
+      
+      // Set bank QR preview if exists - check both bank_qr_url and bank_qr
+      const bankQrUrl = store.bank_qr_url || store.bank_qr || null;
+      if (bankQrUrl) {
+        console.log('📸 Setting bank QR preview:', bankQrUrl);
+        setBankQrPreview(bankQrUrl);
+      }
+      
+      // Reset deletion tracking
+      setDeletedLogo(null)
+      setDeletedBankQr(null)
     } else {
       reset({
         name: '',
         gst: '',
         email: '',
         logo: '',
+        bank_qr: '',
         mobile: '',
         address: '',
         city: '',
@@ -195,6 +298,12 @@ const StoreForm = ({
         user_id: currentUserId,
         created_by: currentUserId,
       })
+      setLogoPreview(null)
+      setBankQrPreview(null)
+      setSelectedLogoFile(null)
+      setSelectedBankQrFile(null)
+      setDeletedLogo(null)
+      setDeletedBankQr(null)
     }
   }, [store, isEdit, reset, currentUserId])
 
@@ -256,16 +365,68 @@ const StoreForm = ({
       return
     }
     
-    const storeData = {
-      ...data,
-      user_id: currentUserId,
-      created_by: currentUserId,
-      status: data.status === 'active' ? true : false,
+    // Create FormData for file upload
+    const formData = new FormData()
+    
+    // Append all fields
+    formData.append('name', data.name)
+    formData.append('email', data.email)
+    formData.append('mobile', data.mobile || '')
+    formData.append('address', data.address)
+    formData.append('city', data.city)
+    formData.append('state', data.state)
+    formData.append('pincode', data.pincode)
+    formData.append('gst', data.gst || '')
+    formData.append('user_id', currentUserId)
+    formData.append('created_by', currentUserId)
+    formData.append('status', data.status === 'active' ? '1' : '0')
+    
+    // Handle logo
+    if (selectedLogoFile) {
+      // If a new logo file is selected, append it
+      formData.append('logo', selectedLogoFile)
+      console.log('📎 Logo file appended:', selectedLogoFile.name, selectedLogoFile.size, 'bytes')
+    } else if (isEdit && store?.logo) {
+      // If editing and no new file selected, keep existing logo
+      formData.append('logo', store.logo)
+    }
+    
+    // Handle bank_qr
+    if (selectedBankQrFile) {
+      // If a new bank QR file is selected, append it
+      formData.append('bank_qr', selectedBankQrFile)
+      console.log('📎 Bank QR file appended:', selectedBankQrFile.name, selectedBankQrFile.size, 'bytes')
+    } else if (isEdit && store?.bank_qr) {
+      // If editing and no new file selected, keep existing bank QR
+      formData.append('bank_qr', store.bank_qr)
+    }
+    
+    // Handle deleted logo
+    if (deletedLogo) {
+      formData.append('deleted_logo', deletedLogo)
+      console.log('🗑️ Deleted logo appended:', deletedLogo)
+    }
+    
+    // Handle deleted bank QR
+    if (deletedBankQr) {
+      formData.append('deleted_bank_qr', deletedBankQr)
+      console.log('🗑️ Deleted bank QR appended:', deletedBankQr)
     }
     
     console.log('📝 StoreForm - Form data submitted:', data)
-    console.log('📝 StoreForm - Final store data:', storeData)
-    onSubmit(storeData)
+    console.log('📝 StoreForm - FormData entries:')
+    for (let pair of formData.entries()) {
+      if (pair[0] === 'logo' && pair[1] instanceof File) {
+        console.log(`   ${pair[0]}: ${pair[1].name} (${pair[1].size} bytes, ${pair[1].type})`)
+      } else if (pair[0] === 'bank_qr' && pair[1] instanceof File) {
+        console.log(`   ${pair[0]}: ${pair[1].name} (${pair[1].size} bytes, ${pair[1].type})`)
+      } else {
+        console.log(`   ${pair[0]}: ${pair[1]}`)
+      }
+    }
+    
+    // Pass FormData to onSubmit
+    onSubmit(formData)
   }
 
   const formFields = [
@@ -529,22 +690,107 @@ const StoreForm = ({
           {/* Logo Upload */}
           <div className="space-y-2 md:col-span-3">
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <FiImage className="inline mr-2" />
               Store Logo
             </label>
             <input
               type="file"
+              name="logo"
               accept="image/*"
-              {...register('logo')}
+              onChange={(e) => handleFileUpload(e, 'logo')}
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 dark:file:bg-gray-600 dark:file:text-gray-200"
               disabled={isSubmitting}
             />
             <p className="text-xs text-gray-500 dark:text-gray-400">
-              Recommended: Square image, max 2MB (JPG, PNG, GIF)
+              Recommended: Square image, max 2MB (JPG, PNG, GIF, WebP)
             </p>
+            
+            {/* Logo Preview */}
+            {logoPreview && (
+              <div className="mt-2 flex items-center space-x-4 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                <img 
+                  src={logoPreview} 
+                  alt="Logo preview" 
+                  className="h-20 w-20 object-cover rounded-lg border border-gray-200 dark:border-gray-600"
+                />
+                <div>
+                  <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    {selectedLogoFile ? selectedLogoFile.name : 'Current logo'}
+                  </p>
+                  {selectedLogoFile && (
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      {(selectedLogoFile.size / 1024).toFixed(2)} KB
+                    </p>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveFile('logo')}
+                    className="mt-1 text-sm text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 flex items-center"
+                  >
+                    <FiX className="mr-1" /> Remove Logo
+                  </button>
+                </div>
+              </div>
+            )}
+            
             {errors.logo && (
               <div className="flex items-center space-x-1 mt-1">
                 <FiAlertCircle className="w-4 h-4 text-red-500" />
                 <p className="text-red-500 text-sm">{errors.logo.message}</p>
+              </div>
+            )}
+          </div>
+
+          {/* Bank QR Upload */}
+          <div className="space-y-2 md:col-span-3">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <FaQrcode className="inline mr-2" />
+              Bank QR Code
+            </label>
+            <input
+              type="file"
+              name="bank_qr"
+              accept="image/*"
+              onChange={(e) => handleFileUpload(e, 'bank_qr')}
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 dark:file:bg-gray-600 dark:file:text-gray-200"
+              disabled={isSubmitting}
+            />
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              Upload bank QR code image, max 2MB (JPG, PNG, GIF, WebP)
+            </p>
+            
+            {/* Bank QR Preview */}
+            {bankQrPreview && (
+              <div className="mt-2 flex items-center space-x-4 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                <img 
+                  src={bankQrPreview} 
+                  alt="Bank QR preview" 
+                  className="h-20 w-20 object-cover rounded-lg border border-gray-200 dark:border-gray-600"
+                />
+                <div>
+                  <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    {selectedBankQrFile ? selectedBankQrFile.name : 'Current bank QR'}
+                  </p>
+                  {selectedBankQrFile && (
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      {(selectedBankQrFile.size / 1024).toFixed(2)} KB
+                    </p>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveFile('bank_qr')}
+                    className="mt-1 text-sm text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 flex items-center"
+                  >
+                    <FiX className="mr-1" /> Remove Bank QR
+                  </button>
+                </div>
+              </div>
+            )}
+            
+            {errors.bank_qr && (
+              <div className="flex items-center space-x-1 mt-1">
+                <FiAlertCircle className="w-4 h-4 text-red-500" />
+                <p className="text-red-500 text-sm">{errors.bank_qr.message}</p>
               </div>
             )}
           </div>

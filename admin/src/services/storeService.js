@@ -9,7 +9,12 @@ export const storeAPI = {
 
   // Register/save store/shop
   create: (storeData) => {
-    return apiClient.post('/store/store', storeData)
+    // For FormData, set the correct headers
+    return apiClient.post('/store/store', storeData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    })
   },
 
   // Edit/show shop (GET method)
@@ -19,7 +24,12 @@ export const storeAPI = {
 
   // Update shop
   update: (id, storeData) => {
-    return apiClient.put(`/store/${id}`, storeData)
+    // For FormData, set the correct headers
+    return apiClient.post(`/store/${id}`, storeData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    })
   },
 
   // Delete shop

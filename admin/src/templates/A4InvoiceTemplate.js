@@ -12,6 +12,8 @@ export const generateA4InvoiceHTML = (invoice, isOrderDetails = false) => {
     return defaultValue
   }
 
+  console.log("checking the invoice in print template",invoice)
+
   // Calculate totals from invoice items and packages
   const calculateSubtotal = () => {
     let subtotal = 0
