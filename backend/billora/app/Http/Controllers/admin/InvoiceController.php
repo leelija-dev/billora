@@ -256,10 +256,10 @@ class InvoiceController extends Controller
                             'message' => 'Stock not available'
                         ]);
                     }
-                    $price = $stock->selling_price;
+                    $price = $item['price']; //$stock->selling_price;
                 } else {
                     $product = Products::find($item['product_id']);
-                    $price = $product->selling_price ?? 0;
+                    $price = $item['price'];//$product->selling_price ?? 0;
                 }
                 // $price = $item['price'];
                 $qty = $item['quantity'];
@@ -296,11 +296,13 @@ class InvoiceController extends Controller
                         ->where('product_id', $item['product_id'])
                         ->first();
                     
-                    $price = $stock->selling_price;
+                    $price = $item['price'];//$stock->selling_price;
+                    $purchasePrice =  $stock->purchase_price;
                 } else {
                     $product = Products::find($item['product_id']);
-                    $price = $product->selling_price ?? 0;
+                    $price = $item['price'];//$product->selling_price ?? 0;
                     $gstPercent = $product->gst_percentage ?? 0;
+                    $purchasePrice =  $product->purchase_price;
                 }
                 // $price = $item['price'];
                 $qty = $item['quantity'];
@@ -315,6 +317,13 @@ class InvoiceController extends Controller
                         'message' => 'GST Percentage can not be less than product GST Percentage'
                     ]);
                 }
+                 if($item['price'] <  $purchasePrice){
+                    return response()->json([
+                        'status' => false,
+                        'message' => 'Selling price can not be less than  purchase price'
+                    ]);
+                }
+                
                 InvoiceItems::create([
                     'user_id'       => $request->user_id,
                     'invoice_id'    => $invoice->id,
@@ -446,7 +455,7 @@ class InvoiceController extends Controller
                         'message' => 'You do not have any active plan. Please upgrade your plan.'
                     ]);
                 }
-                $bill = Invoice::with('invoiceItems','invoiceItems.unit','invoiceItems.product.brand','packages','store','customer','invoiceItems.stock')
+                $bill = Invoice::with('invoiceItems','invoiceItems.product.unit','invoiceItems.product.brand','packages','store','customer','invoiceItems.stock')
                     ->where('user_id', $userId)
                     ->where('id', $id)
                     ->first();
@@ -521,7 +530,7 @@ class InvoiceController extends Controller
 
 
                 return Invoice::with([
-                    'invoiceItems.unit',
+                    'invoiceItems.product.unit',
                     'invoiceItems.product',
                     'invoiceItems.product.brand',
                     'packages',
@@ -930,9 +939,11 @@ class InvoiceController extends Controller
                         ->first();
 
                     $price = $item['price'] ?? 0;//$stock->selling_price;
+                    $purchasePrice = $stock->purchase_price;
                 } else {
                     $product = Products::find($item['product_id']);
                     $price = $item['price'] ?? 0;//$product->selling_price ?? 0;
+                    $purchasePrice = $product->purchase_price;
                 }
                 $qty = $item['quantity'];
                 $product = Products::find($item['product_id']);
@@ -968,6 +979,12 @@ class InvoiceController extends Controller
                     return response()->json([
                         'status' => false,
                         'message' => 'GST Percentage can not be less than product GST Percentage'
+                    ]);
+                }
+                if($item['price'] <  $purchasePrice){
+                    return response()->json([
+                        'status' => false,
+                        'message' => 'Selling price can not be less than  purchase price'
                     ]);
                 }
                     $exist->update([

@@ -49,6 +49,7 @@ const normalizePaymentMethod = (method) => {
     banktransfer: "Bank Transfer",
     cheque: "Cheque",
     check: "Cheque",
+     "non paid": "Non Paid",
   };
   return methodMap[methodLower] || "Cash";
 };
@@ -2088,45 +2089,61 @@ const InvoiceEditForm = ({
             </h3>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <div className="space-y-4">
+               <Select
+  label="Payment method"
+  value={formData.payment_method}
+  onChange={(e) =>
+    setFormData((p) => ({
+      ...p,
+      payment_method: e.target.value,
+    }))
+  }
+  options={[
+    { value: "Cash", label: "Cash" },
+    { value: "Card", label: "Card" },
+    { value: "UPI", label: "UPI" },
+    { value: "Bank Transfer", label: "Bank Transfer" },
+    { value: "Cheque", label: "Cheque" },
+    { value: "Non Paid", label: "Non Paid" },
+  ]}
+  disabled={formData.payment_status === "non_paid"}
+/>
                 <Select
-                  label="Payment method"
-                  value={formData.payment_method}
-                  onChange={(e) =>
-                    setFormData((p) => ({
-                      ...p,
-                      payment_method: e.target.value,
-                    }))
-                  }
-                  options={[
-                    { value: "Cash", label: "Cash" },
-                    { value: "Card", label: "Card" },
-                    { value: "UPI", label: "UPI" },
-                    { value: "Bank Transfer", label: "Bank Transfer" },
-                    { value: "Cheque", label: "Cheque" },
-                  ]}
-                />
-                <Select
-                  label="Payment status"
-                  value={formData.payment_status}
-                  onChange={(e) => {
-                    const v = e.target.value;
-                    setFormData((p) => ({
-                      ...p,
-                      payment_status: v,
-                      payment_amount:
-                        v === "paid"
-                          ? totals.totalAmount
-                          : v === "semi_paid"
-                            ? p.payment_amount
-                            : 0,
-                    }));
-                  }}
-                  options={[
-                    { value: "paid", label: "Full paid" },
-                    { value: "semi_paid", label: "Semi paid" },
-                    { value: "non_paid", label: "Non paid" },
-                  ]}
-                />
+  label="Payment status"
+  value={formData.payment_status}
+  onChange={(e) => {
+    const newStatus = e.target.value;
+    let newPaymentMethod = formData.payment_method;
+    
+    if (newStatus === "non_paid") {
+      newPaymentMethod = "Non Paid";
+    } else if (newStatus === "semi_paid" || newStatus === "paid") {
+      // Default to Cash for paid/semi-paid
+      if (formData.payment_method === "Non Paid") {
+        newPaymentMethod = "Cash";
+      } else {
+        newPaymentMethod = formData.payment_method || "Cash";
+      }
+    }
+    
+    setFormData((p) => ({
+      ...p,
+      payment_status: newStatus,
+      payment_amount:
+        newStatus === "paid"
+          ? totals.totalAmount
+          : newStatus === "semi_paid"
+            ? p.payment_amount
+            : 0,
+      payment_method: newPaymentMethod,
+    }));
+  }}
+  options={[
+    { value: "paid", label: "Full paid" },
+    { value: "semi_paid", label: "Semi paid" },
+    { value: "non_paid", label: "Non paid" },
+  ]}
+/>
                 {formData.payment_status === "semi_paid" && (
                   <>
                     <Input

@@ -867,10 +867,12 @@ export const generateA4InvoiceHTML = (invoice, isOrderDetails = false) => {
   // Helper function to render items section
   function renderItemsSection(invoice) {
     let html = "";
+    
 
     // Products
     if (Array.isArray(invoice.items) && invoice.items.length > 0) {
       html += `<tr><td colspan="7" class="section-header">🛒 PRODUCTS</td></tr>`;
+      console.log("checking the invoice items",invoice.items)
       invoice.items.forEach((item, idx) => {
         const price = parseNumeric(item.price);
         const qty = parseNumeric(item.quantity, 1);
@@ -883,7 +885,7 @@ export const generateA4InvoiceHTML = (invoice, isOrderDetails = false) => {
         html += `<tr>
           <td>${idx + 1}</td>
           <td>${escapeHtml(productName)}</td>
-          <td class="text-right">${qty}</td>
+          <td class="text-right">${qty} (${item.product?.unit?.code})</td>
           <td class="text-right">${formatCurrency(price)}</td>
           <td class="text-center">${gst > 0 ? `${gst}%` : "—"}</td>
           <td class="text-right">${discount > 0 ? `${discount}%` : "—"}</td>

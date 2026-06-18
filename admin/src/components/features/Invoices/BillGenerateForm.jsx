@@ -1421,49 +1421,75 @@ const BillGenerateForm = ({
   }, [formData.items]);
 
   const handleSubmit = useCallback(
-    async (e) => {
-      e.preventDefault();
+  async (e) => {
+    e.preventDefault();
 
-      if (
-        !formData.customer_id ||
-        !formData.store_id ||
-        formData.items.length === 0
-      ) {
+    if (
+      !formData.customer_id ||
+      !formData.store_id ||
+      formData.items.length === 0
+    ) {
+      toast.error(
+        "Please fill all required fields and add at least one item",
+      );
+      return;
+    }
+
+    if (hasStockPermission) {
+      const stockIssues = formData.items.filter(
+        (item) =>
+          item.stock_quantity > 0 && item.quantity > item.stock_quantity,
+      );
+
+      if (stockIssues.length > 0) {
         toast.error(
-          "Please fill all required fields and add at least one item",
+          `Cannot proceed. ${stockIssues.length} item(s) exceed available stock. Please adjust quantities.`,
         );
         return;
       }
+    }
 
-      if (hasStockPermission) {
-        const stockIssues = formData.items.filter(
-          (item) =>
-            item.stock_quantity > 0 && item.quantity > item.stock_quantity,
+    // NEW: Check for price less than purchase price
+    const priceIssues = formData.items.filter(
+      (item) => {
+        // Only check for non-package items
+        if (item.is_package) return false;
+        
+        const purchasePrice = item.purchase_price || 0;
+        const sellingPrice = item.price || 0;
+        
+        // If purchase price exists and selling price is less than purchase price
+        return purchasePrice > 0 && sellingPrice < purchasePrice;
+      }
+    );
+
+    if (priceIssues.length > 0) {
+      const issueMessages = priceIssues.map(item => 
+        `${item.product_name}: ₹${item.price.toFixed(2)} < ₹${(item.purchase_price || 0).toFixed(2)}`
+      );
+      
+      toast.error(
+        `❌ Cannot generate invoice. ${priceIssues.length} item(s) have price below purchase price:\n${issueMessages.join('\n')}`,
+        { duration: 5000 }
+      );
+      return;
+    }
+
+    const totals = calculateTotals();
+
+    if (formData.payment_status === "semi_paid") {
+      if (!formData.payment_amount || formData.payment_amount <= 0) {
+        toast.error(
+          "Please enter a valid payment amount for semi-paid option",
         );
-
-        if (stockIssues.length > 0) {
-          toast.error(
-            `Cannot proceed. ${stockIssues.length} item(s) exceed available stock. Please adjust quantities.`,
-          );
-          return;
-        }
-      }
-
-      const totals = calculateTotals();
-
-      if (formData.payment_status === "semi_paid") {
-        if (!formData.payment_amount || formData.payment_amount <= 0) {
-          toast.error(
-            "Please enter a valid payment amount for semi-paid option",
-          );
-          return;
-        }
-      }
-
-      if (!formData.payment_method) {
-        toast.error("Please select a payment method");
         return;
       }
+    }
+
+    if (!formData.payment_method) {
+      toast.error("Please select a payment method");
+      return;
+    }
 
       const productItems = formData.items.filter((item) => !item.is_package);
       const packageItems = formData.items.filter((item) => item.is_package);
@@ -2300,6 +2326,7 @@ const BillGenerateForm = ({
                           </p>
                           <p className="text-xs text-gray-400 dark:text-gray-500">
                             {item.unit_name}
+                            
                           </p>
 
                           {/* Display attributes in table */}
