@@ -304,9 +304,9 @@ class InvoiceController extends Controller
                 // $price = $item['price'];
                 $qty = $item['quantity'];
 
-                $discount = ((($price * $qty) * ($item['discount'] ?? 0)) / 100);
-                $gst = (((($price * $qty) - $discount) * $item['gst'] ?? 0) / 100);
-                $totalPrice = ((($price * $qty) - $discount) + $gst);
+                $discount = ((($item['price'] * $qty) * ($item['discount'] ?? 0)) / 100);
+                $gst = (((($item['price'] * $qty) - $discount) * $item['gst'] ?? 0) / 100);
+                $totalPrice = ((($item['price'] * $qty) - $discount) + $gst);
                 $product = Products::find($item['product_id']);
                 InvoiceItems::create([
                     'user_id'       => $request->user_id,
@@ -316,10 +316,10 @@ class InvoiceController extends Controller
                     'quantity'      => $qty,
                     'item_count'    => $qty,
                     'unit_id'       => $item['unit_id'],
-                    'price'         => $price,
+                    'price'         => $item['price'] ?? 0,#$price,
                     'gst'           => $item['gst'] ?? 0,
                     'discount'      => $item['discount'] ?? 0,
-                    'total_price'   => $totalPrice,
+                    'total_price'   => $totalPrice,//$item['total_price'] ?? 0,#$totalPrice,
                     'status'        => 'completed',
                     'created_by'    => $request->created_by
                 ]);
@@ -331,10 +331,10 @@ class InvoiceController extends Controller
                     'purchase_price' => $product->purchase_price ?? 0,
                     'purchase_gst_percentage' => $product->purchase_gst_percentage ?? 0,
                     'purchase_gst_amount' => $product->purchase_price * $product->purchase_gst_percentage / 100 ?? 0,
-                    'selling_price' => $product->selling_price ?? 0,
-                    'selling_discount_percentage' => $product->discount_percentage ?? 0,
-                    'selling_gst_percentage' => $product->gst_percentage ?? 0,
-                    'selling_gst_amount' => $product->selling_price * $product->gst_percentage / 100 ?? 0,
+                    'selling_price' => $item['price'],//$product->selling_price ?? 0,
+                    'selling_discount_percentage' => $item['discount'],//$product->discount_percentage ?? 0,
+                    'selling_gst_percentage' => $item['gst'],//$product->gst_percentage ?? 0,
+                    'selling_gst_amount' => $gst,//$product->selling_price * $product->gst_percentage / 100 ?? 0,
                     'quantity' => $qty,
                     'govt_pay_status' => false,
                     'invoice_status' => 'completed',
@@ -516,7 +516,7 @@ class InvoiceController extends Controller
                 return Invoice::with([
                     'invoiceItems.product',
                     'packages',
-                    'customer'
+                    'customer',
                 ])
                     ->where('user_id', $user)
 
@@ -875,10 +875,10 @@ class InvoiceController extends Controller
                             'message' => 'Stock not available'
                         ]);
                     }
-                    $price = $stock->selling_price;
+                    $price = $item['price'];//$stock->selling_price;
                 } else {
                     $product = Products::find($item['product_id']);
-                    $price = $product->selling_price ?? 0;
+                    $price = $item['price'];//$product->selling_price ?? 0;
                 }
                 // $price = $item['price'];
                 $qty = $item['quantity'];
@@ -919,10 +919,10 @@ class InvoiceController extends Controller
                         ->where('product_id', $item['product_id'])
                         ->first();
 
-                    $price = $stock->selling_price;
+                    $price = $item['price'] ?? 0;//$stock->selling_price;
                 } else {
                     $product = Products::find($item['product_id']);
-                    $price = $product->selling_price ?? 0;
+                    $price = $item['price'] ?? 0;//$product->selling_price ?? 0;
                 }
                 $qty = $item['quantity'];
                 $product = Products::find($item['product_id']);
@@ -965,6 +965,8 @@ class InvoiceController extends Controller
                     ]);
                     $gstCollections =  GstCollection::where('user_id', $data['user_id'])->where('invoice_id', $invoice->id)->where('product_id', $item['product_id'])->first();
                     $product = Products::find($item['product_id']);
+                    $netPrice = $item['price'] - ($item['price'] * $item['discount'] / 100);
+                    $gstAmt = ($netPrice * $item['gst'] / 100);
                     if ($gstCollections) {
                         $gstCollections->update([
                             'purchase_price' => $product->purchase_price,
@@ -973,12 +975,14 @@ class InvoiceController extends Controller
                             'selling_price'  => $item['price'] ?? 0,
                             'selling_discount_percentage' => $item['discount'] ?? 0,
                             'selling_gst_percentage' => $item['gst'] ?? 0,
-                            'selling_gst_amount' => $item['price'] * $item['gst'] / 100,
+                            'selling_gst_amount' => $gstAmt,//$item['price'] * $item['gst'] / 100,
                             'quantity' => $item['quantity'],
                             'govt_pay_status' => false,
                             'invoice_status' => 'completed',
                         ]);
                     } else {
+                        // $d
+                       
                         GstCollection::create([
                             'user_id' => $data['user_id'],
                             'invoice_id' => $invoice->id,
@@ -990,7 +994,7 @@ class InvoiceController extends Controller
                             'selling_price'  => $item['price'] ?? 0,
                             'selling_discount_percentage' => $item['discount'] ?? 0,
                             'selling_gst_percentage' => $item['gst'] ?? 0,
-                            'selling_gst_amount' => $item['price'] * $item['gst'] / 100,
+                            'selling_gst_amount' => $gstAmt, //$item['price'] * $item['gst'] / 100,
                             'quantity' => $item['quantity'],
                             'govt_pay_status' => false,
                             'invoice_status' => 'completed',
@@ -998,6 +1002,8 @@ class InvoiceController extends Controller
                         ]);
                     }
                 } else {
+                    $netPrices = $item['price'] - ($item['price'] * $item['discount'] / 100);
+                    $gstAmts = ($netPrices * $item['gst'] / 100);
                     InvoiceItems::create([
                         'user_id'       => $data['user_id'],
                         'invoice_id'    => $invoice->id,
@@ -1029,10 +1035,10 @@ class InvoiceController extends Controller
                         'purchase_price' => $product->purchase_price ?? 0,
                         'purchase_gst_percentage' => $product->purchase_gst_percentage ?? 0,
                         'purchase_gst_amount' => $product->purchase_price * $product->purchase_gst_percentage / 100 ?? 0,
-                        'selling_price' => $product->selling_price ?? 0,
-                        'selling_discount_percentage' => $product->discount_percentage ?? 0,
-                        'selling_gst_percentage' => $product->gst_percentage ?? 0,
-                        'selling_gst_amount' => $product->selling_price * $product->gst_percentage / 100 ?? 0,
+                        'selling_price' => $item['price'] ?? 0,//$product->selling_price ?? 0,
+                        'selling_discount_percentage' => $item['discount'] ?? 0,//$product->discount_percentage ?? 0,
+                        'selling_gst_percentage' => $item['gst'] ?? 0,//$product->gst_percentage ?? 0,
+                        'selling_gst_amount' => $gstAmts,//$product->selling_price * $product->gst_percentage / 100 ?? 0,
                         'quantity' => $qty,
                         'govt_pay_status' => false,
                         'invoice_status' => 'completed',
@@ -1065,7 +1071,8 @@ class InvoiceController extends Controller
                 'customer_wise_user_' . $request->user_id,
                 'single_invoice_' . $request->user_id,
                 'with_out_stock_user_' . $request->user_id,
-                'bill_customers_user_' . $request->user_id
+                'bill_customers_user_' . $request->user_id,
+                'gst_collection_user_' . $request->user_id
             ])->flush();
             return response()->json([
                 'status' => true,
