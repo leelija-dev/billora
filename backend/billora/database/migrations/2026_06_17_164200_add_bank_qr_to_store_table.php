@@ -13,6 +13,8 @@ return new class extends Migration
     {
         Schema::table('store', function (Blueprint $table) {
             $table->string('bank_qr')->nullable()->after('status');
+            $table->string('bank_qr_public_id')->nullable()->after('bank_qr');
+            $table->string('logo_public_id')->nullable()->after('logo');
         });
     }
 
@@ -23,6 +25,8 @@ return new class extends Migration
     {
         Schema::table('store', function (Blueprint $table) {
             $table->dropColumn('bank_qr');
+            $table->dropColumn('bank_qr_public_id');
+            $table->dropColumn('logo_public_id');
         });
     }
 };
