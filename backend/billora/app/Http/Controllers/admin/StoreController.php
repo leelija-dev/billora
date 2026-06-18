@@ -297,7 +297,23 @@ class StoreController extends Controller
             // }
 
             $store->update($data);
+            if($request->deleted_logo){
+                $this->deleteFromCloudinary($store->logo_public_id);
+                $store->update([
+                    'logo' => null,
+                    'logo_public_id' => null
 
+                ]);
+                
+            }
+            if($request->deleted_bank_qr){
+                $this->deleteFromCloudinary($store->bank_qr_public_id);
+                $store->update([
+                    'bank_qr' => null,
+                    'bank_qr_public_id' => null
+
+                ]);
+            }
             if ($request->hasFile('bank_qr')) {
 
                 $bankQrUpload = Cloudinary::uploadApi()->upload(
@@ -311,10 +327,11 @@ class StoreController extends Controller
                 );
 
                 $store->update([
-                    'bank_qr' => $bankQrUpload['secure_url']
+                    'bank_qr' => $bankQrUpload['secure_url'],
+                    'bank_qr_public_id' => $bankQrUpload['public_id']
                 ]);
 
-                Log::info('Bank QR uploaded successfully.');
+                // Log::info('Bank QR uploaded successfully.');
             }
 
 
@@ -331,10 +348,11 @@ class StoreController extends Controller
                 );
 
                 $store->update([
-                    'logo' => $logoUpload['secure_url']
+                    'logo' => $logoUpload['secure_url'],
+                    'logo_public_id' => $logoUpload['public_id']
                 ]);
 
-                Log::info('Store logo uploaded successfully.');
+                // Log::info('Store logo uploaded successfully.');
             }
 
             Cache::tags(['store_user_' . $user, 'billing_user_' . $user, 'single_invoice_' . $user])->flush();
@@ -348,6 +366,13 @@ class StoreController extends Controller
                 'status' => false,
                 'message' => $e->getMessage()
             ]);
+        }
+    }
+    private function deleteFromCloudinary($publicId)
+    {
+        if ($publicId) {
+            // Cloudinary::destroy($publicId);
+            Cloudinary::uploadApi()->destroy($publicId);
         }
     }
     public function delete($id)

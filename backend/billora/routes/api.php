@@ -141,7 +141,7 @@ Route::middleware('auth:sanctum')->prefix('store')->group(function () {
    Route::get('/{id}', [StoreController::class, 'index']);
    Route::post('/store', [StoreController::class, 'store']);
    Route::get('/edit/{id}', [StoreController::class, 'edit']);
-   Route::put('/{id}', [StoreController::class, 'update']);
+   Route::post('/{id}', [StoreController::class, 'update']);
    Route::delete('/{id}', [StoreController::class, 'delete']);
 });
 

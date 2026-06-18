@@ -19,6 +19,8 @@ class Store extends Model
     'status',
     'state',
     'bank_qr',
+    'logo_public_id',
+    'bank_qr_public_id',
     'pincode',
     'created_by'
     ];
