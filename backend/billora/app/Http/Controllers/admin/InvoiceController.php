@@ -516,7 +516,8 @@ class InvoiceController extends Controller
                 return Invoice::with([
                     'invoiceItems.product',
                     'packages',
-                    'customer'
+                    'customer',
+                    'billPaymentHistory'
                 ])
                     ->where('user_id', $user)
 

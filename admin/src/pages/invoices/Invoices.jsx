@@ -549,6 +549,7 @@ const Invoices = () => {
       customer_email: customerData.email || invoice.customer_email || "N/A",
       customer_address: customerAddress,
       customer_gst: customerData.gst || invoice.customer_gst || "N/A",
+      payment_method:invoice.bill_payment_history.payment_method ||"N/A",
       store_name: storeData.name || storeData.store_name || invoice.store_name || "Store Deleted",
       store_address: storeAddress,
       store_gst: storeData.gst || storeData.gst_number || invoice.store_gst || "N/A",
@@ -557,13 +558,7 @@ const Invoices = () => {
       items: enhancedItems,
     };
     
-    console.log("Enhanced invoice for printing:", {
-      store_name: enhancedInvoice.store_name,
-      store_address: enhancedInvoice.store_address,
-      store_phone: enhancedInvoice.store_phone,
-      store_email: enhancedInvoice.store_email,
-      store_gst: enhancedInvoice.store_gst
-    });
+    console.log("Enhanced invoice for printing:", enhancedInvoice);
     
     printA4Invoice(enhancedInvoice);
   } catch (error) {
