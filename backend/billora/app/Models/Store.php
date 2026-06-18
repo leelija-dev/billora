@@ -18,6 +18,7 @@ class Store extends Model
     'city',
     'status',
     'state',
+    'bank_qr',
     'pincode',
     'created_by'
     ];
