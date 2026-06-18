@@ -42,4 +42,5 @@ public function packages(){
 public  function store(){
     return $this->belongsTo(Store::class,'store_id');
 }
+
 }

@@ -34,4 +34,8 @@ class InvoiceItems extends Model
 public function stock(){
     return $this->belongsTo(Stocks::class, 'stock_id');
 }
+public function unit(){
+    return $this->belongsTo(Unit::class , 'unit_id');
+}
+
 }
