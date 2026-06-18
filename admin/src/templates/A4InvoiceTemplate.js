@@ -1,156 +1,152 @@
 /**
  * A4 Invoice Template - Reusable component for generating A4 invoice HTML
- * Professional, compact layout optimized for printing
+ * Professional receipt-style layout optimized for printing
  */
 export const generateA4InvoiceHTML = (invoice, isOrderDetails = false) => {
-  if (!invoice) return ''
+  if (!invoice) return "";
 
   // Helper function to safely parse numeric values
   const parseNumeric = (value, defaultValue = 0) => {
-    if (typeof value === 'string') return parseFloat(value) || defaultValue
-    if (typeof value === 'number') return value
-    return defaultValue
-  }
+    if (typeof value === "string") return parseFloat(value) || defaultValue;
+    if (typeof value === "number") return value;
+    return defaultValue;
+  };
 
-  console.log("checking the invoice in print template",invoice)
+  console.log("checking the invoice in print template", invoice);
 
   // Calculate totals from invoice items and packages
   const calculateSubtotal = () => {
-    let subtotal = 0
+    let subtotal = 0;
     if (Array.isArray(invoice.items)) {
-      invoice.items.forEach(item => {
-        const price = parseNumeric(item.price)
-        const qty = parseNumeric(item.quantity, 1)
-        subtotal += price * qty
-      })
+      invoice.items.forEach((item) => {
+        const price = parseNumeric(item.price);
+        const qty = parseNumeric(item.quantity, 1);
+        subtotal += price * qty;
+      });
     }
     if (Array.isArray(invoice.packages)) {
-      invoice.packages.forEach(pkg => {
-        const price = parseNumeric(pkg.price)
-        const qty = parseNumeric(pkg.quantity, 1)
-        subtotal += price * qty
-      })
+      invoice.packages.forEach((pkg) => {
+        const price = parseNumeric(pkg.price);
+        const qty = parseNumeric(pkg.quantity, 1);
+        subtotal += price * qty;
+      });
     }
-    return subtotal
-  }
+    return subtotal;
+  };
 
   const calculateTotalDiscount = () => {
-    let discount = 0
+    let discount = 0;
     if (Array.isArray(invoice.items)) {
-      invoice.items.forEach(item => {
-        const price = parseNumeric(item.price)
-        const qty = parseNumeric(item.quantity, 1)
-        const discPercent = parseNumeric(item.discount)
-        const subtotal = price * qty
-        discount += subtotal * (discPercent / 100)
-      })
+      invoice.items.forEach((item) => {
+        const price = parseNumeric(item.price);
+        const qty = parseNumeric(item.quantity, 1);
+        const discPercent = parseNumeric(item.discount);
+        const subtotal = price * qty;
+        discount += subtotal * (discPercent / 100);
+      });
     }
-    return discount
-  }
+    return discount;
+  };
 
   const calculateTotalGST = () => {
-    let gst = 0
+    let gst = 0;
     if (Array.isArray(invoice.items)) {
-      invoice.items.forEach(item => {
-        const price = parseNumeric(item.price)
-        const qty = parseNumeric(item.quantity, 1)
-        const discPercent = parseNumeric(item.discount)
-        const gstPercent = parseNumeric(item.gst)
-        const subtotal = price * qty
-        const afterDisc = subtotal - (subtotal * discPercent / 100)
-        gst += afterDisc * (gstPercent / 100)
-      })
+      invoice.items.forEach((item) => {
+        const price = parseNumeric(item.price);
+        const qty = parseNumeric(item.quantity, 1);
+        const discPercent = parseNumeric(item.discount);
+        const gstPercent = parseNumeric(item.gst);
+        const subtotal = price * qty;
+        const afterDisc = subtotal - (subtotal * discPercent) / 100;
+        gst += afterDisc * (gstPercent / 100);
+      });
     }
-    return gst
-  }
+    return gst;
+  };
 
-  const subtotal = calculateSubtotal()
-  const totalDiscount = calculateTotalDiscount()
-  const totalGST = calculateTotalGST()
-  const totalAmount = parseNumeric(invoice.total_amount || invoice.totalAmount, subtotal - totalDiscount + totalGST)
-  const paidAmount = parseNumeric(invoice.paid_amount || invoice.paidAmount, 0)
-  const changeAmount = paidAmount > totalAmount ? paidAmount - totalAmount : 0
-  const dueAmount = paidAmount < totalAmount ? totalAmount - paidAmount : 0
+  const subtotal = calculateSubtotal();
+  const totalDiscount = calculateTotalDiscount();
+  const totalGST = calculateTotalGST();
+  const totalAmount = parseNumeric(
+    invoice.total_amount || invoice.totalAmount,
+    subtotal - totalDiscount + totalGST,
+  );
+  const paidAmount = parseNumeric(invoice.paid_amount || invoice.paidAmount, 0);
+  const changeAmount = paidAmount > totalAmount ? paidAmount - totalAmount : 0;
+  const dueAmount = paidAmount < totalAmount ? totalAmount - paidAmount : 0;
 
   // Format currency
-  const formatCurrency = (amount) => `₹${amount.toFixed(2)}`
+  const formatCurrency = (amount) => `₹${amount.toFixed(2)}`;
 
   // Format date
   const formatDate = (date) => {
-    if (!date) return new Date().toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
-    return new Date(date).toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
-  }
+    if (!date)
+      return new Date().toLocaleString("en-IN", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    return new Date(date).toLocaleString("en-IN", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
 
   // Render header conditionally
   const renderHeader = () => {
-    if (isOrderDetails) return ''
+    if (isOrderDetails) return "";
 
-
-    if(invoice.store_name==='Store Deleted'){
+    if (invoice.store_name === "Store Deleted") {
       return `
-       <div class="header-row">
-  <div class="brand-section">
-    <div style="
-      display: inline-block;
-      padding: 12px 18px;
-      border: 2px dashed #999;
-      border-radius: 8px;
-      background: #f8f8f8;
-      text-align: center;
-      min-width: 220px;
-    ">
-      <div style="
-        font-size: 18px;
-        font-weight: 700;
-        color: #444;
-        margin-bottom: 4px;
-        letter-spacing: 0.5px;
-      ">
-        STORE DELETED
-      </div>
-      <div style="
-        font-size: 11px;
-        color: #777;
-        line-height: 1.4;
-      ">
-        Store information is no longer available
-      </div>
-    </div>
-  </div>
-
-  <div class="invoice-badge">
-    <h2>TAX INVOICE</h2>
-    <p>Original for Recipient</p>
-  </div>
-</div>`
+        <div class="header-row">
+          <div class="brand-section">
+            <div class="store-deleted-badge">
+              <div class="store-deleted-title">STORE DELETED</div>
+              <div class="store-deleted-sub">Store information is no longer available</div>
+            </div>
+          </div>
+          <div class="invoice-badge">
+            <h2>TAX INVOICE</h2>
+            <p>Original for Recipient</p>
+          </div>
+        </div>`;
     }
 
     return `
-    <div class="header-row">
-      <div class="brand-section">
-        <div class="brand-name">${escapeHtml(invoice.store_name) || 'Deleted'}</div>
-        <div class="store-meta">
-          ${escapeHtml(invoice.store_address) || 'Deleted'}<br>
-          ${invoice.store_gst ? `GST: ${escapeHtml(invoice.store_gst)} &nbsp;|&nbsp;` : ''}
-          ${invoice.store_phone ? `Tel: ${escapeHtml(invoice.store_phone)}` : ''}
-          ${invoice.store_email ? `<br>${escapeHtml(invoice.store_email)}` : ''}
+      <div class="header-row">
+        <div class="brand-section">
+          <div style="display:flex;gap:7px;">
+          <div>${invoice.store?.logo ? `<div class="store-logo"><img src="${invoice.store.logo}" alt="Store Logo"/></div>` : ""}</div>
+          <div>
+           <div class="brand-name">${escapeHtml(invoice.store_name) || "Store"}</div>
+          <div class="store-meta">
+            ${escapeHtml(invoice.store_address) || ""}<br>
+            ${invoice.store_phone ? `📞 ${escapeHtml(invoice.store_phone)}` : ""}
+            ${invoice.store_email ? `&nbsp;| ✉️ ${escapeHtml(invoice.store_email)}` : ""}
+            ${invoice.store_gst ? `<br>GST: ${escapeHtml(invoice.store_gst)}` : ""}
+          </div>
+          </div>
+
+          </div>
+         
         </div>
-      </div>
-      <div class="invoice-badge">
-        <h2>TAX INVOICE</h2>
-        <p>Original for Recipient</p>
-      </div>
-    </div>
-    `
-    
-    
-  }
+        <div class="invoice-badge">
+          <h2>TAX INVOICE</h2>
+          <p>Original for Recipient</p>
+        </div>
+      </div>`;
+  };
 
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>${isOrderDetails ? 'Order Details' : 'Invoice #'}${invoice.invoice_number || invoice.id}</title>
+  <title>${isOrderDetails ? "Order Details" : "Invoice #"}${invoice.invoice_number || invoice.id}</title>
   <style>
     * {
       margin: 0;
@@ -160,227 +156,284 @@ export const generateA4InvoiceHTML = (invoice, isOrderDetails = false) => {
 
     @page {
       size: A4;
-      margin: 1.2cm 1cm;
+      margin: 0.8cm 0.8cm;
     }
 
     body {
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
-      background: #eef2f5;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+      background: #f0f2f5;
       display: flex;
       justify-content: center;
       padding: 20px 16px;
+      color: #1a2332;
     }
 
     .invoice-wrapper {
-      max-width: 1100px;
+      max-width: 1000px;
       width: 100%;
       margin: 0 auto;
       background: white;
-      border-radius: 20px;
-      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.08);
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
       overflow: hidden;
     }
 
     .invoice-container {
-      padding: 28px 32px 32px;
+      padding: 30px 35px 25px;
     }
 
-    /* Header Section */
+    /* ===== HEADER ===== */
     .header-row {
       display: flex;
       justify-content: space-between;
       align-items: flex-start;
       flex-wrap: wrap;
       gap: 16px;
-      margin-bottom: 24px;
-      padding-bottom: 16px;
-      border-bottom: 2px solid #e9edf2;
+      margin-bottom: 18px;
+      padding-bottom: 14px;
+      border-bottom: 2px solid #e8edf3;
+    }
+
+    .brand-section {
+      flex: 1;
+    }
+
+    .store-logo {
+      margin-bottom: 6px;
+      border-radius:10px;
+       overflow:hidden;
+       width:100px;
+       height:100px;
+       max-width:100px;
+       max-height:100px;
+    }
+
+    .store-logo img {
+      width:100%;
+      height:100%;
+      object-fit: cover;
+     
     }
 
     .brand-name {
-      font-size: 26px;
-      font-weight: 800;
+      font-size: 24px;
+      font-weight: 700;
+      color: #0b1a2a;
       letter-spacing: -0.3px;
-      background: linear-gradient(135deg, #1e2a3a 0%, #0f1a24 100%);
-      background-clip: text;
-      -webkit-background-clip: text;
-      color: transparent;
-      margin-bottom: 6px;
+      margin-bottom: 4px;
     }
 
     .store-meta {
-      font-size: 13px;
-      color: #5a6874;
-      line-height: 1.4;
+      font-size: 12.5px;
+      color: #4d637a;
+      line-height: 1.5;
     }
 
     .invoice-badge {
       text-align: right;
-      background: #f4f7fc;
-      padding: 10px 20px;
-      border-radius: 32px;
+      background: #f4f7fb;
+      padding: 10px 22px;
+      border-radius: 30px;
+      min-width: 160px;
     }
 
     .invoice-badge h2 {
-      font-size: 24px;
+      font-size: 22px;
       font-weight: 800;
-      color: #1e466e;
-      letter-spacing: 1px;
+      color: #1a3c5e;
+      letter-spacing: 1.2px;
       margin: 0;
     }
 
     .invoice-badge p {
-      font-size: 11px;
-      color: #4a627a;
-      margin-top: 4px;
+      font-size: 10px;
+      color: #55708b;
+      margin-top: 3px;
+      font-weight: 500;
     }
 
-    /* Meta Info Grid */
+    /* Store deleted badge */
+    .store-deleted-badge {
+      display: inline-block;
+      padding: 12px 20px;
+      border: 2px dashed #b0bcc9;
+      border-radius: 8px;
+      background: #f7f9fc;
+      text-align: center;
+    }
+
+    .store-deleted-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: #4a5b6e;
+      letter-spacing: 0.5px;
+    }
+
+    .store-deleted-sub {
+      font-size: 11px;
+      color: #7a8b9e;
+      margin-top: 2px;
+    }
+
+    /* ===== META INFO ===== */
     .meta-grid {
       display: flex;
       justify-content: space-between;
       flex-wrap: wrap;
-      gap: 16px;
-      margin-bottom: 20px;
-      background: #f9fbfd;
-      padding: 14px 20px;
-      border-radius: 16px;
+      gap: 10px 20px;
+      background: #f7faff;
+      padding: 12px 18px;
+      border-radius: 10px;
+      margin-bottom: 16px;
+      border: 1px solid #eef3f9;
     }
 
     .meta-block {
       flex: 1;
-      min-width: 130px;
+      min-width: 120px;
     }
 
     .meta-label {
-      font-size: 11px;
-      font-weight: 600;
+      font-size: 10px;
+      font-weight: 700;
       text-transform: uppercase;
-      letter-spacing: 0.5px;
-      color: #6c7e91;
-      margin-bottom: 4px;
+      letter-spacing: 0.6px;
+      color: #6f859d;
+      margin-bottom: 2px;
     }
 
     .meta-value {
-      font-size: 15px;
+      font-size: 14px;
       font-weight: 600;
-      color: #1f2d3d;
+      color: #142433;
     }
 
-    /* Customer Card */
+    /* ===== CUSTOMER ===== */
     .customer-card {
-      background: #fefefe;
-      border: 1px solid #eef2f8;
-      border-radius: 16px;
-      padding: 14px 20px;
-      margin-bottom: 24px;
+      background: #fafcfe;
+      border: 1px solid #e8eef5;
+      border-radius: 10px;
+      padding: 12px 18px;
+      margin-bottom: 18px;
     }
 
     .section-title {
-      font-size: 12px;
+      font-size: 11px;
       font-weight: 700;
       text-transform: uppercase;
-      letter-spacing: 0.7px;
-      color: #3a546d;
-      margin-bottom: 8px;
-      border-left: 3px solid #2c7da0;
+      letter-spacing: 0.8px;
+      color: #4a6a88;
+      margin-bottom: 6px;
+      border-left: 3px solid #2b7ba8;
       padding-left: 10px;
     }
 
     .customer-details-inline {
       display: flex;
       flex-wrap: wrap;
-      gap: 12px 28px;
+      gap: 8px 24px;
     }
 
     .customer-field {
       font-size: 13px;
-      color: #2c3e50;
+      color: #1f3347;
     }
 
     .customer-field strong {
       font-weight: 600;
-      color: #1a3a4f;
+      color: #0d2137;
     }
 
     .gst-chip {
-      background: #eef3fc;
-      padding: 2px 8px;
+      background: #e9f0f8;
+      padding: 1px 10px;
       border-radius: 20px;
       font-size: 11px;
-      font-weight: 500;
+      font-weight: 600;
+      color: #1f4a6b;
     }
 
-    /* Items Table */
+    /* ===== ITEMS TABLE ===== */
     .items-section {
-      margin-bottom: 24px;
+      margin-bottom: 18px;
     }
 
     .modern-table {
       width: 100%;
       border-collapse: collapse;
-      font-size: 12.5px;
-      border-radius: 12px;
+      font-size: 12px;
+      border-radius: 8px;
       overflow: hidden;
     }
 
     .modern-table th {
-      background: #1f2e3a;
+      background: #1f2f3f;
       color: white;
       font-weight: 600;
-      padding: 10px 10px;
-      font-size: 11.5px;
-      letter-spacing: 0.3px;
+      padding: 8px 10px;
+      font-size: 11px;
+      letter-spacing: 0.4px;
       text-align: left;
+      border: none;
     }
 
     .modern-table td {
-      padding: 10px 10px;
-      border-bottom: 1px solid #eef2f6;
-      color: #2c3f4f;
+      padding: 8px 10px;
+      border-bottom: 1px solid #eef2f7;
+      color: #1d3143;
     }
 
     .modern-table tr:last-child td {
       border-bottom: none;
     }
 
+    .modern-table tr:hover td {
+      background: #f8fafd;
+    }
+
     .text-right {
       text-align: right;
     }
-
     .text-center {
       text-align: center;
     }
-
     .fw-semibold {
       font-weight: 600;
     }
 
     .section-header {
-      background: #f2f5f9;
-      padding: 6px 12px;
+      background: #f2f6fc !important;
+      padding: 5px 12px !important;
       font-weight: 700;
-      font-size: 12px;
+      font-size: 11px;
+      color: #1f405d;
+      letter-spacing: 0.4px;
     }
 
-    /* Summary & Payment Row */
+    .section-header td {
+      background: #f2f6fc !important;
+    }
+
+    /* ===== SUMMARY & PAYMENT ===== */
     .summary-payment-row {
       display: flex;
-      gap: 24px;
-      margin-bottom: 20px;
+      gap: 20px;
+      margin-bottom: 16px;
       flex-wrap: wrap;
     }
 
-    .summary-box, .payment-box {
+    .summary-box,
+    .payment-box {
       flex: 1;
       background: #ffffff;
-      border: 1px solid #e9edf2;
-      border-radius: 18px;
-      padding: 16px 20px;
+      border: 1px solid #e6ecf3;
+      border-radius: 12px;
+      padding: 14px 18px;
+      min-width: 200px;
     }
 
     .summary-box {
-      background: #fbfdff;
+      background: #f9fcff;
     }
 
     .payment-box {
@@ -388,73 +441,129 @@ export const generateA4InvoiceHTML = (invoice, isOrderDetails = false) => {
     }
 
     .box-title {
-      font-size: 12px;
+      font-size: 11px;
       font-weight: 800;
       text-transform: uppercase;
       letter-spacing: 0.8px;
-      color: #446d8c;
-      margin-bottom: 14px;
-      border-bottom: 1px dashed #dce5ec;
-      padding-bottom: 8px;
+      color: #3d607d;
+      margin-bottom: 10px;
+      padding-bottom: 6px;
+      border-bottom: 1px dashed #dce4ed;
     }
 
     .summary-row {
       display: flex;
       justify-content: space-between;
-      margin-bottom: 10px;
+      margin-bottom: 6px;
       font-size: 13px;
     }
 
     .summary-row .label {
-      color: #5a6e7c;
+      color: #56708a;
     }
 
     .summary-row .value {
       font-weight: 500;
-      color: #1f2e3a;
+      color: #1d3145;
     }
 
     .total-row {
-      margin-top: 8px;
-      padding-top: 10px;
-      border-top: 2px solid #e2e8f0;
+      margin-top: 6px;
+      padding-top: 8px;
+      border-top: 2px solid #dfe6ef;
       font-weight: 800;
       font-size: 16px;
     }
 
     .total-row .value {
-      color: #1a5d8f;
+      color: #165a7a;
       font-size: 18px;
     }
 
     .payment-line {
       display: flex;
       justify-content: space-between;
-      margin-bottom: 10px;
+      margin-bottom: 6px;
       font-size: 13px;
+      color: #1d3347;
     }
 
     .amount-paid {
       font-weight: 700;
-      color: #2c6e2c;
+      color: #1f6e3a;
     }
 
     .due-amount {
-      color: #c2412c;
+      color: #b53b2a;
       font-weight: 700;
     }
 
-    /* Footer */
-    .footer-note {
-      margin-top: 20px;
-      text-align: center;
-      border-top: 1px solid #e9edf2;
-      padding-top: 16px;
-      font-size: 11px;
-      color: #7f8c9a;
+    .payment-settled {
+      color: #1f6e3a;
+      font-weight: 600;
+      font-size: 12px;
     }
 
-    /* Print Styles */
+    /* ===== QR CODE FOOTER ===== */
+    .qr-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+      margin-top: 16px;
+      padding-top: 16px;
+      border-top: 2px solid #e8edf3;
+    }
+
+    .qr-section {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .qr-code-img {
+      max-width: 100px;
+      max-height: 100px;
+      border: 1px solid #e6ecf3;
+      border-radius: 8px;
+      padding: 4px;
+      background: white;
+    }
+
+    .qr-label {
+      font-size: 11px;
+      color: #4d657e;
+      font-weight: 500;
+    }
+
+    .footer-text {
+      text-align: right;
+      font-size: 11px;
+      color: #748aa1;
+      line-height: 1.5;
+    }
+
+    .footer-text strong {
+      color: #1f3b55;
+    }
+
+    /* ===== BOTTOM FOOTER ===== */
+    .footer-note {
+      margin-top: 14px;
+      text-align: center;
+      border-top: 1px solid #e8edf3;
+      padding-top: 12px;
+      font-size: 10.5px;
+      color: #7f94ab;
+      letter-spacing: 0.2px;
+    }
+
+    .footer-note span {
+      margin: 0 12px;
+    }
+
+    /* ===== PRINT ===== */
     @media print {
       body {
         background: white;
@@ -467,30 +576,50 @@ export const generateA4InvoiceHTML = (invoice, isOrderDetails = false) => {
         max-width: 100%;
       }
       .invoice-container {
-        padding: 0.2cm 0.3cm;
+        padding: 0.3cm 0.4cm;
       }
-      .meta-grid, .customer-card, .summary-box, .payment-box, .items-table {
+      .modern-table tr:hover td {
+        background: transparent;
+      }
+      .meta-grid,
+      .customer-card,
+      .summary-box,
+      .payment-box,
+      .items-section {
         break-inside: avoid;
       }
     }
 
     @media (max-width: 700px) {
       .invoice-container {
-        padding: 20px;
+        padding: 16px;
       }
       .header-row {
         flex-direction: column;
+        align-items: stretch;
       }
       .invoice-badge {
-        text-align: left;
-        align-self: flex-start;
+        text-align: center;
+        align-self: stretch;
       }
       .meta-grid {
         flex-direction: column;
-        gap: 10px;
+        gap: 6px;
       }
       .summary-payment-row {
         flex-direction: column;
+      }
+      .qr-footer {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+      }
+      .footer-text {
+        text-align: center;
+      }
+      .qr-section {
+        flex-direction: column;
+        align-items: center;
       }
     }
   </style>
@@ -503,16 +632,16 @@ export const generateA4InvoiceHTML = (invoice, isOrderDetails = false) => {
     <!-- Meta Info -->
     <div class="meta-grid">
       <div class="meta-block">
-        <div class="meta-label">${isOrderDetails ? 'Order Number' : 'Invoice Number'}</div>
-        <div class="meta-value">${escapeHtml(invoice.invoice_number || invoice.id || 'INV-001')}</div>
+        <div class="meta-label">${isOrderDetails ? "Order Number" : "Invoice Number"}</div>
+        <div class="meta-value">${escapeHtml(invoice.invoice_number || invoice.id || "INV-001")}</div>
       </div>
       <div class="meta-block">
-        <div class="meta-label">${isOrderDetails ? 'Order Date' : 'Invoice Date'}</div>
+        <div class="meta-label">${isOrderDetails ? "Order Date" : "Invoice Date"}</div>
         <div class="meta-value">${formatDate(invoice.created_at)}</div>
       </div>
       <div class="meta-block">
         <div class="meta-label">Order / Bill No</div>
-        <div class="meta-value">${escapeHtml(invoice.order_id || invoice.id || 'WALK-IN')}</div>
+        <div class="meta-value">${escapeHtml(invoice.order_id || invoice.id || "WALK-IN")}</div>
       </div>
     </div>
 
@@ -520,11 +649,11 @@ export const generateA4InvoiceHTML = (invoice, isOrderDetails = false) => {
     <div class="customer-card">
       <div class="section-title">BILL TO</div>
       <div class="customer-details-inline">
-        <div class="customer-field"><strong>${escapeHtml(invoice.customer_name) || 'Walk-in Customer'}</strong></div>
-        ${invoice.customer_phone ? `<div class="customer-field">📞 ${escapeHtml(invoice.customer_phone)}</div>` : ''}
-        ${invoice.customer_email ? `<div class="customer-field">✉️ ${escapeHtml(invoice.customer_email)}</div>` : ''}
-        ${invoice.customer_address ? `<div class="customer-field">📍 ${escapeHtml(invoice.customer_address)}</div>` : ''}
-        ${invoice.customer_gst ? `<div class="customer-field"><span class="gst-chip">GST: ${escapeHtml(invoice.customer_gst)}</span></div>` : ''}
+        <div class="customer-field"><strong>${escapeHtml(invoice.customer_name) || "Walk-in Customer"}</strong></div>
+        ${invoice.customer_phone ? `<div class="customer-field">📞 ${escapeHtml(invoice.customer_phone)}</div>` : ""}
+        ${invoice.customer_email ? `<div class="customer-field">✉️ ${escapeHtml(invoice.customer_email)}</div>` : ""}
+        ${invoice.customer_address ? `<div class="customer-field">📍 ${escapeHtml(invoice.customer_address)}</div>` : ""}
+        ${invoice.customer_gst ? `<div class="customer-field"><span class="gst-chip">GST: ${escapeHtml(invoice.customer_gst)}</span></div>` : ""}
       </div>
     </div>
 
@@ -534,12 +663,12 @@ export const generateA4InvoiceHTML = (invoice, isOrderDetails = false) => {
         <thead>
           <tr>
             <th style="width: 5%">#</th>
-            <th style="width: 40%">Item / Service</th>
+            <th style="width: 38%">Item / Service</th>
             <th style="width: 10%" class="text-right">Qty</th>
             <th style="width: 13%" class="text-right">Price (₹)</th>
             <th style="width: 9%" class="text-center">GST%</th>
             <th style="width: 10%" class="text-right">Disc%</th>
-            <th style="width: 13%" class="text-right">Total (₹)</th>
+            <th style="width: 15%" class="text-right">Total (₹)</th>
           </tr>
         </thead>
         <tbody>
@@ -558,7 +687,7 @@ export const generateA4InvoiceHTML = (invoice, isOrderDetails = false) => {
         </div>
         <div class="summary-row">
           <span class="label">Total Discount</span>
-          <span class="value" style="color: #2b7e3a;">- ${formatCurrency(totalDiscount)}</span>
+          <span class="value" style="color: #1f7a3a;">- ${formatCurrency(totalDiscount)}</span>
         </div>
         <div class="summary-row">
           <span class="label">Total GST</span>
@@ -576,73 +705,203 @@ export const generateA4InvoiceHTML = (invoice, isOrderDetails = false) => {
           <span>Amount Paid</span>
           <span class="amount-paid">${formatCurrency(paidAmount)}</span>
         </div>
-        ${changeAmount > 0 ? `
+        ${
+          changeAmount > 0
+            ? `
           <div class="payment-line">
             <span>Change Returned</span>
-            <span style="color: #2b6e49; font-weight: 600;">${formatCurrency(changeAmount)}</span>
+            <span style="color: #1f6e3a; font-weight: 600;">${formatCurrency(changeAmount)}</span>
           </div>
-        ` : ''}
-        ${dueAmount > 0 ? `
+        `
+            : ""
+        }
+        ${
+          dueAmount > 0
+            ? `
           <div class="payment-line">
             <span>Due Balance</span>
             <span class="due-amount">${formatCurrency(dueAmount)}</span>
           </div>
-        ` : ''}
-        <div class="payment-line" style="margin-top: 12px; border-top: 1px dashed #dee4ec; padding-top: 10px;">
+        `
+            : ""
+        }
+        <div class="payment-line" style="margin-top: 8px; border-top: 1px dashed #dce4ed; padding-top: 8px;">
           <span>Payment Mode</span>
-          <span>${escapeHtml(invoice.payment_mode || invoice.payment_method || 'Cash / Online')}</span>
+          <span>${escapeHtml(invoice.payment_mode || invoice.payment_method || "Cash / Online")}</span>
         </div>
-        ${invoice.transaction_id ? `<div class="payment-line" style="font-size: 12px;"><span>Txn ID</span><span>${escapeHtml(invoice.transaction_id)}</span></div>` : ''}
-        ${paidAmount >= totalAmount ? `<div class="payment-line" style="margin-top: 6px;"><span style="color: #2d6a4f;">✓ Payment settled</span><span></span></div>` : ''}
+        ${invoice.transaction_id ? `<div class="payment-line" style="font-size: 12px;"><span>Txn ID</span><span>${escapeHtml(invoice.transaction_id)}</span></div>` : ""}
+        ${paidAmount >= totalAmount ? `<div class="payment-line" style="margin-top: 4px;"><span class="payment-settled">✓ Payment settled</span><span></span></div>` : ""}
       </div>
     </div>
 
-    <!-- Footer -->
+    <!-- QR Code Footer -->
+    <div style="display:flex !important;justify-content:flex-end !important;align-items:center !important;margin-top:20px !important;">
+  ${
+    invoice.store?.bank_qr
+      ? `
+    <div style="
+      width:120px !important;
+      
+      
+      
+      text-align:center !important;
+     
+    ">
+      
+      <div style="
+        font-size:12px !important;
+        font-weight:600 !important;
+        color:#1f2937 !important;
+        margin-bottom:10px !important;
+        letter-spacing:0.5px !important;
+      ">
+        PAYMENT QR
+      </div>
+
+      <div style="
+        width:120px !important;
+        height:120px !important;
+        margin:0 auto 10px auto !important;
+        border:1px solid #e5e7eb !important;
+        border-radius:8px !important;
+        padding:6px !important;
+        background:#fff !important;
+      ">
+        <img
+          src="${invoice.store.bank_qr}"
+          alt="QR Code"
+          style="
+            width:100% !important;
+            height:100% !important;
+            object-fit:contain !important;
+            display:block !important;
+          "
+        />
+      </div>
+
+      <div style="
+        font-size:13px !important;
+        font-weight:600 !important;
+        color:#111827 !important;
+        margin-bottom:4px !important;
+        text-align:center !important;
+      ">
+        Scan to Pay
+      </div>
+
+      <div style="
+        font-size:10px !important;
+        color:#6b7280 !important;
+        line-height:1.4 !important;
+        text-align:center !important;
+      ">
+        UPI / Bank Transfer
+      </div>
+
+    </div>
+  `
+      : `
+    <div style="
+      width:180px !important;
+      border:1px dashed #cbd5e1 !important;
+      border-radius:12px !important;
+      padding:12px !important;
+      background:#f8fafc !important;
+      text-align:center !important;
+    ">
+      
+      <div style="
+        width:120px !important;
+        height:120px !important;
+        margin:0 auto 10px auto !important;
+        border:1px dashed #cbd5e1 !important;
+        border-radius:8px !important;
+        display:flex !important;
+        align-items:center !important;
+        justify-content:center !important;
+        background:#ffffff !important;
+      ">
+        <span style="
+          font-size:14px !important;
+          font-weight:600 !important;
+          color:#94a3b8 !important;
+        ">
+          QR
+        </span>
+      </div>
+
+      <div style="
+        font-size:13px !important;
+        font-weight:600 !important;
+        color:#111827 !important;
+        margin-bottom:4px !important;
+      ">
+        Scan to Pay
+      </div>
+
+      <div style="
+        font-size:10px !important;
+        color:#6b7280 !important;
+      ">
+        UPI / Bank Transfer
+      </div>
+
+    </div>
+  `
+  }
+</div>
+
+    <!-- Bottom Footer -->
     <div class="footer-note">
-      <div>This is a computer generated ${isOrderDetails ? 'order summary' : 'invoice'}</div>
-      <div style="margin-top: 4px;">Thank you for your business!</div>
+      <span>This is a computer generated ${isOrderDetails ? "order summary" : "invoice"}</span>
+      <span>•</span>
+      <span>${isOrderDetails ? "Order" : "Invoice"} #${escapeHtml(invoice.invoice_number || invoice.id || "")}</span>
+      <span>•</span>
+      <span>${formatDate(invoice.created_at).split(",")[0]}</span>
     </div>
   </div>
 </div>
 </body>
-</html>`
+</html>`;
 
   // Helper function to render items section
   function renderItemsSection(invoice) {
-    let html = ''
-    
+    let html = "";
+
     // Products
     if (Array.isArray(invoice.items) && invoice.items.length > 0) {
-      html += `<tr><td colspan="7" class="section-header">🛒 PRODUCTS</td></tr>`
+      html += `<tr><td colspan="7" class="section-header">🛒 PRODUCTS</td></tr>`;
       invoice.items.forEach((item, idx) => {
-        const price = parseNumeric(item.price)
-        const qty = parseNumeric(item.quantity, 1)
-        const total = parseNumeric(item.total_price, price * qty)
-        const gst = parseNumeric(item.gst)
-        const discount = parseNumeric(item.discount)
-        const productName = item.product?.name || item.product_name || item.name || 'Product'
-        
+        const price = parseNumeric(item.price);
+        const qty = parseNumeric(item.quantity, 1);
+        const total = parseNumeric(item.total_price, price * qty);
+        const gst = parseNumeric(item.gst);
+        const discount = parseNumeric(item.discount);
+        const productName =
+          item.product?.name || item.product_name || item.name || "Product";
+
         html += `<tr>
           <td>${idx + 1}</td>
           <td>${escapeHtml(productName)}</td>
           <td class="text-right">${qty}</td>
           <td class="text-right">${formatCurrency(price)}</td>
-          <td class="text-center">${gst > 0 ? `${gst}%` : '—'}</td>
-          <td class="text-right">${discount > 0 ? `${discount}%` : '—'}</td>
+          <td class="text-center">${gst > 0 ? `${gst}%` : "—"}</td>
+          <td class="text-right">${discount > 0 ? `${discount}%` : "—"}</td>
           <td class="text-right fw-semibold">${formatCurrency(total)}</td>
-        </tr>`
-      })
+        </tr>`;
+      });
     }
-    
+
     // Packages
     if (Array.isArray(invoice.packages) && invoice.packages.length > 0) {
-      html += `<tr><td colspan="7" class="section-header" style="background: #eef2fa;">📦 PACKAGES</td></tr>`
+      html += `<tr><td colspan="7" class="section-header" style="background: #eef3f9 !important;">📦 PACKAGES</td></tr>`;
       invoice.packages.forEach((pkg, idx) => {
-        const price = parseNumeric(pkg.price)
-        const qty = parseNumeric(pkg.quantity, 1)
-        const total = parseNumeric(pkg.total_price, price * qty)
-        const packageName = pkg.package_name || pkg.name || pkg.product_name || 'Package'
-        
+        const price = parseNumeric(pkg.price);
+        const qty = parseNumeric(pkg.quantity, 1);
+        const total = parseNumeric(pkg.total_price, price * qty);
+        const packageName =
+          pkg.package_name || pkg.name || pkg.product_name || "Package";
+
         html += `<tr>
           <td>${idx + 1}</td>
           <td>${escapeHtml(packageName)}</td>
@@ -651,28 +910,31 @@ export const generateA4InvoiceHTML = (invoice, isOrderDetails = false) => {
           <td class="text-center">—</td>
           <td class="text-right">—</td>
           <td class="text-right fw-semibold">${formatCurrency(total)}</td>
-        </tr>`
-      })
+        </tr>`;
+      });
     }
-    
+
     // No items
-    if ((!invoice.items || invoice.items.length === 0) && (!invoice.packages || invoice.packages.length === 0)) {
-      html += `<tr><td colspan="7" style="text-align: center; padding: 32px; color: #8aa0b5;">No items found</td></tr>`
+    if (
+      (!invoice.items || invoice.items.length === 0) &&
+      (!invoice.packages || invoice.packages.length === 0)
+    ) {
+      html += `<tr><td colspan="7" style="text-align: center; padding: 28px; color: #8aa0b5;">No items found</td></tr>`;
     }
-    
-    return html
+
+    return html;
   }
 
   // Helper function to escape HTML
   function escapeHtml(str) {
-    if (!str) return ''
+    if (!str) return "";
     return String(str)
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#39;')
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
   }
-}
+};
 
-export default generateA4InvoiceHTML
+export default generateA4InvoiceHTML;
