@@ -523,7 +523,7 @@ class InvoiceController extends Controller
                 return Invoice::with([
                     'invoiceItems.unit',
                     'invoiceItems.product',
-                    'invoiceItems.product.brandSingle Bill',
+                    'invoiceItems.product.brand',
                     'packages',
                     'customer',
                 ])
