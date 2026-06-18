@@ -295,11 +295,12 @@ class InvoiceController extends Controller
                     $stock = Stocks::where('id', $item['stock_id'])
                         ->where('product_id', $item['product_id'])
                         ->first();
-
+                    
                     $price = $stock->selling_price;
                 } else {
                     $product = Products::find($item['product_id']);
                     $price = $product->selling_price ?? 0;
+                    $gstPercent = $product->gst_percentage ?? 0;
                 }
                 // $price = $item['price'];
                 $qty = $item['quantity'];
@@ -308,6 +309,12 @@ class InvoiceController extends Controller
                 $gst = (((($item['price'] * $qty) - $discount) * $item['gst'] ?? 0) / 100);
                 $totalPrice = ((($item['price'] * $qty) - $discount) + $gst);
                 $product = Products::find($item['product_id']);
+                if($item['gst'] <  $product->gst_percentage){
+                    return response()->json([
+                        'status' => false,
+                        'message' => 'GST Percentage can not be less than product GST Percentage'
+                    ]);
+                }
                 InvoiceItems::create([
                     'user_id'       => $request->user_id,
                     'invoice_id'    => $invoice->id,
@@ -439,7 +446,7 @@ class InvoiceController extends Controller
                         'message' => 'You do not have any active plan. Please upgrade your plan.'
                     ]);
                 }
-                $bill = Invoice::with('invoiceItems', 'packages','store','customer','invoiceItems.stock')
+                $bill = Invoice::with('invoiceItems','invoiceItems.unit','invoiceItems.product.brand','packages','store','customer','invoiceItems.stock')
                     ->where('user_id', $userId)
                     ->where('id', $id)
                     ->first();
@@ -514,7 +521,9 @@ class InvoiceController extends Controller
 
 
                 return Invoice::with([
+                    'invoiceItems.unit',
                     'invoiceItems.product',
+                    'invoiceItems.product.brand',
                     'packages',
                     'customer',
                     'billPaymentHistory'
@@ -955,6 +964,12 @@ class InvoiceController extends Controller
                             $stock->increment('quantity', abs($differenceQty));
                         }
                     }
+                     if($item['gst'] <  $product->gst_percentage){
+                    return response()->json([
+                        'status' => false,
+                        'message' => 'GST Percentage can not be less than product GST Percentage'
+                    ]);
+                }
                     $exist->update([
                         'quantity' => $item['quantity'],
                         'unit_id'       => $item['unit_id'],
