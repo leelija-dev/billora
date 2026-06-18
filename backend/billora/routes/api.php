@@ -23,6 +23,7 @@ use App\Http\Controllers\admin\ContactUsController;
 use App\Http\Controllers\admin\GstController;
 use App\Http\Controllers\admin\MedicineTypeController;
 use App\Http\Controllers\admin\PackageCostController;
+use App\Http\Controllers\admin\SellerController;
 use App\Http\Controllers\admin\UserOrdersController;
 use App\Http\Controllers\PlanExpiryController;
 use App\Http\Controllers\admin\TestimonialsController;
@@ -293,4 +294,11 @@ Route::prefix('social')->group(function () {
     Route::get('/facebook/callback',[SocialConnectController::class, 'callback']);
     Route::get('/facebook/status/{id}',[SocialConnectController::class,'showConnection']);
     Route::middleware('auth:sanctum')->put('/facebook/update-status/{id}',[SocialConnectController::class,'updateSocialConnection']);
+});
+Route::middleware('auth:sanctum')->prefix('seller')->group(function () {
+   Route::get('/{id}',[SellerController::class, 'index']);    //register user id 
+   Route::post('/store', [SellerController::class, 'store']);
+   Route::get('/edit/{id}', [SellerController::class, 'edit']);   //seller id 
+   Route::put('/update/{id}', [SellerController::class, 'update']);   // seller id 
+   Route::delete('/delete/{id}', [SellerController::class, 'delete']);  //seller id 
 });
