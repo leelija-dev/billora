@@ -9,6 +9,8 @@ use Illuminate\Support\Facades\Auth;
 use App\Models\Customers;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Cache;
+use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
+use Illuminate\Support\Facades\Log;
 
 class StoreController extends Controller
 {
@@ -113,24 +115,27 @@ class StoreController extends Controller
             'state'       => 'nullable',
             'pincode'     => 'nullable',
             'status'      => 'required',
+            'bank_qr'   => 'nullable|image',
             'created_by'  => 'required'
         ]);
         // dd($store);
         $folderPath = public_path('logos');
-
+        Log::info('logo path' . $store['logo']);
         // Create folder if not exists
-        if (!File::exists($folderPath)) {
-            File::makeDirectory($folderPath, 0777, true, true);
-        }
-        $imagePath = null;
-        if ($request->hasFile('logo')) {
-            $image = $request->file('logo');
-            $fileName = time() . '_' . $image->getClientOriginalName();
-            $image->move($folderPath, $fileName);
+        // if (!File::exists($folderPath)) {
+        //     File::makeDirectory($folderPath, 0777, true, true);
+        // }
+        // $imagePath = null;
+        // if ($request->hasFile('logo')) {
+        //     $image = $request->file('logo');
+        //     $fileName = time() . '_' . $image->getClientOriginalName();
+        //     $image->move($folderPath, $fileName);
 
-            $imagePath = 'logos/' . $fileName;
-        }
-        $store['logo'] = $imagePath;
+        //     $imagePath = 'logos/' . $fileName;
+        // }
+        // $store['logo'] = $imagePath;
+        // $tempFile = $store['bank_qr'];
+
         if ($store['user_id'] != $user) {
             return response()->json([
                 'status' => false,
@@ -138,6 +143,7 @@ class StoreController extends Controller
             ]);
         }
         $customer =  Customers::findOrFail($store['user_id']);
+
         if ($customer->plan_id == null || $customer->is_active == false) {
             return response()->json([
                 'status' => false,
@@ -145,12 +151,56 @@ class StoreController extends Controller
             ]);
         }
         try {
-            $store = Store::create($store);
+            $tempFile = null;
+
+            if ($request->hasFile('bank_qr')) {
+                $tempFile = $request->file('bank_qr')->getRealPath();
+            }
+            $logo = null;
+            if ($request->hasfile('logo')) {
+                $logo = $request->file('logo')->getRealPath();
+            }
+            unset($store['bank_qr']);
+            unset($store['logo']);
+            $stores = Store::create($store);
+
+            if ($request->hasFile('bank_qr')) {
+                Log::info('bank qr uploaded ');
+                $upload = Cloudinary::uploadApi()->upload(
+                    $tempFile,
+                    [
+                        'folder' => 'Thefastbill/store_banks_qr',
+                        'public_id' => 'bank_qr_' . $stores->id,
+                        'overwrite' => true,
+                        'resource_type' => 'image'
+                    ]
+                );
+
+                $stores->update([
+                    'bank_qr' => $upload['secure_url']
+                ]);
+            }
+            if ($request->hasfile('logo')) {
+
+                $logoUpload = Cloudinary::uploadApi()->upload(
+                    $logo,
+                    [
+                        'folder' => 'Thefastbill/store_logos',
+                        'public_id' => 'store_logo_' . $stores->id,
+                        'overwrite' => true,
+                        'resource_type' => 'image'
+                    ]
+                );
+                $stores->update([
+                    'logo' => $logoUpload['secure_url']
+                ]);
+                Log::info('logo uploaded ');
+            }
             Cache::tags(['store_user_' . $user, 'billing_user_' . $user, 'single_invoice_' . $user])->flush();
             return response()->json([
                 'status' => true,
                 'message' => 'Store Created Successfully',
-                'data' => $store
+                'data' => $stores
             ]);
         } catch (\Exception $e) {
             return response()->json([
@@ -203,7 +253,7 @@ class StoreController extends Controller
             'name'    => 'required',
             'gst'     => 'nullable',
             'email'   => 'nullable',
-            'logo'    => 'nullable',
+            // 'logo'    => 'nullable',
             'mobile'  => 'nullable',
             'address' => 'nullable',
             'city'    => 'nullable',
@@ -211,7 +261,7 @@ class StoreController extends Controller
             'pincode'     => 'nullable',
             'status'  => 'required',
         ]);
-
+        // Log::info('update logo', $data);
         try {
             $customer =  Customers::findOrFail($user);
             if ($customer->plan_id == null || $customer->is_active == false) {
@@ -223,29 +273,70 @@ class StoreController extends Controller
 
             $store = Store::where('user_id', $user)->where('id', $id)->first();
 
-            $folderPath = public_path('logos');
+            // $folderPath = public_path('logos');
 
-            // Create folder if not exists
-            if (!File::exists($folderPath)) {
-                File::makeDirectory($folderPath, 0777, true, true);
-            }
+            // // Create folder if not exists
+            // if (!File::exists($folderPath)) {
+            //     File::makeDirectory($folderPath, 0777, true, true);
+            // }
             // $imagePath = null;
+            // if ($request->hasFile('logo')) {
+
+            //     // delete old image
+            //     if ($store->logo && File::exists(public_path($store->logo))) {
+            //         File::delete(public_path($store->logo));
+            //     }
+
+            //     // upload new image
+            //     $image = $request->file('logo');
+            //     $fileName = time() . '_' . $image->getClientOriginalName();
+            //     $image->move($folderPath, $fileName);
+
+            //     // update only if new image exists
+            //     $data['logo'] = 'logos/' . $fileName;
+            // }
+
+            $store->update($data);
+
+            if ($request->hasFile('bank_qr')) {
+
+                $bankQrUpload = Cloudinary::uploadApi()->upload(
+                    $request->file('bank_qr')->getRealPath(),
+                    [
+                        'folder'        => 'Thefastbill/store_banks_qr',
+                        'public_id'     => 'bank_qr_' . $store->id,
+                        'overwrite'     => true,
+                        'resource_type' => 'image',
+                    ]
+                );
+
+                $store->update([
+                    'bank_qr' => $bankQrUpload['secure_url']
+                ]);
+
+                Log::info('Bank QR uploaded successfully.');
+            }
+
+
             if ($request->hasFile('logo')) {
 
-                // delete old image
-                if ($store->logo && File::exists(public_path($store->logo))) {
-                    File::delete(public_path($store->logo));
-                }
+                $logoUpload = Cloudinary::uploadApi()->upload(
+                    $request->file('logo')->getRealPath(),
+                    [
+                        'folder'        => 'Thefastbill/store_logos',
+                        'public_id'     => 'store_logo_' . $store->id,
+                        'overwrite'     => true,
+                        'resource_type' => 'image',
+                    ]
+                );
 
-                // upload new image
-                $image = $request->file('logo');
-                $fileName = time() . '_' . $image->getClientOriginalName();
-                $image->move($folderPath, $fileName);
+                $store->update([
+                    'logo' => $logoUpload['secure_url']
+                ]);
 
-                // update only if new image exists
-                $data['logo'] = 'logos/' . $fileName;
+                Log::info('Store logo uploaded successfully.');
             }
-            $store->update($data);
+
             Cache::tags(['store_user_' . $user, 'billing_user_' . $user, 'single_invoice_' . $user])->flush();
             return response()->json([
                 'status' => true,
