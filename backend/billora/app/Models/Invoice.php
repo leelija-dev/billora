@@ -42,5 +42,7 @@ public function packages(){
 public  function store(){
     return $this->belongsTo(Store::class,'store_id');
 }
-
+public  function billPaymentHistory(){
+    return $this->hasOne(BillPaymentHistory::class,'invoice_id')->latestOfMany();
+}
 }

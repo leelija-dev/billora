@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { FiX, FiSave, FiMapPin, FiPhone, FiMail, FiGlobe, FiChevronDown, FiChevronUp, FiUpload, FiAlertCircle, FiCheckCircle } from 'react-icons/fi'
+import { FiX, FiSave, FiMapPin, FiPhone, FiMail, FiGlobe, FiChevronDown, FiChevronUp, FiUpload, FiAlertCircle, FiCheckCircle, FiImage } from 'react-icons/fi'
 import Input from '../../common/Input/Input'
 import Button from '../../common/Button/Button'
 import Modal from '../../common/Modal/Modal'
 import { storeAPI } from '../../../services/storeService'
 import toast from 'react-hot-toast'
 import { LucideStore } from 'lucide-react'
+import { FaQrcode } from 'react-icons/fa'
 import {
   handlePhoneInput,
   handleMaxLength,
@@ -35,6 +36,14 @@ const StoreModal = ({ isOpen, onClose, onStoreCreated, initialData = {} }) => {
   const [error, setError] = useState('')
   const [fieldErrors, setFieldErrors] = useState({})
   const [showMoreDetails, setShowMoreDetails] = useState(false)
+  
+  // Image upload states
+  const [logoPreview, setLogoPreview] = useState(null)
+  const [bankQrPreview, setBankQrPreview] = useState(null)
+  const [selectedLogoFile, setSelectedLogoFile] = useState(null)
+  const [selectedBankQrFile, setSelectedBankQrFile] = useState(null)
+  const [deletedLogo, setDeletedLogo] = useState(null)
+  const [deletedBankQr, setDeletedBankQr] = useState(null)
 
   // Update form data when initialData changes (for editing or prefill)
   useEffect(() => {
@@ -55,6 +64,24 @@ const StoreModal = ({ isOpen, onClose, onStoreCreated, initialData = {} }) => {
         })
         setFieldErrors({})
         setError('')
+        
+        // Set logo preview if exists
+        const logoUrl = initialData.logo_url || initialData.logo || null
+        if (logoUrl) {
+          setLogoPreview(logoUrl)
+        }
+        
+        // Set bank QR preview if exists
+        const bankQrUrl = initialData.bank_qr_url || initialData.bank_qr || null
+        if (bankQrUrl) {
+          setBankQrPreview(bankQrUrl)
+        }
+        
+        // Reset deletion tracking
+        setDeletedLogo(null)
+        setDeletedBankQr(null)
+        setSelectedLogoFile(null)
+        setSelectedBankQrFile(null)
         
         // Auto-expand more details for edit mode or if we have prefill data
         if (isEditMode || hasPrefillData) {
@@ -78,6 +105,12 @@ const StoreModal = ({ isOpen, onClose, onStoreCreated, initialData = {} }) => {
         setFieldErrors({})
         setError('')
         setShowMoreDetails(false)
+        setLogoPreview(null)
+        setBankQrPreview(null)
+        setSelectedLogoFile(null)
+        setSelectedBankQrFile(null)
+        setDeletedLogo(null)
+        setDeletedBankQr(null)
       }
     }
   }, [initialData, isOpen, isEditMode])
@@ -164,90 +197,171 @@ const StoreModal = ({ isOpen, onClose, onStoreCreated, initialData = {} }) => {
     const { name, value, type, files } = e.target
     
     if (type === 'file') {
-      setFormData(prev => ({
-        ...prev,
-        [name]: files[0] || null
-      }))
+      // Handle file upload
+      handleFileUpload(e)
+      return
+    }
+    
+    let processedValue = value
+    let error = ''
+    
+    // Apply field-specific processing and validation
+    switch (name) {
+      case 'mobile':
+        // Allow only numbers and limit to 10 digits
+        processedValue = value.replace(/\D/g, '').slice(0, 10)
+        error = validateField(name, processedValue)
+        break
+        
+      case 'pincode':
+        // Allow only numbers and limit to 6 digits
+        processedValue = value.replace(/\D/g, '').slice(0, 6)
+        error = validateField(name, processedValue)
+        break
+        
+      case 'name':
+        // Limit length
+        if (value.length > 100) processedValue = value.slice(0, 100)
+        error = validateField(name, processedValue)
+        break
+        
+      case 'city':
+        // Allow only alphanumeric, spaces, and hyphens
+        processedValue = value.replace(/[^A-Za-z\s\-]/g, '')
+        if (processedValue.length > 100) processedValue = processedValue.slice(0, 100)
+        error = validateField(name, processedValue)
+        break
+        
+      case 'state':
+        // Allow only letters, spaces, and hyphens
+        processedValue = value.replace(/[^A-Za-z\s\-]/g, '')
+        if (processedValue.length > 50) processedValue = processedValue.slice(0, 50)
+        error = validateField(name, processedValue)
+        break
+        
+      case 'address':
+        if (value.length > 500) processedValue = value.slice(0, 500)
+        error = validateField(name, processedValue)
+        break
+        
+      case 'email':
+        if (value.length > 255) processedValue = value.slice(0, 255)
+        error = validateField(name, processedValue)
+        break
+        
+      case 'gst':
+        // Convert to uppercase for GST
+        processedValue = value.toUpperCase()
+        if (processedValue.length > 50) processedValue = processedValue.slice(0, 50)
+        error = validateField(name, processedValue)
+        break
+        
+      default:
+        break
+    }
+    
+    setFormData(prev => ({
+      ...prev,
+      [name]: processedValue
+    }))
+    
+    // Clear error for this field if validation passes
+    if (!error) {
+      setFieldErrors(prev => {
+        const newErrors = { ...prev }
+        delete newErrors[name]
+        return newErrors
+      })
     } else {
-      let processedValue = value
-      let error = ''
-      
-      // Apply field-specific processing and validation
-      switch (name) {
-        case 'mobile':
-          // Allow only numbers and limit to 10 digits
-          processedValue = value.replace(/\D/g, '').slice(0, 10)
-          error = validateField(name, processedValue)
-          break
-          
-        case 'pincode':
-          // Allow only numbers and limit to 6 digits
-          processedValue = value.replace(/\D/g, '').slice(0, 6)
-          error = validateField(name, processedValue)
-          break
-          
-        case 'name':
-          // Limit length
-          if (value.length > 100) processedValue = value.slice(0, 100)
-          error = validateField(name, processedValue)
-          break
-          
-        case 'city':
-          // Allow only alphanumeric, spaces, and hyphens
-          processedValue = value.replace(/[^A-Za-z\s\-]/g, '')
-          if (processedValue.length > 100) processedValue = processedValue.slice(0, 100)
-          error = validateField(name, processedValue)
-          break
-          
-        case 'state':
-          // Allow only letters, spaces, and hyphens
-          processedValue = value.replace(/[^A-Za-z\s\-]/g, '')
-          if (processedValue.length > 50) processedValue = processedValue.slice(0, 50)
-          error = validateField(name, processedValue)
-          break
-          
-        case 'address':
-          if (value.length > 500) processedValue = value.slice(0, 500)
-          error = validateField(name, processedValue)
-          break
-          
-        case 'email':
-          if (value.length > 255) processedValue = value.slice(0, 255)
-          error = validateField(name, processedValue)
-          break
-          
-        case 'gst':
-          // Convert to uppercase for GST
-          processedValue = value.toUpperCase()
-          if (processedValue.length > 50) processedValue = processedValue.slice(0, 50)
-          error = validateField(name, processedValue)
-          break
-          
-        default:
-          break
-      }
-      
-      setFormData(prev => ({
+      setFieldErrors(prev => ({
         ...prev,
-        [name]: processedValue
+        [name]: error
       }))
-      
-      // Clear error for this field if validation passes
-      if (!error) {
-        setFieldErrors(prev => {
-          const newErrors = { ...prev }
-          delete newErrors[name]
-          return newErrors
-        })
-      } else {
-        setFieldErrors(prev => ({
-          ...prev,
-          [name]: error
-        }))
-      }
     }
     // Clear general error when user starts typing
     if (error) setError('')
+  }
+
+  // Handle file upload with validation
+  const handleFileUpload = (e) => {
+    const { name, files } = e.target
+    const file = files[0]
+    if (!file) return
+
+    // Validate file size (2MB max)
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error(`${name === 'logo' ? 'Logo' : 'Bank QR'} file size must be less than 2MB`)
+      e.target.value = ''
+      return
+    }
+    
+    // Validate file type
+    const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
+    if (!validTypes.includes(file.type)) {
+      toast.error(`${name === 'logo' ? 'Logo' : 'Bank QR'} must be a valid image (JPG, PNG, GIF, WebP)`)
+      e.target.value = ''
+      return
+    }
+    
+    // Create preview
+    const reader = new FileReader()
+    reader.onloadend = () => {
+      if (name === 'logo') {
+        setLogoPreview(reader.result)
+        setSelectedLogoFile(file)
+        // Clear deleted logo if a new file is selected
+        setDeletedLogo(null)
+      } else {
+        setBankQrPreview(reader.result)
+        setSelectedBankQrFile(file)
+        // Clear deleted bank QR if a new file is selected
+        setDeletedBankQr(null)
+      }
+    }
+    reader.readAsDataURL(file)
+    
+    // Update form data
+    setFormData(prev => ({
+      ...prev,
+      [name]: file
+    }))
+  }
+
+  const handleRemoveFile = (type) => {
+    if (type === 'logo') {
+      // Store the current logo URL to be sent as deleted_logo
+      const currentLogoUrl = initialData?.logo_url || initialData?.logo || null
+      if (currentLogoUrl) {
+        setDeletedLogo(currentLogoUrl)
+        console.log('🗑️ Logo marked for deletion:', currentLogoUrl)
+      }
+      
+      setLogoPreview(null)
+      setSelectedLogoFile(null)
+      setFormData(prev => ({
+        ...prev,
+        logo: null
+      }))
+      // Reset file input
+      const fileInput = document.querySelector('input[name="logo"]')
+      if (fileInput) fileInput.value = ''
+    } else {
+      // Store the current bank QR URL to be sent as deleted_bank_qr
+      const currentBankQrUrl = initialData?.bank_qr_url || initialData?.bank_qr || null
+      if (currentBankQrUrl) {
+        setDeletedBankQr(currentBankQrUrl)
+        console.log('🗑️ Bank QR marked for deletion:', currentBankQrUrl)
+      }
+      
+      setBankQrPreview(null)
+      setSelectedBankQrFile(null)
+      setFormData(prev => ({
+        ...prev,
+        bank_qr: null
+      }))
+      const fileInput = document.querySelector('input[name="bank_qr"]')
+      if (fileInput) fileInput.value = ''
+    }
   }
 
   const validateForm = () => {
@@ -310,21 +424,79 @@ const StoreModal = ({ isOpen, onClose, onStoreCreated, initialData = {} }) => {
       // Get current user ID from auth context or localStorage
       const userId = JSON.parse(localStorage.getItem('user'))?.id || 1
       
-      const storeData = {
-        ...formData,
-        user_id: userId,
-        created_by: userId,
-        status: true
+      // Create FormData for file upload
+      const formDataToSend = new FormData()
+      
+      // Append all fields
+      formDataToSend.append('name', formData.name)
+      formDataToSend.append('email', formData.email)
+      formDataToSend.append('mobile', formData.mobile || '')
+      formDataToSend.append('address', formData.address || '')
+      formDataToSend.append('city', formData.city || '')
+      formDataToSend.append('state', formData.state || '')
+      formDataToSend.append('pincode', formData.pincode || '')
+      formDataToSend.append('gst', formData.gst || '')
+      formDataToSend.append('user_id', userId)
+      formDataToSend.append('created_by', userId)
+      formDataToSend.append('status', '1')
+      
+      // Handle logo
+      if (selectedLogoFile) {
+        // If a new logo file is selected, append it
+        formDataToSend.append('logo', selectedLogoFile)
+        console.log('📎 Logo file appended:', selectedLogoFile.name, selectedLogoFile.size, 'bytes')
+      } else if (isEditMode && initialData?.logo) {
+        // If editing and no new file selected, keep existing logo
+        formDataToSend.append('logo', initialData.logo)
+      }
+      
+      // Handle bank_qr
+      if (selectedBankQrFile) {
+        // If a new bank QR file is selected, append it
+        formDataToSend.append('bank_qr', selectedBankQrFile)
+        console.log('📎 Bank QR file appended:', selectedBankQrFile.name, selectedBankQrFile.size, 'bytes')
+      } else if (isEditMode && initialData?.bank_qr) {
+        // If editing and no new file selected, keep existing bank QR
+        formDataToSend.append('bank_qr', initialData.bank_qr)
+      }
+      
+      // Handle deleted logo
+      if (deletedLogo) {
+        formDataToSend.append('deleted_logo', deletedLogo)
+        console.log('🗑️ Deleted logo appended:', deletedLogo)
+      }
+      
+      // Handle deleted bank QR
+      if (deletedBankQr) {
+        formDataToSend.append('deleted_bank_qr', deletedBankQr)
+        console.log('🗑️ Deleted bank QR appended:', deletedBankQr)
+      }
+      
+      // Log FormData entries for debugging
+      console.log('📝 StoreModal - FormData entries:')
+      for (let pair of formDataToSend.entries()) {
+        if (pair[0] === 'logo' && pair[1] instanceof File) {
+          console.log(`   ${pair[0]}: ${pair[1].name} (${pair[1].size} bytes, ${pair[1].type})`)
+        } else if (pair[0] === 'bank_qr' && pair[1] instanceof File) {
+          console.log(`   ${pair[0]}: ${pair[1].name} (${pair[1].size} bytes, ${pair[1].type})`)
+        } else {
+          console.log(`   ${pair[0]}: ${pair[1]}`)
+        }
       }
 
       if (isEditMode) {
-        // For edit mode, pass data to parent to handle API call
-        onStoreCreated({ ...storeData, id: initialData.id })
+        // For edit mode, pass FormData to parent to handle API call
+        onStoreCreated({ 
+          ...formData, 
+          id: initialData.id,
+          _formData: formDataToSend,
+          _isEdit: true
+        })
         toast.success('Store updated successfully!')
         handleClose()
       } else {
-        // For create mode, make API call directly
-        const response = await storeAPI.create(storeData)
+        // For create mode, make API call directly with FormData
+        const response = await storeAPI.create(formDataToSend)
         
         if (response.data) {
           toast.success('Store created successfully!')
@@ -359,6 +531,12 @@ const StoreModal = ({ isOpen, onClose, onStoreCreated, initialData = {} }) => {
     setError('')
     setFieldErrors({})
     setShowMoreDetails(false)
+    setLogoPreview(null)
+    setBankQrPreview(null)
+    setSelectedLogoFile(null)
+    setSelectedBankQrFile(null)
+    setDeletedLogo(null)
+    setDeletedBankQr(null)
     onClose()
   }
 
@@ -417,6 +595,100 @@ const StoreModal = ({ isOpen, onClose, onStoreCreated, initialData = {} }) => {
             error={fieldErrors.mobile}
             helperText="Enter a valid 10-digit mobile number starting with 6,7,8, or 9"
           />
+        </div>
+
+        {/* Logo Upload */}
+        <div className="space-y-2">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+            <FiImage className="inline mr-2" />
+            Store Logo
+          </label>
+          <input
+            type="file"
+            name="logo"
+            accept="image/*"
+            onChange={handleInputChange}
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 dark:file:bg-gray-600 dark:file:text-gray-200"
+            disabled={isSubmitting}
+          />
+          <p className="text-xs text-gray-500 dark:text-gray-400">
+            Recommended: Square image, max 2MB (JPG, PNG, GIF, WebP)
+          </p>
+          
+          {/* Logo Preview */}
+          {logoPreview && (
+            <div className="mt-2 flex items-center space-x-4 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+              <img 
+                src={logoPreview} 
+                alt="Logo preview" 
+                className="h-20 w-20 object-cover rounded-lg border border-gray-200 dark:border-gray-600"
+              />
+              <div>
+                <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  {selectedLogoFile ? selectedLogoFile.name : 'Current logo'}
+                </p>
+                {selectedLogoFile && (
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    {(selectedLogoFile.size / 1024).toFixed(2)} KB
+                  </p>
+                )}
+                <button
+                  type="button"
+                  onClick={() => handleRemoveFile('logo')}
+                  className="mt-1 text-sm text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 flex items-center"
+                >
+                  <FiX className="mr-1" /> Remove Logo
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Bank QR Upload */}
+        <div className="space-y-2">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+            <FaQrcode className="inline mr-2" />
+            Bank QR Code
+          </label>
+          <input
+            type="file"
+            name="bank_qr"
+            accept="image/*"
+            onChange={handleInputChange}
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 dark:file:bg-gray-600 dark:file:text-gray-200"
+            disabled={isSubmitting}
+          />
+          <p className="text-xs text-gray-500 dark:text-gray-400">
+            Upload bank QR code image, max 2MB (JPG, PNG, GIF, WebP)
+          </p>
+          
+          {/* Bank QR Preview */}
+          {bankQrPreview && (
+            <div className="mt-2 flex items-center space-x-4 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+              <img 
+                src={bankQrPreview} 
+                alt="Bank QR preview" 
+                className="h-20 w-20 object-cover rounded-lg border border-gray-200 dark:border-gray-600"
+              />
+              <div>
+                <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  {selectedBankQrFile ? selectedBankQrFile.name : 'Current bank QR'}
+                </p>
+                {selectedBankQrFile && (
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    {(selectedBankQrFile.size / 1024).toFixed(2)} KB
+                  </p>
+                )}
+                <button
+                  type="button"
+                  onClick={() => handleRemoveFile('bank_qr')}
+                  className="mt-1 text-sm text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 flex items-center"
+                >
+                  <FiX className="mr-1" /> Remove Bank QR
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Add More Details Button */}

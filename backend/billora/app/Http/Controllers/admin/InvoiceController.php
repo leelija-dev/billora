@@ -526,6 +526,7 @@ class InvoiceController extends Controller
                     'invoiceItems.product.brand',
                     'packages',
                     'customer',
+                    'billPaymentHistory'
                 ])
                     ->where('user_id', $user)
 

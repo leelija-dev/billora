@@ -533,6 +533,8 @@ const BillGenerateForm = ({
             console.error("Failed to fetch store data:", error);
           }
 
+          console.log("checking the server response",response)
+
           const mergedInvoiceData = {
             ...serverInvoiceData,
             items: createdInvoiceData.items || [],
@@ -595,9 +597,9 @@ const BillGenerateForm = ({
               serverInvoiceData.store_phone ||
               createdInvoiceData.store_phone ||
               "123-456-7890",
-            payment_mode:
-              serverInvoiceData.payment_mode ||
-              createdInvoiceData.payment_mode ||
+            payment_method:
+              serverInvoiceData.payment_method ||
+              createdInvoiceData.payment_method ||
               "Cash",
             payment_status:
               serverInvoiceData.payment_status ||
@@ -676,6 +678,8 @@ const BillGenerateForm = ({
           }
         }
 
+        // console.log("chekcing the iiner enrich",invoice);
+
         const enhancedInvoice = {
           ...invoice,
           invoice_number:
@@ -708,6 +712,8 @@ const BillGenerateForm = ({
           paid_amount: invoice.paid_amount || invoice.paidAmount || 0,
           payment_mode:
             invoice.payment_mode || invoice.payment_method || "Cash",
+          payment_method:
+            invoice.payment_method || invoice.payment_mode || "Cash",
           payment_status: invoice.payment_status || "paid",
           items: invoice.items || [],
           packages: invoice.packages || [],
@@ -2535,6 +2541,7 @@ const BillGenerateForm = ({
                   <Select
                     label="Payment Method"
                     options={[
+                      { value: "Non Paid", label: "Non Paid" },
                       { value: "cash", label: "Cash" },
                       { value: "card", label: "Card" },
                       { value: "upi", label: "UPI" },
@@ -2549,7 +2556,9 @@ const BillGenerateForm = ({
                       }))
                     }
                     required
-                    disabled={dataFetchError}
+                    disabled={
+                      dataFetchError || formData.payment_status === "non_paid"
+                    }
                   />
                 </div>
                 <div>
@@ -2561,16 +2570,32 @@ const BillGenerateForm = ({
                       { value: "non_paid", label: "Non Paid" },
                     ]}
                     value={formData.payment_status}
-                    onChange={(e) =>
+                    onChange={(e) => {
+                      const newStatus = e.target.value;
+                      let newPaymentMethod = formData.payment_method;
+
+                      if (newStatus === "non_paid") {
+                        newPaymentMethod = "Non Paid";
+                      } else if (
+                        newStatus === "semi_paid" ||
+                        newStatus === "paid"
+                      ) {
+                        // Default to cash for paid/semi-paid, but keep existing if it was already set
+                        if (formData.payment_method === "Non Paid") {
+                          newPaymentMethod = "cash";
+                        } else {
+                          newPaymentMethod = formData.payment_method || "cash";
+                        }
+                      }
+
                       setFormData((prev) => ({
                         ...prev,
-                        payment_status: e.target.value,
+                        payment_status: newStatus,
                         payment_amount:
-                          e.target.value === "semi_paid"
-                            ? prev.payment_amount
-                            : 0,
-                      }))
-                    }
+                          newStatus === "semi_paid" ? prev.payment_amount : 0,
+                        payment_method: newPaymentMethod,
+                      }));
+                    }}
                     required
                     disabled={dataFetchError}
                   />
@@ -2869,8 +2894,10 @@ const BillGenerateForm = ({
                         if (!completeInvoiceData) {
                           const enrichedInvoice =
                             await enrichInvoiceForPrint(createdInvoiceData);
+                          // console.log("checking the enriched invoice",enrichedInvoice )
                           printA4Invoice(enrichedInvoice);
                         } else {
+                          console.log("checking the complete invoice",completeInvoiceData )
                           printA4Invoice(completeInvoiceData);
                         }
                         setShowBillDialog(false);
