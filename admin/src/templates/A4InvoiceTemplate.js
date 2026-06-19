@@ -801,52 +801,7 @@ export const generateA4InvoiceHTML = (invoice, isOrderDetails = false) => {
     </div>
   `
       : `
-    <div style="
-      width:180px !important;
-      border:1px dashed #cbd5e1 !important;
-      border-radius:12px !important;
-      padding:12px !important;
-      background:#f8fafc !important;
-      text-align:center !important;
-    ">
-      
-      <div style="
-        width:120px !important;
-        height:120px !important;
-        margin:0 auto 10px auto !important;
-        border:1px dashed #cbd5e1 !important;
-        border-radius:8px !important;
-        display:flex !important;
-        align-items:center !important;
-        justify-content:center !important;
-        background:#ffffff !important;
-      ">
-        <span style="
-          font-size:14px !important;
-          font-weight:600 !important;
-          color:#94a3b8 !important;
-        ">
-          QR
-        </span>
-      </div>
-
-      <div style="
-        font-size:13px !important;
-        font-weight:600 !important;
-        color:#111827 !important;
-        margin-bottom:4px !important;
-      ">
-        Scan to Pay
-      </div>
-
-      <div style="
-        font-size:10px !important;
-        color:#6b7280 !important;
-      ">
-        UPI / Bank Transfer
-      </div>
-
-    </div>
+    <div></div>
   `
   }
 </div>
@@ -867,12 +822,11 @@ export const generateA4InvoiceHTML = (invoice, isOrderDetails = false) => {
   // Helper function to render items section
   function renderItemsSection(invoice) {
     let html = "";
-    
 
     // Products
     if (Array.isArray(invoice.items) && invoice.items.length > 0) {
       html += `<tr><td colspan="7" class="section-header">🛒 PRODUCTS</td></tr>`;
-      console.log("checking the invoice items",invoice.items)
+      console.log("checking the invoice items", invoice.items);
       invoice.items.forEach((item, idx) => {
         const price = parseNumeric(item.price);
         const qty = parseNumeric(item.quantity, 1);
