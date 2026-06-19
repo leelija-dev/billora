@@ -653,7 +653,7 @@ export const generateA4InvoiceHTML = (invoice, isOrderDetails = false) => {
         ${invoice.customer_phone ? `<div class="customer-field">📞 ${escapeHtml(invoice.customer_phone)}</div>` : ""}
         ${invoice.customer_email ? `<div class="customer-field">✉️ ${escapeHtml(invoice.customer_email)}</div>` : ""}
         ${invoice.customer_address ? `<div class="customer-field">📍 ${escapeHtml(invoice.customer_address)}</div>` : ""}
-        ${invoice.customer_gst ? `<div class="customer-field"><span class="gst-chip">GST: ${escapeHtml(invoice.customer_gst)}</span></div>` : ""}
+        ${invoice.customer_gst ? `<div class="customer-field"><span class="gst-chip">GST: ${escapeHtml(invoice.customer?.gst_number)}</span></div>` : ""}
       </div>
     </div>
 

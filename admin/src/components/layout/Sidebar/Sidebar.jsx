@@ -266,16 +266,18 @@ const Sidebar = () => {
                   {/* Item name */}
                   <AnimatePresence mode="wait">
                     {sidebarOpen && (
-                      <motion.span
-                        initial={{ opacity: 0, width: 0 }}
-                        animate={{ opacity: 1, width: 'auto' }}
-                        exit={{ opacity: 0, width: 0 }}
-                        transition={{ duration: 0.2 }}
-                        className="text-sm font-medium whitespace-nowrap overflow-hidden"
-                      >
-                        {item.name}
-                      </motion.span>
-                    )}
+  <motion.span
+    initial={{ opacity: 0, width: 0 }}
+    animate={{ opacity: 1, width: 'auto' }}
+    exit={{ opacity: 0, width: 0 }}
+    transition={{ duration: 0.2 }}
+    className="text-sm font-medium whitespace-nowrap overflow-hidden"
+  >
+    {item.name?.toLowerCase() === 'gst'
+      ? item.name.toUpperCase()
+      : item.name}
+  </motion.span>
+)}
                   </AnimatePresence>
 
                   {/* Badge for expanded state */}
