@@ -106,7 +106,17 @@ export const generateThermalInvoiceHTML = (invoice, isOrderDetails = false) => {
     });
   };
 
-  // Render store header conditionally
+  // Helper function to get unit code
+  const getUnitCode = (item) => {
+    // Check various possible locations for unit code
+    if (item.product?.unit?.code) return item.product.unit.code;
+    if (item.unit_code) return item.unit_code;
+    if (item.unit?.code) return item.unit.code;
+    if (item.product?.unit_code) return item.product.unit_code;
+    return "";
+  };
+
+  // Render store header conditionally with logo support
   const renderStoreHeader = () => {
     if (isOrderDetails) {
       return `
@@ -162,16 +172,70 @@ export const generateThermalInvoiceHTML = (invoice, isOrderDetails = false) => {
     `;
     }
 
+    // Build store header with logo
+    let logoHTML = "";
+    if (invoice.store?.logo) {
+      logoHTML = `
+        <div style="text-align: center; margin-bottom: 6px;">
+          <img 
+            src="${invoice.store.logo}" 
+            alt="Store Logo" 
+            style="
+              max-width: 80px; 
+              max-height: 60px; 
+              width: auto; 
+              height: auto;
+              display: inline-block;
+              border-radius: 4px;
+            "
+          />
+        </div>
+      `;
+    }
+
     return `
     <div class="store-header">
+      ${logoHTML}
       <div class="store-name">${truncateText(invoice.store_name, 30)}</div>
       <div class="store-details">
         ${invoice.store_address ? truncateText(invoice.store_address, 35) + "<br>" : ""}
         ${invoice.store_phone ? `Tel: ${invoice.store_phone}` : ""}
+        ${invoice.store_email ? `&nbsp;| Email: ${truncateText(invoice.store_email, 25)}` : ""}
         ${invoice.store_gst ? `<br>GST: ${invoice.store_gst}` : ""}
       </div>
     </div>
   `;
+  };
+
+  // Render QR code section
+  const renderQRCode = () => {
+    if (!invoice.store?.bank_qr) return "";
+
+    return `
+      <div style="text-align: center; margin: 8px 0; padding: 6px; border: 1px dashed #999; border-radius: 4px;">
+        <div style="font-size: 8px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; color: #333;">
+          Scan to Pay
+        </div>
+        <img 
+          src="${invoice.store.bank_qr}" 
+          alt="Payment QR Code" 
+          style="
+            max-width: 100px; 
+            max-height: 100px; 
+            width: auto; 
+            height: auto;
+            display: inline-block;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 4px;
+            background: white;
+          "
+        />
+        <div style="font-size: 7px; margin-top: 3px; color: #666;">
+          UPI / Bank Transfer
+        </div>
+      </div>
+    `;
   };
 
   return `<!DOCTYPE html>
@@ -481,11 +545,12 @@ export const generateThermalInvoiceHTML = (invoice, isOrderDetails = false) => {
               item.product?.name || item.product_name || item.name || `Product`;
             const discount = parseNumber(item.discount);
             const gst = parseNumber(item.gst);
+            const unitCode = getUnitCode(item);
 
             return `
       <div class="item-row">
         <div class="item-name">${truncateText(productName, 25)}${discount > 0 ? ` (-${discount}%)` : ""}${gst > 0 ? ` [+${gst}%]` : ""}</div>
-        <div class="item-qty">${quantity}</div>
+        <div class="item-qty">${quantity}${unitCode ? ` ${unitCode}` : ""}</div>
         <div class="item-price">${formatCurrency(itemPrice)}</div>
         <div class="item-total">${formatCurrency(itemTotal)}</div>
       </div>
@@ -507,11 +572,12 @@ export const generateThermalInvoiceHTML = (invoice, isOrderDetails = false) => {
         const quantity = parseNumber(pkg.quantity);
         const packageName =
           pkg.package_name || pkg.name || pkg.product_name || `Package`;
+        const unitCode = getUnitCode(pkg);
 
         return `
         <div class="item-row package-item">
           <div class="item-name">📦 ${truncateText(packageName, 23)}</div>
-          <div class="item-qty">${quantity}</div>
+          <div class="item-qty">${quantity}${unitCode ? ` ${unitCode}` : ""}</div>
           <div class="item-price">${formatCurrency(pkgPrice)}</div>
           <div class="item-total">${formatCurrency(pkgTotal)}</div>
         </div>
@@ -611,6 +677,11 @@ export const generateThermalInvoiceHTML = (invoice, isOrderDetails = false) => {
   </div>
 
   <div class="divider"></div>
+
+  <!-- QR Code Section -->
+  ${renderQRCode()}
+
+  ${renderQRCode() ? '<div class="divider"></div>' : ""}
 
   <!-- Footer -->
   <div class="footer">
