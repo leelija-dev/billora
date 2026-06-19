@@ -533,7 +533,7 @@ const BillGenerateForm = ({
             console.error("Failed to fetch store data:", error);
           }
 
-          console.log("checking the server response",response)
+          console.log("checking the server response", response);
 
           const mergedInvoiceData = {
             ...serverInvoiceData,
@@ -988,6 +988,7 @@ const BillGenerateForm = ({
             status: "completed",
             stock_quantity: stockQuantity,
             variant_info: hasStockPermission ? product.variant_info : null,
+            original_gst_percentage: gst, // Store original GST percentage
             // Add attributes and variants to the item
             attributes: product.attributes || [],
             variants: product.variants || [],
@@ -1056,6 +1057,17 @@ const BillGenerateForm = ({
           );
         } else if (field === "gst") {
           const numValue = parseFloat(value) || 0;
+          const originalGst = item.original_gst_percentage || 0;
+
+          // If trying to reduce GST below original, show warning
+          if (originalGst > 0 && numValue < originalGst) {
+            toast.error(
+              `⚠️ GST cannot be reduced below original GST (${originalGst}%). Current: ${numValue}%`,
+              { duration: 3000 },
+            );
+            // Allow the user to set it, but validation will catch it on submit
+          }
+
           item.gst = numValue;
           item.total_price = calculateItemTotal(
             item.price,
@@ -1421,75 +1433,99 @@ const BillGenerateForm = ({
   }, [formData.items]);
 
   const handleSubmit = useCallback(
-  async (e) => {
-    e.preventDefault();
+    async (e) => {
+      e.preventDefault();
 
-    if (
-      !formData.customer_id ||
-      !formData.store_id ||
-      formData.items.length === 0
-    ) {
-      toast.error(
-        "Please fill all required fields and add at least one item",
-      );
-      return;
-    }
-
-    if (hasStockPermission) {
-      const stockIssues = formData.items.filter(
-        (item) =>
-          item.stock_quantity > 0 && item.quantity > item.stock_quantity,
-      );
-
-      if (stockIssues.length > 0) {
+      if (
+        !formData.customer_id ||
+        !formData.store_id ||
+        formData.items.length === 0
+      ) {
         toast.error(
-          `Cannot proceed. ${stockIssues.length} item(s) exceed available stock. Please adjust quantities.`,
+          "Please fill all required fields and add at least one item",
         );
         return;
       }
-    }
 
-    // NEW: Check for price less than purchase price
-    const priceIssues = formData.items.filter(
-      (item) => {
+      if (hasStockPermission) {
+        const stockIssues = formData.items.filter(
+          (item) =>
+            item.stock_quantity > 0 && item.quantity > item.stock_quantity,
+        );
+
+        if (stockIssues.length > 0) {
+          toast.error(
+            `Cannot proceed. ${stockIssues.length} item(s) exceed available stock. Please adjust quantities.`,
+          );
+          return;
+        }
+      }
+
+      // NEW: Check for price less than purchase price
+      const priceIssues = formData.items.filter((item) => {
         // Only check for non-package items
         if (item.is_package) return false;
-        
+
         const purchasePrice = item.purchase_price || 0;
         const sellingPrice = item.price || 0;
-        
+
         // If purchase price exists and selling price is less than purchase price
         return purchasePrice > 0 && sellingPrice < purchasePrice;
-      }
-    );
+      });
 
-    if (priceIssues.length > 0) {
-      const issueMessages = priceIssues.map(item => 
-        `${item.product_name}: ₹${item.price.toFixed(2)} < ₹${(item.purchase_price || 0).toFixed(2)}`
-      );
-      
-      toast.error(
-        `❌ Cannot generate invoice. ${priceIssues.length} item(s) have price below purchase price:\n${issueMessages.join('\n')}`,
-        { duration: 5000 }
-      );
-      return;
-    }
+      if (priceIssues.length > 0) {
+        const issueMessages = priceIssues.map(
+          (item) =>
+            `${item.product_name}: ₹${item.price.toFixed(2)} < ₹${(item.purchase_price || 0).toFixed(2)}`,
+        );
 
-    const totals = calculateTotals();
-
-    if (formData.payment_status === "semi_paid") {
-      if (!formData.payment_amount || formData.payment_amount <= 0) {
         toast.error(
-          "Please enter a valid payment amount for semi-paid option",
+          `❌ Cannot generate invoice. ${priceIssues.length} item(s) have price below purchase price:\n${issueMessages.join("\n")}`,
+          { duration: 5000 },
         );
         return;
       }
-    }
 
-    if (!formData.payment_method) {
-      toast.error("Please select a payment method");
-      return;
-    }
+      const totals = calculateTotals();
+
+      if (formData.payment_status === "semi_paid") {
+        if (!formData.payment_amount || formData.payment_amount <= 0) {
+          toast.error(
+            "Please enter a valid payment amount for semi-paid option",
+          );
+          return;
+        }
+      }
+
+      if (!formData.payment_method) {
+        toast.error("Please select a payment method");
+        return;
+      }
+
+      // NEW: Check for GST reduction below actual GST
+      const gstIssues = formData.items
+        .filter((item) => !item.is_package)
+        .filter((item) => {
+          // Get the original/product GST percentage
+          const originalGst = item.original_gst_percentage || 0;
+          const currentGst = parseFloat(item.gst) || 0;
+
+          // If original GST exists and current GST is less than original GST
+          return originalGst > 0 && currentGst < originalGst;
+        });
+
+      if (gstIssues.length > 0) {
+        const issueMessages = gstIssues.map(
+          (item) =>
+            `${item.product_name}: ${item.gst}% < ${item.original_gst_percentage || 0}%`,
+        );
+
+        toast.error(
+          `❌ Cannot generate invoice. ${gstIssues.length} item(s) have GST below the original GST percentage:\n${issueMessages.join("\n")}`,
+          { duration: 5000 },
+        );
+        return;
+      }
 
       const productItems = formData.items.filter((item) => !item.is_package);
       const packageItems = formData.items.filter((item) => item.is_package);
@@ -2326,7 +2362,6 @@ const BillGenerateForm = ({
                           </p>
                           <p className="text-xs text-gray-400 dark:text-gray-500">
                             {item.unit_name}
-                            
                           </p>
 
                           {/* Display attributes in table */}
@@ -2460,7 +2495,7 @@ const BillGenerateForm = ({
                           />
                         </div>
                       </td>
-                      <td className="py-3">
+                      <td className="py-3 relative">
                         <div className="flex items-center justify-center space-x-1">
                           <button
                             type="button"
@@ -2477,7 +2512,13 @@ const BillGenerateForm = ({
                             onChange={(e) =>
                               handleUpdateItem(index, "gst", e.target.value)
                             }
-                            className="min-w-[5.5rem] text-sm text-center"
+                            className={`min-w-[5.5rem] text-sm text-center ${
+                              item.original_gst_percentage > 0 &&
+                              parseFloat(item.gst) <
+                                item.original_gst_percentage
+                                ? "border-red-500 bg-red-50 dark:bg-red-900/20"
+                                : ""
+                            }`}
                           />
                           <button
                             type="button"
@@ -2488,6 +2529,18 @@ const BillGenerateForm = ({
                             <FiPlus className="w-3 h-3" />
                           </button>
                         </div>
+                        {item.original_gst_percentage > 0 &&
+                          parseFloat(item.gst) <
+                            item.original_gst_percentage && (
+                          
+                             <div className="w-full absolute  flex justify-center items-center bottom-[10px]">
+                              <p className="text-xs text-red-600 dark:text-red-400 text-center mt-1">
+                               GST ({item.original_gst_percentage}
+                              %)
+                            </p>
+                             </div>
+                        
+                          )}
                       </td>
                       <td className="py-3">
                         <div className="flex items-center justify-center space-x-1">
@@ -2924,7 +2977,10 @@ const BillGenerateForm = ({
                           // console.log("checking the enriched invoice",enrichedInvoice )
                           printA4Invoice(enrichedInvoice);
                         } else {
-                          console.log("checking the complete invoice",completeInvoiceData )
+                          console.log(
+                            "checking the complete invoice",
+                            completeInvoiceData,
+                          );
                           printA4Invoice(completeInvoiceData);
                         }
                         setShowBillDialog(false);
