@@ -520,7 +520,7 @@ export const generateThermalInvoiceHTML = (invoice, isOrderDetails = false) => {
     <div><strong>${invoice.customer_name ? truncateText(invoice.customer_name, 30) : "Walk-in Customer"}</strong></div>
     ${invoice.customer_phone ? `<div>${invoice.customer_phone}</div>` : ""}
     ${invoice.customer_email ? `<div style="font-size: 8px;">${truncateText(invoice.customer_email, 30)}</div>` : ""}
-    ${invoice.customer_gst ? `<div>GST: ${invoice.customer_gst}</div>` : ""}
+    ${invoice.customer_gst ? `<div>GST: ${invoice?.customer?.gst_number}</div>` : ""}
   </div>
 
   <div class="divider"></div>

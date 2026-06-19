@@ -653,7 +653,7 @@ export const generateA4InvoiceHTML = (invoice, isOrderDetails = false) => {
         ${invoice.customer_phone ? `<div class="customer-field">📞 ${escapeHtml(invoice.customer_phone)}</div>` : ""}
         ${invoice.customer_email ? `<div class="customer-field">✉️ ${escapeHtml(invoice.customer_email)}</div>` : ""}
         ${invoice.customer_address ? `<div class="customer-field">📍 ${escapeHtml(invoice.customer_address)}</div>` : ""}
-        ${invoice.customer_gst ? `<div class="customer-field"><span class="gst-chip">GST: ${escapeHtml(invoice.customer?.gst_number)}</span></div>` : ""}
+        ${invoice.customer_gst ? `<div class="customer-field"><span class="gst-chip">GST: ${escapeHtml(invoice?.customer?.gst_number)}</span></div>` : ""}
       </div>
     </div>
 
@@ -885,7 +885,7 @@ export const generateA4InvoiceHTML = (invoice, isOrderDetails = false) => {
         html += `<tr>
           <td>${idx + 1}</td>
           <td>${escapeHtml(productName)}</td>
-          <td class="text-right">${qty} (${item.product?.unit?.code})</td>
+          <td class="text-right">${qty} ${item.product?.unit?.code}</td>
           <td class="text-right">${formatCurrency(price)}</td>
           <td class="text-center">${gst > 0 ? `${gst}%` : "—"}</td>
           <td class="text-right">${discount > 0 ? `${discount}%` : "—"}</td>
