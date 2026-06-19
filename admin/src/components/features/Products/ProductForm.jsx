@@ -144,27 +144,7 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
     }
   }, [user?.id]);
 
-  useEffect(() => {
-    // Initialize purchase_gst_percentage on component mount
-    const currentGstValue = watch("gst_percentage");
-    if (currentGstValue !== undefined && currentGstValue !== "") {
-      setValue("purchase_gst_percentage", currentGstValue, {
-        shouldValidate: false,
-        shouldDirty: false,
-      });
-    }
-
-    // Watch for changes in gst_percentage and sync to purchase_gst_percentage
-    const subscription = watch((value, { name }) => {
-      if (name === "gst_percentage") {
-        setValue("purchase_gst_percentage", value.gst_percentage, {
-          shouldValidate: false,
-          shouldDirty: false,
-        });
-      }
-    });
-    return () => subscription.unsubscribe();
-  }, [watch, setValue]);
+  
 
   // Update create page data when medicine types are loaded
   useEffect(() => {
@@ -1149,24 +1129,32 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
           />
 
           <Input
-            label="GST Percentage"
-            type="number"
-            step="0.01"
-            placeholder="Enter GST percentage"
-            error={errors.gst_percentage?.message}
-            onInput={(e) => handleDecimalInput(e, 2)}
-            {...register("gst_percentage", {
-              valueAsNumber: true,
-              min: { value: 0, message: "GST percentage must be positive" },
-              max: { value: 100, message: "GST percentage cannot exceed 100" },
-            })}
-          />
-          {/* Hidden purchase_gst_percentage field that mirrors gst_percentage */}
-          <input
-            type="hidden"
-            {...register("purchase_gst_percentage")}
-            value={watch("purchase_gst_percentage") || ""}
-          />
+      label="GST Percentage (Sales)"
+      type="number"
+      step="0.01"
+      placeholder="Enter GST percentage for sales"
+      error={errors.gst_percentage?.message}
+      onInput={(e) => handleDecimalInput(e, 2)}
+      {...register("gst_percentage", {
+        valueAsNumber: true,
+        min: { value: 0, message: "GST percentage must be positive" },
+        max: { value: 100, message: "GST percentage cannot exceed 100" },
+      })}
+    />
+
+    <Input
+      label="GST Percentage (Purchase)"
+      type="number"
+      step="0.01"
+      placeholder="Enter GST percentage for purchase"
+      error={errors.purchase_gst_percentage?.message}
+      onInput={(e) => handleDecimalInput(e, 2)}
+      {...register("purchase_gst_percentage", {
+        valueAsNumber: true,
+        min: { value: 0, message: "GST percentage must be positive" },
+        max: { value: 100, message: "GST percentage cannot exceed 100" },
+      })}
+    />
 
           <Input
             label="Discount Percentage"
