@@ -824,10 +824,10 @@ export const generateA4InvoiceHTML = (invoice, isOrderDetails = false) => {
     let html = "";
 
     // Products
-    if (Array.isArray(invoice.items) && invoice.items.length > 0) {
+    if (Array.isArray(invoice.invoice_items) && invoice.invoice_items.length > 0) {
       html += `<tr><td colspan="7" class="section-header">🛒 PRODUCTS</td></tr>`;
       console.log("checking the invoice items", invoice.items);
-      invoice.items.forEach((item, idx) => {
+      invoice.invoice_items.forEach((item, idx) => {
         const price = parseNumeric(item.price);
         const qty = parseNumeric(item.quantity, 1);
         const total = parseNumeric(item.total_price, price * qty);

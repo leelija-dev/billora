@@ -535,8 +535,8 @@ export const generateThermalInvoiceHTML = (invoice, isOrderDetails = false) => {
 
   <!-- Products List -->
   ${
-    invoice.items && invoice.items.length > 0
-      ? invoice.items
+    invoice.invoice_items && invoice.invoice_items.length > 0
+      ? invoice.invoice_items
           .map((item, index) => {
             const itemPrice = parseNumber(item.price);
             const itemTotal = parseNumber(item.total_price);
