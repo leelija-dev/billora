@@ -10,7 +10,7 @@ use App\Models\PlanPermissionWithCustomerSidebar;
 use Google\Service\Monitoring\Custom;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
-
+use Illuminate\Support\Facades\Cache;
 class PlanPermissionController extends Controller
 {
     public function index()
@@ -113,7 +113,7 @@ class PlanPermissionController extends Controller
             }
 
             DB::commit();
-
+            Cache::tags('plan_details')->flush();
             return redirect()->route('admin.plan-permission.index')
                 ->with('success', 'Plan Permission Updated Successfully');
         } catch (\Exception $e) {

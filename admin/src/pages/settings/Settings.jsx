@@ -61,6 +61,8 @@ const Settings = () => {
   const { user, token, updateUser } = useAuthStore();
   const { theme, toggleTheme } = useUIStore();
 
+  
+
   useEffect(() => {
     loadSettings();
   }, [loadSettings]);
@@ -131,9 +133,10 @@ const Settings = () => {
   }, [user?.products_qr, user?.name]);
 
   const copyQRUrl = useCallback(async () => {
-    if (!user?.products_qr) return;
+    console.log(user);
+    if (!user?.qrUrl) return;
     try {
-      await navigator.clipboard.writeText(user.products_qr);
+      await navigator.clipboard.writeText(user.qrUrl);
       setCopied(true);
       toast.success("QR Code URL copied to clipboard");
       setTimeout(() => setCopied(false), 2000);

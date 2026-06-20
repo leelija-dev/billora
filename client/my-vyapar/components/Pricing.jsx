@@ -8,17 +8,40 @@ import { useAuthStore } from "../store/authStoreZustand";
 import { useFilterStore } from "../store/filterStore";
 import { useRouter } from "next/navigation";
 import businessService from "../services/businessService";
-import {
-  FaStar,
-  FaCheck,
-  FaSpinner,
-  FaArrowRight,
-  FaLock,
-  FaLayerGroup,
-  FaTags,
-  FaGem,
-  FaInfoCircle,
-} from "react-icons/fa";
+import { 
+  Star, 
+  Check, 
+  Loader2, 
+  ArrowRight, 
+  Lock, 
+  Layers, 
+  Tag, 
+  Gem, 
+  Info,
+  AlertCircle,
+  Crown,
+  Sparkles,
+  ShoppingBag,
+  RefreshCw,
+  Zap,
+  Shield,
+  Users,
+  CreditCard,
+  Gift,
+  TrendingUp,
+  ChevronDown,
+  Building2,
+  LayoutGrid,
+  X,
+  ArrowUpRight,
+  Plus,
+  Minus,
+  CircleCheck,
+  Medal,
+  Rocket,
+  PartyPopper
+} from "lucide-react";
+import { FaStar, FaCheck, FaSpinner, FaArrowRight, FaLock, FaLayerGroup, FaTags, FaGem, FaInfoCircle } from "react-icons/fa";
 import { IoMdTrendingUp } from "react-icons/io";
 import { RiVipCrownFill } from "react-icons/ri";
 import { GiRoundStar } from "react-icons/gi";
@@ -72,6 +95,121 @@ const Pricing = ({
     hasActivePlan,
     checkPlanPurchaseEligibility,
   } = useAuthStore();
+
+  // Helper function to determine plan action based on current and target plan
+  const getPlanAction = (currentPlan, targetPlan) => {
+    if (!currentPlan) {
+      return { 
+        isUpgrade: false, 
+        isDowngrade: false, 
+        isSame: false, 
+        canPurchase: true,
+        isActive: false,
+        action: 'new_purchase',
+        canUpgrade: false,
+        canReactivate: false
+      };
+    }
+
+    // Check if current plan is active
+    const isActive = currentPlan.is_active === 1 || 
+                     currentPlan.is_active === true || 
+                     currentPlan.status === 'active' ||
+                     currentPlan.is_active === '1';
+    
+    // Get the price value
+    const currentPrice = parseFloat(currentPlan.price) || 0;
+    const targetPrice = parseFloat(targetPlan.price?.monthly) || parseFloat(targetPlan.price) || 0;
+    
+    // If plan is inactive, it's a reactivation scenario
+    if (!isActive) {
+      return {
+        isUpgrade: false,
+        isDowngrade: false,
+        isSame: false,
+        canPurchase: true,
+        isActive: false,
+        action: 'reactivation',
+        isInactive: true,
+        canUpgrade: false,
+        canReactivate: true
+      };
+    }
+    
+    // For active plans, determine if it's an upgrade or downgrade
+    if (targetPrice > currentPrice) {
+      return {
+        isUpgrade: true,
+        isDowngrade: false,
+        isSame: false,
+        canPurchase: true,
+        isActive: true,
+        action: 'upgrade',
+        canUpgrade: true,
+        canReactivate: false
+      };
+    } else if (targetPrice < currentPrice) {
+      // Downgrade - NOT ALLOWED
+      return {
+        isUpgrade: false,
+        isDowngrade: true,
+        isSame: false,
+        canPurchase: false, // Cannot purchase downgrade
+        isActive: true,
+        action: 'downgrade_not_allowed',
+        canUpgrade: false,
+        canReactivate: false,
+        reason: "Downgrading is not allowed. Please contact support if you need to change to a lower tier plan."
+      };
+    } else {
+      // Same plan
+      return {
+        isUpgrade: false,
+        isDowngrade: false,
+        isSame: true,
+        canPurchase: false,
+        isActive: true,
+        action: 'same_plan',
+        canUpgrade: false,
+        canReactivate: false,
+        reason: "You are already subscribed to this plan."
+      };
+    }
+  };
+
+  // Helper function to get user's plan status
+  const getUserPlanStatus = () => {
+    if (!isLoggedIn || !user?.plan_id) {
+      return { hasPlan: false, isActive: false, plan: null };
+    }
+    
+    // Find the user's plan from the plans list
+    const currentPlan = plans.find((plan) => plan.id === user.plan_id);
+    if (!currentPlan) {
+      return { hasPlan: false, isActive: false, plan: null };
+    }
+    
+    // Check if plan is active
+    const isActive = currentPlan.is_active === 1 || 
+                     currentPlan.is_active === true || 
+                     currentPlan.status === 'active' ||
+                     currentPlan.is_active === '1';
+    
+    console.log('User plan status check:', {
+      planId: currentPlan.id,
+      planName: currentPlan.name,
+      is_active: currentPlan.is_active,
+      status: currentPlan.status,
+      isActive: isActive
+    });
+    
+    return {
+      hasPlan: true,
+      isActive: isActive,
+      plan: currentPlan,
+      planId: user.plan_id
+    };
+  };
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -172,6 +310,8 @@ const Pricing = ({
       color: index === 1 ? "#8b5cf6" : "#1e293b",
       buttonText: `Select Plan`,
       popular: index === 1,
+      status: plan.status || 'active',
+      is_active: plan.is_active !== undefined ? plan.is_active : true,
     };
   };
 
@@ -257,13 +397,78 @@ const Pricing = ({
     const checkEligibilityForPlans = async () => {
       if (isLoggedIn && filteredPlans.length > 0) {
         const eligibilityData = {};
+        const userPlanStatus = getUserPlanStatus();
+
+        console.log('User plan status in eligibility check:', userPlanStatus);
 
         for (const plan of filteredPlans) {
           setCheckingEligibility((prev) => ({ ...prev, [plan.id]: true }));
 
           try {
-            const eligibility = await checkPlanPurchaseEligibility(plan.id);
-            eligibilityData[plan.id] = eligibility;
+            // Get plan action based on comparison
+            const planAction = getPlanAction(userPlanStatus.plan, plan);
+            
+            console.log(`Plan ${plan.id} (${plan.name}) action:`, planAction);
+
+            // If user has an active plan and this is the same plan
+            if (userPlanStatus.hasPlan && userPlanStatus.isActive && userPlanStatus.plan.id === plan.id) {
+              eligibilityData[plan.id] = {
+                canPurchase: false,
+                reason: "You are already subscribed to this plan.",
+                action: "same_plan",
+                isSame: true
+              };
+            }
+            // If user has an inactive plan that matches this plan
+            else if (userPlanStatus.hasPlan && !userPlanStatus.isActive && userPlanStatus.plan.id === plan.id) {
+              eligibilityData[plan.id] = {
+                canPurchase: true,
+                reason: "Your plan is inactive. You can reactivate it.",
+                action: "reactivation",
+                isInactive: true,
+                canReactivate: true
+              };
+            }
+            // If user has an active plan and this is a different plan
+            else if (userPlanStatus.hasPlan && userPlanStatus.isActive) {
+              // Check if it's an upgrade
+              const isUpgrade = planAction.isUpgrade;
+              const isDowngrade = planAction.isDowngrade;
+              
+              if (isUpgrade) {
+                eligibilityData[plan.id] = {
+                  canPurchase: true,
+                  reason: "You can upgrade to this plan.",
+                  action: "upgrade",
+                  isUpgrade: true,
+                  canUpgrade: true
+                };
+              } else if (isDowngrade) {
+                // Downgrade not allowed
+                eligibilityData[plan.id] = {
+                  canPurchase: false,
+                  reason: "Downgrading is not allowed. Please contact support if you need to change to a lower tier plan.",
+                  action: "downgrade_not_allowed",
+                  isDowngrade: true,
+                  canPurchase: false
+                };
+              } else {
+                eligibilityData[plan.id] = {
+                  canPurchase: false,
+                  reason: "This plan is not available for purchase.",
+                  action: "unavailable"
+                };
+              }
+            }
+            // User has no active plan or no plan at all
+            else {
+              // Check eligibility normally
+              const eligibility = await checkPlanPurchaseEligibility(plan.id);
+              eligibilityData[plan.id] = {
+                ...eligibility,
+                action: eligibility.action || "new_purchase"
+              };
+            }
           } catch (error) {
             console.error(
               `Error checking eligibility for plan ${plan.id}:`,
@@ -278,12 +483,13 @@ const Pricing = ({
           }
         }
 
+        console.log('Final eligibility data:', eligibilityData);
         setPlanEligibility(eligibilityData);
       }
     };
 
     checkEligibilityForPlans();
-  }, [isLoggedIn, filteredPlans, checkPlanPurchaseEligibility]);
+  }, [isLoggedIn, filteredPlans, checkPlanPurchaseEligibility, plans]);
 
   const getCurrentPrice = (plan) => {
     let basePrice;
@@ -338,19 +544,58 @@ const Pricing = ({
   };
 
   const handleSubscribe = async (plan) => {
+    // Get user's plan status
+    const userPlanStatus = getUserPlanStatus();
+    const planAction = getPlanAction(userPlanStatus.plan, plan);
+    const hasInactivePlan = userPlanStatus.hasPlan && !userPlanStatus.isActive;
+    
+    // Check if this is the user's inactive plan
+    const isInactiveRepurchase = hasInactivePlan && userPlanStatus.plan.id === plan.id;
+    const isSameActivePlan = userPlanStatus.hasPlan && userPlanStatus.isActive && userPlanStatus.plan.id === plan.id;
+    const isDowngrade = planAction.isDowngrade;
+
+    console.log('Plan action:', planAction);
+    console.log('Is inactive repurchase:', isInactiveRepurchase);
+    console.log('Is same active plan:', isSameActivePlan);
+    console.log('Is downgrade:', isDowngrade);
+
+    // Prevent purchasing the same active plan
+    if (isSameActivePlan) {
+      alert("You are already subscribed to this plan.");
+      return;
+    }
+
+    // Prevent downgrading
+    if (isDowngrade) {
+      alert("Downgrading is not allowed. Please contact support if you need to change to a lower tier plan.");
+      return;
+    }
+
     if (isLoggedIn) {
       const eligibility = planEligibility[plan.id];
-
+      
       if (!eligibility) {
         try {
           const eligibilityResult = await checkPlanPurchaseEligibility(plan.id);
+          let finalEligibility = eligibilityResult;
+          
+          // If this is the user's inactive plan, allow reactivation
+          if (isInactiveRepurchase) {
+            finalEligibility = {
+              ...eligibilityResult,
+              canPurchase: true,
+              reason: "Your plan is inactive. You can reactivate it.",
+              action: "reactivation"
+            };
+          }
+          
           setPlanEligibility((prev) => ({
             ...prev,
-            [plan.id]: eligibilityResult,
+            [plan.id]: finalEligibility,
           }));
 
-          if (!eligibilityResult.canPurchase) {
-            alert(eligibilityResult.reason);
+          if (!finalEligibility.canPurchase) {
+            alert(finalEligibility.reason);
             return;
           }
         } catch (error) {
@@ -359,11 +604,23 @@ const Pricing = ({
           return;
         }
       } else if (!eligibility.canPurchase) {
-        alert(eligibility.reason);
-        return;
+        // If this is the user's inactive plan, allow reactivation
+        if (isInactiveRepurchase) {
+          // Allow reactivation - proceed
+        } else if (eligibility.isSame) {
+          alert("You are already subscribed to this plan.");
+          return;
+        } else if (eligibility.isDowngrade) {
+          alert("Downgrading is not allowed. Please contact support if you need to change to a lower tier plan.");
+          return;
+        } else {
+          alert(eligibility.reason || "This plan is not available for purchase.");
+          return;
+        }
       }
     }
 
+    // Prepare plan data for order summary
     const currentPriceData = getCurrentPrice(plan);
     const originalPriceData = getOriginalPrice(plan);
     const gstAmount = currentPriceData.price * (plan.gst / 100);
@@ -380,14 +637,16 @@ const Pricing = ({
       gst: plan.gst,
       gstAmount: gstAmount,
       totalAmount: totalAmount,
-      businessType:
-        selectedBusinessType !== "all" && showFilters
-          ? allBusinessTypes.find(
-              (bt) => bt.id === parseInt(selectedBusinessType),
-            )
-          : plan.businessTypes?.[0] || null,
+      businessType: selectedBusinessType !== "all" && showFilters
+        ? allBusinessTypes.find((bt) => bt.id === parseInt(selectedBusinessType))
+        : plan.businessTypes?.[0] || null,
       hasCustomPrice: currentPriceData.hasCustomPrice,
       eligibility: planEligibility[plan.id] || null,
+      isUpgrade: planAction.isUpgrade,
+      isDowngrade: planAction.isDowngrade,
+      isInactiveRepurchase: isInactiveRepurchase,
+      isReactivation: isInactiveRepurchase,
+      userPlanStatus: userPlanStatus
     };
 
     if (!isLoggedIn) {
@@ -396,14 +655,20 @@ const Pricing = ({
       return;
     }
 
-    const eligibility = planEligibility[plan.id];
-    const isUpgrade = eligibility && eligibility.action === "upgrade";
-
-    if (isUpgrade) {
-      const dashboardUrl =
-        process.env.NEXT_PUBLIC_DASHBOARD_URL || "http://localhost:3000";
-      window.open(`${dashboardUrl}/billing`, "_blank");
+    // Handle different scenarios
+    if (planAction.isUpgrade) {
+      // User has active plan and wants to upgrade - redirect to dashboard
+      const dashboardUrl = process.env.NEXT_PUBLIC_DASHBOARD_URL || "http://localhost:3000";
+      
+        window.open(`${dashboardUrl}billing`, "_blank");
+    
+    } else if (isInactiveRepurchase) {
+      // User has inactive plan and wants to repurchase - go to order summary
+      selectPlan(selectedPlanData);
+      localStorage.setItem("selectedPlan", JSON.stringify(selectedPlanData));
+      router.push("/order-summary");
     } else {
+      // New purchase
       selectPlan(selectedPlanData);
       localStorage.setItem("selectedPlan", JSON.stringify(selectedPlanData));
       router.push("/order-summary");
@@ -469,19 +734,7 @@ const Pricing = ({
         >
           <div className="text-center mb-8">
             <div className="w-24 h-24 bg-gradient-to-br from-purple-100 to-purple-200 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg">
-              <svg
-                className="w-12 h-12 text-purple-600"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
-                />
-              </svg>
+              <Lock className="w-12 h-12 text-purple-600" />
             </div>
             <h3 className="text-2xl font-bold text-gray-900 mb-3">
               Unlock Premium Features
@@ -501,6 +754,18 @@ const Pricing = ({
                     /month
                   </span>
                 </p>
+                {pendingPlan.isReactivation && (
+                  <p className="text-xs text-green-600 mt-1">
+                    <RefreshCw className="w-3 h-3 inline mr-1" />
+                    Reactivating your previous plan
+                  </p>
+                )}
+                {pendingPlan.isUpgrade && (
+                  <p className="text-xs text-blue-600 mt-1">
+                    <TrendingUp className="w-3 h-3 inline mr-1" />
+                    Upgrading your plan
+                  </p>
+                )}
               </div>
             )}
           </div>
@@ -523,7 +788,7 @@ const Pricing = ({
     );
   };
 
-  // Skeleton Loading Component with equal height
+  // Skeleton Loading Component
   const PricingCardSkeleton = ({ isPopular = false }) => (
     <div
       className={`group relative transition-all duration-500 transform ${
@@ -678,19 +943,7 @@ const Pricing = ({
       <div className="py-40 bg-gradient-to-br from-gray-50 via-white to-gray-50 min-h-[600px] flex items-center justify-center">
         <div className="text-center bg-white p-10 rounded-3xl shadow-2xl max-w-md">
           <div className="w-24 h-24 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
-            <svg
-              className="w-12 h-12 text-red-500"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-              />
-            </svg>
+            <AlertCircle className="w-12 h-12 text-red-500" />
           </div>
           <h3 className="text-2xl font-bold text-gray-800 mb-3">
             Oops! Something went wrong
@@ -722,38 +975,6 @@ const Pricing = ({
     return selected ? selected.name : "Select Business Type";
   };
 
-  // Get current user's active plan details
-  const getCurrentPlanDetails = () => {
-    if (!isLoggedIn || !user?.plan_id) return null;
-
-    const currentPlan = plans.find((plan) => plan.id === user.plan_id);
-    return currentPlan || null;
-  };
-
-  // Determine if plan is upgrade, downgrade, or same
-  const getPlanAction = (plan) => {
-    const currentPlan = getCurrentPlanDetails();
-
-    if (!currentPlan) {
-      return {
-        isUpgrade: false,
-        isDowngrade: false,
-        isSame: false,
-        canPurchase: true,
-      };
-    }
-
-    const currentPlanPrice = parseFloat(currentPlan.price);
-    const planPrice = parseFloat(plan.price.monthly);
-
-    return {
-      isUpgrade: planPrice > currentPlanPrice,
-      isDowngrade: planPrice < currentPlanPrice,
-      isSame: planPrice === currentPlanPrice,
-      canPurchase: planPrice !== currentPlanPrice,
-    };
-  };
-
   return (
     <div className="pb-28 pt-8 md:pb-28 md:pt-12 bg-gradient-to-br from-gray-50 via-white to-gray-50 font-['Inter',system-ui,-apple-system,sans-serif] relative overflow-hidden">
       {/* Background Decorations */}
@@ -766,9 +987,7 @@ const Pricing = ({
         {/* Header Section */}
         <div className="text-center mb-4 px-4 relative z-10">
           <div className="inline-flex items-center gap-2 bg-gradient-to-r from-purple-100 to-purple-50 text-purple-700 px-5 py-2 rounded-full text-sm font-semibold mb-6 shadow-sm">
-            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-              <path d="M10 2a8 8 0 100 16 8 8 0 000-16zm1 12h-2v-2h2v2zm0-4h-2V6h2v4z" />
-            </svg>
+            <Sparkles className="w-4 h-4" />
             Flexible Pricing Plans
           </div>
           <h2 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent mb-4">
@@ -789,36 +1008,12 @@ const Pricing = ({
                 className="flex items-center justify-between gap-3 bg-white rounded-[40px] px-6 py-3 min-w-[260px] shadow-md border border-gray-200 hover:border-purple-300 transition-all duration-300"
               >
                 <div className="flex items-center gap-2">
-                  <svg
-                    className="w-5 h-5 text-purple-600"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
-                    />
-                  </svg>
+                  <Building2 className="w-5 h-5 text-purple-600" />
                   <span className="text-gray-700 font-medium">
                     {getSelectedBusinessTypeName()}
                   </span>
                 </div>
-                <svg
-                  className={`w-5 h-5 text-gray-400 transition-transform duration-300 ${isDropdownOpen ? "rotate-180" : ""}`}
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M19 9l-7 7-7-7"
-                  />
-                </svg>
+                <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform duration-300 ${isDropdownOpen ? "rotate-180" : ""}`} />
               </button>
 
               {/* Dropdown Menu */}
@@ -835,34 +1030,10 @@ const Pricing = ({
                         : "text-gray-700"
                     }`}
                   >
-                    <svg
-                      className="w-4 h-4"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"
-                      />
-                    </svg>
+                    <LayoutGrid className="w-4 h-4" />
                     All Business Types
                     {selectedBusinessType === "all" && (
-                      <svg
-                        className="w-4 h-4 ml-auto text-purple-600"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M5 13l4 4L19 7"
-                        />
-                      </svg>
+                      <Check className="w-4 h-4 ml-auto text-purple-600" />
                     )}
                   </button>
 
@@ -879,34 +1050,10 @@ const Pricing = ({
                           : "text-gray-700"
                       }`}
                     >
-                      <svg
-                        className="w-4 h-4"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
-                        />
-                      </svg>
+                      <Building2 className="w-4 h-4" />
                       {businessType.name}
                       {selectedBusinessType === businessType.id.toString() && (
-                        <svg
-                          className="w-4 h-4 ml-auto text-purple-600"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M5 13l4 4L19 7"
-                          />
-                        </svg>
+                        <Check className="w-4 h-4 ml-auto text-purple-600" />
                       )}
                     </button>
                   ))}
@@ -916,23 +1063,11 @@ const Pricing = ({
           </div>
         )}
 
-        {/* Pricing Cards Grid - Equal Height Cards */}
+        {/* Pricing Cards Grid */}
         {displayPlans.length === 0 && !loading && hasLoadedOnce ? (
           <div className="text-center py-24 relative z-10">
             <div className="w-32 h-32 bg-gradient-to-br from-gray-100 to-gray-200 rounded-full flex items-center justify-center mx-auto mb-8 shadow-lg">
-              <svg
-                className="w-16 h-16 text-gray-400"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"
-                />
-              </svg>
+              <LayoutGrid className="w-16 h-16 text-gray-400" />
             </div>
             <h3 className="text-3xl font-bold text-gray-800 mb-3">
               No Plans Available
@@ -950,9 +1085,65 @@ const Pricing = ({
                 const currentPriceData = getCurrentPrice(plan);
                 const originalPriceData = getOriginalPrice(plan);
                 const isHovered = hoveredPlan === plan.id;
-                const planAction = getPlanAction(plan);
-
                 
+                // Get user's plan status
+                const userPlanStatus = getUserPlanStatus();
+                const planAction = getPlanAction(userPlanStatus.plan, plan);
+                const hasInactivePlan = userPlanStatus.hasPlan && !userPlanStatus.isActive;
+                const isInactiveRepurchase = hasInactivePlan && userPlanStatus.plan.id === plan.id;
+                const isCurrentActivePlan = userPlanStatus.hasPlan && userPlanStatus.isActive && userPlanStatus.plan.id === plan.id;
+                const isDowngrade = planAction.isDowngrade;
+
+                // Get eligibility info
+                const eligibility = planEligibility[plan.id];
+
+                // Determine if button should be disabled
+                const isButtonDisabled = 
+                  subscribing === plan.id ||
+                  checkingEligibility[plan.id] ||
+                  isCurrentActivePlan ||
+                  isDowngrade ||
+                  (isLoggedIn && eligibility && !eligibility.canPurchase && !isInactiveRepurchase);
+
+                // Determine button style
+                let buttonStyle = "bg-gray-900 text-white hover:bg-gray-800 shadow-md";
+                if (isPopular) {
+                  buttonStyle = "bg-gradient-to-r from-purple-600 via-purple-500 to-pink-500 text-white shadow-lg hover:shadow-xl";
+                } else if (planAction.isUpgrade) {
+                  buttonStyle = "bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow-lg hover:shadow-xl";
+                } else if (isInactiveRepurchase) {
+                  buttonStyle = "bg-gradient-to-r from-green-500 to-emerald-500 text-white shadow-lg hover:shadow-xl";
+                } else if (isDowngrade) {
+                  buttonStyle = "bg-gray-400 text-white cursor-not-allowed";
+                }
+
+                // Determine button text
+                let buttonText = "🎉 Subscribe Now";
+                if (subscribing === plan.id) {
+                  buttonText = "Processing...";
+                } else if (checkingEligibility[plan.id]) {
+                  buttonText = "Checking...";
+                } else if (isLoggedIn && eligibility) {
+                  if (isInactiveRepurchase) {
+                    buttonText = "Reactivate Plan";
+                  } else if (planAction.isUpgrade) {
+                    buttonText = "Upgrade Now";
+                  } else if (isDowngrade) {
+                    buttonText = "Downgrade Not Allowed";
+                  } else if (isCurrentActivePlan) {
+                    buttonText = "Current Plan";
+                  } else if (eligibility.canPurchase) {
+                    if (eligibility.action === "renewal") {
+                      buttonText = "Renew Now";
+                    } else if (eligibility.action === "new_purchase") {
+                      buttonText = "Get Started";
+                    } else {
+                      buttonText = "Select Plan";
+                    }
+                  } else {
+                    buttonText = "Currently Unavailable";
+                  }
+                }
 
                 return (
                   <div
@@ -973,7 +1164,7 @@ const Pricing = ({
                       }`}
                     ></div>
 
-                    {/* Main Card - Equal height using h-full and flex flex-col */}
+                    {/* Main Card */}
                     <div
                       className={`relative bg-white rounded-3xl overflow-hidden transition-all duration-500 h-full flex flex-col ${
                         isPopular
@@ -986,7 +1177,7 @@ const Pricing = ({
                         <div className="absolute top-0 inset-x-0 z-10">
                           <div className="bg-gradient-to-r from-purple-600 via-purple-500 to-pink-500 text-white py-2.5 text-center">
                             <div className="flex items-center justify-center gap-2 text-sm font-bold uppercase tracking-wider">
-                              <RiVipCrownFill className="w-4 h-4" />
+                              <Crown className="w-4 h-4" />
                               MOST POPULAR CHOICE
                             </div>
                           </div>
@@ -996,7 +1187,7 @@ const Pricing = ({
                       <div
                         className={`p-8 flex-1 flex flex-col ${isPopular ? "pt-16" : "pt-8"}`}
                       >
-                        {/* Header - Centered */}
+                        {/* Header */}
                         <div className="mb-3 text-center">
                           <h3 className="text-2xl font-bold text-gray-900 mb-3">
                             {plan.name}
@@ -1006,7 +1197,7 @@ const Pricing = ({
                           </p>
                         </div>
 
-                        {/* Price Section - Centered */}
+                        {/* Price Section */}
                         <div className="mb-6 pb-6 border-b border-gray-100">
                           <div className="flex items-baseline justify-center gap-1">
                             <span className="text-3xl font-bold text-gray-900">
@@ -1026,7 +1217,7 @@ const Pricing = ({
                             </span>
                           </div>
 
-                          {/* Savings Badge - Centered */}
+                          {/* Savings Badge */}
                           {plan.discount > 0 &&
                             !currentPriceData.hasCustomPrice && (
                               <div className="mt-4 inline-flex items-center gap-2 bg-gradient-to-r from-green-50 to-emerald-50 px-3 py-1.5 rounded-full mx-auto">
@@ -1034,6 +1225,7 @@ const Pricing = ({
                                   ₹{originalPriceData.displayPrice}
                                 </span>
                                 <span className="text-xs font-bold text-green-700">
+                                  <Gift className="w-3 h-3 inline mr-1" />
                                   Save ₹
                                   {(
                                     originalPriceData.price -
@@ -1043,13 +1235,13 @@ const Pricing = ({
                               </div>
                             )}
 
-                          {/* Special Pricing - Centered */}
+                          {/* Special Pricing */}
                           {currentPriceData.hasCustomPrice && (
                             <div className="mt-4 flex justify-center">
                               <div className="inline-flex items-center gap-2 bg-gradient-to-r from-purple-50 to-pink-50 px-4 py-2 rounded-full">
                                 <div className="relative">
                                   <div className="absolute inset-0 bg-purple-500 rounded-full blur-sm opacity-50"></div>
-                                  <FaTags className="w-4 h-4 text-purple-600 relative" />
+                                  <Tag className="w-4 h-4 text-purple-600 relative" />
                                 </div>
                                 <span className="text-xs font-semibold text-purple-700">
                                   Special Pricing Available
@@ -1059,11 +1251,11 @@ const Pricing = ({
                           )}
                         </div>
 
-                        {/* Features Section - Centered - flex-grow to push button down */}
+                        {/* Features Section */}
                         <div className="mb-8 flex-1">
                           <div className="flex items-center justify-between mb-4">
                             <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider flex items-center gap-1">
-                              <FaLayerGroup className="w-3 h-3" />
+                              <Layers className="w-3 h-3" />
                               What's Included
                             </h4>
                             <span className="text-xs text-gray-400">
@@ -1084,7 +1276,7 @@ const Pricing = ({
                                       : "bg-green-100 group-hover/item:bg-green-200"
                                   }`}
                                 >
-                                  <FaCheck
+                                  <Check
                                     className={`w-3 h-3 ${isPopular ? "text-purple-600" : "text-green-600"}`}
                                   />
                                 </div>
@@ -1097,81 +1289,19 @@ const Pricing = ({
 
                           {plan.features.length > 5 && (
                             <button className="mt-3 text-xs font-medium text-purple-600 hover:text-purple-700 flex items-center justify-center gap-1 mx-auto transition-colors">
-                              <FaInfoCircle className="w-3 h-3" />+
+                              <Info className="w-3 h-3" />+
                               {plan.features.length - 5} more features
                             </button>
                           )}
                         </div>
 
-                        {/* Eligibility Status - Modern Design - Centered */}
-                        {isLoggedIn && planEligibility[plan.id] && (
-                          <div className="mb-6">
-                            <div
-                              className={`p-3 rounded-xl inline-block w-full ${
-                                planEligibility[plan.id].canPurchase
-                                  ? "bg-gradient-to-r from-green-50 to-emerald-50 border-l-4 border-green-500"
-                                  : "bg-gray-50 border-l-4 border-gray-300"
-                              }`}
-                            >
-                              <div className="flex items-center justify-center gap-2 text-sm font-medium">
-                                {planEligibility[plan.id].canPurchase ? (
-                                  <>
-                                    <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
-                                    <span className="text-green-700">
-                                      {planEligibility[plan.id].action ===
-                                        "upgrade" && " Ready to Upgrade"}
-                                      {planEligibility[plan.id].action ===
-                                        "renewal" && " Eligible for Renewal"}
-                                      {planEligibility[plan.id].action ===
-                                        "new_purchase" && " Available Now"}
-                                    </span>
-                                  </>
-                                ) : (
-                                  <>
-                                    <FaSpinner className="w-4 h-4 text-gray-400" />
-                                    <span className="text-gray-500 text-xs">
-                                      {planEligibility[plan.id].reason}
-                                    </span>
-                                  </>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                        )}
-
-                        {/* CTA Button - Modern Design - mt-auto to stick to bottom */}
+                        {/* CTA Button */}
                         <button
                           onClick={() => handleSubscribe(plan)}
-                          disabled={
-                            subscribing === plan.id ||
-                            (isLoggedIn &&
-                              planEligibility[plan.id] &&
-                              !planEligibility[plan.id].canPurchase) ||
-                            checkingEligibility[plan.id] ||
-                            (isLoggedIn && planAction.isSame) ||
-                            (isLoggedIn && planAction.isDowngrade)
-                          }
-                          className={`relative w-full py-4 rounded-xl font-bold transition-all duration-300 overflow-hidden group mt-auto
-                ${
-                  isPopular
-                    ? "bg-gradient-to-r from-purple-600 via-purple-500 to-pink-500 text-white shadow-lg hover:shadow-xl"
-                    : planAction.isUpgrade
-                      ? "bg-gradient-to-r from-green-500 to-emerald-500 text-white shadow-lg hover:shadow-xl"
-                      : planAction.isDowngrade
-                        ? " text-white shadow-lg hover:shadow-xl bg-gray-500"
-                        : "bg-gray-900 text-white hover:bg-gray-800 shadow-md"
-                }
-                ${
-                  subscribing === plan.id ||
-                  checkingEligibility[plan.id] ||
-                  (isLoggedIn &&
-                    planEligibility[plan.id] &&
-                    !planEligibility[plan.id].canPurchase) ||
-                  (isLoggedIn && planAction.isSame)
-                    ? "opacity-60 cursor-not-allowed"
-                    : "hover:scale-105 active:scale-95"
-                }
-              `}
+                          disabled={isButtonDisabled}
+                          className={`relative w-full py-4 rounded-xl font-bold transition-all duration-300 overflow-hidden group mt-auto ${buttonStyle}
+                            ${isButtonDisabled ? "opacity-60 cursor-not-allowed" : "hover:scale-105 active:scale-95"}
+                          `}
                         >
                           {/* Animated shine effect */}
                           <div
@@ -1185,44 +1315,30 @@ const Pricing = ({
                           <span className="relative flex items-center justify-center gap-2">
                             {subscribing === plan.id ? (
                               <>
-                                <FaSpinner className="animate-spin h-5 w-5" />
+                                <Loader2 className="animate-spin h-5 w-5" />
                                 Processing...
                               </>
                             ) : checkingEligibility[plan.id] ? (
                               <>
-                                <FaSpinner className="animate-spin h-5 w-5" />
+                                <Loader2 className="animate-spin h-5 w-5" />
                                 Checking...
                               </>
-                            ) : isLoggedIn && planEligibility[plan.id] ? (
-                              planEligibility[plan.id].canPurchase ? (
-                                <>
-                                  {planAction.isUpgrade && "🚀 Upgrade Now"}
-                                  {planAction.isDowngrade && "� Downgrade Now"}
-                                  {planEligibility[plan.id].action ===
-                                    "renewal" && "🔄 Renew Now"}
-                                  {planEligibility[plan.id].action ===
-                                    "new_purchase" && "✨ Get Started"}
-                                  <FaArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                                </>
-                              ) : planAction.isSame ? (
-                                "🔒 Current Plan"
-                              ) : (
-                                "🔒 Currently Unavailable"
-                              )
                             ) : (
                               <>
-                                🎉 Subscribe Now
-                                <FaArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                                {buttonText}
+                                {!isButtonDisabled && buttonText !== "Current Plan" && buttonText !== "Currently Unavailable" && buttonText !== "Downgrade Not Allowed" && (
+                                  <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                                )}
                               </>
                             )}
                           </span>
                         </button>
 
-                        {/* Trust Badge for popular plan - Centered */}
+                        {/* Trust Badge */}
                         {isPopular && (
                           <div className="mt-4 text-center">
                             <p className="text-xs text-gray-400 flex items-center justify-center gap-1">
-                              <FaLock className="w-3 h-3" />
+                              <Lock className="w-3 h-3" />
                               Secure payment • Cancel anytime
                             </p>
                           </div>
@@ -1242,19 +1358,7 @@ const Pricing = ({
                   className="group inline-flex items-center gap-3 px-8 py-3.5 bg-white text-purple-600 rounded-xl font-semibold shadow-lg hover:shadow-xl border-2 border-purple-200 hover:border-purple-400 transition-all duration-300 hover:-translate-y-0.5"
                 >
                   <span>View All Plans</span>
-                  <svg
-                    className="w-5 h-5 group-hover:translate-x-1 transition-transform"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M17 8l4 4m0 0l-4 4m4-4H3"
-                    />
-                  </svg>
+                  <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                 </a>
               </div>
             )}

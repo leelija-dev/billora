@@ -40,7 +40,7 @@ class CustomerRegistrationJob implements ShouldQueue
             return;
         }
         $id = Crypt::encryptString($customer->id);
-            $qrUrl = env('FRONTEND_ADMIN_URL', 'https://thefastbill.com') . '/products/' . $id;
+            $qrUrl = env('FRONTEND_URL', 'https://thefastbill.com') . '/products/' . $id;
             $renderer = new ImageRenderer(
             new RendererStyle(200),
             new SvgImageBackEnd()
