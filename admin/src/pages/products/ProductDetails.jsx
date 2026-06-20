@@ -9,7 +9,7 @@ import {
     FiTrash2,
     FiPackage,
     FiTag,
-    FiDollarSign,
+    
     FiShoppingCart,
     FiBox,
     FiCalendar,
@@ -49,16 +49,23 @@ import Button from '../../components/common/Button/Button'
 import StatusBadge from '../../components/common/StatusBadge/StatusBadge'
 import StockAddModal from '../../components/common/CreateModals/StockAddModal'
 import ProductForm from '../../components/features/Products/ProductForm'
-import { FaQrcode } from 'react-icons/fa'
+import { FaQrcode, FaRupeeSign } from 'react-icons/fa'
 
 const ProductDetails = () => {
     const { id } = useParams()
     const navigate = useNavigate()
-    const { getProductById, deleteProduct, fetchProducts } = useProductStore()
+    const { 
+        getProductById, 
+        deleteProduct, 
+        fetchProducts,
+        fetchProductsByUrl,
+        pagination,
+        currentPage,
+        clearCache
+    } = useProductStore()
 
     const [product, setProduct] = useState(null)
     const [loading, setLoading] = useState(true)
-    const [stocks, setStocks] = useState(null)
     const [categories, setCategories] = useState([])
     const [brands, setBrands] = useState([])
     const [units, setUnits] = useState([])
@@ -78,21 +85,54 @@ const ProductDetails = () => {
         quantity: 0
     })
     const [isPrinting, setIsPrinting] = useState(false)
+    const [updatingStock, setUpdatingStock] = useState(false)
+
+    // Refs to track initialization
+    const initializedRef = useRef(false)
+
+    // Function to get total stock quantity for a product from its stocks array
+    const getProductTotalStock = (product) => {
+        if (!product || !product.stocks || !Array.isArray(product.stocks)) return 0
+        return product.stocks.reduce((total, stock) => {
+            const quantity = parseFloat(stock.quantity) || 0
+            return total + quantity
+        }, 0)
+    }
+
+    // Function to get all stock records for a product
+    const getProductStocks = (product) => {
+        if (!product || !product.stocks || !Array.isArray(product.stocks)) return []
+        return product.stocks
+    }
+
+    // Function to get the primary stock record for a product
+    const getPrimaryStockRecord = (product) => {
+        if (!product || !product.stocks || !Array.isArray(product.stocks)) return null
+        return product.stocks[0] || null
+    }
 
     // Update print settings quantity when stock data is available
     useEffect(() => {
-        if (stocks?.quantity) {
-            setPrintSettings(prev => ({ ...prev, quantity: stocks.quantity }))
+        if (product) {
+            const totalStock = getProductTotalStock(product)
+            setPrintSettings(prev => ({ ...prev, quantity: totalStock || 1 }))
         }
-    }, [stocks?.quantity])
+    }, [product])
 
     // Fetch product details
     useEffect(() => {
         const fetchProductDetails = async () => {
+            if (initializedRef.current) return
+            initializedRef.current = true
+            
             setLoading(true)
             try {
+                // First fetch products to ensure store is populated
                 await fetchProducts()
-                const productData = getProductById(parseInt(id))
+                
+                // Get product by ID - this calls productsAPI.getById(id) which returns full product with relations
+                const productData = await getProductById(parseInt(id))
+                console.log('Product data from store:', productData)
 
                 if (!productData) {
                     toast.error('Product not found')
@@ -102,6 +142,7 @@ const ProductDetails = () => {
 
                 setProduct(productData)
 
+                // Fetch categories, brands and units for dropdowns and display
                 const [categoriesRes, brandsRes, unitsRes] = await Promise.all([
                     categoriesAPI.getAll(),
                     brandsAPI.getAll(),
@@ -139,13 +180,10 @@ const ProductDetails = () => {
                 setBrands(brandsData)
                 setUnits(unitsData)
 
-                const stocksResponse = await stockAPI.getAll()
-                const stocksData = stocksResponse.data?.data?.data || stocksResponse.data?.data || []
-                const productStock = stocksData.find(s => s.product_id === parseInt(id))
-                setStocks(productStock || null)
-
+                // Fetch stock history
                 await fetchStockHistory()
 
+                // Fetch related products from same category
                 if (productData.category_id) {
                     const sameCategoryProducts = await fetchProductsByCategory(productData.category_id, productData.id)
                     setRelatedProducts(sameCategoryProducts)
@@ -160,17 +198,14 @@ const ProductDetails = () => {
         }
 
         fetchProductDetails()
-    }, [id, getProductById, navigate])
+    }, [id, getProductById, navigate, fetchProducts])
 
     const fetchStockHistory = async () => {
         setStockHistoryLoading(true)
         try {
+            // TODO: Replace with actual API call when available
             const mockHistory = [
-                { id: 1, date: '2024-01-15', type: 'purchase', quantity: 50, user: 'John Doe', note: 'Initial stock' },
-                { id: 2, date: '2024-01-20', type: 'sale', quantity: -5, user: 'Jane Smith', note: 'Customer order #1234' },
-                { id: 3, date: '2024-01-25', type: 'purchase', quantity: 30, user: 'John Doe', note: 'Restock' },
-                { id: 4, date: '2024-02-01', type: 'sale', quantity: -8, user: 'Mike Johnson', note: 'Customer order #1235' },
-                { id: 5, date: '2024-02-05', type: 'adjustment', quantity: 2, user: 'Admin', note: 'Inventory adjustment' },
+               
             ]
             setStockHistory(mockHistory)
         } catch (error) {
@@ -203,12 +238,24 @@ const ProductDetails = () => {
         setFormSubmitting(true)
         try {
             const { updateProduct } = useProductStore.getState()
-            await updateProduct(parseInt(id), productData)
+            const result = await updateProduct(parseInt(id), productData)
 
+            if (result?.success === false) {
+                // Error already handled in store
+                setFormSubmitting(false)
+                return
+            }
+
+            // Clear cache and refresh
+            clearCache()
+            useProductStore.setState({ lastFetchTime: null, cacheKey: null })
             await fetchProducts()
-            const updatedProductData = getProductById(parseInt(id))
+
+            // Get updated product data
+            const updatedProductData = await getProductById(parseInt(id))
             setProduct(updatedProductData)
 
+            // Refresh categories, brands and units
             const [categoriesRes, brandsRes, unitsRes] = await Promise.all([
                 categoriesAPI.getAll(),
                 brandsAPI.getAll(),
@@ -246,11 +293,6 @@ const ProductDetails = () => {
             setBrands(brandsData)
             setUnits(unitsData)
 
-            const stocksResponse = await stockAPI.getAll()
-            const stocksData = stocksResponse.data?.data?.data || stocksResponse.data?.data || []
-            const updatedStock = stocksData.find(s => s.product_id === parseInt(id))
-            setStocks(updatedStock)
-
             setShowEditForm(false)
             toast.success('Product updated successfully')
         } catch (error) {
@@ -262,29 +304,57 @@ const ProductDetails = () => {
     }
 
     const handleAddStock = async (stockData) => {
+        if (updatingStock) return
+
+        setUpdatingStock(true)
         try {
-            await stockAPI.addStock(stocks.id, stockData.user_id, stockData.quantity)
+            // Get the primary stock record for this product
+            const stockRecord = getPrimaryStockRecord(product)
+            
+            if (!stockRecord) {
+                toast.error('No stock record found for this product. Please create a stock record first.')
+                return
+            }
+
+            // Call the stock API with the stock record ID
+            await stockAPI.addStock(
+                stockRecord.id,
+                stockData.user_id,
+                stockData.quantity
+            )
+
             toast.success(`Stock added successfully! New stock: ${stockData.new_stock}`)
 
-            const stocksResponse = await stockAPI.getAll()
-            const stocksData = stocksResponse.data?.data?.data || stocksResponse.data?.data || []
-            const updatedStock = stocksData.find(s => s.product_id === parseInt(id))
-            setStocks(updatedStock)
+            // Clear cache to force fresh data
+            clearCache()
+            useProductStore.setState({ lastFetchTime: null, cacheKey: null })
 
+            // Refresh the products list
+            await fetchProducts()
+
+            // Get updated product data
+            const updatedProductData = await getProductById(parseInt(id))
+            setProduct(updatedProductData)
+
+            // Refresh stock history
             await fetchStockHistory()
 
             setShowStockModal(false)
         } catch (error) {
             console.error('Error adding stock:', error)
-            toast.error('Failed to add stock')
+            toast.error('Failed to add stock. Please try again.')
+        } finally {
+            setUpdatingStock(false)
         }
     }
 
     const handleDelete = async () => {
         try {
-            await deleteProduct(parseInt(id))
-            toast.success('Product deleted successfully')
-            navigate('/products')
+            const result = await deleteProduct(parseInt(id))
+            if (result?.success !== false) {
+                toast.success('Product deleted successfully')
+                navigate('/products')
+            }
         } catch (error) {
             console.error('Error deleting product:', error)
             toast.error('Failed to delete product')
@@ -304,9 +374,8 @@ const ProductDetails = () => {
         setShowQrBarcodeModal(false)
     }
 
-    // Improved print function with proper layout and no gaps
     const handlePrintQrBarcode = () => {
-        const quantity = printSettings.quantity || stocks?.quantity || 1
+        const quantity = printSettings.quantity || getProductTotalStock(product) || 1
         const isQR = activeQrTab === 'qr'
         const imageUrl = isQR ? product.qr_code : product.barcode
         const label = isQR ? 'QR Code' : 'Barcode'
@@ -318,31 +387,34 @@ const ProductDetails = () => {
         
         setIsPrinting(true)
         
-        // Define layout constants
         const isA4 = printSettings.pageSize === 'A4'
-        
-        // For A4: 3 columns, flexible rows
-        // For Thermal: 1 column, each code on its own page/slip
         
         let htmlContent = ''
         
+        function escapeHtml(str) {
+            if (!str) return ''
+            return str
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;')
+        }
+        
         if (isA4) {
-            // A4 layout with 3 columns and proper grid that fills pages completely
-            const itemsPerPage = 12 // 3 columns x 4 rows = 12 items per page (optimal for A4)
+            const itemsPerPage = 12
             const totalPages = Math.ceil(quantity / itemsPerPage)
             
             for (let page = 0; page < totalPages; page++) {
                 const startIdx = page * itemsPerPage
                 const endIdx = Math.min(startIdx + itemsPerPage, quantity)
                 const itemsOnPage = endIdx - startIdx
-                
-                // Calculate rows needed for this page (ceil(itemsOnPage / 3))
                 const rowsNeeded = Math.ceil(itemsOnPage / 3)
                 
                 htmlContent += `
                     <div class="a4-page">
                         <div class="page-header">
-                            <h2>${label}s - ${product.name}</h2>
+                            <h2>${label}s - ${escapeHtml(product.name)}</h2>
                             <p class="page-number">Page ${page + 1} of ${totalPages}</p>
                         </div>
                         <div class="qr-grid" style="--rows: ${rowsNeeded};">
@@ -364,7 +436,6 @@ const ProductDetails = () => {
                     `
                 }
                 
-                // Fill remaining slots on last page with empty divs to maintain grid structure
                 if (page === totalPages - 1 && itemsOnPage < itemsPerPage) {
                     const remainingSlots = itemsPerPage - itemsOnPage
                     for (let i = 0; i < remainingSlots; i++) {
@@ -378,7 +449,6 @@ const ProductDetails = () => {
                 `
             }
         } else {
-            // Thermal printer layout (3x5 inch) - each on separate page with no gaps
             for (let i = 0; i < quantity; i++) {
                 htmlContent += `
                     <div class="thermal-page">
@@ -399,20 +469,9 @@ const ProductDetails = () => {
         
         const styles = `
             <style>
-                * {
-                    margin: 0;
-                    padding: 0;
-                    box-sizing: border-box;
-                }
+                * { margin: 0; padding: 0; box-sizing: border-box; }
+                body { font-family: 'Segoe UI', Arial, sans-serif; background: white; margin: 0; padding: 0; }
                 
-                body {
-                    font-family: 'Segoe UI', Arial, sans-serif;
-                    background: white;
-                    margin: 0;
-                    padding: 0;
-                }
-                
-                /* A4 Styles */
                 .a4-page {
                     page-break-after: always;
                     page-break-inside: avoid;
@@ -421,10 +480,7 @@ const ProductDetails = () => {
                     background: white;
                     position: relative;
                 }
-                
-                .a4-page:last-child {
-                    page-break-after: auto;
-                }
+                .a4-page:last-child { page-break-after: auto; }
                 
                 .page-header {
                     text-align: center;
@@ -432,17 +488,8 @@ const ProductDetails = () => {
                     padding-bottom: 10px;
                     border-bottom: 2px solid #e5e7eb;
                 }
-                
-                .page-header h2 {
-                    font-size: 18px;
-                    color: #1f2937;
-                    margin-bottom: 5px;
-                }
-                
-                .page-number {
-                    font-size: 12px;
-                    color: #6b7280;
-                }
+                .page-header h2 { font-size: 18px; color: #1f2937; margin-bottom: 5px; }
+                .page-number { font-size: 12px; color: #6b7280; }
                 
                 .qr-grid {
                     display: grid;
@@ -461,7 +508,6 @@ const ProductDetails = () => {
                     background: white;
                     box-shadow: 0 1px 3px rgba(0,0,0,0.05);
                 }
-                
                 .qr-item.empty-item {
                     visibility: hidden;
                     border: 1px dashed #e5e7eb;
@@ -476,24 +522,10 @@ const ProductDetails = () => {
                     margin-bottom: 12px;
                 }
                 
-                .qr-image {
-                    display: block;
-                }
+                .qr-image.qr-type { width: 120px; height: 120px; }
+                .qr-image.barcode-type { width: 220px; height: 70px; }
                 
-                .qr-image.qr-type {
-                    width: 120px;
-                    height: 120px;
-                }
-                
-                .qr-image.barcode-type {
-                    width: 220px;
-                    height: 70px;
-                }
-                
-                .qr-info {
-                    text-align: center;
-                }
-                
+                .qr-info { text-align: center; }
                 .product-name {
                     font-weight: 600;
                     font-size: 13px;
@@ -501,20 +533,14 @@ const ProductDetails = () => {
                     margin-bottom: 4px;
                     word-break: break-word;
                 }
-                
                 .product-sku {
                     font-size: 10px;
                     color: #6b7280;
                     font-family: monospace;
                     margin-bottom: 4px;
                 }
+                .product-number { font-size: 10px; color: #9ca3af; }
                 
-                .product-number {
-                    font-size: 10px;
-                    color: #9ca3af;
-                }
-                
-                /* Thermal Styles (3x5 inch) */
                 .thermal-page {
                     page-break-after: always;
                     page-break-inside: avoid;
@@ -529,10 +555,7 @@ const ProductDetails = () => {
                     padding: 0.2in;
                     box-sizing: border-box;
                 }
-                
-                .thermal-page:last-child {
-                    page-break-after: auto;
-                }
+                .thermal-page:last-child { page-break-after: auto; }
                 
                 .thermal-content {
                     text-align: center;
@@ -548,30 +571,11 @@ const ProductDetails = () => {
                     padding: 10px;
                 }
                 
-                .thermal-image-wrapper {
-                    flex-shrink: 0;
-                    margin-bottom: 15px;
-                }
+                .thermal-image-wrapper { flex-shrink: 0; margin-bottom: 15px; }
+                .thermal-image.qr-type { width: 1.4in; height: 1.4in; }
+                .thermal-image.barcode-type { width: 2.2in; height: 0.8in; }
                 
-                .thermal-image {
-                    display: block;
-                    margin: 0 auto;
-                }
-                
-                .thermal-image.qr-type {
-                    width: 1.4in;
-                    height: 1.4in;
-                }
-                
-                .thermal-image.barcode-type {
-                    width: 2.2in;
-                    height: 0.8in;
-                }
-                
-                .thermal-info {
-                    flex-shrink: 0;
-                }
-                
+                .thermal-info { flex-shrink: 0; }
                 .thermal-product-name {
                     font-weight: 600;
                     font-size: 11px;
@@ -581,7 +585,6 @@ const ProductDetails = () => {
                     word-break: break-word;
                     max-width: 2.5in;
                 }
-                
                 .thermal-sku {
                     font-size: 9px;
                     color: #6b7280;
@@ -589,85 +592,25 @@ const ProductDetails = () => {
                     margin-bottom: 6px;
                     text-align: center;
                 }
+                .thermal-number { font-size: 8px; color: #9ca3af; text-align: center; }
                 
-                .thermal-number {
-                    font-size: 8px;
-                    color: #9ca3af;
-                    text-align: center;
-                }
-                
-                /* Print-specific overrides */
                 @media print {
-                    body {
-                        margin: 0;
-                        padding: 0;
-                        -webkit-print-color-adjust: exact;
-                        print-color-adjust: exact;
-                    }
-                    
-                    /* A4 page breaks */
-                    .a4-page {
-                        page-break-after: always;
-                        page-break-inside: avoid;
-                    }
-                    
-                    /* Thermal page breaks */
-                    .thermal-page {
-                        page-break-after: always;
-                        page-break-inside: avoid;
-                    }
-                    
-                    /* Ensure images print properly */
-                    img {
-                        -webkit-print-color-adjust: exact;
-                        print-color-adjust: exact;
-                    }
-                    
-                    /* Remove gaps from empty items */
-                    .empty-item {
-                        display: block !important;
-                        visibility: hidden !important;
-                    }
-                    
-                    /* Prevent orphan rows in A4 */
-                    .qr-grid {
-                        page-break-inside: avoid;
-                    }
+                    body { margin: 0; padding: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+                    .a4-page { page-break-after: always; page-break-inside: avoid; }
+                    .thermal-page { page-break-after: always; page-break-inside: avoid; }
+                    img { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+                    .empty-item { display: block !important; visibility: hidden !important; }
+                    .qr-grid { page-break-inside: avoid; }
                 }
                 
-                /* Small screen adjustments for preview */
                 @media screen and (max-width: 768px) {
-                    .qr-grid {
-                        gap: 12px;
-                    }
-                    
-                    .qr-item {
-                        padding: 10px;
-                    }
-                    
-                    .qr-image.qr-type {
-                        width: 80px;
-                        height: 80px;
-                    }
-                    
-                    .qr-image.barcode-type {
-                        width: 160px;
-                        height: 50px;
-                    }
+                    .qr-grid { gap: 12px; }
+                    .qr-item { padding: 10px; }
+                    .qr-image.qr-type { width: 80px; height: 80px; }
+                    .qr-image.barcode-type { width: 160px; height: 50px; }
                 }
             </style>
         `
-        
-        // Escape HTML function to prevent XSS and formatting issues
-        function escapeHtml(str) {
-            if (!str) return ''
-            return str
-                .replace(/&/g, '&amp;')
-                .replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;')
-                .replace(/"/g, '&quot;')
-                .replace(/'/g, '&#39;')
-        }
         
         const fullHtml = `<!DOCTYPE html>
         <html>
@@ -681,7 +624,6 @@ const ProductDetails = () => {
             </body>
         </html>`
         
-        // Create iframe for printing
         const iframe = document.createElement('iframe')
         iframe.style.position = 'fixed'
         iframe.style.right = 0
@@ -698,7 +640,6 @@ const ProductDetails = () => {
         iframeDoc.write(fullHtml)
         iframeDoc.close()
         
-        // Wait for all images to load before printing
         const images = iframeDoc.querySelectorAll('img')
         let imagesLoaded = 0
         
@@ -742,19 +683,27 @@ const ProductDetails = () => {
     }
 
     const getStockStatus = (quantity) => {
-        if (!quantity || quantity === 0) return { label: 'Out of Stock', color: 'red', icon: FiXCircle, bgColor: 'bg-red-100 dark:bg-red-900/20', textColor: 'text-red-700 dark:text-red-400' }
-        if (quantity <= (product.lowStockThreshold || 10)) return { label: 'Low Stock', color: 'orange', icon: FiAlertCircle, bgColor: 'bg-orange-100 dark:bg-orange-900/20', textColor: 'text-orange-700 dark:text-orange-400' }
-        if (quantity <= (product.lowStockThreshold || 10) * 2) return { label: 'Medium Stock', color: 'yellow', icon: FiActivity, bgColor: 'bg-yellow-100 dark:bg-yellow-900/20', textColor: 'text-yellow-700 dark:text-yellow-400' }
+        const lowStockThreshold = parseFloat(product?.minimum_stock_quantity) || 10
+        if (!quantity || quantity === 0) { 
+            return { label: 'Out of Stock', color: 'red', icon: FiXCircle, bgColor: 'bg-red-100 dark:bg-red-900/20', textColor: 'text-red-700 dark:text-red-400' }
+        }
+        if (quantity <= lowStockThreshold) { 
+            return { label: 'Low Stock', color: 'orange', icon: FiAlertCircle, bgColor: 'bg-orange-100 dark:bg-orange-900/20', textColor: 'text-orange-700 dark:text-orange-400' }
+        }
+        if (quantity <= lowStockThreshold * 2) { 
+            return { label: 'Medium Stock', color: 'yellow', icon: FiActivity, bgColor: 'bg-yellow-100 dark:bg-yellow-900/20', textColor: 'text-yellow-700 dark:text-yellow-400' }
+        }
         return { label: 'In Stock', color: 'green', icon: FiCheckCircle, bgColor: 'bg-green-100 dark:bg-green-900/20', textColor: 'text-green-700 dark:text-green-400' }
     }
 
     const getStockPercentage = () => {
-        if (!stocks) return 0
-        const maxStock = product.maxStock || 100
-        return Math.min((stocks.quantity / maxStock) * 100, 100)
+        const totalStock = getProductTotalStock(product)
+        const maxStock = parseFloat(product?.maximum_stock_quantity) || 100
+        return Math.min((totalStock / maxStock) * 100, 100)
     }
 
     const formatDate = (dateString) => {
+        if (!dateString) return 'N/A'
         return new Date(dateString).toLocaleDateString('en-US', {
             year: 'numeric',
             month: 'long',
@@ -763,7 +712,7 @@ const ProductDetails = () => {
     }
 
     const formatCurrency = (amount) => {
-        if (!amount) return '₹0.00'
+        if (!amount && amount !== 0) return '₹0.00'
         return new Intl.NumberFormat('en-IN', {
             style: 'currency',
             currency: 'INR',
@@ -772,9 +721,35 @@ const ProductDetails = () => {
     }
 
     const getProfitMargin = () => {
-        if (!product.selling_price || !product.purchase_price) return 0
-        const profit = product.selling_price - product.purchase_price
-        return ((profit / product.purchase_price) * 100).toFixed(1)
+        if (!product?.selling_price || !product?.purchase_price) return 0
+        const profit = parseFloat(product.selling_price) - parseFloat(product.purchase_price)
+        return ((profit / parseFloat(product.purchase_price)) * 100).toFixed(1)
+    }
+
+    // Parse attributes for display
+    const parseAttributes = (attributes) => {
+        if (!attributes) return null
+        try {
+            if (Array.isArray(attributes)) {
+                return attributes.flatMap(item => Object.entries(item))
+            }
+            if (typeof attributes === 'object') {
+                return Object.entries(attributes)
+            }
+            if (typeof attributes === 'string') {
+                const parsed = JSON.parse(attributes)
+                if (typeof parsed === 'string') {
+                    return parseAttributes(parsed)
+                }
+                if (Array.isArray(parsed)) {
+                    return parsed.flatMap(item => Object.entries(item))
+                }
+                return Object.entries(parsed)
+            }
+            return null
+        } catch (e) {
+            return null
+        }
     }
 
     if (loading) {
@@ -832,11 +807,16 @@ const ProductDetails = () => {
         )
     }
 
-    const category = categories.find(c => c.id === product.category_id)
-    const brand = brands.find(b => b.id === product.brand_id)
-    const unit = units.find(u => u.id === product.unit_id)
-    const stockStatus = getStockStatus(stocks?.quantity)
+    const totalStock = getProductTotalStock(product)
+    const stockRecords = getProductStocks(product)
+    // Use the nested objects from the product response (from productsAPI.getById)
+    const category = product.category || null
+    const brand = product.brand || null
+    const unit = product.unit || null
+    const stockStatus = getStockStatus(totalStock)
     const profitMargin = getProfitMargin()
+    const lowStockThreshold = parseFloat(product.minimum_stock_quantity) || 10
+    const attributeEntries = parseAttributes(product.attributes)
 
     return (
         <>
@@ -929,7 +909,7 @@ const ProductDetails = () => {
                             <div className="flex items-center justify-between">
                                 <div>
                                     <p className="text-sm text-gray-500 dark:text-gray-400">Current Stock</p>
-                                    <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">{stocks?.quantity || 0}</p>
+                                    <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">{totalStock}</p>
                                 </div>
                                 <div className={`w-10 h-10 rounded-lg ${stockStatus.bgColor} flex items-center justify-center`}>
                                     <stockStatus.icon className={`w-5 h-5 ${stockStatus.textColor}`} />
@@ -949,7 +929,7 @@ const ProductDetails = () => {
                                     <p className="text-2xl font-bold text-green-600 dark:text-green-400 mt-1">{formatCurrency(product.selling_price)}</p>
                                 </div>
                                 <div className="w-10 h-10 rounded-lg bg-green-100 dark:bg-green-900/20 flex items-center justify-center">
-                                    <FiDollarSign className="w-5 h-5 text-green-600 dark:text-green-400" />
+                                    <FaRupeeSign className="w-5 h-5 text-green-600 dark:text-green-400" />
                                 </div>
                             </div>
                             <div className="mt-2">
@@ -970,7 +950,7 @@ const ProductDetails = () => {
                                 </div>
                             </div>
                             <div className="mt-2">
-                                <p className="text-xs text-gray-500 dark:text-gray-400">Profit: {formatCurrency(product.selling_price - product.purchase_price)}</p>
+                                <p className="text-xs text-gray-500 dark:text-gray-400">Profit: {formatCurrency(parseFloat(product.selling_price) - parseFloat(product.purchase_price))}</p>
                             </div>
                         </div>
 
@@ -1010,7 +990,24 @@ const ProductDetails = () => {
                                             alt={product.name}
                                             className="w-full h-full object-contain p-8"
                                             onError={(e) => {
-                                                e.target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgdmlld0JveD0iMCAwIDIwMCAyMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIyMDAiIGhlaWdodD0iMjAwIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik04NSA3NUgxMTVWMTI1SDg1Vjc1WiIgZmlsbD0iI0QxRDVEQiIvPgo8Y2lyY2xlIGN4PSI5MCIgY3k9IjkwIiByPSI1IiBmaWxsPSIjOUJBM0FGIi8+CjxwYXRoIGQ9Ik05NSAxMDBWMTA1SDEwMFY5OUg5NVoiIGZpbGw9IiM5QkEzQUYiLz4KPC9zdmc+'
+                                                console.error(`Failed to load product image:`, product.image)
+                                                if (product.image && product.image.includes('drive.google.com')) {
+                                                    e.target.style.display = 'none'
+                                                    const parent = e.target.parentElement
+                                                    const placeholder = document.createElement('div')
+                                                    placeholder.className = 'w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-red-50 to-orange-50 dark:from-red-900/20 dark:to-orange-900/20'
+                                                    placeholder.innerHTML = `
+                                                        <svg class="w-12 h-12 text-red-500 dark:text-red-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                                                        </svg>
+                                                        <span class="text-sm text-red-600 dark:text-red-400 font-medium">Google Drive</span>
+                                                        <span class="text-xs text-red-500 dark:text-red-500 mt-1">Image not available</span>
+                                                    `
+                                                    parent.appendChild(placeholder)
+                                                } else {
+                                                    e.target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgdmlld0JveD0iMCAwIDIwMCAyMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIyMDAiIGhlaWdodD0iMjAwIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik04NSA3NUgxMTVWMTI1SDg1Vjc1WiIgZmlsbD0iI0QxRDVEQiIvPgo8Y2lyY2xlIGN4PSI5MCIgY3k9IjkwIiByPSI1IiBmaWxsPSIjOUJBM0FGIi8+CjxwYXRoIGQ9Ik05NSAxMDBWMTA1SDEwMFY5OUg5NVoiIGZpbGw9IiM5QkEzQUYiLz4KPC9zdmc+'
+                                                }
+                                                e.target.onerror = null
                                             }}
                                         />
                                     ) : (
@@ -1041,12 +1038,12 @@ const ProductDetails = () => {
                                                 key={tab.id}
                                                 onClick={() => setActiveTab(tab.id)}
                                                 className={`
-                          flex items-center space-x-2 px-4 py-3 text-sm font-medium border-b-2 transition-all duration-200
-                          ${activeTab === tab.id
+                                                    flex items-center space-x-2 px-4 py-3 text-sm font-medium border-b-2 transition-all duration-200
+                                                    ${activeTab === tab.id
                                                         ? 'border-primary-500 text-primary-600 dark:text-primary-400'
                                                         : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
                                                     }
-                        `}
+                                                `}
                                             >
                                                 <tab.icon className="w-4 h-4" />
                                                 <span className="hidden sm:inline">{tab.label}</span>
@@ -1121,6 +1118,18 @@ const ProductDetails = () => {
                                                             />
                                                         </div>
                                                     </div>
+
+                                                    {product.minimum_stock_quantity && (
+                                                        <div className="flex items-start space-x-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                                                            <FiAlertCircle className="w-4 h-4 text-gray-400 mt-0.5" />
+                                                            <div>
+                                                                <p className="text-xs text-gray-500 dark:text-gray-400">Low Stock Threshold</p>
+                                                                <p className="text-sm font-medium text-gray-900 dark:text-white">
+                                                                    {product.minimum_stock_quantity} units
+                                                                </p>
+                                                            </div>
+                                                        </div>
+                                                    )}
                                                 </div>
                                             </div>
                                         </motion.div>
@@ -1133,58 +1142,25 @@ const ProductDetails = () => {
                                             animate={{ opacity: 1 }}
                                             className="space-y-6"
                                         >
-                                            {product.attributes && (
+                                            {attributeEntries && attributeEntries.length > 0 && (
                                                 <div>
                                                     <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-3 flex items-center">
                                                         <FiClipboard className="w-4 h-4 mr-2 text-primary-500" />
                                                         Attributes
                                                     </h3>
                                                     <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
-                                                        {(() => {
-                                                            let attributes = product.attributes
-                                                            const safeJSONParse = (data) => {
-                                                                try {
-                                                                    if (typeof data === 'string') {
-                                                                        const parsed = JSON.parse(data)
-                                                                        if (typeof parsed === 'string') {
-                                                                            return safeJSONParse(parsed)
-                                                                        }
-                                                                        return parsed
-                                                                    }
-                                                                    return data
-                                                                } catch (e) {
-                                                                    return null
-                                                                }
-                                                            }
-
-                                                            if (typeof attributes === 'string') {
-                                                                attributes = safeJSONParse(attributes)
-                                                            }
-
-                                                            if (attributes && typeof attributes === 'object') {
-                                                                const attributeEntries = Array.isArray(attributes)
-                                                                    ? attributes.flatMap(item => Object.entries(item))
-                                                                    : Object.entries(attributes)
-
-                                                                if (attributeEntries.length > 0) {
-                                                                    return (
-                                                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                                                            {attributeEntries.map(([key, value]) => (
-                                                                                <div key={key} className="flex justify-between items-center py-2 border-b border-gray-200 dark:border-gray-600 last:border-0">
-                                                                                    <span className="text-sm text-gray-600 dark:text-gray-400 capitalize font-medium">
-                                                                                        {key}:
-                                                                                    </span>
-                                                                                    <span className="text-sm text-gray-900 dark:text-white">
-                                                                                        {String(value)}
-                                                                                    </span>
-                                                                                </div>
-                                                                            ))}
-                                                                        </div>
-                                                                    )
-                                                                }
-                                                            }
-                                                            return <p className="text-gray-500 dark:text-gray-400 text-center py-4">No attributes defined</p>
-                                                        })()}
+                                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                                            {attributeEntries.map(([key, value]) => (
+                                                                <div key={key} className="flex justify-between items-center py-2 border-b border-gray-200 dark:border-gray-600 last:border-0">
+                                                                    <span className="text-sm text-gray-600 dark:text-gray-400 capitalize font-medium">
+                                                                        {key}:
+                                                                    </span>
+                                                                    <span className="text-sm text-gray-900 dark:text-white">
+                                                                        {String(value)}
+                                                                    </span>
+                                                                </div>
+                                                            ))}
+                                                        </div>
                                                     </div>
                                                 </div>
                                             )}
@@ -1367,7 +1343,7 @@ const ProductDetails = () => {
                                 <div className="space-y-4">
                                     <div className="flex items-baseline justify-between">
                                         <span className="text-3xl font-bold text-gray-900 dark:text-white">
-                                            {stocks?.quantity || 0}
+                                            {totalStock}
                                         </span>
                                         <span className="text-sm text-gray-500 dark:text-gray-400">units available</span>
                                     </div>
@@ -1391,10 +1367,32 @@ const ProductDetails = () => {
                                         </div>
                                     </div>
 
-                                    {product.lowStockThreshold && (
+                                    {/* Show stock breakdown by unit */}
+                                    {stockRecords.length > 1 && (
+                                        <div className="border-t border-gray-200 dark:border-gray-700 pt-3">
+                                            <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">Stock Breakdown:</p>
+                                            <div className="space-y-1">
+                                                {stockRecords.map((stock, idx) => {
+                                                    const stockUnit = units.find(u => u.id === stock.unit_id)
+                                                    return (
+                                                        <div key={idx} className="flex items-center justify-between text-sm">
+                                                            <span className="text-gray-600 dark:text-gray-400">
+                                                                {stockUnit ? stockUnit.name : `Unit ${stock.unit_id}`}
+                                                            </span>
+                                                            <span className="font-medium text-gray-900 dark:text-white">
+                                                                {parseFloat(stock.quantity).toFixed(2)}
+                                                            </span>
+                                                        </div>
+                                                    )
+                                                })}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {product.minimum_stock_quantity && (
                                         <div className="flex justify-between text-xs p-2 bg-gray-50 dark:bg-gray-700/50 rounded">
                                             <span className="text-gray-500 dark:text-gray-400">Low Stock Threshold</span>
-                                            <span className="font-medium text-gray-700 dark:text-gray-300">{product.lowStockThreshold}</span>
+                                            <span className="font-medium text-gray-700 dark:text-gray-300">{product.minimum_stock_quantity}</span>
                                         </div>
                                     )}
 
@@ -1402,7 +1400,7 @@ const ProductDetails = () => {
                                         onClick={() => setShowStockModal(true)}
                                         icon={FiPlus}
                                         className="w-full"
-                                        disabled={!stocks}
+                                        disabled={!stockRecords.length}
                                     >
                                         Add Stock
                                     </Button>
@@ -1417,7 +1415,7 @@ const ProductDetails = () => {
                                 className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6"
                             >
                                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
-                                    <FiDollarSign className="w-5 h-5 mr-2 text-primary-500" />
+                                    <FaRupeeSign className="w-5 h-5 mr-2 text-primary-500" />
                                     Pricing Details
                                 </h3>
 
@@ -1439,7 +1437,7 @@ const ProductDetails = () => {
                                     <div className="flex justify-between items-center py-2 border-b border-gray-200 dark:border-gray-700">
                                         <span className="text-gray-600 dark:text-gray-400">Profit per Unit</span>
                                         <span className="text-base font-semibold text-green-600 dark:text-green-400">
-                                            {formatCurrency(product.selling_price - product.purchase_price)}
+                                            {formatCurrency(parseFloat(product.selling_price) - parseFloat(product.purchase_price))}
                                         </span>
                                     </div>
 
@@ -1553,7 +1551,7 @@ const ProductDetails = () => {
                 onClose={() => setShowStockModal(false)}
                 onAddStock={handleAddStock}
                 product={product}
-                currentStock={stocks?.quantity || 0}
+                currentStock={totalStock}
             />
 
             {/* Delete Confirmation Modal */}
@@ -1661,18 +1659,18 @@ const ProductDetails = () => {
                                             <input
                                                 type="number"
                                                 min="1"
-                                                max={stocks?.quantity || 0}
+                                                max={totalStock || 1}
                                                 value={printSettings.quantity}
                                                 onChange={(e) => {
                                                     const value = parseInt(e.target.value) || 0
-                                                    const maxQuantity = stocks?.quantity || 0
-                                                    if (value > maxQuantity) {
+                                                    const maxQuantity = totalStock || 0
+                                                    if (value > maxQuantity && maxQuantity > 0) {
                                                         toast.error(`Cannot print more than available stock (${maxQuantity})`)
                                                         return
                                                     }
                                                     setPrintSettings(prev => ({ ...prev, quantity: value }))
                                                 }}
-                                                placeholder={`Current stock: ${stocks?.quantity || 0}`}
+                                                placeholder={`Current stock: ${totalStock || 0}`}
                                                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
                                             />
                                         </div>
@@ -1740,13 +1738,13 @@ const ProductDetails = () => {
                                                         const errorDiv = document.createElement('div')
                                                         errorDiv.className = 'w-64 h-64 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center'
                                                         errorDiv.innerHTML = `
-                              <div class="text-center">
-                                <svg class="w-16 h-16 text-gray-400 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
-                                </svg>
-                                <p class="text-sm text-gray-500 mt-2">QR Code Unavailable</p>
-                              </div>
-                            `
+                                                            <div class="text-center">
+                                                                <svg class="w-16 h-16 text-gray-400 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
+                                                                </svg>
+                                                                <p class="text-sm text-gray-500 mt-2">QR Code Unavailable</p>
+                                                            </div>
+                                                        `
                                                         parent.appendChild(errorDiv)
                                                     }}
                                                 />

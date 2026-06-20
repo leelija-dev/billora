@@ -366,11 +366,15 @@ export const useProductStore = create((set, get) => ({
   },
 
   // Get a single product by ID from the current products array
-  getProductById: (id) => {
-    const currentState = get()
-    const product = currentState.products.find(p => p.id === parseInt(id))
-    return product || null
-  },
+  getProductById: async (id) => {
+  try {
+    const response = await productsAPI.getById(id)
+    return response.data?.data || null
+  } catch (error) {
+    console.error('Error fetching product by ID:', error)
+    return null
+  }
+},
 
   // Get products by category
   getProductsByCategory: async (categoryId) => {
