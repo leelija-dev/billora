@@ -8,12 +8,14 @@ use App\Models\Stocks;
 use App\Models\Products;
 use App\Models\Unit;
 use App\Models\Customers;
+use App\Models\Seller;
+use App\Models\SellerProducts;
 use App\Models\StockHistory;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
-
+use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
 class StocksController extends Controller
 {
 
@@ -133,6 +135,16 @@ class StocksController extends Controller
             'product_package_id' => 'nullable',
             'purchase_price'    => 'nullable',
             'unit_id'           => 'nullable',
+            'selling_gst_percentage' => 'nullable',
+            'purchase_gst_percentage' =>'nullable',
+            //seller products
+            'seller_id'      => 'required',
+            'gst_percentage' => 'nullable',
+            'total_amount'   => 'nullable',
+            'paid_amount'    => 'nullable',
+            'invoice_number' => 'nullable',   
+            'invoice_date'   => 'nullable',
+            'invoice_image'  => 'nullable|image',
 
         ]);
         // Log::info('stock details: ' . json_encode($stocks));
@@ -180,6 +192,39 @@ class StocksController extends Controller
                             'discount' => null
                            
                         ]);
+                /*---------------Seller Details---------------*/
+                 $tempFile = null;
+
+            if ($request->hasFile('invoice_image')) {
+                $tempFile = $request->file('invoice_image')->getRealPath();
+            }
+                 if ($request->hasFile('invoice_image')) {
+                Log::info('seller invoice image uploaded ');
+                    $upload = Cloudinary::uploadApi()->upload(
+                        $tempFile,
+                        [
+                            'folder' => 'Thefastbill/seller_products_invoices',
+                            'public_id' => 'seller_'.$stocks['seller_id'] .'_'.'stock_id'.$stock->id,
+                            'overwrite' => true,
+                            'resource_type' => 'image'
+                        ]
+                    );
+                }
+                $sellerDetails = SellerProducts::create([
+                            'user_id'    => $user,
+                            'seller_id'  => $stocks['seller_id'],
+                            'product_id' => $stocks['product_id'],
+                            'stock_id'   => $stock->id,
+                            'qty'        => $stocks['quantity'],
+                            'purchase_price' => $stocks['purchase_price'],
+                            'gst_percentage' => $stocks['gst_percentage'],
+                            'total_amount'   => $stocks['total_amount'],
+                            'paid_amount'    => $stocks['paid_amount'],
+                            'invoice_number' => $stocks['invoice_number'],
+                            'invoice_date'   => $stocks['invoice_date'],
+                            'invoice_image'  => $upload['secure_url'] ?? null,
+                            'invoice_image_public_url' =>$upload['public_id'] ?? null
+                ]);
                 // Log::info('Stock created: ' . json_encode($stock));
                 $stocks = Stocks::where('user_id', $user)->get();
                 Cache::tags(['stock_user_' . $user.'_page_'.$request->page ?? 1])->flush();
@@ -289,6 +334,8 @@ class StocksController extends Controller
                 $data = $request->validate([
                     'product_id'    => 'required',
                     'purchase_price' => 'nullable',
+                    'purchase_gst_percentage' => 'nullable',
+                    'selling_gst_percentage' => 'nullable',
                     'selling_price' => 'required',
                     'unit_id'       => 'required',
                     'quantity'      => 'required',
@@ -306,6 +353,54 @@ class StocksController extends Controller
                 $stock = Stocks::where('user_id', $user)->where('id', $id)->first();
 
                 $stock->update($data);
+                $seller = Seller::where('user_id',$id)->where('id',$request->seller_id)->first();
+                $sellerProducts = SellerProducts::where('user_id',$user)->where('seller_id',$request->seller_id)->where('stock_id',$stock->id)->first();
+                if(!$seller){
+                   return response()->json([
+                    'status' => false,
+                    'message' => 'Seller not found.Please select valid seller!'
+                   ]); 
+                }
+
+                if($request->deleted_image_id){
+                    $this->deleteFromCloudinary($stock->invoice_image_public_url);
+                    $sellerProducts->update([
+                        'invoice_image' => null,
+                        'invoice_image_public_url' => null
+                        
+                        ]);
+                        
+                }
+                $tempFile = null;
+                if ($request->hasFile('invoice_image')) {
+                    $tempFile = $request->file('invoice_image')->getRealPath();
+                }
+                 if ($request->hasFile('invoice_image')) {
+                Log::info('seller invoice image uploaded ');
+                    $upload = Cloudinary::uploadApi()->upload(
+                        $tempFile,
+                        [
+                            'folder' => 'Thefastbill/seller_products_invoices',
+                            'public_id' => 'seller_'.$stock['seller_id'] .'_'.'stock_id'.$stock->id,
+                            'overwrite' => true,
+                            'resource_type' => 'image'
+                        ]
+                    );
+                }
+                $sellerProducts->update([
+                    'stock_id'                  => $stock->id,
+                    'seller_id'                 => $seller->id,
+                    'qty'                       => $data['quantity'],
+                    'product_id'                => $data['product_id'],
+                    'purchase_price'            => $data['purchase_price'],
+                    'gst_percentage'            => $data['purchase_gst_percentage'],
+                    'total_amount'              => $data['total_amount'],
+                    'paid_amount'               => $data['paid_amount'],
+                    'invoice_number'            => $data['invoice_number'],
+                    'invoice_date'              => $data['invoice_date'],
+                    'invoice_image'             => $upload['secure_url'] ?? null,
+                    'invoice_image_public_url'  =>$upload['public_id'] ?? null
+                ]);
                 // Log::info('Stock updated: ' . json_encode($stock));
                 // $product->update([
                 //     'selling_price' => $data['selling_price'],
@@ -329,6 +424,13 @@ class StocksController extends Controller
                 'status' => false,
                 'message' => $e->getMessage()
             ]);
+        }
+    }
+    private function deleteFromCloudinary($publicId)
+    {
+        if ($publicId) {
+            // Cloudinary::destroy($publicId);
+            Cloudinary::uploadApi()->destroy($publicId);
         }
     }
     public function destroy(Request $request, $id)

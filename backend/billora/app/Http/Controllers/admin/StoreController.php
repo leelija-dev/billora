@@ -304,7 +304,6 @@ class StoreController extends Controller
                     'logo_public_id' => null
 
                 ]);
-                
             }
             if($request->deleted_bank_qr){
                 $this->deleteFromCloudinary($store->bank_qr_public_id);
