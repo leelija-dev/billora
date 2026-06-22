@@ -10,9 +10,10 @@ use Illuminate\Support\Facades\Auth;
 
 class SellerController extends Controller
 {
-    public function index($id)
+    public function index(Request $request, $id)
     {
         $user = Auth::user()->id;
+        $search = $request->search;
         if ($user != $id) {
             return response([
                 'status' => false,
@@ -20,7 +21,18 @@ class SellerController extends Controller
             ]);
         }
         try {
-            $seller = Seller::where('user_id', $id)->get();
+            $seller = Seller::where('user_id', $id)
+           ->when($search, function ($query) use ($search) {
+                $query->where('name', 'LIKE', "%{$search}%")
+                 ->orWhere('city', 'LIKE', "%{$search}%")
+                 ->orWhere('phone', 'LIKE', "%{$search}%")
+                 ->orWhere('gst_number', 'LIKE', "%{$search}%")
+                 ->orWhere('address', 'LIKE', "%{$search}%")
+                 ->orWhere('state', 'LIKE', "%{$search}%")
+                 ->orWhere('pincode', 'LIKE', "%{$search}%")
+                 ;
+            })
+            ->paginate(15);
             return response([
                 'status' => true,
                 'message' => 'seller list',

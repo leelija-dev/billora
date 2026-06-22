@@ -22,5 +22,13 @@ class SellerProducts extends Model
         'invoice_image',
         'invoice_image_public_url'
     ];
-       
+public function seller(){
+    return $this->belongsTo(Seller::class, 'seller_id');
+}
+public function products(){
+    return $this->belongsTo(Products::class, 'product_id');
+}
+public function stocks(){
+    return $this->belongsTo(Stocks::class, 'stock_id');
+}
 }

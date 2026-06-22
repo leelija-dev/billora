@@ -24,6 +24,7 @@ use App\Http\Controllers\admin\GstController;
 use App\Http\Controllers\admin\MedicineTypeController;
 use App\Http\Controllers\admin\PackageCostController;
 use App\Http\Controllers\admin\SellerController;
+use App\Http\Controllers\admin\SellerProductsController;
 use App\Http\Controllers\admin\UserOrdersController;
 use App\Http\Controllers\PlanExpiryController;
 use App\Http\Controllers\admin\TestimonialsController;
@@ -301,4 +302,8 @@ Route::middleware('auth:sanctum')->prefix('seller')->group(function () {
    Route::get('/edit/{id}', [SellerController::class, 'edit']);   //seller id 
    Route::put('/update/{id}', [SellerController::class, 'update']);   // seller id 
    Route::delete('/delete/{id}', [SellerController::class, 'delete']);  //seller id 
+});
+Route::middleware('auth:sanctum')->prefix('seller-products')->group(function (){
+      Route::get('/{id}',[SellerProductsController::class,'sellerProducts']);
+      // Route::
 });
