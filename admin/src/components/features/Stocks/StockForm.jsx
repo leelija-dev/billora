@@ -22,6 +22,7 @@ const StockForm = ({ stock, onSubmit, onCancel, isSubmitting, products, units })
   const [optionsList, setOptionsList] = useState([])
   const [sellerOptionsList, setSellerOptionsList] = useState([])
   const [sellers, setSellers] = useState([])
+  const [sellersLoading, setSellersLoading] = useState(false)
 
   const {
     register,
@@ -35,13 +36,20 @@ const StockForm = ({ stock, onSubmit, onCancel, isSubmitting, products, units })
   // Fetch sellers on component mount
   useEffect(() => {
     const fetchSellers = async () => {
+      setSellersLoading(true)
       try {
         const userId = user?.id || 1
-        const response = await sellerAPI.getByUserId(userId)
+        const response = await sellerAPI.getByUserId(userId, { page: 1, per_page: 100 })
         console.log('📦 Sellers fetched:', response.data)
         
         let sellersData = []
-        if (response.data?.sellers) {
+        
+        // Handle new paginated response structure
+        if (response.data?.sellers?.data) {
+          // New structure: { status, message, sellers: { data: [...], total, current_page, ... } }
+          sellersData = Array.isArray(response.data.sellers.data) ? response.data.sellers.data : []
+        } else if (response.data?.sellers) {
+          // Old structure: { status, message, sellers: [...] }
           sellersData = Array.isArray(response.data.sellers) ? response.data.sellers : []
         } else if (response.data?.data?.sellers) {
           sellersData = Array.isArray(response.data.data.sellers) ? response.data.data.sellers : []
@@ -51,6 +59,7 @@ const StockForm = ({ stock, onSubmit, onCancel, isSubmitting, products, units })
           sellersData = response.data
         }
         
+        console.log('📊 Sellers extracted:', sellersData.length)
         setSellers(sellersData)
         
         // If editing and has seller_id, pre-select the seller
@@ -58,10 +67,27 @@ const StockForm = ({ stock, onSubmit, onCancel, isSubmitting, products, units })
           const seller = sellersData.find(s => s.id === stock.seller_id)
           if (seller) {
             setSelectedSeller(seller)
+            // Add to options list for SearchSelect
+            const sellerOption = {
+              value: seller.id.toString(),
+              label: seller.name,
+              description: `📧 ${seller.email || 'No email'}`,
+              subtext: seller.phone ? `📞 ${seller.phone}` : null
+            }
+            setSellerOptionsList(prev => {
+              const exists = prev.some(opt => opt.value === sellerOption.value)
+              if (!exists) {
+                return [sellerOption, ...prev]
+              }
+              return prev
+            })
           }
         }
       } catch (error) {
         console.error('Failed to fetch sellers:', error)
+        toast.error('Failed to load sellers')
+      } finally {
+        setSellersLoading(false)
       }
     }
     fetchSellers()
@@ -117,7 +143,7 @@ const StockForm = ({ stock, onSubmit, onCancel, isSubmitting, products, units })
     }
   }
 
-  // Handle seller search
+  // Handle seller search - search across all pages
   const handleSellerSearch = async (searchTerm) => {
     if (searchTerm.length < 2) {
       setSellerSearchResults([])
@@ -126,16 +152,32 @@ const StockForm = ({ stock, onSubmit, onCancel, isSubmitting, products, units })
 
     setIsSearchingSeller(true)
     try {
-      // Filter sellers locally based on search term
+      // First, try to search across all sellers using the API with search param
+      const userId = user?.id || 1
+      const response = await sellerAPI.getByUserId(userId, { 
+        page: 1, 
+        per_page: 100,
+        search: searchTerm 
+      })
+      
+      let searchResults = []
+      if (response.data?.sellers?.data) {
+        searchResults = Array.isArray(response.data.sellers.data) ? response.data.sellers.data : []
+      } else if (response.data?.sellers) {
+        searchResults = Array.isArray(response.data.sellers) ? response.data.sellers : []
+      }
+      
+      console.log('🔍 Seller search results:', searchResults.length)
+      setSellerSearchResults(searchResults)
+    } catch (error) {
+      console.error('Failed to search sellers:', error)
+      // Fallback to local filtering
       const filtered = sellers.filter(seller => 
         seller.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         seller.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         seller.phone?.includes(searchTerm)
       )
       setSellerSearchResults(filtered)
-    } catch (error) {
-      console.error('Failed to search sellers:', error)
-      setSellerSearchResults([])
     } finally {
       setIsSearchingSeller(false)
     }
@@ -444,7 +486,7 @@ const StockForm = ({ stock, onSubmit, onCancel, isSubmitting, products, units })
             required
             renderOption={renderSellerOption}
             onSearchChange={handleSellerSearch}
-            isLoading={isSearchingSeller}
+            isLoading={isSearchingSeller || sellersLoading}
             minSearchLength={2}
           />
 

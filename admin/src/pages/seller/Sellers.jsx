@@ -1,6 +1,6 @@
 // pages/Sellers/Sellers.jsx
-import React, { useState, useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useState, useEffect, useRef } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   FiPlus,
   FiSearch,
@@ -20,19 +20,19 @@ import {
   FiFileText,
   FiUser,
   FiDollarSign,
-} from 'react-icons/fi';
-import { FaRupeeSign } from 'react-icons/fa';
-import Button from '../../components/common/Button/Button';
-import Input from '../../components/common/Input/Input';
-import Table from '../../components/common/Table/Table';
-import StatusBadge from '../../components/common/StatusBadge/StatusBadge';
-import Pagination from '../../components/common/Pagination/Pagination';
-import EmptyState from '../../components/common/EmptyState/EmptyState';
-import Select from '../../components/common/Select/Select';
-import SellerForm from '../../components/features/Sellers/SellerForm';
-import useSellerStore from '../../store/sellerStore';
-import { useAuthStore } from '../../store/authStore';
-import toast from 'react-hot-toast';
+} from "react-icons/fi";
+import { FaRupeeSign } from "react-icons/fa";
+import Button from "../../components/common/Button/Button";
+import Input from "../../components/common/Input/Input";
+import Table from "../../components/common/Table/Table";
+import StatusBadge from "../../components/common/StatusBadge/StatusBadge";
+import Pagination from "../../components/common/Pagination/Pagination";
+import EmptyState from "../../components/common/EmptyState/EmptyState";
+import Select from "../../components/common/Select/Select";
+import SellerForm from "../../components/features/Sellers/SellerForm";
+import useSellerStore from "../../store/sellerStore";
+import { useAuthStore } from "../../store/authStore";
+import toast from "react-hot-toast";
 
 const Sellers = () => {
   const { user } = useAuthStore();
@@ -58,9 +58,9 @@ const Sellers = () => {
   const [showAddForm, setShowAddForm] = useState(false);
   const [showEditForm, setShowEditForm] = useState(false);
   const [selectedSeller, setSelectedSeller] = useState(null);
-  const [searchTerm, setSearchTerm] = useState(filters.search || '');
+  const [searchTerm, setSearchTerm] = useState(filters.search || "");
   const [showFilters, setShowFilters] = useState(false);
-  const [viewMode, setViewMode] = useState('table');
+  const [viewMode, setViewMode] = useState("table");
   const [selectedSellers, setSelectedSellers] = useState([]);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [sellerToDelete, setSellerToDelete] = useState(null);
@@ -77,18 +77,18 @@ const Sellers = () => {
     if (user && user.id) {
       return user.id.toString();
     }
-    const authStorage = localStorage.getItem('auth-storage');
+    const authStorage = localStorage.getItem("auth-storage");
     if (authStorage) {
       try {
         const parsed = JSON.parse(authStorage);
         const userId = parsed.state?.user?.id || parsed.user?.id;
-        return userId ? userId.toString() : '1';
+        return userId ? userId.toString() : "1";
       } catch (error) {
-        console.error('Error parsing auth storage:', error);
-        return '1';
+        console.error("Error parsing auth storage:", error);
+        return "1";
       }
     }
-    return '1';
+    return "1";
   };
 
   const currentUserId = getUserId();
@@ -100,11 +100,11 @@ const Sellers = () => {
 
     const fetchData = async () => {
       try {
-        console.log('🔄 Fetching sellers for user:', currentUserId);
+        console.log("🔄 Fetching sellers for user:", currentUserId);
         await fetchSellers(currentUserId);
-        console.log('✅ Sellers fetched successfully');
+        console.log("✅ Sellers fetched successfully");
       } catch (error) {
-        console.error('❌ Failed to fetch sellers:', error);
+        console.error("❌ Failed to fetch sellers:", error);
       } finally {
         setInitialLoading(false);
       }
@@ -135,8 +135,8 @@ const Sellers = () => {
     try {
       // Fetch fresh data for the seller
       const sellerData = await getSellerById(seller.id);
-      console.log('📝 Seller data for edit:', sellerData);
-      
+      console.log("📝 Seller data for edit:", sellerData);
+
       // If sellerData exists, use it, otherwise fallback to the passed seller
       if (sellerData) {
         setSelectedSeller(sellerData);
@@ -147,7 +147,7 @@ const Sellers = () => {
       setShowEditForm(true);
       setShowAddForm(false);
     } catch (error) {
-      console.error('Failed to fetch seller data:', error);
+      console.error("Failed to fetch seller data:", error);
       // Fallback to existing seller data
       setSelectedSeller(seller);
       setShowEditForm(true);
@@ -177,19 +177,25 @@ const Sellers = () => {
 
       if (showEditForm && selectedSeller) {
         await updateSeller(selectedSeller.id, data);
-        console.log('✅ Seller updated successfully');
-        toast.success('Seller updated successfully');
+        console.log("✅ Seller updated successfully");
+        toast.success("Seller updated successfully");
       } else {
         await createSeller(data);
-        console.log('✅ Seller created successfully');
-        toast.success('Seller created successfully');
+        console.log("✅ Seller created successfully");
+        toast.success("Seller created successfully");
       }
       // Refresh the seller list
       await fetchSellers(currentUserId);
       handleCancelForm();
     } catch (error) {
-      console.error(`Error ${showEditForm ? 'updating' : 'creating'} seller:`, error);
-      toast.error(error.response?.data?.message || `Failed to ${showEditForm ? 'update' : 'create'} seller`);
+      console.error(
+        `Error ${showEditForm ? "updating" : "creating"} seller:`,
+        error,
+      );
+      toast.error(
+        error.response?.data?.message ||
+          `Failed to ${showEditForm ? "update" : "create"} seller`,
+      );
     } finally {
       setFormSubmitting(false);
     }
@@ -207,10 +213,10 @@ const Sellers = () => {
         await fetchSellers(currentUserId);
         setShowDeleteConfirm(false);
         setSellerToDelete(null);
-        toast.success('Seller deleted successfully');
+        toast.success("Seller deleted successfully");
       } catch (error) {
-        console.error('Error deleting seller:', error);
-        toast.error('Failed to delete seller');
+        console.error("Error deleting seller:", error);
+        toast.error("Failed to delete seller");
       }
     }
   };
@@ -226,15 +232,33 @@ const Sellers = () => {
       await fetchSellers(currentUserId);
       toast.success(`${selectedSellers.length} sellers deleted successfully`);
     } catch (error) {
-      console.error('Error bulk deleting sellers:', error);
-      toast.error('Failed to delete sellers');
+      console.error("Error bulk deleting sellers:", error);
+      toast.error("Failed to delete sellers");
     }
   };
 
-  const handlePageChange = (url) => {
-    const pageMatch = url.match(/page=(\d+)/);
-    if (pageMatch) {
-      fetchSellers(currentUserId, pageMatch[1], filters);
+  const handlePageChange = (pageOrUrl) => {
+    // If it's a URL string, extract the page number
+    let page = pageOrUrl;
+    if (typeof pageOrUrl === "string") {
+      const pageMatch = pageOrUrl.match(/page=(\d+)/);
+      if (pageMatch) {
+        page = parseInt(pageMatch[1]);
+      } else {
+        // If no page parameter, default to 1
+        page = 1;
+      }
+    }
+
+    // If it's a number, use it directly
+    if (typeof page === "number") {
+      fetchSellers(currentUserId, page, filters);
+    } else {
+      // If it's a URL with page parameter
+      const pageMatch = pageOrUrl.match(/page=(\d+)/);
+      if (pageMatch) {
+        fetchSellers(currentUserId, parseInt(pageMatch[1]), filters);
+      }
     }
   };
 
@@ -243,19 +267,19 @@ const Sellers = () => {
     clearCache();
     await fetchSellers(currentUserId);
     setRefreshing(false);
-    toast.success('Data refreshed');
+    toast.success("Data refreshed");
   };
 
   const clearFilters = () => {
-    setSearchTerm('');
-    setFilters({ search: '' });
+    setSearchTerm("");
+    setFilters({ search: "" });
   };
 
   const toggleSellerSelection = (sellerId) => {
     setSelectedSellers((prev) =>
       prev.includes(sellerId)
         ? prev.filter((id) => id !== sellerId)
-        : [...prev, sellerId]
+        : [...prev, sellerId],
     );
   };
 
@@ -270,9 +294,9 @@ const Sellers = () => {
   // Format currency
   const formatCurrency = (amount) => {
     const num = parseFloat(amount) || 0;
-    return new Intl.NumberFormat('en-IN', {
-      style: 'currency',
-      currency: 'INR',
+    return new Intl.NumberFormat("en-IN", {
+      style: "currency",
+      currency: "INR",
       minimumFractionDigits: 2,
     }).format(num);
   };
@@ -292,7 +316,7 @@ const Sellers = () => {
           />
         </div>
       ),
-      accessor: 'selection',
+      accessor: "selection",
       cell: (_, row) => (
         <input
           type="checkbox"
@@ -303,8 +327,8 @@ const Sellers = () => {
       ),
     },
     {
-      header: 'Seller',
-      accessor: 'name',
+      header: "Seller",
+      accessor: "name",
       cell: (value, row) => (
         <div className="flex items-center">
           <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl mr-3 flex items-center justify-center flex-shrink-0">
@@ -322,8 +346,8 @@ const Sellers = () => {
       ),
     },
     {
-      header: 'Contact',
-      accessor: 'email',
+      header: "Contact",
+      accessor: "email",
       cell: (value, row) => (
         <div className="space-y-1">
           {value && (
@@ -346,8 +370,8 @@ const Sellers = () => {
       ),
     },
     {
-      header: 'Location',
-      accessor: 'address',
+      header: "Location",
+      accessor: "address",
       cell: (value, row) => (
         <div className="space-y-1">
           {value && (
@@ -360,7 +384,7 @@ const Sellers = () => {
           )}
           {(row.city || row.state) && (
             <div className="text-sm text-gray-500 dark:text-gray-500 pl-6">
-              {[row.city, row.state].filter(Boolean).join(', ')}
+              {[row.city, row.state].filter(Boolean).join(", ")}
               {row.pincode && ` - ${row.pincode}`}
             </div>
           )}
@@ -368,14 +392,16 @@ const Sellers = () => {
       ),
     },
     {
-      header: 'Due Amount',
-      accessor: 'due_amount',
+      header: "Due Amount",
+      accessor: "due_amount",
       cell: (value) => {
         const dueAmount = parseFloat(value) || 0;
         return (
           <div className="flex items-center">
             <FaRupeeSign className="w-3 h-3 mr-1 text-gray-500" />
-            <span className={`font-medium ${dueAmount > 0 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>
+            <span
+              className={`font-medium ${dueAmount > 0 ? "text-red-600 dark:text-red-400" : "text-green-600 dark:text-green-400"}`}
+            >
               {dueAmount.toFixed(2)}
             </span>
             {dueAmount > 0 && (
@@ -388,8 +414,8 @@ const Sellers = () => {
       },
     },
     {
-      header: 'Actions',
-      accessor: 'id',
+      header: "Actions",
+      accessor: "id",
       cell: (value, row) => (
         <div className="flex items-center space-x-1">
           <motion.button
@@ -429,7 +455,9 @@ const Sellers = () => {
     <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-12">
       <div className="flex flex-col items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mb-4"></div>
-        <p className="text-gray-600 dark:text-gray-400">Loading seller data...</p>
+        <p className="text-gray-600 dark:text-gray-400">
+          Loading seller data...
+        </p>
       </div>
     </div>
   );
@@ -465,11 +493,11 @@ const Sellers = () => {
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
-                  onClick={() => setViewMode('table')}
+                  onClick={() => setViewMode("table")}
                   className={`p-2 rounded-lg transition-colors ${
-                    viewMode === 'table'
-                      ? 'bg-white dark:bg-gray-700 shadow-sm text-primary-600'
-                      : 'text-gray-600 dark:text-gray-400'
+                    viewMode === "table"
+                      ? "bg-white dark:bg-gray-700 shadow-sm text-primary-600"
+                      : "text-gray-600 dark:text-gray-400"
                   }`}
                 >
                   <FiList className="w-4 h-4" />
@@ -477,11 +505,11 @@ const Sellers = () => {
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
-                  onClick={() => setViewMode('grid')}
+                  onClick={() => setViewMode("grid")}
                   className={`p-2 rounded-lg transition-colors ${
-                    viewMode === 'grid'
-                      ? 'bg-white dark:bg-gray-700 shadow-sm text-primary-600'
-                      : 'text-gray-600 dark:text-gray-400'
+                    viewMode === "grid"
+                      ? "bg-white dark:bg-gray-700 shadow-sm text-primary-600"
+                      : "text-gray-600 dark:text-gray-400"
                   }`}
                 >
                   <FiGrid className="w-4 h-4" />
@@ -496,7 +524,7 @@ const Sellers = () => {
                 className="p-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shadow-sm"
               >
                 <FiRefreshCw
-                  className={`w-5 h-5 text-gray-600 dark:text-gray-300 ${refreshing ? 'animate-spin' : ''}`}
+                  className={`w-5 h-5 text-gray-600 dark:text-gray-300 ${refreshing ? "animate-spin" : ""}`}
                 />
               </motion.button>
 
@@ -510,8 +538,15 @@ const Sellers = () => {
               </motion.button>
 
               {/* Add Button */}
-              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                <Button onClick={handleAddSeller} icon={FiPlus} className="shadow-lg shadow-primary-500/30">
+              <motion.div
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                <Button
+                  onClick={handleAddSeller}
+                  icon={FiPlus}
+                  className="shadow-lg shadow-primary-500/30"
+                >
                   Add Seller
                 </Button>
               </motion.div>
@@ -549,7 +584,8 @@ const Sellers = () => {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-3">
                     <span className="text-sm font-medium text-primary-700 dark:text-primary-300">
-                      {selectedSellers.length} seller{selectedSellers.length !== 1 ? 's' : ''} selected
+                      {selectedSellers.length} seller
+                      {selectedSellers.length !== 1 ? "s" : ""} selected
                     </span>
                     <button
                       onClick={() => setSelectedSellers([])}
@@ -618,11 +654,13 @@ const Sellers = () => {
               <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-12">
                 <div className="flex flex-col items-center justify-center">
                   <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mb-4"></div>
-                  <p className="text-gray-600 dark:text-gray-400">Updating seller data...</p>
+                  <p className="text-gray-600 dark:text-gray-400">
+                    Updating seller data...
+                  </p>
                 </div>
               </div>
             ) : safeSellers.length > 0 ? (
-              viewMode === 'table' ? (
+              viewMode === "table" ? (
                 <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg overflow-hidden">
                   <Table
                     columns={columns}
@@ -634,6 +672,7 @@ const Sellers = () => {
                       currentPage={currentPage}
                       totalItems={totalSellers}
                       pageSize={pageSize}
+                      pagination={pagination} // Pass the pagination object
                       onPageChange={handlePageChange}
                     />
                   )}
@@ -740,8 +779,12 @@ const Sellers = () => {
                           )}
                           {/* Due Amount in Grid View */}
                           <div className="pt-2 border-t border-gray-100 dark:border-gray-700 flex items-center justify-between">
-                            <span className="text-sm text-gray-500 dark:text-gray-400">Due Amount</span>
-                            <span className={`font-semibold ${dueAmount > 0 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>
+                            <span className="text-sm text-gray-500 dark:text-gray-400">
+                              Due Amount
+                            </span>
+                            <span
+                              className={`font-semibold ${dueAmount > 0 ? "text-red-600 dark:text-red-400" : "text-green-600 dark:text-green-400"}`}
+                            >
                               ₹{dueAmount.toFixed(2)}
                             </span>
                           </div>
@@ -757,8 +800,8 @@ const Sellers = () => {
                 title="No sellers yet"
                 description={
                   searchTerm
-                    ? 'No sellers match your search criteria'
-                    : 'Get started by adding your first seller or service provider'
+                    ? "No sellers match your search criteria"
+                    : "Get started by adding your first seller or service provider"
                 }
                 action={
                   !searchTerm && (
@@ -790,7 +833,7 @@ const Sellers = () => {
               initial={{ scale: 0.9, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.9, opacity: 0, y: 20 }}
-              transition={{ type: 'spring', duration: 0.5 }}
+              transition={{ type: "spring", duration: 0.5 }}
               onClick={(e) => e.stopPropagation()}
               className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto"
             >
@@ -825,7 +868,9 @@ const Sellers = () => {
                       </p>
                     )}
                     <div className="flex items-center mt-1">
-                      <span className={`text-sm font-medium ${parseFloat(viewingSeller.due_amount) > 0 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>
+                      <span
+                        className={`text-sm font-medium ${parseFloat(viewingSeller.due_amount) > 0 ? "text-red-600 dark:text-red-400" : "text-green-600 dark:text-green-400"}`}
+                      >
                         Due Amount: {formatCurrency(viewingSeller.due_amount)}
                       </span>
                       {parseFloat(viewingSeller.due_amount) > 0 && (
@@ -847,13 +892,17 @@ const Sellers = () => {
                     {viewingSeller.email && (
                       <div className="flex items-center space-x-3 text-sm">
                         <FiMail className="w-4 h-4 text-gray-400" />
-                        <span className="text-gray-600 dark:text-gray-400">{viewingSeller.email}</span>
+                        <span className="text-gray-600 dark:text-gray-400">
+                          {viewingSeller.email}
+                        </span>
                       </div>
                     )}
                     {viewingSeller.phone && (
                       <div className="flex items-center space-x-3 text-sm">
                         <FiPhone className="w-4 h-4 text-gray-400" />
-                        <span className="text-gray-600 dark:text-gray-400">{viewingSeller.phone}</span>
+                        <span className="text-gray-600 dark:text-gray-400">
+                          {viewingSeller.phone}
+                        </span>
                       </div>
                     )}
                   </div>
@@ -870,7 +919,9 @@ const Sellers = () => {
                           <p>{viewingSeller.address}</p>
                           {(viewingSeller.city || viewingSeller.state) && (
                             <p>
-                              {[viewingSeller.city, viewingSeller.state].filter(Boolean).join(', ')}
+                              {[viewingSeller.city, viewingSeller.state]
+                                .filter(Boolean)
+                                .join(", ")}
                             </p>
                           )}
                           {viewingSeller.pincode && (
@@ -886,29 +937,41 @@ const Sellers = () => {
                 <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                     <div>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">Seller ID</p>
-                      <p className="text-sm font-medium text-gray-900 dark:text-white">#{viewingSeller.id}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        Seller ID
+                      </p>
+                      <p className="text-sm font-medium text-gray-900 dark:text-white">
+                        #{viewingSeller.id}
+                      </p>
                     </div>
                     {viewingSeller.created_at && (
                       <div>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">Created At</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          Created At
+                        </p>
                         <p className="text-sm font-medium text-gray-900 dark:text-white">
-                          {new Date(viewingSeller.created_at).toLocaleDateString('en-IN', {
-                            day: '2-digit',
-                            month: 'short',
-                            year: 'numeric',
+                          {new Date(
+                            viewingSeller.created_at,
+                          ).toLocaleDateString("en-IN", {
+                            day: "2-digit",
+                            month: "short",
+                            year: "numeric",
                           })}
                         </p>
                       </div>
                     )}
                     {viewingSeller.updated_at && (
                       <div>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">Last Updated</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          Last Updated
+                        </p>
                         <p className="text-sm font-medium text-gray-900 dark:text-white">
-                          {new Date(viewingSeller.updated_at).toLocaleDateString('en-IN', {
-                            day: '2-digit',
-                            month: 'short',
-                            year: 'numeric',
+                          {new Date(
+                            viewingSeller.updated_at,
+                          ).toLocaleDateString("en-IN", {
+                            day: "2-digit",
+                            month: "short",
+                            year: "numeric",
                           })}
                         </p>
                       </div>
@@ -964,7 +1027,7 @@ const Sellers = () => {
               initial={{ scale: 0.9, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.9, opacity: 0, y: 20 }}
-              transition={{ type: 'spring', duration: 0.5 }}
+              transition={{ type: "spring", duration: 0.5 }}
               onClick={(e) => e.stopPropagation()}
               className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-6 max-w-md w-full mx-4"
             >
@@ -974,8 +1037,8 @@ const Sellers = () => {
                 </div>
                 <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
                   {sellerToDelete
-                    ? 'Delete Seller'
-                    : `Delete ${selectedSellers.length > 1 ? 'Sellers' : 'Seller'}`}
+                    ? "Delete Seller"
+                    : `Delete ${selectedSellers.length > 1 ? "Sellers" : "Seller"}`}
                 </h3>
                 {sellerToDelete ? (
                   <>
@@ -987,14 +1050,16 @@ const Sellers = () => {
                     </p>
                     {parseFloat(sellerToDelete.due_amount) > 0 && (
                       <p className="text-sm text-red-600 dark:text-red-400 mb-4">
-                        ⚠️ This seller has a due amount of {formatCurrency(sellerToDelete.due_amount)}
+                        ⚠️ This seller has a due amount of{" "}
+                        {formatCurrency(sellerToDelete.due_amount)}
                       </p>
                     )}
                   </>
                 ) : (
                   <p className="text-gray-600 dark:text-gray-400 mb-6">
-                    Are you sure you want to delete {selectedSellers.length}{' '}
-                    selected {selectedSellers.length === 1 ? 'seller' : 'sellers'}?
+                    Are you sure you want to delete {selectedSellers.length}{" "}
+                    selected{" "}
+                    {selectedSellers.length === 1 ? "seller" : "sellers"}?
                   </p>
                 )}
                 <p className="text-xs text-gray-500 dark:text-gray-400 mb-6">

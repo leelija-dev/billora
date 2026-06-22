@@ -35,12 +35,13 @@ const useSellerStore = create((set, get) => ({
     search: '',
   },
   currentUserId: null,
+  pagination: null,
 
   // Cache state
   lastFetchTime: null,
   cacheKey: null,
 
-  // Fetch sellers by user ID
+  // Fetch sellers by user ID with pagination
   fetchSellers: async (userId, page = 1, filters = {}) => {
     set({ currentUserId: userId })
     
@@ -61,30 +62,68 @@ const useSellerStore = create((set, get) => ({
         sellers: cached.sellers,
         totalSellers: cached.total,
         currentPage: page,
+        pageSize: cached.pageSize || 15,
         loading: false,
         cacheKey,
         lastFetchTime: Date.now(),
         currentUserId: userId,
+        pagination: cached.pagination || null,
       })
       return
     }
 
     set({ loading: true, cacheKey, currentUserId: userId })
     try {
-      const response = await sellerAPI.getByUserId(userId, filters)
+      const params = { 
+        page, 
+        ...filters 
+      }
+      // Remove undefined values
+      Object.keys(params).forEach(key => {
+        if (params[key] === undefined || params[key] === '') {
+          delete params[key]
+        }
+      })
+      
+      const response = await sellerAPI.getByUserId(userId, params)
       console.log('📦 Sellers fetched successfully:', response.data)
       
-      // Extract sellers array from response: { status: true, message: "seller list", sellers: [...] }
+      // Extract sellers from response structure: 
+      // { status: true, message: "seller list", sellers: { data: [...], total: 1, ... } }
       let sellersArray = []
       let total = 0
+      let paginationData = null
       
-      if (response.data?.sellers) {
+      if (response.data?.sellers?.data) {
+        // New structure with pagination
+        sellersArray = Array.isArray(response.data.sellers.data) ? response.data.sellers.data : []
+        total = response.data.sellers.total || sellersArray.length
+        
+        // Extract pagination info
+        paginationData = {
+          current_page: response.data.sellers.current_page,
+          first_page_url: response.data.sellers.first_page_url,
+          from: response.data.sellers.from,
+          last_page: response.data.sellers.last_page,
+          last_page_url: response.data.sellers.last_page_url,
+          links: response.data.sellers.links,
+          next_page_url: response.data.sellers.next_page_url,
+          path: response.data.sellers.path,
+          per_page: response.data.sellers.per_page,
+          prev_page_url: response.data.sellers.prev_page_url,
+          to: response.data.sellers.to,
+          total: response.data.sellers.total,
+        }
+      } else if (response.data?.sellers) {
+        // Direct sellers array (old structure)
         sellersArray = Array.isArray(response.data.sellers) ? response.data.sellers : []
         total = sellersArray.length
       } else if (response.data?.data?.sellers) {
+        // Nested data.sellers
         sellersArray = Array.isArray(response.data.data.sellers) ? response.data.data.sellers : []
         total = sellersArray.length
       } else if (response.data?.data?.data) {
+        // Nested data.data array
         sellersArray = Array.isArray(response.data.data.data) ? response.data.data.data : []
         total = sellersArray.length
       } else if (Array.isArray(response.data)) {
@@ -93,10 +132,14 @@ const useSellerStore = create((set, get) => ({
       }
       
       console.log('📊 Sellers extracted:', sellersArray.length, 'sellers')
+      console.log('📊 Total sellers:', total)
+      console.log('📊 Pagination:', paginationData)
       
       const cacheData = {
         sellers: sellersArray,
-        total: total
+        total: total,
+        pageSize: paginationData?.per_page || 15,
+        pagination: paginationData,
       }
       setCachedData(cacheKey, cacheData)
       
@@ -104,9 +147,11 @@ const useSellerStore = create((set, get) => ({
         sellers: sellersArray,
         totalSellers: total,
         currentPage: page,
+        pageSize: paginationData?.per_page || 15,
         loading: false,
         lastFetchTime: Date.now(),
         currentUserId: userId,
+        pagination: paginationData,
       })
       return response.data
     } catch (error) {
@@ -118,6 +163,7 @@ const useSellerStore = create((set, get) => ({
         loading: false,
         error: error.message || 'Failed to fetch sellers',
         currentUserId: userId,
+        pagination: null,
       })
     }
   },
@@ -136,12 +182,15 @@ const useSellerStore = create((set, get) => ({
       // Extract the created seller from response
       const newSeller = response.data?.data || response.data || sellerData
       
-      const { sellers } = get()
+      const { sellers, currentPage, currentUserId, filters } = get()
       set({
         sellers: [newSeller, ...sellers],
         totalSellers: (sellers?.length || 0) + 1,
         loading: false,
       })
+      
+      // Refresh the list to update pagination
+      await get().fetchSellers(currentUserId, currentPage, filters)
       
       return newSeller
     } catch (error) {
@@ -166,13 +215,10 @@ const useSellerStore = create((set, get) => ({
       let sellerData = null
       
       if (response.data?.data) {
-        // If response has data wrapper
         sellerData = response.data.data
       } else if (response.data?.seller) {
-        // If response has seller key
         sellerData = response.data.seller
       } else {
-        // If response is the seller object directly
         sellerData = response.data
       }
       
@@ -205,13 +251,16 @@ const useSellerStore = create((set, get) => ({
       // Extract updated seller from response
       const updatedSeller = response.data?.data || response.data || sellerData
       
-      const { sellers } = get()
+      const { sellers, currentUserId, currentPage, filters } = get()
       set({
         sellers: sellers.map(seller => 
           seller.id === sellerId ? updatedSeller : seller
         ),
         loading: false,
       })
+      
+      // Refresh the list to update pagination
+      await get().fetchSellers(currentUserId, currentPage, filters)
       
       return updatedSeller
     } catch (error) {
@@ -236,12 +285,15 @@ const useSellerStore = create((set, get) => ({
       
       get().clearCache()
       
-      const { sellers } = get()
+      const { sellers, currentUserId, currentPage, filters } = get()
       set({
         sellers: sellers.filter(seller => seller.id !== sellerId),
         totalSellers: Math.max(0, (sellers?.length || 0) - 1),
         loading: false,
       })
+      
+      // Refresh the list to update pagination
+      await get().fetchSellers(currentUserId, currentPage, filters)
       
       return { success: true }
     } catch (error) {

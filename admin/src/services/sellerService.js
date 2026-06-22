@@ -2,7 +2,7 @@
 import { apiClient } from './apiClient';
 
 export const sellerAPI = {
-  // Get all sellers by user ID
+  // Get all sellers by user ID with pagination
   getByUserId: (userId, params = {}) => {
     return apiClient.get(`/seller/${userId}`, { params })
   },
