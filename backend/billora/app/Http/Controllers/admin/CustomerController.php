@@ -178,8 +178,8 @@ class CustomerController extends Controller
             }
 
             $customer = Customers::findOrFail($id);
-            $id = Crypt::encryptString($customer->id);
-            $qrUrl = env('FRONTEND_ADMIN_URL', 'https://thefastbill.com') . '/products/' . $id;
+             $id = Crypt::encryptString($customer->id);
+            $qrUrl = env('FRONTEND_URL', 'https://thefastbill.com') . '/products/' . $id;
             $customer['qrUrl'] = $qrUrl;
             return response()->json([
                 'status' => true,
@@ -387,7 +387,9 @@ class CustomerController extends Controller
                 'message' => 'User not authenticated'
             ], 401);
         }
-
+        $id = Crypt::encryptString($user->id);
+        $qrUrl = env('FRONTEND_URL', 'https://thefastbill.com') . '/products/' . $id;
+        $user->qrUrl = $qrUrl;
         return response()->json([
             'status' => true,
             'message' => 'Authenticated',

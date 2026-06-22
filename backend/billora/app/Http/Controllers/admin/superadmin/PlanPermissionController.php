@@ -113,7 +113,7 @@ class PlanPermissionController extends Controller
             }
 
             DB::commit();
-
+            Cache::tags('plan_details')->flush();
             return redirect()->route('admin.plan-permission.index')
                 ->with('success', 'Plan Permission Updated Successfully');
         } catch (\Exception $e) {

@@ -373,14 +373,27 @@ export const generateA4InvoiceHTML = (invoice, isOrderDetails = false) => {
       padding: 8px 10px;
       font-size: 11px;
       letter-spacing: 0.4px;
-      text-align: left;
+      text-align: center;
       border: none;
+    }
+
+    .modern-table th:first-child {
+      text-align: left;
     }
 
     .modern-table td {
       padding: 8px 10px;
       border-bottom: 1px solid #eef2f7;
       color: #1d3143;
+      text-align: center;
+    }
+
+    .modern-table td:first-child {
+      text-align: left;
+    }
+
+    .modern-table td:nth-child(2) {
+      text-align: left;
     }
 
     .modern-table tr:last-child td {
@@ -653,7 +666,7 @@ export const generateA4InvoiceHTML = (invoice, isOrderDetails = false) => {
         ${invoice.customer_phone ? `<div class="customer-field">📞 ${escapeHtml(invoice.customer_phone)}</div>` : ""}
         ${invoice.customer_email ? `<div class="customer-field">✉️ ${escapeHtml(invoice.customer_email)}</div>` : ""}
         ${invoice.customer_address ? `<div class="customer-field">📍 ${escapeHtml(invoice.customer_address)}</div>` : ""}
-        ${invoice.customer_gst ? `<div class="customer-field"><span class="gst-chip">GST: ${escapeHtml(invoice.customer_gst)}</span></div>` : ""}
+        ${invoice.customer_gst ? `<div class="customer-field"><span class="gst-chip">GST: ${escapeHtml(invoice?.customer?.gst_number)}</span></div>` : ""}
       </div>
     </div>
 
@@ -663,12 +676,12 @@ export const generateA4InvoiceHTML = (invoice, isOrderDetails = false) => {
         <thead>
           <tr>
             <th style="width: 5%">#</th>
-            <th style="width: 38%">Item / Service</th>
-            <th style="width: 10%" class="text-right">Qty</th>
-            <th style="width: 13%" class="text-right">Price (₹)</th>
-            <th style="width: 9%" class="text-center">GST%</th>
-            <th style="width: 10%" class="text-right">Disc%</th>
-            <th style="width: 15%" class="text-right">Total (₹)</th>
+            <th style="width: 38%; text-align: left;">Item / Service</th>
+            <th style="width: 10%; text-align: center;">Qty</th>
+            <th style="width: 13%; text-align: center;">Price (₹)</th>
+            <th style="width: 9%; text-align: center;">GST%</th>
+            <th style="width: 10%; text-align: center;">Disc%</th>
+            <th style="width: 15%; text-align: center;">Total (₹)</th>
           </tr>
         </thead>
         <tbody>
@@ -801,52 +814,7 @@ export const generateA4InvoiceHTML = (invoice, isOrderDetails = false) => {
     </div>
   `
       : `
-    <div style="
-      width:180px !important;
-      border:1px dashed #cbd5e1 !important;
-      border-radius:12px !important;
-      padding:12px !important;
-      background:#f8fafc !important;
-      text-align:center !important;
-    ">
-      
-      <div style="
-        width:120px !important;
-        height:120px !important;
-        margin:0 auto 10px auto !important;
-        border:1px dashed #cbd5e1 !important;
-        border-radius:8px !important;
-        display:flex !important;
-        align-items:center !important;
-        justify-content:center !important;
-        background:#ffffff !important;
-      ">
-        <span style="
-          font-size:14px !important;
-          font-weight:600 !important;
-          color:#94a3b8 !important;
-        ">
-          QR
-        </span>
-      </div>
-
-      <div style="
-        font-size:13px !important;
-        font-weight:600 !important;
-        color:#111827 !important;
-        margin-bottom:4px !important;
-      ">
-        Scan to Pay
-      </div>
-
-      <div style="
-        font-size:10px !important;
-        color:#6b7280 !important;
-      ">
-        UPI / Bank Transfer
-      </div>
-
-    </div>
+    <div></div>
   `
   }
 </div>
@@ -867,13 +835,12 @@ export const generateA4InvoiceHTML = (invoice, isOrderDetails = false) => {
   // Helper function to render items section
   function renderItemsSection(invoice) {
     let html = "";
-    
 
     // Products
-    if (Array.isArray(invoice.items) && invoice.items.length > 0) {
+    if (Array.isArray(invoice.invoice_items) && invoice.invoice_items.length > 0) {
       html += `<tr><td colspan="7" class="section-header">🛒 PRODUCTS</td></tr>`;
-      console.log("checking the invoice items",invoice.items)
-      invoice.items.forEach((item, idx) => {
+      console.log("checking the invoice items", invoice.items);
+      invoice.invoice_items.forEach((item, idx) => {
         const price = parseNumeric(item.price);
         const qty = parseNumeric(item.quantity, 1);
         const total = parseNumeric(item.total_price, price * qty);
@@ -883,13 +850,13 @@ export const generateA4InvoiceHTML = (invoice, isOrderDetails = false) => {
           item.product?.name || item.product_name || item.name || "Product";
 
         html += `<tr>
-          <td>${idx + 1}</td>
-          <td>${escapeHtml(productName)}</td>
-          <td class="text-right">${qty} (${item.product?.unit?.code})</td>
-          <td class="text-right">${formatCurrency(price)}</td>
-          <td class="text-center">${gst > 0 ? `${gst}%` : "—"}</td>
-          <td class="text-right">${discount > 0 ? `${discount}%` : "—"}</td>
-          <td class="text-right fw-semibold">${formatCurrency(total)}</td>
+          <td style="text-align: left;">${idx + 1}</td>
+          <td style="text-align: left;">${escapeHtml(productName)}</td>
+          <td style="text-align: center;">${qty} ${item.product?.unit?.code || ''}</td>
+          <td style="text-align: center;">${formatCurrency(price)}</td>
+          <td style="text-align: center;">${gst > 0 ? `${gst}%` : "—"}</td>
+          <td style="text-align: center;">${discount > 0 ? `${discount}%` : "—"}</td>
+          <td style="text-align: center; font-weight: 600;">${formatCurrency(total)}</td>
         </tr>`;
       });
     }
@@ -905,13 +872,13 @@ export const generateA4InvoiceHTML = (invoice, isOrderDetails = false) => {
           pkg.package_name || pkg.name || pkg.product_name || "Package";
 
         html += `<tr>
-          <td>${idx + 1}</td>
-          <td>${escapeHtml(packageName)}</td>
-          <td class="text-right">${qty}</td>
-          <td class="text-right">${formatCurrency(price)}</td>
-          <td class="text-center">—</td>
-          <td class="text-right">—</td>
-          <td class="text-right fw-semibold">${formatCurrency(total)}</td>
+          <td style="text-align: left;">${idx + 1}</td>
+          <td style="text-align: left;">${escapeHtml(packageName)}</td>
+          <td style="text-align: center;">${qty}</td>
+          <td style="text-align: center;">${formatCurrency(price)}</td>
+          <td style="text-align: center;">—</td>
+          <td style="text-align: center;">—</td>
+          <td style="text-align: center; font-weight: 600;">${formatCurrency(total)}</td>
         </tr>`;
       });
     }

@@ -433,19 +433,22 @@ const Orders = () => {
       ),
     },
     {
-      header: 'Date',
-      accessor: 'created_at',
-      cell: (value) => (
-        <div className="flex items-center text-sm text-gray-600 dark:text-gray-300">
-          <FiCalendar className="w-3 h-3 mr-1 text-gray-400" />
-          {new Date(value).toLocaleDateString('en-US', { 
-            month: 'short', 
-            day: 'numeric',
-            year: 'numeric'
-          })}
-        </div>
-      ),
-    },
+  header: 'Date',
+  accessor: 'created_at',
+  cell: (value) => (
+    <div className="flex items-center text-sm text-gray-600 dark:text-gray-300">
+      <FiCalendar className="w-3 h-3 mr-1 text-gray-400" />
+      {new Date(value).toLocaleString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true, // set to false for 24-hour format
+      })}
+    </div>
+  ),
+},
     {
       header: 'Items',
       accessor: 'total_items',

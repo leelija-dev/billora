@@ -6,7 +6,6 @@ import {
   FiPrinter,
   FiFileText,
   FiCheckCircle,
-
   FiClock,
   FiAlertCircle,
   FiSlash,
@@ -413,8 +412,6 @@ const InvoiceDetail = () => {
                       productData = productResponse.data;
                     }
 
-               
-
                     return {
                       ...item,
                       product_name:
@@ -752,7 +749,7 @@ const InvoiceDetail = () => {
   };
 
   const handlePrint = () => {
-    console.log("checking invoice ..........",invoice);
+    console.log("checking invoice ..........", invoice);
     printA4Invoice(invoice);
   };
 
@@ -1121,8 +1118,7 @@ const InvoiceDetail = () => {
                               accessible.
                             </p>
                             {invoice.store_name &&
-                              invoice.store_name !==
-                                "Store Deleted" && (
+                              invoice.store_name !== "Store Deleted" && (
                                 <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
                                   Last known name: {invoice.store_name}
                                 </p>
@@ -1131,57 +1127,139 @@ const InvoiceDetail = () => {
                         </div>
                       </div>
                     ) : (
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div className="space-y-1">
-                          <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                            Store Name
-                          </p>
-                          <p className="font-semibold text-gray-900 dark:text-white">
-                            {invoice.store_name}
-                          </p>
-                        </div>
-                        <div className="space-y-1">
-                          <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                            GST Number
-                          </p>
-                          <p className="font-mono text-sm text-gray-700 dark:text-gray-300">
-                            {invoice.store_gst || "N/A"}
-                          </p>
-                        </div>
-                        <div className="sm:col-span-2 space-y-1">
-                          <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                            Address
-                          </p>
-                          <div className="flex items-start gap-2">
-                            <FiMapPin className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" />
-                            <p className="text-gray-700 dark:text-gray-300">
-                              {invoice.store_address}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="space-y-1">
-                          <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                            Email
-                          </p>
-                          <div className="flex items-center gap-2">
-                            <FiMail className="w-4 h-4 text-gray-400" />
-                            <p className="text-sm text-gray-700 dark:text-gray-300">
-                              {invoice.store_email}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="space-y-1">
-                          <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                            Phone
-                          </p>
-                          <div className="flex items-center gap-2">
-                            <FiPhone className="w-4 h-4 text-gray-400" />
-                            <p className="text-sm text-gray-700 dark:text-gray-300">
-                              {invoice.store_phone}
-                            </p>
-                          </div>
-                        </div>
+                      <>
+                        {/* Store Logo and QR Code Section */}
+                        <div className="flex flex-wrap items-start gap-6 mb-6 pb-6 border-b border-gray-200 dark:border-gray-700">
+                          {/* Store Logo */}
+                          {invoice.store?.logo && (
+                            <div className="flex flex-col items-center gap-2">
+                              <div className="w-24 h-24 rounded-xl border-2 border-gray-200 dark:border-gray-700 overflow-hidden bg-gray-50 dark:bg-gray-900 p-2 flex items-center justify-center">
+                                <img
+                                  src={invoice.store?.logo}
+                                  alt={`${invoice.store_name} logo`}
+                                  className="w-full h-full object-contain"
+                                  onError={(e) => {
+                                    e.target.style.display = "none";
+                                    e.target.parentElement.innerHTML = `
+                      <div class="flex items-center justify-center w-full h-full text-gray-400">
+                        <svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                        </svg>
                       </div>
+                    `;
+                                  }}
+                                />
+                              </div>
+                              <span className="text-xs text-gray-500 dark:text-gray-400">
+                                Store Logo
+                              </span>
+                            </div>
+                          )}
+
+                          {/* Bank QR Code */}
+                          {invoice.store?.bank_qr && (
+                            <div className="flex flex-col items-center gap-2">
+                              <div className="w-24 h-24 rounded-xl border-2 border-gray-200 dark:border-gray-700 overflow-hidden bg-white dark:bg-gray-900 p-2 flex items-center justify-center">
+                                <img
+                                  src={invoice.store?.bank_qr}
+                                  alt="Bank QR Code"
+                                  className="w-full h-full object-contain"
+                                  onError={(e) => {
+                                    e.target.style.display = "none";
+                                    e.target.parentElement.innerHTML = `
+                      <div class="flex items-center justify-center w-full h-full text-gray-400">
+                        <svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
+                        </svg>
+                      </div>
+                    `;
+                                  }}
+                                />
+                              </div>
+                              <span className="text-xs text-gray-500 dark:text-gray-400">
+                                Bank QR
+                              </span>
+                            </div>
+                          )}
+
+                          {/* Optional: View Full Size Buttons */}
+                          <div className="flex flex-col gap-2 ml-auto self-center">
+                            {invoice.store?.logo && (
+                              <button
+                                onClick={() =>
+                                  window.open(invoice.store?.logo, "_blank")
+                                }
+                                className="text-xs px-3 py-1.5 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors"
+                              >
+                                View Logo
+                              </button>
+                            )}
+                            {invoice.store?.bank_qr && (
+                              <button
+                                onClick={() =>
+                                  window.open(invoice.store?.bank_qr, "_blank")
+                                }
+                                className="text-xs px-3 py-1.5 bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 rounded-lg hover:bg-purple-100 dark:hover:bg-purple-900/30 transition-colors"
+                              >
+                                View QR
+                              </button>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Store Details */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <div className="space-y-1">
+                            <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                              Store Name
+                            </p>
+                            <p className="font-semibold text-gray-900 dark:text-white">
+                              {invoice.store_name}
+                            </p>
+                          </div>
+                          <div className="space-y-1">
+                            <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                              GST Number
+                            </p>
+                            <p className="font-mono text-sm text-gray-700 dark:text-gray-300">
+                              {invoice?.store_gst || "N/A"}
+                            </p>
+                          </div>
+                          <div className="sm:col-span-2 space-y-1">
+                            <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                              Address
+                            </p>
+                            <div className="flex items-start gap-2">
+                              <FiMapPin className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" />
+                              <p className="text-gray-700 dark:text-gray-300">
+                                {invoice.store_address}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="space-y-1">
+                            <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                              Email
+                            </p>
+                            <div className="flex items-center gap-2">
+                              <FiMail className="w-4 h-4 text-gray-400" />
+                              <p className="text-sm text-gray-700 dark:text-gray-300">
+                                {invoice.store_email}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="space-y-1">
+                            <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                              Phone
+                            </p>
+                            <div className="flex items-center gap-2">
+                              <FiPhone className="w-4 h-4 text-gray-400" />
+                              <p className="text-sm text-gray-700 dark:text-gray-300">
+                                {invoice.store_phone}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      </>
                     )}
                   </div>
                 </motion.div>
@@ -1238,10 +1316,10 @@ const InvoiceDetail = () => {
                           GST Number
                         </p>
                         <p className="font-mono text-sm text-gray-700 dark:text-gray-300">
-                          {invoice.customer_gst || "N/A"}
+                          {invoice.customer?.gst_number || "N/A"}
                         </p>
                       </div>
-                      <div className="sm:col-span-2 space-y-1">
+                      <div className=" space-y-1">
                         <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                           Address
                         </p>
@@ -1249,6 +1327,17 @@ const InvoiceDetail = () => {
                           <FiHome className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" />
                           <p className="text-gray-700 dark:text-gray-300">
                             {invoice.customer_address}
+                          </p>
+                        </div>
+                      </div>
+                      <div className=" space-y-1">
+                        <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                          Location
+                        </p>
+                        <div className="flex items-start gap-2">
+                          <FiHome className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" />
+                          <p className="text-gray-700 dark:text-gray-300">
+                            {invoice.customer?.city || "N/A"}
                           </p>
                         </div>
                       </div>
@@ -1338,9 +1427,6 @@ const InvoiceDetail = () => {
                                     ? item.discount
                                     : 0;
 
-
-                                    
-
                               return (
                                 <tr
                                   key={`product-${index}`}
@@ -1351,126 +1437,133 @@ const InvoiceDetail = () => {
                                   </td>
                                   <td className="px-6 py-4 min-w-[400px]">
                                     <div className="space-y-2 flex flex-row gap-3 justify-start items-center">
-                                       <div className="w-[80px] min-w-[80px] h-[80px] overflow-hidden shadow-[0px_0px_5px_#9c9b9b] min-h-[80px] bg-gradient-to-br from-blue-100 to-blue-200 dark:from-blue-900/30 dark:to-blue-800/30 rounded-lg flex items-center justify-center">
-                                         <img className="w-full h-full object-cover" src={item.product_image} />
-                                        </div>
+                                      <div className="w-[80px] min-w-[80px] h-[80px] overflow-hidden shadow-[0px_0px_5px_#9c9b9b] min-h-[80px] bg-gradient-to-br from-blue-100 to-blue-200 dark:from-blue-900/30 dark:to-blue-800/30 rounded-lg flex items-center justify-center">
+                                        <img
+                                          className="w-full h-full object-cover"
+                                          src={item.product_image}
+                                        />
+                                      </div>
                                       <div className="flex flex-col gap-1">
                                         <div className="flex items-center gap-2">
-                                       
-                                        <span className="font-medium text-gray-900 dark:text-white">
-                                          {item.product_name}
-                                        </span>
-                                      </div>
+                                          <span className="font-medium text-gray-900 dark:text-white">
+                                            {item.product_name}
+                                          </span>
+                                        </div>
 
-                                      {/* Display Attributes */}
-                                      {item.attributes &&
-                                        Array.isArray(item.attributes) &&
-                                        item.attributes.length > 0 && (
-                                          <div className="flex flex-wrap gap-1 mb-2">
-                                            
-                                            {item.attributes.map(
-                                              (attr, attrIdx) => {
-                                                if (
-                                                  typeof attr === "object" &&
-                                                  attr !== null
-                                                ) {
-                                                  return Object.entries(
-                                                    attr,
-                                                  ).map(
-                                                    (
-                                                      [key, value],
-                                                      entryIdx,
-                                                    ) => (
+                                        {/* Display Attributes */}
+                                        {item.attributes &&
+                                          Array.isArray(item.attributes) &&
+                                          item.attributes.length > 0 && (
+                                            <div className="flex flex-wrap gap-1 mb-2">
+                                              {item.attributes.map(
+                                                (attr, attrIdx) => {
+                                                  if (
+                                                    typeof attr === "object" &&
+                                                    attr !== null
+                                                  ) {
+                                                    return Object.entries(
+                                                      attr,
+                                                    ).map(
+                                                      (
+                                                        [key, value],
+                                                        entryIdx,
+                                                      ) => (
+                                                        <span
+                                                          key={`attr-${attrIdx}-${entryIdx}`}
+                                                          className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300"
+                                                        >
+                                                          {value}
+                                                        </span>
+                                                      ),
+                                                    );
+                                                  }
+                                                  return (
+                                                    <span
+                                                      key={`attr-${attrIdx}`}
+                                                      className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300"
+                                                    >
+                                                      {attr}
+                                                    </span>
+                                                  );
+                                                },
+                                              )}
+                                            </div>
+                                          )}
+
+                                        {/* Display Variants */}
+                                        {item.variants &&
+                                          Array.isArray(item.variants) &&
+                                          item.variants.length > 0 && (
+                                            <div className="flex flex-wrap gap-1 mb-2">
+                                              {item.variants.map(
+                                                (variant, variantIdx) => {
+                                                  const variantValues = [];
+                                                  if (variant.size)
+                                                    variantValues.push(
+                                                      ` ${variant.size}`,
+                                                    );
+                                                  if (variant.color)
+                                                    variantValues.push(
+                                                      `${variant.color}`,
+                                                    );
+                                                  if (variant.material)
+                                                    variantValues.push(
+                                                      `${variant.material}`,
+                                                    );
+                                                  if (variant.gender)
+                                                    variantValues.push(
+                                                      `${variant.gender}`,
+                                                    );
+                                                  if (variant.weight)
+                                                    variantValues.push(
+                                                      `${variant.weight}`,
+                                                    );
+
+                                                  // If variant is a string or has other properties
+                                                  if (
+                                                    variantValues.length ===
+                                                      0 &&
+                                                    typeof variant === "object"
+                                                  ) {
+                                                    Object.entries(
+                                                      variant,
+                                                    ).forEach(
+                                                      ([key, value]) => {
+                                                        if (
+                                                          key !== "id" &&
+                                                          key !== "user_id" &&
+                                                          key !==
+                                                            "product_id" &&
+                                                          key !==
+                                                            "created_at" &&
+                                                          key !==
+                                                            "updated_at" &&
+                                                          key !==
+                                                            "deleted_at" &&
+                                                          key !== "created_by"
+                                                        ) {
+                                                          variantValues.push(
+                                                            `${key}: ${value}`,
+                                                          );
+                                                        }
+                                                      },
+                                                    );
+                                                  }
+
+                                                  return variantValues.map(
+                                                    (val, valIdx) => (
                                                       <span
-                                                        key={`attr-${attrIdx}-${entryIdx}`}
-                                                        className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300"
+                                                        key={`variant-${variantIdx}-${valIdx}`}
+                                                        className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300"
                                                       >
-                                                         {value}
+                                                        {val}
                                                       </span>
                                                     ),
                                                   );
-                                                }
-                                                return (
-                                                  <span
-                                                    key={`attr-${attrIdx}`}
-                                                    className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300"
-                                                  >
-                                                    {attr}
-                                                  </span>
-                                                );
-                                              },
-                                            )}
-                                          </div>
-                                        )}
-
-                                      {/* Display Variants */}
-                                      {item.variants &&
-                                        Array.isArray(item.variants) &&
-                                        item.variants.length > 0 && (
-                                          <div className="flex flex-wrap gap-1 mb-2">
-                                            
-                                            {item.variants.map(
-                                              (variant, variantIdx) => {
-                                                const variantValues = [];
-                                                if (variant.size)
-                                                  variantValues.push(
-                                                    ` ${variant.size}`,
-                                                  );
-                                                if (variant.color)
-                                                  variantValues.push(
-                                                    `${variant.color}`,
-                                                  );
-                                                if (variant.material)
-                                                  variantValues.push(
-                                                    `${variant.material}`,
-                                                  );
-                                                if (variant.gender)
-                                                  variantValues.push(
-                                                    `${variant.gender}`,
-                                                  );
-                                                if (variant.weight)
-                                                  variantValues.push(
-                                                    `${variant.weight}`,
-                                                  );
-
-                                                // If variant is a string or has other properties
-                                                if (
-                                                  variantValues.length === 0 &&
-                                                  typeof variant === "object"
-                                                ) {
-                                                  Object.entries(
-                                                    variant,
-                                                  ).forEach(([key, value]) => {
-                                                    if (
-                                                      key !== "id" &&
-                                                      key !== "user_id" &&
-                                                      key !== "product_id" &&
-                                                      key !== "created_at" &&
-                                                      key !== "updated_at" &&
-                                                      key !== "deleted_at" &&
-                                                      key !== "created_by"
-                                                    ) {
-                                                      variantValues.push(
-                                                        `${key}: ${value}`,
-                                                      );
-                                                    }
-                                                  });
-                                                }
-
-                                                return variantValues.map(
-                                                  (val, valIdx) => (
-                                                    <span
-                                                      key={`variant-${variantIdx}-${valIdx}`}
-                                                      className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300"
-                                                    >
-                                                      {val}
-                                                    </span>
-                                                  ),
-                                                );
-                                              },
-                                            )}
-                                          </div>
-                                        )}
+                                                },
+                                              )}
+                                            </div>
+                                          )}
                                       </div>
                                     </div>
                                   </td>
