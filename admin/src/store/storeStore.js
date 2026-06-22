@@ -1,3 +1,4 @@
+// store/storeStore.js
 import { create } from 'zustand'
 import { storeAPI } from '../services/storeService'
 
@@ -32,6 +33,8 @@ const useStoreStore = create((set, get) => ({
   filters: {
     search: '',
   },
+  // Store the current userId
+  currentUserId: null,
 
   // Cache state
   lastFetchTime: null,
@@ -39,6 +42,9 @@ const useStoreStore = create((set, get) => ({
 
   // Fetch stores by user ID
   fetchStores: async (userId, page = 1, filters = {}) => {
+    // Store the userId for later use
+    set({ currentUserId: userId })
+    
     const cacheKey = JSON.stringify({ userId, page, filters })
     const currentState = get()
     
@@ -60,12 +66,13 @@ const useStoreStore = create((set, get) => ({
         currentPage: page,
         loading: false,
         cacheKey,
-        lastFetchTime: Date.now()
+        lastFetchTime: Date.now(),
+        currentUserId: userId,
       })
       return
     }
 
-    set({ loading: true, cacheKey })
+    set({ loading: true, cacheKey, currentUserId: userId })
     try {
       const response = await storeAPI.getByUserId(userId, filters.search)
       console.log('API Response in store:', response)
@@ -86,7 +93,8 @@ const useStoreStore = create((set, get) => ({
         totalStores: storesArray.length,
         currentPage: page,
         loading: false,
-        lastFetchTime: Date.now()
+        lastFetchTime: Date.now(),
+        currentUserId: userId,
       })
       return response.data
     } catch (error) {
@@ -95,7 +103,8 @@ const useStoreStore = create((set, get) => ({
         stores: [], 
         totalStores: 0, 
         loading: false,
-        error: error.message || 'Failed to fetch stores'
+        error: error.message || 'Failed to fetch stores',
+        currentUserId: userId,
       })
     }
   },
@@ -214,9 +223,14 @@ const useStoreStore = create((set, get) => ({
       
       // Debounce API call
       setTimeout(() => {
-        const { stores } = get()
-        const userId = stores[0]?.user_id || '1'
-        get().fetchStores(userId, 1, newFilters)
+        // Use the stored userId instead of trying to extract from stores
+        const userId = get().currentUserId
+        if (userId) {
+          console.log('🔍 Searching stores with userId:', userId, 'and filters:', newFilters)
+          get().fetchStores(userId, 1, newFilters)
+        } else {
+          console.warn('No userId available for search, skipping fetch')
+        }
       }, 300)
     } else {
       set({ filters: newFilters })

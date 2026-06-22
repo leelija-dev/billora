@@ -158,15 +158,7 @@ const Units = () => {
         </span>
       ),
     },
-    {
-      header: 'Created By',
-      accessor: 'created_by',
-      cell: (value) => (
-        <span className="text-gray-600 dark:text-gray-400">
-          {value || '-'}
-        </span>
-      ),
-    },
+ 
     {
       header: 'Actions',
       accessor: 'actions',
