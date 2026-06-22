@@ -120,7 +120,7 @@ class StoreController extends Controller
         ]);
         // dd($store);
         $folderPath = public_path('logos');
-        Log::info('logo path' . $store['logo']);
+        // Log::info('logo path' . $store['logo']);
         // Create folder if not exists
         // if (!File::exists($folderPath)) {
         //     File::makeDirectory($folderPath, 0777, true, true);

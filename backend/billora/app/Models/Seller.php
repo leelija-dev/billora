@@ -16,7 +16,8 @@ class Seller extends Model
         'address',
         'city',
         'state',
-        'pincode'
+        'pincode',
+        'due_amount'
     ];
     public function sellerProducts(){
         return $this->hasMany(SellerProducts::class);   
