@@ -1,11 +1,11 @@
+// services/gstService.js
 import { apiClient } from './apiClient';
 
 export const gstAPI = {
-  // Get GST collection details for a registered user
-  getGstCollection: async (userId) => {
+  getGstCollection: async (userId, params = {}) => {
     try {
-      console.log('📊 Fetching GST collection for user:', userId);
-      const response = await apiClient.get(`/gst-collection/${userId}`);
+      console.log('📊 Fetching GST collection for user:', userId, params);
+      const response = await apiClient.get(`/gst-collection/${userId}`, { params });
       console.log('📊 GST collection fetched successfully:', response.data);
       return response;
     } catch (error) {
@@ -14,20 +14,6 @@ export const gstAPI = {
     }
   },
 
-  // Get all products for GST collection
-  getAllProducts: async (productId) => {
-    try {
-      console.log('📦 Fetching all products for GST:', productId);
-      const response = await apiClient.get(`/gst-collection/all-products/${productId}`);
-      console.log('📦 Products fetched successfully:', response.data);
-      return response;
-    } catch (error) {
-      console.error('❌ Failed to fetch products:', error);
-      throw error.response?.data || error.message;
-    }
-  },
-
-  // Update government GST payment status
   updateGstPaymentStatus: async (collectionId, statusData) => {
     try {
       console.log('💰 Updating GST payment status for collection:', collectionId);

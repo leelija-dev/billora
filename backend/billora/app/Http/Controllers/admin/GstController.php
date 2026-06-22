@@ -189,8 +189,8 @@ class GstController extends Controller
 
         $toDate = now();
     }
-
-    $cacheKey = "gst_collection_{$user}_{$fromDate->format('Ymd')}_{$toDate->format('Ymd')}";
+    $page=$request->page ?? 1;
+    $cacheKey = "gst_collection_{$user}_page{$page}_{$fromDate->format('Ymd')}_{$toDate->format('Ymd')}";
 
     $fromCache = Cache::tags(['gst_collection_user_' . $user])->has($cacheKey);
 
@@ -285,7 +285,7 @@ class GstController extends Controller
                 ->where('invoice_status', 'completed')
                 ->whereBetween('created_at', [$fromDate, $toDate])
                 ->orderByDesc('created_at')
-                ->get();
+                ->paginate(15);
 
             $allProducts = GstCollection::where('gst_collection.user_id', $id)
                 ->whereBetween('gst_collection.created_at', [$fromDate, $toDate])
@@ -304,7 +304,7 @@ class GstController extends Controller
                     'gst_collection.product_id',
                     'products.name'
                 )
-                ->get();
+                ->paginate(15);
 
             return [
                 'status' => true,
