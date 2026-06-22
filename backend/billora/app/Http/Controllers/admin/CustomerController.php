@@ -519,7 +519,7 @@ class CustomerController extends Controller
 
             // Frontend URL
             $resetUrl =
-                env('FRONTEND_URL') .
+                env('FRONTEND_URL','https://thefastbill.com') .
                 "/reset-password?token=" . $token;
             $app_name = config('app.name');
             
