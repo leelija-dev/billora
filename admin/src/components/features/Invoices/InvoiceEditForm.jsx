@@ -49,7 +49,7 @@ const normalizePaymentMethod = (method) => {
     banktransfer: "Bank Transfer",
     cheque: "Cheque",
     check: "Cheque",
-     "non paid": "Non Paid",
+    "non paid": "Non Paid",
   };
   return methodMap[methodLower] || "Cash";
 };
@@ -390,13 +390,13 @@ const InvoiceEditForm = ({
               const productResponse = await productsAPI.getById(
                 item.product_id,
               );
-              
+
               if (
                 productResponse.data?.status === true &&
                 productResponse.data?.data
               ) {
                 product = productResponse.data.data;
-                console.log('Fetched product data:', {
+                console.log("Fetched product data:", {
                   id: product.id,
                   name: product.name,
                   attributes: product.attributes,
@@ -553,6 +553,7 @@ const InvoiceEditForm = ({
             variant_info: item.variant_info || stockEntry?.variant_info || null,
             attributes: productAttributes,
             variants: productVariants,
+            original_gst_percentage: gst,
           });
         }
         console.log("Mapped products with stock info:", mappedProducts);
@@ -954,6 +955,7 @@ const InvoiceEditForm = ({
       variant_info: hasStockPermission ? product.variant_info : null,
       attributes: product.attributes || [],
       variants: product.variants || [],
+      original_gst_percentage: gst,
       is_package: false,
     };
 
@@ -990,6 +992,7 @@ const InvoiceEditForm = ({
     setLineItems((prev) => {
       const next = [...prev];
       const row = { ...next[index] };
+
       if (field === "quantity") {
         const newQuantity = parseFloat(value) || 0;
         if (
@@ -1004,11 +1007,26 @@ const InvoiceEditForm = ({
         }
         row.quantity = newQuantity;
         row.item_count = newQuantity;
-      } else if (field === "price" || field === "gst" || field === "discount") {
+      } else if (field === "price" || field === "discount") {
         row[field] = parseFloat(value) || 0;
+      } else if (field === "gst") {
+        const numValue = parseFloat(value) || 0;
+        const originalGst = row.original_gst_percentage || 0;
+
+        // If trying to reduce GST below original, show warning
+        if (originalGst > 0 && numValue < originalGst) {
+          toast.error(
+            `⚠️ GST cannot be reduced below original GST (${originalGst}%). Current: ${numValue}%`,
+            { duration: 3000 },
+          );
+          // Allow the user to set it, but validation will catch it on submit
+        }
+
+        row.gst = numValue;
       } else {
         row[field] = value;
       }
+
       row.total_price = calculateItemTotal(
         row.price,
         row.quantity,
@@ -1120,6 +1138,26 @@ const InvoiceEditForm = ({
         parseFloat(formData.payment_amount) <= 0)
     ) {
       toast.error("Please enter a valid payment amount for semi-paid option");
+      return;
+    }
+
+    // NEW: Check for GST reduction below actual GST
+    const gstIssues = productLinesOnly.filter((item) => {
+      const originalGst = item.original_gst_percentage || 0;
+      const currentGst = parseFloat(item.gst) || 0;
+      return originalGst > 0 && currentGst < originalGst;
+    });
+
+    if (gstIssues.length > 0) {
+      const issueMessages = gstIssues.map(
+        (item) =>
+          `${item.product_name}: ${item.gst}% < ${item.original_gst_percentage || 0}%`,
+      );
+
+      toast.error(
+        `❌ Cannot save invoice. ${gstIssues.length} item(s) have GST below the original GST percentage:\n${issueMessages.join("\n")}`,
+        { duration: 5000 },
+      );
       return;
     }
 
@@ -1884,15 +1922,20 @@ const InvoiceEditForm = ({
                             item.attributes.length > 0 && (
                               <div className="flex flex-wrap gap-1 mt-1">
                                 {item.attributes.map((attr, attrIdx) => {
-                                  if (typeof attr === "object" && attr !== null) {
-                                    return Object.entries(attr).map(([key, value]) => (
-                                      <span
-                                        key={`${attrIdx}-${key}`}
-                                        className="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300"
-                                      >
-                                        {key}: {value}
-                                      </span>
-                                    ));
+                                  if (
+                                    typeof attr === "object" &&
+                                    attr !== null
+                                  ) {
+                                    return Object.entries(attr).map(
+                                      ([key, value]) => (
+                                        <span
+                                          key={`${attrIdx}-${key}`}
+                                          className="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300"
+                                        >
+                                          {key}: {value}
+                                        </span>
+                                      ),
+                                    );
                                   }
                                   return (
                                     <span
@@ -1911,22 +1954,36 @@ const InvoiceEditForm = ({
                             Array.isArray(item.variants) &&
                             item.variants.length > 0 && (
                               <div className="flex flex-wrap gap-1 mt-1">
-                                {item.variants.slice(0, 2).map((variant, variantIdx) => {
-                                  const variantValues = [];
-                                  if (variant.size) variantValues.push(`Size: ${variant.size}`);
-                                  if (variant.color) variantValues.push(`Color: ${variant.color}`);
-                                  if (variant.material) variantValues.push(`Material: ${variant.material}`);
-                                  if (variant.gender) variantValues.push(`Gender: ${variant.gender}`);
+                                {item.variants
+                                  .slice(0, 2)
+                                  .map((variant, variantIdx) => {
+                                    const variantValues = [];
+                                    if (variant.size)
+                                      variantValues.push(
+                                        `Size: ${variant.size}`,
+                                      );
+                                    if (variant.color)
+                                      variantValues.push(
+                                        `Color: ${variant.color}`,
+                                      );
+                                    if (variant.material)
+                                      variantValues.push(
+                                        `Material: ${variant.material}`,
+                                      );
+                                    if (variant.gender)
+                                      variantValues.push(
+                                        `Gender: ${variant.gender}`,
+                                      );
 
-                                  return variantValues.map((val, valIdx) => (
-                                    <span
-                                      key={`${variantIdx}-${valIdx}`}
-                                      className="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300"
-                                    >
-                                      {val}
-                                    </span>
-                                  ));
-                                })}
+                                    return variantValues.map((val, valIdx) => (
+                                      <span
+                                        key={`${variantIdx}-${valIdx}`}
+                                        className="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300"
+                                      >
+                                        {val}
+                                      </span>
+                                    ));
+                                  })}
                                 {item.variants.length > 2 && (
                                   <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400">
                                     +{item.variants.length - 2} more
@@ -1997,7 +2054,7 @@ const InvoiceEditForm = ({
                           />
                         )}
                       </td>
-                      <td className="py-3 text-center">
+                      <td className="py-3 text-center relative">
                         {item.is_package ? (
                           <span className="text-sm text-gray-400">—</span>
                         ) : (
@@ -2015,7 +2072,13 @@ const InvoiceEditForm = ({
                               onChange={(e) =>
                                 handleUpdateItem(index, "gst", e.target.value)
                               }
-                              className="text-sm text-center min-w-[90px] w-[90px]"
+                              className={`text-sm text-center min-w-[90px] w-[90px] ${
+                                item.original_gst_percentage > 0 &&
+                                parseFloat(item.gst) <
+                                  item.original_gst_percentage
+                                  ? "border-red-500 bg-red-50 dark:bg-red-900/20"
+                                  : ""
+                              }`}
                             />
                             <button
                               type="button"
@@ -2026,6 +2089,15 @@ const InvoiceEditForm = ({
                             </button>
                           </div>
                         )}
+                        {!item.is_package &&
+                          item.original_gst_percentage > 0 &&
+                          parseFloat(item.gst) <
+                            item.original_gst_percentage && (
+                            <div className="absolute w-full bottom-[10px]"><p className="text-xs text-red-600 dark:text-red-400 text-center mt-1">
+                              GST ({item.original_gst_percentage}
+                              %)
+                            </p></div>
+                          )}
                       </td>
                       <td className="py-3 text-center">
                         {item.is_package ? (
@@ -2072,7 +2144,7 @@ const InvoiceEditForm = ({
                         >
                           <FiTrash2 className="w-4 h-4" />
                         </button>
-                       </td>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -2089,61 +2161,64 @@ const InvoiceEditForm = ({
             </h3>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <div className="space-y-4">
-               <Select
-  label="Payment method"
-  value={formData.payment_method}
-  onChange={(e) =>
-    setFormData((p) => ({
-      ...p,
-      payment_method: e.target.value,
-    }))
-  }
-  options={[
-    { value: "Cash", label: "Cash" },
-    { value: "Card", label: "Card" },
-    { value: "UPI", label: "UPI" },
-    { value: "Bank Transfer", label: "Bank Transfer" },
-    { value: "Cheque", label: "Cheque" },
-    { value: "Non Paid", label: "Non Paid" },
-  ]}
-  disabled={formData.payment_status === "non_paid"}
-/>
                 <Select
-  label="Payment status"
-  value={formData.payment_status}
-  onChange={(e) => {
-    const newStatus = e.target.value;
-    let newPaymentMethod = formData.payment_method;
-    
-    if (newStatus === "non_paid") {
-      newPaymentMethod = "Non Paid";
-    } else if (newStatus === "semi_paid" || newStatus === "paid") {
-      // Default to Cash for paid/semi-paid
-      if (formData.payment_method === "Non Paid") {
-        newPaymentMethod = "Cash";
-      } else {
-        newPaymentMethod = formData.payment_method || "Cash";
-      }
-    }
-    
-    setFormData((p) => ({
-      ...p,
-      payment_status: newStatus,
-      payment_amount:
-        newStatus === "paid"
-          ? totals.totalAmount
-          : newStatus === "semi_paid"
-            ? p.payment_amount
-            : 0,
-      payment_method: newPaymentMethod,
-    }));
-  }}
-  options={[
-    { value: "paid", label: "Full paid" },
-    { value: "semi_paid", label: "Semi paid" },
-    { value: "non_paid", label: "Non paid" },
-  ]}
-/>
+                  label="Payment method"
+                  value={formData.payment_method}
+                  onChange={(e) =>
+                    setFormData((p) => ({
+                      ...p,
+                      payment_method: e.target.value,
+                    }))
+                  }
+                  options={[
+                    { value: "Cash", label: "Cash" },
+                    { value: "Card", label: "Card" },
+                    { value: "UPI", label: "UPI" },
+                    { value: "Bank Transfer", label: "Bank Transfer" },
+                    { value: "Cheque", label: "Cheque" },
+                    { value: "Non Paid", label: "Non Paid" },
+                  ]}
+                  disabled={formData.payment_status === "non_paid"}
+                />
+                <Select
+                  label="Payment status"
+                  value={formData.payment_status}
+                  onChange={(e) => {
+                    const newStatus = e.target.value;
+                    let newPaymentMethod = formData.payment_method;
+
+                    if (newStatus === "non_paid") {
+                      newPaymentMethod = "Non Paid";
+                    } else if (
+                      newStatus === "semi_paid" ||
+                      newStatus === "paid"
+                    ) {
+                      // Default to Cash for paid/semi-paid
+                      if (formData.payment_method === "Non Paid") {
+                        newPaymentMethod = "Cash";
+                      } else {
+                        newPaymentMethod = formData.payment_method || "Cash";
+                      }
+                    }
+
+                    setFormData((p) => ({
+                      ...p,
+                      payment_status: newStatus,
+                      payment_amount:
+                        newStatus === "paid"
+                          ? totals.totalAmount
+                          : newStatus === "semi_paid"
+                            ? p.payment_amount
+                            : 0,
+                      payment_method: newPaymentMethod,
+                    }));
+                  }}
+                  options={[
+                    { value: "paid", label: "Full paid" },
+                    { value: "semi_paid", label: "Semi paid" },
+                    { value: "non_paid", label: "Non paid" },
+                  ]}
+                />
                 {formData.payment_status === "semi_paid" && (
                   <>
                     <Input
