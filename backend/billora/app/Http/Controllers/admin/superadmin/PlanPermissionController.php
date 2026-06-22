@@ -10,7 +10,7 @@ use App\Models\PlanPermissionWithCustomerSidebar;
 use Google\Service\Monitoring\Custom;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
-
+use Illuminate\Support\Facades\Cache;
 class PlanPermissionController extends Controller
 {
     public function index()
@@ -102,7 +102,7 @@ class PlanPermissionController extends Controller
 
             // delete old permissions
             PlanPermissionWithCustomerSidebar::where('plan_permission_id', $id)->delete();
-
+            Cache::tags('plan_details')->flush();
             // insert new permissions
             foreach ($data['permissions'] as $perm) {
                 PlanPermissionWithCustomerSidebar::create([

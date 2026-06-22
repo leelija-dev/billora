@@ -15,6 +15,7 @@ use App\Models\InputPermission;
 use App\Models\PlanBusinessType;
 use App\Models\ProductImages;
 use App\Models\ProductVariant;
+use App\Models\StockHistory;
 use App\Models\Store;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
@@ -465,6 +466,15 @@ class ProductsController extends Controller
                     $stocks['user_id'] = $user;
                     $stocks['created_by'] = $user;
                     $stock = Stocks::create($stocks);
+                    if($stock){
+                        $stockHistory = StockHistory::create([
+                            'user_id' => $user,
+                            'product_id'=> $product->id,
+                            'stock_id'=> $stock->id,
+                            'quantity'=> 0,
+                            'created_by'=> $user
+                        ]);
+                    }
                     $stocks = Stocks::where('user_id', $user)->get();
                     // Log::info('stocks created' . $stocks);
                 }

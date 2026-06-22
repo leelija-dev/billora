@@ -178,6 +178,9 @@ class CustomerController extends Controller
             }
 
             $customer = Customers::findOrFail($id);
+            $id = Crypt::encryptString($customer->id);
+            $qrUrl = env('FRONTEND_ADMIN_URL', 'https://thefastbill.com') . '/products/' . $id;
+            $customer['qrUrl'] = $qrUrl;
             return response()->json([
                 'status' => true,
                 'message' => 'User Details',
