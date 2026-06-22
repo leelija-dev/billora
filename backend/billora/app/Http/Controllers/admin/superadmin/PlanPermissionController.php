@@ -102,7 +102,7 @@ class PlanPermissionController extends Controller
 
             // delete old permissions
             PlanPermissionWithCustomerSidebar::where('plan_permission_id', $id)->delete();
-
+            Cache::tags('plan_details')->flush();
             // insert new permissions
             foreach ($data['permissions'] as $perm) {
                 PlanPermissionWithCustomerSidebar::create([

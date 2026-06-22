@@ -455,7 +455,7 @@ class InvoiceController extends Controller
                         'message' => 'You do not have any active plan. Please upgrade your plan.'
                     ]);
                 }
-                $bill = Invoice::with('invoiceItems','invoiceItems.product.unit','invoiceItems.product.brand','packages','store','customer','invoiceItems.stock')
+                $bill = Invoice::with('invoiceItems','invoiceItems.product.variants','invoiceItems.product.unit','invoiceItems.product.brand','packages','store','customer','invoiceItems.stock')
                     ->where('user_id', $userId)
                     ->where('id', $id)
                     ->first();
@@ -533,6 +533,7 @@ class InvoiceController extends Controller
                     'invoiceItems.product.unit',
                     'invoiceItems.product',
                     'invoiceItems.product.brand',
+                    'invoiceItems.product.variants',
                     'packages',
                     'customer',
                     'billPaymentHistory'

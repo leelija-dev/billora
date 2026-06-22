@@ -8,6 +8,7 @@ use App\Models\Stocks;
 use App\Models\Products;
 use App\Models\Unit;
 use App\Models\Customers;
+use App\Models\StockHistory;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Cache;
@@ -35,7 +36,7 @@ class StocksController extends Controller
 
             $cacheKey = "stock_list_" . Auth::user()->id . "_" . md5($request->search . '_' . $request->page);
             
-            $formCache = Cache::tags(['stock_user_' . Auth::user()->id])->has($cacheKey);
+            $formCache = Cache::tags(['stock_user_' . Auth::user()->id.'_page_'.$request->page])->has($cacheKey);
             if ($hasStockPermission) {
                 $user = Auth::user()->id; // authenticated user
                 $search = $request->search;
@@ -82,7 +83,7 @@ class StocksController extends Controller
     {
         try {
             // check permission 
-            Cache::tags(['stock_user_' . Auth::user()->id])->flush();
+            Cache::tags(['stock_user_' . Auth::user()->id.'_page_' ,1])->flush();
             $customer =  Customers::findOrFail(Auth::user()->id);
             $permissions = DB::table('plan_permission_details as ppd')
                 ->join('plan_permission as pp', 'pp.id', '=', 'ppd.permission_id')
@@ -167,9 +168,22 @@ class StocksController extends Controller
                 $stocks['user_id'] = $user;
                 $stocks['created_by'] = $user;
                 $stock = Stocks::create($stocks);
+                $stockHistory = StockHistory::create([
+                            'user_id' => $user,
+                            'product_id'=> $stocks['product_id'],
+                            'stock_id'=> $stock->id,
+                            'quantity'=> $stocks['quantity'],
+                            'created_by'=> $user,
+                            'seller_id' => null,
+                            'price' => $stocks['purchase_price'], // this is for purchase price 
+                            'gst'  => null,
+                            'discount' => null
+                           
+                        ]);
                 // Log::info('Stock created: ' . json_encode($stock));
                 $stocks = Stocks::where('user_id', $user)->get();
-                Cache::tags(['stock_user_' . $user])->flush();
+                Cache::tags(['stock_user_' . $user.'_page_'.$request->page ?? 1])->flush();
+                // 'stock_user_' . Auth::user()->id.'page_id'.$request->page
                 return response()->json([
                     'status' => true,
                     'message' => 'Stock created successfully',
@@ -192,7 +206,8 @@ class StocksController extends Controller
     {
         try {
             //check authenticated user
-            Cache::tags(['stock_user_' . Auth::user()->id])->flush();
+            Cache::tags(['stock_user_' . Auth::user()->id.'_page_1'])->flush();
+            
             if (!Auth::check()) {
                 return response()->json([
                     'status' => false,
@@ -296,7 +311,8 @@ class StocksController extends Controller
                 //     'selling_price' => $data['selling_price'],
                 //     'purchase_price' => $data['purchase_price']
                 // ]);
-                Cache::tags(['stock_user_' . $user,'products_user_'.$user])->flush();
+                // Cache::tags(['stock_user_' . $user,'products_user_'.$user])->flush();
+                 Cache::tags(['stock_user_' . $user.'_page_'.$request->page ?? 1,'products_user_'.$user])->flush();
                 return response()->json([
                     'status' => true,
                     'message' => 'edit stock',
@@ -354,7 +370,8 @@ class StocksController extends Controller
                     ->where('user_id', $user_id)
                     ->firstOrFail();
                 $stock->delete();
-                Cache::tags(['stock_user_' . Auth::user()->id,'products_user_'.$user])->flush();
+                Cache::tags(['stock_user_' . Auth::user()->id.'_page_' ,$request->page ?? 1,'products_user_'.$user])->flush();
+                // Cache::tags(['stock_user_' . Auth::user()->id.'_page_' ,1])->flush();
                 return response()->json([
                     'status' => true,
                     'message' => 'Stock Deleted Successfully',
@@ -415,7 +432,15 @@ class StocksController extends Controller
                 $stock->update([
                     'quantity' => ((float)$stock->quantity + (float)$data['quantity']),
                 ]);
-                Cache::tags(['stock_user_' . Auth::user()->id,'products_user_'.$user])->flush();
+                $stockHistory = StockHistory::create([
+                            'user_id' => $user,
+                            'product_id'=> $stock->product_id,
+                            'stock_id'=> $stock->id,
+                            'quantity'=> $data['quantity'],
+                            'created_by'=> $user
+                ]);
+                Cache::tags(['stock_user_' . Auth::user()->id.'_page_' ,$request->page ?? 1,'products_user_'.$user])->flush();
+                
                 return response()->json([
                     'status' => true,
                     'message' => 'Stock Updated Successfully',
