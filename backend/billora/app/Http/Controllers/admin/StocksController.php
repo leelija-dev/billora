@@ -141,7 +141,7 @@ class StocksController extends Controller
             'selling_gst_percentage' => 'nullable',
             'purchase_gst_percentage' => 'nullable',
             //seller products
-            'seller_id'      => 'required',
+            'seller_id'      => 'nullable',
             'gst_percentage' => 'nullable',
             'total_amount'   => 'nullable',
             'paid_amount'    => 'nullable',
@@ -189,10 +189,10 @@ class StocksController extends Controller
                     'stock_id' => $stock->id,
                     'quantity' => $stocks['quantity'],
                     'created_by' => $user,
-                    'seller_id' => null,
+                    'seller_id' => $stocks['seller_id'],
                     'price' => $stocks['purchase_price'], // this is for purchase price 
-                    'gst'  => null,
-                    'discount' => null
+                    'gst'  =>$stocks['purchase_gst_percentage'],
+                    'discount' => 0,
 
                 ]);
                 /*---------------Seller Details---------------*/
@@ -218,13 +218,13 @@ class StocksController extends Controller
                     'seller_id'  => $stocks['seller_id'],
                     'product_id' => $stocks['product_id'],
                     'stock_id'   => $stock->id,
-                    'qty'        => $stocks['quantity'],
-                    'purchase_price' => $stocks['purchase_price'],
-                    'gst_percentage' => $stocks['gst_percentage'],
-                    'total_amount'   => $stocks['total_amount'],
-                    'paid_amount'    => $stocks['paid_amount'],
-                    'invoice_number' => $stocks['invoice_number'],
-                    'invoice_date'   => $stocks['invoice_date'],
+                    'qty'        => $stocks['quantity'] ?? 0,
+                    'purchase_price' => $stocks['purchase_price'] ?? 0,
+                    'gst_percentage' => $stocks['purchase_gst_percentage'] ?? 0,
+                    'total_amount'   => $stocks['total_amount'] ?? 0,
+                    'paid_amount'    => $stocks['paid_amount'] ?? 0,
+                    'invoice_number' => $stocks['invoice_number'] ?? 0,
+                    'invoice_date'   => $stocks['invoice_date'] ?? 0,
                     'invoice_image'  => $upload['secure_url'] ?? null,
                     'invoice_image_public_url' => $upload['public_id'] ?? null
                 ]);
