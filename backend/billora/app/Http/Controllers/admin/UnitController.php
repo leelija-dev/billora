@@ -23,9 +23,11 @@ class UnitController extends Controller
         }
         $user = Auth::id();
         $sartTime = microtime(true);
-        $cacheKey = "unit_list_{$user}";
-        $fromCache = Cache::tags(['unit_user_' . $user])->has($cacheKey);
+        // $cacheKey = "unit_list_{$user}";
+        $page = $request->page ?? 1;
         $search = $request->search;
+        $cacheKey = "unit_list_{$user}_page_{$page}_search_" . md5($search);
+        $fromCache = Cache::tags(['unit_user_' . $user])->has($cacheKey);
         $units = Cache::tags(['unit_user_'.$user])->remember($cacheKey,600, function () use ($user, $search) {
         return Unit::where('user_id', $user)
             ->when($search, function ($query) use ($search) {
