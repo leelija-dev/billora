@@ -147,7 +147,7 @@ class GstController extends Controller
     // }
     public function index(Request $request, $id)
 {
-    $user = Auth::id();
+    $user = Auth::user()->id;
 
     if ($user != $id) {
         return response()->json([
@@ -206,11 +206,7 @@ class GstController extends Controller
 
             $hasStockPermission = $permissions->contains('stock-management');
 
-            /*
-            |--------------------------------------------------------------------------
-            | GST OUT = Purchase GST
-            |--------------------------------------------------------------------------
-            */
+            /*------------ GST OUT = Purchase GST ------------*/
             $gstOut = 0;
 
             if ($hasStockPermission) {
@@ -234,7 +230,7 @@ class GstController extends Controller
 
             } else {
 
-                $invoiceItems = InvoiceItems::with('product')
+                $invoiceItems = InvoiceItems::with('product','invoice')
                     ->where('user_id', $id)
                     ->where('status', 'completed')
                     ->whereBetween('created_at', [$fromDate, $toDate])
@@ -253,14 +249,10 @@ class GstController extends Controller
                 }
             }
 
-            /*
-            |--------------------------------------------------------------------------
-            | GST IN = Selling GST
-            |--------------------------------------------------------------------------
-            */
+            /*----------------------- GST IN = Selling GST -----------------------*/
             $gstIn = 0;
 
-            $invoiceItems = InvoiceItems::with('product')
+            $invoiceItems = InvoiceItems::with('product','invoice')
                 ->where('user_id', $id)
                 ->where('status', 'completed')
                 ->whereBetween('created_at', [$fromDate, $toDate])
@@ -284,6 +276,7 @@ class GstController extends Controller
             $gstCollection = GstCollection::where('user_id', $id)
                 ->where('invoice_status', 'completed')
                 ->whereBetween('created_at', [$fromDate, $toDate])
+                ->with('invoice:id,invoice_number')
                 ->orderByDesc('created_at')
                 ->paginate(15);
 

@@ -18,4 +18,8 @@ class StockHistory extends Model
         'quantity',
         'created_by'
     ];
+    public function stock()
+    {
+        return $this->belongsTo(Stocks::class, 'stock_id');
+    }
 }

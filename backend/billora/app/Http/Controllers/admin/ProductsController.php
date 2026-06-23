@@ -447,6 +447,8 @@ class ProductsController extends Controller
                     'selling_price'     => $product->selling_price ?? 0,
                     'product_package_id' => null,
                     'purchase_price'    => $product->purchase_price ?? 0,
+                    'purchase_gst_percentage' => $product->purchase_gst_percentage ?? 0,
+                    'selling_gst_percentage' => $product->gst_percentage ?? 0,
                     'unit_id'           => $product->unit_id,
 
                 ];
@@ -471,6 +473,7 @@ class ProductsController extends Controller
                             'user_id' => $user,
                             'product_id'=> $product->id,
                             'stock_id'=> $stock->id,
+                            // 'gst' => $product->purchase_gst_percentage,
                             'quantity'=> 0,
                             'created_by'=> $user
                         ]);
