@@ -1769,9 +1769,23 @@ const InvoiceEditForm = ({
                                   {product.price.toFixed(2)}
                                 </div>
                                 <div className="text-xs text-gray-500 dark:text-gray-400 space-y-1 mt-2">
+                                  {hasStockPermission && product.stock_id ? (
+                                    <div className="text-xs text-blue-600 dark:text-blue-400 font-medium">
+                                      📦 Stock Price
+                                    </div>
+                                  ) : (
+                                    <div className="text-xs text-gray-500 dark:text-gray-400">
+                                      🏷️ Product Price
+                                    </div>
+                                  )}
                                   {product.gst_percentage > 0 && (
                                     <div>
                                       GST: {product.gst_percentage.toFixed(1)}%
+                                      {hasStockPermission && product.stock_id && (
+                                        <span className="text-blue-600 dark:text-blue-400 ml-1">
+                                          (Stock)
+                                        </span>
+                                      )}
                                     </div>
                                   )}
                                   {product.discount_percentage > 0 && (

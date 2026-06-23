@@ -6,14 +6,14 @@ export const stocksAPI = {
     const params = new URLSearchParams();
     
     if (search) {
-      params.append('search', encodeURIComponent(search));
+      params.append('search', search.trim().replace(/\s+/g, '-'));
     }
     
     if (page) {
       params.append('page', page);
     }
-    
     const queryString = params.toString();
+   
     const url = queryString ? `/stocks?${queryString}` : '/stocks';
     
     return apiClient.get(url);
