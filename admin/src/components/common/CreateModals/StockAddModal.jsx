@@ -27,6 +27,7 @@ const StockAddModal = ({
   })
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [selectedStock, setSelectedStock] = useState(null)
+  const [validationError, setValidationError] = useState('')
 
   // Reset form when product changes
   useEffect(() => {
@@ -46,8 +47,23 @@ const StockAddModal = ({
       })
       
       setSelectedStock(defaultStock)
+      setValidationError('')
     }
   }, [product, user, currentStock])
+
+  // Validate numeric input - only allows digits and decimal point
+  const validateNumericInput = (value) => {
+    // Allow empty string
+    if (value === '' || value === null || value === undefined) {
+      return true
+    }
+    
+    // Check if the value matches the pattern for positive numbers (integer or decimal)
+    // Allows: 123, 123.45, 0, 0.5
+    // Disallows: abc, 123abc, 12.34.56, -123, etc.
+    const numericRegex = /^[0-9]*\.?[0-9]*$/
+    return numericRegex.test(value)
+  }
 
   const handleStockSelect = (stockId, stock) => {
     console.log('Stock selected:', stockId, stock)
@@ -70,9 +86,19 @@ const StockAddModal = ({
       console.log('Updated form data:', newFormData)
       return newFormData
     })
+    setValidationError('')
   }
 
   const handleStockChange = (value) => {
+    // Validate input - only allow digits and decimal point
+    if (!validateNumericInput(value) && value !== '') {
+      setValidationError('Please enter only numbers (digits and decimal point allowed)')
+      return
+    }
+    
+    // Clear any previous validation errors
+    setValidationError('')
+    
     // Parse the value as a number, default to 0 if invalid
     const stockToAdd = parseFloat(value) || 0
     
@@ -93,8 +119,20 @@ const StockAddModal = ({
     
     const quantityToAdd = parseFloat(formData.stock_to_add)
     
-    if (!quantityToAdd || quantityToAdd <= 0) {
-      toast.error('Please enter a valid quantity to add')
+    // Validate quantity
+    if (formData.stock_to_add === '' || formData.stock_to_add === null || formData.stock_to_add === undefined) {
+      toast.error('Please enter a quantity to add')
+      return
+    }
+    
+    if (isNaN(quantityToAdd) || quantityToAdd <= 0) {
+      toast.error('Please enter a valid positive number')
+      return
+    }
+    
+    // Check if the input contains any non-numeric characters
+    if (!/^[0-9]*\.?[0-9]*$/.test(formData.stock_to_add)) {
+      toast.error('Please enter only numbers (digits and decimal point allowed)')
       return
     }
 
@@ -125,6 +163,7 @@ const StockAddModal = ({
         user_id: user?.id || ''
       })
       setSelectedStock(null)
+      setValidationError('')
     } catch (error) {
       console.error('Error adding stock:', error)
       toast.error('Failed to add stock. Please try again.')
@@ -142,6 +181,38 @@ const StockAddModal = ({
         ...prev,
         [name]: value
       }))
+    }
+  }
+
+  // Prevent paste of invalid characters
+  const handlePaste = (e) => {
+    const pastedText = e.clipboardData.getData('text')
+    if (!validateNumericInput(pastedText)) {
+      e.preventDefault()
+      toast.error('Invalid input. Only numbers are allowed.')
+    }
+  }
+
+  // Prevent keypress of invalid characters
+  const handleKeyPress = (e) => {
+    const char = String.fromCharCode(e.which)
+    // Allow: digits, decimal point, backspace, delete, arrow keys, tab, etc.
+    const allowedKeys = ['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Tab', 'Enter', 'Escape']
+    
+    if (allowedKeys.includes(e.key)) {
+      return
+    }
+    
+    // Allow only digits and decimal point
+    if (!/^[0-9.]$/.test(char)) {
+      e.preventDefault()
+      toast.error('Only numbers are allowed')
+    }
+    
+    // Prevent multiple decimal points
+    if (char === '.' && e.target.value.includes('.')) {
+      e.preventDefault()
+      toast.error('Only one decimal point is allowed')
     }
   }
 
@@ -478,19 +549,31 @@ const StockAddModal = ({
                   )}
                 </div>
 
-                {/* Only Quantity Input */}
-                <Input
-                  label="Stock to Add"
-                  name="stock_to_add"
-                  type="number"
-                  step="1"
-                  min="1"
-                  value={formData.stock_to_add}
-                  onChange={handleChange}
-                  placeholder="Enter quantity to add"
-                  required
-                  icon={FiPlus}
-                />
+                {/* Quantity Input with Validation */}
+                <div className="space-y-1">
+                  <Input
+                    label="Stock to Add"
+                    name="stock_to_add"
+                    type="text"
+                    value={formData.stock_to_add}
+                    onChange={handleChange}
+                    onKeyPress={handleKeyPress}
+                    onPaste={handlePaste}
+                    placeholder="Enter quantity to add (numbers only)"
+                    required
+                    icon={FiPlus}
+                    className={validationError ? 'border-red-500 dark:border-red-500' : ''}
+                  />
+                  {validationError && (
+                    <p className="text-sm text-red-600 dark:text-red-400 flex items-center gap-1">
+                      <FiInfo className="w-4 h-4" />
+                      {validationError}
+                    </p>
+                  )}
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    Only numbers (digits and decimal point) are allowed
+                  </p>
+                </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <Input
@@ -524,7 +607,7 @@ const StockAddModal = ({
                     type="submit"
                     variant="primary"
                     isLoading={isSubmitting}
-                    disabled={isSubmitting || !formData.stock_to_add || parseFloat(formData.stock_to_add) <= 0 || !formData.stock_id}
+                    disabled={isSubmitting || !formData.stock_to_add || parseFloat(formData.stock_to_add) <= 0 || !formData.stock_id || !!validationError}
                   >
                     <FiSave className="w-4 h-4 mr-2" />
                     Add Stock

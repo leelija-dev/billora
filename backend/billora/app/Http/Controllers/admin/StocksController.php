@@ -353,7 +353,7 @@ class StocksController extends Controller
                 $stock = Stocks::where('user_id', $user)->where('id', $id)->first();
 
                 $stock->update($data);
-                $seller = Seller::where('user_id',$id)->where('id',$request->seller_id)->first();
+                $seller = Seller::where('user_id',$user)->where('id',$request->seller_id)->first();
                 $sellerProducts = SellerProducts::where('user_id',$user)->where('seller_id',$request->seller_id)->where('stock_id',$stock->id)->first();
                 if(!$seller){
                    return response()->json([
