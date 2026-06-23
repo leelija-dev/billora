@@ -22,4 +22,8 @@ class StockHistory extends Model
     {
         return $this->belongsTo(Stocks::class, 'stock_id');
     }
+    public function seller()
+    {
+        return $this->belongsTo(Seller::class, 'seller_id');
+    }
 }

@@ -172,7 +172,13 @@ class GstController extends Controller
         $fromDate = Carbon::create($year, 1, 1)->startOfYear();
         $toDate   = Carbon::create($year, 12, 31)->endOfYear();
 
-    } else {
+    } elseif($month){
+        $year = $year ?? now()->year;
+
+            $fromDate = Carbon::create($year, $month, 1)->startOfMonth();
+            $toDate   = Carbon::create($year, $month, 1)->endOfMonth();
+
+    }else {
 
         $currentMonth = now()->month;
         $currentYear  = now()->year;
@@ -223,8 +229,8 @@ class GstController extends Controller
                     }
 
                     $gstOut += (
-                        ($history->stock->purchase_price * $history->quantity)
-                        * $history->stock->purchase_gst_percentage
+                        ($history->price * $history->quantity)
+                        * $history->gst
                     ) / 100;
                 }
 
@@ -273,31 +279,38 @@ class GstController extends Controller
                 $gstIn += ($finalAmount * $item->gst) / 100;
             }
 
-            $gstCollection = GstCollection::where('user_id', $id)
-                ->where('invoice_status', 'completed')
+            $gstOutData = StockHistory::where('user_id', $id)->where('quantity', '>', 0)->with(['stock','stock.product','seller.sellerProducts'])->whereBetween('created_at', [$fromDate, $toDate])->orderByDesc('created_at')->paginate(15); 
+            $gstInData = InvoiceItems::with('product','invoice')
+                ->where('user_id', $id)
+                ->where('status', 'completed')
                 ->whereBetween('created_at', [$fromDate, $toDate])
-                ->with('invoice:id,invoice_number')
                 ->orderByDesc('created_at')
                 ->paginate(15);
+            // $gstCollection = GstCollection::where('user_id', $id)
+            //     ->where('invoice_status', 'completed')
+            //     ->whereBetween('created_at', [$fromDate, $toDate])
+            //     ->with('invoice:id,invoice_number')
+            //     ->orderByDesc('created_at')
+            //     ->paginate(15);
 
-            $allProducts = GstCollection::where('gst_collection.user_id', $id)
-                ->whereBetween('gst_collection.created_at', [$fromDate, $toDate])
-                ->join('products', 'gst_collection.product_id', '=', 'products.id')
-                ->select(
-                    'gst_collection.product_id',
-                    'products.name',
-                    DB::raw('SUM(gst_collection.quantity) as total_quantity'),
-                    DB::raw('SUM(gst_collection.purchase_price * gst_collection.quantity) as total_purchase_price'),
-                    DB::raw('SUM(gst_collection.purchase_gst_amount * gst_collection.quantity) as total_purchase_gst'),
-                    DB::raw('SUM(gst_collection.selling_price * gst_collection.quantity) as total_selling_price'),
-                    DB::raw('SUM(gst_collection.selling_gst_amount * gst_collection.quantity) as total_selling_gst'),
-                    DB::raw('COUNT(*) as total_products')
-                )
-                ->groupBy(
-                    'gst_collection.product_id',
-                    'products.name'
-                )
-                ->paginate(15);
+            // $allProducts = GstCollection::where('gst_collection.user_id', $id)
+            //     ->whereBetween('gst_collection.created_at', [$fromDate, $toDate])
+            //     ->join('products', 'gst_collection.product_id', '=', 'products.id')
+            //     ->select(
+            //         'gst_collection.product_id',
+            //         'products.name',
+            //         DB::raw('SUM(gst_collection.quantity) as total_quantity'),
+            //         DB::raw('SUM(gst_collection.purchase_price * gst_collection.quantity) as total_purchase_price'),
+            //         DB::raw('SUM(gst_collection.purchase_gst_amount * gst_collection.quantity) as total_purchase_gst'),
+            //         DB::raw('SUM(gst_collection.selling_price * gst_collection.quantity) as total_selling_price'),
+            //         DB::raw('SUM(gst_collection.selling_gst_amount * gst_collection.quantity) as total_selling_gst'),
+            //         DB::raw('COUNT(*) as total_products')
+            //     )
+            //     ->groupBy(
+            //         'gst_collection.product_id',
+            //         'products.name'
+            //     )
+            //     ->paginate(15);
 
             return [
                 'status' => true,
@@ -306,9 +319,8 @@ class GstController extends Controller
                 'date_to' => $toDate->format('Y-m-d'),
                 'gst_out' => round($gstOut, 2), // Purchase GST
                 'gst_in' => round($gstIn, 2),   // Selling GST
-                // 'gst_payable' => round($gstIn - $gstOut, 2),
-                'data' => $gstCollection,
-                'all_products' => $allProducts,
+                'gst_in_data' => $gstInData,
+                'gst_out_data' => $gstOutData
             ];
         });
 

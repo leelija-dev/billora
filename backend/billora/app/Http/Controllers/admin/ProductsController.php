@@ -473,7 +473,8 @@ class ProductsController extends Controller
                             'user_id' => $user,
                             'product_id'=> $product->id,
                             'stock_id'=> $stock->id,
-                            // 'gst' => $product->purchase_gst_percentage,
+                            'price' => $product->purchase_price,
+                            'gst' => $product->purchase_gst_percentage,
                             'quantity'=> 0,
                             'created_by'=> $user
                         ]);

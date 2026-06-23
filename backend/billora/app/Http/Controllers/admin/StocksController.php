@@ -190,9 +190,10 @@ class StocksController extends Controller
                     'quantity' => $stocks['quantity'],
                     'created_by' => $user,
                     'seller_id' => $stocks['seller_id'],
+                    'seller_id' => $stocks['seller_id'],
                     'price' => $stocks['purchase_price'], // this is for purchase price 
-                    'gst'  =>$stocks['purchase_gst_percentage'],
-                    'discount' => 0,
+                    'gst'  => $stocks['purchase_gst_percentage'],
+                    'discount' => 0
 
                 ]);
                 /*---------------Seller Details---------------*/
@@ -233,7 +234,7 @@ class StocksController extends Controller
                 ]);
                 // Log::info('Stock created: ' . json_encode($stock));
                 $stocks = Stocks::where('user_id', $user)->get();
-                Cache::tags(['stock_user_' . $user])->flush();
+                Cache::tags(['stock_user_' . $user,'gst_collection_user_' . $user,'billing_user_' . $user])->flush();
                 // 'stock_user_' . Auth::user()->id.'page_id'.$request->page
                 return response()->json([
                     'status' => true,
@@ -434,9 +435,18 @@ class StocksController extends Controller
                     'seller_id' => $sellerProducts->seller_id,
                     'seller_product_id' => $sellerProducts->id
                 ]);
+                $stockHistory = StockHistory::where('stock_id', $stock->id)->where('user_id', $user)->get();
+                foreach ($stockHistory as $history) {
+                    $history->update([
+                        'price' =>$stock->purchase_price,
+                        'gst' => $stock->purchase_gst_percentage
+                    ]);
+                }
                 Cache::tags([
                     'stock_user_' . $user,
-                    'products_user_' . $user
+                    'products_user_' . $user,
+                    'gst_collection_user_' . $user,
+                    'billing_user_' . $user
                 ])->flush();
 
                 return response()->json([
@@ -565,14 +575,18 @@ class StocksController extends Controller
                 $stock->update([
                     'quantity' => ((float)$stock->quantity + (float)$data['quantity']),
                 ]);
+                
                 $stockHistory = StockHistory::create([
                     'user_id' => $user,
                     'product_id' => $stock->product_id,
                     'stock_id' => $stock->id,
+                    'seller_id' => $stock->seller_id ? $stock->seller_id : null,
+                    'price' => $stock->purchase_price ? $stock->purchase_price : 0, 
+                    'gst' => $stock->purchase_gst_percentage ? $stock->purchase_gst_percentage : 0,                     
                     'quantity' => $data['quantity'],
                     'created_by' => $user
                 ]);
-                Cache::tags(['stock_user_' . Auth::user()->id, 'products_user_' . $user])->flush();
+                Cache::tags(['stock_user_' . Auth::user()->id, 'products_user_' . $user,'gst_collection_user_' . $user,'billing_user_' . $user])->flush();
                 // 'stock_user_' . Auth::user()->id.'_page_'.$request->page
                 return response()->json([
                     'status' => true,
