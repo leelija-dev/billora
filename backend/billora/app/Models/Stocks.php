@@ -17,6 +17,8 @@ class Stocks extends Model
         'product_package_id',
         'quantity',
         'unit_id',
+        'seller_id',
+        'seller_product_id',
         'created_by' 
     ];
     public function product(){
@@ -34,4 +36,8 @@ class Stocks extends Model
     public function user(){
         return $this->belongsTo(Customers::class);
     }
+    public function sellerProduct(){
+        return $this->belongsTo(SellerProducts::class, 'seller_product_id');
+    }
 }
+ 
