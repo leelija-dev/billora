@@ -88,8 +88,8 @@ Route::middleware('auth:sanctum')->prefix('products')->group(function () {
 Route::middleware('auth:sanctum')->prefix('stocks')->group(function () {
    Route::get('/', [StocksController::class, 'index']);
    Route::get('/create', [StocksController::class, 'create']);
-   Route::post('/{id}', [StocksController::class, 'update']);
    Route::post('/store', [StocksController::class, 'store']);
+   Route::post('/{id}', [StocksController::class, 'update']);
    Route::get('/{id}', [StocksController::class, 'edit']);
    Route::delete('/{id}', [StocksController::class, 'destroy']);
    Route::post('/add-stock/{id}', [StocksController::class, 'addStock']);
