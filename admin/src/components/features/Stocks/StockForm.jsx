@@ -10,25 +10,40 @@ import Button from '../../common/Button/Button'
 import Select from '../../common/Select/Select'
 import SearchSelect from '../../common/SearchSelect/SearchSelect'
 import SellerForm from '../../features/Sellers/SellerForm'
+import UnitModal from '../../common/CreateModals/UnitModal' // Import UnitModal
 import useSellerStore from '../../../store/sellerStore'
+import useUnitStore from '../../../store/unitStore'
 import toast from 'react-hot-toast'
 import { handleNumberInput, handleDecimalInput } from '../../../utils/validators'
 import { FiPlus, FiEdit2 } from 'react-icons/fi'
 
-const StockForm = ({ stock, onSubmit, onCancel, isSubmitting, products, units }) => {
+const StockForm = ({ stock, onSubmit, onCancel, isSubmitting, products, units: initialUnits }) => {
   const { user } = useAuthStore()
   const { createSeller, updateSeller, fetchSellers } = useSellerStore()
+  const { 
+    units: storeUnits, 
+    fetchUnits, 
+    createUnit,
+    loading: unitsLoading 
+  } = useUnitStore()
+  
   const [selectedProduct, setSelectedProduct] = useState(null)
   const [selectedSeller, setSelectedSeller] = useState(null)
+  const [selectedUnit, setSelectedUnit] = useState(null)
   const [searchResults, setSearchResults] = useState([])
   const [sellerSearchResults, setSellerSearchResults] = useState([])
+  const [unitSearchResults, setUnitSearchResults] = useState([])
   const [isSearching, setIsSearching] = useState(false)
   const [isSearchingSeller, setIsSearchingSeller] = useState(false)
+  const [isSearchingUnit, setIsSearchingUnit] = useState(false)
   const [optionsList, setOptionsList] = useState([])
   const [sellerOptionsList, setSellerOptionsList] = useState([])
+  const [unitOptionsList, setUnitOptionsList] = useState([])
   const [sellers, setSellers] = useState([])
   const [sellersLoading, setSellersLoading] = useState(false)
   const [isSellerSearchActive, setIsSellerSearchActive] = useState(false)
+  const [isUnitSearchActive, setIsUnitSearchActive] = useState(false)
+  const [unitSearchTerm, setUnitSearchTerm] = useState('')
   
   // State for Seller Form Modal
   const [showSellerModal, setShowSellerModal] = useState(false)
@@ -36,6 +51,11 @@ const StockForm = ({ stock, onSubmit, onCancel, isSubmitting, products, units })
   const [isEditingSeller, setIsEditingSeller] = useState(false)
   const [editingSeller, setEditingSeller] = useState(null)
   const [sellerSearchTerm, setSellerSearchTerm] = useState('')
+  
+  // State for Unit Modal
+  const [showUnitModal, setShowUnitModal] = useState(false)
+  const [isCreatingUnit, setIsCreatingUnit] = useState(false)
+  const [unitSearchTermForModal, setUnitSearchTermForModal] = useState('')
   
   // State for file input
   const [invoiceImageFile, setInvoiceImageFile] = useState(null)
@@ -54,6 +74,18 @@ const StockForm = ({ stock, onSubmit, onCancel, isSubmitting, products, units })
       invoice_image: stock?.invoice_image || '',
     }
   })
+
+  // Fetch units on component mount
+  useEffect(() => {
+    const fetchUnitsData = async () => {
+      try {
+        await fetchUnits(1, { per_page: 100 })
+      } catch (error) {
+        console.error('Failed to fetch units:', error)
+      }
+    }
+    fetchUnitsData()
+  }, [fetchUnits])
 
   // Fetch sellers on component mount
   useEffect(() => {
@@ -122,7 +154,27 @@ const StockForm = ({ stock, onSubmit, onCancel, isSubmitting, products, units })
       setValue('product_id', id)
       setValue('selling_price', product.selling_price || product.price || '')
       setValue('purchase_price', product.purchase_price || product.cost || '')
-      setValue('unit_id', product.unit_id || '')
+      
+      // Auto-select unit from product if available
+      if (product.unit_id) {
+        const unit = storeUnits.find(u => u.id === product.unit_id)
+        if (unit) {
+          setSelectedUnit(unit)
+          setValue('unit_id', unit.id)
+          const unitOption = {
+            value: unit.id.toString(),
+            label: `${unit.name} (${unit.code})`,
+          }
+          setUnitOptionsList(prev => {
+            const exists = prev.some(opt => opt.value === unitOption.value)
+            if (!exists) {
+              return [unitOption, ...prev]
+            }
+            return prev
+          })
+        }
+      }
+      
       setValue('purchase_gst_percentage', product.purchase_gst_percentage_percentage || product.purchase_gst_percentage || '')
       setValue('selling_gst_percentage', product.gst_percentage || product.selling_gst_percentage || '')
       
@@ -142,6 +194,21 @@ const StockForm = ({ stock, onSubmit, onCancel, isSubmitting, products, units })
       setValue('seller_id', id)
       setSellerSearchResults([])
       setIsSellerSearchActive(false)
+    }
+  }
+
+  // Handle unit selection
+  const handleUnitSelect = (unitId) => {
+    const id = parseInt(unitId)
+    const unit = unitSearchResults.length > 0 
+      ? unitSearchResults.find(u => u.id === id) 
+      : storeUnits?.find(u => u.id === id)
+    
+    if (unit) {
+      setSelectedUnit(unit)
+      setValue('unit_id', id)
+      setUnitSearchResults([])
+      setIsUnitSearchActive(false)
     }
   }
 
@@ -210,6 +277,96 @@ const StockForm = ({ stock, onSubmit, onCancel, isSubmitting, products, units })
       setSellerSearchResults(filtered)
     } finally {
       setIsSearchingSeller(false)
+    }
+  }
+
+  // Handle unit search
+  const handleUnitSearch = async (searchTerm) => {
+    setUnitSearchTerm(searchTerm)
+    setUnitSearchTermForModal(searchTerm)
+    
+    if (searchTerm.length < 2) {
+      setUnitSearchResults([])
+      setIsUnitSearchActive(false)
+      return
+    }
+
+    setIsSearchingUnit(true)
+    setIsUnitSearchActive(true)
+    
+    try {
+      const response = await fetchUnits(1, { 
+        per_page: 100,
+        search: searchTerm 
+      })
+      
+      // The store should update the units state
+      const currentUnits = useUnitStore.getState().units
+      setUnitSearchResults(currentUnits)
+      
+      console.log('🔍 Unit search results:', currentUnits.length)
+    } catch (error) {
+      console.error('Failed to search units:', error)
+      // Fallback to filtering local units
+      const filtered = storeUnits.filter(unit => 
+        unit.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        unit.code?.toLowerCase().includes(searchTerm.toLowerCase())
+      )
+      setUnitSearchResults(filtered)
+    } finally {
+      setIsSearchingUnit(false)
+    }
+  }
+
+  // Handle creating a new unit from the modal
+  const handleCreateUnit = async (unitData) => {
+    setIsCreatingUnit(true)
+    try {
+      const userId = user?.id || 1
+      const data = {
+        ...unitData,
+        user_id: userId,
+      }
+      
+      const newUnit = await createUnit(data)
+      console.log('✅ Unit created successfully:', newUnit)
+      toast.success('Unit created successfully')
+      
+      // Refresh units list
+      await fetchUnits(1, { per_page: 100 })
+      
+      // Select the newly created unit
+      const currentUnits = useUnitStore.getState().units
+      const newUnitData = currentUnits.find(u => u.id === newUnit.id) || newUnit
+      
+      if (newUnitData) {
+        setSelectedUnit(newUnitData)
+        setValue('unit_id', newUnitData.id)
+        setUnitSearchResults([])
+        setIsUnitSearchActive(false)
+        
+        // Add to options list
+        const unitOption = {
+          value: newUnitData.id.toString(),
+          label: `${newUnitData.name} (${newUnitData.code})`,
+        }
+        setUnitOptionsList(prev => {
+          const exists = prev.some(opt => opt.value === unitOption.value)
+          if (!exists) {
+            return [unitOption, ...prev]
+          }
+          return prev
+        })
+      }
+      
+      // Close modal
+      setShowUnitModal(false)
+      
+    } catch (error) {
+      console.error('Error creating unit:', error)
+      toast.error(error.response?.data?.message || 'Failed to create unit')
+    } finally {
+      setIsCreatingUnit(false)
     }
   }
 
@@ -552,6 +709,76 @@ const StockForm = ({ stock, onSubmit, onCancel, isSubmitting, products, units })
     )
   }
 
+  // Custom render function for unit options with "Add New" option
+  const renderUnitOption = (option, index, isHighlighted, isSelected) => {
+    // Check if this is the "Add New Unit" option
+    if (option.value === 'add-new-unit') {
+      return (
+        <div
+          key={option.value}
+          className={`px-4 py-3 cursor-pointer border-b border-gray-100 dark:border-gray-700 last:border-b-0 transition-colors ${
+            isHighlighted ? 'bg-primary-50 dark:bg-primary-900/20' : ''
+          } hover:bg-primary-50 dark:hover:bg-primary-900/20`}
+          onClick={() => {
+            setShowUnitModal(true)
+            setIsUnitSearchActive(false)
+            setUnitSearchResults([])
+          }}
+        >
+          <div className="flex items-center text-primary-600 dark:text-primary-400">
+            <FiPlus className="w-5 h-5 mr-2" />
+            <span className="font-medium">Add New Unit: "{unitSearchTerm}"</span>
+          </div>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 ml-7">
+            Couldn't find the unit you're looking for? Create a new one.
+          </p>
+        </div>
+      )
+    }
+
+    const unit = isUnitSearchActive 
+      ? unitSearchResults.find(u => u.id === parseInt(option.value))
+      : storeUnits?.find(u => u.id === parseInt(option.value)) || unitSearchResults.find(u => u.id === parseInt(option.value))
+    
+    if (!unit) return null
+    
+    const isSelectedUnit = selectedUnit?.id === unit.id
+    
+    return (
+      <div
+        key={option.value}
+        className={`px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer border-b border-gray-100 dark:border-gray-700 last:border-b-0 transition-colors ${
+          isSelectedUnit ? 'bg-primary-50 dark:bg-primary-900/20' : ''
+        } ${isHighlighted ? 'bg-gray-100 dark:bg-gray-700' : ''}`}
+        onClick={() => handleUnitSelect(option.value)}
+      >
+        <div className="flex justify-between items-start">
+          <div className="flex-1">
+            <div className="font-medium text-gray-900 dark:text-white">
+              {option.label}
+            </div>
+            {unit && (
+              <div className="mt-1 space-y-1">
+                <div className="flex flex-wrap gap-2 text-xs">
+                  {unit.code && (
+                    <span className="inline-block px-2 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded">
+                      Code: {unit.code}
+                    </span>
+                  )}
+                  {unit.description && (
+                    <span className="inline-block px-2 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded">
+                      {unit.description}
+                    </span>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   useEffect(() => {
     if (stock) {
       console.log('📝 StockForm - Stock prop received:', stock)
@@ -615,12 +842,31 @@ const StockForm = ({ stock, onSubmit, onCancel, isSubmitting, products, units })
         }
       }
 
+      // Set unit if present
+      if (stock.unit_id) {
+        const unit = storeUnits.find(u => u.id === stock.unit_id)
+        if (unit) {
+          setSelectedUnit(unit)
+          const unitOption = {
+            value: unit.id.toString(),
+            label: `${unit.name} (${unit.code})`,
+          }
+          setUnitOptionsList(prev => {
+            const exists = prev.some(opt => opt.value === unitOption.value)
+            if (!exists) {
+              return [unitOption, ...prev]
+            }
+            return prev
+          })
+        }
+      }
+
       // Set existing image preview if editing
       if (stock.invoice_image) {
         setInvoiceImagePreview(stock.invoice_image)
       }
     }
-  }, [stock, reset, products, sellers])
+  }, [stock, reset, products, sellers, storeUnits])
 
   const onFormSubmit = (data) => {
     // Create FormData to handle file upload
@@ -628,7 +874,7 @@ const StockForm = ({ stock, onSubmit, onCancel, isSubmitting, products, units })
     
     // Append all fields except invoice_image (we handle it separately)
     Object.keys(data).forEach(key => {
-      if (key !== 'invoice_image' && data[key] !== undefined && data[key] !== null) {
+      if (key !== 'invoice_image' && data[key] !== undefined && data[key] !== null && data[key] !== '') {
         formData.append(key, data[key])
       }
     })
@@ -643,8 +889,6 @@ const StockForm = ({ stock, onSubmit, onCancel, isSubmitting, products, units })
       formData.append('invoice_image', invoiceImageFile)
     } else if (stock?.invoice_image && !invoiceImageFile) {
       // If editing and keeping existing image, append the existing image URL/string
-      // Some backends expect this, others might want to keep it as-is
-      // If your backend expects the image to be kept, you might not need to append it
       formData.append('invoice_image', stock.invoice_image)
     }
     // If no file and no existing image, don't append the field
@@ -728,6 +972,47 @@ const StockForm = ({ stock, onSubmit, onCancel, isSubmitting, products, units })
     return options
   }
 
+  // Prepare options for Unit SearchSelect with "Add New" option
+  const getUnitOptions = () => {
+    let options = []
+    
+    if (isUnitSearchActive && unitSearchResults.length > 0) {
+      options = unitSearchResults.map(unit => ({
+        value: unit.id.toString(),
+        label: `${unit.name} (${unit.code})`,
+        description: unit.description || '',
+      }))
+    } else if (!isUnitSearchActive) {
+      let unitList = storeUnits || []
+      options = unitList.map(unit => ({
+        value: unit.id.toString(),
+        label: `${unit.name} (${unit.code})`,
+        description: unit.description || '',
+      }))
+      
+      if (unitOptionsList.length > 0) {
+        const allOptions = [...unitOptionsList]
+        options.forEach(opt => {
+          if (!allOptions.some(existing => existing.value === opt.value)) {
+            allOptions.push(opt)
+          }
+        })
+        options = allOptions
+      }
+    }
+    
+    // If there are no results and we're searching, add "Add New" option
+    if (isUnitSearchActive && unitSearchResults.length === 0 && unitSearchTerm.length >= 2) {
+      options.push({
+        value: 'add-new-unit',
+        label: `Add New Unit: "${unitSearchTerm}"`,
+        description: 'Click to create a new unit',
+      })
+    }
+    
+    return options
+  }
+
   return (
     <>
       <motion.div
@@ -754,11 +1039,11 @@ const StockForm = ({ stock, onSubmit, onCancel, isSubmitting, products, units })
         {/* Hidden user_id field */}
         <input type="hidden" {...register('user_id')} value={user.id} />
         
-        {/* Seller & Invoice Section */}
+        {/* Seller & Invoice Section - Now Optional */}
         <div className="bg-gray-50 dark:bg-gray-700/30 rounded-xl p-4 space-y-4">
           <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center">
             <span className="w-1 h-5 bg-blue-500 rounded mr-2"></span>
-            Seller & Invoice Details
+            Seller & Invoice Details <span className="text-xs text-gray-400 ml-2">(Optional)</span>
           </h4>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -769,7 +1054,7 @@ const StockForm = ({ stock, onSubmit, onCancel, isSubmitting, products, units })
                 value={selectedSeller?.id?.toString() || ''}
                 onChange={handleSellerSelect}
                 placeholder="Search seller by name, email, or phone..."
-                required
+                required={false}
                 renderOption={renderSellerOption}
                 onSearchChange={handleSellerSearch}
                 isLoading={isSearchingSeller || sellersLoading}
@@ -785,11 +1070,9 @@ const StockForm = ({ stock, onSubmit, onCancel, isSubmitting, products, units })
             <Input
               label="Invoice Number"
               type="text"
-              placeholder="Enter invoice number"
+              placeholder="Enter invoice number (Optional)"
               error={errors.invoice_number?.message}
-              {...register('invoice_number', { 
-                required: 'Invoice number is required'
-              })}
+              {...register('invoice_number')}
             />
           </div>
 
@@ -799,9 +1082,7 @@ const StockForm = ({ stock, onSubmit, onCancel, isSubmitting, products, units })
               type="date"
               placeholder="Select invoice date"
               error={errors.invoice_date?.message}
-              {...register('invoice_date', { 
-                required: 'Invoice date is required'
-              })}
+              {...register('invoice_date')}
             />
 
             <Input
@@ -818,11 +1099,10 @@ const StockForm = ({ stock, onSubmit, onCancel, isSubmitting, products, units })
           </div>
 
           <div className="grid grid-cols-1 gap-4">
-            {/* Invoice Image - Custom file input */}
+            {/* Invoice Image - Optional file input */}
             <div className="space-y-2">
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                Invoice Image
-                {!stock?.invoice_image && <span className="text-red-500 ml-1">*</span>}
+                Invoice Image <span className="text-gray-400 text-xs">(Optional)</span>
               </label>
               
               <div className="flex items-center space-x-4">
@@ -886,11 +1166,11 @@ const StockForm = ({ stock, onSubmit, onCancel, isSubmitting, products, units })
           </div>
         </div>
 
-        {/* Product Details Section */}
+        {/* Product Details Section - Required */}
         <div className="bg-gray-50 dark:bg-gray-700/30 rounded-xl p-4 space-y-4">
           <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center">
             <span className="w-1 h-5 bg-green-500 rounded mr-2"></span>
-            Product Details
+            Product Details <span className="text-xs text-red-500 ml-2">*Required</span>
           </h4>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -917,7 +1197,12 @@ const StockForm = ({ stock, onSubmit, onCancel, isSubmitting, products, units })
               {...register('quantity', { 
                 required: 'Quantity is required',
                 valueAsNumber: true,
-                onChange: (e) => handleNumberInput(e)
+                onChange: (e) => {
+                  // Only allow digits
+                  const value = e.target.value.replace(/\D/g, '')
+                  e.target.value = value
+                  handleNumberInput(e)
+                }
               })}
             />
           </div>
@@ -943,7 +1228,12 @@ const StockForm = ({ stock, onSubmit, onCancel, isSubmitting, products, units })
               error={errors.purchase_gst_percentage?.message}
               {...register('purchase_gst_percentage', { 
                 valueAsNumber: true,
-                onChange: (e) => handleDecimalInput(e)
+                onChange: (e) => {
+                  // Only allow digits and decimal point
+                  const value = e.target.value.replace(/[^0-9.]/g, '')
+                  e.target.value = value
+                  handleDecimalInput(e)
+                }
               })}
             />
           </div>
@@ -969,27 +1259,33 @@ const StockForm = ({ stock, onSubmit, onCancel, isSubmitting, products, units })
               error={errors.selling_gst_percentage?.message}
               {...register('selling_gst_percentage', { 
                 valueAsNumber: true,
-                onChange: (e) => handleDecimalInput(e)
+                onChange: (e) => {
+                  // Only allow digits and decimal point
+                  const value = e.target.value.replace(/[^0-9.]/g, '')
+                  e.target.value = value
+                  handleDecimalInput(e)
+                }
               })}
             />
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Select
+            <SearchSelect
               label="Unit"
-              options={[
-                { value: '', label: 'Select Unit' },
-                ...(units?.map(unit => ({
-                  value: unit.id.toString(),
-                  label: `${unit.name} (${unit.code})`,
-                })) || [])
-              ]}
-              error={errors.unit_id?.message}
-              {...register('unit_id', { 
-                required: 'Unit is required',
-                valueAsNumber: true,
-                setValueAs: (value) => value ? parseInt(value) : null
-              })}
+              options={getUnitOptions()}
+              value={selectedUnit?.id?.toString() || ''}
+              onChange={handleUnitSelect}
+              placeholder="Search unit by name or code..."
+              required
+              renderOption={renderUnitOption}
+              onSearchChange={handleUnitSearch}
+              isLoading={isSearchingUnit || unitsLoading}
+              minSearchLength={2}
+              noOptionsMessage={
+                isUnitSearchActive && unitSearchResults.length === 0 && unitSearchTerm.length >= 2
+                  ? 'No units found. Click "Add New Unit" to create one.'
+                  : unitsLoading ? 'Loading units...' : 'No units available'
+              }
             />
           </div>
         </div>
@@ -1057,6 +1353,18 @@ const StockForm = ({ stock, onSubmit, onCancel, isSubmitting, products, units })
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Unit Creation Modal */}
+      <UnitModal
+        isOpen={showUnitModal}
+        onClose={() => {
+          if (!isCreatingUnit) {
+            setShowUnitModal(false)
+          }
+        }}
+        onCreate={handleCreateUnit}
+        initialName={unitSearchTermForModal}
+      />
     </>
   )
 }
