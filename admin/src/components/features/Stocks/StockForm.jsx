@@ -1,4 +1,4 @@
-// StockForm.jsx - Updated with image deletion handling
+// StockForm.jsx - Updated with quantity disabled during edit
 
 import React, { useState, useEffect, useRef } from "react";
 import { useForm } from "react-hook-form";
@@ -19,7 +19,7 @@ import {
   handleNumberInput,
   handleDecimalInput,
 } from "../../../utils/validators";
-import { FiPlus, FiEdit2, FiTrash2 } from "react-icons/fi";
+import { FiPlus, FiEdit2, FiTrash2, FiLock } from "react-icons/fi";
 
 const StockForm = ({
   stock,
@@ -87,6 +87,9 @@ const StockForm = ({
       invoice_image: stock?.invoice_image || "",
     },
   });
+
+  // Check if we're in edit mode
+  const isEditMode = !!stock;
 
   // Fetch units on component mount
   useEffect(() => {
@@ -1334,7 +1337,7 @@ const StockForm = ({
       >
         <div className="flex items-center justify-between mb-6">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-            {stock ? "Edit Stock Entry" : "Add New Stock Entry"}
+            {isEditMode ? "Edit Stock Entry" : "Add New Stock Entry"}
           </h3>
           <button
             type="button"
@@ -1471,7 +1474,7 @@ const StockForm = ({
                 )}
 
                 {/* Delete Image Button - Only show when editing and image exists */}
-                {stock && !invoiceImageFile && invoiceImagePreview && !isImageDeleted && (
+                {isEditMode && !invoiceImageFile && invoiceImagePreview && !isImageDeleted && (
                   <button
                     type="button"
                     onClick={handleDeleteImage}
@@ -1576,24 +1579,39 @@ const StockForm = ({
               minSearchLength={2}
             />
 
-            <Input
-              label="Quantity"
-              type="text"
-              min="1"
-              step="1"
-              placeholder="Enter quantity (default: 0)"
-              error={errors.quantity?.message}
-              {...register("quantity", {
-                required: "Quantity is required",
-                valueAsNumber: true,
-                onChange: (e) => {
-                  // Only allow digits
-                  const value = e.target.value.replace(/\D/g, "");
-                  e.target.value = value;
-                  handleNumberInput(e);
-                },
-              })}
-            />
+            <div className="relative">
+              <Input
+                label="Quantity"
+                type="text"
+                min="1"
+                step="1"
+                placeholder="Enter quantity (default: 0)"
+                error={errors.quantity?.message}
+                disabled={isEditMode}
+                className={isEditMode ? "bg-gray-100 dark:bg-gray-700 cursor-not-allowed opacity-75" : ""}
+                {...register("quantity", {
+                  required: "Quantity is required",
+                  valueAsNumber: true,
+                  onChange: (e) => {
+                    // Only allow digits
+                    const value = e.target.value.replace(/\D/g, "");
+                    e.target.value = value;
+                    handleNumberInput(e);
+                  },
+                })}
+              />
+              {isEditMode && (
+                <div className="absolute right-3 top-[38px] text-gray-400 dark:text-gray-500">
+                  <FiLock className="w-4 h-4" title="Quantity is locked during edit" />
+                </div>
+              )}
+              {isEditMode && (
+                <p className="text-xs text-gray-400 dark:text-gray-500 mt-1 flex items-center">
+                  <FiLock className="w-3 h-3 mr-1" />
+                  Quantity cannot be changed during edit. Use "Add Stock" to increase quantity.
+                </p>
+              )}
+            </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1699,7 +1717,7 @@ const StockForm = ({
             onClick={handleSubmit(onFormSubmit)}
             isLoading={isSubmitting}
           >
-            {stock ? "Update Stock" : "Create Stock"}
+            {isEditMode ? "Update Stock" : "Create Stock"}
           </Button>
         </div>
       </motion.div>
