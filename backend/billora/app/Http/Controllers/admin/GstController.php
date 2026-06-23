@@ -278,8 +278,17 @@ class GstController extends Controller
 
                 $gstIn += ($finalAmount * $item->gst) / 100;
             }
-
+            if($hasStockPermission){
+                
             $gstOutData = StockHistory::where('user_id', $id)->where('quantity', '>', 0)->with(['stock','stock.product','seller.sellerProducts'])->whereBetween('created_at', [$fromDate, $toDate])->orderByDesc('created_at')->paginate(15); 
+            }else{
+                $gstOutData = InvoiceItems::with('product','invoice')
+                ->where('user_id', $id)
+                ->where('status', 'completed')
+                ->whereBetween('created_at', [$fromDate, $toDate])
+                ->orderByDesc('created_at')
+                ->paginate(15);
+            }
             $gstInData = InvoiceItems::with('product','invoice')
                 ->where('user_id', $id)
                 ->where('status', 'completed')
