@@ -1079,7 +1079,7 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
           />
 
           <Input
-            label="Purchase Price"
+            label="Purchase Price / Costing Price"
             type="number"
             step="0.01"
             placeholder="Enter purchase price"

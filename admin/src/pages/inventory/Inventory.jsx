@@ -94,26 +94,26 @@ const Stock = () => {
     setShowAddForm(true);
   };
 
- // In the parent Stock component
-const handleEditStock = async (stock) => {
-  console.log('✏️ Editing stock:', stock)
-  
-  // Create a clean copy of the stock data
-  const stockData = {
-    ...stock,
-    // Ensure numeric fields are numbers
-    quantity: parseFloat(stock.quantity) || 0,
-    selling_price: parseFloat(stock.selling_price) || 0,
-    purchase_price: parseFloat(stock.purchase_price) || 0,
-    paid_amount: parseFloat(stock.paid_amount) || 0,
-    purchase_gst_percentage: parseFloat(stock.purchase_gst_percentage) || 0,
-    selling_gst_percentage: parseFloat(stock.selling_gst_percentage) || 0,
-  }
-  
-  setSelectedStock(stockData)
-  setSelectedStockWithProduct(stockData)
-  setShowEditForm(true)
-}
+  // In the parent Stock component
+  const handleEditStock = async (stock) => {
+    console.log("✏️ Editing stock:", stock);
+
+    // Create a clean copy of the stock data
+    const stockData = {
+      ...stock,
+      // Ensure numeric fields are numbers
+      quantity: parseFloat(stock.quantity) || 0,
+      selling_price: parseFloat(stock.selling_price) || 0,
+      purchase_price: parseFloat(stock.purchase_price) || 0,
+      paid_amount: parseFloat(stock.paid_amount) || 0,
+      purchase_gst_percentage: parseFloat(stock.purchase_gst_percentage) || 0,
+      selling_gst_percentage: parseFloat(stock.selling_gst_percentage) || 0,
+    };
+
+    setSelectedStock(stockData);
+    setSelectedStockWithProduct(stockData);
+    setShowEditForm(true);
+  };
 
   const handleCancelForm = () => {
     setShowAddForm(false);
@@ -537,14 +537,16 @@ const handleEditStock = async (stock) => {
         {/* Conditional rendering: Show form or table */}
         {showAddForm || showEditForm ? (
           <StockForm
-    key={showEditForm ? selectedStock?.id : 'new'} // Add key to force re-render
-    stock={showEditForm ? (selectedStockWithProduct || selectedStock) : null}
-    onSubmit={handleSubmitStock}
-    onCancel={handleCancelForm}
-    isSubmitting={formSubmitting}
-    products={products}
-    units={units}
-  />
+            key={showEditForm ? selectedStock?.id : "new"} // Add key to force re-render
+            stock={
+              showEditForm ? selectedStockWithProduct || selectedStock : null
+            }
+            onSubmit={handleSubmitStock}
+            onCancel={handleCancelForm}
+            isSubmitting={formSubmitting}
+            products={products}
+            units={units}
+          />
         ) : (
           <>
             {/* Stats Cards */}
@@ -723,14 +725,15 @@ const handleEditStock = async (stock) => {
                 <>
                   <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg overflow-hidden">
                     <Table columns={columns} data={stocks} loading={loading} />
-                  </div>
-                  <Pagination
+                     <Pagination
                     currentPage={currentPage}
                     totalItems={totalStocks}
                     pageSize={pageSize}
                     pagination={pagination}
                     onPageChange={handlePageChange}
                   />
+                  </div>
+                 
                 </>
               ) : (
                 <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-12 text-center">

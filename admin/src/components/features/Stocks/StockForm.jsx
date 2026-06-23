@@ -1616,7 +1616,7 @@ const StockForm = ({
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Input
-              label="Purchase Price"
+              label="Purchase Price / Costing Price"
               type="text"
               step="0.01"
               placeholder="Enter purchase price (default: 0)"
