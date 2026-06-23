@@ -1,6 +1,7 @@
+// StockForm.jsx
 import React, { useState, useEffect, useRef } from 'react'
 import { useForm } from 'react-hook-form'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import { useAuthStore } from '../../../store/authStore'
 import { productsAPI } from '../../../services/productsService'
 import { sellerAPI } from '../../../services/sellerService'
@@ -8,11 +9,15 @@ import Input from '../../common/Input/Input'
 import Button from '../../common/Button/Button'
 import Select from '../../common/Select/Select'
 import SearchSelect from '../../common/SearchSelect/SearchSelect'
+import SellerForm from '../../features/Sellers/SellerForm'
+import useSellerStore from '../../../store/sellerStore'
 import toast from 'react-hot-toast'
 import { handleNumberInput, handleDecimalInput } from '../../../utils/validators'
+import { FiPlus, FiEdit2 } from 'react-icons/fi'
 
 const StockForm = ({ stock, onSubmit, onCancel, isSubmitting, products, units }) => {
   const { user } = useAuthStore()
+  const { createSeller, updateSeller, fetchSellers } = useSellerStore()
   const [selectedProduct, setSelectedProduct] = useState(null)
   const [selectedSeller, setSelectedSeller] = useState(null)
   const [searchResults, setSearchResults] = useState([])
@@ -24,6 +29,13 @@ const StockForm = ({ stock, onSubmit, onCancel, isSubmitting, products, units })
   const [sellers, setSellers] = useState([])
   const [sellersLoading, setSellersLoading] = useState(false)
   const [isSellerSearchActive, setIsSellerSearchActive] = useState(false)
+  
+  // State for Seller Form Modal
+  const [showSellerModal, setShowSellerModal] = useState(false)
+  const [isCreatingSeller, setIsCreatingSeller] = useState(false)
+  const [isEditingSeller, setIsEditingSeller] = useState(false)
+  const [editingSeller, setEditingSeller] = useState(null)
+  const [sellerSearchTerm, setSellerSearchTerm] = useState('')
   
   // State for file input
   const [invoiceImageFile, setInvoiceImageFile] = useState(null)
@@ -45,7 +57,7 @@ const StockForm = ({ stock, onSubmit, onCancel, isSubmitting, products, units })
 
   // Fetch sellers on component mount
   useEffect(() => {
-    const fetchSellers = async () => {
+    const fetchSellersData = async () => {
       setSellersLoading(true)
       try {
         const userId = user?.id || 1
@@ -95,7 +107,7 @@ const StockForm = ({ stock, onSubmit, onCancel, isSubmitting, products, units })
         setSellersLoading(false)
       }
     }
-    fetchSellers()
+    fetchSellersData()
   }, [user?.id, stock])
 
   // Handle product selection
@@ -155,6 +167,8 @@ const StockForm = ({ stock, onSubmit, onCancel, isSubmitting, products, units })
 
   // Handle seller search
   const handleSellerSearch = async (searchTerm) => {
+    setSellerSearchTerm(searchTerm)
+    
     if (searchTerm.length < 2) {
       setSellerSearchResults([])
       setIsSellerSearchActive(false)
@@ -181,6 +195,11 @@ const StockForm = ({ stock, onSubmit, onCancel, isSubmitting, products, units })
       
       console.log('🔍 Seller search results:', searchResults.length)
       setSellerSearchResults(searchResults)
+      
+      // If no results found, show a "Add New Seller" option
+      if (searchResults.length === 0) {
+        // We'll handle this in the SearchSelect component via custom render
+      }
     } catch (error) {
       console.error('Failed to search sellers:', error)
       const filtered = sellers.filter(seller => 
@@ -191,6 +210,142 @@ const StockForm = ({ stock, onSubmit, onCancel, isSubmitting, products, units })
       setSellerSearchResults(filtered)
     } finally {
       setIsSearchingSeller(false)
+    }
+  }
+
+  // Handle creating a new seller from the modal
+  const handleCreateSeller = async (sellerData) => {
+    setIsCreatingSeller(true)
+    try {
+      const userId = user?.id || 1
+      const data = {
+        ...sellerData,
+        user_id: userId,
+      }
+      
+      const newSeller = await createSeller(data)
+      console.log('✅ Seller created successfully:', newSeller)
+      toast.success('Seller created successfully')
+      
+      // Refresh sellers list
+      await refreshSellersList(userId)
+      
+      // Select the newly created seller
+      const newSellerData = sellers.find(s => s.id === newSeller.id) || newSeller
+      if (newSellerData) {
+        setSelectedSeller(newSellerData)
+        setValue('seller_id', newSellerData.id)
+        setSellerSearchResults([])
+        setIsSellerSearchActive(false)
+        
+        // Add to options list
+        const sellerOption = {
+          value: newSellerData.id.toString(),
+          label: newSellerData.name,
+          description: `📧 ${newSellerData.email || 'No email'}`,
+          subtext: newSellerData.phone ? `📞 ${newSellerData.phone}` : null
+        }
+        setSellerOptionsList(prev => {
+          const exists = prev.some(opt => opt.value === sellerOption.value)
+          if (!exists) {
+            return [sellerOption, ...prev]
+          }
+          return prev
+        })
+      }
+      
+      // Close modal
+      setShowSellerModal(false)
+      setIsEditingSeller(false)
+      setEditingSeller(null)
+      
+    } catch (error) {
+      console.error('Error creating seller:', error)
+      toast.error(error.response?.data?.message || 'Failed to create seller')
+    } finally {
+      setIsCreatingSeller(false)
+    }
+  }
+
+  // Handle updating an existing seller
+  const handleUpdateSeller = async (sellerData) => {
+    setIsCreatingSeller(true)
+    try {
+      const userId = user?.id || 1
+      const data = {
+        ...sellerData,
+        user_id: userId,
+      }
+      
+      const updatedSeller = await updateSeller(editingSeller.id, data)
+      console.log('✅ Seller updated successfully:', updatedSeller)
+      toast.success('Seller updated successfully')
+      
+      // Refresh sellers list
+      await refreshSellersList(userId)
+      
+      // Update selected seller if it's the one being edited
+      if (selectedSeller?.id === editingSeller.id) {
+        const updatedSellerData = sellers.find(s => s.id === editingSeller.id)
+        if (updatedSellerData) {
+          setSelectedSeller(updatedSellerData)
+          setValue('seller_id', updatedSellerData.id)
+          
+          // Update options list
+          const sellerOption = {
+            value: updatedSellerData.id.toString(),
+            label: updatedSellerData.name,
+            description: `📧 ${updatedSellerData.email || 'No email'}`,
+            subtext: updatedSellerData.phone ? `📞 ${updatedSellerData.phone}` : null
+          }
+          setSellerOptionsList(prev => {
+            const exists = prev.some(opt => opt.value === sellerOption.value)
+            if (!exists) {
+              return [sellerOption, ...prev]
+            }
+            return prev
+          })
+        }
+      }
+      
+      // Close modal
+      setShowSellerModal(false)
+      setIsEditingSeller(false)
+      setEditingSeller(null)
+      
+    } catch (error) {
+      console.error('Error updating seller:', error)
+      toast.error(error.response?.data?.message || 'Failed to update seller')
+    } finally {
+      setIsCreatingSeller(false)
+    }
+  }
+
+  // Refresh sellers list helper
+  const refreshSellersList = async (userId) => {
+    try {
+      const response = await sellerAPI.getByUserId(userId, { page: 1, per_page: 100 })
+      let sellersData = []
+      if (response.data?.sellers?.data) {
+        sellersData = Array.isArray(response.data.sellers.data) ? response.data.sellers.data : []
+      } else if (response.data?.sellers) {
+        sellersData = Array.isArray(response.data.sellers) ? response.data.sellers : []
+      }
+      setSellers(sellersData)
+      return sellersData
+    } catch (error) {
+      console.error('Failed to refresh sellers:', error)
+      return []
+    }
+  }
+
+  // Handle edit seller click from dropdown
+  const handleEditSellerClick = (e, seller) => {
+    e.stopPropagation() // Prevent dropdown selection
+    if (seller) {
+      setEditingSeller(seller)
+      setIsEditingSeller(true)
+      setShowSellerModal(true)
     }
   }
 
@@ -300,20 +455,50 @@ const StockForm = ({ stock, onSubmit, onCancel, isSubmitting, products, units })
     )
   }
 
-  // Custom render function for seller options
+  // Custom render function for seller options with "Add New" and "Edit" options
   const renderSellerOption = (option, index, isHighlighted, isSelected) => {
+    // Check if this is the "Add New Seller" option
+    if (option.value === 'add-new') {
+      return (
+        <div
+          key={option.value}
+          className={`px-4 py-3 cursor-pointer border-b border-gray-100 dark:border-gray-700 last:border-b-0 transition-colors ${
+            isHighlighted ? 'bg-primary-50 dark:bg-primary-900/20' : ''
+          } hover:bg-primary-50 dark:hover:bg-primary-900/20`}
+          onClick={() => {
+            setShowSellerModal(true)
+            setIsEditingSeller(false)
+            setEditingSeller(null)
+            setIsSellerSearchActive(false)
+            setSellerSearchResults([])
+          }}
+        >
+          <div className="flex items-center text-primary-600 dark:text-primary-400">
+            <FiPlus className="w-5 h-5 mr-2" />
+            <span className="font-medium">Add New Seller: "{sellerSearchTerm}"</span>
+          </div>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 ml-7">
+            Couldn't find the seller you're looking for? Create a new one.
+          </p>
+        </div>
+      )
+    }
+
     const seller = isSellerSearchActive 
       ? sellerSearchResults.find(s => s.id === parseInt(option.value))
       : sellers?.find(s => s.id === parseInt(option.value)) || sellerSearchResults.find(s => s.id === parseInt(option.value))
     
     if (!seller) return null
     
+    const isSelectedSeller = selectedSeller?.id === seller.id
+    
     return (
       <div
         key={option.value}
         className={`px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer border-b border-gray-100 dark:border-gray-700 last:border-b-0 transition-colors ${
-          isSelected ? 'bg-primary-50 dark:bg-primary-900/20' : ''
+          isSelectedSeller ? 'bg-primary-50 dark:bg-primary-900/20' : ''
         } ${isHighlighted ? 'bg-gray-100 dark:bg-gray-700' : ''}`}
+        onClick={() => handleSellerSelect(option.value)}
       >
         <div className="flex justify-between items-start">
           <div className="flex-1">
@@ -352,6 +537,16 @@ const StockForm = ({ stock, onSubmit, onCancel, isSubmitting, products, units })
               </div>
             )}
           </div>
+          
+          {/* Edit Icon - positioned on the right */}
+          <button
+            type="button"
+            onClick={(e) => handleEditSellerClick(e, seller)}
+            className="ml-2 p-1.5 text-blue-600 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-900/20 rounded-lg transition-colors flex-shrink-0"
+            title="Edit seller"
+          >
+            <FiEdit2 className="w-4 h-4" />
+          </button>
         </div>
       </div>
     )
@@ -490,322 +685,379 @@ const StockForm = ({ stock, onSubmit, onCancel, isSubmitting, products, units })
     return options
   }
 
-  // Prepare options for Seller SearchSelect
+  // Prepare options for Seller SearchSelect with "Add New" option
   const getSellerOptions = () => {
+    let options = []
+    
     if (isSellerSearchActive && sellerSearchResults.length > 0) {
-      return sellerSearchResults.map(seller => ({
+      options = sellerSearchResults.map(seller => ({
         value: seller.id.toString(),
         label: seller.name,
         description: `📧 ${seller.email || 'No email'}`,
         subtext: seller.phone ? `📞 ${seller.phone}` : null
       }))
+    } else if (!isSellerSearchActive) {
+      let sellerList = sellers || []
+      options = sellerList.map(seller => ({
+        value: seller.id.toString(),
+        label: seller.name,
+        description: `📧 ${seller.email || 'No email'}`,
+        subtext: seller.phone ? `📞 ${seller.phone}` : null
+      }))
+      
+      if (sellerOptionsList.length > 0) {
+        const allOptions = [...sellerOptionsList]
+        options.forEach(opt => {
+          if (!allOptions.some(existing => existing.value === opt.value)) {
+            allOptions.push(opt)
+          }
+        })
+        options = allOptions
+      }
     }
     
-    if (isSellerSearchActive && sellerSearchResults.length === 0) {
-      return []
-    }
-    
-    let sellerList = sellers || []
-    
-    const options = sellerList.map(seller => ({
-      value: seller.id.toString(),
-      label: seller.name,
-      description: `📧 ${seller.email || 'No email'}`,
-      subtext: seller.phone ? `📞 ${seller.phone}` : null
-    }))
-    
-    if (sellerOptionsList.length > 0) {
-      const allOptions = [...sellerOptionsList]
-      options.forEach(opt => {
-        if (!allOptions.some(existing => existing.value === opt.value)) {
-          allOptions.push(opt)
-        }
+    // If there are no results and we're searching, add "Add New" option
+    if (isSellerSearchActive && sellerSearchResults.length === 0 && sellerSearchTerm.length >= 2) {
+      options.push({
+        value: 'add-new',
+        label: `Add New Seller: "${sellerSearchTerm}"`,
+        description: 'Click to create a new seller',
       })
-      return allOptions
     }
     
     return options
   }
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -20 }}
-      className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6 space-y-6"
-    >
-      <div className="flex items-center justify-between mb-6">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-          {stock ? 'Edit Stock Entry' : 'Add New Stock Entry'}
-        </h3>
-        <button
-          type="button"
-          onClick={onCancel}
-          className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-        >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </button>
-      </div>
+    <>
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -20 }}
+        className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6 space-y-6"
+      >
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+            {stock ? 'Edit Stock Entry' : 'Add New Stock Entry'}
+          </h3>
+          <button
+            type="button"
+            onClick={onCancel}
+            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
 
-      {/* Hidden user_id field */}
-      <input type="hidden" {...register('user_id')} value={user.id} />
-      
-      {/* Seller & Invoice Section */}
-      <div className="bg-gray-50 dark:bg-gray-700/30 rounded-xl p-4 space-y-4">
-        <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center">
-          <span className="w-1 h-5 bg-blue-500 rounded mr-2"></span>
-          Seller & Invoice Details
-        </h4>
+        {/* Hidden user_id field */}
+        <input type="hidden" {...register('user_id')} value={user.id} />
         
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <SearchSelect
-            label="Seller Name"
-            options={getSellerOptions()}
-            value={selectedSeller?.id?.toString() || ''}
-            onChange={handleSellerSelect}
-            placeholder="Search seller by name, email, or phone..."
-            required
-            renderOption={renderSellerOption}
-            onSearchChange={handleSellerSearch}
-            isLoading={isSearchingSeller || sellersLoading}
-            minSearchLength={2}
-            noOptionsMessage={isSellerSearchActive && sellerSearchResults.length === 0 ? 'No sellers found' : 'No sellers available'}
-          />
-
-          <Input
-            label="Invoice Number"
-            type="text"
-            placeholder="Enter invoice number"
-            error={errors.invoice_number?.message}
-            {...register('invoice_number', { 
-              required: 'Invoice number is required'
-            })}
-          />
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Input
-            label="Invoice Date"
-            type="date"
-            placeholder="Select invoice date"
-            error={errors.invoice_date?.message}
-            {...register('invoice_date', { 
-              required: 'Invoice date is required'
-            })}
-          />
-
-          <Input
-            label="Paid Amount"
-            type="text"
-            step="0.01"
-            placeholder="Enter paid amount"
-            error={errors.paid_amount?.message}
-            {...register('paid_amount', { 
-              valueAsNumber: true,
-              onChange: (e) => handleDecimalInput(e)
-            })}
-          />
-        </div>
-
-        <div className="grid grid-cols-1 gap-4">
-          {/* Invoice Image - Custom file input */}
-          <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Invoice Image
-              {!stock?.invoice_image && <span className="text-red-500 ml-1">*</span>}
-            </label>
-            
-            <div className="flex items-center space-x-4">
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*,.pdf"
-                onChange={handleFileChange}
-                className="block w-full text-sm text-gray-500 dark:text-gray-400
-                  file:mr-4 file:py-2 file:px-4
-                  file:rounded-lg file:border-0
-                  file:text-sm file:font-medium
-                  file:bg-primary-50 file:text-primary-700
-                  hover:file:bg-primary-100
-                  dark:file:bg-primary-900/20 dark:file:text-primary-400
-                  dark:hover:file:bg-primary-900/30
-                  cursor-pointer"
+        {/* Seller & Invoice Section */}
+        <div className="bg-gray-50 dark:bg-gray-700/30 rounded-xl p-4 space-y-4">
+          <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center">
+            <span className="w-1 h-5 bg-blue-500 rounded mr-2"></span>
+            Seller & Invoice Details
+          </h4>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <SearchSelect
+                label="Seller Name"
+                options={getSellerOptions()}
+                value={selectedSeller?.id?.toString() || ''}
+                onChange={handleSellerSelect}
+                placeholder="Search seller by name, email, or phone..."
+                required
+                renderOption={renderSellerOption}
+                onSearchChange={handleSellerSearch}
+                isLoading={isSearchingSeller || sellersLoading}
+                minSearchLength={2}
+                noOptionsMessage={
+                  isSellerSearchActive && sellerSearchResults.length === 0 && sellerSearchTerm.length >= 2
+                    ? 'No sellers found. Click "Add New Seller" to create one.'
+                    : 'No sellers available'
+                }
               />
-              
-              {invoiceImageFile && (
-                <button
-                  type="button"
-                  onClick={handleRemoveFile}
-                  className="p-2 text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20 rounded-lg transition-colors"
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              )}
             </div>
 
-            {/* Preview or existing image */}
-            {invoiceImagePreview && (
-              <div className="mt-3">
-                <div className="relative inline-block">
-                  <img 
-                    src={invoiceImagePreview} 
-                    alt="Invoice preview" 
-                    className="max-h-32 rounded-lg border border-gray-200 dark:border-gray-700 object-contain"
-                  />
+            <Input
+              label="Invoice Number"
+              type="text"
+              placeholder="Enter invoice number"
+              error={errors.invoice_number?.message}
+              {...register('invoice_number', { 
+                required: 'Invoice number is required'
+              })}
+            />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Input
+              label="Invoice Date"
+              type="date"
+              placeholder="Select invoice date"
+              error={errors.invoice_date?.message}
+              {...register('invoice_date', { 
+                required: 'Invoice date is required'
+              })}
+            />
+
+            <Input
+              label="Paid Amount"
+              type="text"
+              step="0.01"
+              placeholder="Enter paid amount"
+              error={errors.paid_amount?.message}
+              {...register('paid_amount', { 
+                valueAsNumber: true,
+                onChange: (e) => handleDecimalInput(e)
+              })}
+            />
+          </div>
+
+          <div className="grid grid-cols-1 gap-4">
+            {/* Invoice Image - Custom file input */}
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                Invoice Image
+                {!stock?.invoice_image && <span className="text-red-500 ml-1">*</span>}
+              </label>
+              
+              <div className="flex items-center space-x-4">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*,.pdf"
+                  onChange={handleFileChange}
+                  className="block w-full text-sm text-gray-500 dark:text-gray-400
+                    file:mr-4 file:py-2 file:px-4
+                    file:rounded-lg file:border-0
+                    file:text-sm file:font-medium
+                    file:bg-primary-50 file:text-primary-700
+                    hover:file:bg-primary-100
+                    dark:file:bg-primary-900/20 dark:file:text-primary-400
+                    dark:hover:file:bg-primary-900/30
+                    cursor-pointer"
+                />
+                
+                {invoiceImageFile && (
+                  <button
+                    type="button"
+                    onClick={handleRemoveFile}
+                    className="p-2 text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                )}
+              </div>
+
+              {/* Preview or existing image */}
+              {invoiceImagePreview && (
+                <div className="mt-3">
+                  <div className="relative inline-block">
+                    <img 
+                      src={invoiceImagePreview} 
+                      alt="Invoice preview" 
+                      className="max-h-32 rounded-lg border border-gray-200 dark:border-gray-700 object-contain"
+                    />
+                  </div>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    {invoiceImageFile ? invoiceImageFile.name : 'Existing image'}
+                  </p>
                 </div>
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                  {invoiceImageFile ? invoiceImageFile.name : 'Existing image'}
+              )}
+              
+              {stock?.invoice_image && !invoiceImageFile && (
+                <div className="text-sm text-gray-500 dark:text-gray-400">
+                  Current file: {stock.invoice_image}
+                </div>
+              )}
+              
+              {errors.invoice_image && (
+                <p className="mt-1 text-sm text-red-600 dark:text-red-400">
+                  {errors.invoice_image.message}
                 </p>
-              </div>
-            )}
-            
-            {stock?.invoice_image && !invoiceImageFile && (
-              <div className="text-sm text-gray-500 dark:text-gray-400">
-                Current file: {stock.invoice_image}
-              </div>
-            )}
-            
-            {errors.invoice_image && (
-              <p className="mt-1 text-sm text-red-600 dark:text-red-400">
-                {errors.invoice_image.message}
-              </p>
-            )}
+              )}
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Product Details Section */}
-      <div className="bg-gray-50 dark:bg-gray-700/30 rounded-xl p-4 space-y-4">
-        <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center">
-          <span className="w-1 h-5 bg-green-500 rounded mr-2"></span>
-          Product Details
-        </h4>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <SearchSelect
-            label="Product"
-            options={getProductOptions()}
-            value={selectedProduct?.id?.toString() || ''}
-            onChange={handleProductSelect}
-            placeholder="Search product by name, SKU, brand..."
-            required
-            renderOption={renderProductOption}
-            onSearchChange={handleProductSearch}
-            isLoading={isSearching}
-            minSearchLength={2}
-          />
+        {/* Product Details Section */}
+        <div className="bg-gray-50 dark:bg-gray-700/30 rounded-xl p-4 space-y-4">
+          <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center">
+            <span className="w-1 h-5 bg-green-500 rounded mr-2"></span>
+            Product Details
+          </h4>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <SearchSelect
+              label="Product"
+              options={getProductOptions()}
+              value={selectedProduct?.id?.toString() || ''}
+              onChange={handleProductSelect}
+              placeholder="Search product by name, SKU, brand..."
+              required
+              renderOption={renderProductOption}
+              onSearchChange={handleProductSearch}
+              isLoading={isSearching}
+              minSearchLength={2}
+            />
 
-          <Input
-            label="Quantity"
-            type="text"
-            min="1"
-            step="1"
-            placeholder="Enter quantity"
-            error={errors.quantity?.message}
-            {...register('quantity', { 
-              required: 'Quantity is required',
-              valueAsNumber: true,
-              onChange: (e) => handleNumberInput(e)
-            })}
-          />
+            <Input
+              label="Quantity"
+              type="text"
+              min="1"
+              step="1"
+              placeholder="Enter quantity"
+              error={errors.quantity?.message}
+              {...register('quantity', { 
+                required: 'Quantity is required',
+                valueAsNumber: true,
+                onChange: (e) => handleNumberInput(e)
+              })}
+            />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Input
+              label="Purchase Price"
+              type="text"
+              step="0.01"
+              placeholder="Enter purchase price"
+              error={errors.purchase_price?.message}
+              {...register('purchase_price', { 
+                valueAsNumber: true,
+                onChange: (e) => handleDecimalInput(e)
+              })}
+            />
+
+            <Input
+              label="Purchase GST (%)"
+              type="text"
+              step="0.01"
+              placeholder="Enter purchase GST percentage"
+              error={errors.purchase_gst_percentage?.message}
+              {...register('purchase_gst_percentage', { 
+                valueAsNumber: true,
+                onChange: (e) => handleDecimalInput(e)
+              })}
+            />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Input
+              label="Selling Price"
+              type="text"
+              step="0.01"
+              placeholder="Enter selling price"
+              error={errors.selling_price?.message}
+              {...register('selling_price', { 
+                valueAsNumber: true,
+                onChange: (e) => handleDecimalInput(e)
+              })}
+            />
+
+            <Input
+              label="Selling GST (%)"
+              type="text"
+              step="0.01"
+              placeholder="Enter selling GST percentage"
+              error={errors.selling_gst_percentage?.message}
+              {...register('selling_gst_percentage', { 
+                valueAsNumber: true,
+                onChange: (e) => handleDecimalInput(e)
+              })}
+            />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Select
+              label="Unit"
+              options={[
+                { value: '', label: 'Select Unit' },
+                ...(units?.map(unit => ({
+                  value: unit.id.toString(),
+                  label: `${unit.name} (${unit.code})`,
+                })) || [])
+              ]}
+              error={errors.unit_id?.message}
+              {...register('unit_id', { 
+                required: 'Unit is required',
+                valueAsNumber: true,
+                setValueAs: (value) => value ? parseInt(value) : null
+              })}
+            />
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Input
-            label="Purchase Price"
-            type="text"
-            step="0.01"
-            placeholder="Enter purchase price"
-            error={errors.purchase_price?.message}
-            {...register('purchase_price', { 
-              valueAsNumber: true,
-              onChange: (e) => handleDecimalInput(e)
-            })}
-          />
-
-          <Input
-            label="Purchase GST (%)"
-            type="text"
-            step="0.01"
-            placeholder="Enter purchase GST percentage"
-            error={errors.purchase_gst_percentage?.message}
-            {...register('purchase_gst_percentage', { 
-              valueAsNumber: true,
-              onChange: (e) => handleDecimalInput(e)
-            })}
-          />
+        {/* Form Actions */}
+        <div className="flex justify-end space-x-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onCancel}
+            disabled={isSubmitting}
+          >
+            Cancel
+          </Button>
+          <Button
+            type="button"
+            variant="primary"
+            onClick={handleSubmit(onFormSubmit)}
+            isLoading={isSubmitting}
+          >
+            {stock ? 'Update Stock' : 'Create Stock'}
+          </Button>
         </div>
+      </motion.div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Input
-            label="Selling Price"
-            type="text"
-            step="0.01"
-            placeholder="Enter selling price"
-            error={errors.selling_price?.message}
-            {...register('selling_price', { 
-              valueAsNumber: true,
-              onChange: (e) => handleDecimalInput(e)
-            })}
-          />
-
-          <Input
-            label="Selling GST (%)"
-            type="text"
-            step="0.01"
-            placeholder="Enter selling GST percentage"
-            error={errors.selling_gst_percentage?.message}
-            {...register('selling_gst_percentage', { 
-              valueAsNumber: true,
-              onChange: (e) => handleDecimalInput(e)
-            })}
-          />
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Select
-            label="Unit"
-            options={[
-              { value: '', label: 'Select Unit' },
-              ...(units?.map(unit => ({
-                value: unit.id.toString(),
-                label: `${unit.name} (${unit.code})`,
-              })) || [])
-            ]}
-            error={errors.unit_id?.message}
-            {...register('unit_id', { 
-              required: 'Unit is required',
-              valueAsNumber: true,
-              setValueAs: (value) => value ? parseInt(value) : null
-            })}
-          />
-        </div>
-      </div>
-
-      {/* Form Actions */}
-      <div className="flex justify-end space-x-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-        <Button
-          type="button"
-          variant="outline"
-          onClick={onCancel}
-          disabled={isSubmitting}
-        >
-          Cancel
-        </Button>
-        <Button
-          type="button"
-          variant="primary"
-          onClick={handleSubmit(onFormSubmit)}
-          isLoading={isSubmitting}
-        >
-          {stock ? 'Update Stock' : 'Create Stock'}
-        </Button>
-      </div>
-    </motion.div>
+      {/* Seller Creation/Edit Modal */}
+      <AnimatePresence>
+        {showSellerModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+            style={{ marginTop: 0 }}
+            onClick={() => {
+              if (!isCreatingSeller) {
+                setShowSellerModal(false)
+                setIsEditingSeller(false)
+                setEditingSeller(null)
+              }
+            }}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              transition={{ type: "spring", duration: 0.5 }}
+              onClick={(e) => e.stopPropagation()}
+              className="w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto"
+            >
+              <SellerForm
+                seller={isEditingSeller ? editingSeller : null}
+                onSubmit={isEditingSeller ? handleUpdateSeller : handleCreateSeller}
+                onCancel={() => {
+                  if (!isCreatingSeller) {
+                    setShowSellerModal(false)
+                    setIsEditingSeller(false)
+                    setEditingSeller(null)
+                  }
+                }}
+                isSubmitting={isCreatingSeller}
+                isEdit={isEditingSeller}
+              />
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </>
   )
 }
 

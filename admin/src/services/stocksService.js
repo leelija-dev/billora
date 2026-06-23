@@ -42,13 +42,13 @@ export const stocksAPI = {
   update: (id, stockData) => {
     console.log('Stocks API - Updating stock:', id, stockData)
     if (stockData instanceof FormData) {
-      return apiClient.put(`/stocks/${id}`, stockData, {
+      return apiClient.post(`/stocks/${id}`, stockData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
       })
     }
-    return apiClient.put(`/stocks/${id}`, stockData)
+    return apiClient.post(`/stocks/${id}`, stockData)
   },
 
   // Delete stock
