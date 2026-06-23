@@ -61,8 +61,6 @@ const Products = () => {
 
   const hasStockPermission = canAccess("stock-management");
 
-  
-
   // Refs to track initialization
   const initializedRef = useRef(false);
   const categoriesInitializedRef = useRef(false);
@@ -321,33 +319,23 @@ const Products = () => {
     setUpdatingStock(true);
     try {
       console.log("handleAddStock - stockData:", stockData);
-      console.log("handleAddStock - selectedStockRecord:", selectedStockRecord);
-      console.log(
-        "handleAddStock - selectedStockProduct:",
-        selectedStockProduct,
-      );
 
-      // Use the stock record we already have from the product
-      if (!selectedStockRecord) {
-        console.error(
-          "No stock record found for product:",
-          selectedStockProduct?.id,
-        );
-        toast.error(
-          "No stock record found for this product. Please create a stock record first.",
-        );
+      // Use the stock_id from the form data
+      if (!stockData.stock_id) {
+        console.error("No stock record selected");
+        toast.error("Please select a stock record");
         return;
       }
 
       console.log("handleAddStock - API call params:", {
-        stockId: selectedStockRecord.id,
+        stockId: stockData.stock_id,
         userId: stockData.user_id,
         quantity: stockData.quantity,
       });
 
-      // Call the stock API with the stock record ID
+      // Call the stock API with the selected stock record ID
       await stockAPI.addStock(
-        selectedStockRecord.id,
+        stockData.stock_id,
         stockData.user_id,
         stockData.quantity,
       );
@@ -377,7 +365,6 @@ const Products = () => {
         ) {
           currentPageUrl = pagination.last_page_url;
         } else if (pagination.next_page_url) {
-          // Use next_page_url and replace the page number
           currentPageUrl = pagination.next_page_url.replace(
             /page=\d+/,
             `page=${currentPageNumber}`,
@@ -600,13 +587,11 @@ const Products = () => {
               SKU: {row.sku}
             </p>
 
-           
-              <div className="flex items-center mt-1">
-                <span className="text-xs text-gray-500 dark:text-gray-400">
-                 {row.unit_amount }: {row.unit ? row.unit.name : "N/A"}
-                </span>
-              </div>
-          
+            <div className="flex items-center mt-1">
+              <span className="text-xs text-gray-500 dark:text-gray-400">
+                {row.unit_amount}: {row.unit ? row.unit.name : "N/A"}
+              </span>
+            </div>
 
             {row.attributes && (
               <div className="mt-1">
@@ -758,8 +743,7 @@ const Products = () => {
     {
       header: "Category",
       accessor: "category_id",
-      cell: (value,row) => {
-        
+      cell: (value, row) => {
         return (
           <span className="px-3 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg text-sm">
             {row?.category?.name || `Not specified`}
@@ -770,12 +754,12 @@ const Products = () => {
     {
       header: "Brand",
       accessor: "brand_id",
-      cell: (value,row) => {
+      cell: (value, row) => {
         // console.log("Rendering brand cell - value:", value, "row:", row);
-       
+
         return (
           <span className="px-3 py-1 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded-lg text-sm">
-           {row?.brand?.name || `Not specified`}
+            {row?.brand?.name || `Not specified`}
           </span>
         );
       },
@@ -791,80 +775,81 @@ const Products = () => {
 
         return (
           <>
-          {hasStockPermission ? (
-            <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              <div className="w-16 h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                <motion.div
-                  initial={{ width: 0 }}
-                  animate={{
-                    width: `${Math.min((totalStock / maxStock) * 100, 100)}%`,
-                  }}
-                  transition={{ duration: 0.5 }}
-                  className={`h-full rounded-full ${
-                    totalStock <= lowStockThreshold && totalStock > 0
-                      ? "bg-red-500"
-                      : totalStock === 0
-                        ? "bg-gray-400"
-                        : totalStock <= lowStockThreshold * 2
-                          ? "bg-yellow-500"
-                          : "bg-green-500"
-                  }`}
-                />
-              </div>
-              <span
-                className={`
-                text-sm font-medium
-                ${
-                  totalStock <= lowStockThreshold && totalStock > 0
-                    ? "text-red-600 dark:text-red-400"
-                    : totalStock === 0
-                      ? "text-orange-600 dark:text-orange-400"
-                      : totalStock <= lowStockThreshold * 2
-                        ? "text-yellow-600 dark:text-yellow-400"
-                        : "text-gray-900 dark:text-white"
-                }
-              `}
-              >
-                {totalStock}
-              </span>
-              {totalStock === 0 && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => openStockModal(row)}
-                  icon={FiPlus}
-                  className="!px-2 !py-1 text-orange-600 border-orange-300 hover:bg-orange-50 dark:text-orange-400 dark:border-orange-700 dark:hover:bg-orange-900/20"
-                  title="Add Stock"
-                />
-              )}
-            </div>
+            {hasStockPermission ? (
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <div className="w-16 h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                    <motion.div
+                      initial={{ width: 0 }}
+                      animate={{
+                        width: `${Math.min((totalStock / maxStock) * 100, 100)}%`,
+                      }}
+                      transition={{ duration: 0.5 }}
+                      className={`h-full rounded-full ${
+                        totalStock <= lowStockThreshold && totalStock > 0
+                          ? "bg-red-500"
+                          : totalStock === 0
+                            ? "bg-gray-400"
+                            : totalStock <= lowStockThreshold * 2
+                              ? "bg-yellow-500"
+                              : "bg-green-500"
+                      }`}
+                    />
+                  </div>
+                  <span
+                    className={`
+              text-sm font-medium
+              ${
+                totalStock <= lowStockThreshold && totalStock > 0
+                  ? "text-red-600 dark:text-red-400"
+                  : totalStock === 0
+                    ? "text-orange-600 dark:text-orange-400"
+                    : totalStock <= lowStockThreshold * 2
+                      ? "text-yellow-600 dark:text-yellow-400"
+                      : "text-gray-900 dark:text-white"
+              }
+            `}
+                  >
+                    {totalStock}
+                  </span>
+                  {/* Always show the Add Stock button */}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => openStockModal(row)}
+                    icon={FiPlus}
+                    className="!px-2 !py-1 text-blue-600 border-blue-300 hover:bg-blue-50 dark:text-blue-400 dark:border-blue-700 dark:hover:bg-blue-900/20"
+                    title="Add Stock"
+                  />
+                </div>
 
-            {/* Display stock breakdown by unit if multiple stocks exist */}
-            {stocksList.length > 1 && (
-              <div className="text-xs text-gray-500 dark:text-gray-400 space-y-0.5">
-                {stocksList.map((stock, idx) => {
-                  const unit = Array.isArray(units)
-                    ? units.find((u) => u.id === stock.unit_id)
-                    : null;
-                  return (
-                    <div
-                      key={idx}
-                      className="flex items-center justify-between"
-                    >
-                      <span className="truncate">
-                        {unit ? unit.name : `Unit ${stock.unit_id}`}:
-                      </span>
-                      <span className="font-medium">
-                        {parseFloat(stock.quantity).toFixed(2)}
-                      </span>
-                    </div>
-                  );
-                })}
+                {/* Display stock breakdown by unit if multiple stocks exist */}
+                {stocksList.length > 1 && (
+                  <div className="text-xs text-gray-500 dark:text-gray-400 space-y-0.5">
+                    {stocksList.map((stock, idx) => {
+                      const unit = Array.isArray(units)
+                        ? units.find((u) => u.id === stock.unit_id)
+                        : null;
+                      return (
+                        <div
+                          key={idx}
+                          className="flex items-center justify-between"
+                        >
+                          <span className="truncate">
+                            {unit ? unit.name : `Unit ${stock.unit_id}`}:
+                          </span>
+                          <span className="font-medium">
+                            {parseFloat(stock.quantity).toFixed(2)}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
+            ) : (
+              <div className="text-sm text-gray-500">Not applicable</div>
             )}
-          </div>
-          ):(<div className="text-sm text-gray-500">Not applicable</div>)}
           </>
         );
       },
@@ -1037,7 +1022,6 @@ const Products = () => {
             )}
           </div>
         </motion.div>
-
         {showAddForm || showEditForm ? (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -1348,12 +1332,36 @@ const Products = () => {
                                   </div>
                                 )}
 
+                              {totalStock <= lowStockThreshold &&
+                                totalStock > 0 && (
+                                  <div className="absolute top-2 left-2 px-2 py-1 bg-red-500 text-white text-xs font-medium rounded-lg flex items-center">
+                                    <FiAlertCircle className="w-3 h-3 mr-1" />
+                                    Low Stock
+                                  </div>
+                                )}
+
                               {totalStock === 0 && (
                                 <div className="absolute top-2 left-2 px-2 py-1 bg-orange-500 text-white text-xs font-medium rounded-lg flex items-center">
                                   <FiAlertCircle className="w-3 h-3 mr-1" />
                                   Out of Stock
                                 </div>
                               )}
+
+                              {/* Add a floating action button for stock in grid view */}
+                              <div className="absolute bottom-2 right-2">
+                                <motion.button
+                                  whileHover={{ scale: 1.1 }}
+                                  whileTap={{ scale: 0.95 }}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    openStockModal(product);
+                                  }}
+                                  className="p-2 bg-blue-500 hover:bg-blue-600 text-white rounded-full shadow-lg"
+                                  title="Add Stock"
+                                >
+                                  <FiPlus className="w-4 h-4" />
+                                </motion.button>
+                              </div>
                             </div>
 
                             <div className="p-4">
@@ -1484,7 +1492,7 @@ const Products = () => {
             </motion.div>
           </>
         )}
-
+        
         <StockAddModal
           isOpen={showStockModal}
           onClose={() => {
@@ -1499,6 +1507,7 @@ const Products = () => {
               ? getProductTotalStock(selectedStockProduct)
               : 0
           }
+          units={units} // Pass units for better display
         />
       </motion.div>
 

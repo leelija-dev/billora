@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { useForm } from 'react-hook-form'
 import { motion } from 'framer-motion'
 import { useAuthStore } from '../../../store/authStore'
@@ -23,6 +23,12 @@ const StockForm = ({ stock, onSubmit, onCancel, isSubmitting, products, units })
   const [sellerOptionsList, setSellerOptionsList] = useState([])
   const [sellers, setSellers] = useState([])
   const [sellersLoading, setSellersLoading] = useState(false)
+  const [isSellerSearchActive, setIsSellerSearchActive] = useState(false)
+  
+  // State for file input
+  const [invoiceImageFile, setInvoiceImageFile] = useState(null)
+  const [invoiceImagePreview, setInvoiceImagePreview] = useState(null)
+  const fileInputRef = useRef(null)
 
   const {
     register,
@@ -31,7 +37,11 @@ const StockForm = ({ stock, onSubmit, onCancel, isSubmitting, products, units })
     setValue,
     reset,
     watch,
-  } = useForm()
+  } = useForm({
+    defaultValues: {
+      invoice_image: stock?.invoice_image || '',
+    }
+  })
 
   // Fetch sellers on component mount
   useEffect(() => {
@@ -44,12 +54,9 @@ const StockForm = ({ stock, onSubmit, onCancel, isSubmitting, products, units })
         
         let sellersData = []
         
-        // Handle new paginated response structure
         if (response.data?.sellers?.data) {
-          // New structure: { status, message, sellers: { data: [...], total, current_page, ... } }
           sellersData = Array.isArray(response.data.sellers.data) ? response.data.sellers.data : []
         } else if (response.data?.sellers) {
-          // Old structure: { status, message, sellers: [...] }
           sellersData = Array.isArray(response.data.sellers) ? response.data.sellers : []
         } else if (response.data?.data?.sellers) {
           sellersData = Array.isArray(response.data.data.sellers) ? response.data.data.sellers : []
@@ -62,12 +69,10 @@ const StockForm = ({ stock, onSubmit, onCancel, isSubmitting, products, units })
         console.log('📊 Sellers extracted:', sellersData.length)
         setSellers(sellersData)
         
-        // If editing and has seller_id, pre-select the seller
         if (stock?.seller_id) {
           const seller = sellersData.find(s => s.id === stock.seller_id)
           if (seller) {
             setSelectedSeller(seller)
-            // Add to options list for SearchSelect
             const sellerOption = {
               value: seller.id.toString(),
               label: seller.name,
@@ -103,10 +108,13 @@ const StockForm = ({ stock, onSubmit, onCancel, isSubmitting, products, units })
     if (product) {
       setSelectedProduct(product)
       setValue('product_id', id)
-
       setValue('selling_price', product.selling_price || product.price || '')
       setValue('purchase_price', product.purchase_price || product.cost || '')
       setValue('unit_id', product.unit_id || '')
+      setValue('purchase_gst_percentage', product.purchase_gst_percentage_percentage || product.purchase_gst_percentage || '')
+      setValue('selling_gst_percentage', product.gst_percentage || product.selling_gst_percentage || '')
+      
+      console.log('📝 Product selected:', product.name)
     }
   }
 
@@ -120,6 +128,8 @@ const StockForm = ({ stock, onSubmit, onCancel, isSubmitting, products, units })
     if (seller) {
       setSelectedSeller(seller)
       setValue('seller_id', id)
+      setSellerSearchResults([])
+      setIsSellerSearchActive(false)
     }
   }
 
@@ -143,16 +153,18 @@ const StockForm = ({ stock, onSubmit, onCancel, isSubmitting, products, units })
     }
   }
 
-  // Handle seller search - search across all pages
+  // Handle seller search
   const handleSellerSearch = async (searchTerm) => {
     if (searchTerm.length < 2) {
       setSellerSearchResults([])
+      setIsSellerSearchActive(false)
       return
     }
 
     setIsSearchingSeller(true)
+    setIsSellerSearchActive(true)
+    
     try {
-      // First, try to search across all sellers using the API with search param
       const userId = user?.id || 1
       const response = await sellerAPI.getByUserId(userId, { 
         page: 1, 
@@ -171,7 +183,6 @@ const StockForm = ({ stock, onSubmit, onCancel, isSubmitting, products, units })
       setSellerSearchResults(searchResults)
     } catch (error) {
       console.error('Failed to search sellers:', error)
-      // Fallback to local filtering
       const filtered = sellers.filter(seller => 
         seller.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         seller.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -181,6 +192,37 @@ const StockForm = ({ stock, onSubmit, onCancel, isSubmitting, products, units })
     } finally {
       setIsSearchingSeller(false)
     }
+  }
+
+  // Handle file input change
+  const handleFileChange = (e) => {
+    const file = e.target.files[0]
+    if (file) {
+      setInvoiceImageFile(file)
+      // Create preview URL
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        setInvoiceImagePreview(reader.result)
+      }
+      reader.readAsDataURL(file)
+      // Clear any previous errors for this field
+      if (errors.invoice_image) {
+        // You might want to clear the error here
+      }
+    } else {
+      setInvoiceImageFile(null)
+      setInvoiceImagePreview(null)
+    }
+  }
+
+  // Handle remove file
+  const handleRemoveFile = () => {
+    setInvoiceImageFile(null)
+    setInvoiceImagePreview(null)
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ''
+    }
+    setValue('invoice_image', '')
   }
 
   // Custom render function for product options
@@ -260,7 +302,12 @@ const StockForm = ({ stock, onSubmit, onCancel, isSubmitting, products, units })
 
   // Custom render function for seller options
   const renderSellerOption = (option, index, isHighlighted, isSelected) => {
-    const seller = sellers?.find(s => s.id === parseInt(option.value)) || sellerSearchResults.find(s => s.id === parseInt(option.value))
+    const seller = isSellerSearchActive 
+      ? sellerSearchResults.find(s => s.id === parseInt(option.value))
+      : sellers?.find(s => s.id === parseInt(option.value)) || sellerSearchResults.find(s => s.id === parseInt(option.value))
+    
+    if (!seller) return null
+    
     return (
       <div
         key={option.value}
@@ -314,7 +361,6 @@ const StockForm = ({ stock, onSubmit, onCancel, isSubmitting, products, units })
     if (stock) {
       console.log('📝 StockForm - Stock prop received:', stock)
       
-      // Set form values for editing
       reset({
         product_id: stock.product_id,
         seller_id: stock.seller_id,
@@ -327,11 +373,10 @@ const StockForm = ({ stock, onSubmit, onCancel, isSubmitting, products, units })
         invoice_image: stock.invoice_image || '',
         invoice_date: stock.invoice_date || '',
         paid_amount: stock.paid_amount || '',
-        purchase_gst: stock.purchase_gst || '',
-        selling_gst: stock.selling_gst || '',
+        purchase_gst_percentage: stock.purchase_gst_percentage || '',
+        selling_gst_percentage: stock.selling_gst_percentage || '',
       })
 
-      // Find and set the selected product
       if (stock.product_id) {
         let product = products?.find(p => p.id === stock.product_id)
         if (!product && stock.product) {
@@ -355,7 +400,6 @@ const StockForm = ({ stock, onSubmit, onCancel, isSubmitting, products, units })
         }
       }
 
-      // Find and set the selected seller
       if (stock.seller_id) {
         const seller = sellers?.find(s => s.id === stock.seller_id)
         if (seller) {
@@ -375,21 +419,51 @@ const StockForm = ({ stock, onSubmit, onCancel, isSubmitting, products, units })
           })
         }
       }
+
+      // Set existing image preview if editing
+      if (stock.invoice_image) {
+        setInvoiceImagePreview(stock.invoice_image)
+      }
     }
   }, [stock, reset, products, sellers])
 
   const onFormSubmit = (data) => {
-    const stockData = {
-      ...data,
-      user_id: user.id,
-      created_by: user.id,
+    // Create FormData to handle file upload
+    const formData = new FormData()
+    
+    // Append all fields except invoice_image (we handle it separately)
+    Object.keys(data).forEach(key => {
+      if (key !== 'invoice_image' && data[key] !== undefined && data[key] !== null) {
+        formData.append(key, data[key])
+      }
+    })
+    
+    // Append user fields
+    formData.append('user_id', user.id)
+    formData.append('created_by', user.id)
+    
+    // Handle invoice image
+    if (invoiceImageFile) {
+      // If there's a new file, append it
+      formData.append('invoice_image', invoiceImageFile)
+    } else if (stock?.invoice_image && !invoiceImageFile) {
+      // If editing and keeping existing image, append the existing image URL/string
+      // Some backends expect this, others might want to keep it as-is
+      // If your backend expects the image to be kept, you might not need to append it
+      formData.append('invoice_image', stock.invoice_image)
     }
-    console.log('📝 StockForm - Form data submitted:', data)
-    console.log('📝 StockForm - Final stock data:', stockData)
-    onSubmit(stockData)
+    // If no file and no existing image, don't append the field
+    
+    console.log('📝 StockForm - FormData entries:')
+    for (let pair of formData.entries()) {
+      console.log(pair[0], pair[1])
+    }
+    
+    // Pass FormData to parent
+    onSubmit(formData)
   }
 
-  // Prepare options for SearchSelect - combine products and search results
+  // Prepare options for SearchSelect
   const getProductOptions = () => {
     let productList = products || []
     if (searchResults.length > 0) {
@@ -418,10 +492,20 @@ const StockForm = ({ stock, onSubmit, onCancel, isSubmitting, products, units })
 
   // Prepare options for Seller SearchSelect
   const getSellerOptions = () => {
-    let sellerList = sellers || []
-    if (sellerSearchResults.length > 0) {
-      sellerList = sellerSearchResults
+    if (isSellerSearchActive && sellerSearchResults.length > 0) {
+      return sellerSearchResults.map(seller => ({
+        value: seller.id.toString(),
+        label: seller.name,
+        description: `📧 ${seller.email || 'No email'}`,
+        subtext: seller.phone ? `📞 ${seller.phone}` : null
+      }))
     }
+    
+    if (isSellerSearchActive && sellerSearchResults.length === 0) {
+      return []
+    }
+    
+    let sellerList = sellers || []
     
     const options = sellerList.map(seller => ({
       value: seller.id.toString(),
@@ -476,7 +560,6 @@ const StockForm = ({ stock, onSubmit, onCancel, isSubmitting, products, units })
         </h4>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Seller Name - Searchable Dropdown */}
           <SearchSelect
             label="Seller Name"
             options={getSellerOptions()}
@@ -488,9 +571,9 @@ const StockForm = ({ stock, onSubmit, onCancel, isSubmitting, products, units })
             onSearchChange={handleSellerSearch}
             isLoading={isSearchingSeller || sellersLoading}
             minSearchLength={2}
+            noOptionsMessage={isSellerSearchActive && sellerSearchResults.length === 0 ? 'No sellers found' : 'No sellers available'}
           />
 
-          {/* Invoice Number */}
           <Input
             label="Invoice Number"
             type="text"
@@ -503,7 +586,6 @@ const StockForm = ({ stock, onSubmit, onCancel, isSubmitting, products, units })
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Invoice Date */}
           <Input
             label="Invoice Date"
             type="date"
@@ -514,7 +596,6 @@ const StockForm = ({ stock, onSubmit, onCancel, isSubmitting, products, units })
             })}
           />
 
-          {/* Paid Amount */}
           <Input
             label="Paid Amount"
             type="text"
@@ -529,20 +610,71 @@ const StockForm = ({ stock, onSubmit, onCancel, isSubmitting, products, units })
         </div>
 
         <div className="grid grid-cols-1 gap-4">
-          {/* Invoice Image */}
-          <Input
-            label="Invoice Image"
-            type="file"
-            accept="image/*,.pdf"
-            placeholder="Upload invoice image"
-            error={errors.invoice_image?.message}
-            {...register('invoice_image')}
-          />
-          {stock?.invoice_image && (
-            <div className="text-sm text-gray-500 dark:text-gray-400">
-              Current file: {stock.invoice_image}
+          {/* Invoice Image - Custom file input */}
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Invoice Image
+              {!stock?.invoice_image && <span className="text-red-500 ml-1">*</span>}
+            </label>
+            
+            <div className="flex items-center space-x-4">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*,.pdf"
+                onChange={handleFileChange}
+                className="block w-full text-sm text-gray-500 dark:text-gray-400
+                  file:mr-4 file:py-2 file:px-4
+                  file:rounded-lg file:border-0
+                  file:text-sm file:font-medium
+                  file:bg-primary-50 file:text-primary-700
+                  hover:file:bg-primary-100
+                  dark:file:bg-primary-900/20 dark:file:text-primary-400
+                  dark:hover:file:bg-primary-900/30
+                  cursor-pointer"
+              />
+              
+              {invoiceImageFile && (
+                <button
+                  type="button"
+                  onClick={handleRemoveFile}
+                  className="p-2 text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              )}
             </div>
-          )}
+
+            {/* Preview or existing image */}
+            {invoiceImagePreview && (
+              <div className="mt-3">
+                <div className="relative inline-block">
+                  <img 
+                    src={invoiceImagePreview} 
+                    alt="Invoice preview" 
+                    className="max-h-32 rounded-lg border border-gray-200 dark:border-gray-700 object-contain"
+                  />
+                </div>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  {invoiceImageFile ? invoiceImageFile.name : 'Existing image'}
+                </p>
+              </div>
+            )}
+            
+            {stock?.invoice_image && !invoiceImageFile && (
+              <div className="text-sm text-gray-500 dark:text-gray-400">
+                Current file: {stock.invoice_image}
+              </div>
+            )}
+            
+            {errors.invoice_image && (
+              <p className="mt-1 text-sm text-red-600 dark:text-red-400">
+                {errors.invoice_image.message}
+              </p>
+            )}
+          </div>
         </div>
       </div>
 
@@ -600,8 +732,8 @@ const StockForm = ({ stock, onSubmit, onCancel, isSubmitting, products, units })
             type="text"
             step="0.01"
             placeholder="Enter purchase GST percentage"
-            error={errors.purchase_gst?.message}
-            {...register('purchase_gst', { 
+            error={errors.purchase_gst_percentage?.message}
+            {...register('purchase_gst_percentage', { 
               valueAsNumber: true,
               onChange: (e) => handleDecimalInput(e)
             })}
@@ -626,8 +758,8 @@ const StockForm = ({ stock, onSubmit, onCancel, isSubmitting, products, units })
             type="text"
             step="0.01"
             placeholder="Enter selling GST percentage"
-            error={errors.selling_gst?.message}
-            {...register('selling_gst', { 
+            error={errors.selling_gst_percentage?.message}
+            {...register('selling_gst_percentage', { 
               valueAsNumber: true,
               onChange: (e) => handleDecimalInput(e)
             })}

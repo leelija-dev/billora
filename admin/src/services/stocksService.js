@@ -24,14 +24,30 @@ export const stocksAPI = {
     return apiClient.get(`/stocks/${id}`)
   },
 
-  // Create stock
+ // Create stock with FormData support
   create: (stockData) => {
+    // Check if we're sending FormData
+    if (stockData instanceof FormData) {
+      return apiClient.post('/stocks/store', stockData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      })
+    }
+    // Regular JSON data
     return apiClient.post('/stocks/store', stockData)
   },
 
-  // Update stock
+  // Update stock with FormData support
   update: (id, stockData) => {
-    console.log(' Stocks API - Updating stock:', id, stockData)
+    console.log('Stocks API - Updating stock:', id, stockData)
+    if (stockData instanceof FormData) {
+      return apiClient.put(`/stocks/${id}`, stockData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      })
+    }
     return apiClient.put(`/stocks/${id}`, stockData)
   },
 

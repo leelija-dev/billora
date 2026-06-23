@@ -130,52 +130,32 @@ const Stock = () => {
   }
 
   const handleSubmitStock = async (stockData) => {
-    setFormSubmitting(true)
-    try {
-      if (showEditForm && selectedStock) {
-        await updateStock(selectedStock.id, stockData)
-        console.log('Stock updated, refreshing current page')
-        
-        // Clear cache if your store has cache
-        if (useInventoryStore.getState().clearCache) {
-          useInventoryStore.getState().clearCache()
-        }
-        
-        // Get the current page from pagination state
-        const currentPageNumber = pagination?.current_page || currentPage || 1
-        
-        // Refresh the current page data
-        if (fetchStocksByUrl && pagination?.first_page_url) {
-          // Construct URL for current page
-          const baseUrl = pagination.first_page_url.split('?')[0]
-          const currentPageUrl = `${baseUrl}?page=${currentPageNumber}`
-          await fetchStocksByUrl(currentPageUrl)
-        } else {
-          await fetchStocks(currentPageNumber, searchTerm, true)
-        }
-      } else {
-        await createStock({
-          ...stockData,
-          user_id: user.id,
-          created_by: user.id,
-        })
-        console.log('Stock created, refreshing first page')
-        
-        // Clear cache if your store has cache
-        if (useInventoryStore.getState().clearCache) {
-          useInventoryStore.getState().clearCache()
-        }
-        
-        // Refresh first page after creation
-        await fetchStocks(1, searchTerm, true)
-      }
-      handleCancelForm()
-    } catch (error) {
-      console.error('Error saving stock:', error)
-    } finally {
-      setFormSubmitting(false)
+  setFormSubmitting(true)
+  try {
+    let response
+    if (showEditForm && selectedStock) {
+      response = await updateStock(selectedStock.id, stockData)
+    } else {
+      response = await createStock(stockData)
     }
+    
+    console.log('Stock saved successfully', response)
+    
+    // Clear cache and refresh
+    if (useInventoryStore.getState().clearCache) {
+      useInventoryStore.getState().clearCache()
+    }
+    
+    const currentPageNumber = pagination?.current_page || currentPage || 1
+    await fetchStocks(currentPageNumber, searchTerm, true)
+    handleCancelForm()
+  } catch (error) {
+    console.error('Error saving stock:', error)
+    toast.error(error.response?.data?.message || 'Failed to save stock')
+  } finally {
+    setFormSubmitting(false)
   }
+}
 
   const handleDeleteClick = (stock) => {
     setStockToDelete(stock)
