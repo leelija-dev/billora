@@ -160,7 +160,7 @@ class GstController extends Controller
 
     $month = $request->month;
     $year  = $request->year;
-
+    $search = $request->search;
     // Default: Current GST Quarter
     if ($month && $year) {
 
@@ -201,7 +201,7 @@ class GstController extends Controller
     $fromCache = Cache::tags(['gst_collection_user_' . $user])->has($cacheKey);
 
     $data = Cache::tags(['gst_collection_user_' . $user])
-        ->remember($cacheKey, 600, function () use ($id, $fromDate, $toDate) {
+        ->remember($cacheKey, 600, function () use ($id, $fromDate, $toDate,$search) {
 
             $customer = Customers::findOrFail($id);
 
@@ -279,22 +279,43 @@ class GstController extends Controller
                 $gstIn += ($finalAmount * $item->gst) / 100;
             }
             if($hasStockPermission){
-                
+            if($search == 'all'){  
+                $gstOutData = StockHistory::where('user_id', $id)->where('quantity', '>', 0)->with(['stock','stock.product','seller.sellerProducts'])->whereBetween('created_at', [$fromDate, $toDate])->orderByDesc('created_at')->get(); 
+            }else{              
             $gstOutData = StockHistory::where('user_id', $id)->where('quantity', '>', 0)->with(['stock','stock.product','seller.sellerProducts'])->whereBetween('created_at', [$fromDate, $toDate])->orderByDesc('created_at')->paginate(15); 
+            }
             }else{
-                $gstOutData = InvoiceItems::with('product','invoice')
+                if($search == 'all'){
+                     $gstOutData = InvoiceItems::with('product','invoice')
+                    ->where('user_id', $id)
+                    ->where('status', 'completed')
+                    ->whereBetween('created_at', [$fromDate, $toDate])
+                    ->orderByDesc('created_at')
+                    ->get();
+                }else{
+                    $gstOutData = InvoiceItems::with('product','invoice')
+                    ->where('user_id', $id)
+                    ->where('status', 'completed')
+                    ->whereBetween('created_at', [$fromDate, $toDate])
+                    ->orderByDesc('created_at')
+                    ->paginate(15);
+                }
+            }
+            if($search == 'all'){
+                 $gstInData = Invoice::with('invoiceItems','invoiceItems.product')
                 ->where('user_id', $id)
                 ->where('status', 'completed')
                 ->whereBetween('created_at', [$fromDate, $toDate])
                 ->orderByDesc('created_at')
                 ->paginate(15);
-            }
+            }else{
             $gstInData = Invoice::with('invoiceItems','invoiceItems.product')
                 ->where('user_id', $id)
                 ->where('status', 'completed')
                 ->whereBetween('created_at', [$fromDate, $toDate])
                 ->orderByDesc('created_at')
                 ->paginate(15);
+            }
             // $gstCollection = GstCollection::where('user_id', $id)
             //     ->where('invoice_status', 'completed')
             //     ->whereBetween('created_at', [$fromDate, $toDate])
