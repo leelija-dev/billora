@@ -5,8 +5,10 @@ namespace App\Http\Controllers\admin;
 use App\Http\Controllers\Controller;
 use App\Models\Customers;
 use App\Models\Seller;
+use App\Models\SellerProducts;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class SellerController extends Controller
 {
@@ -22,17 +24,17 @@ class SellerController extends Controller
         }
         try {
             $seller = Seller::where('user_id', $id)
-           ->when($search, function ($query) use ($search) {
-                $query->where('name', 'LIKE', "%{$search}%")
-                 ->orWhere('city', 'LIKE', "%{$search}%")
-                 ->orWhere('phone', 'LIKE', "%{$search}%")
-                 ->orWhere('gst_number', 'LIKE', "%{$search}%")
-                 ->orWhere('address', 'LIKE', "%{$search}%")
-                 ->orWhere('state', 'LIKE', "%{$search}%")
-                 ->orWhere('pincode', 'LIKE', "%{$search}%")
-                 ;
-            })
-            ->paginate(15);
+                ->when($search, function ($query) use ($search) {
+                    $query->where('name', 'LIKE', "%{$search}%")
+                        ->orWhere('city', 'LIKE', "%{$search}%")
+                        ->orWhere('phone', 'LIKE', "%{$search}%")
+                        ->orWhere('gst_number', 'LIKE', "%{$search}%")
+                        ->orWhere('address', 'LIKE', "%{$search}%")
+                        ->orWhere('state', 'LIKE', "%{$search}%")
+                        ->orWhere('pincode', 'LIKE', "%{$search}%")
+                    ;
+                })
+                ->paginate(15);
             return response([
                 'status' => true,
                 'message' => 'seller list',
@@ -45,94 +47,97 @@ class SellerController extends Controller
             ]);
         }
     }
-    public function store(Request $request) {
+    public function store(Request $request)
+    {
         $user = Auth::user()->id;
         $data = $request->validate([
             'user_id' => 'required',
             'name' =>  'required',
             'email' => 'nullable|email',
             'phone' => 'nullable',
-            'gst_number' =>'nullable',
+            'gst_number' => 'nullable',
             'address' => 'nullable',
             'city' => 'nullable',
             'state' => 'nullable',
             'pincode' => 'nullable',
             'due_amount' => 'nullable',
-            
-        ]);
-        try{
-        if($data['user_id'] != $user) {
-            return response([
-                'status' => false,
-                'message' => 'Unauthorized user'
-            ]);
-        }
-        $customer = Customers::findOrFail($user);
-        if(!$customer){
-            return response([
-                'status' => false,
-                'message' => 'Customer not found'
-            ]);
-        }
 
-        $seller = Seller::create($data);
-        return response([
-            'status' => true,
-            'message' => 'Seller created successfully',
-            'seller' => $seller
         ]);
-        }catch(\Exception $e){
+        try {
+            if ($data['user_id'] != $user) {
+                return response([
+                    'status' => false,
+                    'message' => 'Unauthorized user'
+                ]);
+            }
+            $customer = Customers::findOrFail($user);
+            if (!$customer) {
+                return response([
+                    'status' => false,
+                    'message' => 'Customer not found'
+                ]);
+            }
+
+            $seller = Seller::create($data);
+            return response([
+                'status' => true,
+                'message' => 'Seller created successfully',
+                'seller' => $seller
+            ]);
+        } catch (\Exception $e) {
             return response([
                 'status' => false,
                 'message' => $e->getMessage()
             ]);
         }
     }
-    public function update(Request $request, $id) {
+    public function update(Request $request, $id)
+    {
         $user = Auth::user()->id;
-        try{
-        $data = $request->validate([
-            'user_id' => 'required',
-            'name' =>  'required',
-            'email' => 'nullable|email',
-            'phone' => 'nullable',
-            'gst_number' =>'nullable',
-            'address' => 'nullable',
-            'city' => 'nullable',
-            'state' => 'nullable',  
-            'pincode' => 'nullable',
-        ]);
-        if($user != $data['user_id']) {
-            return response([
-                'status' => false,
-                'message' => 'Unauthorized user'
+        try {
+            $data = $request->validate([
+                'user_id' => 'required',
+                'name' =>  'required',
+                'email' => 'nullable|email',
+                'phone' => 'nullable',
+                'gst_number' => 'nullable',
+                'address' => 'nullable',
+                'city' => 'nullable',
+                'state' => 'nullable',
+                'pincode' => 'nullable',
             ]);
-        }
-        $seller = Seller::where('id', $id)->where('user_id', $user)->firstOrFail();
-        if(!$seller){
-            return response([
-                'status' => false,
-                'message' => 'Seller not found'
-            ]);
-        }
-        $seller->update($data);
-        return response([
-            'status' => true,
-            'message' => 'Seller updated successfully',
-            'seller' => $seller
-        ]);
-        }catch(\Exception $e){
-            return response([
-                'status' =>false,
-                'message' => $e->getMessage()
-            ]);
-        }
-    }
-    public function edit($id){
-        $user = Auth::user()->id;
-        try{
+            if ($user != $data['user_id']) {
+                return response([
+                    'status' => false,
+                    'message' => 'Unauthorized user'
+                ]);
+            }
             $seller = Seller::where('id', $id)->where('user_id', $user)->firstOrFail();
-            if(!$seller){
+            if (!$seller) {
+                return response([
+                    'status' => false,
+                    'message' => 'Seller not found'
+                ]);
+            }
+            $seller->update($data);
+            return response([
+                'status' => true,
+                'message' => 'Seller updated successfully',
+                'seller' => $seller
+            ]);
+        } catch (\Exception $e) {
+            return response([
+                'status' => false,
+                'message' => $e->getMessage()
+            ]);
+        }
+    }
+    public function edit($id)
+    {
+        $user = Auth::user()->id;
+        try {
+            $seller = Seller::where('id', $id)->where('user_id', $user)->firstOrFail();
+            if (!$seller) {
                 return response([
                     'status' => false,
                     'message' => 'Seller not found'
@@ -143,30 +148,31 @@ class SellerController extends Controller
                 'message' => 'Seller details',
                 'seller' => $seller
             ]);
-        }catch(\Exception $e){
+        } catch (\Exception $e) {
             return response([
-                'status' =>false,
+                'status' => false,
                 'message' => $e->getMessage()
             ]);
         }
     }
-    public function delete($id){
+    public function delete($id)
+    {
         $user = Auth::user()->id;
-        try{
-        $seller = Seller::where('id', $id)->where('user_id', $user)->firstOrFail();
-        if(!$seller){
+        try {
+            $seller = Seller::where('id', $id)->where('user_id', $user)->firstOrFail();
+            if (!$seller) {
+                return response([
+                    'status' => false,
+                    'message' => 'Seller not found'
+                ]);
+            }
+            $seller->delete();
             return response([
-                'status' => false,
-                'message' => 'Seller not found'
+                'status' => true,
+                'message' => 'Seller deleted successfully',
+                'seller' => $seller
             ]);
-        }
-        $seller->delete();
-        return response([
-            'status' => true,
-            'message' => 'Seller deleted successfully',
-            'seller' => $seller
-        ]);
-        }catch(\Exception $e){
+        } catch (\Exception $e) {
             return response([
                 'status' => false,
                 'message' => $e->getMessage()
@@ -198,7 +204,94 @@ class SellerController extends Controller
             ]);
         } catch (\Exception $e) {
             return response([
-                'status' => false,  
+                'status' => false,
+                'message' => $e->getMessage()
+            ]);
+        }
+    }
+    public function duePay(Request $request, $id)
+    {
+        $data =  $request->validate([
+            'user_id' =>   'required',
+            'paid_amount' => 'required|numeric|min:0.01',
+        ]);
+            
+        if (!Auth::check()) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Authentication required. Please login first.'
+                ], 401);
+            }
+        $user = Auth::user()->id;
+        if ($data['user_id'] != $user) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Unauthorized user'
+            ]);
+}
+        DB::beginTransaction();
+
+        try {
+            $seller = Seller::where('id', $id)->where('user_id', $user)->first();
+            if (!$seller) {
+                DB::rollBack();
+                return response([
+                    'status' => false,
+                    'message' => 'Seller not found'
+                ]);
+            }
+            $sellerProducts = SellerProducts::where('seller_id', $id)->where('user_id', $user)->orderBy('id', 'asc')->get();
+            if ($data['paid_amount'] > $seller->due_amount) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Paid amount cannot be greater than seller due amount.'
+                ]);
+            }
+            if($data['paid_amount'] < 0){
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Paid amount cannot be negative.'
+                ]);
+            }
+            $seller->update([
+                'due_amount' => $seller->due_amount - $data['paid_amount']
+            ]);
+            $paidAmount = $data['paid_amount'];
+            foreach ($sellerProducts as $product) {
+
+                if ($paidAmount <= 0) {
+                    break;
+                }
+
+                $due = $product->total_amount - $product->paid_amount;
+                if ($due <= 0) {
+                    continue; // already fully paid
+                }
+                if ($paidAmount >= $due) {
+
+                    $product->update([
+                        'paid_amount' => $product->paid_amount + $due
+                    ]);
+
+                    $paidAmount -= $due;
+                } else {
+
+                    $product->update([
+                        'paid_amount' => $product->paid_amount + $paidAmount
+                    ]);
+
+                    $paidAmount = 0;
+                }
+            }
+            DB::commit();
+            return response()->json([
+                'status' => true,
+                'message' => 'Payment completed successfully',
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response([
+                'status' => false,
                 'message' => $e->getMessage()
             ]);
         }
