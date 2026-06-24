@@ -94,6 +94,7 @@ Route::middleware('auth:sanctum')->prefix('stocks')->group(function () {
    Route::delete('/{id}', [StocksController::class, 'destroy']);
    Route::post('/add-stock/{id}', [StocksController::class, 'addStock']);
    Route::get('/stock-alert', [StocksController::class, 'stockalert']);
+   Route::post('/delete-stock/{id}',[StocksController::class,'stockRemove']);
 });
 //units
 Route::middleware('auth:sanctum')->prefix('units')->group(function () {
