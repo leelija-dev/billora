@@ -282,7 +282,7 @@ class GstController extends Controller
             if($search == 'all'){  
                 $gstOutData = StockHistory::where('user_id', $id)->where('quantity', '>', 0)->with(['stock','stock.product','seller.sellerProducts'])->whereBetween('created_at', [$fromDate, $toDate])->orderByDesc('created_at')->get(); 
             }else{              
-            $gstOutData = StockHistory::where('user_id', $id)->where('quantity', '>', 0)->with(['stock','stock.product','seller.sellerProducts'])->whereBetween('created_at', [$fromDate, $toDate])->orderByDesc('created_at')->paginate(15); 
+            $gstOutData = StockHistory::where('user_id', $id)->where('quantity', '>', 0)->with(['stock','stock.product','seller.sellerProducts'])->whereBetween('created_at', [$fromDate, $toDate])->orderByDesc('created_at')->paginate(10); 
             }
             }else{
                 if($search == 'all'){
@@ -298,7 +298,7 @@ class GstController extends Controller
                     ->where('status', 'completed')
                     ->whereBetween('created_at', [$fromDate, $toDate])
                     ->orderByDesc('created_at')
-                    ->paginate(15);
+                    ->paginate(10);
                 }
             }
             if($search == 'all'){
@@ -307,14 +307,14 @@ class GstController extends Controller
                 ->where('status', 'completed')
                 ->whereBetween('created_at', [$fromDate, $toDate])
                 ->orderByDesc('created_at')
-                ->paginate(15);
+                ->get();
             }else{
             $gstInData = Invoice::with('invoiceItems','invoiceItems.product')
                 ->where('user_id', $id)
                 ->where('status', 'completed')
                 ->whereBetween('created_at', [$fromDate, $toDate])
                 ->orderByDesc('created_at')
-                ->paginate(15);
+                ->paginate(10);
             }
             // $gstCollection = GstCollection::where('user_id', $id)
             //     ->where('invoice_status', 'completed')
