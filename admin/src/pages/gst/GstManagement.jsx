@@ -109,6 +109,7 @@ const GSTManagement = () => {
     const debounceTimer = setTimeout(() => {
       if (initializedRef.current) {
         const params = {};
+        if (dataViewMode === 'all') params.search = 'all';
         if (filters.month) params.month = filters.month;
         if (filters.year) params.year = filters.year;
         fetchGstCollections(userId, params);
@@ -116,7 +117,7 @@ const GSTManagement = () => {
     }, 500);
 
     return () => clearTimeout(debounceTimer);
-  }, [filters.month, filters.year, userId, fetchGstCollections]);
+  }, [filters.month, filters.year, dataViewMode, userId, fetchGstCollections]);
 
   const handleRefresh = async () => {
     if (refreshing) return;
@@ -124,6 +125,7 @@ const GSTManagement = () => {
 
     try {
       const params = {};
+      if (dataViewMode === 'all') params.search = 'all';
       if (filters.month) params.month = filters.month;
       if (filters.year) params.year = filters.year;
       await fetchGstCollections(userId, params);
