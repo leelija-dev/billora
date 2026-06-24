@@ -302,14 +302,14 @@ class GstController extends Controller
                 }
             }
             if($search == 'all'){
-                 $gstInData = Invoice::with('invoiceItems','invoiceItems.product')
+                 $gstInData = Invoice::with('customer','invoiceItems','invoiceItems.product')
                 ->where('user_id', $id)
                 ->where('status', 'completed')
                 ->whereBetween('created_at', [$fromDate, $toDate])
                 ->orderByDesc('created_at')
                 ->get();
             }else{
-            $gstInData = Invoice::with('invoiceItems','invoiceItems.product')
+            $gstInData = Invoice::with('customer','invoiceItems','invoiceItems.product')
                 ->where('user_id', $id)
                 ->where('status', 'completed')
                 ->whereBetween('created_at', [$fromDate, $toDate])

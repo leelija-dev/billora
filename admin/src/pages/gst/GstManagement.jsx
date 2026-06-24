@@ -338,33 +338,50 @@ const GSTManagement = () => {
           <tbody>
             ${tableData.map(item => {
               if (isGstIn) {
-                const customer = item.customer || {};
+                // GST In data structure
+                const invoiceNumber = item.invoice_number || item.invoice?.invoice_number || item._originalId || 'N/A';
+                const customer = item.customer || item.invoice?.customer || {};
+                const customerName = customer.name || customer.customer_name || `${item.customer_id || 'N/A'}`;
                 const product = item.product || {};
-                const gstAmount = (parseFloat(item.price) * parseFloat(item.gst)) / (100 + parseFloat(item.gst));
+                const productName = product.name || product.product_name || `${item.product_id || 'N/A'}`;
+                const quantity = parseFloat(item.quantity) || 0;
+                const price = parseFloat(item.price) || 0;
+                const gstPercent = parseFloat(item.gst) || 0;
+                const gstAmount = (price * gstPercent) / (100 + gstPercent);
+                
                 return `
                   <tr>
-                    <td>#${item.invoice_number || 'N/A'}</td>
-                    <td>${customer.name || 'N/A'}</td>
-                    <td>${product.name || 'N/A'}</td>
-                    <td class="center">${parseFloat(item.quantity).toFixed(2)}</td>
-                    <td class="amount">${formatCurrency(item.price)}</td>
-                    <td class="center">${parseFloat(item.gst).toFixed(2)}%</td>
+                    <td>#${invoiceNumber}</td>
+                    <td>${customerName}</td>
+                    <td>${productName}</td>
+                    <td class="center">${quantity.toFixed(2)}</td>
+                    <td class="amount">${formatCurrency(price)}</td>
+                    <td class="center">${gstPercent.toFixed(2)}%</td>
                     <td class="amount">${formatCurrency(gstAmount)}</td>
-                    <td>${formatDate(item.created_at)}</td>
+                    <td>${formatDate(item.created_at || item.invoice?.created_at)}</td>
                   </tr>
                 `;
               } else {
-                const product = item.stock?.product || {};
+                // GST Out data structure
+                const id = item._originalId || item.id || 'N/A';
+                const stock = item.stock || {};
+                const product = stock.product || item.product || {};
+                const productName = product.name || product.product_name || `${item.product_id || 'N/A'}`;
                 const seller = item.seller || {};
-                const gstAmount = (parseFloat(item.price) * parseFloat(item.gst)) / 100;
+                const sellerName = seller.name || seller.seller_name || `${item.seller_id || 'N/A'}`;
+                const quantity = parseFloat(item.quantity) || 0;
+                const price = parseFloat(item.price) || 0;
+                const gstPercent = parseFloat(item.gst) || 0;
+                const gstAmount = (price * gstPercent) / 100;
+                
                 return `
                   <tr>
-                    <td>#${item.id}</td>
-                    <td>${product.name || 'N/A'}</td>
-                    <td>${seller.name || 'N/A'}</td>
-                    <td class="center">${parseFloat(item.quantity).toFixed(2)}</td>
-                    <td class="amount">${formatCurrency(item.price)}</td>
-                    <td class="center">${parseFloat(item.gst).toFixed(2)}%</td>
+                    <td>#${id}</td>
+                    <td>${productName}</td>
+                    <td>${sellerName}</td>
+                    <td class="center">${quantity.toFixed(2)}</td>
+                    <td class="amount">${formatCurrency(price)}</td>
+                    <td class="center">${gstPercent.toFixed(2)}%</td>
                     <td class="amount">${formatCurrency(gstAmount)}</td>
                     <td>${formatDate(item.created_at)}</td>
                   </tr>
@@ -492,17 +509,12 @@ const GSTManagement = () => {
       accessor: 'customer',
       cell: (value, row) => {
         const customer = value || row.invoice?.customer || {};
-        const customerId = row.customer_id || row.invoice?.customer_id || 'N/A';
+        const customerName = customer.name || customer.customer_name || `${row.customer_id || 'N/A'}`;
         return (
           <div>
             <p className="text-sm font-medium text-gray-900 dark:text-white">
-              #{customerId}
+              {customerName}
             </p>
-            {customer.name && (
-              <p className="text-xs text-gray-500 dark:text-gray-400">
-                {customer.name}
-              </p>
-            )}
           </div>
         );
       },
@@ -929,7 +941,7 @@ const GSTManagement = () => {
         >
           <span className="flex items-center">
             <FiArrowUp className="w-4 h-4 mr-2 text-green-500" />
-            GST In ({gstInPagination?.total || 0})
+            GST In 
           </span>
           {activeTab === 'gst_in' && (
             <motion.div
@@ -948,7 +960,7 @@ const GSTManagement = () => {
         >
           <span className="flex items-center">
             <FiArrowDown className="w-4 h-4 mr-2 text-red-500" />
-            GST Out ({gstOutPagination?.total || 0})
+            GST Out 
           </span>
           {activeTab === 'gst_out' && (
             <motion.div
