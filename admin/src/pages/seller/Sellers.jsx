@@ -33,6 +33,7 @@ import SellerForm from "../../components/features/Sellers/SellerForm";
 import useSellerStore from "../../store/sellerStore";
 import { useAuthStore } from "../../store/authStore";
 import toast from "react-hot-toast";
+import { useNavigate } from "react-router-dom";
 
 const Sellers = () => {
   const { user } = useAuthStore();
@@ -69,6 +70,8 @@ const Sellers = () => {
   const [initialLoading, setInitialLoading] = useState(true);
   const [showViewModal, setShowViewModal] = useState(false);
   const [viewingSeller, setViewingSeller] = useState(null);
+
+  const navigate = useNavigate();
 
   const initializedRef = useRef(false);
 
@@ -116,6 +119,23 @@ const Sellers = () => {
     };
   }, []);
 
+  // Add this useEffect in Sellers.jsx after the initial fetch
+useEffect(() => {
+  // Check if there's an edit parameter in the URL
+  const searchParams = new URLSearchParams(window.location.search);
+  const editId = searchParams.get('edit');
+  
+  if (editId) {
+    // Find the seller in the list
+    const sellerToEdit = safeSellers.find(s => s.id === parseInt(editId));
+    if (sellerToEdit) {
+      handleEditSeller(sellerToEdit);
+    }
+    // Clean up URL
+    window.history.replaceState({}, '', '/sellers');
+  }
+}, [safeSellers]);
+
   // Handle search with debounce
   useEffect(() => {
     const debounceTimer = setTimeout(() => {
@@ -155,10 +175,10 @@ const Sellers = () => {
     }
   };
 
-  const handleViewSeller = (seller) => {
-    setViewingSeller(seller);
-    setShowViewModal(true);
-  };
+ const handleViewSeller = (seller) => {
+  // Navigate to seller details page instead of opening modal
+  navigate(`/seller/${seller.id}`);
+};
 
   const handleCancelForm = () => {
     setShowAddForm(false);
@@ -421,7 +441,7 @@ const Sellers = () => {
           <motion.button
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.95 }}
-            onClick={() => handleViewSeller(row)}
+           onClick={() => handleViewSeller(row)}
             className="p-2 text-gray-600 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-700 rounded-lg transition-colors"
             title="View seller details"
           >

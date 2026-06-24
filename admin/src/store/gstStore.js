@@ -25,8 +25,12 @@ const setCachedData = (cacheKey, data) => {
 
 export const useGstStore = create((set, get) => ({
   collections: [],
+  gstInData: [],
+  gstOutData: [],
   allProducts: [],
   pagination: null,
+  gstInPagination: null,
+  gstOutPagination: null,
   allProductsPagination: null,
   loading: false,
   updatingStatus: false,
@@ -64,33 +68,67 @@ export const useGstStore = create((set, get) => ({
         throw new Error(data.message || 'Failed to fetch GST collections');
       }
 
-      // Extract collections with proper unique identification
-      const collectionsData = data.data?.data?.map((item, index) => ({
+      // Extract GST In data with unique IDs
+      const gstInData = data.gst_in_data?.data?.map((item, index) => ({
         ...item,
-        _uniqueId: `${item.id}-${item.invoice_id}-${index}`,
+        // Create a truly unique ID for React keys
+        _uniqueId: `gst_in_${item.id}_${Date.now()}_${index}`,
+        _originalId: item.id,
+        _type: 'gst_in',
       })) || [];
 
+      // Extract GST Out data with unique IDs
+      const gstOutData = data.gst_out_data?.data?.map((item, index) => ({
+        ...item,
+        // Create a truly unique ID for React keys
+        _uniqueId: `gst_out_${item.id}_${Date.now()}_${index}`,
+        _originalId: item.id,
+        _type: 'gst_out',
+      })) || [];
+
+      // Extract all products data
       const allProductsData = data.all_products?.data?.map((item, index) => ({
         ...item,
-        _uniqueId: `${item.product_id}-${index}`,
+        _uniqueId: `prod_${item.product_id}_${Date.now()}_${index}`,
+        _originalId: item.product_id,
       })) || [];
 
-      const paginationData = data.data ? {
-        current_page: data.data.current_page,
-        first_page_url: data.data.first_page_url,
-        from: data.data.from,
-        last_page: data.data.last_page,
-        last_page_url: data.data.last_page_url,
-        links: data.data.links,
-        next_page_url: data.data.next_page_url,
-        path: data.data.path,
-        per_page: data.data.per_page,
-        prev_page_url: data.data.prev_page_url,
-        to: data.data.to,
-        total: data.data.total,
+      // Combine all collections for backward compatibility
+      const allCollections = [...gstInData, ...gstOutData];
+
+      // Pagination for GST In
+      const gstInPagination = data.gst_in_data ? {
+        current_page: data.gst_in_data.current_page,
+        first_page_url: data.gst_in_data.first_page_url,
+        from: data.gst_in_data.from,
+        last_page: data.gst_in_data.last_page,
+        last_page_url: data.gst_in_data.last_page_url,
+        links: data.gst_in_data.links,
+        next_page_url: data.gst_in_data.next_page_url,
+        path: data.gst_in_data.path,
+        per_page: data.gst_in_data.per_page,
+        prev_page_url: data.gst_in_data.prev_page_url,
+        to: data.gst_in_data.to,
+        total: data.gst_in_data.total,
       } : null;
 
-      const allProductsPaginationData = data.all_products ? {
+      // Pagination for GST Out
+      const gstOutPagination = data.gst_out_data ? {
+        current_page: data.gst_out_data.current_page,
+        first_page_url: data.gst_out_data.first_page_url,
+        from: data.gst_out_data.from,
+        last_page: data.gst_out_data.last_page,
+        last_page_url: data.gst_out_data.last_page_url,
+        links: data.gst_out_data.links,
+        next_page_url: data.gst_out_data.next_page_url,
+        path: data.gst_out_data.path,
+        per_page: data.gst_out_data.per_page,
+        prev_page_url: data.gst_out_data.prev_page_url,
+        to: data.gst_out_data.to,
+        total: data.gst_out_data.total,
+      } : null;
+
+      const allProductsPagination = data.all_products ? {
         current_page: data.all_products.current_page,
         first_page_url: data.all_products.first_page_url,
         from: data.all_products.from,
@@ -106,10 +144,14 @@ export const useGstStore = create((set, get) => ({
       } : null;
 
       const result = {
-        collections: collectionsData,
+        collections: allCollections,
+        gstInData: gstInData,
+        gstOutData: gstOutData,
         allProducts: allProductsData,
-        pagination: paginationData,
-        allProductsPagination: allProductsPaginationData,
+        pagination: gstInPagination,
+        gstInPagination: gstInPagination,
+        gstOutPagination: gstOutPagination,
+        allProductsPagination: allProductsPagination,
         summary: {
           gstOut: parseFloat(data.gst_out) || 0,
           gstIn: parseFloat(data.gst_in) || 0,
@@ -142,15 +184,24 @@ export const useGstStore = create((set, get) => ({
       const data = response.data;
 
       if (data.status) {
-        const { collections } = get();
-        const updatedCollections = collections.map(col =>
-          col.id === collectionId
-            ? { ...col, govt_pay_status: statusData.govt_gst_pay_status }
-            : col
+        const { gstInData, gstOutData } = get();
+        
+        // Update in both GST In and GST Out data
+        const updatedGstIn = gstInData.map(item =>
+          item._originalId === collectionId
+            ? { ...item, govt_pay_status: statusData.govt_gst_pay_status }
+            : item
+        );
+        
+        const updatedGstOut = gstOutData.map(item =>
+          item._originalId === collectionId
+            ? { ...item, govt_pay_status: statusData.govt_gst_pay_status }
+            : item
         );
 
         set({
-          collections: updatedCollections,
+          gstInData: updatedGstIn,
+          gstOutData: updatedGstOut,
           updatingStatus: false,
         });
 
@@ -189,8 +240,12 @@ export const useGstStore = create((set, get) => ({
   resetStore: () => {
     set({
       collections: [],
+      gstInData: [],
+      gstOutData: [],
       allProducts: [],
       pagination: null,
+      gstInPagination: null,
+      gstOutPagination: null,
       allProductsPagination: null,
       loading: false,
       updatingStatus: false,

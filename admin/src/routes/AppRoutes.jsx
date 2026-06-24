@@ -35,6 +35,7 @@ import Settings from '../pages/settings/Settings'
 import APITest from '../components/test/APITest'
 import SocialLink from '../pages/social-link/SocialLink'
 import Sellers from '../pages/seller/Sellers'
+import SellerDetails from '../pages/seller/SellerDetails'
 
 const AppRoutes = () => {
   return (
@@ -60,6 +61,7 @@ const AppRoutes = () => {
         <Route path="packages" element={<Packages />} />
         <Route path="stock" element={<ProtectedRoute feature="stock-management"><Inventory /></ProtectedRoute>} />
         <Route path="seller" element={<ProtectedRoute feature="seller"><Sellers /></ProtectedRoute>} />
+        <Route path="seller/:id" element={<ProtectedRoute feature="seller"><SellerDetails /></ProtectedRoute>} />
         <Route path="orders" element={<ProtectedRoute feature="orders"><Orders /></ProtectedRoute>} />
         <Route path="customers" element={<ProtectedRoute feature="customers"><Customers /></ProtectedRoute>} />
         <Route path="customers/trashed" element={<ProtectedRoute feature="customers"><TrashedCustomers /></ProtectedRoute>} />

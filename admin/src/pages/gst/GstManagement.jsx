@@ -1,5 +1,5 @@
 // pages/gst/GstManagement.jsx
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   FiPackage,
@@ -15,6 +15,8 @@ import {
   FiGrid,
   FiList,
   FiDownload,
+  FiArrowUp,
+  FiArrowDown,
 } from 'react-icons/fi';
 import { FaRupeeSign } from 'react-icons/fa';
 import { useGstStore } from '../../store/gstStore';
@@ -29,10 +31,10 @@ import toast from 'react-hot-toast';
 
 const GSTManagement = () => {
   const {
-    collections,
-    allProducts,
-    pagination,
-    allProductsPagination,
+    gstInData,
+    gstOutData,
+    gstInPagination,
+    gstOutPagination,
     loading,
     updatingStatus,
     filters,
@@ -47,9 +49,8 @@ const GSTManagement = () => {
   const { user } = useAuthStore();
   const userId = user?.id || 1;
 
-  const [showFilters, setShowFilters] = useState(false);
   const [viewMode, setViewMode] = useState('table');
-  const [activeTab, setActiveTab] = useState('collections');
+  const [activeTab, setActiveTab] = useState('gst_in');
   const [showStatusModal, setShowStatusModal] = useState(false);
   const [selectedCollection, setSelectedCollection] = useState(null);
   const [selectedStatus, setSelectedStatus] = useState(0);
@@ -73,13 +74,15 @@ const GSTManagement = () => {
     { value: '12', label: 'December' },
   ];
 
-  const yearOptions = [
-    { value: '', label: 'All Years' },
-    { value: '2024', label: '2024' },
-    { value: '2025', label: '2025' },
-    { value: '2026', label: '2026' },
-    { value: '2027', label: '2027' },
-  ];
+  const yearOptions = useMemo(() => {
+    const currentYear = new Date().getFullYear();
+    const options = [{ value: '', label: 'All Years' }];
+    // Include 5 years before and 2 years after current year
+    for (let year = currentYear - 5; year <= currentYear + 2; year++) {
+      options.push({ value: String(year), label: String(year) });
+    }
+    return options;
+  }, []);
 
   useEffect(() => {
     if (initializedRef.current) return;
@@ -141,7 +144,7 @@ const GSTManagement = () => {
     if (!selectedCollection) return;
 
     try {
-      await updatePaymentStatus(selectedCollection.id, {
+      await updatePaymentStatus(selectedCollection._originalId, {
         govt_gst_pay_status: selectedStatus,
       });
       setShowStatusModal(false);
@@ -181,28 +184,97 @@ const GSTManagement = () => {
     return <StatusBadge status="Unknown" variant="default" />;
   };
 
-  // IMPORTANT: Generate unique IDs for each row
-  // The Table component uses row.id as key, so we need to ensure each row has a unique id
-  const collectionsWithUniqueIds = collections.map((item, index) => ({
-    ...item,
-    // Override id with a unique combination to ensure React keys are unique
-    id: `${item.id}-${item.invoice_id}-${index}`,
-    // Keep original id for reference
-    originalId: item.id,
-  }));
+  // Get current data based on active tab - ensure unique IDs
+  const getCurrentData = () => {
+    let data = [];
+    switch(activeTab) {
+      case 'gst_in':
+        // Flatten invoice_items from each invoice
+        const invoices = gstInData || [];
+        data = invoices.flatMap((invoice, invIndex) => {
+          const items = invoice.invoice_items || [];
+          return items.map((item, itemIndex) => ({
+            ...item,
+            // Add invoice context to each item
+            invoice: invoice,
+            invoice_id: invoice.id,
+            invoice_number: invoice.invoice_number,
+            customer_id: invoice.customer_id,
+            customer: invoice.customer,
+            // Override id with a unique value for the table key
+            id: item._uniqueId || `gst_in-${item.id}-${invIndex}-${itemIndex}`,
+            // Keep original id for reference
+            _originalId: invoice.invoice_number,
+          }));
+        });
+        break;
+      case 'gst_out':
+        // Use stock-specific price and GST values
+        const purchases = gstOutData || [];
+        data = purchases.map((item, index) => ({
+          ...item,
+          // Use stock-specific values if available
+          price: item.stock?.purchase_price || item.price,
+          gst: item.stock?.purchase_gst_percentage || item.gst,
+          // Override id with a unique value for the table key
+          id: item._uniqueId || `gst_out-${item.id}-${index}`,
+          // Keep original id for reference
+          _originalId: item.id,
+        }));
+        break;
+      default:
+        return [];
+    }
+    
+    // Ensure each item has a unique id for the table key
+    return data.map((item, index) => ({
+      ...item,
+      // Override id with a unique value for the table key (if not already set)
+      id: item.id || `${activeTab}-${index}`,
+      // Keep original id for reference
+      _originalId: item._originalId || item.id,
+    }));
+  };
 
-  const productsWithUniqueIds = allProducts.map((item, index) => ({
-    ...item,
-    // Override id with a unique combination
-    id: `${item.product_id}-${index}`,
-    // Keep original product_id for reference
-    originalProductId: item.product_id,
-  }));
+  const getCurrentPagination = () => {
+    switch(activeTab) {
+      case 'gst_in':
+        return gstInPagination;
+      case 'gst_out':
+        return gstOutPagination;
+      default:
+        return null;
+    }
+  };
 
-  const collectionColumns = [
+  const getTotalCount = () => {
+    switch(activeTab) {
+      case 'gst_in':
+        return gstInPagination?.total || 0;
+      case 'gst_out':
+        return gstOutPagination?.total || 0;
+      default:
+        return 0;
+    }
+  };
+
+  const getTabLabel = () => {
+    switch(activeTab) {
+      case 'gst_in':
+        return 'GST In';
+      case 'gst_out':
+        return 'GST Out';
+      default:
+        return '';
+    }
+  };
+
+  // GST In Columns - memoized with unique IDs
+  const gstInColumns = useMemo(() => [
     {
-      header: 'ID',
-      accessor: 'originalId',
+      id: 'invoice_id',
+      header: 'Invoice ID',
+      accessor: '_originalId',
       cell: (value) => (
         <span className="font-mono text-sm font-medium text-gray-900 dark:text-white">
           #{value}
@@ -210,33 +282,48 @@ const GSTManagement = () => {
       ),
     },
     {
-      header: 'Invoice ID',
-      accessor: 'invoice_id',
-      cell: (value) => (
-        <span className="font-mono text-sm text-primary-600 dark:text-primary-400">
-          INV-{String(value).padStart(5, '0')}
-        </span>
-      ),
+      id: 'customer',
+      header: 'Customer',
+      accessor: 'customer',
+      cell: (value, row) => {
+        const customer = value || row.invoice?.customer || {};
+        const customerId = row.customer_id || row.invoice?.customer_id || 'N/A';
+        return (
+          <div>
+            <p className="text-sm font-medium text-gray-900 dark:text-white">
+              #{customerId}
+            </p>
+            {customer.name && (
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                {customer.name}
+              </p>
+            )}
+          </div>
+        );
+      },
     },
     {
-      header: 'Customer ID',
-      accessor: 'customer_id',
-      cell: (value) => (
-        <span className="text-sm text-gray-700 dark:text-gray-300">
-          #{value}
-        </span>
-      ),
+      id: 'product',
+      header: 'Product',
+      accessor: 'product',
+      cell: (value) => {
+        const product = value || {};
+        return (
+          <div>
+            <p className="text-sm font-medium text-gray-900 dark:text-white">
+              {product.name || 'N/A'}
+            </p>
+            {product.sku && (
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                SKU: {product.sku}
+              </p>
+            )}
+          </div>
+        );
+      },
     },
     {
-      header: 'Product ID',
-      accessor: 'product_id',
-      cell: (value) => (
-        <span className="text-sm text-gray-700 dark:text-gray-300">
-          #{value}
-        </span>
-      ),
-    },
-    {
+      id: 'quantity',
       header: 'Quantity',
       accessor: 'quantity',
       cell: (value) => (
@@ -246,8 +333,9 @@ const GSTManagement = () => {
       ),
     },
     {
+      id: 'selling_price',
       header: 'Selling Price',
-      accessor: 'selling_price',
+      accessor: 'price',
       cell: (value) => (
         <span className="px-3 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded-lg text-sm font-medium">
           {formatCurrency(value)}
@@ -255,8 +343,9 @@ const GSTManagement = () => {
       ),
     },
     {
+      id: 'gst_percent',
       header: 'GST %',
-      accessor: 'selling_gst_percentage',
+      accessor: 'gst',
       cell: (value) => (
         <span className="text-sm text-gray-700 dark:text-gray-300">
           {parseFloat(value).toFixed(2)}%
@@ -264,20 +353,22 @@ const GSTManagement = () => {
       ),
     },
     {
+      id: 'gst_amount',
       header: 'GST Amount',
-      accessor: 'selling_gst_amount',
-      cell: (value) => (
-        <span className="px-3 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg text-sm font-medium">
-          {formatCurrency(value)}
-        </span>
-      ),
+      accessor: 'total_price',
+      cell: (value, row) => {
+        const total = parseFloat(value) || 0;
+        const gstPercent = parseFloat(row.gst) || 0;
+        const gstAmount = (total * gstPercent) / (100 + gstPercent);
+        return (
+          <span className="px-3 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg text-sm font-medium">
+            {formatCurrency(gstAmount)}
+          </span>
+        );
+      },
     },
     {
-      header: 'Status',
-      accessor: 'govt_pay_status',
-      cell: (value) => getStatusBadge(value),
-    },
-    {
+      id: 'created',
       header: 'Created',
       accessor: 'created_at',
       cell: (value) => (
@@ -286,37 +377,14 @@ const GSTManagement = () => {
         </span>
       ),
     },
-    {
-      header: 'Actions',
-      accessor: 'id',
-      cell: (_, row) => (
-        <div className="flex items-center space-x-2">
-          <motion.button
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => openStatusModal(row)}
-            className="p-2 text-primary-600 hover:bg-primary-50 dark:text-primary-400 dark:hover:bg-primary-900/20 rounded-lg transition-colors"
-            title="Update Payment Status"
-          >
-            <FiEdit2 className="w-4 h-4" />
-          </motion.button>
-          <motion.button
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.95 }}
-            className="p-2 text-gray-600 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-700 rounded-lg transition-colors"
-            title="View Details"
-          >
-            <FiEye className="w-4 h-4" />
-          </motion.button>
-        </div>
-      ),
-    },
-  ];
+  ], []);
 
-  const productColumns = [
+  // GST Out Columns - memoized with unique IDs
+  const gstOutColumns = useMemo(() => [
     {
-      header: 'Product ID',
-      accessor: 'originalProductId',
+      id: 'id',
+      header: 'ID',
+      accessor: '_originalId',
       cell: (value) => (
         <span className="font-mono text-sm font-medium text-gray-900 dark:text-white">
           #{value}
@@ -324,17 +392,49 @@ const GSTManagement = () => {
       ),
     },
     {
-      header: 'Product Name',
-      accessor: 'name',
-      cell: (value) => (
-        <span className="text-sm font-medium text-gray-900 dark:text-white">
-          {value || 'N/A'}
-        </span>
-      ),
+      id: 'product',
+      header: 'Product',
+      accessor: 'stock',
+      cell: (value) => {
+        const product = value?.product || {};
+        return (
+          <div>
+            <p className="text-sm font-medium text-gray-900 dark:text-white">
+              {product.name || 'N/A'}
+            </p>
+            {product.sku && (
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                SKU: {product.sku}
+              </p>
+            )}
+          </div>
+        );
+      },
     },
     {
-      header: 'Total Quantity',
-      accessor: 'total_quantity',
+      id: 'seller',
+      header: 'Seller',
+      accessor: 'seller',
+      cell: (value) => {
+        const seller = value || {};
+        return (
+          <div>
+            <p className="text-sm font-medium text-gray-900 dark:text-white">
+              {seller.name || 'N/A'}
+            </p>
+            {seller.gst_number && (
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                GST: {seller.gst_number}
+              </p>
+            )}
+          </div>
+        );
+      },
+    },
+    {
+      id: 'quantity',
+      header: 'Quantity',
+      accessor: 'quantity',
       cell: (value) => (
         <span className="text-sm font-medium text-gray-900 dark:text-white">
           {parseFloat(value).toFixed(2)}
@@ -342,48 +442,72 @@ const GSTManagement = () => {
       ),
     },
     {
-      header: 'Total Purchase',
-      accessor: 'total_purchase_price',
+      id: 'purchase_price',
+      header: 'Purchase Price',
+      accessor: 'price',
       cell: (value) => (
-        <span className="text-sm text-orange-600 dark:text-orange-400 font-medium">
+        <span className="px-3 py-1 bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 rounded-lg text-sm font-medium">
           {formatCurrency(value)}
         </span>
       ),
     },
     {
-      header: 'Total Selling',
-      accessor: 'total_selling_price',
+      id: 'gst_percent',
+      header: 'GST %',
+      accessor: 'gst',
       cell: (value) => (
-        <span className="text-sm text-green-600 dark:text-green-400 font-medium">
-          {formatCurrency(value)}
+        <span className="text-sm text-gray-700 dark:text-gray-300">
+          {parseFloat(value).toFixed(2)}%
         </span>
       ),
     },
     {
-      header: 'Purchase GST',
-      accessor: 'total_purchase_gst',
-      cell: (value) => (
-        <span className="text-sm text-blue-600 dark:text-blue-400 font-medium">
-          {formatCurrency(value)}
-        </span>
-      ),
+      id: 'gst_amount',
+      header: 'GST Amount',
+      accessor: 'gst_amount_calc',
+      cell: (_, row) => {
+        const price = parseFloat(row.price) || 0;
+        const gstPercent = parseFloat(row.gst) || 0;
+        const gstAmount = (price * gstPercent) / 100;
+        return (
+          <span className="px-3 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded-lg text-sm font-medium">
+            {formatCurrency(gstAmount)}
+          </span>
+        );
+      },
     },
     {
-      header: 'Selling GST',
-      accessor: 'total_selling_gst',
+      id: 'created',
+      header: 'Created',
+      accessor: 'created_at',
       cell: (value) => (
-        <span className="text-sm text-purple-600 dark:text-purple-400 font-medium">
-          {formatCurrency(value)}
+        <span className="text-sm text-gray-500 dark:text-gray-400">
+          {formatDate(value)}
         </span>
       ),
     },
-  ];
+  ], []);
+
+  // Get columns based on active tab - memoized
+  const getColumnsForTab = useMemo(() => {
+    switch(activeTab) {
+      case 'gst_in':
+        return gstInColumns;
+      case 'gst_out':
+        return gstOutColumns;
+      default:
+        return [];
+    }
+  }, [activeTab, gstInColumns, gstOutColumns]);
+
+  // Get the data with proper keys for the Table component
+  const tableData = getCurrentData();
 
   return (
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="space-y-6 p-6"
+      className="space-y-6 p-6 min-h-screen bg-gray-50 dark:bg-gray-900"
     >
       {/* Header */}
       <motion.div
@@ -464,43 +588,50 @@ const GSTManagement = () => {
         <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-500 dark:text-gray-400">GST In</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">GST In (Sales)</p>
               <p className="text-2xl font-bold text-green-600 dark:text-green-400">
                 {formatCurrency(summary.gstIn)}
               </p>
             </div>
             <div className="w-12 h-12 bg-green-100 dark:bg-green-900/30 rounded-xl flex items-center justify-center">
-              <FiTrendingUp className="w-6 h-6 text-green-600 dark:text-green-400" />
+              <FiArrowUp className="w-6 h-6 text-green-600 dark:text-green-400" />
             </div>
           </div>
+          <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">
+            Total GST collected from sales
+          </p>
         </div>
 
         <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-500 dark:text-gray-400">GST Out</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">GST Out (Purchases)</p>
               <p className="text-2xl font-bold text-red-600 dark:text-red-400">
                 {formatCurrency(summary.gstOut)}
               </p>
             </div>
             <div className="w-12 h-12 bg-red-100 dark:bg-red-900/30 rounded-xl flex items-center justify-center">
-              <FiTrendingDown className="w-6 h-6 text-red-600 dark:text-red-400" />
+              <FiArrowDown className="w-6 h-6 text-red-600 dark:text-red-400" />
             </div>
           </div>
+          <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">
+            Total GST paid on purchases
+          </p>
         </div>
 
         <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-500 dark:text-gray-400">
-                Total Collections
-              </p>
-              <p className="text-2xl font-bold text-primary-600 dark:text-primary-400">
-                {pagination?.total || 0}
+              <p className="text-sm text-gray-500 dark:text-gray-400">Net GST</p>
+              <p className={`text-2xl font-bold ${(summary.gstIn - summary.gstOut) >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                {formatCurrency(summary.gstIn - summary.gstOut)}
               </p>
             </div>
-            <div className="w-12 h-12 bg-primary-100 dark:bg-primary-900/30 rounded-xl flex items-center justify-center">
-              <FaRupeeSign className="w-6 h-6 text-primary-600 dark:text-primary-400" />
+            <div className={`w-12 h-12 ${(summary.gstIn - summary.gstOut) >= 0 ? 'bg-green-100 dark:bg-green-900/30' : 'bg-red-100 dark:bg-red-900/30'} rounded-xl flex items-center justify-center`}>
+              { (summary.gstIn - summary.gstOut) >= 0 ? 
+                <FiTrendingUp className={`w-6 h-6 text-green-600 dark:text-green-400`} /> :
+                <FiTrendingDown className={`w-6 h-6 text-red-600 dark:text-red-400`} />
+              }
             </div>
           </div>
           <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">
@@ -516,16 +647,19 @@ const GSTManagement = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-500 dark:text-gray-400">
-                Total Products
+                Total Collections
               </p>
-              <p className="text-2xl font-bold text-purple-600 dark:text-purple-400">
-                {allProductsPagination?.total || 0}
+              <p className="text-2xl font-bold text-primary-600 dark:text-primary-400">
+                {(gstInPagination?.total || 0) + (gstOutPagination?.total || 0)}
               </p>
             </div>
-            <div className="w-12 h-12 bg-purple-100 dark:bg-purple-900/30 rounded-xl flex items-center justify-center">
-              <FiPackage className="w-6 h-6 text-purple-600 dark:text-purple-400" />
+            <div className="w-12 h-12 bg-primary-100 dark:bg-primary-900/30 rounded-xl flex items-center justify-center">
+              <FaRupeeSign className="w-6 h-6 text-primary-600 dark:text-primary-400" />
             </div>
           </div>
+          <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">
+            Total collections across all
+          </p>
         </div>
       </motion.div>
 
@@ -573,7 +707,7 @@ const GSTManagement = () => {
         </div>
       </motion.div>
 
-      {/* Tabs */}
+      {/* Tabs - Only GST In and GST Out */}
       <motion.div
         initial={{ y: 20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
@@ -581,15 +715,18 @@ const GSTManagement = () => {
         className="flex space-x-2 border-b border-gray-200 dark:border-gray-700"
       >
         <button
-          onClick={() => setActiveTab('collections')}
+          onClick={() => setActiveTab('gst_in')}
           className={`px-6 py-3 text-sm font-medium transition-colors relative ${
-            activeTab === 'collections'
+            activeTab === 'gst_in'
               ? 'text-primary-600 dark:text-primary-400'
               : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
           }`}
         >
-          Collections ({pagination?.total || 0})
-          {activeTab === 'collections' && (
+          <span className="flex items-center">
+            <FiArrowUp className="w-4 h-4 mr-2 text-green-500" />
+            GST In ({gstInPagination?.total || 0})
+          </span>
+          {activeTab === 'gst_in' && (
             <motion.div
               layoutId="tabIndicator"
               className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary-600 dark:bg-primary-400"
@@ -597,15 +734,18 @@ const GSTManagement = () => {
           )}
         </button>
         <button
-          onClick={() => setActiveTab('products')}
+          onClick={() => setActiveTab('gst_out')}
           className={`px-6 py-3 text-sm font-medium transition-colors relative ${
-            activeTab === 'products'
+            activeTab === 'gst_out'
               ? 'text-primary-600 dark:text-primary-400'
               : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
           }`}
         >
-          All Products ({allProductsPagination?.total || 0})
-          {activeTab === 'products' && (
+          <span className="flex items-center">
+            <FiArrowDown className="w-4 h-4 mr-2 text-red-500" />
+            GST Out ({gstOutPagination?.total || 0})
+          </span>
+          {activeTab === 'gst_out' && (
             <motion.div
               layoutId="tabIndicator"
               className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary-600 dark:bg-primary-400"
@@ -629,53 +769,40 @@ const GSTManagement = () => {
               </p>
             </div>
           </div>
-        ) : activeTab === 'collections' ? (
-          collections.length > 0 ? (
-            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg overflow-hidden">
-              <Table
-                columns={collectionColumns}
-                data={collectionsWithUniqueIds}
-                loading={loading}
-              />
-              {pagination && (
-                <Pagination
-                  currentPage={pagination.current_page}
-                  totalItems={pagination.total}
-                  pageSize={pagination.per_page}
-                  pagination={pagination}
-                  onPageChange={(url) => {
-                    const pageMatch = url.match(/page=(\d+)/);
-                    if (pageMatch) {
-                      const params = {};
-                      if (filters.month) params.month = filters.month;
-                      if (filters.year) params.year = filters.year;
-                      params.page = pageMatch[1];
-                      fetchGstCollections(userId, params);
-                    }
-                  }}
-                />
-              )}
-            </div>
-          ) : (
-            <EmptyState
-              icon={FaRupeeSign}
-              title="No GST collections found"
-              description="No GST collection records available for the selected filters."
-            />
-          )
-        ) : allProducts.length > 0 ? (
+        ) : tableData.length > 0 ? (
           <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg overflow-hidden">
+            <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/50 ">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                    {getTabLabel()} Records
+                  </h3>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    Showing {tableData.length} of {getTotalCount()} records
+                  </p>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <span className="text-xs text-gray-400 dark:text-gray-500">
+                    Total GST: {activeTab === 'gst_in' ? 
+                      formatCurrency(summary.gstIn) : 
+                      formatCurrency(summary.gstOut)
+                    }
+                  </span>
+                </div>
+              </div>
+            </div>
             <Table
-              columns={productColumns}
-              data={productsWithUniqueIds}
+              key={activeTab}
+              columns={getColumnsForTab}
+              data={tableData}
               loading={loading}
             />
-            {allProductsPagination && (
+            {getCurrentPagination() && (
               <Pagination
-                currentPage={allProductsPagination.current_page}
-                totalItems={allProductsPagination.total}
-                pageSize={allProductsPagination.per_page}
-                pagination={allProductsPagination}
+                currentPage={getCurrentPagination().current_page}
+                totalItems={getCurrentPagination().total}
+                pageSize={getCurrentPagination().per_page}
+                pagination={getCurrentPagination()}
                 onPageChange={(url) => {
                   const pageMatch = url.match(/page=(\d+)/);
                   if (pageMatch) {
@@ -691,9 +818,16 @@ const GSTManagement = () => {
           </div>
         ) : (
           <EmptyState
-            icon={FiPackage}
-            title="No products found"
-            description="No product records available for the selected filters."
+            icon={activeTab === 'gst_in' ? FiArrowUp : FiArrowDown}
+            title={`No ${getTabLabel()} records found`}
+            description={`No ${getTabLabel().toLowerCase()} records available for the selected filters.`}
+            action={
+              (filters.month || filters.year) ? (
+                <Button variant="outline" onClick={clearFilters}>
+                  Clear Filters
+                </Button>
+              ) : null
+            }
           />
         )}
       </motion.div>
@@ -732,7 +866,7 @@ const GSTManagement = () => {
                   <p className="text-sm text-gray-600 dark:text-gray-400">
                     Collection ID:{' '}
                     <span className="font-medium text-gray-900 dark:text-white">
-                      #{selectedCollection.originalId}
+                      #{selectedCollection._originalId}
                     </span>
                   </p>
                   <p className="text-sm text-gray-600 dark:text-gray-400">
@@ -746,9 +880,9 @@ const GSTManagement = () => {
                     {getStatusBadge(selectedCollection.govt_pay_status)}
                   </p>
                   <p className="text-sm text-gray-600 dark:text-gray-400">
-                    GST Amount:{' '}
-                    <span className="font-medium text-gray-900 dark:text-white">
-                      {formatCurrency(selectedCollection.selling_gst_amount)}
+                    Type:{' '}
+                    <span className={`font-medium ${activeTab === 'gst_in' ? 'text-green-600' : 'text-red-600'}`}>
+                      {activeTab === 'gst_in' ? 'GST In (Sales)' : 'GST Out (Purchases)'}
                     </span>
                   </p>
                 </div>
