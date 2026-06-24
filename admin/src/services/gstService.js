@@ -5,6 +5,7 @@ export const gstAPI = {
   getGstCollection: async (userId, params = {}) => {
     try {
       console.log('📊 Fetching GST collection for user:', userId, params);
+      // Support search=all parameter to fetch all records without pagination
       const response = await apiClient.get(`/gst-collection/${userId}`, { params });
       console.log('📊 GST collection fetched successfully:', response.data);
       return response;

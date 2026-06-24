@@ -51,6 +51,7 @@ const GSTManagement = () => {
 
   const [viewMode, setViewMode] = useState('table');
   const [activeTab, setActiveTab] = useState('gst_in');
+  const [dataViewMode, setDataViewMode] = useState('paginate'); // 'paginate' or 'all'
   const [showStatusModal, setShowStatusModal] = useState(false);
   const [selectedCollection, setSelectedCollection] = useState(null);
   const [selectedStatus, setSelectedStatus] = useState(0);
@@ -295,8 +296,12 @@ const GSTManagement = () => {
         
         <div class="summary">
           <div class="summary-item">
+            <label>View Mode</label>
+            <div class="value">${dataViewMode === 'all' ? 'All Records' : 'Paginated'}</div>
+          </div>
+          <div class="summary-item">
             <label>Total Records</label>
-            <div class="value">${getTotalCount()}</div>
+            <div class="value">${dataViewMode === 'all' ? tableData.length : getTotalCount()}</div>
           </div>
           <div class="summary-item">
             <label>Total GST</label>
@@ -986,6 +991,40 @@ const GSTManagement = () => {
                       formatCurrency(summary.gstOut)
                     }
                   </span>
+                  <div className="flex items-center space-x-2 bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
+                    <button
+                      onClick={() => {
+                        setDataViewMode('paginate');
+                        const params = {};
+                        if (filters.month) params.month = filters.month;
+                        if (filters.year) params.year = filters.year;
+                        fetchGstCollections(userId, params);
+                      }}
+                      className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                        dataViewMode === 'paginate'
+                          ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm'
+                          : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                      }`}
+                    >
+                      Paginate
+                    </button>
+                    <button
+                      onClick={() => {
+                        setDataViewMode('all');
+                        const params = { search: 'all' };
+                        if (filters.month) params.month = filters.month;
+                        if (filters.year) params.year = filters.year;
+                        fetchGstCollections(userId, params);
+                      }}
+                      className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                        dataViewMode === 'all'
+                          ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm'
+                          : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                      }`}
+                    >
+                      All
+                    </button>
+                  </div>
                   <Button
                     variant="outline"
                     size="sm"
@@ -1004,7 +1043,7 @@ const GSTManagement = () => {
               data={tableData}
               loading={loading}
             />
-            {getCurrentPagination() && (
+            {dataViewMode === 'paginate' && getCurrentPagination() && (
               <Pagination
                 currentPage={getCurrentPagination().current_page}
                 totalItems={getCurrentPagination().total}

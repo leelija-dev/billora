@@ -68,36 +68,42 @@ export const useGstStore = create((set, get) => ({
         throw new Error(data.message || 'Failed to fetch GST collections');
       }
 
-      // Extract GST In data with unique IDs
-      const gstInData = data.gst_in_data?.data?.map((item, index) => ({
+      // Handle search=all response (returns array directly instead of paginated object)
+      const isSearchAll = params.search === 'all';
+      
+      // Extract GST In data with unique IDs - handle both array and paginated structure
+      const gstInRawData = isSearchAll ? data.gst_in_data : data.gst_in_data?.data;
+      const gstInData = Array.isArray(gstInRawData) ? gstInRawData.map((item, index) => ({
         ...item,
         // Create a truly unique ID for React keys
         _uniqueId: `gst_in_${item.id}_${Date.now()}_${index}`,
         _originalId: item.id,
         _type: 'gst_in',
-      })) || [];
+      })) : [];
 
-      // Extract GST Out data with unique IDs
-      const gstOutData = data.gst_out_data?.data?.map((item, index) => ({
+      // Extract GST Out data with unique IDs - handle both array and paginated structure
+      const gstOutRawData = isSearchAll ? data.gst_out_data : data.gst_out_data?.data;
+      const gstOutData = Array.isArray(gstOutRawData) ? gstOutRawData.map((item, index) => ({
         ...item,
         // Create a truly unique ID for React keys
         _uniqueId: `gst_out_${item.id}_${Date.now()}_${index}`,
         _originalId: item.id,
         _type: 'gst_out',
-      })) || [];
+      })) : [];
 
-      // Extract all products data
-      const allProductsData = data.all_products?.data?.map((item, index) => ({
+      // Extract all products data - handle both array and paginated structure
+      const allProductsRawData = isSearchAll ? data.all_products : data.all_products?.data;
+      const allProductsData = Array.isArray(allProductsRawData) ? allProductsRawData.map((item, index) => ({
         ...item,
         _uniqueId: `prod_${item.product_id}_${Date.now()}_${index}`,
         _originalId: item.product_id,
-      })) || [];
+      })) : [];
 
       // Combine all collections for backward compatibility
       const allCollections = [...gstInData, ...gstOutData];
 
-      // Pagination for GST In
-      const gstInPagination = data.gst_in_data ? {
+      // Pagination for GST In (null when search=all)
+      const gstInPagination = isSearchAll ? null : (data.gst_in_data ? {
         current_page: data.gst_in_data.current_page,
         first_page_url: data.gst_in_data.first_page_url,
         from: data.gst_in_data.from,
@@ -110,10 +116,10 @@ export const useGstStore = create((set, get) => ({
         prev_page_url: data.gst_in_data.prev_page_url,
         to: data.gst_in_data.to,
         total: data.gst_in_data.total,
-      } : null;
+      } : null);
 
-      // Pagination for GST Out
-      const gstOutPagination = data.gst_out_data ? {
+      // Pagination for GST Out (null when search=all)
+      const gstOutPagination = isSearchAll ? null : (data.gst_out_data ? {
         current_page: data.gst_out_data.current_page,
         first_page_url: data.gst_out_data.first_page_url,
         from: data.gst_out_data.from,
@@ -126,9 +132,9 @@ export const useGstStore = create((set, get) => ({
         prev_page_url: data.gst_out_data.prev_page_url,
         to: data.gst_out_data.to,
         total: data.gst_out_data.total,
-      } : null;
+      } : null);
 
-      const allProductsPagination = data.all_products ? {
+      const allProductsPagination = isSearchAll ? null : (data.all_products ? {
         current_page: data.all_products.current_page,
         first_page_url: data.all_products.first_page_url,
         from: data.all_products.from,
@@ -141,7 +147,7 @@ export const useGstStore = create((set, get) => ({
         prev_page_url: data.all_products.prev_page_url,
         to: data.all_products.to,
         total: data.all_products.total,
-      } : null;
+      } : null);
 
       const result = {
         collections: allCollections,
