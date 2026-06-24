@@ -28,7 +28,7 @@ class StocksController extends Controller
 
             $customer =  Customers::findOrFail(Auth::user()->id);
 
-           $search = $request->search;
+            $search = $request->search;
 
             if ($search) {
                 $search = str_replace('-', ' ', $search);
@@ -47,9 +47,9 @@ class StocksController extends Controller
             $formCache = Cache::tags(['stock_user_' . Auth::user()->id])->has($cacheKey);
             if ($hasStockPermission) {
                 $user = Auth::user()->id; // authenticated user
-                
+
                 $stocks = Cache::tags(['stock_user_' . $user])->remember($cacheKey, 600, function () use ($user, $search) {
-                    return Stocks::with('product','sellerProduct')
+                    return Stocks::with('product', 'sellerProduct')
                         ->where('user_id', $user)
                         ->when($search, function ($query) use ($search) {
 
@@ -238,7 +238,7 @@ class StocksController extends Controller
                 ]);
                 // Log::info('Stock created: ' . json_encode($stock));
                 $stocks = Stocks::where('user_id', $user)->get();
-                Cache::tags(['stock_user_' . $user,'gst_collection_user_' . $user,'billing_user_' . $user])->flush();
+                Cache::tags(['stock_user_' . $user, 'gst_collection_user_' . $user, 'billing_user_' . $user])->flush();
                 // 'stock_user_' . Auth::user()->id.'page_id'.$request->page
                 return response()->json([
                     'status' => true,
@@ -442,7 +442,7 @@ class StocksController extends Controller
                 $stockHistory = StockHistory::where('stock_id', $stock->id)->where('user_id', $user)->get();
                 foreach ($stockHistory as $history) {
                     $history->update([
-                        'price' =>$stock->purchase_price,
+                        'price' => $stock->purchase_price,
                         'gst' => $stock->purchase_gst_percentage
                     ]);
                 }
@@ -579,18 +579,18 @@ class StocksController extends Controller
                 $stock->update([
                     'quantity' => ((float)$stock->quantity + (float)$data['quantity']),
                 ]);
-                
+
                 $stockHistory = StockHistory::create([
                     'user_id' => $user,
                     'product_id' => $stock->product_id,
                     'stock_id' => $stock->id,
                     'seller_id' => $stock->seller_id ? $stock->seller_id : null,
-                    'price' => $stock->purchase_price ? $stock->purchase_price : 0, 
-                    'gst' => $stock->purchase_gst_percentage ? $stock->purchase_gst_percentage : 0,                     
+                    'price' => $stock->purchase_price ? $stock->purchase_price : 0,
+                    'gst' => $stock->purchase_gst_percentage ? $stock->purchase_gst_percentage : 0,
                     'quantity' => $data['quantity'],
                     'created_by' => $user
                 ]);
-                Cache::tags(['stock_user_' . Auth::user()->id, 'products_user_' . $user,'gst_collection_user_' . $user,'billing_user_' . $user])->flush();
+                Cache::tags(['stock_user_' . Auth::user()->id, 'products_user_' . $user, 'gst_collection_user_' . $user, 'billing_user_' . $user])->flush();
                 // 'stock_user_' . Auth::user()->id.'_page_'.$request->page
                 return response()->json([
                     'status' => true,
@@ -628,31 +628,115 @@ class StocksController extends Controller
         }
         $customer =  Customers::findOrFail($user);
     }
-    public function stockRemove(Request $request ,$id){
+    public function stockRemove(Request $request, $id)
+    {
         $data = $request->validate([
             'user_id' => 'required',
             'quantity' => 'required',
-            
+
+
         ]);
         $user = Auth::user()->id;
-        if($data['user_id'] != $user){
+        if ($data['user_id'] != $user) {
             return response()->json([
                 'status' => false,
-                'message' =>'Unauthorized user'
+                'message' => 'Unauthorized user'
             ]);
-            
         }
-        $customer =  Customers::findOrFail(Auth::user()->id);
-        $permissions = DB::table('plan_permission_details as ppd')
+        DB::beginTransaction();
+        try {
+            $customer =  Customers::findOrFail(Auth::user()->id);
+            $permissions = DB::table('plan_permission_details as ppd')
                 ->join('plan_permission as pp', 'pp.id', '=', 'ppd.permission_id')
                 ->where('ppd.plan_id', $customer->plan_id)
                 ->pluck('pp.slug')
                 ->toArray();
 
-        $hasStockPermission = in_array('stock-management', $permissions);
-        // if($g){
+            $hasStockPermission = in_array('stock-management', $permissions);
+            if ($hasStockPermission) {
+                $stock = Stocks::where('id', $id)->where('user_id', $data['user_id'])->first();
+                if (!$stock) {
+                    return response()->json([
+                        'status' => false,
+                        'message' => 'Stock not found'
+                    ]);
+                }
+                if ($data['quantity']  <= 0) {
+                    return response()->json([
+                        'status' => false,
+                        'message' => 'Delete stock can less than 0 or equal to 0'
+                    ]);
+                }
+                if ($stock->quantity < $data['quantity']) {
+                    return response()->json([
+                        'status' => false,
+                        'message' => 'Delete stock can not greater than current stock quantity'
+                    ]);
+                }
+                if ($stock->quantity >= $data['quantity']) {
+                    $stock->update([
+                        'quantity' => ((float)$stock->quantity - (float)$data['quantity']),
+                    ]);
+                    $sellerProducts = SellerProducts::where('seller_id', $stock->seller_id)->where('stock_id', $stock->id)->where('product_id', $stock->product_id)->orderBy('id', 'desc')->get();
+                    $removeQty = $data['quantity'];
 
-        // }
-        
+                    if ($sellerProducts->isNotEmpty()) {
+                        foreach ($sellerProducts as $seller) {
+                            if ($removeQty <= 0) {
+                                break;
+                            }
+                            $availableQty = $seller->quantity;
+                            if ($availableQty <= $removeQty) {
+
+                                // Remove all quantity from this record
+                                $seller->update([
+                                    'quantity' => 0
+                                ]);
+
+                                $removeQty -= $availableQty;
+                            } else {
+
+                                // Remove only required quantity
+                                $seller->update([
+                                    'quantity' => $availableQty - $removeQty
+                                ]);
+
+                                $removeQty = 0;
+                            }
+                        }
+                    }
+
+                    $stockHistory = StockHistory::create([
+                        'user_id' => $data['user_id'],
+                        'product_id' => $stock->product_id ? $stock->product_id : null,
+                        'seller_id' => $stock->seller_id ? $stock->seller_id : null,
+                        'stock_id'  => $id,
+                        'price'     => $stock->purchase_price ? $stock->purchase_price : 0,
+                        'gst'       => $stock->purchase_gst_percentage ? $stock->purchase_gst_percentage : 0,
+                        'discount'  => 0,
+                        'quantity'  => -abs($data['quantity']),
+                        'created_by'  => $data['user_id']
+                    ]);
+                }
+                DB::commit();
+                Cache::tags(['stock_user_' . $user, 'products_user_' . $user, 'gst_collection_user_' . $user, 'billing_user_' . $user])->flush();
+                return response()->json([
+                    'status' => true,
+                    'message' => 'Stock removed successfully',
+                    'stock' => $stock
+                ]);
+            } else {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'You do not have permission to access stock management!'
+                ]);
+            }
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'status' => false,
+                'message' => $e->getMessage()
+            ]);
+        }
     }
 }
