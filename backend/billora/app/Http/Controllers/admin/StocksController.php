@@ -194,7 +194,6 @@ class StocksController extends Controller
                     'quantity' => $stocks['quantity'],
                     'created_by' => $user,
                     'seller_id' => $stocks['seller_id'],
-                    'seller_id' => $stocks['seller_id'],
                     'price' => $stocks['purchase_price'], // this is for purchase price 
                     'gst'  => $stocks['purchase_gst_percentage'],
                     'discount' => 0
@@ -218,6 +217,14 @@ class StocksController extends Controller
                         ]
                     );
                 }
+                $seller = Seller::findOrFail($stocks['seller_id']);
+                if(!$seller){
+                    return response()->json([
+                        'status' => false,
+                        'message' => 'Seller not found'
+                    ]);
+                }
+                $totalAmt = (($stocks['purchase_price'] * $stocks['quantity']) + ($stocks['purchase_price'] * $stocks['quantity'] * $stocks['purchase_gst_percentage'] / 100));
                 $sellerDetails = SellerProducts::create([
                     'user_id'    => $user,
                     'seller_id'  => $stocks['seller_id'],
@@ -226,13 +233,17 @@ class StocksController extends Controller
                     'qty'        => $stocks['quantity'] ?? 0,
                     'purchase_price' => $stocks['purchase_price'] ?? 0,
                     'gst_percentage' => $stocks['purchase_gst_percentage'] ?? 0,
-                    'total_amount'   => $stocks['total_amount'] ?? 0,
+                    'total_amount'   => $totalAmt,//$stocks['total_amount'] ?? 0,
                     'paid_amount'    => $stocks['paid_amount'] ?? 0,
                     'invoice_number' => $stocks['invoice_number'] ?? 0,
                     'invoice_date'   => $stocks['invoice_date'] ?? 0,
                     'invoice_image'  => $upload['secure_url'] ?? null,
                     'invoice_image_public_url' => $upload['public_id'] ?? null
                 ]);
+                $seller->update([
+                    'due_amount' => $seller->due_amount + ($totalAmt - $stocks['paid_amount'])
+                ]);
+
                 $stock->update([
                     'seller_product_id' => $sellerDetails->id
                 ]);
@@ -404,7 +415,10 @@ class StocksController extends Controller
                     ->where('seller_id', $seller->id)
                     ->where('stock_id', $stock->id)
                     ->first();
-
+                $prePaid = 0;
+                if($sellerProducts){
+                    $prePaid = $sellerProducts->paid_amount;
+                }
                 if ($request->deleted_image_id && $sellerProducts) {
                     if ($sellerProducts->invoice_image_public_url) {
                         $this->deleteFromCloudinary($sellerProducts->invoice_image_public_url);
@@ -415,7 +429,7 @@ class StocksController extends Controller
                         'invoice_image_public_url' => null
                     ]);
                 }
-
+                
                 $sellerProducts = SellerProducts::updateOrCreate(
                     [
                         'user_id'   => $user,
@@ -435,6 +449,13 @@ class StocksController extends Controller
                         'invoice_image_public_url' => $upload['public_id'] ?? ($sellerProducts->invoice_image_public_url ?? null),
                     ]
                 );
+                // $sellerProducts
+                if($seller){
+                $new = (float)$prePaid - (float)$request->paid_amount;
+                $seller->update([
+                    'due_amount' => (float)$seller->due_amount + (float)$new
+                ]);
+                }
                 $stock->update([
                     'seller_id' => $sellerProducts->seller_id,
                     'seller_product_id' => $sellerProducts->id
@@ -589,6 +610,16 @@ class StocksController extends Controller
                     'gst' => $stock->purchase_gst_percentage ? $stock->purchase_gst_percentage : 0,
                     'quantity' => $data['quantity'],
                     'created_by' => $user
+                ]);
+                $sellerProduct = SellerProducts::where('seller_id',$stock->seller_id)->where('stock_id', $stock->id)->where('user_id', $user)->first();
+                $seller = Seller::where('id', $stock->seller_id)->first();
+                if ($sellerProduct) {
+                    $sellerProduct->update([
+                        'quantity' => ((float)$sellerProduct->quantity + (float)$data['quantity'])
+                    ]);
+                }
+                $seller->update([
+                    'due_amount' => ((float)$seller->due_amount + (float)$data['quantity'] * ((float)$stock->purchase_price*(float)$stock->purchase_gst_percentage/100))
                 ]);
                 Cache::tags(['stock_user_' . Auth::user()->id, 'products_user_' . $user, 'gst_collection_user_' . $user, 'billing_user_' . $user])->flush();
                 // 'stock_user_' . Auth::user()->id.'_page_'.$request->page

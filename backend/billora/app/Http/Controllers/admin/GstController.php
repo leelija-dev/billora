@@ -196,7 +196,7 @@ class GstController extends Controller
         $toDate = now();
     }
     $page=$request->page ?? 1;
-    $cacheKey = "gst_collection_{$user}_page{$page}_{$fromDate->format('Ymd')}_{$toDate->format('Ymd')}";
+    $cacheKey = "gst_collection_{$user}_page{$page}_{$fromDate->format('Ymd')}_{$toDate->format('Ymd')}_{$search}";
 
     $fromCache = Cache::tags(['gst_collection_user_' . $user])->has($cacheKey);
 
@@ -279,13 +279,13 @@ class GstController extends Controller
                 $gstIn += ($finalAmount * $item->gst) / 100;
             }
             if($hasStockPermission){
-            if($search == 'all'){  
+            if($search === 'all'){  
                 $gstOutData = StockHistory::where('user_id', $id)->where('quantity', '>', 0)->with(['stock','stock.product','seller.sellerProducts'])->whereBetween('created_at', [$fromDate, $toDate])->orderByDesc('created_at')->get(); 
             }else{              
-            $gstOutData = StockHistory::where('user_id', $id)->where('quantity', '>', 0)->with(['stock','stock.product','seller.sellerProducts'])->whereBetween('created_at', [$fromDate, $toDate])->orderByDesc('created_at')->paginate(15); 
+                $gstOutData = StockHistory::where('user_id', $id)->where('quantity', '>', 0)->with(['stock','stock.product','seller.sellerProducts'])->whereBetween('created_at', [$fromDate, $toDate])->orderByDesc('created_at')->paginate(15); 
             }
             }else{
-                if($search == 'all'){
+                if($search === 'all'){
                      $gstOutData = InvoiceItems::with('product','invoice')
                     ->where('user_id', $id)
                     ->where('status', 'completed')
@@ -307,7 +307,7 @@ class GstController extends Controller
                 ->where('status', 'completed')
                 ->whereBetween('created_at', [$fromDate, $toDate])
                 ->orderByDesc('created_at')
-                ->paginate(15);
+                ->get();
             }else{
             $gstInData = Invoice::with('invoiceItems','invoiceItems.product')
                 ->where('user_id', $id)

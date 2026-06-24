@@ -417,7 +417,7 @@ const GSTManagement = () => {
         data = purchases.map((item, index) => ({
           ...item,
           // Use stock-specific values if available
-          price: item.stock?.purchase_price || item.price,
+          price:  item.price, //|| item.stock?.purchase_price ,
           gst: item.stock?.purchase_gst_percentage || item.gst,
           // Override id with a unique value for the table key
           id: item._uniqueId || `gst_out-${item.id}-${index}`,
@@ -671,7 +671,7 @@ const GSTManagement = () => {
       cell: (_, row) => {
         const price = parseFloat(row.price) || 0;
         const gstPercent = parseFloat(row.gst) || 0;
-        const gstAmount = (price * gstPercent) / 100;
+        const gstAmount = ((price * gstPercent) / 100 ) * row.quantity;
         return (
           <span className="px-3 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded-lg text-sm font-medium">
             {formatCurrency(gstAmount)}
