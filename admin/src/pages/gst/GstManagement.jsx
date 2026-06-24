@@ -184,6 +184,204 @@ const GSTManagement = () => {
     return <StatusBadge status="Unknown" variant="default" />;
   };
 
+  const handlePrint = () => {
+    const printWindow = window.open('', '_blank');
+    const isGstIn = activeTab === 'gst_in';
+    const title = isGstIn ? 'GST In Report' : 'GST Out Report';
+    
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>${title}</title>
+        <style>
+          body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            margin: 0;
+            color: #333;
+          }
+          .header {
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #333;
+            padding-bottom: 20px;
+          }
+          .header h1 {
+            margin: 0;
+            font-size: 24px;
+            color: #1a1a1a;
+          }
+          .header p {
+            margin: 5px 0 0;
+            color: #666;
+            font-size: 14px;
+          }
+          .summary {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #f5f5f5;
+            border-radius: 5px;
+          }
+          .summary-item {
+            text-align: center;
+          }
+          .summary-item label {
+            display: block;
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 5px;
+          }
+          .summary-item .value {
+            font-size: 18px;
+            font-weight: bold;
+            color: #1a1a1a;
+          }
+          table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+          }
+          th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+          }
+          th {
+            background-color: #f5f5f5;
+            font-weight: bold;
+            font-size: 12px;
+            text-transform: uppercase;
+          }
+          td {
+            font-size: 12px;
+          }
+          tr:nth-child(even) {
+            background-color: #f9f9f9;
+          }
+          .amount {
+            text-align: right;
+            font-family: monospace;
+          }
+          .center {
+            text-align: center;
+          }
+          .footer {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #ddd;
+            text-align: center;
+            font-size: 12px;
+            color: #666;
+          }
+          @media print {
+            body {
+              padding: 0;
+            }
+            .no-print {
+              display: none;
+            }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <h1>${title}</h1>
+          <p>Generated on: ${new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' })}</p>
+          ${filters.year || filters.month ? `<p>Filter: ${filters.month ? new Date(2024, parseInt(filters.month) - 1).toLocaleString('default', { month: 'long' }) : ''} ${filters.year ? filters.year : ''}</p>` : ''}
+        </div>
+        
+        <div class="summary">
+          <div class="summary-item">
+            <label>Total Records</label>
+            <div class="value">${getTotalCount()}</div>
+          </div>
+          <div class="summary-item">
+            <label>Total GST</label>
+            <div class="value">${formatCurrency(isGstIn ? summary.gstIn : summary.gstOut)}</div>
+          </div>
+        </div>
+
+        <table>
+          <thead>
+            <tr>
+              ${isGstIn ? `
+                <th>Invoice ID</th>
+                <th>Customer</th>
+                <th>Product</th>
+                <th>Quantity</th>
+                <th class="amount">Price</th>
+                <th class="center">GST %</th>
+                <th class="amount">GST Amount</th>
+                <th>Created</th>
+              ` : `
+                <th>ID</th>
+                <th>Product</th>
+                <th>Seller</th>
+                <th>Quantity</th>
+                <th class="amount">Purchase Price</th>
+                <th class="center">GST %</th>
+                <th class="amount">GST Amount</th>
+                <th>Created</th>
+              `}
+            </tr>
+          </thead>
+          <tbody>
+            ${tableData.map(item => {
+              if (isGstIn) {
+                const customer = item.customer || {};
+                const product = item.product || {};
+                const gstAmount = (parseFloat(item.price) * parseFloat(item.gst)) / (100 + parseFloat(item.gst));
+                return `
+                  <tr>
+                    <td>#${item.invoice_number || 'N/A'}</td>
+                    <td>${customer.name || 'N/A'}</td>
+                    <td>${product.name || 'N/A'}</td>
+                    <td class="center">${parseFloat(item.quantity).toFixed(2)}</td>
+                    <td class="amount">${formatCurrency(item.price)}</td>
+                    <td class="center">${parseFloat(item.gst).toFixed(2)}%</td>
+                    <td class="amount">${formatCurrency(gstAmount)}</td>
+                    <td>${formatDate(item.created_at)}</td>
+                  </tr>
+                `;
+              } else {
+                const product = item.stock?.product || {};
+                const seller = item.seller || {};
+                const gstAmount = (parseFloat(item.price) * parseFloat(item.gst)) / 100;
+                return `
+                  <tr>
+                    <td>#${item.id}</td>
+                    <td>${product.name || 'N/A'}</td>
+                    <td>${seller.name || 'N/A'}</td>
+                    <td class="center">${parseFloat(item.quantity).toFixed(2)}</td>
+                    <td class="amount">${formatCurrency(item.price)}</td>
+                    <td class="center">${parseFloat(item.gst).toFixed(2)}%</td>
+                    <td class="amount">${formatCurrency(gstAmount)}</td>
+                    <td>${formatDate(item.created_at)}</td>
+                  </tr>
+                `;
+              }
+            }).join('')}
+          </tbody>
+        </table>
+
+        <div class="footer">
+          <p>This is a computer-generated report. No signature required.</p>
+        </div>
+      </body>
+      </html>
+    `;
+
+    printWindow.document.write(htmlContent);
+    printWindow.document.close();
+    printWindow.focus();
+    setTimeout(() => {
+      printWindow.print();
+    }, 250);
+  };
+
   // Get current data based on active tab - ensure unique IDs
   const getCurrentData = () => {
     let data = [];
@@ -788,6 +986,15 @@ const GSTManagement = () => {
                       formatCurrency(summary.gstOut)
                     }
                   </span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handlePrint}
+                    className="flex items-center space-x-2"
+                  >
+                    <FiDownload className="w-4 h-4" />
+                    <span>Print PDF</span>
+                  </Button>
                 </div>
               </div>
             </div>
