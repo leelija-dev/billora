@@ -1,5 +1,5 @@
 // pages/gst/GstManagement.jsx
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   FiPackage,
@@ -74,13 +74,15 @@ const GSTManagement = () => {
     { value: '12', label: 'December' },
   ];
 
-  const yearOptions = [
-    { value: '', label: 'All Years' },
-    { value: '2024', label: '2024' },
-    { value: '2025', label: '2025' },
-    { value: '2026', label: '2026' },
-    { value: '2027', label: '2027' },
-  ];
+  const yearOptions = useMemo(() => {
+    const currentYear = new Date().getFullYear();
+    const options = [{ value: '', label: 'All Years' }];
+    // Include 5 years before and 2 years after current year
+    for (let year = currentYear - 5; year <= currentYear + 2; year++) {
+      options.push({ value: String(year), label: String(year) });
+    }
+    return options;
+  }, []);
 
   useEffect(() => {
     if (initializedRef.current) return;
@@ -187,10 +189,38 @@ const GSTManagement = () => {
     let data = [];
     switch(activeTab) {
       case 'gst_in':
-        data = gstInData || [];
+        // Flatten invoice_items from each invoice
+        const invoices = gstInData || [];
+        data = invoices.flatMap((invoice, invIndex) => {
+          const items = invoice.invoice_items || [];
+          return items.map((item, itemIndex) => ({
+            ...item,
+            // Add invoice context to each item
+            invoice: invoice,
+            invoice_id: invoice.id,
+            invoice_number: invoice.invoice_number,
+            customer_id: invoice.customer_id,
+            customer: invoice.customer,
+            // Override id with a unique value for the table key
+            id: item._uniqueId || `gst_in-${item.id}-${invIndex}-${itemIndex}`,
+            // Keep original id for reference
+            _originalId: invoice.invoice_number,
+          }));
+        });
         break;
       case 'gst_out':
-        data = gstOutData || [];
+        // Use stock-specific price and GST values
+        const purchases = gstOutData || [];
+        data = purchases.map((item, index) => ({
+          ...item,
+          // Use stock-specific values if available
+          price: item.stock?.purchase_price || item.price,
+          gst: item.stock?.purchase_gst_percentage || item.gst,
+          // Override id with a unique value for the table key
+          id: item._uniqueId || `gst_out-${item.id}-${index}`,
+          // Keep original id for reference
+          _originalId: item.id,
+        }));
         break;
       default:
         return [];
@@ -199,10 +229,10 @@ const GSTManagement = () => {
     // Ensure each item has a unique id for the table key
     return data.map((item, index) => ({
       ...item,
-      // Override id with a unique value for the table key
-      id: item._uniqueId || `${activeTab}-${item.id}-${index}`,
+      // Override id with a unique value for the table key (if not already set)
+      id: item.id || `${activeTab}-${index}`,
       // Keep original id for reference
-      _originalId: item.id,
+      _originalId: item._originalId || item.id,
     }));
   };
 
@@ -239,10 +269,11 @@ const GSTManagement = () => {
     }
   };
 
-  // GST In Columns - using _originalId for the actual ID display
-  const gstInColumns = [
+  // GST In Columns - memoized with unique IDs
+  const gstInColumns = useMemo(() => [
     {
-      header: 'ID',
+      id: 'invoice_id',
+      header: 'Invoice ID',
       accessor: '_originalId',
       cell: (value) => (
         <span className="font-mono text-sm font-medium text-gray-900 dark:text-white">
@@ -251,27 +282,20 @@ const GSTManagement = () => {
       ),
     },
     {
-      header: 'Invoice ID',
-      accessor: 'invoice_id',
-      cell: (value) => (
-        <span className="font-mono text-sm text-primary-600 dark:text-primary-400">
-          INV-{String(value).padStart(5, '0')}
-        </span>
-      ),
-    },
-    {
+      id: 'customer',
       header: 'Customer',
-      accessor: 'invoice',
-      cell: (value) => {
-        const invoice = value || {};
+      accessor: 'customer',
+      cell: (value, row) => {
+        const customer = value || row.invoice?.customer || {};
+        const customerId = row.customer_id || row.invoice?.customer_id || 'N/A';
         return (
           <div>
             <p className="text-sm font-medium text-gray-900 dark:text-white">
-              #{invoice.customer_id || 'N/A'}
+              #{customerId}
             </p>
-            {invoice.customer && (
+            {customer.name && (
               <p className="text-xs text-gray-500 dark:text-gray-400">
-                {invoice.customer.name || ''}
+                {customer.name}
               </p>
             )}
           </div>
@@ -279,6 +303,7 @@ const GSTManagement = () => {
       },
     },
     {
+      id: 'product',
       header: 'Product',
       accessor: 'product',
       cell: (value) => {
@@ -298,6 +323,7 @@ const GSTManagement = () => {
       },
     },
     {
+      id: 'quantity',
       header: 'Quantity',
       accessor: 'quantity',
       cell: (value) => (
@@ -307,6 +333,7 @@ const GSTManagement = () => {
       ),
     },
     {
+      id: 'selling_price',
       header: 'Selling Price',
       accessor: 'price',
       cell: (value) => (
@@ -316,6 +343,7 @@ const GSTManagement = () => {
       ),
     },
     {
+      id: 'gst_percent',
       header: 'GST %',
       accessor: 'gst',
       cell: (value) => (
@@ -325,6 +353,7 @@ const GSTManagement = () => {
       ),
     },
     {
+      id: 'gst_amount',
       header: 'GST Amount',
       accessor: 'total_price',
       cell: (value, row) => {
@@ -339,11 +368,7 @@ const GSTManagement = () => {
       },
     },
     {
-      header: 'Status',
-      accessor: 'govt_pay_status',
-      cell: (value) => getStatusBadge(value),
-    },
-    {
+      id: 'created',
       header: 'Created',
       accessor: 'created_at',
       cell: (value) => (
@@ -352,36 +377,12 @@ const GSTManagement = () => {
         </span>
       ),
     },
-    {
-      header: 'Actions',
-      accessor: '_originalId',
-      cell: (_, row) => (
-        <div className="flex items-center space-x-2">
-          <motion.button
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => openStatusModal(row)}
-            className="p-2 text-primary-600 hover:bg-primary-50 dark:text-primary-400 dark:hover:bg-primary-900/20 rounded-lg transition-colors"
-            title="Update Payment Status"
-          >
-            <FiEdit2 className="w-4 h-4" />
-          </motion.button>
-          <motion.button
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.95 }}
-            className="p-2 text-gray-600 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-700 rounded-lg transition-colors"
-            title="View Details"
-          >
-            <FiEye className="w-4 h-4" />
-          </motion.button>
-        </div>
-      ),
-    },
-  ];
+  ], []);
 
-  // GST Out Columns - using _originalId for the actual ID display
-  const gstOutColumns = [
+  // GST Out Columns - memoized with unique IDs
+  const gstOutColumns = useMemo(() => [
     {
+      id: 'id',
       header: 'ID',
       accessor: '_originalId',
       cell: (value) => (
@@ -391,10 +392,11 @@ const GSTManagement = () => {
       ),
     },
     {
+      id: 'product',
       header: 'Product',
-      accessor: 'product',
+      accessor: 'stock',
       cell: (value) => {
-        const product = value || {};
+        const product = value?.product || {};
         return (
           <div>
             <p className="text-sm font-medium text-gray-900 dark:text-white">
@@ -410,6 +412,7 @@ const GSTManagement = () => {
       },
     },
     {
+      id: 'seller',
       header: 'Seller',
       accessor: 'seller',
       cell: (value) => {
@@ -429,6 +432,7 @@ const GSTManagement = () => {
       },
     },
     {
+      id: 'quantity',
       header: 'Quantity',
       accessor: 'quantity',
       cell: (value) => (
@@ -438,6 +442,7 @@ const GSTManagement = () => {
       ),
     },
     {
+      id: 'purchase_price',
       header: 'Purchase Price',
       accessor: 'price',
       cell: (value) => (
@@ -447,6 +452,7 @@ const GSTManagement = () => {
       ),
     },
     {
+      id: 'gst_percent',
       header: 'GST %',
       accessor: 'gst',
       cell: (value) => (
@@ -456,10 +462,11 @@ const GSTManagement = () => {
       ),
     },
     {
+      id: 'gst_amount',
       header: 'GST Amount',
-      accessor: 'price',
-      cell: (value, row) => {
-        const price = parseFloat(value) || 0;
+      accessor: 'gst_amount_calc',
+      cell: (_, row) => {
+        const price = parseFloat(row.price) || 0;
         const gstPercent = parseFloat(row.gst) || 0;
         const gstAmount = (price * gstPercent) / 100;
         return (
@@ -470,6 +477,7 @@ const GSTManagement = () => {
       },
     },
     {
+      id: 'created',
       header: 'Created',
       accessor: 'created_at',
       cell: (value) => (
@@ -478,34 +486,10 @@ const GSTManagement = () => {
         </span>
       ),
     },
-    {
-      header: 'Actions',
-      accessor: '_originalId',
-      cell: (_, row) => (
-        <div className="flex items-center space-x-2">
-          <motion.button
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => openStatusModal(row)}
-            className="p-2 text-primary-600 hover:bg-primary-50 dark:text-primary-400 dark:hover:bg-primary-900/20 rounded-lg transition-colors"
-            title="Update Payment Status"
-          >
-            <FiEdit2 className="w-4 h-4" />
-          </motion.button>
-          <motion.button
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.95 }}
-            className="p-2 text-gray-600 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-700 rounded-lg transition-colors"
-            title="View Details"
-          >
-            <FiEye className="w-4 h-4" />
-          </motion.button>
-        </div>
-      ),
-    },
-  ];
+  ], []);
 
-  const getColumnsForTab = () => {
+  // Get columns based on active tab - memoized
+  const getColumnsForTab = useMemo(() => {
     switch(activeTab) {
       case 'gst_in':
         return gstInColumns;
@@ -514,7 +498,7 @@ const GSTManagement = () => {
       default:
         return [];
     }
-  };
+  }, [activeTab, gstInColumns, gstOutColumns]);
 
   // Get the data with proper keys for the Table component
   const tableData = getCurrentData();
@@ -787,7 +771,7 @@ const GSTManagement = () => {
           </div>
         ) : tableData.length > 0 ? (
           <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg overflow-hidden">
-            <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
+            <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/50 ">
               <div className="flex items-center justify-between">
                 <div>
                   <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
@@ -808,7 +792,8 @@ const GSTManagement = () => {
               </div>
             </div>
             <Table
-              columns={getColumnsForTab()}
+              key={activeTab}
+              columns={getColumnsForTab}
               data={tableData}
               loading={loading}
             />
