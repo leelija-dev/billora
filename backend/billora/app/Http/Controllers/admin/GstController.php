@@ -289,7 +289,7 @@ class GstController extends Controller
                 ->orderByDesc('created_at')
                 ->paginate(15);
             }
-            $gstInData = InvoiceItems::with('product','invoice')
+            $gstInData = Invoice::with('product','invoiceItems')
                 ->where('user_id', $id)
                 ->where('status', 'completed')
                 ->whereBetween('created_at', [$fromDate, $toDate])
