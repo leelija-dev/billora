@@ -26,6 +26,11 @@ export const sellerAPI = {
   delete: (sellerId) => {
     return apiClient.delete(`/seller/delete/${sellerId}`)
   },
+
+  // Get seller products
+  getSellerProducts: (sellerId, params = {}) => {
+    return apiClient.get(`/seller-products/${sellerId}`, { params })
+  },
 }
 
 const sellerService = sellerAPI
