@@ -23,6 +23,14 @@ export const stocksAPI = {
   getById: (id) => {
     return apiClient.get(`/stocks/${id}`)
   },
+  // In your stocksAPI object
+deleteStockQuantity: (id, userId, quantity) => {
+  console.log('📦 Stocks API - Removing stock from:', id, 'User:', userId, 'Quantity:', quantity)
+  return apiClient.post(`/stocks/delete-stock/${id}`, { 
+    user_id: userId, 
+    quantity: quantity 
+  })
+},
 
  // Create stock with FormData support
   create: (stockData) => {

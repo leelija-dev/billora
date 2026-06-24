@@ -239,6 +239,60 @@ export const useInventoryStore = create((set, get) => ({
     }
   },
 
+  // In useInventoryStore
+deductStockQuantity: async (id, userId, quantity) => {
+  set({ loading: true })
+  try {
+    // Validate that quantity is not greater than available stock
+    const currentStock = get().stocks.find(s => s.id === id)
+    if (!currentStock) {
+      toast.error('Stock item not found')
+      set({ loading: false })
+      return { success: false }
+    }
+
+    const currentQuantity = parseFloat(currentStock.quantity) || 0
+    if (quantity > currentQuantity) {
+      toast.error(`Cannot deduct more than available stock (${currentQuantity})`)
+      set({ loading: false })
+      return { success: false }
+    }
+
+    const response = await stocksAPI.deleteStockQuantity(id, userId, quantity)
+    const apiData = response.data
+    const stock = apiData.data || apiData
+
+    // Get products data to enrich stock information
+    const productStore = useProductStore.getState()
+    const products = productStore.products || []
+
+    // Enrich the updated stock with product information
+    const product = products.find(p => p.id === stock.product_id)
+    const enrichedStock = {
+      ...stock,
+      product_name: product?.name || `Product ${stock.product_id}`,
+      product_sku: product?.sku || '',
+      unit_id: stock.unit_id,
+    }
+
+    set((state) => ({
+      stocks: state.stocks.map(s => s.id === id ? enrichedStock : s),
+      loading: false,
+    }))
+
+    // Clear cache to force refresh on next fetch
+    get().clearCache()
+
+    toast.success('Stock deducted successfully')
+    return { success: true }
+  } catch (error) {
+    console.error('Deduct Stock Quantity Error:', error)
+    toast.error(error.response?.data?.message || 'Failed to deduct stock quantity')
+    set({ loading: false })
+    return { success: false }
+  }
+},
+
   deleteStock: async (id, userId) => {
     console.log(' Inventory Store - Starting delete for stock ID:', id, 'User ID:', userId)
     set({ loading: true })

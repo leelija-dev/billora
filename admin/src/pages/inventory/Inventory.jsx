@@ -14,6 +14,8 @@ import {
   FiTag,
   FiGrid,
 } from "react-icons/fi";
+import { FiMinus } from 'react-icons/fi';
+import DeductStockModal from '../../components/features/Stocks/DeductStockModal';
 import { motion, AnimatePresence } from "framer-motion";
 import { useInventoryStore } from "../../store/inventoryStore";
 import { useProductStore } from "../../store/productStore";
@@ -64,6 +66,10 @@ const Stock = () => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [stockToDelete, setStockToDelete] = useState(null);
   const [initialLoading, setInitialLoading] = useState(true);
+
+  // Add these state variables after other state declarations
+  const [showDeductStockModal, setShowDeductStockModal] = useState(false);
+  const [selectedStockForDeduction, setSelectedStockForDeduction] = useState(null);
 
   useEffect(() => {
     // Fetch products first, then stocks with force refresh
@@ -270,6 +276,29 @@ const Stock = () => {
       stocks?.filter((s) => (parseInt(s.quantity) || 0) < 10).length || 0,
   };
 
+
+  // Add the deduction handler function
+  const handleDeductStock = async (stockId, quantity) => {
+    const result = await useInventoryStore.getState().deductStockQuantity(
+      stockId,
+      user.id,
+      quantity
+    );
+
+    if (result.success) {
+      setShowDeductStockModal(false);
+      setSelectedStockForDeduction(null);
+      // Refresh current page after deduction
+      const currentPageNumber = pagination?.current_page || currentPage || 1;
+      await fetchStocks(currentPageNumber, searchTerm, true);
+    }
+  };
+
+  // Add the handler to open the deduction modal
+  const handleOpenDeductStockModal = (stock) => {
+    setSelectedStockForDeduction(stock);
+    setShowDeductStockModal(true);
+  };
   const columns = [
     {
       header: (
@@ -351,9 +380,8 @@ const Stock = () => {
       cell: (value) => (
         <div className="flex items-center">
           <span
-            className={`text-lg font-semibold ${
-              (parseInt(value) || 0) < 10 ? "text-red-600" : "text-green-600"
-            }`}
+            className={`text-lg font-semibold ${(parseInt(value) || 0) < 10 ? "text-red-600" : "text-green-600"
+              }`}
           >
             {value || 0}
           </span>
@@ -431,6 +459,16 @@ const Stock = () => {
           >
             <FiPlus className="w-4 h-4" />
           </motion.button>
+          {/* New Deduct Stock Button */}
+          <motion.button
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => handleOpenDeductStockModal(row)}
+            className="p-2 text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+            title="Deduct Stock"
+          >
+            <FiMinus className="w-4 h-4" />
+          </motion.button>
           <motion.button
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.95 }}
@@ -442,7 +480,7 @@ const Stock = () => {
           </motion.button>
         </div>
       ),
-    },
+    }
   ];
 
   const StatCard = ({ title, value, icon: Icon, color, subtitle, delay }) => (
@@ -632,11 +670,10 @@ const Stock = () => {
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
                       onClick={() => setShowFilters(!showFilters)}
-                      className={`px-4 py-2 rounded-xl border transition-colors flex items-center space-x-2 ${
-                        showFilters
+                      className={`px-4 py-2 rounded-xl border transition-colors flex items-center space-x-2 ${showFilters
                           ? "bg-primary-50 border-primary-200 text-primary-600 dark:bg-primary-900/20 dark:border-primary-800 dark:text-primary-400"
                           : "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700"
-                      }`}
+                        }`}
                     >
                       <FiFilter className="w-4 h-4" />
                       <span>Filters</span>
@@ -725,15 +762,15 @@ const Stock = () => {
                 <>
                   <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg overflow-hidden">
                     <Table columns={columns} data={stocks} loading={loading} />
-                     <Pagination
-                    currentPage={currentPage}
-                    totalItems={totalStocks}
-                    pageSize={pageSize}
-                    pagination={pagination}
-                    onPageChange={handlePageChange}
-                  />
+                    <Pagination
+                      currentPage={currentPage}
+                      totalItems={totalStocks}
+                      pageSize={pageSize}
+                      pagination={pagination}
+                      onPageChange={handlePageChange}
+                    />
                   </div>
-                 
+
                 </>
               ) : (
                 <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-12 text-center">
@@ -758,7 +795,10 @@ const Stock = () => {
           </>
         )}
 
-        {/* Add Stock Modal */}
+        
+      </motion.div>
+
+      {/* Add Stock Modal */}
         {selectedStockForModal && (
           <AddStockModal
             isOpen={showAddStockModal}
@@ -768,7 +808,21 @@ const Stock = () => {
             isSubmitting={loading}
           />
         )}
-      </motion.div>
+
+
+        {/* Deduct Stock Modal */}
+        {selectedStockForDeduction && (
+          <DeductStockModal
+            isOpen={showDeductStockModal}
+            onClose={() => {
+              setShowDeductStockModal(false);
+              setSelectedStockForDeduction(null);
+            }}
+            stock={selectedStockForDeduction}
+            onDeductStock={handleDeductStock}
+            isSubmitting={loading}
+          />
+        )}
 
       {/* Delete Confirmation Modal */}
       <AnimatePresence>
