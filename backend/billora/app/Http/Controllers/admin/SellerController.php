@@ -5,6 +5,7 @@ namespace App\Http\Controllers\admin;
 use App\Http\Controllers\Controller;
 use App\Models\Customers;
 use App\Models\Seller;
+use App\Models\SellerPaymentHistory;
 use App\Models\SellerProducts;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -228,7 +229,7 @@ class SellerController extends Controller
                 'status' => false,
                 'message' => 'Unauthorized user'
             ]);
-}
+    }
         DB::beginTransaction();
 
         try {
@@ -247,15 +248,18 @@ class SellerController extends Controller
                     'message' => 'Paid amount cannot be greater than seller due amount.'
                 ]);
             }
+
             if($data['paid_amount'] < 0){
                 return response()->json([
                     'status' => false,
                     'message' => 'Paid amount cannot be negative.'
                 ]);
             }
+            if($seller){
             $seller->update([
                 'due_amount' => $seller->due_amount - $data['paid_amount']
             ]);
+            }
             $paidAmount = $data['paid_amount'];
             foreach ($sellerProducts as $product) {
 
@@ -283,6 +287,16 @@ class SellerController extends Controller
                     $paidAmount = 0;
                 }
             }
+                if($data['paid_amount'] > 0){
+                    SellerPaymentHistory::create([
+                        'user_id'           => $user,
+                        'seller_id'         => $id,
+                        'invoice_id'        => null,
+                        'paid_amount'       => $stocks['paid_amount'] ?? 0,
+                        'payment_method'    => 'cash',
+                        'remarks'           => 'Due Payment'
+                    ]);
+                }
             DB::commit();
             return response()->json([
                 'status' => true,

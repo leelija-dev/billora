@@ -9,6 +9,7 @@ use App\Models\Products;
 use App\Models\Unit;
 use App\Models\Customers;
 use App\Models\Seller;
+use App\Models\SellerPaymentHistory;
 use App\Models\SellerProducts;
 use App\Models\StockHistory;
 use Illuminate\Support\Facades\Auth;
@@ -240,10 +241,21 @@ class StocksController extends Controller
                     'invoice_image'  => $upload['secure_url'] ?? null,
                     'invoice_image_public_url' => $upload['public_id'] ?? null
                 ]);
+                if($stocks['paid_amount'] > 0){
+                    SellerPaymentHistory::create([
+                        'user_id'           => $user,
+                        'seller_id'         => $stocks['seller_id'],
+                        'invoice_id'        => $stocks['invoice_number'] ?? 0,
+                        'paid_amount'       => $stocks['paid_amount'] ?? 0,
+                        'payment_method'    => 'cash',
+                        'remarks'           => 'Stock purchase'
+                    ]);
+                }
+                if($seller){
                 $seller->update([
                     'due_amount' => $seller->due_amount + ($totalAmt - $stocks['paid_amount'])
                 ]);
-
+               } 
                 $stock->update([
                     'seller_product_id' => $sellerDetails->id
                 ]);
@@ -467,6 +479,7 @@ class StocksController extends Controller
                         'gst' => $stock->purchase_gst_percentage
                     ]);
                 }
+            
                 Cache::tags([
                     'stock_user_' . $user,
                     'products_user_' . $user,
@@ -596,11 +609,11 @@ class StocksController extends Controller
                 $stock = Stocks::where('id', $id)
                     ->where('user_id', $data['user_id'])
                     ->first();
-
+                if($stock){
                 $stock->update([
                     'quantity' => ((float)$stock->quantity + (float)$data['quantity']),
                 ]);
-
+                }
                 $stockHistory = StockHistory::create([
                     'user_id' => $user,
                     'product_id' => $stock->product_id,
@@ -618,9 +631,11 @@ class StocksController extends Controller
                         'qty' => ((float)$sellerProduct->qty + (float)$data['quantity'])
                     ]);
                 }
+                if($seller){
                 $seller->update([
                     'due_amount' => ((float)$seller->due_amount + ((float)$stock->purchase_price * (float)$data['quantity'])+(float)$data['quantity'] * ((float)$stock->purchase_price*(float)$stock->purchase_gst_percentage/100))
                 ]);
+                }
                 Cache::tags(['stock_user_' . Auth::user()->id, 'products_user_' . $user, 'gst_collection_user_' . $user, 'billing_user_' . $user])->flush();
                 // 'stock_user_' . Auth::user()->id.'_page_'.$request->page
                 return response()->json([
