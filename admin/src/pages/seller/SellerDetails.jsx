@@ -23,6 +23,8 @@ import {
   FiSave,
   FiAlertCircle,
   FiCheckCircle,
+  FiCreditCard,
+  FiPrinter,
 } from "react-icons/fi";
 import { FaRupeeSign } from "react-icons/fa";
 import Button from "../../components/common/Button/Button";
@@ -31,6 +33,7 @@ import Table from "../../components/common/Table/Table";
 import Pagination from "../../components/common/Pagination/Pagination";
 import EmptyState from "../../components/common/EmptyState/EmptyState";
 import StatusBadge from "../../components/common/StatusBadge/StatusBadge";
+import DuePaymentModal from "../../components/features/Sellers/DuePaymentModal";
 import useSellerStore from "../../store/sellerStore";
 import { useAuthStore } from "../../store/authStore";
 import toast from "react-hot-toast";
@@ -53,6 +56,8 @@ const SellerDetails = () => {
     getSellerById,
     updateSeller,
     fetchSellers,
+    processDuePayment,
+    paymentProcessing,
   } = useSellerStore();
 
   // Seller state
@@ -69,6 +74,14 @@ const SellerDetails = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [refreshing, setRefreshing] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
+
+  // Payment state
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [paymentSuccess, setPaymentSuccess] = useState(false);
+
+  // Print state
+  const [isPrinting, setIsPrinting] = useState(false);
+  const printContentRef = useRef(null);
 
   // Refs to prevent duplicate requests
   const sellerFetchedRef = useRef(false);
@@ -261,7 +274,7 @@ const SellerDetails = () => {
     return Object.keys(errors).length === 0;
   };
 
-  // Handle form submit - FIXED: No unnecessary re-renders
+  // Handle form submit
   const handleSubmitEdit = async () => {
     if (!validateForm()) {
       const firstError = document.querySelector('.border-red-500');
@@ -295,7 +308,7 @@ const SellerDetails = () => {
         ...editFormData
       }));
       
-      // Refresh the sellers list in the background (don't await to prevent blocking)
+      // Refresh the sellers list in the background
       fetchSellers(currentUserId).catch(err => console.error("Background refresh failed:", err));
       
       toast.success("Seller updated successfully");
@@ -316,6 +329,24 @@ const SellerDetails = () => {
       setIsRefreshing(false);
     }
   };
+
+  // Handle payment success
+  const handlePaymentSuccess = useCallback(async () => {
+    setPaymentSuccess(true);
+    // Refresh seller details to update due amount
+    sellerFetchedRef.current = false;
+    await fetchSellerDetails(true);
+    // Refresh products
+    productsFetchedRef.current = false;
+    await fetchProducts();
+    
+    // Show success animation
+    toast.success("Payment processed and data refreshed");
+    
+    setTimeout(() => {
+      setPaymentSuccess(false);
+    }, 3000);
+  }, [fetchSellerDetails, fetchProducts]);
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -373,7 +404,334 @@ const SellerDetails = () => {
     });
   };
 
-  // Product columns
+  // Print functionality
+  const handlePrint = () => {
+    setIsPrinting(true);
+    
+    const printContent = printContentRef.current;
+    
+    if (!printContent) {
+      setIsPrinting(false);
+      return;
+    }
+
+    const pageTitle = `Seller Details - ${seller?.name || 'Seller'}`;
+    const contentHTML = printContent.innerHTML;
+
+    const printStyles = `
+      <style>
+        * {
+          margin: 0;
+          padding: 0;
+          box-sizing: border-box;
+        }
+        
+        body {
+          font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+          background: #ffffff;
+          color: #1a1a1a;
+          padding: 40px;
+          line-height: 1.6;
+        }
+        
+        .print-container {
+          max-width: 1200px;
+          margin: 0 auto;
+        }
+        
+        .print-header {
+          text-align: center;
+          border-bottom: 3px solid #2563eb;
+          padding-bottom: 20px;
+          margin-bottom: 30px;
+        }
+        
+        .print-header h1 {
+          font-size: 28px;
+          color: #1a1a1a;
+          margin-bottom: 5px;
+        }
+        
+        .print-header p {
+          color: #666;
+          font-size: 14px;
+        }
+        
+        .print-header .print-date {
+          margin-top: 10px;
+          font-size: 12px;
+          color: #888;
+        }
+        
+        .seller-info-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 30px;
+          margin-bottom: 30px;
+          padding: 20px;
+          background: #f8fafc;
+          border-radius: 8px;
+        }
+        
+        .seller-info-section h3 {
+          font-size: 14px;
+          font-weight: 600;
+          color: #2563eb;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+          margin-bottom: 10px;
+          border-bottom: 1px solid #e2e8f0;
+          padding-bottom: 8px;
+        }
+        
+        .seller-info-item {
+          display: flex;
+          padding: 6px 0;
+          font-size: 14px;
+        }
+        
+        .seller-info-item .label {
+          font-weight: 500;
+          color: #4a5568;
+          min-width: 100px;
+        }
+        
+        .seller-info-item .value {
+          color: #1a1a1a;
+        }
+        
+        .seller-meta-grid {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 20px;
+          margin: 20px 0 30px 0;
+          padding: 15px;
+          background: #f1f5f9;
+          border-radius: 8px;
+        }
+        
+        .seller-meta-item {
+          text-align: center;
+        }
+        
+        .seller-meta-item .meta-label {
+          font-size: 11px;
+          text-transform: uppercase;
+          color: #64748b;
+          font-weight: 600;
+          letter-spacing: 0.5px;
+        }
+        
+        .seller-meta-item .meta-value {
+          font-size: 16px;
+          font-weight: 600;
+          color: #1a1a1a;
+          margin-top: 4px;
+        }
+        
+        .due-amount-section {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 15px 20px;
+          margin-bottom: 30px;
+          background: ${parseFloat(seller?.due_amount) > 0 ? '#fef2f2' : '#f0fdf4'};
+          border-radius: 8px;
+          border-left: 4px solid ${parseFloat(seller?.due_amount) > 0 ? '#dc2626' : '#22c55e'};
+        }
+        
+        .due-amount-section .due-label {
+          font-weight: 500;
+          color: #4a5568;
+        }
+        
+        .due-amount-section .due-amount {
+          font-size: 20px;
+          font-weight: 700;
+          color: ${parseFloat(seller?.due_amount) > 0 ? '#dc2626' : '#16a34a'};
+        }
+        
+        .products-section {
+          margin-top: 30px;
+        }
+        
+        .products-section h2 {
+          font-size: 20px;
+          font-weight: 600;
+          color: #1a1a1a;
+          margin-bottom: 15px;
+          border-bottom: 2px solid #e2e8f0;
+          padding-bottom: 10px;
+        }
+        
+        .products-table {
+          width: 100%;
+          border-collapse: collapse;
+          font-size: 13px;
+        }
+        
+        .products-table th {
+          background: #f1f5f9;
+          color: #334155;
+          font-weight: 600;
+          text-align: left;
+          padding: 10px 12px;
+          border-bottom: 2px solid #cbd5e1;
+          text-transform: uppercase;
+          font-size: 11px;
+          letter-spacing: 0.5px;
+        }
+        
+        .products-table td {
+          padding: 10px 12px;
+          border-bottom: 1px solid #e2e8f0;
+          color: #1e293b;
+        }
+        
+        .products-table tr:last-child td {
+          border-bottom: none;
+        }
+        
+        .products-table .product-name {
+          font-weight: 500;
+        }
+        
+        .products-table .product-sku {
+          font-family: 'Courier New', monospace;
+          font-size: 12px;
+          color: #64748b;
+        }
+        
+        .products-table .product-price {
+          font-weight: 500;
+        }
+        
+        .products-table .product-gst {
+          color: #64748b;
+        }
+        
+        .print-footer {
+          margin-top: 40px;
+          padding-top: 20px;
+          border-top: 1px solid #e2e8f0;
+          display: flex;
+          justify-content: flex-end;
+          font-size: 12px;
+          color: #94a3b8;
+        }
+        
+        .no-products {
+          text-align: center;
+          padding: 30px;
+          color: #94a3b8;
+          font-size: 14px;
+        }
+        
+        @media print {
+          body {
+            padding: 20px;
+          }
+          
+          .print-container {
+            max-width: 100%;
+          }
+          
+          .seller-info-grid {
+            break-inside: avoid;
+          }
+          
+          .products-table {
+            break-inside: auto;
+          }
+          
+          .products-table tr {
+            break-inside: avoid;
+          }
+        }
+        
+        @media (max-width: 768px) {
+          .seller-info-grid {
+            grid-template-columns: 1fr;
+            gap: 15px;
+          }
+          
+          .seller-meta-grid {
+            grid-template-columns: repeat(2, 1fr);
+          }
+          
+          .products-table {
+            font-size: 11px;
+          }
+          
+          .products-table th,
+          .products-table td {
+            padding: 6px 8px;
+          }
+        }
+      </style>
+    `;
+
+    const printHTML = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>${pageTitle}</title>
+          ${printStyles}
+        </head>
+        <body>
+          <div class="print-container">
+            ${contentHTML}
+            <div class="print-footer">
+              <span>Generated on: ${new Date().toLocaleString()}</span>
+            </div>
+          </div>
+        </body>
+      </html>
+    `;
+
+    const iframe = document.createElement('iframe');
+    iframe.style.position = 'absolute';
+    iframe.style.top = '-9999px';
+    iframe.style.left = '-9999px';
+    document.body.appendChild(iframe);
+
+    const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+    iframeDoc.open();
+    iframeDoc.write(printHTML);
+    iframeDoc.close();
+
+    let printTriggered = false;
+
+    iframe.onload = () => {
+      if (!printTriggered) {
+        printTriggered = true;
+        setTimeout(() => {
+          iframe.contentWindow.print();
+          setTimeout(() => {
+            if (document.body.contains(iframe)) {
+              document.body.removeChild(iframe);
+            }
+            setIsPrinting(false);
+          }, 1000);
+        }, 250);
+      }
+    };
+
+    setTimeout(() => {
+      if (document.body.contains(iframe) && !printTriggered) {
+        printTriggered = true;
+        iframe.contentWindow.print();
+        setTimeout(() => {
+          if (document.body.contains(iframe)) {
+            document.body.removeChild(iframe);
+          }
+          setIsPrinting(false);
+        }, 1000);
+      }
+    }, 500);
+  };
+
+  // Product columns - REMOVED ID column
   const productColumns = [
     {
       id: "product_info",
@@ -529,7 +887,155 @@ const SellerDetails = () => {
     </div>
   );
 
-  // Render view mode
+  // Print content renderer - REMOVED ID fields
+  const PrintContent = () => (
+    <div className="print-container">
+      {/* Header */}
+      <div className="print-header">
+        <h1>Seller Details</h1>
+        <p>Complete seller information and product inventory</p>
+        <div className="print-date">
+          Printed on: {new Date().toLocaleString()}
+        </div>
+      </div>
+
+      {/* Seller Information */}
+      <div className="seller-info-grid">
+        <div className="seller-info-section">
+          <h3>Contact Information</h3>
+          <div className="seller-info-item">
+            <span className="label">Name:</span>
+            <span className="value">{seller?.name || 'N/A'}</span>
+          </div>
+          {seller?.email && (
+            <div className="seller-info-item">
+              <span className="label">Email:</span>
+              <span className="value">{seller.email}</span>
+            </div>
+          )}
+          {seller?.phone && (
+            <div className="seller-info-item">
+              <span className="label">Phone:</span>
+              <span className="value">{seller.phone}</span>
+            </div>
+          )}
+          {seller?.gst_number && (
+            <div className="seller-info-item">
+              <span className="label">GST Number:</span>
+              <span className="value">{seller.gst_number}</span>
+            </div>
+          )}
+        </div>
+        <div className="seller-info-section">
+          <h3>Address Information</h3>
+          {seller?.address && (
+            <div className="seller-info-item">
+              <span className="label">Address:</span>
+              <span className="value">{seller.address}</span>
+            </div>
+          )}
+          {(seller?.city || seller?.state) && (
+            <div className="seller-info-item">
+              <span className="label">City/State:</span>
+              <span className="value">
+                {[seller.city, seller.state].filter(Boolean).join(', ')}
+              </span>
+            </div>
+          )}
+          {seller?.pincode && (
+            <div className="seller-info-item">
+              <span className="label">Pincode:</span>
+              <span className="value">{seller.pincode}</span>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Meta Information - REMOVED Seller ID */}
+      <div className="seller-meta-grid">
+        <div className="seller-meta-item">
+          <div className="meta-label">Total Products</div>
+          <div className="meta-value">{sellerProductsTotal || 0}</div>
+        </div>
+        {seller?.created_at && (
+          <div className="seller-meta-item">
+            <div className="meta-label">Created</div>
+            <div className="meta-value">{formatDate(seller.created_at)}</div>
+          </div>
+        )}
+        {seller?.updated_at && (
+          <div className="seller-meta-item">
+            <div className="meta-label">Last Updated</div>
+            <div className="meta-value">{formatDate(seller.updated_at)}</div>
+          </div>
+        )}
+      </div>
+
+      {/* Due Amount */}
+      <div className="due-amount-section">
+        <span className="due-label">Due Amount</span>
+        <span className="due-amount">{formatCurrency(seller?.due_amount || 0)}</span>
+      </div>
+
+      {/* Products Section */}
+      <div className="products-section">
+        <h2>Products & Inventory ({sellerProductsTotal || 0} items)</h2>
+        {sellerProducts && sellerProducts.length > 0 ? (
+          <table className="products-table">
+            <thead>
+              <tr>
+                <th>Product</th>
+                <th>SKU</th>
+                <th>Quantity</th>
+                <th>Purchase Price</th>
+                <th>Selling Price</th>
+                <th>GST</th>
+                <th>Invoice</th>
+                <th>Date</th>
+              </tr>
+            </thead>
+            <tbody>
+              {sellerProducts.map((item) => {
+                const product = item.products || {};
+                return (
+                  <tr key={item.id}>
+                    <td>
+                      <div className="product-name">{product.name || 'N/A'}</div>
+                    </td>
+                    <td>
+                      <div className="product-sku">{product.sku || 'N/A'}</div>
+                    </td>
+                    <td>{parseFloat(item.qty || 0).toFixed(2)}</td>
+                    <td>
+                      <div className="product-price">
+                        ₹{parseFloat(item.purchase_price || 0).toFixed(2)}
+                      </div>
+                    </td>
+                    <td>
+                      <div className="product-price">
+                        ₹{parseFloat(product.selling_price || 0).toFixed(2)}
+                      </div>
+                    </td>
+                    <td>
+                      <div className="product-gst">
+                        {parseFloat(item.gst_percentage || 0).toFixed(2)}%
+                      </div>
+                    </td>
+                    <td>{item.invoice_number || 'N/A'}</td>
+                    <td>{item.invoice_date ? formatDate(item.invoice_date) : 'N/A'}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        ) : (
+          <div className="no-products">No products found for this seller.</div>
+        )}
+      </div>
+    </div>
+  );
+
+  // Render view mode - REMOVED Seller ID
   const renderViewMode = () => (
     <motion.div
       key="view-mode"
@@ -567,7 +1073,7 @@ const SellerDetails = () => {
               </motion.p>
             )}
             <motion.div 
-              className="flex items-center mt-1"
+              className="flex items-center mt-1 space-x-3"
               initial={{ x: -10, opacity: 0 }}
               animate={{ x: 0, opacity: 1 }}
               transition={{ delay: 0.2 }}
@@ -583,7 +1089,7 @@ const SellerDetails = () => {
               </span>
               {parseFloat(seller.due_amount) > 0 && (
                 <motion.span 
-                  className="ml-2 px-2 py-0.5 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 text-xs rounded-full"
+                  className="px-2 py-0.5 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 text-xs rounded-full"
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
                   transition={{ delay: 0.25, type: "spring" }}
@@ -596,11 +1102,28 @@ const SellerDetails = () => {
         </div>
 
         <motion.div 
-          className="flex space-x-2"
+          className="flex flex-wrap items-center gap-2"
           initial={{ x: 10, opacity: 0 }}
           animate={{ x: 0, opacity: 1 }}
           transition={{ delay: 0.15 }}
         >
+          {/* Payment Button - Only show if due amount > 0 */}
+          {parseFloat(seller.due_amount) > 0 && (
+            <motion.div
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              <Button
+                variant="success"
+                onClick={() => setShowPaymentModal(true)}
+                icon={FiDollarSign}
+                className="shadow-lg shadow-green-500/30"
+              >
+                Process Payment
+              </Button>
+            </motion.div>
+          )}
+          
           <Button
             variant="primary"
             onClick={handleEditToggle}
@@ -608,12 +1131,15 @@ const SellerDetails = () => {
           >
             Edit Seller
           </Button>
+          
+          {/* Print Button */}
           <Button
             variant="outline"
-            onClick={() => window.print()}
+            onClick={handlePrint}
+            icon={FiPrinter}
+            disabled={isPrinting}
           >
-            <FiFileText className="w-4 h-4 mr-2" />
-            Print
+            {isPrinting ? 'Preparing...' : 'Print'}
           </Button>
         </motion.div>
       </div>
@@ -683,19 +1209,13 @@ const SellerDetails = () => {
         </div>
       </motion.div>
 
-      {/* Meta Info */}
+      {/* Meta Info - REMOVED Seller ID */}
       <motion.div 
-        className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6 pt-6 border-t border-gray-200 dark:border-gray-700"
+        className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-6 pt-6 border-t border-gray-200 dark:border-gray-700"
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.3 }}
       >
-        <div>
-          <p className="text-xs text-gray-500 dark:text-gray-400">Seller ID</p>
-          <p className="text-sm font-medium text-gray-900 dark:text-white">
-            #{seller.id}
-          </p>
-        </div>
         <div>
           <p className="text-xs text-gray-500 dark:text-gray-400">Products</p>
           <p className="text-sm font-medium text-gray-900 dark:text-white">
@@ -719,10 +1239,27 @@ const SellerDetails = () => {
           </div>
         )}
       </motion.div>
+
+      {/* Payment Success Animation */}
+      <AnimatePresence>
+        {paymentSuccess && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="mt-4 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl flex items-center space-x-3"
+          >
+            <FiCheckCircle className="w-5 h-5 text-green-600 dark:text-green-400" />
+            <span className="text-green-700 dark:text-green-300 font-medium">
+              Payment processed successfully! Due amount has been updated.
+            </span>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 
-  // Render edit form
+  // Render edit form - REMOVED ID field
   const renderEditForm = () => (
     <motion.div
       key="edit-mode"
@@ -1081,6 +1618,11 @@ const SellerDetails = () => {
         </motion.button>
       </div>
 
+      {/* Hidden print content */}
+      <div ref={printContentRef} className="hidden">
+        <PrintContent />
+      </div>
+
       {/* Seller Info Card */}
       <motion.div
         initial={{ y: -20, opacity: 0 }}
@@ -1193,6 +1735,16 @@ const SellerDetails = () => {
           )}
         </div>
       </motion.div>
+
+      {/* Due Payment Modal */}
+      <DuePaymentModal
+        seller={seller}
+        isOpen={showPaymentModal}
+        onClose={() => {
+          setShowPaymentModal(false);
+        }}
+        onSuccess={handlePaymentSuccess}
+      />
 
       {/* Add shake animation for validation errors */}
       <style jsx>{`
