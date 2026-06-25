@@ -641,24 +641,24 @@ class StocksController extends Controller
             ]);
         }
     }
-
-    public function stockalert($id)
-    {
-        $user =  Auth::user()->id;
-        if (!Auth::check()) {
-            return response()->json([
-                'status' => false,
-                'message' => 'Authentication required. Please login first.'
-            ]);
-        }
-        if ($id != $user) {
-            return response()->json([
-                'status' => false,
-                'message' => ' Invalid user.You do not have permission to access stock management!'
-            ]);
-        }
-        $customer =  Customers::findOrFail($user);
-    }
+     // stock alert send from customer controller login function
+    // public function stockalert($id)  
+    // {
+    //     $user =  Auth::user()->id;
+    //     if (!Auth::check()) {
+    //         return response()->json([
+    //             'status' => false,
+    //             'message' => 'Authentication required. Please login first.'
+    //         ]);
+    //     }
+    //     if ($id != $user) {
+    //         return response()->json([
+    //             'status' => false,
+    //             'message' => ' Invalid user.You do not have permission to access stock management!'
+    //         ]);
+    //     }
+    //     $customer =  Customers::findOrFail($user);
+    // }
     public function stockRemove(Request $request, $id)
     {
         $data = $request->validate([

@@ -177,7 +177,7 @@ Route::prefix('plans')->group(function (){
    Route::post('/store',[PlanController::class, 'store']);
    Route::get('/trashed', [PlanController::class, 'trashed']);
    Route::get('/search', [PlanController::class, 'search']);
-   Route::get('/{id}', [PlanController::class, 'edit']);
+   Route::middleware('auth:sanctum')->get('/{id}', [PlanController::class, 'edit']);
    Route::put('/{id}', [PlanController::class, 'update']);
    Route::delete('/{id}', [PlanController::class, 'delete']);
    Route::patch('/{id}', [PlanController::class, 'restore']);

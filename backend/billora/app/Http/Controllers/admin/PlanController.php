@@ -10,10 +10,13 @@ use Illuminate\Http\Request;
 use App\Models\Plans;
 use App\Models\PlanPermissionDetails;
 use App\Models\PlanPurchaseHistory;
+use App\Models\Stocks;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
+
 class PlanController extends Controller
 {
     public function index()
@@ -92,7 +95,22 @@ class PlanController extends Controller
                 'description'
             ])
             ->get();
+            $user = Auth::user()->id;
+            $customer =  Customers::findOrFail($user);
+        $permissions = DB::table('plan_permission_details as ppd')
+                ->join('plan_permission as pp', 'pp.id', '=', 'ppd.permission_id')
+                ->where('ppd.plan_id', $customer->plan_id)
+                ->pluck('pp.slug')
+                ->toArray();
 
+        $hasStockPermission = in_array('stock-management', $permissions);
+        $lowStocks = collect();
+        if($hasStockPermission){
+        $lowStocks = Stocks::where('user_id', $user)
+            ->where('quantity', '<=', 5)
+            ->with('product:id,name,sku')
+            ->get();
+        }
         // Get Sidebar Permissions (IMPORTANT FIX)
         $sidebarPermissions = PlanPermission::with('sidebarPermissions')
             ->whereIn('id', $planPermissions)
@@ -115,7 +133,10 @@ class PlanController extends Controller
             'business_types' => $plan->business_types()->with('businessType')->get(),
 
             //  FINAL SIDEBAR PERMISSIONS
-            'customer_sidebar_permission' => $sidebarPermissions
+            'customer_sidebar_permission' => $sidebarPermissions,
+            'low_stock_alert' => $lowStocks->isNotEmpty(),
+            'low_stock_count' => $lowStocks->count(),
+            'low_stock_products' => $lowStocks,
         ];
 
          });
