@@ -134,9 +134,7 @@ class PlanController extends Controller
 
             //  FINAL SIDEBAR PERMISSIONS
             'customer_sidebar_permission' => $sidebarPermissions,
-            'low_stock_alert' => $lowStocks->isNotEmpty(),
-            'low_stock_count' => $lowStocks->count(),
-            'low_stock_products' => $lowStocks,
+            'notifications' => $lowStocks,
         ];
 
          });
