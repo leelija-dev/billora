@@ -7,7 +7,6 @@ use App\Models\Customers;
 use App\Models\Seller;
 use App\Models\SellerPaymentHistory;
 use App\Models\SellerProducts;
-use App\Models\SellerPaymentHistory;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
