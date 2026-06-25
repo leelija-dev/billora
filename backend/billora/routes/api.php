@@ -219,8 +219,8 @@ Route::middleware('auth:sanctum')->prefix('free-trials')->group(function () {
   Route::post('/', [PaymentController::class, 'freeTrial']);
 });
 //plan expire reminder
-Route::middleware('auth:sanctum')->prefix('plan-expire-reminder')->group(function () {
-   Route::get('/{id}', [PlanExpiryController::class, 'getExpiringPlans']);
+Route::middleware('auth:sanctum')->prefix('notifications')->group(function () {  //plan-expire-reminder   pre name 
+   Route::get('/{id}', [PlanExpiryController::class, 'getExpiringPlans']);     // here all notification define e.g plan expire,low stock alert,due customer
 });
 
 //public user access product with out login for restaurant,etc.
