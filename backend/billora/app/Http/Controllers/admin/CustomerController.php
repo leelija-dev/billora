@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use App\Jobs\CustomerRegistrationJob;
 use Illuminate\Http\Request;
 use App\Models\Customers;
+use App\Models\Stocks;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
@@ -22,6 +23,8 @@ use BaconQrCode\Writer;
 use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
+
 class CustomerController extends Controller
 {
     public function index()
@@ -314,13 +317,29 @@ class CustomerController extends Controller
         $cookieDomain = env('AUTH_COOKIE_DOMAIN', null);
         $cookieSecure = env('AUTH_COOKIE_SECURE', false);
         $cookieSameSite = env('AUTH_COOKIE_SAMESITE', 'none');
+         $permissions = DB::table('plan_permission_details as ppd')
+                ->join('plan_permission as pp', 'pp.id', '=', 'ppd.permission_id')
+                ->where('ppd.plan_id', $user->plan_id)
+                ->pluck('pp.slug')
+                ->toArray();
 
+        $hasStockPermission = in_array('stock-management', $permissions);
+        $lowStocks = collect();
+        if($hasStockPermission){
+        $lowStocks = Stocks::where('user_id', $user->id)
+            ->where('quantity', '<=', 5)
+            ->with('product:id,name,sku')
+            ->get();
+        }
         // Prepare response with token in body
         $response = response()->json([
             'status' => true,
             'message' => 'Login successful',
             'token' => $token,
-            'user' => $user
+            'user' => $user,
+            'low_stock_alert' => $lowStocks->isNotEmpty(),
+            'low_stock_count' => $lowStocks->count(),
+            'low_stock_products' => $lowStocks,
         ]);
 
         // Set HTTP-only auth_token cookie for backward compatibility
