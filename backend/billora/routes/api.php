@@ -303,6 +303,7 @@ Route::middleware('auth:sanctum')->prefix('seller')->group(function () {
    Route::get('/edit/{id}', [SellerController::class, 'edit']);   //seller id 
    Route::put('/update/{id}', [SellerController::class, 'update']);   // seller id 
    Route::delete('/delete/{id}', [SellerController::class, 'delete']);  //seller id 
+   Route::post('/due-payment/{id}', [SellerController::class, 'duePay']);
 });
 Route::middleware('auth:sanctum')->prefix('seller-products')->group(function (){
       Route::get('/{id}',[SellerProductsController::class,'sellerProducts']);

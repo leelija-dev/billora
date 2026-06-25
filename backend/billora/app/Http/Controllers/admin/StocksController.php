@@ -615,11 +615,11 @@ class StocksController extends Controller
                 $seller = Seller::where('id', $stock->seller_id)->first();
                 if ($sellerProduct) {
                     $sellerProduct->update([
-                        'quantity' => ((float)$sellerProduct->quantity + (float)$data['quantity'])
+                        'qty' => ((float)$sellerProduct->qty + (float)$data['quantity'])
                     ]);
                 }
                 $seller->update([
-                    'due_amount' => ((float)$seller->due_amount + (float)$data['quantity'] * ((float)$stock->purchase_price*(float)$stock->purchase_gst_percentage/100))
+                    'due_amount' => ((float)$seller->due_amount + ((float)$stock->purchase_price * (float)$data['quantity'])+(float)$data['quantity'] * ((float)$stock->purchase_price*(float)$stock->purchase_gst_percentage/100))
                 ]);
                 Cache::tags(['stock_user_' . Auth::user()->id, 'products_user_' . $user, 'gst_collection_user_' . $user, 'billing_user_' . $user])->flush();
                 // 'stock_user_' . Auth::user()->id.'_page_'.$request->page
@@ -716,22 +716,28 @@ class StocksController extends Controller
                             if ($removeQty <= 0) {
                                 break;
                             }
-                            $availableQty = $seller->quantity;
+                            $availableQty = $seller->qty;
                             if ($availableQty <= $removeQty) {
 
                                 // Remove all quantity from this record
                                 $seller->update([
-                                    'quantity' => 0
+                                    'qty' => 0
                                 ]);
 
                                 $removeQty -= $availableQty;
+                               
                             } else {
-
+                                $userSeller = Seller::where('id',$seller->seller_id)->where('user_id',$data['user_id'])->first();
                                 // Remove only required quantity
                                 $seller->update([
-                                    'quantity' => $availableQty - $removeQty
+                                    'qty' => $availableQty - $removeQty
                                 ]);
+                               $amount = $stock->purchase_price * $removeQty;
+                                $totalAmount = $amount + ($amount * ($stock->purchase_gst_percentage / 100));
 
+                                $userSeller->update([
+                                    'due_amount' => $userSeller->due_amount - $totalAmount
+                                ]);
                                 $removeQty = 0;
                             }
                         }
