@@ -29,6 +29,7 @@ import ReportDetails from '../pages/reports/ReportDetails'
 import Plans from '../pages/billing/Plans'
 import GstManagement from '../pages/gst/GstManagement'
 import Settings from '../pages/settings/Settings'
+import Notifications from '../pages/notifications/Notifications'
 
 
 // Test Page
@@ -73,7 +74,8 @@ const AppRoutes = () => {
         <Route path="billing" element={<ProtectedRoute feature="billing"><Plans /></ProtectedRoute>} />
         <Route path="gst" element={<ProtectedRoute feature="gst"><GstManagement /></ProtectedRoute>} />
         <Route path="social-link" element={<ProtectedRoute feature="social-link"><SocialLink /></ProtectedRoute>} />
-      
+        <Route path="notifications" element={<Notifications />} />
+
 
 
         <Route path="settings" element={<ProtectedRoute feature="settings"><Settings /></ProtectedRoute>} />

@@ -1522,6 +1522,7 @@ const SellerDetails = () => {
             onChange={handleInputChange}
             placeholder="Enter due amount"
             step="0.01"
+            disabled={isEditing}
           />
         </motion.div>
       </motion.div>

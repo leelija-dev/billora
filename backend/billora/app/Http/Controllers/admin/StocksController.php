@@ -618,9 +618,11 @@ class StocksController extends Controller
                         'qty' => ((float)$sellerProduct->qty + (float)$data['quantity'])
                     ]);
                 }
+                if($seller){
                 $seller->update([
                     'due_amount' => ((float)$seller->due_amount + ((float)$stock->purchase_price * (float)$data['quantity'])+(float)$data['quantity'] * ((float)$stock->purchase_price*(float)$stock->purchase_gst_percentage/100))
                 ]);
+                }
                 Cache::tags(['stock_user_' . Auth::user()->id, 'products_user_' . $user, 'gst_collection_user_' . $user, 'billing_user_' . $user])->flush();
                 // 'stock_user_' . Auth::user()->id.'_page_'.$request->page
                 return response()->json([

@@ -1418,6 +1418,7 @@ const StockForm = ({
               step="0.01"
               placeholder="Enter paid amount"
               error={errors.paid_amount?.message}
+              disabled={isEditMode}
               {...register("paid_amount", {
                 valueAsNumber: true,
                 onChange: (e) => handleDecimalInput(e),
