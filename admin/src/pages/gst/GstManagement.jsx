@@ -795,90 +795,108 @@ const GSTManagement = () => {
         </div>
       </motion.div>
 
-      {/* Summary Cards */}
-      <motion.div
-        initial={{ y: 20, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ delay: 0.1 }}
-        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4"
-      >
-        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-500 dark:text-gray-400">GST In (Sales)</p>
-              <p className="text-2xl font-bold text-green-600 dark:text-green-400">
-                {formatCurrency(summary.gstIn)}
-              </p>
-            </div>
-            <div className="w-12 h-12 bg-green-100 dark:bg-green-900/30 rounded-xl flex items-center justify-center">
-              <FiArrowUp className="w-6 h-6 text-green-600 dark:text-green-400" />
-            </div>
-          </div>
-          <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">
-            Total GST collected from sales
-          </p>
-        </div>
+     {/* Summary Cards */}
+<motion.div
+  initial={{ y: 20, opacity: 0 }}
+  animate={{ y: 0, opacity: 1 }}
+  transition={{ delay: 0.1 }}
+  className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 md:gap-4 lg:gap-5 px-3 sm:px-0"
+>
+  {/* GST In (Sales) */}
+  <motion.div
+    whileHover={{ y: -4, transition: { duration: 0.2 } }}
+    className="bg-white dark:bg-gray-800 rounded-xl md:rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 p-4 sm:p-5 md:p-6 border border-gray-100 dark:border-gray-700"
+  >
+    <div className="flex items-start justify-between">
+      <div className="flex-1 min-w-0">
+        <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 font-medium truncate">
+          GST In (Sales)
+        </p>
+        <p className="text-xl sm:text-2xl md:text-3xl font-bold text-green-600 dark:text-green-400 mt-1 truncate">
+          {formatCurrency(summary.gstIn)}
+        </p>
+      </div>
+      <div className="flex-shrink-0 w-10 h-10 sm:w-12 sm:h-12 bg-green-100 dark:bg-green-900/30 rounded-lg sm:rounded-xl flex items-center justify-center ml-2 sm:ml-3">
+        <FiArrowUp className="w-5 h-5 sm:w-6 sm:h-6 text-green-600 dark:text-green-400" />
+      </div>
+    </div>
+   
+  </motion.div>
 
-        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-500 dark:text-gray-400">GST Out (Purchases)</p>
-              <p className="text-2xl font-bold text-red-600 dark:text-red-400">
-                {formatCurrency(summary.gstOut)}
-              </p>
-            </div>
-            <div className="w-12 h-12 bg-red-100 dark:bg-red-900/30 rounded-xl flex items-center justify-center">
-              <FiArrowDown className="w-6 h-6 text-red-600 dark:text-red-400" />
-            </div>
-          </div>
-          <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">
-            Total GST paid on purchases
-          </p>
-        </div>
+  {/* GST Out (Purchases) */}
+  <motion.div
+    whileHover={{ y: -4, transition: { duration: 0.2 } }}
+    className="bg-white dark:bg-gray-800 rounded-xl md:rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 p-4 sm:p-5 md:p-6 border border-gray-100 dark:border-gray-700"
+  >
+    <div className="flex items-start justify-between">
+      <div className="flex-1 min-w-0">
+        <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 font-medium truncate">
+          GST Out (Purchases)
+        </p>
+        <p className="text-xl sm:text-2xl md:text-3xl font-bold text-red-600 dark:text-red-400 mt-1 truncate">
+          {formatCurrency(summary.gstOut)}
+        </p>
+      </div>
+      <div className="flex-shrink-0 w-10 h-10 sm:w-12 sm:h-12 bg-red-100 dark:bg-red-900/30 rounded-lg sm:rounded-xl flex items-center justify-center ml-2 sm:ml-3">
+        <FiArrowDown className="w-5 h-5 sm:w-6 sm:h-6 text-red-600 dark:text-red-400" />
+      </div>
+    </div>
+   
+  </motion.div>
 
-        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-500 dark:text-gray-400">Net GST</p>
-              <p className={`text-2xl font-bold ${(summary.gstIn - summary.gstOut) >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                {formatCurrency(summary.gstIn - summary.gstOut)}
-              </p>
-            </div>
-            <div className={`w-12 h-12 ${(summary.gstIn - summary.gstOut) >= 0 ? 'bg-green-100 dark:bg-green-900/30' : 'bg-red-100 dark:bg-red-900/30'} rounded-xl flex items-center justify-center`}>
-              { (summary.gstIn - summary.gstOut) >= 0 ? 
-                <FiTrendingUp className={`w-6 h-6 text-green-600 dark:text-green-400`} /> :
-                <FiTrendingDown className={`w-6 h-6 text-red-600 dark:text-red-400`} />
-              }
-            </div>
-          </div>
-          <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">
-            {summary.dateFrom && summary.dateTo && (
-              <>
-                {formatDate(summary.dateFrom)} - {formatDate(summary.dateTo)}
-              </>
-            )}
-          </p>
-        </div>
+  {/* Net GST */}
+  <motion.div
+    whileHover={{ y: -4, transition: { duration: 0.2 } }}
+    className="bg-white dark:bg-gray-800 rounded-xl md:rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 p-4 sm:p-5 md:p-6 border border-gray-100 dark:border-gray-700"
+  >
+    <div className="flex items-start justify-between">
+      <div className="flex-1 min-w-0">
+        <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 font-medium truncate">
+          Net GST
+        </p>
+        <p className={`text-xl sm:text-2xl md:text-3xl font-bold mt-1 truncate ${
+          (summary.gstIn - summary.gstOut) >= 0 
+            ? 'text-green-600 dark:text-green-400' 
+            : 'text-red-600 dark:text-red-400'
+        }`}>
+          {formatCurrency(summary.gstIn - summary.gstOut)}
+        </p>
+      </div>
+      <div className={`flex-shrink-0 w-10 h-10 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl flex items-center justify-center ml-2 sm:ml-3 ${
+        (summary.gstIn - summary.gstOut) >= 0 
+          ? 'bg-green-100 dark:bg-green-900/30' 
+          : 'bg-red-100 dark:bg-red-900/30'
+      }`}>
+        {(summary.gstIn - summary.gstOut) >= 0 ? 
+          <FiTrendingUp className={`w-5 h-5 sm:w-6 sm:h-6 text-green-600 dark:text-green-400`} /> :
+          <FiTrendingDown className={`w-5 h-5 sm:w-6 sm:h-6 text-red-600 dark:text-red-400`} />
+        }
+      </div>
+    </div>
+    
+  </motion.div>
 
-        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-500 dark:text-gray-400">
-                Total Collections
-              </p>
-              <p className="text-2xl font-bold text-primary-600 dark:text-primary-400">
-                {(gstInPagination?.total || 0) + (gstOutPagination?.total || 0)}
-              </p>
-            </div>
-            <div className="w-12 h-12 bg-primary-100 dark:bg-primary-900/30 rounded-xl flex items-center justify-center">
-              <FaRupeeSign className="w-6 h-6 text-primary-600 dark:text-primary-400" />
-            </div>
-          </div>
-          <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">
-            Total collections across all
-          </p>
-        </div>
-      </motion.div>
+  {/* Total Collections */}
+  <motion.div
+    whileHover={{ y: -4, transition: { duration: 0.2 } }}
+    className="bg-white dark:bg-gray-800 rounded-xl md:rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 p-4 sm:p-5 md:p-6 border border-gray-100 dark:border-gray-700"
+  >
+    <div className="flex items-start justify-between">
+      <div className="flex-1 min-w-0">
+        <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 font-medium truncate">
+          Total Collections
+        </p>
+        <p className="text-xl sm:text-2xl md:text-3xl font-bold text-primary-600 dark:text-primary-400 mt-1 truncate">
+          {(gstInPagination?.total || 0) + (gstOutPagination?.total || 0)}
+        </p>
+      </div>
+      <div className="flex-shrink-0 w-10 h-10 sm:w-12 sm:h-12 bg-primary-100 dark:bg-primary-900/30 rounded-lg sm:rounded-xl flex items-center justify-center ml-2 sm:ml-3">
+        <FaRupeeSign className="w-5 h-5 sm:w-6 sm:h-6 text-primary-600 dark:text-primary-400" />
+      </div>
+    </div>
+   
+  </motion.div>
+</motion.div>
 
       {/* Filters */}
       <motion.div
