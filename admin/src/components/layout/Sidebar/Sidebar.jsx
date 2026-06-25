@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { NavLink, useLocation } from "react-router-dom";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useAuthStore } from "../../../store/authStore";
 import { useNotificationStore } from "../../../store/notificationStore";
 import { useUIStore } from "../../../store/uiStore";
@@ -38,6 +38,7 @@ const Sidebar = () => {
   const { user } = useAuthStore();
   const { planExpireReminder } = useNotificationStore();
   const location = useLocation();
+  const navigate = useNavigate();
   const [hoveredItem, setHoveredItem] = useState(null);
 
   useEffect(() => {
@@ -347,6 +348,7 @@ const Sidebar = () => {
                 <motion.button
                   whileHover={{ scale: 1.1, y: -2 }}
                   whileTap={{ scale: 0.95 }}
+                  onClick={() => navigate("/notifications")}
                   className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400"
                 >
                   <FiBell className="w-4 h-4" />

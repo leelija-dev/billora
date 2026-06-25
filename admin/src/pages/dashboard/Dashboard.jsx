@@ -25,7 +25,7 @@ import { dashboardAPI } from '../../services'
 import OrderStatusChart from '../../components/charts/OrderStatusChart'
 import RevenueChart from '../../components/charts/RevenueChart'
 import TopProductsChart from '../../components/charts/TopProductsChart'
-import { FaFile } from 'react-icons/fa'
+import { FaFile, FaRupeeSign } from 'react-icons/fa'
 import { 
   handlePDFExport, 
   handleWordExport, 
@@ -377,7 +377,7 @@ const Dashboard = () => {
           <StatCard
             title="Total Revenue"
             value={stats.revenue || 0}
-            icon={FiDollarSign}
+            icon={FaRupeeSign}
             change={stats.revenueChange}
             color="from-green-500 to-emerald-500"
             delay={0.1}
