@@ -5,6 +5,7 @@ namespace App\Http\Controllers\admin;
 use App\Http\Controllers\Controller;
 use App\Models\Customers;
 use App\Models\Seller;
+use App\Models\SellerPaymentHistory;
 use App\Models\SellerProducts;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -76,17 +77,19 @@ public function sellerProducts(Request $request, $id){
                 'message' => 'Seller not found'
             ]);
         }
-        $sellerProducts = SellerProducts::where('seller_id',$id)->where('user_id', $user)->with('products', 'stocks','seller','paymentHistory')
+        $sellerProducts = SellerProducts::where('seller_id',$id)->where('user_id', $user)->with('products', 'stocks','seller')
         ->when($search, function ($query) use ($search) {
                 $query->whereHas('products', function ($q) use ($search) {
                     $q->where('name', 'LIKE', "%{$search}%")
                       ->orWhere('sku', 'LIKE', "%{$search}%");
                 });
         })->paginate(15);
+        $sellerPaymentHistory = SellerPaymentHistory::where('seller_id', $id)->where('user_id', $user)->paginate(15);
         return response()->json([
             'status' => true,
             'message' => 'Seller products',
-            'sellerProducts' => $sellerProducts
+            'sellerProducts' => $sellerProducts,
+            'sellerPaymentHistory' => $sellerPaymentHistory
         ]);
     }catch(\Exception $e){
         return response()->json([
