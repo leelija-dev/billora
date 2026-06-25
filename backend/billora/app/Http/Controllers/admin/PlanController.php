@@ -119,7 +119,8 @@ class PlanController extends Controller
             'business_types' => $plan->business_types()->with('businessType')->get(),
 
             //  FINAL SIDEBAR PERMISSIONS
-          'customer_sidebar_permission' => $sidebarPermissions,
+            'customer_sidebar_permission' => $sidebarPermissions,
+
         ];
 
          });

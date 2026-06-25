@@ -31,4 +31,7 @@ public function products(){
 public function stocks(){
     return $this->belongsTo(Stocks::class, 'stock_id');
 }
+public function paymentHistory(){
+    return $this->hasMany(SellerPaymentHistory::class, 'seller_id');
+}
 }

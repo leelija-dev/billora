@@ -50,6 +50,8 @@ const SellerDetails = () => {
     sellerProductsPagination,
     sellerProductsSearch,
     currentSellerId,
+    sellerPaymentHistory,
+    sellerPaymentHistoryPagination,
     fetchSellerProducts,
     clearSellerProducts,
     getSellerById,
@@ -73,6 +75,7 @@ const SellerDetails = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [refreshing, setRefreshing] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState("products");
 
   // Payment state
   const [showPaymentModal, setShowPaymentModal] = useState(false);
@@ -860,6 +863,55 @@ const SellerDetails = () => {
     },
   ];
 
+  // Payment history columns
+  const paymentHistoryColumns = [
+    {
+      id: "payment_date",
+      header: "Date",
+      accessor: "created_at",
+      cell: (value) => (
+        <div className="flex items-center space-x-1 text-sm text-gray-500 dark:text-gray-400">
+          <FiCalendar className="w-3 h-3" />
+          <span>{value ? formatDate(value) : "N/A"}</span>
+        </div>
+      ),
+    },
+   
+    {
+      id: "payment_amount",
+      header: "Amount",
+      accessor: "paid_amount",
+      cell: (value) => (
+        <div className="flex items-center">
+          <FaRupeeSign className="w-3 h-3 text-gray-500 mr-1" />
+          <span className="font-medium text-green-600 dark:text-green-400">
+            {parseFloat(value || 0).toFixed(2)}
+          </span>
+        </div>
+      ),
+    },
+    {
+      id: "payment_method",
+      header: "Method",
+      accessor: "payment_method",
+      cell: (value) => (
+        <span className="text-sm text-gray-600 dark:text-gray-400 capitalize">
+          {value || "N/A"}
+        </span>
+      ),
+    },
+    {
+      id: "payment_remarks",
+      header: "Remarks",
+      accessor: "remarks",
+      cell: (value) => (
+        <span className="text-sm text-gray-600 dark:text-gray-400">
+          {value || "N/A"}
+        </span>
+      ),
+    },
+  ];
+
   // Loading Skeleton
   const SkeletonLoader = () => (
     <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-12">
@@ -1131,7 +1183,7 @@ const SellerDetails = () => {
             Edit Seller
           </Button>
           
-          {/* Print Button */}
+          {/* Print Button
           <Button
             variant="outline"
             onClick={handlePrint}
@@ -1139,7 +1191,7 @@ const SellerDetails = () => {
             disabled={isPrinting}
           >
             {isPrinting ? 'Preparing...' : 'Print'}
-          </Button>
+          </Button> */}
         </motion.div>
       </div>
 
@@ -1694,44 +1746,108 @@ const SellerDetails = () => {
 
         {/* Products Table */}
         <div className="p-6">
-          {sellerProductsLoading && !initialLoading ? (
-            <SkeletonLoader />
-          ) : sellerProducts && sellerProducts.length > 0 ? (
+          {/* Tab Navigation */}
+          <div className="flex space-x-4 mb-6 border-b border-gray-200 dark:border-gray-700">
+            <button
+              onClick={() => setActiveTab("products")}
+              className={`pb-3 px-4 text-sm font-medium transition-colors ${
+                activeTab === "products"
+                  ? "text-primary-600 border-b-2 border-primary-600 dark:text-primary-400 dark:border-primary-400"
+                  : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+              }`}
+            >
+              Products
+            </button>
+            <button
+              onClick={() => setActiveTab("payment_history")}
+              className={`pb-3 px-4 text-sm font-medium transition-colors ${
+                activeTab === "payment_history"
+                  ? "text-primary-600 border-b-2 border-primary-600 dark:text-primary-400 dark:border-primary-400"
+                  : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+              }`}
+            >
+              Payment History
+            </button>
+          </div>
+
+          {/* Products Tab */}
+          {activeTab === "products" && (
             <>
-              <Table
-                columns={productColumns}
-                data={sellerProducts}
-                loading={sellerProductsLoading}
-              />
-              {sellerProductsTotal > sellerProductsPageSize && (
-                <div className="mt-4">
-                  <Pagination
-                    currentPage={sellerProductsCurrentPage}
-                    totalItems={sellerProductsTotal}
-                    pageSize={sellerProductsPageSize}
-                    pagination={sellerProductsPagination}
-                    onPageChange={handlePageChange}
+              {sellerProductsLoading && !initialLoading ? (
+                <SkeletonLoader />
+              ) : sellerProducts && sellerProducts.length > 0 ? (
+                <>
+                  <Table
+                    columns={productColumns}
+                    data={sellerProducts}
+                    loading={sellerProductsLoading}
                   />
-                </div>
+                  {sellerProductsTotal > sellerProductsPageSize && (
+                    <div className="mt-4">
+                      <Pagination
+                        currentPage={sellerProductsCurrentPage}
+                        totalItems={sellerProductsTotal}
+                        pageSize={sellerProductsPageSize}
+                        pagination={sellerProductsPagination}
+                        onPageChange={handlePageChange}
+                      />
+                    </div>
+                  )}
+                </>
+              ) : (
+                <EmptyState
+                  icon={FiShoppingBag}
+                  title="No Products Found"
+                  description={
+                    searchTerm
+                      ? `No products found matching "${searchTerm}"`
+                      : "This seller doesn't have any products yet."
+                  }
+                  action={
+                    searchTerm ? (
+                      <Button variant="outline" onClick={clearSearch}>
+                        Clear Search
+                      </Button>
+                    ) : null
+                  }
+                />
               )}
             </>
-          ) : (
-            <EmptyState
-              icon={FiShoppingBag}
-              title="No Products Found"
-              description={
-                searchTerm
-                  ? `No products found matching "${searchTerm}"`
-                  : "This seller doesn't have any products yet."
-              }
-              action={
-                searchTerm ? (
-                  <Button variant="outline" onClick={clearSearch}>
-                    Clear Search
-                  </Button>
-                ) : null
-              }
-            />
+          )}
+
+          {/* Payment History Tab */}
+          {activeTab === "payment_history" && (
+            <>
+              {sellerProductsLoading ? (
+                <SkeletonLoader />
+              ) : sellerPaymentHistory && sellerPaymentHistory.length > 0 ? (
+                <>
+                  <Table
+                    columns={paymentHistoryColumns}
+                    data={sellerPaymentHistory}
+                    loading={sellerProductsLoading}
+                  />
+                  {sellerPaymentHistoryPagination &&
+                    sellerPaymentHistoryPagination.total > sellerPaymentHistoryPagination.per_page && (
+                      <div className="mt-4">
+                        <Pagination
+                          currentPage={sellerPaymentHistoryPagination.current_page}
+                          totalItems={sellerPaymentHistoryPagination.total}
+                          pageSize={sellerPaymentHistoryPagination.per_page}
+                          pagination={sellerPaymentHistoryPagination}
+                          onPageChange={(page) => fetchSellerProducts(id, page, searchTerm)}
+                        />
+                      </div>
+                    )}
+                </>
+              ) : (
+                <EmptyState
+                  icon={FiCreditCard}
+                  title="No Payment History"
+                  description="This seller doesn't have any payment records yet."
+                />
+              )}
+            </>
           )}
         </div>
       </motion.div>

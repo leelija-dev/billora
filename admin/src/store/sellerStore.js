@@ -49,6 +49,10 @@ const useSellerStore = create((set, get) => ({
   sellerProductsSearch: "",
   currentSellerId: null,
 
+  // Seller payment history state
+  sellerPaymentHistory: [],
+  sellerPaymentHistoryPagination: null,
+
   // Payment state
   paymentProcessing: false,
   paymentError: null,
@@ -286,6 +290,8 @@ const useSellerStore = create((set, get) => ({
         let productsArray = []
         let total = 0
         let paginationData = null
+        let paymentHistoryArray = []
+        let paymentHistoryPagination = null
         
         if (response.data?.sellerProducts?.data) {
           productsArray = Array.isArray(response.data.sellerProducts.data) ? response.data.sellerProducts.data : []
@@ -336,9 +342,29 @@ const useSellerStore = create((set, get) => ({
           total = productsArray.length
         }
         
+        // Extract payment history
+        if (response.data?.sellerPaymentHistory?.data) {
+          paymentHistoryArray = Array.isArray(response.data.sellerPaymentHistory.data) ? response.data.sellerPaymentHistory.data : []
+          paymentHistoryPagination = {
+            current_page: response.data.sellerPaymentHistory.current_page,
+            first_page_url: response.data.sellerPaymentHistory.first_page_url,
+            from: response.data.sellerPaymentHistory.from,
+            last_page: response.data.sellerPaymentHistory.last_page,
+            last_page_url: response.data.sellerPaymentHistory.last_page_url,
+            links: response.data.sellerPaymentHistory.links,
+            next_page_url: response.data.sellerPaymentHistory.next_page_url,
+            path: response.data.sellerPaymentHistory.path,
+            per_page: response.data.sellerPaymentHistory.per_page,
+            prev_page_url: response.data.sellerPaymentHistory.prev_page_url,
+            to: response.data.sellerPaymentHistory.to,
+            total: response.data.sellerPaymentHistory.total,
+          }
+        }
+        
         console.log('📊 Products extracted:', productsArray.length, 'products')
         console.log('📊 Total products:', total)
         console.log('📊 Pagination:', paginationData)
+        console.log('💳 Payment history extracted:', paymentHistoryArray.length, 'records')
         
         set({
           sellerProducts: productsArray,
@@ -349,6 +375,8 @@ const useSellerStore = create((set, get) => ({
           sellerProductsPagination: paginationData,
           sellerProductsSearch: search,
           currentSellerId: sellerId,
+          sellerPaymentHistory: paymentHistoryArray,
+          sellerPaymentHistoryPagination: paymentHistoryPagination,
         })
         
         return response.data
