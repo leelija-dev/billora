@@ -13,7 +13,6 @@ import {
   FiX,
   FiRefreshCw,
   FiEdit2,
-  FiDollarSign,
   FiFileText,
   FiCalendar,
   FiTag,
@@ -1116,7 +1115,7 @@ const SellerDetails = () => {
               <Button
                 variant="success"
                 onClick={() => setShowPaymentModal(true)}
-                icon={FiDollarSign}
+                icon={FaRupeeSign}
                 className="shadow-lg shadow-green-500/30"
               >
                 Process Payment
@@ -1748,7 +1747,7 @@ const SellerDetails = () => {
       />
 
       {/* Add shake animation for validation errors */}
-      <style jsx>{`
+      <style>{`
         @keyframes shake {
           0%, 100% { transform: translateX(0); }
           10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
